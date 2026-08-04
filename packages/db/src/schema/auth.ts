@@ -1,0 +1,76 @@
+import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { neighborhoods } from './reference'
+
+// Identity is owned by Better Auth. These four tables match Better Auth's
+// default Drizzle schema; `user` is EXTENDED with Mesa's profile fields so there
+// is exactly one identity per person — no parallel "users" table to keep in
+// sync. One user can carry Apple, Instagram, and phone identities via `account`.
+//
+// Everything a user owns cascades from user.id ON DELETE — that is what makes
+// in-app account deletion (App Store 5.1.1) actually erase their data.
+
+export const user = pgTable('user', {
+  // Better Auth core
+  id: text('id').primaryKey(),
+  // Defaults to '' so a phone-first signup (no display name yet) can't fail the
+  // insert; the real name is captured during onboarding.
+  name: text('name').notNull().default(''),
+  email: text('email').unique(),
+  emailVerified: boolean('email_verified').notNull().default(false),
+  image: text('image'),
+  // Phone-number plugin
+  phoneNumber: text('phone_number').unique(),
+  phoneNumberVerified: boolean('phone_number_verified').notNull().default(false),
+
+  // --- Mesa profile fields ---
+  handle: text('handle').unique(), // @handle; set during onboarding
+  bio: text('bio'),
+  neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id, {
+    onDelete: 'set null',
+  }),
+  // EULA acceptance is required at signup for a UGC app (App Store 1.2).
+  eulaAcceptedAt: timestamp('eula_accepted_at'),
+
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const session = pgTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const account = pgTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(), // provider's user id
+  providerId: text('provider_id').notNull(), // 'apple' | 'instagram' | 'phone' | 'credential'
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+export const verification = pgTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})

@@ -1,10 +1,39 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import { auth } from './auth'
+import type { AppEnv } from './context'
+import { sessionMiddleware } from './middleware/session'
+import { meRoutes } from './routes/me'
 
-// M0: the API boots and answers a health check. Milestone 1 adds the typed
-// route structure, request-context (current user), Better Auth, and the DB.
-const app = new Hono()
+const app = new Hono<AppEnv>()
+
+// CORS for the Vite app / Capacitor webview; credentials so the session cookie
+// rides along.
+app.use(
+  '*',
+  cors({
+    origin: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
+    credentials: true,
+  }),
+)
+
+// Better Auth owns everything under /api/auth/* (sign-in, OAuth callbacks, OTP).
+app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+
+// Resolve the current user for every other route.
+app.use('*', sessionMiddleware)
 
 app.get('/health', (c) => c.json({ ok: true, service: 'mesa-api' }))
+
+// Feature routes (typed, mounted under a clear prefix).
+app.route('/me', meRoutes)
+
+// Uniform JSON error + 404 handling.
+app.notFound((c) => c.json({ error: 'not_found' }, 404))
+app.onError((err, c) => {
+  console.error(err)
+  return c.json({ error: 'internal_error' }, 500)
+})
 
 const port = Number(process.env.PORT ?? 3000)
 
