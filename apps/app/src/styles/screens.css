@@ -1,0 +1,87 @@
+/* Shared layout for the full-screen flows (auth, onboarding). Tokens only. */
+
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--safe-top) + var(--space-6)) var(--space-5)
+    calc(var(--safe-bottom) + var(--space-6));
+  background: var(--ink);
+}
+
+/* A vertically-centered content column with breathing room. */
+.screen--center {
+  justify-content: center;
+  gap: var(--space-6);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.stack--tight {
+  gap: var(--space-2);
+}
+.stack--loose {
+  gap: var(--space-5);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Text input on the dark ground: a hairline field, brass focus. */
+.field {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--cream);
+  font-size: var(--text-body);
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+.field:focus {
+  border-color: var(--brass);
+}
+.field--code {
+  text-align: center;
+  letter-spacing: 0.4em;
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.error-text {
+  color: var(--status-packed);
+  font-size: var(--text-label);
+}
+
+.legal-text {
+  color: var(--dim);
+  font-size: var(--text-eyebrow);
+  line-height: 1.5;
+  text-align: center;
+}
+.legal-text a {
+  color: var(--cream-dim);
+  text-decoration: underline;
+}
+
+/* Onboarding progress dots. */
+.progress-dots {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: center;
+}
+.progress-dots span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.progress-dots span[data-active="true"] {
+  background: var(--brass);
+}

@@ -1,0 +1,79 @@
+/* Onboarding rank step — selection grid + versus cards. Tokens only. */
+
+.rank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.rank-pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  text-align: left;
+  padding: var(--space-4);
+  min-height: 84px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--cream);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.rank-pick--on {
+  border-color: var(--brass);
+  background: var(--surface-2);
+}
+.rank-pick__name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: var(--cream);
+}
+.rank-pick--on .rank-pick__name {
+  color: var(--brass-2);
+}
+.rank-pick__meta {
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+}
+
+/* Versus comparison — two large stacked targets with an "or" between. */
+.compare {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: stretch;
+}
+.versus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-7) var(--space-5);
+  min-height: 140px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.versus:hover {
+  border-color: var(--brass);
+}
+.versus:active {
+  transform: scale(0.98);
+}
+.versus__name {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 1.05;
+  color: var(--cream);
+}
+.compare__or {
+  text-align: center;
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--brass);
+  font-size: 1.1rem;
+}

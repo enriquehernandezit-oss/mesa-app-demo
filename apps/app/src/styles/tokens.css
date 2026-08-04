@@ -1,0 +1,62 @@
+/*
+ * Mesa brand tokens — the single source of truth for color, type, and spacing.
+ * Values are transcribed exactly from docs/DESIGN.md. Do NOT hand-pick colors
+ * anywhere else in the app; reference these variables. The look is fixed and
+ * shared with the pre-launch quiz — there must be zero visual seam.
+ */
+
+:root {
+  /* Color — deep oxblood grounds, cream text, brass as the single accent */
+  --ink: #210104; /* primary background */
+  --ink-2: #180b0b; /* deeper wells, tab bar base */
+  --surface: #2c1516; /* cards, sheets */
+  --surface-2: #391c1d; /* raised elements */
+  --cream: #ebe4d6; /* primary text, the wordmark */
+  --cream-dim: #dcccbb; /* secondary text */
+  --dim: #a3867a; /* muted / captions */
+  --brass: #c09050; /* accent, rank numerals, active states, hairlines */
+  --brass-2: #e2c179; /* brighter accent / highlights */
+  --line: rgba(235, 228, 214, 0.1); /* hairlines / dividers */
+
+  /* Nightlife status colors — Phase 2, defined now for consistency */
+  --status-packed: #e0865a;
+  --status-good: #c09050;
+  --status-building: #a98a63;
+  --status-slow: #7a6258;
+
+  /* Type families. Cormorant is the display serif (wordmark, restaurant names,
+     rank numerals); Plus Jakarta Sans is UI/body. Georgia is the serif fallback
+     so type never reflows to a system sans before the webfont loads. */
+  --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-ui: "Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+
+  /* Type scale — editorial: big serif, restrained UI text */
+  --text-display: 3rem; /* hero serif moments */
+  --text-title: 2rem; /* screen titles, restaurant names */
+  --text-rank: 2.5rem; /* the big brass rank numerals */
+  --text-body: 1rem;
+  --text-label: 0.8125rem; /* buttons, metadata */
+  --text-eyebrow: 0.6875rem; /* uppercase letter-spaced labels */
+
+  /* Eyebrow/label letter-spacing per DESIGN.md (~0.14–0.18em) */
+  --tracking-eyebrow: 0.16em;
+
+  /* Spacing — generous negative space on dark grounds */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* Safe-area insets (Capacitor / notch). Fall back to 0 in the browser. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

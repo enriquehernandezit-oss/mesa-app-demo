@@ -4,6 +4,8 @@ import { auth } from './auth'
 import type { AppEnv } from './context'
 import { sessionMiddleware } from './middleware/session'
 import { meRoutes } from './routes/me'
+import { onboardingRoutes } from './routes/onboarding'
+import { socialRoutes } from './routes/social'
 
 const app = new Hono<AppEnv>()
 
@@ -27,6 +29,8 @@ app.get('/health', (c) => c.json({ ok: true, service: 'mesa-api' }))
 
 // Feature routes (typed, mounted under a clear prefix).
 app.route('/me', meRoutes)
+app.route('/onboarding', onboardingRoutes)
+app.route('/social', socialRoutes)
 
 // Uniform JSON error + 404 handling.
 app.notFound((c) => c.json({ error: 'not_found' }, 404))

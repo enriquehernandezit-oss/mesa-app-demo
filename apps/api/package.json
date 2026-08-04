@@ -12,6 +12,7 @@
     "@mesa/db": "workspace:*",
     "better-auth": "^1.1.14",
     "drizzle-orm": "^0.38.3",
-    "hono": "^4.6.14"
+    "hono": "^4.6.14",
+    "zod": "^4.4.3"
   }
 }

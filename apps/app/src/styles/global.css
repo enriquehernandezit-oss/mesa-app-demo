@@ -1,0 +1,89 @@
+/*
+ * Global base. Dark oxblood ground everywhere, cream text, warm grain overlay.
+ * "When a screen feels like a tech dashboard, it's wrong; when it feels like the
+ *  inside of a dim, warm restaurant at 9pm, it's right." — docs/DESIGN.md
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Never a rubber-band white flash past the oxblood ground on iOS overscroll. */
+  overscroll-behavior: none;
+}
+
+/* A subtle warm grain/vignette over the whole app — film photography, not
+   product photography. Cheap (a fixed pseudo-layer), non-interactive, and it
+   keeps the flat dark grounds from reading as sterile startup UI. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  /* vignette */
+  background: radial-gradient(120% 100% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+  /* faint grain via a tiled fractal-noise data URI, kept very low opacity */
+  mix-blend-mode: soft-light;
+  opacity: 0.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.05;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Inputs inherit the ground; no bright default fields. */
+input,
+textarea,
+select {
+  font-family: inherit;
+  color: var(--cream);
+  background: transparent;
+}
+
+::placeholder {
+  color: var(--dim);
+}
+
+/* Respect reduced motion — disable the app's transitions/animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
