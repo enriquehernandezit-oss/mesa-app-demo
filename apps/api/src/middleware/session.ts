@@ -12,11 +12,26 @@ export const sessionMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   await next()
 })
 
-// Guard for authed routes: 401 unless a user is present. After this runs,
-// c.get('user') is guaranteed non-null within the handler.
+// Guard for authed routes: 401 unless a user is present. Also the ban gate
+// (App Store 1.2 — ejected users): a banned account is rejected everywhere and
+// its session is cleared. After this runs, c.get('user') is non-null.
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
-  if (!c.get('user')) {
+  const user = c.get('user')
+  if (!user) {
     return c.json({ error: 'unauthorized' }, 401)
   }
+  if (user.bannedAt) {
+    await auth.api.signOut({ headers: c.req.raw.headers }).catch(() => {})
+    return c.json({ error: 'account_suspended' }, 403)
+  }
+  await next()
+})
+
+// Guard for moderation actions (remove content / eject users). Must run after
+// requireAuth. Only accounts flagged isModerator may pass.
+export const requireModerator = createMiddleware<AppEnv>(async (c, next) => {
+  const user = c.get('user')
+  if (!user) return c.json({ error: 'unauthorized' }, 401)
+  if (!user.isModerator) return c.json({ error: 'forbidden' }, 403)
   await next()
 })

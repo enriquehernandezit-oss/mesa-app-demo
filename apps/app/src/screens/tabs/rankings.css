@@ -1,0 +1,138 @@
+/* Rankings screen — the ranked passport. Serif rank numerals, brass score,
+   vibe note. Tokens only. */
+
+.rank-toggle {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.ranking-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Big serif rank numeral in brass — the signature of the passport. */
+.ranking-numeral {
+  font-family: var(--font-serif);
+  font-size: var(--text-rank);
+  line-height: 1;
+  color: var(--brass);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.4em;
+  text-align: center;
+}
+
+.ranking-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ranking-name {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  line-height: 1.1;
+  color: var(--cream);
+}
+.ranking-meta {
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.ranking-note {
+  margin-top: var(--space-2);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--cream-dim);
+  line-height: 1.35;
+}
+
+/* Score sits to the right, brass, tabular. */
+.ranking-score {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  color: var(--brass-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding-top: 4px;
+}
+
+/* Small inline row actions (edit note / remove). */
+.ranking-actions {
+  display: flex;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+.link-action {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+}
+.link-action:hover {
+  color: var(--brass);
+}
+.link-action--danger:hover {
+  color: var(--status-packed);
+}
+
+.note-editor {
+  margin-top: var(--space-2);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--cream);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  resize: none;
+  outline: none;
+}
+.note-editor:focus {
+  border-color: var(--brass);
+}
+
+/* Floating rank-a-place button. */
+.fab {
+  position: fixed;
+  right: var(--space-5);
+  bottom: calc(72px + var(--safe-bottom) + var(--space-4));
+  height: 52px;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--brass);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: var(--text-label);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+}
+.fab:active {
+  transform: scale(0.97);
+}
+
+/* Saved (want-to-try) rows. */
+.saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}

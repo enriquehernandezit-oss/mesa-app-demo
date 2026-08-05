@@ -7,14 +7,17 @@ import {
   createRouter,
   redirect,
 } from '@tanstack/react-router'
+import { RankAPlace } from '../screens/rank/RankAPlace'
 import { ProfileTab } from '../screens/tabs/ProfileTab'
-import { DiscoverTab, RankingsTab, TonightTab } from '../screens/tabs/placeholders'
+import { RankingsTab } from '../screens/tabs/RankingsTab'
+import { DiscoverTab, TonightTab } from '../screens/tabs/placeholders'
+import { UserRankings } from '../screens/user/UserRankings'
 import '../screens/tabs/tabs.css'
 
-// The tab shell. Reached only once a user is authed AND onboarded (App gates
-// that), so these routes never worry about auth. TanStack Router owns
-// navigation between the four tabs; auth/onboarding live outside the router as
-// their own flows.
+// Reached only once a user is authed AND onboarded (App gates that), so these
+// routes never worry about auth. The four tabs live under a pathless layout that
+// renders the tab bar; focused flows (rank-a-place, another user's profile) are
+// top-level routes WITHOUT the tab bar.
 
 const TABS = [
   { to: '/discover', label: 'Discover' },
@@ -36,7 +39,7 @@ function TabBar() {
   )
 }
 
-function Shell() {
+function TabsLayout() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
@@ -47,9 +50,8 @@ function Shell() {
   )
 }
 
-const rootRoute = createRootRoute({ component: Shell })
+const rootRoute = createRootRoute({ component: Outlet })
 
-// Land on Discover.
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
@@ -58,35 +60,52 @@ const indexRoute = createRoute({
   },
 })
 
-// Literal path strings (not a helper) so TanStack Router infers each route's
-// path type and the tab <Link to> values stay type-checked.
-const discoverRoute = createRoute({
+// Pathless layout: everything under it gets the tab bar.
+const tabsLayout = createRoute({
   getParentRoute: () => rootRoute,
+  id: 'tabs',
+  component: TabsLayout,
+})
+const discoverRoute = createRoute({
+  getParentRoute: () => tabsLayout,
   path: '/discover',
   component: DiscoverTab,
 })
 const rankingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => tabsLayout,
   path: '/rankings',
   component: RankingsTab,
 })
 const tonightRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => tabsLayout,
   path: '/tonight',
   component: TonightTab,
 })
 const profileRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => tabsLayout,
   path: '/profile',
   component: ProfileTab,
 })
 
+// Full-screen flows, no tab bar.
+const rankRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/rank',
+  validateSearch: (s: Record<string, unknown>): { restaurant?: string } =>
+    typeof s.restaurant === 'string' ? { restaurant: s.restaurant } : {},
+  component: RankAPlace,
+})
+const userRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/u/$userId',
+  component: UserRankings,
+})
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  discoverRoute,
-  rankingsRoute,
-  tonightRoute,
-  profileRoute,
+  tabsLayout.addChildren([discoverRoute, rankingsRoute, tonightRoute, profileRoute]),
+  rankRoute,
+  userRoute,
 ])
 
 const router = createRouter({ routeTree })

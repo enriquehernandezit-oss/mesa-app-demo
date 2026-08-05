@@ -41,6 +41,27 @@ function startNext<T>(s: PairwiseState<T>): PairwiseState<T> {
   return { ...s, current: next, queue: rest, lo: 0, hi: s.ordered.length }
 }
 
+/**
+ * Seed a session that places ONE new spot into an already-ordered list — the
+ * rank-a-place flow (M3). Same binary search as building from scratch, just with
+ * the existing list pre-loaded. When done, the new item's final slot is
+ * `ordered.indexOf(item) + 1`. An empty list places the item at position 1 with
+ * no comparisons.
+ */
+export function initInsert<T>(existing: T[], item: T): PairwiseState<T> {
+  if (existing.length === 0) {
+    return { ordered: [item], queue: [], current: null, lo: 0, hi: 0, total: 1 }
+  }
+  return {
+    ordered: [...existing],
+    queue: [],
+    current: item,
+    lo: 0,
+    hi: existing.length,
+    total: existing.length + 1,
+  }
+}
+
 /** Seed a session from an unordered set of spots. */
 export function initPairwise<T>(items: T[]): PairwiseState<T> {
   if (items.length === 0) {

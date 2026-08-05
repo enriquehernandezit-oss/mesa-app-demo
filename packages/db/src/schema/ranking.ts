@@ -56,6 +56,9 @@ export const vibeNotes = pgTable(
       .notNull()
       .references(() => restaurants.id, { onDelete: 'cascade' }),
     body: text('body').notNull(),
+    // Soft-removal for moderation (App Store 1.2 — "remove content"). A removed
+    // note is retained for audit but filtered out of every read.
+    removedAt: timestamp('removed_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

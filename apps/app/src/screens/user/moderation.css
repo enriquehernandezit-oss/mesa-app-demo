@@ -1,0 +1,53 @@
+/* Report/block UI. Tokens only. */
+
+.mod-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--space-4);
+}
+
+.mod-block-btn {
+  flex: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+.mod-block-btn:hover {
+  color: var(--status-packed);
+  border-color: var(--status-packed);
+}
+
+/* Inline report panel under a note. */
+.report-panel {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.report-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.report-done {
+  font-size: var(--text-label);
+  color: var(--brass);
+  font-style: italic;
+  font-family: var(--font-serif);
+  margin-top: var(--space-2);
+}

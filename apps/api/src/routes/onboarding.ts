@@ -3,22 +3,12 @@ import { and, eq, inArray, ne, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
+import { scoreFor } from '../lib/score'
 import { requireAuth } from '../middleware/session'
 
 // Everything the cold-start onboarding needs. The product's #1 risk is an empty
 // first open, so these endpoints exist to make a brand-new profile immediately
 // non-empty and non-friendless (BUILD_PLAN M2).
-
-// Derive the 0–100 score shown beside a rank from the ordered position the
-// pairwise flow produced. Linear spread, top of the list highest. M3's full
-// rank-a-place flow refines this; for a starter list it just needs to look
-// right and be monotonic.
-function scoreFor(index: number, total: number): number {
-  if (total <= 1) return 95
-  const top = 96
-  const bottom = 72
-  return Math.round(top - (index * (top - bottom)) / (total - 1))
-}
 
 const rankingsSchema = z.object({
   // Ordered best-first, as the pairwise comparisons settled them.

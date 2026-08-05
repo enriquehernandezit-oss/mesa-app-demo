@@ -1,0 +1,173 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate, useParams } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Body, Caption, Chip, Eyebrow, SerifItalic } from '../../components/ui'
+import { ApiError, api } from '../../lib/api'
+import type { Ranking, UserRankingsResponse } from '../../lib/types'
+import '../tabs/tabs.css'
+import '../tabs/rankings.css'
+import './moderation.css'
+
+// Another person's ranked passport — and the surface where UGC moderation is
+// exercised (App Store 1.2): report any vibe note, block the user. Blocking
+// severs the graph and hides their content everywhere; the API 404s a blocked or
+// banned user, so this view empties out.
+const REASONS = ['Spam', 'Harassment', 'Inappropriate', 'Other'] as const
+
+export function UserRankings() {
+  const { userId } = useParams({ from: '/u/$userId' })
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const q = useQuery({
+    queryKey: ['user-rankings', userId],
+    queryFn: () => api.get<UserRankingsResponse>(`/rankings/user/${userId}`),
+    retry: false,
+  })
+
+  const block = useMutation({
+    mutationFn: () => api.post('/moderation/blocks', { userId }),
+    onSuccess: () => {
+      // Their content is gone now — drop caches that could still show them.
+      queryClient.invalidateQueries()
+      navigate({ to: '/discover' })
+    },
+  })
+
+  if (q.isPending) {
+    return (
+      <div className="tab-shell">
+        <div className="tab-body">
+          <Body>Loading…</Body>
+        </div>
+      </div>
+    )
+  }
+
+  // Blocked / banned / missing → the API hides the user.
+  if (q.isError) {
+    const gone = q.error instanceof ApiError && q.error.status === 404
+    return (
+      <div className="tab-shell">
+        <div className="tab-body">
+          <button
+            type="button"
+            className="link-action"
+            onClick={() => navigate({ to: '/discover' })}
+          >
+            ← Back
+          </button>
+          <div className="tab-empty">
+            <SerifItalic style={{ fontSize: '1.15rem' }}>
+              {gone ? 'This profile is unavailable.' : 'Could not load this profile.'}
+            </SerifItalic>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const { user, rankings } = q.data
+  return (
+    <div className="tab-shell">
+      <div className="tab-body">
+        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
+          ← Back
+        </button>
+
+        <div className="mod-header">
+          <div>
+            <Eyebrow>{user.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
+            <div
+              style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--cream)' }}
+            >
+              {user.name || user.handle}
+            </div>
+            {user.handle && <Caption>@{user.handle}</Caption>}
+          </div>
+          <button
+            type="button"
+            className="mod-block-btn"
+            onClick={() => block.mutate()}
+            disabled={block.isPending}
+          >
+            Block
+          </button>
+        </div>
+
+        {rankings.length === 0 ? (
+          <div className="tab-empty">
+            <SerifItalic style={{ fontSize: '1.15rem' }}>No rankings yet.</SerifItalic>
+          </div>
+        ) : (
+          rankings.map((r) => <TheirRow key={r.id} ranking={r} />)
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TheirRow({ ranking }: { ranking: Ranking }) {
+  return (
+    <div className="ranking-row">
+      <div className="ranking-numeral">{ranking.position}</div>
+      <div className="ranking-main">
+        <div className="ranking-name">{ranking.restaurant.name}</div>
+        <div className="ranking-meta">
+          {[ranking.restaurant.cuisine, ranking.neighborhood].filter(Boolean).join(' · ')}
+        </div>
+        {ranking.note && <div className="ranking-note">“{ranking.note}”</div>}
+        {ranking.note && ranking.noteId && (
+          <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
+        )}
+      </div>
+      <div className="ranking-score">{Math.round(ranking.score)}</div>
+    </div>
+  )
+}
+
+function ReportControl({
+  targetType,
+  targetId,
+}: {
+  targetType: 'vibe_note' | 'user'
+  targetId: string
+}) {
+  const [open, setOpen] = useState(false)
+  const report = useMutation({
+    mutationFn: (reason: string) =>
+      api.post('/moderation/reports', { targetType, targetId, reason }),
+  })
+
+  if (report.isSuccess) {
+    return <div className="report-done">Reported. Thank you — we'll review it.</div>
+  }
+
+  return (
+    <div className="ranking-actions">
+      {!open ? (
+        <button
+          type="button"
+          className="link-action link-action--danger"
+          onClick={() => setOpen(true)}
+        >
+          Report
+        </button>
+      ) : (
+        <div className="report-panel">
+          <Caption>Why are you reporting this note?</Caption>
+          <div className="report-reasons">
+            {REASONS.map((reason) => (
+              <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
+                {reason}
+              </Chip>
+            ))}
+          </div>
+          <button type="button" className="link-action" onClick={() => setOpen(false)}>
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

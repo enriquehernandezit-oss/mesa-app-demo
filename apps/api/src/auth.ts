@@ -46,6 +46,19 @@ export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   database: drizzleAdapter(db, { provider: 'pg', schema }),
 
+  // Surface Mesa's server-managed profile/moderation columns on the session user
+  // so route handlers and middleware can read them (e.g. the ban gate and the
+  // moderator check) without an extra query. input:false — clients can't set
+  // these through auth endpoints; they're written by our own routes/moderation.
+  user: {
+    additionalFields: {
+      handle: { type: 'string', required: false, input: false },
+      neighborhoodId: { type: 'string', required: false, input: false },
+      bannedAt: { type: 'date', required: false, input: false },
+      isModerator: { type: 'boolean', required: false, input: false },
+    },
+  },
+
   // Sign in with Apple — the App Store 4.8 counterpart to Instagram login.
   socialProviders: hasApple
     ? {

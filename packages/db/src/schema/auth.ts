@@ -31,6 +31,14 @@ export const user = pgTable('user', {
   // EULA acceptance is required at signup for a UGC app (App Store 1.2).
   eulaAcceptedAt: timestamp('eula_accepted_at'),
 
+  // --- Moderation (App Store 1.2) ---
+  // Ejected users: set on moderation action; the session middleware rejects any
+  // request from a banned account, and their content is filtered from reads.
+  bannedAt: timestamp('banned_at'),
+  // Who may take moderation actions (remove content / eject users). No admin UI
+  // in Phase 1 — flipped directly in the DB — but the capability must exist.
+  isModerator: boolean('is_moderator').notNull().default(false),
+
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
