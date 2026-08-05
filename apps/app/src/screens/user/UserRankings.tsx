@@ -3,6 +3,7 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Caption, Chip, Eyebrow, SerifItalic } from '../../components/ui'
 import { ApiError, api } from '../../lib/api'
+import { displayScore, matchColor } from '../../lib/display'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
@@ -79,7 +80,8 @@ export function UserRankings() {
     )
   }
 
-  const { user, rankings, isFollowing, followerCount, followingCount } = q.data
+  const { user, rankings, isFollowing, followerCount, followingCount, matchPercent, sharedCount } =
+    q.data
   return (
     <div className="tab-shell">
       <div className="tab-body">
@@ -99,6 +101,11 @@ export function UserRankings() {
             <Caption style={{ marginTop: 'var(--space-2)' }}>
               {followerCount} followers · {followingCount} following
             </Caption>
+            {matchPercent != null && (
+              <span className="match-chip" style={{ color: matchColor(matchPercent) }}>
+                {matchPercent}% match · {sharedCount} spots en común
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -146,7 +153,7 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
           <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
         )}
       </div>
-      <div className="ranking-score">{Math.round(ranking.score)}</div>
+      <div className="ranking-score">{displayScore(ranking.score)}</div>
     </div>
   )
 }

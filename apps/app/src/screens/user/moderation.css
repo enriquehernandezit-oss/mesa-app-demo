@@ -51,3 +51,13 @@
   font-family: var(--font-serif);
   margin-top: var(--space-2);
 }
+
+/* Taste-match chip on the passport header. */
+.match-chip {
+  margin-top: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}

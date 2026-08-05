@@ -95,6 +95,52 @@
   );
 }
 
+/* Sentiment buckets (rank flow). */
+.sentiment {
+  min-height: 60px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--cream);
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  transition: transform 0.15s var(--ease-spring), border-color 0.15s ease;
+}
+.sentiment:active {
+  transform: scale(0.96);
+}
+.sentiment--loved {
+  border-color: var(--brass);
+  color: var(--brass-2);
+}
+.sentiment--low {
+  color: var(--dim);
+}
+
+/* Tag chips (rank flow + filters). */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.tag-chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--cream-dim);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  transition: all 0.12s ease;
+}
+.tag-chip--on {
+  background: var(--brass);
+  border-color: var(--brass);
+  color: var(--ink);
+}
+
 /* Placement celebration — the stamp. */
 .stamp-screen {
   justify-content: center;

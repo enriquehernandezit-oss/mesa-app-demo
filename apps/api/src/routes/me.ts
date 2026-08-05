@@ -104,6 +104,60 @@ export const meRoutes = new Hono<AppEnv>()
 
     return c.json({ ok: true })
   })
+  // Stats for the profile + rankings headers and the Taste Profile card:
+  // counts, average, current weekly streak, top cuisine/neighborhood. One
+  // rankings read + two count queries — fixed round trips.
+  .get('/stats', async (c) => {
+    const current = c.get('user')
+    if (!current) return c.json({ error: 'unauthorized' }, 401)
+
+    const mine = await db
+      .select({
+        score: schema.rankings.score,
+        createdAt: schema.rankings.createdAt,
+        cuisine: schema.restaurants.cuisine,
+        neighborhood: schema.neighborhoods.name,
+      })
+      .from(schema.rankings)
+      .innerJoin(schema.restaurants, eq(schema.restaurants.id, schema.rankings.restaurantId))
+      .leftJoin(
+        schema.neighborhoods,
+        eq(schema.neighborhoods.id, schema.restaurants.neighborhoodId),
+      )
+      .where(eq(schema.rankings.userId, current.id))
+
+    const followers = await db.$count(schema.follows, eq(schema.follows.followingId, current.id))
+    const followingCount = await db.$count(
+      schema.follows,
+      eq(schema.follows.followerId, current.id),
+    )
+
+    // Current streak: consecutive ISO weeks (ending this week) with ≥1 ranking.
+    const WEEK = 7 * 24 * 60 * 60 * 1000
+    const weeks = new Set(mine.map((r) => Math.floor(r.createdAt.getTime() / WEEK)))
+    const thisWeek = Math.floor(Date.now() / WEEK)
+    let streak = 0
+    for (let w = thisWeek; weeks.has(w); w--) streak++
+
+    const top = (values: (string | null)[]): string | null => {
+      const counts = new Map<string, number>()
+      for (const v of values) if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+      let best: string | null = null
+      let bestN = 0
+      for (const [k, n] of counts) if (n > bestN) [best, bestN] = [k, n]
+      return best
+    }
+
+    return c.json({
+      places: mine.length,
+      followers,
+      following: followingCount,
+      streakWeeks: streak,
+      avgScore: mine.length ? mine.reduce((s, r) => s + r.score, 0) / mine.length : null,
+      topCuisine: top(mine.map((r) => r.cuisine)),
+      topNeighborhood: top(mine.map((r) => r.neighborhood)),
+    })
+  })
   // Avatar: the client resizes to a small JPEG and sends a data URL (Cloudinary
   // replaces this path at launch; the column already holds any URL). Size-capped.
   .patch('/avatar', async (c) => {

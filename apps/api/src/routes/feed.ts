@@ -105,3 +105,43 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
     nextCursor,
   })
 })
+
+// "For you" — places I haven't ranked, scored by my friends' average, best
+// first. Sharpens as the graph grows; one grouped query.
+feedRoutes.get('/recs', async (c) => {
+  const me = c.get('user')
+  if (!me) return c.json({ error: 'unauthorized' }, 401)
+  const following = db
+    .select({ id: follows.followingId })
+    .from(follows)
+    .where(eq(follows.followerId, me.id))
+  const mine = db
+    .select({ id: rankings.restaurantId })
+    .from(rankings)
+    .where(eq(rankings.userId, me.id))
+
+  const rows = await db
+    .select({
+      id: restaurants.id,
+      name: restaurants.name,
+      cuisine: restaurants.cuisine,
+      coverImageId: restaurants.coverImageId,
+      neighborhood: neighborhoods.name,
+      friendAvg: sql<number>`avg(${rankings.score})`,
+      friendCount: sql<number>`count(*)::int`,
+    })
+    .from(rankings)
+    .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+    .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+    .where(and(inArray(rankings.userId, following), notInArray(restaurants.id, mine)))
+    .groupBy(
+      restaurants.id,
+      restaurants.name,
+      restaurants.cuisine,
+      restaurants.coverImageId,
+      neighborhoods.name,
+    )
+    .orderBy(sql`avg(${rankings.score}) desc`)
+    .limit(8)
+  return c.json({ recs: rows })
+})

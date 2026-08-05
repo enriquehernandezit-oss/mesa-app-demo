@@ -124,7 +124,7 @@ export async function renderListCard(opts: {
     ctx.textAlign = 'right'
     ctx.fillStyle = BRASS_2
     ctx.font = '500 60px "Cormorant Garamond", Georgia, serif'
-    ctx.fillText(String(Math.round(item.score)), W - 90, y)
+    ctx.fillText((item.score / 10).toFixed(1), W - 90, y)
     // hairline
     if (i < items.length - 1) {
       ctx.fillStyle = 'rgba(235,228,214,0.12)'
@@ -174,7 +174,7 @@ export async function renderSpotCard(opts: {
   if (opts.score != null) {
     ctx.fillStyle = BRASS_2
     ctx.font = '500 84px "Cormorant Garamond", Georgia, serif'
-    ctx.fillText(String(Math.round(opts.score)), W / 2, opts.position ? 1630 : 1540)
+    ctx.fillText((opts.score / 10).toFixed(1), W / 2, opts.position ? 1630 : 1540)
   }
   if (opts.note) {
     ctx.fillStyle = CREAM_DIM

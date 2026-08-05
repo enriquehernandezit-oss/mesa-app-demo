@@ -5,9 +5,10 @@ import { PullToRefresh } from '../../components/PullToRefresh'
 import { Body, ErrorState, Eyebrow, SerifItalic, Skeleton, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
+import { displayScore } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
-import type { FeedItem } from '../../lib/types'
+import type { FeedItem, RailSpot } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
@@ -71,9 +72,16 @@ export function DiscoverTab() {
         <ErrorState>Couldn't load the feed. Try again in a moment.</ErrorState>
       ) : items.length > 0 ? (
         <>
+          <SpotRail title="Trending esta semana" endpoint="/restaurants/trending" kind="cheers" />
           <div className="feed">
-            {items.map((item, i) => (
+            {items.slice(0, 2).map((item, i) => (
               <FeedCard key={item.rankingId} item={item} index={i} />
+            ))}
+          </div>
+          <SpotRail title="Para ti" endpoint="/feed/recs" kind="avg" />
+          <div className="feed" style={{ marginTop: 'var(--space-5)' }}>
+            {items.slice(2).map((item, i) => (
+              <FeedCard key={item.rankingId} item={item} index={i + 2} />
             ))}
           </div>
           <div ref={sentinel} style={{ height: 1 }} />
@@ -88,6 +96,59 @@ export function DiscoverTab() {
         </div>
       )}
     </PullToRefresh>
+  )
+}
+
+// Horizontal rail of spot cards — Trending (by cheers) and For-you (by friends'
+// average). The chrome that makes Discover feel like an app, not a list.
+function SpotRail({
+  title,
+  endpoint,
+  kind,
+}: {
+  title: string
+  endpoint: string
+  kind: 'cheers' | 'avg'
+}) {
+  const q = useQuery({
+    queryKey: ['rail', endpoint],
+    queryFn: () => api.get<{ restaurants?: RailSpot[]; recs?: RailSpot[] }>(endpoint),
+    staleTime: 120_000,
+  })
+  const spots = q.data?.restaurants ?? q.data?.recs ?? []
+  if (spots.length < 3) return null
+  return (
+    <section className="rail">
+      <div className="rail__head">
+        <span className="rail__title">{title}</span>
+      </div>
+      <div className="rail__scroll">
+        {spots.map((s) => {
+          const cover = cloudinaryUrl(s.coverImageId, { w: 320, h: 400 })
+          return (
+            <Link
+              key={s.id}
+              to="/r/$restaurantId"
+              params={{ restaurantId: s.id }}
+              className="rail-card"
+              style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+            >
+              <span className="rail-card__badge">
+                {kind === 'cheers'
+                  ? `🥂 ${s.cheerCount}`
+                  : s.friendAvg
+                    ? displayScore(s.friendAvg)
+                    : ''}
+              </span>
+              <span className="rail-card__name">{s.name}</span>
+              <span className="rail-card__meta">
+                {[s.cuisine, s.neighborhood].filter(Boolean).join(' · ')}
+              </span>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 
@@ -192,7 +253,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
         )}
         <div className="feed-caption">
           <span className="feed-name">{item.restaurant.name}</span>
-          <span className="feed-score">{Math.round(item.score)}</span>
+          <span className="feed-score">{displayScore(item.score)}</span>
         </div>
       </Link>
 

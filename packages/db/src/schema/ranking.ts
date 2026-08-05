@@ -33,6 +33,10 @@ export const rankings = pgTable(
       .references(() => restaurants.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
     score: doublePrecision('score').notNull(),
+    // Beli-style extras: short tags ("date night", "terraza") and the dish worth
+    // ordering. Both optional, set alongside the vibe note.
+    tags: text('tags').array(),
+    favoriteDish: text('favorite_dish'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

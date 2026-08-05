@@ -7,6 +7,9 @@ import {
   createRouter,
   redirect,
 } from '@tanstack/react-router'
+import { TopBar } from '../components/TopBar'
+import { ActivityScreen } from '../screens/activity/ActivityScreen'
+import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
 import { RankAPlace } from '../screens/rank/RankAPlace'
 import { RestaurantProfile } from '../screens/restaurant/RestaurantProfile'
 import { DiscoverTab } from '../screens/tabs/DiscoverTab'
@@ -72,6 +75,7 @@ function TabBar() {
 function TabsLayout() {
   return (
     <div className="tab-shell">
+      <TopBar />
       <div className="tab-body">
         <Outlet />
       </div>
@@ -135,6 +139,16 @@ const restaurantRoute = createRoute({
   path: '/r/$restaurantId',
   component: RestaurantProfile,
 })
+const activityRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/activity',
+  component: ActivityScreen,
+})
+const leaderboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/leaderboard',
+  component: LeaderboardScreen,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -142,6 +156,8 @@ const routeTree = rootRoute.addChildren([
   rankRoute,
   userRoute,
   restaurantRoute,
+  activityRoute,
+  leaderboardRoute,
 ])
 
 const router = createRouter({ routeTree })

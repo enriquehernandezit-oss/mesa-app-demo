@@ -62,6 +62,28 @@ export function initInsert<T>(existing: T[], item: T): PairwiseState<T> {
   }
 }
 
+/** How the user felt about the place before placing it (Beli-style). */
+export type Sentiment = 'loved' | 'fine' | 'disliked'
+
+/**
+ * initInsert, but the sentiment pre-narrows the binary search to the matching
+ * third of the list — "loved" competes near the top, "disliked" near the bottom.
+ * Fewer comparisons, and the question order feels right to the user.
+ */
+export function initInsertBounded<T>(
+  existing: T[],
+  item: T,
+  sentiment: Sentiment,
+): PairwiseState<T> {
+  const base = initInsert(existing, item)
+  if (base.current === null || existing.length < 3) return base
+  const n = existing.length
+  const third = Math.ceil(n / 3)
+  if (sentiment === 'loved') return { ...base, lo: 0, hi: third }
+  if (sentiment === 'disliked') return { ...base, lo: n - third, hi: n }
+  return { ...base, lo: third, hi: Math.max(third + 1, n - third) }
+}
+
 /** Seed a session from an unordered set of spots. */
 export function initPairwise<T>(items: T[]): PairwiseState<T> {
   if (items.length === 0) {

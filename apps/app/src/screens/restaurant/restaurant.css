@@ -84,6 +84,47 @@
   padding: var(--space-5) var(--space-5) 0;
 }
 
+/* Friends' average — the signature number. */
+.friend-avg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: var(--space-4);
+}
+.friend-avg__n {
+  font-family: var(--font-serif);
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--brass-2);
+  font-variant-numeric: tabular-nums;
+}
+.friend-avg__who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.avatar-stack {
+  display: flex;
+}
+.avatar-stack > * {
+  margin-left: -8px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+}
+.avatar-stack > *:first-child {
+  margin-left: 0;
+}
+.friend-avg__label {
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .resto-mine {
   margin-bottom: var(--space-4);
   font-size: var(--text-label);

@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
 import { requireAuth } from '../middleware/session'
@@ -40,6 +40,34 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .limit(25)
     return c.json({ restaurants: rows })
   })
+  // Trending: most-cheered places of the last two weeks — the Discover rail.
+  // One grouped query (cheers → rankings → restaurants).
+  .get('/trending', async (c) => {
+    const rows = await db
+      .select({
+        id: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
+        neighborhood: neighborhoods.name,
+        cheerCount: sql<number>`count(*)::int`,
+      })
+      .from(schema.cheers)
+      .innerJoin(rankings, eq(rankings.id, schema.cheers.rankingId))
+      .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .where(sql`${schema.cheers.createdAt} > now() - interval '14 days'`)
+      .groupBy(
+        restaurants.id,
+        restaurants.name,
+        restaurants.cuisine,
+        restaurants.coverImageId,
+        neighborhoods.name,
+      )
+      .orderBy(sql`count(*) desc`)
+      .limit(8)
+    return c.json({ restaurants: rows })
+  })
   .get('/:id', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
@@ -55,6 +83,8 @@ export const restaurantRoutes = new Hono<AppEnv>()
         lng: true,
         coverImageId: true,
         phone: true,
+        priceTier: true,
+        neighborhoodId: true,
       },
       with: { neighborhood: { columns: { slug: true, name: true } } },
     })
@@ -112,9 +142,40 @@ export const restaurantRoutes = new Hono<AppEnv>()
       columns: { restaurantId: true },
     })
 
+    // Similar spots: same cuisine or same neighborhood, one query.
+    const similar = await db
+      .select({
+        id: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
+        neighborhood: neighborhoods.name,
+      })
+      .from(restaurants)
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .where(
+        and(
+          sql`${restaurants.id} <> ${id}`,
+          or(
+            restaurant.cuisine ? eq(restaurants.cuisine, restaurant.cuisine) : sql`false`,
+            eq(restaurants.neighborhoodId, restaurant.neighborhoodId),
+          ),
+        ),
+      )
+      .limit(6)
+
+    // Beli-style friend average over the visible friends' scores.
+    const friendAvg =
+      friendsRankings.length > 0
+        ? friendsRankings.reduce((s, f) => s + f.score, 0) / friendsRankings.length
+        : null
+
+    const { neighborhoodId: _nid, ...restaurantOut } = restaurant
     return c.json({
-      restaurant,
+      restaurant: restaurantOut,
       friendsRankings,
+      friendAvg,
+      similar,
       myRanking: myRanking ?? null,
       saved: Boolean(savedRow),
     })

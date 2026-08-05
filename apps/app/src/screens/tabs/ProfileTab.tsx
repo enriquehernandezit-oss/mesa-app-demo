@@ -6,7 +6,8 @@ import { Avatar } from '../../components/ui/Avatar'
 import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
 import { signOut } from '../../lib/auth-client'
-import type { BlockedUser, SuggestedUser } from '../../lib/types'
+import { displayScore } from '../../lib/display'
+import type { BlockedUser, MeStats, SuggestedUser } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
 import './profile.css'
@@ -56,6 +57,10 @@ export function ProfileTab() {
   const blocks = useQuery({
     queryKey: ['blocks'],
     queryFn: () => api.get<{ blocked: BlockedUser[] }>('/moderation/blocks'),
+  })
+  const stats = useQuery({
+    queryKey: ['me-stats'],
+    queryFn: () => api.get<MeStats>('/me/stats'),
   })
   const unblock = useMutation({
     mutationFn: (userId: string) => api.del(`/moderation/blocks/${userId}`),
@@ -130,9 +135,65 @@ export function ProfileTab() {
         {p?.bio && <Body style={{ marginTop: 'var(--space-2)' }}>{p.bio}</Body>}
       </div>
 
-      <Button variant="secondary" onClick={invite} style={{ marginBottom: 'var(--space-6)' }}>
-        Invite friends 🥂
-      </Button>
+      {/* Stats row — the numbers that make a profile feel real. */}
+      {stats.data && (
+        <div className="stats-row">
+          <div className="stat">
+            <span className="stat__n">{stats.data.places}</span>
+            <span className="stat__l">places</span>
+          </div>
+          <div className="stat">
+            <span className="stat__n">{stats.data.followers}</span>
+            <span className="stat__l">followers</span>
+          </div>
+          <div className="stat">
+            <span className="stat__n">{stats.data.following}</span>
+            <span className="stat__l">following</span>
+          </div>
+          <div className="stat">
+            <span className="stat__n">
+              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks}w` : '—'}
+            </span>
+            <span className="stat__l">streak</span>
+          </div>
+        </div>
+      )}
+
+      {/* Taste Profile — what your list says about you. */}
+      {stats.data && stats.data.places > 0 && (
+        <div className="taste-card">
+          <Eyebrow>Tu Taste Profile</Eyebrow>
+          <div className="taste-card__rows">
+            {stats.data.topCuisine && (
+              <div className="taste-card__row">
+                <span className="taste-card__k">Cocina favorita</span>
+                <span className="taste-card__v">{stats.data.topCuisine}</span>
+              </div>
+            )}
+            {stats.data.topNeighborhood && (
+              <div className="taste-card__row">
+                <span className="taste-card__k">Tu barrio</span>
+                <span className="taste-card__v">{stats.data.topNeighborhood}</span>
+              </div>
+            )}
+            {stats.data.avgScore != null && (
+              <div className="taste-card__row">
+                <span className="taste-card__k">Promedio</span>
+                <span className="taste-card__v">{displayScore(stats.data.avgScore)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+        <Button variant="secondary" onClick={invite}>
+          Invite friends 🥂
+        </Button>
+        <Link to="/leaderboard" style={{ flex: 1 }}>
+          <Button variant="secondary">Leaderboard</Button>
+        </Link>
+      </div>
 
       {/* People — the entry point to another person's ranked passport. */}
       <Eyebrow style={{ marginBottom: 'var(--space-3)' }}>People on Mesa</Eyebrow>

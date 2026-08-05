@@ -4,7 +4,13 @@ import { useMemo, useState } from 'react'
 import { Body, Button, Caption, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
-import { choose, initInsert, isDone, nextComparison } from '../../lib/pairwise'
+import {
+  type Sentiment,
+  choose,
+  initInsertBounded,
+  isDone,
+  nextComparison,
+} from '../../lib/pairwise'
 import type { Ranking } from '../../lib/types'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
@@ -37,8 +43,11 @@ export function RankAPlace() {
   })
 
   const [pickedId, setPickedId] = useState<string | null>(search.restaurant ?? null)
+  const [sentiment, setSentiment] = useState<Sentiment | null>(null)
   const [position, setPosition] = useState<number | null>(null)
   const [note, setNote] = useState('')
+  const [tags, setTags] = useState<string[]>([])
+  const [dish, setDish] = useState('')
   const [placedStamp, setPlacedStamp] = useState(false)
 
   const existing: Item[] = useMemo(
@@ -65,6 +74,8 @@ export function RankAPlace() {
         restaurantId: pickedId,
         position: pos,
         vibeNote: note.trim() || undefined,
+        tags: tags.length ? tags : undefined,
+        favoriteDish: dish.trim() || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
@@ -119,7 +130,7 @@ export function RankAPlace() {
     )
   }
 
-  // Step: note (reached once the position is settled).
+  // Step: note + tags + dish (reached once the position is settled).
   if (position !== null) {
     return (
       <div className="screen">
@@ -131,11 +142,40 @@ export function RankAPlace() {
         </div>
         <textarea
           className="note-editor"
-          style={{ marginTop: 'var(--space-4)', minHeight: 96 }}
+          style={{ marginTop: 'var(--space-4)', minHeight: 84 }}
           maxLength={140}
           placeholder="candlelit, natural wine, go for the branzino…"
           value={note}
           onChange={(e) => setNote(e.target.value)}
+        />
+        <Eyebrow style={{ marginTop: 'var(--space-4)' }}>Tags</Eyebrow>
+        <div className="tag-row">
+          {RANK_TAGS.map((t) => {
+            const on = tags.includes(t)
+            return (
+              <button
+                type="button"
+                key={t}
+                className={`tag-chip${on ? ' tag-chip--on' : ''}`}
+                onClick={() =>
+                  setTags((cur) =>
+                    on ? cur.filter((x) => x !== t) : cur.length < 3 ? [...cur, t] : cur,
+                  )
+                }
+              >
+                {t}
+              </button>
+            )
+          })}
+        </div>
+        <Eyebrow style={{ marginTop: 'var(--space-4)' }}>The dish to order</Eyebrow>
+        <input
+          className="field"
+          style={{ marginTop: 'var(--space-2)' }}
+          maxLength={60}
+          placeholder="el risotto de hongos…"
+          value={dish}
+          onChange={(e) => setDish(e.target.value)}
         />
         <div className="spacer" />
         <Button disabled={save.isPending} onClick={() => save.mutate(position)}>
@@ -145,16 +185,68 @@ export function RankAPlace() {
     )
   }
 
-  // Step: pairwise placement — the card battle.
+  // Step: how did it feel? Narrows the comparison band (Beli-style).
+  if (!sentiment) {
+    return (
+      <div className="screen">
+        <BackBar
+          onBack={() => (search.restaurant ? navigate({ to: '/rankings' }) : setPickedId(null))}
+        />
+        <div
+          className="stack stack--tight"
+          style={{ marginTop: 'var(--space-4)', textAlign: 'center', alignItems: 'center' }}
+        >
+          <Eyebrow>{picked.name}</Eyebrow>
+          <Title>¿Cómo estuvo?</Title>
+        </div>
+        <div className="stack" style={{ marginTop: 'var(--space-5)' }}>
+          <button
+            type="button"
+            className="sentiment sentiment--loved"
+            onClick={() => setSentiment('loved')}
+          >
+            Me encantó
+          </button>
+          <button type="button" className="sentiment" onClick={() => setSentiment('fine')}>
+            Estuvo bien
+          </button>
+          <button
+            type="button"
+            className="sentiment sentiment--low"
+            onClick={() => setSentiment('disliked')}
+          >
+            No me convenció
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Step: pairwise placement — the card battle, banded by sentiment.
   return (
     <div className="screen">
-      <BackBar
-        onBack={() => (search.restaurant ? navigate({ to: '/rankings' }) : setPickedId(null))}
+      <BackBar onBack={() => setSentiment(null)} />
+      <PlaceStep
+        existing={existing}
+        item={picked}
+        sentiment={sentiment}
+        onPlaced={(pos) => setPosition(pos)}
       />
-      <PlaceStep existing={existing} item={picked} onPlaced={(pos) => setPosition(pos)} />
     </div>
   )
 }
+
+const RANK_TAGS = [
+  'date night',
+  'en grupo',
+  'terraza',
+  'brunch',
+  'chichi',
+  'casual',
+  'buena música',
+  'vinos',
+  'hasta tarde',
+]
 
 function PickCard({ item, onClick }: { item: Item; onClick: () => void }) {
   const cover = cloudinaryUrl(item.coverImageId, { w: 400, h: 300 })
@@ -176,13 +268,15 @@ function PickCard({ item, onClick }: { item: Item; onClick: () => void }) {
 function PlaceStep({
   existing,
   item,
+  sentiment,
   onPlaced,
 }: {
   existing: Item[]
   item: Item
+  sentiment: Sentiment
   onPlaced: (position: number) => void
 }) {
-  const [state, setState] = useState(() => initInsert(existing, item))
+  const [state, setState] = useState(() => initInsertBounded(existing, item, sentiment))
   const comparison = nextComparison(state)
 
   // Empty list or search settled: no comparison left → item is placed.

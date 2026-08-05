@@ -1,5 +1,6 @@
 import { db, schema } from '@mesa/db'
 import { and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
+import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
@@ -25,6 +26,8 @@ const placeSchema = z.object({
   // 1-based slot in the user's list, as the pairwise flow settled it.
   position: z.number().int().min(1),
   vibeNote: z.string().trim().max(VIBE_MAX).optional(),
+  tags: z.array(z.string().trim().min(1).max(24)).max(4).optional(),
+  favoriteDish: z.string().trim().max(60).optional(),
 })
 const noteSchema = z.object({ body: z.string().trim().max(VIBE_MAX) })
 
@@ -75,6 +78,8 @@ export const rankingsRoutes = new Hono<AppEnv>()
         id: rankings.id,
         position: rankings.position,
         score: rankings.score,
+        tags: rankings.tags,
+        favoriteDish: rankings.favoriteDish,
         restaurant: {
           id: restaurants.id,
           name: restaurants.name,
@@ -183,6 +188,25 @@ export const rankingsRoutes = new Hono<AppEnv>()
     const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
     const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
 
+    // Match % (Beli-style taste compatibility): over restaurants we've both
+    // ranked, 100 minus the average score gap. Needs ≥2 shared spots.
+    const mine = aliasedTable(rankings, 'mine')
+    const [match] = await db
+      .select({
+        shared: sql<number>`count(*)::int`,
+        avgDiff: sql<number>`avg(abs(${mine.score} - ${rankings.score}))`,
+      })
+      .from(mine)
+      .innerJoin(
+        rankings,
+        and(eq(rankings.restaurantId, mine.restaurantId), eq(rankings.userId, targetId)),
+      )
+      .where(eq(mine.userId, me.id))
+    const matchPercent =
+      match && match.shared >= 2
+        ? Math.max(0, Math.min(100, Math.round(100 - match.avgDiff)))
+        : null
+
     const { bannedAt: _drop, ...profile } = target
     return c.json({
       user: profile,
@@ -190,6 +214,8 @@ export const rankingsRoutes = new Hono<AppEnv>()
       isFollowing: Boolean(amFollowing),
       followerCount,
       followingCount,
+      matchPercent,
+      sharedCount: match?.shared ?? 0,
     })
   })
 
@@ -202,7 +228,7 @@ export const rankingsRoutes = new Hono<AppEnv>()
     if (!parsed.success) {
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     }
-    const { restaurantId, position, vibeNote } = parsed.data
+    const { restaurantId, position, vibeNote, tags, favoriteDish } = parsed.data
 
     const exists = await db.query.restaurants.findFirst({
       where: eq(restaurants.id, restaurantId),
@@ -215,6 +241,13 @@ export const rankingsRoutes = new Hono<AppEnv>()
       const idx = Math.min(Math.max(position - 1, 0), order.length)
       order.splice(idx, 0, restaurantId)
       await rewrite(tx, me.id, order)
+
+      if (tags?.length || favoriteDish) {
+        await tx
+          .update(rankings)
+          .set({ tags: tags ?? null, favoriteDish: favoriteDish ?? null })
+          .where(and(eq(rankings.userId, me.id), eq(rankings.restaurantId, restaurantId)))
+      }
 
       if (vibeNote && vibeNote.length > 0) {
         await tx

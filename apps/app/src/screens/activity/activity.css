@@ -1,0 +1,26 @@
+/* Activity rows. Tokens only. */
+
+.activity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.activity-row__main {
+  flex: 1;
+  min-width: 0;
+}
+.activity-row__text {
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  color: var(--cream-dim);
+  line-height: 1.45;
+}
+.activity-row__text b {
+  color: var(--cream);
+  font-weight: 600;
+}
+.activity-row__place {
+  color: var(--brass);
+}

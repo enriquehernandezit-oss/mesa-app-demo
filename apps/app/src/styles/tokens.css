@@ -32,8 +32,8 @@
     sans-serif;
 
   /* Type scale — editorial: big serif, restrained UI text */
-  --text-display: 3rem; /* hero serif moments */
-  --text-title: 2rem; /* screen titles, restaurant names */
+  --text-display: 2.4rem; /* hero serif moments */
+  --text-title: 1.55rem; /* screen titles, restaurant names */
   --text-rank: 2.5rem; /* the big brass rank numerals */
   --text-body: 1rem;
   --text-label: 0.8125rem; /* buttons, metadata */

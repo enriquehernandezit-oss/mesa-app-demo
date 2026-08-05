@@ -37,6 +37,92 @@
   opacity: 0.6;
 }
 
+/* Stats header (Rankings + Profile). */
+.stats-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: var(--space-3) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.stat__n {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--brass-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.stat__l {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+/* Barrios breakdown. */
+.hood-row {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.hood-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-2);
+}
+.hood-row__name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--cream);
+}
+.hood-row__stats {
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+}
+.hood-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.hood-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--brass), var(--brass-2));
+}
+
+/* Dish + tags line inside a ranking row. */
+.ranking-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.ranking-dish {
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  color: var(--brass);
+  font-weight: 600;
+}
+.mini-tag {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: lowercase;
+}
+
 /* Thumbnail in ranking rows. */
 .ranking-thumb {
   width: 56px;

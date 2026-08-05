@@ -2,6 +2,7 @@ import {
   boolean,
   doublePrecision,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -29,6 +30,8 @@ export const restaurants = pgTable(
     // is a handoff, not a booking engine — DR restaurants have no supply behind
     // it yet (BUILD_PLAN M5 / Phase 3).
     phone: text('phone'),
+    // 1–4 ($ – $$$$), shown in meta lines and usable as a filter.
+    priceTier: integer('price_tier'),
     // Marks seed/demo rows so they are never confused with real listings later.
     isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),

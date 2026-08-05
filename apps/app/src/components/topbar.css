@@ -1,0 +1,54 @@
+/* Persistent top app bar. Tokens only. */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-5) var(--space-3);
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.topbar__btn {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--cream-dim);
+  border: 1px solid var(--line);
+  transition: color 0.15s ease, transform 0.15s var(--ease-spring);
+}
+.topbar__btn:active {
+  transform: scale(0.9);
+}
+.topbar__btn:hover {
+  color: var(--brass);
+}
+
+.topbar__badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--brass);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}

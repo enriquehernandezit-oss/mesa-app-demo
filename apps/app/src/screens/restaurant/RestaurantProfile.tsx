@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Body, Button, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
+import { displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
 import type { RestaurantProfileResponse } from '../../lib/types'
@@ -60,10 +61,12 @@ export function RestaurantProfile() {
     )
   }
 
-  const { restaurant, friendsRankings, myRanking, saved } = q.data
+  const { restaurant, friendsRankings, friendAvg, similar, myRanking, saved } = q.data
   const cover = cloudinaryUrl(restaurant.coverImageId, { w: 1000, h: 750 })
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
-  const meta = [restaurant.cuisine, restaurant.neighborhood?.name].filter(Boolean).join(' · ')
+  const meta = [restaurant.cuisine, restaurant.neighborhood?.name, priceLabel(restaurant.priceTier)]
+    .filter(Boolean)
+    .join(' · ')
 
   async function shareSpot() {
     const blob = await renderSpotCard({
@@ -103,14 +106,36 @@ export function RestaurantProfile() {
             {restaurant.neighborhood?.name ?? 'Santo Domingo'}
           </Eyebrow>
           <h1 className="resto-name">{restaurant.name}</h1>
-          {restaurant.cuisine && <div className="resto-cuisine">{restaurant.cuisine}</div>}
+          <div className="resto-cuisine">{meta}</div>
         </div>
       </div>
 
       <div className="resto-content">
+        {/* The Beli-signature number: your friends' average, with their faces. */}
+        {friendAvg != null && (
+          <div className="friend-avg">
+            <span className="friend-avg__n">{displayScore(friendAvg)}</span>
+            <div className="friend-avg__who">
+              <div className="avatar-stack">
+                {friendsRankings.slice(0, 4).map((fr) => (
+                  <Avatar
+                    key={fr.user.id}
+                    name={fr.user.name || fr.user.handle || 'm'}
+                    src={fr.user.image}
+                    size={26}
+                  />
+                ))}
+              </div>
+              <span className="friend-avg__label">
+                {friendsRankings.length} amig{friendsRankings.length === 1 ? 'o' : 'os'} · promedio
+              </span>
+            </div>
+          </div>
+        )}
+
         {myRanking && (
           <div className="resto-mine">
-            You ranked this <b>#{myRanking.position}</b> · {Math.round(myRanking.score)}
+            You ranked this <b>#{myRanking.position}</b> · {displayScore(myRanking.score)}
           </div>
         )}
 
@@ -183,10 +208,36 @@ export function RestaurantProfile() {
                     </div>
                   )}
                 </div>
-                <div className="feed-place__score">{Math.round(fr.score)}</div>
+                <div className="feed-place__score">{displayScore(fr.score)}</div>
               </Link>
             )
           })
+        )}
+
+        {/* Similar spots rail. */}
+        {similar.length > 0 && (
+          <>
+            <Eyebrow style={{ margin: 'var(--space-6) 0 var(--space-3)' }}>Similares</Eyebrow>
+            <div className="rail__scroll">
+              {similar.map((s) => {
+                const sc = cloudinaryUrl(s.coverImageId, { w: 320, h: 400 })
+                return (
+                  <Link
+                    key={s.id}
+                    to="/r/$restaurantId"
+                    params={{ restaurantId: s.id }}
+                    className="rail-card"
+                    style={sc ? { backgroundImage: `url(${sc})` } : undefined}
+                  >
+                    <span className="rail-card__name">{s.name}</span>
+                    <span className="rail-card__meta">
+                      {[s.cuisine, s.neighborhood].filter(Boolean).join(' · ')}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </>
         )}
       </div>
     </div>

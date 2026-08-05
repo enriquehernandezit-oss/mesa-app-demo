@@ -47,10 +47,51 @@ export interface Ranking {
   id: string
   position: number
   score: number
+  tags?: string[] | null
+  favoriteDish?: string | null
   restaurant: RankedRestaurant
   neighborhood: string | null
   note: string | null
   noteId?: string | null // present on other users' lists (for reporting)
+}
+
+// A card in the Trending / For-you / Similar rails.
+export interface RailSpot {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  cheerCount?: number
+  friendAvg?: number
+  friendCount?: number
+}
+
+export interface MeStats {
+  places: number
+  followers: number
+  following: number
+  streakWeeks: number
+  avgScore: number | null
+  topCuisine: string | null
+  topNeighborhood: string | null
+}
+
+export interface LeaderboardRow {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  neighborhood: string | null
+  count: number
+  avgScore: number
+}
+
+export interface ActivityItem {
+  type: 'cheers' | 'follow' | 'saved_ranked'
+  at: string
+  user: { id: string; name: string; handle: string | null; image: string | null }
+  restaurant?: { id: string; name: string } | null
 }
 
 export interface SavedPlace {
@@ -71,6 +112,8 @@ export interface UserRankingsResponse {
   isFollowing: boolean
   followerCount: number
   followingCount: number
+  matchPercent: number | null
+  sharedCount: number
 }
 
 export interface BlockedUser {
@@ -110,9 +153,12 @@ export interface RestaurantProfileResponse {
     lng: number
     coverImageId: string | null
     phone: string | null
+    priceTier: number | null
     neighborhood: { slug: string; name: string } | null
   }
   friendsRankings: FriendRanking[]
+  friendAvg: number | null
+  similar: RailSpot[]
   myRanking: { position: number; score: number } | null
   saved: boolean
 }

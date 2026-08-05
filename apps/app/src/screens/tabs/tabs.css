@@ -9,7 +9,7 @@
 
 .tab-body {
   flex: 1;
-  padding: calc(var(--safe-top) + var(--space-6)) var(--space-5) var(--space-6);
+  padding: var(--space-4) var(--space-5) var(--space-6);
   /* Room so content never hides behind the fixed tab bar. */
   padding-bottom: calc(72px + var(--safe-bottom) + var(--space-5));
   animation: screen-in 0.3s ease both;
@@ -28,8 +28,8 @@
 .tab-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-bottom: var(--space-6);
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
 }
 
 /* Editorial empty state for the tabs whose content lands in M3/M4. */

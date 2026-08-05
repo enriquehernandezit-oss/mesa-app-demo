@@ -3,13 +3,21 @@ import { eq, sql } from 'drizzle-orm'
 import { db, pool } from './client'
 import * as schema from './schema'
 import { friends, neighborhoods, restaurants, scoreForPosition, waitlist } from './seed-data'
+import {
+  COVER_BY_CUISINE,
+  extraNeighborhoods,
+  extraRestaurants,
+  generateUsers,
+  mulberry32,
+} from './seed-extra'
 
-// Seeds the dense demo cluster (see seed-data.ts). Idempotent: it truncates the
-// demo/auth tables first, so re-running gives a clean, identical dataset.
+// Seeds the dense demo world: 7 neighborhoods, 35 real SD restaurants, 40 users
+// (8 curated friends + 32 generated), ~600 rankings with notes/tags/dishes
+// spread over six weeks, an organic follow graph, and cheers throughout.
+// Deterministic (fixed PRNG seeds) and idempotent (truncates first).
 // Run with: bun run --env-file=.env src/seed.ts  (or `bun db:seed`).
 
-// Each spot's cover photo, matched to its cuisine. Files live in
-// apps/app/public/restaurants/. Real Cloudinary ids replace these at launch.
+// Curated cover photos for the original 15; the rest map by cuisine.
 const COVER_BY_KEY: Record<string, string> = {
   sophias: 'cocktails',
   peperoni: 'pasta',
@@ -28,19 +36,38 @@ const COVER_BY_KEY: Record<string, string> = {
   mesonbari: 'cocktails',
 }
 
+// Price tiers for the curated 15 (the extras carry their own).
+const PRICE_BY_KEY: Record<string, number> = {
+  sophias: 4,
+  peperoni: 3,
+  mijas: 3,
+  boga: 4,
+  segundo: 3,
+  bottega: 3,
+  mitre: 3,
+  adrian: 2,
+  vesuvio: 3,
+  cava: 4,
+  positano: 3,
+  patepalo: 3,
+  lulu: 2,
+  jalao: 2,
+  mesonbari: 2,
+}
+
+const DAY = 24 * 60 * 60 * 1000
+
 async function seed() {
   console.log('seeding…')
 
-  // Dev reset. CASCADE from user clears follows/rankings/vibe_notes/saved_places/
-  // reports/user_blocks/session/account; from neighborhoods clears restaurants.
   await db.execute(
     sql`TRUNCATE TABLE "user", restaurants, neighborhoods, waitlist RESTART IDENTITY CASCADE`,
   )
 
-  // --- neighborhoods ---
+  // --- neighborhoods (5 curated + 2 extra) ---
   const nRows = await db
     .insert(schema.neighborhoods)
-    .values(neighborhoods)
+    .values([...neighborhoods, ...extraNeighborhoods])
     .returning({ id: schema.neighborhoods.id, slug: schema.neighborhoods.slug })
   const neighborhoodId = new Map(nRows.map((r) => [r.slug, r.id]))
   const nid = (slug: string): string => {
@@ -49,78 +76,151 @@ async function seed() {
     return id
   }
 
-  // --- restaurants (flagged isDemo) ---
+  // --- restaurants (15 curated + 20 extra, all isDemo) ---
+  const allRestaurants = [
+    ...restaurants.map((r) => ({
+      ...r,
+      priceTier: PRICE_BY_KEY[r.key] ?? 2,
+      cover: COVER_BY_KEY[r.key] ?? COVER_BY_CUISINE[r.cuisine] ?? 'bar',
+    })),
+    ...extraRestaurants.map((r) => ({
+      ...r,
+      cover: COVER_BY_CUISINE[r.cuisine] ?? 'bar',
+    })),
+  ]
   const rRows = await db
     .insert(schema.restaurants)
     .values(
-      restaurants.map((r, i) => ({
+      allRestaurants.map((r, i) => ({
         name: r.name,
         neighborhoodId: nid(r.neighborhood),
         cuisine: r.cuisine,
         lat: r.lat,
         lng: r.lng,
-        // Demo WhatsApp/call number so the reserve handoff is exercisable. Real
-        // numbers replace these before launch (the rows are flagged isDemo).
         phone: `+1809555${String(1000 + i)}`,
-        // Film-photo cover matched to the spot's cuisine (served from the app's
-        // /public/restaurants; a real Cloudinary id replaces these at launch).
-        coverImageId: `/restaurants/${COVER_BY_KEY[r.key] ?? 'bar'}.jpg`,
+        priceTier: r.priceTier,
+        coverImageId: `/restaurants/${r.cover}.jpg`,
         isDemo: true,
       })),
     )
     .returning({ id: schema.restaurants.id, name: schema.restaurants.name })
   const idByName = new Map(rRows.map((r) => [r.name, r.id]))
   const rid = (key: string): string => {
-    const r = restaurants.find((x) => x.key === key)
+    const r = allRestaurants.find((x) => x.key === key)
     const id = r && idByName.get(r.name)
     if (!id) throw new Error(`unknown restaurant key: ${key}`)
     return id
   }
 
-  // --- friends (user rows; demo profiles, EULA accepted) ---
-  const now = new Date()
-  const friendId = new Map<string, string>()
-  await db.insert(schema.user).values(
-    friends.map((f) => {
+  // --- users: 8 curated friends + 32 generated ---
+  const now = Date.now()
+  const generated = generateUsers(
+    allRestaurants.map((r) => ({ key: r.key, cuisine: r.cuisine })),
+    friends.map((f) => f.handle),
+  )
+  const userId = new Map<string, string>()
+  await db.insert(schema.user).values([
+    ...friends.map((f) => {
       const id = randomUUID()
-      friendId.set(f.handle, id)
+      userId.set(f.handle, id)
       return {
         id,
         name: f.name,
         handle: f.handle,
         bio: f.bio,
         neighborhoodId: nid(f.neighborhood),
-        eulaAcceptedAt: now,
+        eulaAcceptedAt: new Date(now),
       }
     }),
-  )
+    ...generated.map((g) => {
+      const id = randomUUID()
+      userId.set(g.handle, id)
+      return {
+        id,
+        name: g.name,
+        handle: g.handle,
+        bio: g.bio,
+        neighborhoodId: nid(g.neighborhood),
+        eulaAcceptedAt: new Date(now),
+      }
+    }),
+  ])
   const uid = (handle: string): string => {
-    const id = friendId.get(handle)
-    if (!id) throw new Error(`missing friend id: ${handle}`)
+    const id = userId.get(handle)
+    if (!id) throw new Error(`missing user id: ${handle}`)
     return id
   }
 
-  // --- follows: complete graph among the friends (dense cluster) ---
-  const followRows = friends.flatMap((a) =>
-    friends
-      .filter((b) => b.handle !== a.handle)
-      .map((b) => ({ followerId: uid(a.handle), followingId: uid(b.handle) })),
-  )
+  // --- follows: curated cluster is complete; generated users follow curated +
+  // each other; curated friends follow back a slice of generated. Deduped. ---
+  const followPairs = new Set<string>()
+  const followRows: (typeof schema.follows.$inferInsert)[] = []
+  const addFollow = (a: string, b: string) => {
+    if (a === b) return
+    const key = `${a}:${b}`
+    if (followPairs.has(key)) return
+    followPairs.add(key)
+    followRows.push({ followerId: a, followingId: b })
+  }
+  for (const a of friends) for (const b of friends) addFollow(uid(a.handle), uid(b.handle))
+  generated.forEach((g, i) => {
+    for (const h of g.followsHandles) addFollow(uid(g.handle), uid(h))
+    // Curated friends follow back roughly a third of generated users.
+    const backFollower = friends[i % friends.length]
+    if (backFollower && i % 3 !== 0) addFollow(uid(backFollower.handle), uid(g.handle))
+  })
   await db.insert(schema.follows).values(followRows)
 
-  // --- rankings + vibe notes ---
+  // --- rankings + vibe notes (timestamps spread over ~6 weeks) ---
+  const tsRand = mulberry32(777)
   const rankingRows: (typeof schema.rankings.$inferInsert)[] = []
   const noteRows: (typeof schema.vibeNotes.$inferInsert)[] = []
   for (const f of friends) {
     f.ranked.forEach((entry, i) => {
       const position = i + 1
+      // Curated friends stay active: their newest entries land within days.
+      const daysAgo = i === 0 ? tsRand() * 2 : tsRand() * 40
+      const at = new Date(now - daysAgo * DAY)
       rankingRows.push({
         userId: uid(f.handle),
         restaurantId: rid(entry.key),
         position,
         score: scoreForPosition(position, f.ranked.length),
+        createdAt: at,
+        updatedAt: at,
       })
-      noteRows.push({ userId: uid(f.handle), restaurantId: rid(entry.key), body: entry.note })
+      noteRows.push({
+        userId: uid(f.handle),
+        restaurantId: rid(entry.key),
+        body: entry.note,
+        createdAt: at,
+        updatedAt: at,
+      })
+    })
+  }
+  for (const g of generated) {
+    g.ranked.forEach((entry, i) => {
+      const position = i + 1
+      const at = new Date(now - entry.daysAgo * DAY)
+      rankingRows.push({
+        userId: uid(g.handle),
+        restaurantId: rid(entry.key),
+        position,
+        score: scoreForPosition(position, g.ranked.length),
+        tags: entry.tags,
+        favoriteDish: entry.dish,
+        createdAt: at,
+        updatedAt: at,
+      })
+      if (entry.note) {
+        noteRows.push({
+          userId: uid(g.handle),
+          restaurantId: rid(entry.key),
+          body: entry.note,
+          createdAt: at,
+          updatedAt: at,
+        })
+      }
     })
   }
   const insertedRankings = await db
@@ -129,33 +229,40 @@ async function seed() {
     .returning({ id: schema.rankings.id, userId: schema.rankings.userId })
   await db.insert(schema.vibeNotes).values(noteRows)
 
-  // --- cheers (🥂 reactions) — deterministic spread so the feed shows counts ---
-  const friendIds = friends.map((f) => uid(f.handle))
+  // --- cheers: 0–6 per ranking, drawn from the owner's followers ---
+  const followersOf = new Map<string, string[]>()
+  for (const f of followRows) {
+    const list = followersOf.get(f.followingId as string) ?? []
+    list.push(f.followerId as string)
+    followersOf.set(f.followingId as string, list)
+  }
+  const cheerRand = mulberry32(1313)
   const cheerRows: (typeof schema.cheers.$inferInsert)[] = []
-  insertedRankings.forEach((r, i) => {
-    // 1–3 cheerers per ranking, never the owner, spread by index.
-    const howMany = (i % 3) + 1
-    for (let k = 0; k < howMany; k++) {
-      const cheerer = friendIds[(i * 3 + k * 5 + 1) % friendIds.length]
-      if (cheerer && cheerer !== r.userId) {
-        cheerRows.push({ userId: cheerer, rankingId: r.id })
-      }
-    }
-  })
-  // Dedupe on the composite key.
   const seenCheer = new Set<string>()
-  const uniqueCheers = cheerRows.filter((c) => {
-    const key = `${c.userId}:${c.rankingId}`
-    if (seenCheer.has(key)) return false
-    seenCheer.add(key)
-    return true
-  })
-  if (uniqueCheers.length) await db.insert(schema.cheers).values(uniqueCheers)
+  for (const r of insertedRankings) {
+    const followers = followersOf.get(r.userId) ?? []
+    if (followers.length === 0) continue
+    const howMany = Math.floor(cheerRand() * Math.min(7, followers.length + 1))
+    for (let k = 0; k < howMany; k++) {
+      const cheerer = followers[Math.floor(cheerRand() * followers.length)]
+      if (!cheerer) continue
+      const key = `${cheerer}:${r.id}`
+      if (seenCheer.has(key)) continue
+      seenCheer.add(key)
+      cheerRows.push({ userId: cheerer, rankingId: r.id })
+    }
+  }
+  if (cheerRows.length) await db.insert(schema.cheers).values(cheerRows)
 
   // --- saved places (want-to-try) ---
-  const savedRows = friends.flatMap((f) =>
-    (f.wantToTry ?? []).map((key) => ({ userId: uid(f.handle), restaurantId: rid(key) })),
-  )
+  const savedRows = [
+    ...friends.flatMap((f) =>
+      (f.wantToTry ?? []).map((key) => ({ userId: uid(f.handle), restaurantId: rid(key) })),
+    ),
+    ...generated.flatMap((g) =>
+      g.wantToTry.map((key) => ({ userId: uid(g.handle), restaurantId: rid(key) })),
+    ),
+  ]
   if (savedRows.length) await db.insert(schema.savedPlaces).values(savedRows)
 
   // --- waitlist (mirror of the quiz) ---
@@ -163,9 +270,9 @@ async function seed() {
 
   console.log(
     `inserted: ${nRows.length} neighborhoods, ${rRows.length} restaurants, ` +
-      `${friends.length} friends, ${followRows.length} follows, ` +
+      `${friends.length + generated.length} users, ${followRows.length} follows, ` +
       `${rankingRows.length} rankings, ${noteRows.length} vibe notes, ` +
-      `${savedRows.length} saved, ${waitlist.length} waitlist`,
+      `${cheerRows.length} cheers, ${savedRows.length} saved, ${waitlist.length} waitlist`,
   )
 
   return uid('caro') // the viewer for the read-back check

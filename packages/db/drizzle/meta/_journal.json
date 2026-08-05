@@ -29,6 +29,13 @@
       "when": 1785915720848,
       "tag": "0003_round_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785946878019,
+      "tag": "0004_purple_cyclops",
+      "breakpoints": true
     }
   ]
 }
