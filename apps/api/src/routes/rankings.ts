@@ -79,6 +79,7 @@ export const rankingsRoutes = new Hono<AppEnv>()
           id: restaurants.id,
           name: restaurants.name,
           cuisine: restaurants.cuisine,
+          coverImageId: restaurants.coverImageId,
         },
         neighborhood: neighborhoods.name,
         note: vibeNotes.body,
@@ -112,6 +113,7 @@ export const rankingsRoutes = new Hono<AppEnv>()
         id: restaurants.id,
         name: restaurants.name,
         cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
         neighborhood: neighborhoods.name,
       })
       .from(restaurants)

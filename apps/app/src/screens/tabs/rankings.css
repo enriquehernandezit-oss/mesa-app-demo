@@ -7,6 +7,47 @@
   margin-bottom: var(--space-5);
 }
 
+.rankings-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Share pill — brass, small, unmistakable. */
+.share-pill {
+  flex: none;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  border: none;
+  background: var(--brass);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 700;
+  transition: transform 0.15s var(--ease-spring), background 0.15s ease;
+}
+.share-pill:active {
+  transform: scale(0.92);
+}
+.share-pill:hover {
+  background: var(--brass-2);
+}
+.share-pill:disabled {
+  opacity: 0.6;
+}
+
+/* Thumbnail in ranking rows. */
+.ranking-thumb {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
 .ranking-row {
   display: grid;
   grid-template-columns: auto 1fr auto;

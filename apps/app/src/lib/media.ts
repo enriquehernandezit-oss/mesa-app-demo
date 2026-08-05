@@ -5,12 +5,16 @@
 const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined
 const MAPBOX = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
 
-// Delivery URL for a Cloudinary public id, auto format/quality + a fill crop.
+// A cover image URL. Local/absolute paths (the seed's /restaurants/*.jpg, or a
+// full https URL) are served as-is; a bare Cloudinary public id is expanded into
+// a delivery URL with auto format/quality + a fill crop when a cloud is set.
 export function cloudinaryUrl(
   publicId: string | null | undefined,
   opts: { w?: number; h?: number } = {},
 ): string | null {
-  if (!CLOUD || !publicId) return null
+  if (!publicId) return null
+  if (publicId.startsWith('/') || publicId.startsWith('http')) return publicId
+  if (!CLOUD) return null
   const { w = 800, h = 460 } = opts
   return `https://res.cloudinary.com/${CLOUD}/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/${publicId}`
 }

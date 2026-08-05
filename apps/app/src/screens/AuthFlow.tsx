@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '../components/ui'
 import { authClient } from '../lib/auth-client'
@@ -14,6 +15,7 @@ import '../styles/screens.css'
 type Step = 'choose' | 'phone' | 'verify'
 
 export function AuthFlow() {
+  const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>('choose')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
@@ -55,12 +57,15 @@ export function AuthFlow() {
       code,
     })
     setBusy(false)
-    // On success Better Auth sets the session; App re-renders into onboarding.
     if (error) return setError(error.message ?? 'That code did not match.')
+    // Session cookie is set — refresh the cached session so App re-gates.
+    queryClient.invalidateQueries({ queryKey: ['session'] })
   }
 
   return (
-    <div className="screen screen--center">
+    <div className="screen screen--center auth-screen">
+      {/* Film-photo hero behind everything — the first thing anyone sees. */}
+      <div className="auth-hero" aria-hidden />
       <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={64} />
         <SerifItalic style={{ fontSize: '1.15rem' }}>where your friends actually eat</SerifItalic>

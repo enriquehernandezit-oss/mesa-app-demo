@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Body, Button, Caption, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
+import { cloudinaryUrl } from '../../lib/media'
 import { choose, initPairwise, isDone, nextComparison, progress } from '../../lib/pairwise'
 import type { Restaurant } from '../../lib/types'
 import './rank.css'
@@ -61,11 +62,13 @@ export function RankStep({ onNext }: { onNext: () => void }) {
         <div className="rank-grid">
           {data?.restaurants.map((r) => {
             const on = selectedIds.includes(r.id)
+            const cover = cloudinaryUrl(r.coverImageId, { w: 400, h: 300 })
             return (
               <button
                 type="button"
                 key={r.id}
-                className={`rank-pick${on ? ' rank-pick--on' : ''}`}
+                className={`rank-pick rank-pick--photo${on ? ' rank-pick--on' : ''}`}
+                style={cover ? { backgroundImage: `url(${cover})` } : undefined}
                 onClick={() => toggle(r.id)}
               >
                 <span className="rank-pick__name">{r.name}</span>
@@ -141,8 +144,14 @@ function ComparePhase({
 }
 
 function VersusCard({ r, onClick }: { r: Restaurant; onClick: () => void }) {
+  const cover = cloudinaryUrl(r.coverImageId, { w: 700, h: 340 })
   return (
-    <button type="button" className="versus" onClick={onClick}>
+    <button
+      type="button"
+      className="versus versus--photo"
+      style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+      onClick={onClick}
+    >
       <span className="versus__name">{r.name}</span>
       <Caption>{[r.cuisine, r.neighborhood?.name].filter(Boolean).join(' · ')}</Caption>
     </button>

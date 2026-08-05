@@ -8,6 +8,26 @@ import { friends, neighborhoods, restaurants, scoreForPosition, waitlist } from 
 // demo/auth tables first, so re-running gives a clean, identical dataset.
 // Run with: bun run --env-file=.env src/seed.ts  (or `bun db:seed`).
 
+// Each spot's cover photo, matched to its cuisine. Files live in
+// apps/app/public/restaurants/. Real Cloudinary ids replace these at launch.
+const COVER_BY_KEY: Record<string, string> = {
+  sophias: 'cocktails',
+  peperoni: 'pasta',
+  mijas: 'tapas',
+  boga: 'branzino',
+  segundo: 'ceviche',
+  bottega: 'pizza',
+  mitre: 'wine',
+  adrian: 'mofongo',
+  vesuvio: 'bar',
+  cava: 'steak',
+  positano: 'dessert',
+  patepalo: 'branzino',
+  lulu: 'tapas',
+  jalao: 'mofongo',
+  mesonbari: 'cocktails',
+}
+
 async function seed() {
   console.log('seeding…')
 
@@ -42,6 +62,9 @@ async function seed() {
         // Demo WhatsApp/call number so the reserve handoff is exercisable. Real
         // numbers replace these before launch (the rows are flagged isDemo).
         phone: `+1809555${String(1000 + i)}`,
+        // Film-photo cover matched to the spot's cuisine (served from the app's
+        // /public/restaurants; a real Cloudinary id replaces these at launch).
+        coverImageId: `/restaurants/${COVER_BY_KEY[r.key] ?? 'bar'}.jpg`,
         isDemo: true,
       })),
     )
@@ -100,8 +123,34 @@ async function seed() {
       noteRows.push({ userId: uid(f.handle), restaurantId: rid(entry.key), body: entry.note })
     })
   }
-  await db.insert(schema.rankings).values(rankingRows)
+  const insertedRankings = await db
+    .insert(schema.rankings)
+    .values(rankingRows)
+    .returning({ id: schema.rankings.id, userId: schema.rankings.userId })
   await db.insert(schema.vibeNotes).values(noteRows)
+
+  // --- cheers (🥂 reactions) — deterministic spread so the feed shows counts ---
+  const friendIds = friends.map((f) => uid(f.handle))
+  const cheerRows: (typeof schema.cheers.$inferInsert)[] = []
+  insertedRankings.forEach((r, i) => {
+    // 1–3 cheerers per ranking, never the owner, spread by index.
+    const howMany = (i % 3) + 1
+    for (let k = 0; k < howMany; k++) {
+      const cheerer = friendIds[(i * 3 + k * 5 + 1) % friendIds.length]
+      if (cheerer && cheerer !== r.userId) {
+        cheerRows.push({ userId: cheerer, rankingId: r.id })
+      }
+    }
+  })
+  // Dedupe on the composite key.
+  const seenCheer = new Set<string>()
+  const uniqueCheers = cheerRows.filter((c) => {
+    const key = `${c.userId}:${c.rankingId}`
+    if (seenCheer.has(key)) return false
+    seenCheer.add(key)
+    return true
+  })
+  if (uniqueCheers.length) await db.insert(schema.cheers).values(uniqueCheers)
 
   // --- saved places (want-to-try) ---
   const savedRows = friends.flatMap((f) =>

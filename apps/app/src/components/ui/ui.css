@@ -112,6 +112,28 @@
   background: var(--surface-2);
 }
 
+/* --- Avatar --- */
+.mesa-avatar {
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--brass);
+  background: var(--surface-2);
+}
+.mesa-avatar--initial {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  color: var(--brass);
+  user-select: none;
+}
+
+@keyframes mesa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* --- Skeleton (loading placeholder) --- */
 .mesa-skeleton {
   border-radius: var(--radius-sm);

@@ -104,6 +104,26 @@ export const meRoutes = new Hono<AppEnv>()
 
     return c.json({ ok: true })
   })
+  // Avatar: the client resizes to a small JPEG and sends a data URL (Cloudinary
+  // replaces this path at launch; the column already holds any URL). Size-capped.
+  .patch('/avatar', async (c) => {
+    const current = c.get('user')
+    if (!current) return c.json({ error: 'unauthorized' }, 401)
+    const body = (await c.req.json().catch(() => null)) as { image?: string } | null
+    const image = body?.image
+    if (
+      typeof image !== 'string' ||
+      !image.startsWith('data:image/jpeg;base64,') ||
+      image.length > 80_000
+    ) {
+      return c.json({ error: 'invalid_image' }, 400)
+    }
+    await db
+      .update(schema.user)
+      .set({ image, updatedAt: new Date() })
+      .where(eq(schema.user.id, current.id))
+    return c.json({ ok: true })
+  })
   // In-app account deletion (App Store 5.1.1). Deleting the user row cascades
   // across everything they own — rankings, vibe notes, follows, blocks, saved
   // places, reports, and Better Auth's own sessions + accounts (every child FK

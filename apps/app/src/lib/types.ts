@@ -39,6 +39,7 @@ export interface RankedRestaurant {
   id: string
   name: string
   cuisine: string | null
+  coverImageId?: string | null
 }
 
 // A row in a ranked list (mine or someone else's).
@@ -89,6 +90,8 @@ export interface FeedItem {
   restaurant: RankedRestaurant
   neighborhood: string | null
   note: string | null
+  cheersCount?: number
+  cheeredByMe?: boolean
 }
 
 export interface FriendRanking {

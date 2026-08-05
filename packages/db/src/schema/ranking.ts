@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -39,6 +40,25 @@ export const rankings = pgTable(
     unique('rankings_user_restaurant_uq').on(t.userId, t.restaurantId),
     index('rankings_user_position_idx').on(t.userId, t.position),
     index('rankings_restaurant_idx').on(t.restaurantId), // who ranked this place
+  ],
+)
+
+// A "cheers" (🥂) — Mesa's reaction to a friend's ranking. One per user per
+// ranking; deleting either side cascades. The feed shows the count.
+export const cheers = pgTable(
+  'cheers',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    rankingId: uuid('ranking_id')
+      .notNull()
+      .references(() => rankings.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.rankingId] }),
+    index('cheers_ranking_idx').on(t.rankingId),
   ],
 )
 

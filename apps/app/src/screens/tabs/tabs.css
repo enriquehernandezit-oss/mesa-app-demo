@@ -12,6 +12,17 @@
   padding: calc(var(--safe-top) + var(--space-6)) var(--space-5) var(--space-6);
   /* Room so content never hides behind the fixed tab bar. */
   padding-bottom: calc(72px + var(--safe-bottom) + var(--space-5));
+  animation: screen-in 0.3s ease both;
+}
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .tab-header {

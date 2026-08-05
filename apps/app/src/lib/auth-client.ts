@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query'
 import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 
@@ -15,4 +16,17 @@ export const authClient = createAuthClient({
   plugins: [phoneNumberClient(), genericOAuthClient()],
 })
 
-export const { useSession, signOut } = authClient
+export const signOut = () => authClient.signOut()
+
+// Session state via a cached TanStack Query instead of Better Auth's reactive
+// useSession: under React 19 that hook's external-store snapshot never settles
+// and re-fetches /get-session in a tight loop (constant re-renders were also
+// eating first taps). One cached fetch; sign-in/out invalidates ['session'].
+export function useSession() {
+  return useQuery({
+    queryKey: ['session'],
+    queryFn: async () => (await authClient.getSession()).data,
+    staleTime: 5 * 60_000,
+    retry: false,
+  })
+}

@@ -77,3 +77,53 @@
   color: var(--brass);
   font-size: 1.1rem;
 }
+
+/* --- Photo variants (the card battle) --- */
+.rank-pick--photo,
+.versus--photo {
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  isolation: isolate;
+}
+.rank-pick--photo::before,
+.versus--photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(24, 4, 6, 0.9) 10%, rgba(24, 4, 6, 0.35) 60%);
+}
+.rank-pick--photo {
+  justify-content: flex-end;
+  min-height: 128px;
+}
+.rank-pick--photo .rank-pick__name,
+.versus--photo .versus__name {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+.versus--photo {
+  min-height: 170px;
+  justify-content: flex-end;
+  padding-bottom: var(--space-4);
+  transition: transform 0.18s var(--ease-spring), border-color 0.15s ease;
+}
+.versus--photo:active {
+  transform: scale(0.96);
+}
+
+/* Each comparison round slides in. */
+.compare--battle {
+  animation: battle-in 0.35s var(--ease-spring) both;
+}
+@keyframes battle-in {
+  from {
+    opacity: 0;
+    transform: translateX(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

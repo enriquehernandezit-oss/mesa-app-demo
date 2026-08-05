@@ -1,4 +1,23 @@
-/* Profile danger zone (account deletion). Tokens only. */
+/* Profile danger zone (account deletion) + avatar upload. Tokens only. */
+
+.avatar-btn {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: var(--space-2);
+}
+.avatar-btn__hint {
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 
 .danger-zone {
   margin-top: var(--space-8);

@@ -70,6 +70,74 @@
   text-decoration: underline;
 }
 
+/* Auth hero — the candlelit bar photo behind the sign-in screen. */
+.auth-screen {
+  position: relative;
+  isolation: isolate;
+}
+.auth-hero {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url("/restaurants/bar.jpg");
+  background-size: cover;
+  background-position: center;
+}
+.auth-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(33, 1, 4, 0.55),
+    rgba(33, 1, 4, 0.82) 55%,
+    var(--ink) 92%
+  );
+}
+
+/* Placement celebration — the stamp. */
+.stamp-screen {
+  justify-content: center;
+  align-items: center;
+}
+.stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  animation: stamp-in 0.55s var(--ease-spring) both;
+}
+@keyframes stamp-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.7) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+  }
+}
+.stamp__ring {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid var(--brass);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 60px rgba(192, 144, 80, 0.25);
+}
+.stamp__numeral {
+  font-family: var(--font-serif);
+  font-size: 3.4rem;
+  color: var(--brass-2);
+}
+.stamp__name {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  color: var(--cream);
+  text-align: center;
+}
+
 /* Onboarding progress dots. */
 .progress-dots {
   display: flex;

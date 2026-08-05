@@ -1,39 +1,147 @@
-/* Discovery feed — friends' rankings + vibe notes. Editorial cards on the dark
-   oxblood ground. Tokens only. */
+/* Discovery feed — photo-forward editorial cards. The film-photo cover carries
+   the warmth; brass + serif do the rest. Tokens only. */
 
 .feed {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
 }
 
 .feed-card {
-  padding: var(--space-5);
-  border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+  animation: feed-card-in 0.5s var(--ease-spring) both;
+  transition: transform 0.15s var(--ease-spring);
+}
+.feed-card:active {
+  transform: scale(0.985);
+}
+@keyframes feed-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.feed-time {
+  flex: none;
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-body__row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
 }
 
-/* Who ranked it. */
+/* --- Cheers (🥂) --- */
+.cheers {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--dim);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+  transition: border-color 0.15s ease, transform 0.15s var(--ease-spring);
+}
+.cheers:active {
+  transform: scale(0.9);
+}
+.cheers--on {
+  border-color: var(--brass);
+  color: var(--brass-2);
+}
+.cheers--pop .cheers__glass {
+  animation: cheers-pop 0.45s var(--ease-spring);
+  display: inline-block;
+}
+@keyframes cheers-pop {
+  0% {
+    transform: scale(1) rotate(0);
+  }
+  40% {
+    transform: scale(1.6) rotate(-12deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+.cheers__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Search --- */
+.search-field {
+  margin-top: var(--space-4);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--cream);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.search-field:focus {
+  border-color: var(--brass);
+}
+.search-results {
+  display: flex;
+  flex-direction: column;
+}
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.search-thumb {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+/* Who ranked it — a quiet header above the photo. */
 .feed-who {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
 }
 .feed-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   flex: none;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brass);
   display: grid;
   place-items: center;
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--brass);
 }
 .feed-who__name {
@@ -51,43 +159,93 @@
   font-weight: 400;
 }
 
-/* The place — the tappable heart of the card. */
-.feed-place {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0;
+/* The film-photo cover — the heart of the card. */
+.feed-cover {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 2;
+  background: var(--ink-2);
+}
+.feed-cover img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-.feed-place__name {
+/* Bottom scrim so the name/score read over any photo. */
+.feed-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(24, 4, 6, 0.92) 0%,
+    rgba(24, 4, 6, 0.35) 32%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+.feed-cover--empty {
+  display: grid;
+  place-items: center;
   font-family: var(--font-serif);
-  font-size: 1.6rem;
-  line-height: 1.1;
+  font-style: italic;
+  color: var(--dim);
+}
+
+/* Name + score laid over the bottom of the photo. */
+.feed-caption {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.feed-name {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  line-height: 1.02;
   color: var(--cream);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
-.feed-place__score {
+.feed-score {
   flex: none;
+  min-width: 46px;
+  height: 46px;
+  padding: 0 var(--space-2);
+  border-radius: 50%;
+  background: rgba(24, 4, 6, 0.55);
+  border: 1px solid var(--brass);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   color: var(--brass-2);
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+}
+
+/* Below the photo — meta + the vibe note. */
+.feed-body {
+  padding: var(--space-3) var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 .feed-meta {
   font-size: var(--text-eyebrow);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--dim);
-  margin-top: calc(-1 * var(--space-2));
+  letter-spacing: 0.1em;
+  color: var(--brass);
 }
 .feed-note {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.15rem;
-  line-height: 1.35;
+  font-size: 1.2rem;
+  line-height: 1.4;
   color: var(--cream-dim);
 }

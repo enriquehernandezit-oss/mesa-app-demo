@@ -3,18 +3,24 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { Body, Button, Caption, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
+import { cloudinaryUrl } from '../../lib/media'
 import { choose, initInsert, isDone, nextComparison } from '../../lib/pairwise'
-import type { Ranking, Restaurant } from '../../lib/types'
+import type { Ranking } from '../../lib/types'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
 import '../../styles/screens.css'
 
-// Rank-a-place (M3): pick a spot you've been to, place it against your existing
-// list with the same "this or that?" pairwise comparisons, add an optional vibe
-// note, and it takes its slot in your passport. Reuses the pairwise engine via
-// initInsert — inserting one item into an already-ordered list.
+// Rank-a-place (M3, rebuilt as a card battle in the viral pass): pick a spot,
+// place it against your list with photo-backed "this or that?" cards, add a
+// vibe note, and celebrate the placement with a stamp before returning.
 
-type Item = { id: string; name: string; cuisine: string | null; neighborhood: string | null }
+type Item = {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId?: string | null
+  neighborhood: string | null
+}
 
 export function RankAPlace() {
   const navigate = useNavigate()
@@ -23,10 +29,7 @@ export function RankAPlace() {
 
   const candidates = useQuery({
     queryKey: ['rankings', 'candidates'],
-    queryFn: () =>
-      api.get<{ restaurants: (Restaurant & { neighborhood: string | null })[] }>(
-        '/rankings/candidates',
-      ),
+    queryFn: () => api.get<{ restaurants: Item[] }>('/rankings/candidates'),
   })
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -36,6 +39,7 @@ export function RankAPlace() {
   const [pickedId, setPickedId] = useState<string | null>(search.restaurant ?? null)
   const [position, setPosition] = useState<number | null>(null)
   const [note, setNote] = useState('')
+  const [placedStamp, setPlacedStamp] = useState(false)
 
   const existing: Item[] = useMemo(
     () =>
@@ -43,19 +47,17 @@ export function RankAPlace() {
         id: r.restaurant.id,
         name: r.restaurant.name,
         cuisine: r.restaurant.cuisine,
+        coverImageId: r.restaurant.coverImageId,
         neighborhood: r.neighborhood,
       })),
     [mine.data],
   )
 
   const candList = candidates.data?.restaurants ?? []
-  const picked = useMemo<Item | null>(() => {
-    if (!pickedId) return null
-    const c = candList.find((r) => r.id === pickedId)
-    return c
-      ? { id: c.id, name: c.name, cuisine: c.cuisine, neighborhood: c.neighborhood ?? null }
-      : null
-  }, [pickedId, candList])
+  const picked = useMemo<Item | null>(
+    () => (pickedId ? (candList.find((r) => r.id === pickedId) ?? null) : null),
+    [pickedId, candList],
+  )
 
   const save = useMutation({
     mutationFn: (pos: number) =>
@@ -67,9 +69,27 @@ export function RankAPlace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
-      navigate({ to: '/rankings' })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      // Celebrate the placement, then return to the passport.
+      setPlacedStamp(true)
+      setTimeout(() => navigate({ to: '/rankings' }), 1300)
     },
   })
+
+  // The celebration stamp — "#3 · Mijas" punches in over the screen.
+  if (placedStamp && picked && position !== null) {
+    return (
+      <div className="screen stamp-screen">
+        <div className="stamp">
+          <div className="stamp__ring">
+            <span className="stamp__numeral">#{position}</span>
+          </div>
+          <div className="stamp__name">{picked.name}</div>
+          <Caption>added to your passport</Caption>
+        </div>
+      </div>
+    )
+  }
 
   if (candidates.isPending || mine.isPending) {
     return (
@@ -92,17 +112,7 @@ export function RankAPlace() {
         <div className="rank-grid" style={{ marginTop: 'var(--space-5)' }}>
           {candList.length === 0 && <Body>You've ranked everything on Mesa. 👏</Body>}
           {candList.map((r) => (
-            <button
-              type="button"
-              key={r.id}
-              className="rank-pick"
-              onClick={() => setPickedId(r.id)}
-            >
-              <span className="rank-pick__name">{r.name}</span>
-              <span className="rank-pick__meta">
-                {[r.cuisine, r.neighborhood].filter(Boolean).join(' · ')}
-              </span>
-            </button>
+            <PickCard key={r.id} item={r} onClick={() => setPickedId(r.id)} />
           ))}
         </div>
       </div>
@@ -135,7 +145,7 @@ export function RankAPlace() {
     )
   }
 
-  // Step: pairwise placement.
+  // Step: pairwise placement — the card battle.
   return (
     <div className="screen">
       <BackBar
@@ -143,6 +153,23 @@ export function RankAPlace() {
       />
       <PlaceStep existing={existing} item={picked} onPlaced={(pos) => setPosition(pos)} />
     </div>
+  )
+}
+
+function PickCard({ item, onClick }: { item: Item; onClick: () => void }) {
+  const cover = cloudinaryUrl(item.coverImageId, { w: 400, h: 300 })
+  return (
+    <button
+      type="button"
+      className="rank-pick rank-pick--photo"
+      style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+      onClick={onClick}
+    >
+      <span className="rank-pick__name">{item.name}</span>
+      <span className="rank-pick__meta">
+        {[item.cuisine, item.neighborhood].filter(Boolean).join(' · ')}
+      </span>
+    </button>
   )
 }
 
@@ -170,12 +197,11 @@ function PlaceStep({
   return (
     <div className="stack stack--loose" style={{ marginTop: 'var(--space-4)' }}>
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
-        {/* Binary search: the number of comparisons isn't fixed, so we name what
-            we're placing rather than show a misleading "x of y". */}
         <Eyebrow>Placing {item.name}</Eyebrow>
         <Title>Which do you like more?</Title>
       </div>
-      <div className="compare">
+      {/* key = the pivot: each new round slides in fresh. */}
+      <div className="compare compare--battle" key={comparison.pivot.id}>
         <Versus item={comparison.current} onClick={() => setState((s) => choose(s, true))} />
         <div className="compare__or">or</div>
         <Versus item={comparison.pivot} onClick={() => setState((s) => choose(s, false))} />
@@ -185,8 +211,14 @@ function PlaceStep({
 }
 
 function Versus({ item, onClick }: { item: Item; onClick: () => void }) {
+  const cover = cloudinaryUrl(item.coverImageId, { w: 700, h: 340 })
   return (
-    <button type="button" className="versus" onClick={onClick}>
+    <button
+      type="button"
+      className="versus versus--photo"
+      style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+      onClick={onClick}
+    >
       <span className="versus__name">{item.name}</span>
       <Caption>{[item.cuisine, item.neighborhood].filter(Boolean).join(' · ')}</Caption>
     </button>

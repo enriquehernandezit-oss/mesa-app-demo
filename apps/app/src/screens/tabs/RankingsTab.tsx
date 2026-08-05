@@ -2,7 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
+import { cloudinaryUrl } from '../../lib/media'
+import { renderListCard, shareCard } from '../../lib/shareCard'
 import type { Ranking, SavedPlace } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
@@ -11,6 +14,8 @@ import './rankings.css'
 // scores, and vibe notes. Want-to-try = saved places waiting to be ranked.
 export function RankingsTab() {
   const [tab, setTab] = useState<'mine' | 'saved'>('mine')
+  const [sharing, setSharing] = useState(false)
+  const { data: me } = useProfile(true)
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -22,11 +27,43 @@ export function RankingsTab() {
     enabled: tab === 'saved',
   })
 
+  // The viral artifact: my top 5 as a branded story card → native share sheet.
+  async function shareMyList() {
+    const list = mine.data?.rankings ?? []
+    if (list.length === 0 || sharing) return
+    setSharing(true)
+    try {
+      const top = list.slice(0, 5)
+      const first = top[0]
+      const name = (me?.profile.name || me?.profile.handle || 'my').split(' ')[0]
+      const blob = await renderListCard({
+        eyebrow: `${name}'s top ${top.length}`,
+        subtitle: `${me?.profile.neighborhood?.name ?? 'Santo Domingo'} · Mesa`,
+        items: top.map((r) => ({
+          position: r.position,
+          name: r.restaurant.name,
+          score: r.score,
+        })),
+        coverUrl: first ? cloudinaryUrl(first.restaurant.coverImageId, { w: 1080, h: 780 }) : null,
+      })
+      await shareCard(blob, 'mesa-top.jpg', 'Mi ranking en Mesa 🥂')
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
     <div>
       <div className="tab-header">
         <Eyebrow>Your list</Eyebrow>
-        <Title>Rankings</Title>
+        <div className="rankings-title-row">
+          <Title>Rankings</Title>
+          {tab === 'mine' && (mine.data?.rankings.length ?? 0) > 0 && (
+            <button type="button" className="share-pill" onClick={shareMyList} disabled={sharing}>
+              {sharing ? '…' : '↗ Share'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="rank-toggle">
@@ -96,9 +133,15 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
     onSuccess: invalidate,
   })
 
+  const thumb = cloudinaryUrl(ranking.restaurant.coverImageId, { w: 160, h: 160 })
   return (
-    <div className="ranking-row">
+    <div className="ranking-row" style={{ gridTemplateColumns: 'auto auto 1fr auto' }}>
       <div className="ranking-numeral">{ranking.position}</div>
+      {thumb ? (
+        <img className="ranking-thumb" src={thumb} alt="" loading="lazy" />
+      ) : (
+        <div className="ranking-thumb" />
+      )}
       <div className="ranking-main">
         <div className="ranking-name">{ranking.restaurant.name}</div>
         <div className="ranking-meta">

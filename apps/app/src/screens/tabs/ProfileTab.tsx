@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Body, Button, Caption, Eyebrow } from '../../components/ui'
+import { Avatar } from '../../components/ui/Avatar'
 import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
 import { signOut } from '../../lib/auth-client'
@@ -9,6 +10,36 @@ import type { BlockedUser, SuggestedUser } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
 import './profile.css'
+
+// Resize a picked photo to a small square JPEG data URL for the avatar column.
+async function fileToAvatar(file: File): Promise<string> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = reject
+      i.src = url
+    })
+    const size = 192
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('canvas unsupported')
+    const s = Math.max(size / img.width, size / img.height)
+    ctx.drawImage(
+      img,
+      (size - img.width * s) / 2,
+      (size - img.height * s) / 2,
+      img.width * s,
+      img.height * s,
+    )
+    return canvas.toDataURL('image/jpeg', 0.8)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
 
 // The user's own profile. M2 showed identity + sign out; M3 adds the doorway to
 // other people's ranked passports (where reporting/blocking happen) and blocked-
@@ -32,6 +63,27 @@ export function ProfileTab() {
   })
 
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const fileInput = useRef<HTMLInputElement>(null)
+
+  const setAvatar = useMutation({
+    mutationFn: (image: string) => api.patch('/me/avatar', { image }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+    },
+  })
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) setAvatar.mutate(await fileToAvatar(file))
+    e.target.value = ''
+  }
+
+  // Invite — plain-text share; the link becomes real at launch.
+  async function invite() {
+    const text = 'Estoy en Mesa — donde mis amigos realmente comen 🥂 https://mesa.app'
+    if (navigator.share) await navigator.share({ text }).catch(() => {})
+    else await navigator.clipboard.writeText(text).catch(() => {})
+  }
 
   async function handleSignOut() {
     await signOut()
@@ -49,13 +101,27 @@ export function ProfileTab() {
     },
   })
 
-  const initial = (p?.name || p?.handle || 'm').trim().charAt(0).toLowerCase()
   const blocked = blocks.data?.blocked ?? []
 
   return (
     <div>
       <div className="profile-hero">
-        <div className="profile-avatar">{initial}</div>
+        <button
+          type="button"
+          className="avatar-btn"
+          onClick={() => fileInput.current?.click()}
+          aria-label="Change photo"
+        >
+          <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={72} />
+          <span className="avatar-btn__hint">{setAvatar.isPending ? '…' : '+ photo'}</span>
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={onPickAvatar}
+        />
         <Eyebrow>{p?.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--cream)' }}>
           {p?.name || 'You'}
@@ -63,6 +129,10 @@ export function ProfileTab() {
         {p?.handle && <Caption>@{p.handle}</Caption>}
         {p?.bio && <Body style={{ marginTop: 'var(--space-2)' }}>{p.bio}</Body>}
       </div>
+
+      <Button variant="secondary" onClick={invite} style={{ marginBottom: 'var(--space-6)' }}>
+        Invite friends 🥂
+      </Button>
 
       {/* People — the entry point to another person's ranked passport. */}
       <Eyebrow style={{ marginBottom: 'var(--space-3)' }}>People on Mesa</Eyebrow>
