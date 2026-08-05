@@ -1,0 +1,33 @@
+/* Profile danger zone (account deletion). Tokens only. */
+
+.danger-zone {
+  margin-top: var(--space-8);
+  padding: var(--space-5);
+  border: 1px solid rgba(224, 134, 90, 0.35); /* status-packed, dimmed */
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.danger-btn {
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--status-packed);
+  background: transparent;
+  color: var(--status-packed);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.danger-btn--solid {
+  align-self: stretch;
+  background: var(--status-packed);
+  color: var(--ink);
+  border-color: var(--status-packed);
+  min-height: 48px;
+}
+.danger-btn:disabled {
+  opacity: 0.5;
+}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Body, Button, Chip, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import type { Ranking, SavedPlace } from '../../lib/types'
 import './tabs.css'
@@ -41,6 +41,8 @@ export function RankingsTab() {
       {tab === 'mine' &&
         (mine.isPending ? (
           <Body>Loading your list…</Body>
+        ) : mine.isError ? (
+          <ErrorState>Couldn't load your rankings.</ErrorState>
         ) : mine.data && mine.data.rankings.length > 0 ? (
           mine.data.rankings.map((r) => <RankingRow key={r.id} ranking={r} />)
         ) : (

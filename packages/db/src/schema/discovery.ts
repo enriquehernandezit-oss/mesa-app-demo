@@ -25,6 +25,10 @@ export const restaurants = pgTable(
     lat: doublePrecision('lat').notNull(),
     lng: doublePrecision('lng').notNull(),
     coverImageId: text('cover_image_id'), // Cloudinary public id
+    // E.164 phone for the reserve handoff (WhatsApp deep link / call). Reserve
+    // is a handoff, not a booking engine — DR restaurants have no supply behind
+    // it yet (BUILD_PLAN M5 / Phase 3).
+    phone: text('phone'),
     // Marks seed/demo rows so they are never confused with real listings later.
     isDemo: boolean('is_demo').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),

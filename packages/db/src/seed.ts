@@ -33,12 +33,15 @@ async function seed() {
   const rRows = await db
     .insert(schema.restaurants)
     .values(
-      restaurants.map((r) => ({
+      restaurants.map((r, i) => ({
         name: r.name,
         neighborhoodId: nid(r.neighborhood),
         cuisine: r.cuisine,
         lat: r.lat,
         lng: r.lng,
+        // Demo WhatsApp/call number so the reserve handoff is exercisable. Real
+        // numbers replace these before launch (the rows are flagged isDemo).
+        phone: `+1809555${String(1000 + i)}`,
         isDemo: true,
       })),
     )

@@ -69,13 +69,19 @@ ATT prompt. Phase 1 avoids cross-app tracking, so ATT is likely N/A now — revi
 if an ad/attribution SDK is ever added.
 
 ## Quick pre-submission checklist
-- [ ] Sign in with Apple present next to Instagram
-- [ ] Report content + block user + remove/eject working
-- [ ] EULA accepted at signup
-- [ ] In-app account deletion (cascading)
-- [ ] Privacy policy + terms URLs live
-- [ ] App Privacy nutrition label filled in App Store Connect
-- [ ] All `Info.plist` purpose strings written, permissions prompted just-in-time
-- [ ] App demonstrably more than a WebView (native plugins active)
-- [ ] Official Meta OAuth, no scraping
-- [ ] TestFlight build green, seeded with a dense friend cluster
+
+Status as of the end of Phase 1 build (M5). ✅ = built & verified in-app; ⬜ = a
+config/account action that happens at submission (see `docs/SUBMISSION.md`).
+
+- [x] Sign in with Apple present next to Instagram — auth screen, equal prominence (env-gated, turns on with Apple creds)
+- [x] Report content + block user + remove/eject working — verified end to end (M3)
+- [x] EULA accepted at signup — required checkbox in onboarding; recorded server-side
+- [x] In-app account deletion (cascading) — Profile → Danger zone → DELETE /me, cascade verified (M5)
+- [~] Privacy policy + terms URLs live — in-app pages exist (`/privacy`, `/terms`, `/eula`); **copy is DRAFT — finalize with counsel**, optionally host at public URLs
+- [ ] App Privacy nutrition label filled in App Store Connect — declare: account info, contacts (matched, not stored), usage
+- [~] All `Info.plist` purpose strings written — drafted in `docs/NATIVE.md`; paste after `cap add ios`
+- [x] App demonstrably more than a WebView — Contacts (live), reserve handoff, MapBox map, camera/photo (staged) satisfy 4.2
+- [x] Official Meta OAuth, no scraping — Instagram via Better Auth generic-oauth to Meta endpoints
+- [ ] TestFlight build green, seeded with a dense friend cluster — needs Xcode + Apple Developer (see SUBMISSION.md)
+
+See **`docs/SUBMISSION.md`** for the exact remaining steps and what each needs.

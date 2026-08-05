@@ -17,7 +17,15 @@ export const restaurantRoutes = new Hono<AppEnv>().use(requireAuth).get('/:id', 
 
   const restaurant = await db.query.restaurants.findFirst({
     where: eq(restaurants.id, id),
-    columns: { id: true, name: true, cuisine: true, lat: true, lng: true, coverImageId: true },
+    columns: {
+      id: true,
+      name: true,
+      cuisine: true,
+      lat: true,
+      lng: true,
+      coverImageId: true,
+      phone: true,
+    },
     with: { neighborhood: { columns: { slug: true, name: true } } },
   })
   if (!restaurant) return c.json({ error: 'not_found' }, 404)

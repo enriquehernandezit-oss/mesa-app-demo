@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Body, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, ErrorState, Eyebrow, SerifItalic, Skeleton, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import type { FeedItem } from '../../lib/types'
 import './tabs.css'
@@ -23,7 +23,9 @@ export function DiscoverTab() {
       </div>
 
       {feed.isPending ? (
-        <Body>Loading the feed…</Body>
+        <FeedSkeleton />
+      ) : feed.isError ? (
+        <ErrorState>Couldn't load the feed. Try again in a moment.</ErrorState>
       ) : feed.data && feed.data.feed.length > 0 ? (
         <div className="feed">
           {feed.data.feed.map((item) => (
@@ -36,6 +38,23 @@ export function DiscoverTab() {
           <Body>Their rankings and vibe notes fill this feed.</Body>
         </div>
       )}
+    </div>
+  )
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="feed">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="feed-card">
+          <div className="feed-who">
+            <Skeleton height={34} width={34} style={{ borderRadius: '50%' }} />
+            <Skeleton height={14} width={140} />
+          </div>
+          <Skeleton height={28} width="70%" />
+          <Skeleton height={12} width="45%" />
+        </div>
+      ))}
     </div>
   )
 }

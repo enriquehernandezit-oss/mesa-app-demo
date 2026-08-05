@@ -106,6 +106,7 @@ export interface RestaurantProfileResponse {
     lat: number
     lng: number
     coverImageId: string | null
+    phone: string | null
     neighborhood: { slug: string; name: string } | null
   }
   friendsRankings: FriendRanking[]

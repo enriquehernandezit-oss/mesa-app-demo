@@ -52,6 +52,24 @@ export const Button = ({ variant = 'primary', icon, className, children, ...p }:
   </button>
 )
 
+/* Skeleton — a shimmering placeholder while data loads. */
+export const Skeleton = ({
+  height = 16,
+  width = '100%',
+  className,
+  style,
+  ...p
+}: DivProps & { height?: number | string; width?: number | string }) => (
+  <div className={cx('mesa-skeleton', className)} style={{ height, width, ...style }} {...p} />
+)
+
+/* Error — a quiet retry-friendly message when a query fails. */
+export const ErrorState = ({ className, children, ...p }: DivProps) => (
+  <div className={cx('mesa-error', className)} {...p}>
+    {children ?? 'Something went wrong. Pull to refresh, or try again in a moment.'}
+  </div>
+)
+
 /* --- Card --- */
 export const Card = ({ raised, className, ...p }: DivProps & { raised?: boolean }) => (
   <div className={cx('mesa-card', raised && 'mesa-card--raised', className)} {...p} />

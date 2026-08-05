@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Body, Button, Caption, Eyebrow, SerifItalic } from '../../components/ui'
 import { api } from '../../lib/api'
+import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import type { RestaurantProfileResponse } from '../../lib/types'
+import { ReserveSheet } from './ReserveSheet'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
 import '../tabs/feed.css'
 import './restaurant.css'
+import './reserve.css'
 
 // Restaurant profile (M4): the place, which friends ranked it (+ their vibe
 // notes), and your own state — saved or ranked. The MapBox map and a Cloudinary
@@ -15,6 +19,7 @@ export function RestaurantProfile() {
   const { restaurantId } = useParams({ from: '/r/$restaurantId' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [reserving, setReserving] = useState(false)
 
   const q = useQuery({
     queryKey: ['restaurant', restaurantId],
@@ -54,11 +59,20 @@ export function RestaurantProfile() {
   }
 
   const { restaurant, friendsRankings, myRanking, saved } = q.data
+  const cover = cloudinaryUrl(restaurant.coverImageId, { w: 800, h: 360 })
+  const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
 
   return (
     <div className="tab-shell">
       <div className="tab-body">
         <BackLink onBack={() => navigate({ to: '/discover' })} />
+
+        {/* Cover photo (Cloudinary) — a branded fallback when none is set. */}
+        {cover ? (
+          <img className="resto-cover" src={cover} alt={restaurant.name} />
+        ) : (
+          <div className="resto-cover resto-cover--fallback">{restaurant.name}</div>
+        )}
 
         <div className="resto-hero">
           <Eyebrow>{restaurant.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
@@ -87,7 +101,32 @@ export function RestaurantProfile() {
           </Button>
         </div>
 
-        {/* MapBox map + cover photo arrive in M5. */}
+        {/* Reserve = handoff. Only when the restaurant has a number on file. */}
+        {restaurant.phone &&
+          (reserving ? (
+            <ReserveSheet
+              restaurantName={restaurant.name}
+              phone={restaurant.phone}
+              onClose={() => setReserving(false)}
+            />
+          ) : (
+            <Button
+              variant="secondary"
+              style={{ marginTop: 'var(--space-3)' }}
+              onClick={() => setReserving(true)}
+            >
+              Request a table
+            </Button>
+          ))}
+
+        {/* Map (MapBox static) — a branded fallback with no token configured. */}
+        {mapUrl ? (
+          <img className="resto-map" src={mapUrl} alt={`Map of ${restaurant.name}`} />
+        ) : (
+          <div className="resto-map resto-map--fallback">
+            {restaurant.neighborhood?.name ?? 'Santo Domingo'} · map
+          </div>
+        )}
 
         <Eyebrow style={{ margin: 'var(--space-6) 0 var(--space-3)' }}>
           {friendsRankings.length > 0 ? 'Ranked by friends' : 'No friends here yet'}

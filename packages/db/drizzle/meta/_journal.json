@@ -15,6 +15,13 @@
       "when": 1785864978097,
       "tag": "0001_fat_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785897400560,
+      "tag": "0002_bored_onslaught",
+      "breakpoints": true
     }
   ]
 }

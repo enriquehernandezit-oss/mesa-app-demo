@@ -104,3 +104,14 @@ export const meRoutes = new Hono<AppEnv>()
 
     return c.json({ ok: true })
   })
+  // In-app account deletion (App Store 5.1.1). Deleting the user row cascades
+  // across everything they own — rankings, vibe notes, follows, blocks, saved
+  // places, reports, and Better Auth's own sessions + accounts (every child FK
+  // is ON DELETE CASCADE). This is a real erase, not a deactivate. The client
+  // then clears its session and returns to the sign-in screen.
+  .delete('/', async (c) => {
+    const current = c.get('user')
+    if (!current) return c.json({ error: 'unauthorized' }, 401)
+    await db.delete(schema.user).where(eq(schema.user.id, current.id))
+    return c.json({ ok: true })
+  })
