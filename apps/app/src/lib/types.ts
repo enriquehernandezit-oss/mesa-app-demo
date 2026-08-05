@@ -67,6 +67,9 @@ export interface UserRankingsResponse {
     neighborhood: { name: string } | null
   }
   rankings: Ranking[]
+  isFollowing: boolean
+  followerCount: number
+  followingCount: number
 }
 
 export interface BlockedUser {
@@ -74,4 +77,38 @@ export interface BlockedUser {
   name: string
   handle: string | null
   image: string | null
+}
+
+// A person + place in the discovery feed.
+export interface FeedItem {
+  rankingId: string
+  position: number
+  score: number
+  rankedAt: string
+  user: { id: string; name: string; handle: string | null; image: string | null }
+  restaurant: RankedRestaurant
+  neighborhood: string | null
+  note: string | null
+}
+
+export interface FriendRanking {
+  user: { id: string; name: string; handle: string | null; image: string | null }
+  score: number
+  position: number
+  note: string | null
+}
+
+export interface RestaurantProfileResponse {
+  restaurant: {
+    id: string
+    name: string
+    cuisine: string | null
+    lat: number
+    lng: number
+    coverImageId: string | null
+    neighborhood: { slug: string; name: string } | null
+  }
+  friendsRankings: FriendRanking[]
+  myRanking: { position: number; score: number } | null
+  saved: boolean
 }

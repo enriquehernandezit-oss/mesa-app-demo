@@ -3,10 +3,12 @@ import { cors } from 'hono/cors'
 import { auth } from './auth'
 import type { AppEnv } from './context'
 import { sessionMiddleware } from './middleware/session'
+import { feedRoutes } from './routes/feed'
 import { meRoutes } from './routes/me'
 import { moderationRoutes } from './routes/moderation'
 import { onboardingRoutes } from './routes/onboarding'
 import { rankingsRoutes } from './routes/rankings'
+import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
 import { socialRoutes } from './routes/social'
 
@@ -37,6 +39,8 @@ app.route('/social', socialRoutes)
 app.route('/rankings', rankingsRoutes)
 app.route('/saved', savedRoutes)
 app.route('/moderation', moderationRoutes)
+app.route('/feed', feedRoutes)
+app.route('/restaurants', restaurantRoutes)
 
 // Uniform JSON error + 404 handling.
 app.notFound((c) => c.json({ error: 'not_found' }, 404))

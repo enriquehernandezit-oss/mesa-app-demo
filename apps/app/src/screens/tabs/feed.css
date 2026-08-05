@@ -1,0 +1,93 @@
+/* Discovery feed — friends' rankings + vibe notes. Editorial cards on the dark
+   oxblood ground. Tokens only. */
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.feed-card {
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Who ranked it. */
+.feed-who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.feed-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--brass);
+}
+.feed-who__name {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-label);
+  color: var(--cream);
+}
+.feed-who__meta {
+  font-size: var(--text-eyebrow);
+  color: var(--dim);
+}
+.feed-verb {
+  color: var(--dim);
+  font-weight: 400;
+}
+
+/* The place — the tappable heart of the card. */
+.feed-place {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
+.feed-place__name {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: var(--cream);
+}
+.feed-place__score {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--brass-2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.feed-meta {
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  margin-top: calc(-1 * var(--space-2));
+}
+.feed-note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.35;
+  color: var(--cream-dim);
+}

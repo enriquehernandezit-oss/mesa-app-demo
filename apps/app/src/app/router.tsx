@@ -8,9 +8,11 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { RankAPlace } from '../screens/rank/RankAPlace'
+import { RestaurantProfile } from '../screens/restaurant/RestaurantProfile'
+import { DiscoverTab } from '../screens/tabs/DiscoverTab'
 import { ProfileTab } from '../screens/tabs/ProfileTab'
 import { RankingsTab } from '../screens/tabs/RankingsTab'
-import { DiscoverTab, TonightTab } from '../screens/tabs/placeholders'
+import { TonightTab } from '../screens/tabs/placeholders'
 import { UserRankings } from '../screens/user/UserRankings'
 import '../screens/tabs/tabs.css'
 
@@ -100,12 +102,18 @@ const userRoute = createRoute({
   path: '/u/$userId',
   component: UserRankings,
 })
+const restaurantRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/r/$restaurantId',
+  component: RestaurantProfile,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   tabsLayout.addChildren([discoverRoute, rankingsRoute, tonightRoute, profileRoute]),
   rankRoute,
   userRoute,
+  restaurantRoute,
 ])
 
 const router = createRouter({ routeTree })

@@ -6,6 +6,7 @@ import { ApiError, api } from '../../lib/api'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
+import '../onboarding/friends.css'
 import './moderation.css'
 
 // Another person's ranked passport — and the surface where UGC moderation is
@@ -31,6 +32,17 @@ export function UserRankings() {
       // Their content is gone now — drop caches that could still show them.
       queryClient.invalidateQueries()
       navigate({ to: '/discover' })
+    },
+  })
+
+  // Follow/unfollow. Optimistically flip the cached profile, and refresh the
+  // feed since following changes what it shows.
+  const follow = useMutation({
+    mutationFn: (next: boolean) =>
+      next ? api.post('/social/follow', { userId }) : api.del(`/social/follow/${userId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-rankings', userId] })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
     },
   })
 
@@ -67,7 +79,7 @@ export function UserRankings() {
     )
   }
 
-  const { user, rankings } = q.data
+  const { user, rankings, isFollowing, followerCount, followingCount } = q.data
   return (
     <div className="tab-shell">
       <div className="tab-body">
@@ -84,6 +96,9 @@ export function UserRankings() {
               {user.name || user.handle}
             </div>
             {user.handle && <Caption>@{user.handle}</Caption>}
+            <Caption style={{ marginTop: 'var(--space-2)' }}>
+              {followerCount} followers · {followingCount} following
+            </Caption>
           </div>
           <button
             type="button"
@@ -94,6 +109,16 @@ export function UserRankings() {
             Block
           </button>
         </div>
+
+        <button
+          type="button"
+          className={`friend-follow${isFollowing ? ' friend-follow--on' : ''}`}
+          style={{ alignSelf: 'flex-start', marginBottom: 'var(--space-5)' }}
+          onClick={() => follow.mutate(!isFollowing)}
+          disabled={follow.isPending}
+        >
+          {isFollowing ? 'Following' : 'Follow'}
+        </button>
 
         {rankings.length === 0 ? (
           <div className="tab-empty">

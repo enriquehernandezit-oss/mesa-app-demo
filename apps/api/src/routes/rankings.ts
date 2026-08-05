@@ -11,7 +11,7 @@ import { requireAuth } from '../middleware/session'
 // pairwise comparisons, never a star input. Vibe notes are the one-line "why"
 // attached to a ranking — Mesa's identity, and the app's only UGC in Phase 1.
 
-const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user } = schema
+const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user, follows } = schema
 
 // The transaction executor type, so helpers can run against either db or an open
 // transaction without an unsafe cast.
@@ -172,8 +172,23 @@ export const rankingsRoutes = new Hono<AppEnv>()
       .where(eq(rankings.userId, targetId))
       .orderBy(asc(rankings.position))
 
+    // Follow state + counts, so the passport can show a Follow button (M4).
+    const [amFollowing] = await db
+      .select({ x: follows.followerId })
+      .from(follows)
+      .where(and(eq(follows.followerId, me.id), eq(follows.followingId, targetId)))
+      .limit(1)
+    const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
+    const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
+
     const { bannedAt: _drop, ...profile } = target
-    return c.json({ user: profile, rankings: rows })
+    return c.json({
+      user: profile,
+      rankings: rows,
+      isFollowing: Boolean(amFollowing),
+      followerCount,
+      followingCount,
+    })
   })
 
   // Place a spot into my list at the position the pairwise flow chose, with an
