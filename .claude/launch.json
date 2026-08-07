@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--filter", "@mesa/app", "dev"],
+      "port": 5173,
+      "autoPort": false,
+      "url": "http://localhost:5173"
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--filter", "@mesa/api", "dev"],
+      "port": 3222
+    }
+  ]
+}
