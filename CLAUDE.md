@@ -88,7 +88,12 @@ starting the next. Do not run ahead into later milestones unprompted.
 
 ## Design
 
-Do not invent a look. The brand is fixed and shared with the pre-launch quiz.
-Read `docs/DESIGN.md` and use the exact tokens there. The real wordmark is at
-`assets/brand/mesa-wordmark-burgundy.png`; the aesthetic references are in
+Do not invent a look. Read `docs/DESIGN.md` — it is the source of truth. Mesa
+ships **two first-class themes**, Afternoon (light paper, default) and Candlelit
+(dark oxblood), plus Auto. Both resolve through the **semantic token layer** in
+`apps/app/src/styles/tokens.css` (`--bg`, `--text`, `--accent`, …). Never
+reference a raw brand color (`--ink`, `--cream`, `--brass`) or a hex/`rgba()`
+outside `tokens.css` and the four sites `docs/DESIGN.md` names under "Where color
+is allowed to live." The real wordmark is at
+`assets/brand/mesa-wordmark-burgundy.png`; aesthetic references are in
 `assets/moodboard/`.

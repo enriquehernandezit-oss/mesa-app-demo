@@ -1,7 +1,8 @@
 /*
- * Global base. Dark oxblood ground everywhere, cream text, warm grain overlay.
- * "When a screen feels like a tech dashboard, it's wrong; when it feels like the
- *  inside of a dim, warm restaurant at 9pm, it's right." — docs/DESIGN.md
+ * Global base. Themed ground via --bg (Afternoon paper / Candlelit oxblood),
+ * --text ink, and a warm grain overlay tuned per theme. All color resolves
+ * through the semantic tokens in tokens.css — never a raw brand color here.
+ * See docs/DESIGN.md ("How color works: the semantic token layer").
  */
 
 *,

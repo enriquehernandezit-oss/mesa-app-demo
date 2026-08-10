@@ -1,8 +1,10 @@
 /*
- * Mesa brand tokens — the single source of truth for color, type, and spacing.
- * Values are transcribed exactly from docs/DESIGN.md. Do NOT hand-pick colors
- * anywhere else in the app; reference these variables. The look is fixed and
- * shared with the pre-launch quiz — there must be zero visual seam.
+ * Mesa semantic tokens — the single source of truth for color, type, and
+ * spacing, per docs/DESIGN.md. Color is defined per theme: :root = Afternoon
+ * (light paper), html[data-theme="candlelit"] = the dark oxblood theme. Do NOT
+ * hand-pick colors anywhere else in the app; reference the semantic variables
+ * (--bg, --text, --accent, …), never a raw brand color or hex.
+ * (M6.2 fills in the semantic layer; this header describes the target.)
  */
 
 :root {

@@ -49,7 +49,10 @@ Build the whole shared spine before any screen exists.
   device build boots the Vite app in the native shell.
 - Load fonts (Cormorant Garamond + Plus Jakarta Sans) and apply the theme tokens
   from `docs/DESIGN.md`. Build the shared UI primitives (text styles, buttons,
-  cards, chips) against those tokens once.
+  cards, chips) against those tokens once. **(Phase 6 supersedes the single-theme
+  token instruction: the app now ships Afternoon + Candlelit through the semantic
+  token layer — see `docs/DESIGN.md`. Reference `--bg`/`--text`/`--accent`, never
+  raw brand colors.)**
 - Auth flow: sign in with **Instagram, Apple, or phone** (Apple option is not
   optional — see 4.8).
 - Contact import uses the Capacitor Contacts plugin with a proper
