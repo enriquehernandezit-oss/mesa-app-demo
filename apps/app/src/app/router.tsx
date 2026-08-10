@@ -10,6 +10,7 @@ import {
 import { TopBar } from '../components/TopBar'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
+import { MapScreen } from '../screens/map/MapScreen'
 import { RankAPlace } from '../screens/rank/RankAPlace'
 import { RestaurantProfile } from '../screens/restaurant/RestaurantProfile'
 import { DiscoverTab } from '../screens/tabs/DiscoverTab'
@@ -149,6 +150,11 @@ const leaderboardRoute = createRoute({
   path: '/leaderboard',
   component: LeaderboardScreen,
 })
+const mapRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/map',
+  component: MapScreen,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -158,6 +164,7 @@ const routeTree = rootRoute.addChildren([
   restaurantRoute,
   activityRoute,
   leaderboardRoute,
+  mapRoute,
 ])
 
 const router = createRouter({ routeTree })

@@ -68,6 +68,40 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .limit(8)
     return c.json({ restaurants: rows })
   })
+  // Map view: every spot with its coordinates and the signal from people you
+  // follow (their average score + how many ranked it). One query — the friend
+  // aggregate is a filtered left join, so restaurants no one you follow has
+  // ranked still come back (friendAvg null, friendCount 0). No loop.
+  .get('/map', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const following = db
+      .select({ id: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, me.id))
+    const spots = await db
+      .select({
+        id: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
+        neighborhood: neighborhoods.name,
+        lat: restaurants.lat,
+        lng: restaurants.lng,
+        priceTier: restaurants.priceTier,
+        friendAvg: sql<number | null>`avg(${rankings.score})::float`,
+        friendCount: sql<number>`count(${rankings.id})::int`,
+      })
+      .from(restaurants)
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .leftJoin(
+        rankings,
+        and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
+      )
+      .groupBy(restaurants.id, neighborhoods.name)
+      .orderBy(asc(restaurants.name))
+    return c.json({ spots })
+  })
   .get('/:id', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)

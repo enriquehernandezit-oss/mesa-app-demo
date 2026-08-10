@@ -12,6 +12,7 @@ import type { FeedItem, RailSpot } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
+import '../map/map.css'
 
 // The discovery feed (M4, redesigned in the viral pass): photo-forward cards,
 // infinite scroll (cursor pagination), pull-to-refresh, timestamps, cheers.
@@ -62,6 +63,9 @@ export function DiscoverTab() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <Link to="/map" className="map-pill">
+          🗺 Ver en el mapa
+        </Link>
       </div>
 
       {searching ? (

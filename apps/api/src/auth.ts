@@ -44,6 +44,10 @@ const instagramPlugin = genericOAuth({
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
+  // The app runs on a different origin than the API (Vite in dev, the web/native
+  // build in prod), so sign-in POSTs come cross-origin. Trust the same origins
+  // the CORS layer allows, or Better Auth rejects them as "Invalid origin".
+  trustedOrigins: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
   database: drizzleAdapter(db, { provider: 'pg', schema }),
 
   // Surface Mesa's server-managed profile/moderation columns on the session user

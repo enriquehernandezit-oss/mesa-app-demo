@@ -1,0 +1,183 @@
+/* The barrio map — a self-contained SVG, styled to the oxblood/brass palette. */
+
+.map-frame {
+  margin-top: var(--space-4);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(235, 228, 214, 0.08);
+}
+
+.map-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: manipulation;
+}
+
+.map-label {
+  fill: var(--cream-dim);
+  opacity: 0.35;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.map-pin {
+  cursor: pointer;
+}
+
+.map-pin__dot {
+  fill: rgba(235, 228, 214, 0.28);
+  stroke: var(--ink);
+  stroke-width: 0.6;
+  transition: fill 0.15s ease;
+}
+
+.map-pin__dot--hot {
+  fill: var(--brass-2);
+  fill-opacity: 0.82;
+  filter: drop-shadow(0 0 3.5px rgba(226, 193, 121, 0.45));
+}
+
+.map-pin:active .map-pin__dot {
+  fill: var(--cream);
+}
+
+.map-pin__halo {
+  fill: none;
+  stroke: var(--brass);
+  stroke-width: 1.4;
+  opacity: 0.9;
+}
+
+/* Selection card + scrim. */
+.map-scrim {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(15, 1, 2, 0.4);
+  z-index: 40;
+  animation: map-fade 0.16s ease;
+}
+
+.map-card {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(440px, calc(100vw - 2 * var(--space-4)));
+  z-index: 41;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: 16px;
+  background: #2c1516;
+  border: 1px solid rgba(235, 228, 214, 0.12);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6);
+  animation: map-rise 0.2s cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+
+.map-card__thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(235, 228, 214, 0.08);
+  flex: none;
+}
+
+.map-card__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.map-card__name {
+  font-family: var(--font-serif, "Cormorant Garamond"), Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--cream);
+  line-height: 1.05;
+}
+
+.map-card__meta {
+  font-size: 0.78rem;
+  color: var(--cream-dim);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-card__signal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: 5px;
+}
+
+.map-card__avg {
+  font-family: var(--font-serif, "Cormorant Garamond"), Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--brass-2);
+}
+
+.map-card__label {
+  font-size: 0.72rem;
+  color: var(--cream-dim);
+}
+
+.map-card__go {
+  flex: none;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  border-radius: 12px;
+  background: var(--brass);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+/* Discover entry pill. */
+.map-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-3);
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(235, 228, 214, 0.06);
+  border: 1px solid rgba(235, 228, 214, 0.14);
+  color: var(--cream);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@keyframes map-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes map-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

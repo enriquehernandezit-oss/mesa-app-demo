@@ -67,6 +67,19 @@ export interface RailSpot {
   friendCount?: number
 }
 
+export interface MapSpot {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  lat: number
+  lng: number
+  priceTier: number | null
+  friendAvg: number | null
+  friendCount: number
+}
+
 export interface MeStats {
   places: number
   followers: number
