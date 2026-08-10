@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { useProfile } from '../../hooks/useProfile'
-import { api } from '../../lib/api'
+import { api, apiOrigin } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { renderListCard, shareCard } from '../../lib/shareCard'
@@ -58,7 +58,8 @@ export function RankingsTab() {
         })),
         coverUrl: first ? cloudinaryUrl(first.restaurant.coverImageId, { w: 1080, h: 780 }) : null,
       })
-      await shareCard(blob, 'mesa-top.jpg', 'Mi ranking en Mesa 🥂')
+      const link = me?.profile.handle ? `${apiOrigin}/p/u/${me.profile.handle}` : apiOrigin
+      await shareCard(blob, 'mesa-top.jpg', `Mi ranking en Mesa 🥂\n${link}`)
     } finally {
       setSharing(false)
     }

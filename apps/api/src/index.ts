@@ -13,6 +13,7 @@ import { onboardingRoutes } from './routes/onboarding'
 import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
+import { sharePagesRoutes } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
 
 const app = new Hono<AppEnv>()
@@ -29,6 +30,11 @@ app.use(
 
 // Better Auth owns everything under /api/auth/* (sign-in, OAuth callbacks, OTP).
 app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
+
+// PUBLIC share pages (the growth loop's return path) — server-rendered HTML with
+// OG meta, hit by link crawlers and logged-out visitors. Mounted before the
+// session middleware so they need no cookie and never touch auth.
+app.route('/p', sharePagesRoutes)
 
 // Resolve the current user for every other route.
 app.use('*', sessionMiddleware)

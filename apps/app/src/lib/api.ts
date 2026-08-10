@@ -4,6 +4,10 @@
 // TanStack Query surfaces failures through its error channel.
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
+// The API origin, also where the public share pages (/p/*) are served. Used to
+// build the shareable link that rides along with a share card.
+export const apiOrigin = baseURL
+
 export class ApiError extends Error {
   constructor(
     public status: number,

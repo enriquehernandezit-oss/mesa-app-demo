@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
-import { api } from '../../lib/api'
+import { api, apiOrigin } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
@@ -77,7 +77,11 @@ export function RestaurantProfile() {
       note: friendsRankings.find((f) => f.note)?.note ?? null,
       coverUrl: cloudinaryUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
     })
-    await shareCard(blob, 'mesa-spot.jpg', `${restaurant.name} en Mesa 🥂`)
+    await shareCard(
+      blob,
+      'mesa-spot.jpg',
+      `${restaurant.name} en Mesa 🥂\n${apiOrigin}/p/spot/${restaurant.id}`,
+    )
   }
 
   return (
