@@ -6,6 +6,11 @@ import './styles/fonts'
 import './styles/tokens.css'
 import './styles/global.css'
 import { queryClient } from './lib/query'
+import { initTheme } from './styles/theme'
+
+// Re-sync the theme (the inline boot script already set it for first paint) and
+// wire the OS-change listener for Auto.
+initTheme()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('root element missing')

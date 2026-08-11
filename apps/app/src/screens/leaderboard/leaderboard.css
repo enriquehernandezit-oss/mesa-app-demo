@@ -12,7 +12,7 @@
   min-width: 34px;
   font-family: var(--font-serif);
   font-size: 1.5rem;
-  color: var(--brass);
+  color: var(--accent);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -27,14 +27,14 @@
   font-family: var(--font-ui);
   font-weight: 600;
   font-size: var(--text-label);
-  color: var(--cream);
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .lb-meta {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
 }
 .lb-stats {
   display: flex;
@@ -45,6 +45,6 @@
 .lb-count {
   font-family: var(--font-serif);
   font-size: 1.3rem;
-  color: var(--brass-2);
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
 }

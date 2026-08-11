@@ -4,27 +4,57 @@
  * (light paper), html[data-theme="candlelit"] = the dark oxblood theme. Do NOT
  * hand-pick colors anywhere else in the app; reference the semantic variables
  * (--bg, --text, --accent, …), never a raw brand color or hex.
- * (M6.2 fills in the semantic layer; this header describes the target.)
+ *
+ * M6.2 note: both theme blocks currently hold the SAME oxblood values, so the
+ * app renders visually identical while the whole codebase moves to semantic
+ * names. M6.3 fills in the real Afternoon (paper) palette by editing ONLY the
+ * :root color block below — the candlelit block stays as-is.
  */
 
 :root {
-  /* Color — deep oxblood grounds, cream text, brass as the single accent */
-  --ink: #210104; /* primary background */
-  --ink-2: #180b0b; /* deeper wells, tab bar base */
+  /* ── Afternoon (paper) — M6.2 placeholder values (still oxblood; M6.3 fills paper) ── */
+  --bg: #210104; /* primary ground */
+  --bg-sunk: #180b0b; /* deepest wells, tab-bar base */
   --surface: #2c1516; /* cards, sheets */
-  --surface-2: #391c1d; /* raised elements */
-  --cream: #ebe4d6; /* primary text, the wordmark */
-  --cream-dim: #dcccbb; /* secondary text */
-  --dim: #a3867a; /* muted / captions */
-  --brass: #c09050; /* accent, rank numerals, active states, hairlines */
-  --brass-2: #e2c179; /* brighter accent / highlights */
+  --surface-raised: #391c1d; /* raised elements — always lighter than --surface */
+  --text: #ebe4d6; /* primary text */
+  --text-2: #dcccbb; /* secondary text */
+  --text-muted: #a3867a; /* muted / captions */
+  --accent: #c09050; /* accent text, hairlines, active states */
+  --accent-strong: #e2c179; /* brighter/heavier accent, highlights */
+  --accent-fill: #c09050; /* solid brass fill (buttons, chips) — brass in both themes */
+  --on-accent: #210104; /* text/icon on an --accent-fill surface */
   --line: rgba(235, 228, 214, 0.1); /* hairlines / dividers */
 
-  /* Nightlife status colors — Phase 2, defined now for consistency */
+  /* Elevation & emphasis (theme-variant: warm-brown on paper in M6.3). */
+  --shadow-card: rgba(0, 0, 0, 0.5); /* drop shadow on cards/sheets */
+  --shadow-text: rgba(0, 0, 0, 0.65); /* legibility shadow for text over photos */
+  --glow-stamp: 0 0 60px rgba(192, 144, 80, 0.25); /* the ranking-stamp emphasis */
+  --glow-pin: drop-shadow(0 0 3.5px rgba(226, 193, 121, 0.45)); /* lit map pin */
+
+  /* Film-grain overlay (theme-variant). */
+  --grain-tint: rgba(0, 0, 0, 0.35);
+  --grain-blend: soft-light;
+  --grain-opacity: 0.5;
+
+  /* Nightlife status colors. */
   --status-packed: #e0865a;
   --status-good: #c09050;
   --status-building: #a98a63;
   --status-slow: #7a6258;
+
+  /* ── Theme-INVARIANT: photos carry their own dark island in both themes ── */
+  --on-photo: #ebe4d6; /* primary text over photography */
+  --on-photo-2: #dcccbb; /* secondary text over photography */
+  --on-photo-accent: #e2c179; /* accent (e.g. a score) over photography */
+  --photo-scrim-1: rgba(24, 4, 6, 0.92); /* heaviest gradient base */
+  --photo-scrim-2: rgba(24, 4, 6, 0.65);
+  --photo-scrim-3: rgba(24, 4, 6, 0.55); /* on-photo control chrome */
+  --photo-scrim-4: rgba(24, 4, 6, 0.35);
+  --photo-scrim-5: rgba(24, 4, 6, 0.2); /* faintest gradient top */
+  --hero-scrim: rgba(33, 1, 4, 0.55); /* hero photo → ground bleed */
+  --hero-scrim-2: rgba(33, 1, 4, 0.82);
+  --overlay-scrim: rgba(15, 1, 2, 0.4); /* dim behind the map card sheet */
 
   /* Type families. Cormorant is the display serif (wordmark, restaurant names,
      rank numerals); Plus Jakarta Sans is UI/body. Georgia is the serif fallback
@@ -44,7 +74,7 @@
   /* Eyebrow/label letter-spacing per DESIGN.md (~0.14–0.18em) */
   --tracking-eyebrow: 0.16em;
 
-  /* Spacing — generous negative space on dark grounds */
+  /* Spacing — generous negative space */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -64,4 +94,35 @@
   /* Safe-area insets (Capacitor / notch). Fall back to 0 in the browser. */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Candlelit (dark oxblood) — the original theme. Only color changes per theme;
+      type/spacing/motion and the invariant photo tokens are inherited from :root. ── */
+html[data-theme="candlelit"] {
+  --bg: #210104;
+  --bg-sunk: #180b0b;
+  --surface: #2c1516;
+  --surface-raised: #391c1d;
+  --text: #ebe4d6;
+  --text-2: #dcccbb;
+  --text-muted: #a3867a;
+  --accent: #c09050;
+  --accent-strong: #e2c179;
+  --accent-fill: #c09050;
+  --on-accent: #210104;
+  --line: rgba(235, 228, 214, 0.1);
+
+  --shadow-card: rgba(0, 0, 0, 0.5);
+  --shadow-text: rgba(0, 0, 0, 0.65);
+  --glow-stamp: 0 0 60px rgba(192, 144, 80, 0.25);
+  --glow-pin: drop-shadow(0 0 3.5px rgba(226, 193, 121, 0.45));
+
+  --grain-tint: rgba(0, 0, 0, 0.35);
+  --grain-blend: soft-light;
+  --grain-opacity: 0.5;
+
+  --status-packed: #e0865a;
+  --status-good: #c09050;
+  --status-building: #a98a63;
+  --status-slow: #7a6258;
 }

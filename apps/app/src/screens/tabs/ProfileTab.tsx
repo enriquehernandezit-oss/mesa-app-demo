@@ -128,7 +128,7 @@ export function ProfileTab() {
           onChange={onPickAvatar}
         />
         <Eyebrow>{p?.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--cream)' }}>
+        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--text)' }}>
           {p?.name || 'You'}
         </div>
         {p?.handle && <Caption>@{p.handle}</Caption>}

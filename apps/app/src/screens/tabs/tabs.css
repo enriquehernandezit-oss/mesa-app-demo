@@ -4,7 +4,7 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--ink);
+  background: var(--bg);
 }
 
 .tab-body {
@@ -40,7 +40,7 @@
   gap: var(--space-3);
   align-items: center;
   text-align: center;
-  color: var(--dim);
+  color: var(--text-muted);
 }
 
 /* --- Tab bar --- */
@@ -50,7 +50,7 @@
   right: 0;
   bottom: 0;
   display: flex;
-  background: var(--ink-2);
+  background: var(--bg-sunk);
   border-top: 1px solid var(--line);
   padding-bottom: var(--safe-bottom);
   z-index: 10;
@@ -62,14 +62,14 @@
   align-items: center;
   gap: 3px;
   padding: var(--space-3) 0 var(--space-4);
-  color: var(--dim);
+  color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
 .tab-link[data-status="active"] {
-  color: var(--brass);
+  color: var(--accent);
 }
 .tab-link__dot {
   width: 5px;
@@ -78,7 +78,7 @@
   background: transparent;
 }
 .tab-link[data-status="active"] .tab-link__dot {
-  background: var(--brass);
+  background: var(--accent-fill);
 }
 
 .profile-hero {
@@ -93,12 +93,12 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: var(--surface-2);
+  background: var(--surface-raised);
   border: 1px solid var(--line);
   display: grid;
   place-items: center;
   font-family: var(--font-serif);
   font-size: 2rem;
-  color: var(--brass);
+  color: var(--accent);
   margin-bottom: var(--space-2);
 }

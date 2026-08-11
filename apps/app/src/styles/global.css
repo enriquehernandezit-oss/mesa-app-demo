@@ -19,8 +19,8 @@ body,
 
 body {
   margin: 0;
-  background: var(--ink);
-  color: var(--cream);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--text-body);
   line-height: 1.5;
@@ -31,19 +31,18 @@ body {
 }
 
 /* A subtle warm grain/vignette over the whole app — film photography, not
-   product photography. Cheap (a fixed pseudo-layer), non-interactive, and it
-   keeps the flat dark grounds from reading as sterile startup UI. */
+   product photography. Cheap (a fixed pseudo-layer), non-interactive. The
+   tint/blend/opacity are themed (see --grain-*): a soft-light black vignette on
+   the dark ground, a warm multiply edge on paper. */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  /* vignette */
-  background: radial-gradient(120% 100% at 50% 0%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
-  /* faint grain via a tiled fractal-noise data URI, kept very low opacity */
-  mix-blend-mode: soft-light;
-  opacity: 0.5;
+  background: radial-gradient(120% 100% at 50% 0%, transparent 55%, var(--grain-tint) 100%);
+  mix-blend-mode: var(--grain-blend);
+  opacity: var(--grain-opacity);
 }
 
 h1,
@@ -70,12 +69,12 @@ input,
 textarea,
 select {
   font-family: inherit;
-  color: var(--cream);
+  color: var(--text);
   background: transparent;
 }
 
 ::placeholder {
-  color: var(--dim);
+  color: var(--text-muted);
 }
 
 /* Respect reduced motion — disable the app's transitions/animations. */

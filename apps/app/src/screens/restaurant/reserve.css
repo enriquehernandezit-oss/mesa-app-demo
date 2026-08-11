@@ -3,7 +3,7 @@
 .reserve {
   margin-top: var(--space-5);
   padding: var(--space-5);
-  border: 1px solid var(--brass);
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--surface);
   display: flex;
@@ -26,23 +26,23 @@
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background: transparent;
-  color: var(--cream-dim);
+  color: var(--text-2);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 600;
   text-transform: capitalize;
 }
 .reserve-chip--on {
-  background: var(--brass);
-  border-color: var(--brass);
-  color: var(--ink);
+  background: var(--accent-fill);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 .reserve-time {
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background: transparent;
-  color: var(--cream);
+  color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--text-label);
 }
@@ -66,8 +66,8 @@
   height: 120px;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--surface-2), var(--ink-2));
-  color: var(--dim);
+  background: linear-gradient(135deg, var(--surface-raised), var(--bg-sunk));
+  color: var(--text-muted);
   font-family: var(--font-serif);
   font-style: italic;
 }
@@ -84,7 +84,7 @@
   display: grid;
   place-items: center;
   background: var(--surface);
-  color: var(--dim);
+  color: var(--text-muted);
   font-size: var(--text-eyebrow);
   text-transform: uppercase;
   letter-spacing: 0.1em;

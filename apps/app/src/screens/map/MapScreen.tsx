@@ -98,7 +98,7 @@ export function MapScreen() {
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>El mapa</Title>
           {rankedByFriends > 0 && (
-            <Body style={{ color: 'var(--brass)' }}>
+            <Body style={{ color: 'var(--accent)' }}>
               {rankedByFriends} spot{rankedByFriends === 1 ? '' : 's'} tus amigos han rankeado.
             </Body>
           )}
@@ -123,8 +123,8 @@ export function MapScreen() {
               {/* faint framing rings for depth */}
               <defs>
                 <radialGradient id="mapGlow" cx="50%" cy="42%" r="60%">
-                  <stop offset="0%" stopColor="#2c1516" />
-                  <stop offset="100%" stopColor="#210104" />
+                  <stop offset="0%" className="map-glow-from" />
+                  <stop offset="100%" className="map-glow-to" />
                 </radialGradient>
               </defs>
               <rect x="0" y="0" width={VW} height={vh} rx="16" fill="url(#mapGlow)" />

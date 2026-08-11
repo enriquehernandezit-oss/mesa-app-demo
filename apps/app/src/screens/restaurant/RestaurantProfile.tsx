@@ -106,7 +106,7 @@ export function RestaurantProfile() {
           ↗
         </button>
         <div className="resto-photo__caption">
-          <Eyebrow style={{ color: 'var(--brass-2)' }}>
+          <Eyebrow style={{ color: 'var(--accent-strong)' }}>
             {restaurant.neighborhood?.name ?? 'Santo Domingo'}
           </Eyebrow>
           <h1 className="resto-name">{restaurant.name}</h1>

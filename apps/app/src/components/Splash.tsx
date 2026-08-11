@@ -9,7 +9,7 @@ export function Splash() {
         minHeight: '100dvh',
         display: 'grid',
         placeItems: 'center',
-        background: 'var(--ink)',
+        background: 'var(--bg)',
       }}
     >
       <Wordmark size={56} style={{ opacity: 0.9 }} />

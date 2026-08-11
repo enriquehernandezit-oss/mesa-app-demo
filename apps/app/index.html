@@ -3,7 +3,34 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f3efe6" />
     <title>mesa</title>
+    <!--
+      Resolve the theme synchronously, before any CSS paints, so there is no
+      flash of the wrong ground. Reads the same localStorage key as
+      styles/theme.ts; Auto follows the OS. Keep the fallbacks (#f3efe6 paper /
+      #210104 oxblood) in sync with --bg in styles/tokens.css.
+    -->
+    <script>
+      (function () {
+        try {
+          var c = localStorage.getItem('mesa.theme');
+          var r =
+            c === 'afternoon' || c === 'candlelit'
+              ? c
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'candlelit'
+                : 'afternoon';
+          var el = document.documentElement;
+          el.setAttribute('data-theme', r);
+          el.style.colorScheme = r === 'candlelit' ? 'dark' : 'light';
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute('content', r === 'candlelit' ? '#210104' : '#f3efe6');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'afternoon');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

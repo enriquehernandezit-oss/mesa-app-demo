@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   padding: calc(var(--safe-top) + var(--space-3)) var(--space-5) var(--space-3);
-  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
@@ -25,7 +25,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  color: var(--cream-dim);
+  color: var(--text-2);
   border: 1px solid var(--line);
   transition: color 0.15s ease, transform 0.15s var(--ease-spring);
 }
@@ -33,7 +33,7 @@
   transform: scale(0.9);
 }
 .topbar__btn:hover {
-  color: var(--brass);
+  color: var(--accent);
 }
 
 .topbar__badge {
@@ -44,8 +44,8 @@
   height: 17px;
   padding: 0 4px;
   border-radius: var(--radius-pill);
-  background: var(--brass);
-  color: var(--ink);
+  background: var(--accent-fill);
+  color: var(--on-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   font-weight: 700;

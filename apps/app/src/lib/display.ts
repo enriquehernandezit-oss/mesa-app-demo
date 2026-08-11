@@ -12,7 +12,7 @@ export function priceLabel(tier: number | null | undefined): string | null {
 
 // Match % color: strong matches glow brass, weak ones stay dim.
 export function matchColor(pct: number): string {
-  if (pct >= 75) return 'var(--brass-2)'
-  if (pct >= 50) return 'var(--brass)'
-  return 'var(--dim)'
+  if (pct >= 75) return 'var(--accent-strong)'
+  if (pct >= 50) return 'var(--accent)'
+  return 'var(--text-muted)'
 }

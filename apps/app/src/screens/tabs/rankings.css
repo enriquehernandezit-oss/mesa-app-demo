@@ -20,8 +20,8 @@
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-pill);
   border: none;
-  background: var(--brass);
-  color: var(--ink);
+  background: var(--accent-fill);
+  color: var(--on-accent);
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 700;
@@ -31,7 +31,7 @@
   transform: scale(0.92);
 }
 .share-pill:hover {
-  background: var(--brass-2);
+  background: var(--accent-strong);
 }
 .share-pill:disabled {
   opacity: 0.6;
@@ -57,7 +57,7 @@
 .stat__n {
   font-family: var(--font-serif);
   font-size: 1.35rem;
-  color: var(--brass-2);
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -65,7 +65,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--dim);
+  color: var(--text-muted);
 }
 
 /* Barrios breakdown. */
@@ -82,22 +82,22 @@
 .hood-row__name {
   font-family: var(--font-serif);
   font-size: 1.2rem;
-  color: var(--cream);
+  color: var(--text);
 }
 .hood-row__stats {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
 }
 .hood-bar {
   height: 5px;
   border-radius: 3px;
-  background: var(--surface-2);
+  background: var(--surface-raised);
   overflow: hidden;
 }
 .hood-bar__fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--brass), var(--brass-2));
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
 }
 
 /* Dish + tags line inside a ranking row. */
@@ -111,7 +111,7 @@
 .ranking-dish {
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
-  color: var(--brass);
+  color: var(--accent);
   font-weight: 600;
 }
 .mini-tag {
@@ -119,7 +119,7 @@
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   font-size: 10px;
-  color: var(--dim);
+  color: var(--text-muted);
   text-transform: lowercase;
 }
 
@@ -130,7 +130,7 @@
   flex: none;
   border-radius: var(--radius-sm);
   object-fit: cover;
-  background: var(--surface-2);
+  background: var(--surface-raised);
   border: 1px solid var(--line);
 }
 
@@ -148,7 +148,7 @@
   font-family: var(--font-serif);
   font-size: var(--text-rank);
   line-height: 1;
-  color: var(--brass);
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
   min-width: 1.4em;
   text-align: center;
@@ -164,11 +164,11 @@
   font-family: var(--font-serif);
   font-size: 1.4rem;
   line-height: 1.1;
-  color: var(--cream);
+  color: var(--text);
 }
 .ranking-meta {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -177,7 +177,7 @@
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.05rem;
-  color: var(--cream-dim);
+  color: var(--text-2);
   line-height: 1.35;
 }
 
@@ -185,7 +185,7 @@
 .ranking-score {
   font-family: var(--font-serif);
   font-size: 1.5rem;
-  color: var(--brass-2);
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
   line-height: 1;
   padding-top: 4px;
@@ -205,10 +205,10 @@
   font-size: var(--text-eyebrow);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--dim);
+  color: var(--text-muted);
 }
 .link-action:hover {
-  color: var(--brass);
+  color: var(--accent);
 }
 .link-action--danger:hover {
   color: var(--status-packed);
@@ -222,7 +222,7 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--surface);
-  color: var(--cream);
+  color: var(--text);
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.05rem;
@@ -230,7 +230,7 @@
   outline: none;
 }
 .note-editor:focus {
-  border-color: var(--brass);
+  border-color: var(--accent);
 }
 
 /* Floating rank-a-place button. */
@@ -242,12 +242,12 @@
   padding: 0 var(--space-5);
   border-radius: var(--radius-pill);
   border: none;
-  background: var(--brass);
-  color: var(--ink);
+  background: var(--accent-fill);
+  color: var(--on-accent);
   font-family: var(--font-ui);
   font-weight: 700;
   font-size: var(--text-label);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px var(--shadow-card);
   z-index: 20;
 }
 .fab:active {

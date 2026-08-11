@@ -23,14 +23,14 @@
 }
 .taste-card__k {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 .taste-card__v {
   font-family: var(--font-serif);
   font-size: 1.15rem;
-  color: var(--cream);
+  color: var(--text);
 }
 
 .avatar-btn {
@@ -47,7 +47,7 @@
 .avatar-btn__hint {
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -55,7 +55,7 @@
 .danger-zone {
   margin-top: var(--space-8);
   padding: var(--space-5);
-  border: 1px solid rgba(224, 134, 90, 0.35); /* status-packed, dimmed */
+  border: 1px solid color-mix(in srgb, var(--status-packed) 35%, transparent); /* status-packed, dimmed */
   border-radius: var(--radius);
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
 .danger-btn--solid {
   align-self: stretch;
   background: var(--status-packed);
-  color: var(--ink);
+  color: var(--on-accent);
   border-color: var(--status-packed);
   min-height: 48px;
 }

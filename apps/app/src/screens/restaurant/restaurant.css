@@ -2,7 +2,7 @@
 
 .resto-screen {
   min-height: 100dvh;
-  background: var(--ink);
+  background: var(--bg);
   padding-bottom: calc(var(--safe-bottom) + var(--space-7));
 }
 
@@ -12,7 +12,7 @@
   width: 100%;
   height: 44vh;
   min-height: 300px;
-  background: linear-gradient(135deg, var(--surface-2), var(--ink-2));
+  background: linear-gradient(135deg, var(--surface-raised), var(--bg-sunk));
   overflow: hidden;
 }
 .resto-photo img {
@@ -26,7 +26,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, var(--ink) 2%, rgba(33, 1, 4, 0.55) 30%, transparent 62%);
+  background: linear-gradient(to top, var(--bg) 2%, var(--hero-scrim) 30%, transparent 62%);
 }
 .resto-photo--empty {
   display: grid;
@@ -42,9 +42,9 @@
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: rgba(24, 4, 6, 0.5);
+  background: var(--photo-scrim-3);
   backdrop-filter: blur(8px);
-  color: var(--cream);
+  color: var(--text);
   font-size: 1.2rem;
   display: grid;
   place-items: center;
@@ -54,7 +54,7 @@
 .resto-share {
   left: auto;
   right: var(--space-4);
-  color: var(--brass-2);
+  color: var(--accent-strong);
 }
 
 .resto-photo__caption {
@@ -71,13 +71,13 @@
   font-family: var(--font-serif);
   font-size: clamp(2.4rem, 11vw, 3.2rem);
   line-height: 1;
-  color: var(--cream);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  text-shadow: 0 2px 16px var(--shadow-text);
 }
 .resto-cuisine {
   font-family: var(--font-ui);
   font-size: var(--text-label);
-  color: var(--cream-dim);
+  color: var(--text-2);
 }
 
 .resto-content {
@@ -99,7 +99,7 @@
   font-family: var(--font-serif);
   font-size: 2.6rem;
   line-height: 1;
-  color: var(--brass-2);
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
 }
 .friend-avg__who {
@@ -120,7 +120,7 @@
 }
 .friend-avg__label {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -128,7 +128,7 @@
 .resto-mine {
   margin-bottom: var(--space-4);
   font-size: var(--text-label);
-  color: var(--brass);
+  color: var(--accent);
 }
 .resto-mine b {
   font-family: var(--font-serif);
@@ -159,6 +159,6 @@
   flex: none;
   font-family: var(--font-serif);
   font-size: 1.5rem;
-  color: var(--brass-2);
+  color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
 }

@@ -49,7 +49,7 @@ export function LeaderboardScreen() {
         </div>
 
         {q.data?.myRank && (
-          <Body style={{ marginBottom: 'var(--space-4)', color: 'var(--brass)' }}>
+          <Body style={{ marginBottom: 'var(--space-4)', color: 'var(--accent)' }}>
             You're #{q.data.myRank} in the city.
           </Body>
         )}

@@ -93,7 +93,7 @@ export function UserRankings() {
           <div>
             <Eyebrow>{user.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
             <div
-              style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--cream)' }}
+              style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--text)' }}
             >
               {user.name || user.handle}
             </div>

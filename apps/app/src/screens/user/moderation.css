@@ -16,7 +16,7 @@
   border-radius: var(--radius-pill);
   border: 1px solid var(--line);
   background: transparent;
-  color: var(--dim);
+  color: var(--text-muted);
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
   text-transform: uppercase;
@@ -46,7 +46,7 @@
 }
 .report-done {
   font-size: var(--text-label);
-  color: var(--brass);
+  color: var(--accent);
   font-style: italic;
   font-family: var(--font-serif);
   margin-top: var(--space-2);

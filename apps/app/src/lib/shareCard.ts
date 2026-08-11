@@ -6,6 +6,10 @@
 const W = 1080
 const H = 1920
 
+// FROZEN as Candlelit (oxblood) brand — one of the four non-CSS color sites in
+// docs/DESIGN.md ("Where color is allowed to live"). This card leaves the app
+// and is viewed inside someone else's feed, so it stays the same regardless of
+// the sharer's theme. Canvas cannot resolve var(); do NOT wire it to the tokens.
 const INK = '#210104'
 const CREAM = '#ebe4d6'
 const CREAM_DIM = '#dcccbb'

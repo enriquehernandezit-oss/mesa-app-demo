@@ -139,7 +139,7 @@ export function AuthFlow() {
       )}
 
       {step === 'choose' && (
-        <Body style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--dim)' }}>
+        <Body style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           Ranking + vibe notes. No stars, ever.
         </Body>
       )}

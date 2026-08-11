@@ -89,6 +89,11 @@ function layout(opts: {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
   <style>
+    /* FROZEN as Candlelit (oxblood) brand — a public OG/share page seen by
+       logged-out strangers inside someone else's feed. Kept dark regardless of
+       any app theme so every shared Mesa link previews identically. If this is
+       ever themed, add a prefers-color-scheme block HERE in the same commit as
+       the app palette (see docs/DESIGN.md "Where color is allowed to live"). */
     :root { --ink:#210104; --cream:#ebe4d6; --cream-dim:#dcccbb; --brass:#c09050; --brass-2:#e2c179; }
     * { box-sizing: border-box; margin: 0; }
     body {

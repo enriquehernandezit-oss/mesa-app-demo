@@ -16,25 +16,25 @@
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
-  color: var(--cream);
+  color: var(--text);
   transition: border-color 0.12s ease, background 0.12s ease;
 }
 .rank-pick--on {
-  border-color: var(--brass);
-  background: var(--surface-2);
+  border-color: var(--accent);
+  background: var(--surface-raised);
 }
 .rank-pick__name {
   font-family: var(--font-serif);
   font-size: 1.25rem;
   line-height: 1.1;
-  color: var(--cream);
+  color: var(--text);
 }
 .rank-pick--on .rank-pick__name {
-  color: var(--brass-2);
+  color: var(--accent-strong);
 }
 .rank-pick__meta {
   font-size: var(--text-eyebrow);
-  color: var(--dim);
+  color: var(--text-muted);
 }
 
 /* Versus comparison — two large stacked targets with an "or" between. */
@@ -59,7 +59,7 @@
   transition: transform 0.12s ease, border-color 0.12s ease;
 }
 .versus:hover {
-  border-color: var(--brass);
+  border-color: var(--accent);
 }
 .versus:active {
   transform: scale(0.98);
@@ -68,13 +68,13 @@
   font-family: var(--font-serif);
   font-size: 1.75rem;
   line-height: 1.05;
-  color: var(--cream);
+  color: var(--text);
 }
 .compare__or {
   text-align: center;
   font-family: var(--font-serif);
   font-style: italic;
-  color: var(--brass);
+  color: var(--accent);
   font-size: 1.1rem;
 }
 
@@ -93,7 +93,7 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(to top, rgba(24, 4, 6, 0.9) 10%, rgba(24, 4, 6, 0.35) 60%);
+  background: linear-gradient(to top, var(--photo-scrim-1) 10%, var(--photo-scrim-4) 60%);
 }
 .rank-pick--photo {
   justify-content: flex-end;
@@ -101,7 +101,7 @@
 }
 .rank-pick--photo .rank-pick__name,
 .versus--photo .versus__name {
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 2px 10px var(--shadow-text);
 }
 .versus--photo {
   min-height: 170px;

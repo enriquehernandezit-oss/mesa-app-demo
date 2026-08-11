@@ -59,7 +59,7 @@ export function PullToRefresh({
             height: 22,
             borderRadius: '50%',
             border: '2px solid var(--line)',
-            borderTopColor: 'var(--brass)',
+            borderTopColor: 'var(--accent)',
             opacity: Math.min(pull / THRESHOLD, 1),
             transform: `rotate(${pull * 3}deg)`,
             animation: refreshing ? 'mesa-spin .8s linear infinite' : undefined,
