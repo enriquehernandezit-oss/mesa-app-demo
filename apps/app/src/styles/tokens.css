@@ -12,32 +12,33 @@
  */
 
 :root {
-  /* ── Afternoon (paper) — M6.2 placeholder values (still oxblood; M6.3 fills paper) ── */
-  --bg: #210104; /* primary ground */
-  --bg-sunk: #180b0b; /* deepest wells, tab-bar base */
-  --surface: #2c1516; /* cards, sheets */
-  --surface-raised: #391c1d; /* raised elements — always lighter than --surface */
-  --text: #ebe4d6; /* primary text */
-  --text-2: #dcccbb; /* secondary text */
-  --text-muted: #a3867a; /* muted / captions */
-  --accent: #c09050; /* accent text, hairlines, active states */
-  --accent-strong: #e2c179; /* brighter/heavier accent, highlights */
+  /* ── Afternoon (paper) — the light theme, and the default. Warm ivory grounds,
+        ink-brown text, aged-brass accent. Never a pure-white ground. ── */
+  --bg: #f3efe6; /* primary ground — warm ivory */
+  --bg-sunk: #e8e2d5; /* deepest wells, tab-bar base */
+  --surface: #fbf8f2; /* cards, sheets */
+  --surface-raised: #ffffff; /* raised elements — always lighter than --surface */
+  --text: #241012; /* primary text — near-black ink-brown (14.9:1 on --bg) */
+  --text-2: #4a3236; /* secondary text (9.4:1) */
+  --text-muted: #8a7167; /* muted / captions only (3.9:1) */
+  --accent: #8a5f22; /* accent text, hairlines, active states (5.4:1) */
+  --accent-strong: #6b4715; /* heavier accent, emphasis (7.6:1) — DARKER than --accent on paper */
   --accent-fill: #c09050; /* solid brass fill (buttons, chips) — brass in both themes */
-  --on-accent: #210104; /* text/icon on an --accent-fill surface */
-  --line: rgba(235, 228, 214, 0.1); /* hairlines / dividers */
+  --on-accent: #241012; /* text/icon on an --accent-fill surface */
+  --line: rgba(36, 16, 18, 0.1); /* faint dark hairline */
 
-  /* Elevation & emphasis (theme-variant: warm-brown on paper in M6.3). */
-  --shadow-card: rgba(0, 0, 0, 0.5); /* drop shadow on cards/sheets */
-  --shadow-text: rgba(0, 0, 0, 0.65); /* legibility shadow for text over photos */
-  --glow-stamp: 0 0 60px rgba(192, 144, 80, 0.25); /* the ranking-stamp emphasis */
-  --glow-pin: drop-shadow(0 0 3.5px rgba(226, 193, 121, 0.45)); /* lit map pin */
+  /* Elevation & emphasis — warm brown on paper, never black. */
+  --shadow-card: rgba(60, 40, 30, 0.14); /* soft warm drop shadow on cards/sheets */
+  --shadow-text: rgba(0, 0, 0, 0.65); /* legibility shadow BEHIND light text over photos (stays dark) */
+  --glow-stamp: 0 12px 30px -12px rgba(107, 71, 21, 0.35); /* warm drop, not a bloom, on paper */
+  --glow-pin: drop-shadow(0 1px 3px rgba(36, 16, 18, 0.3)); /* subtle pin definition on the light map */
 
-  /* Film-grain overlay (theme-variant). */
-  --grain-tint: rgba(0, 0, 0, 0.35);
-  --grain-blend: soft-light;
-  --grain-opacity: 0.5;
+  /* Film-grain overlay — a warm multiply edge (aged paper), not soft-light black. */
+  --grain-tint: rgba(120, 100, 84, 0.1);
+  --grain-blend: multiply;
+  --grain-opacity: 0.6;
 
-  /* Nightlife status colors. */
+  /* Nightlife status colors (shared across themes). */
   --status-packed: #e0865a;
   --status-good: #c09050;
   --status-building: #a98a63;
@@ -55,6 +56,11 @@
   --hero-scrim: rgba(33, 1, 4, 0.55); /* hero photo → ground bleed */
   --hero-scrim-2: rgba(33, 1, 4, 0.82);
   --overlay-scrim: rgba(15, 1, 2, 0.4); /* dim behind the map card sheet */
+
+  /* Theme-picker swatches — both grounds shown at once, whatever the active
+     theme, so they must be literal (not --bg). */
+  --swatch-afternoon: #f3efe6;
+  --swatch-candlelit: #210104;
 
   /* Type families. Cormorant is the display serif (wordmark, restaurant names,
      rank numerals); Plus Jakarta Sans is UI/body. Georgia is the serif fallback

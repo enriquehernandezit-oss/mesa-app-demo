@@ -11,11 +11,14 @@ const config: CapacitorConfig = {
   // Vite's production output. `cap sync` copies this into the native shells.
   webDir: 'dist',
   ios: {
-    // Cream text on oxblood — no white flash before the web layer paints.
-    backgroundColor: '#210104',
+    // Afternoon (paper) is the default theme — match its --bg so there's no
+    // flash before the web layer paints. A Candlelit user gets a sub-100ms light
+    // flash on cold start; that's an accepted trade-off (per-user needs native
+    // code). Keep in sync with --bg in src/styles/tokens.css and index.html.
+    backgroundColor: '#f3efe6',
   },
   android: {
-    backgroundColor: '#210104',
+    backgroundColor: '#f3efe6',
   },
 }
 

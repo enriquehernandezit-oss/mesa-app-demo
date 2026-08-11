@@ -313,6 +313,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Text over photography stays light in BOTH themes — the photo carries its own
+   dark scrim, so paper's dark --text would vanish here. These overrides are
+   no-ops in Candlelit (the on-photo values equal the dark palette). */
+.rail-card,
+.feed-caption {
+  --text: var(--on-photo);
+  --text-2: var(--on-photo-2);
+  --accent-strong: var(--on-photo-accent);
+}
+
 /* Below the photo — meta + the vibe note. */
 .feed-body {
   padding: var(--space-3) var(--space-4) var(--space-5);

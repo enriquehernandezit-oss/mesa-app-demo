@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { Body, Button, Caption, Eyebrow } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { ThemePicker } from '../../components/ui/ThemePicker'
 import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
 import { signOut } from '../../lib/auth-client'
@@ -185,6 +186,12 @@ export function ProfileTab() {
           </div>
         </div>
       )}
+
+      {/* Appearance — temporary home; M6.6 moves this into Settings. */}
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <Eyebrow style={{ marginBottom: 'var(--space-3)' }}>Appearance</Eyebrow>
+        <ThemePicker />
+      </div>
 
       <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
         <Button variant="secondary" onClick={invite}>

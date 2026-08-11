@@ -86,6 +86,10 @@
   background-position: center;
   overflow: hidden;
   isolation: isolate;
+  /* Light text over the photo in both themes (no-op in Candlelit). */
+  --text: var(--on-photo);
+  --text-2: var(--on-photo-2);
+  --accent-strong: var(--on-photo-accent);
 }
 .rank-pick--photo::before,
 .versus--photo::before {
