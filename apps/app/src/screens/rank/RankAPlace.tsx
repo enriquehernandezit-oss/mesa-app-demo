@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { Body, Button, Caption, Chip, Eyebrow, Title } from '../../components/ui'
+import { Body, Button, Caption, Chip, ChipRail, Eyebrow, Title } from '../../components/ui'
+import { Characteristics } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
+import { displayScore, priceLabel, scoreForPosition } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import {
   type Sentiment,
@@ -26,6 +28,7 @@ type Item = {
   cuisine: string | null
   coverImageId?: string | null
   neighborhood: string | null
+  priceTier?: number | null
 }
 
 export function RankAPlace() {
@@ -43,8 +46,11 @@ export function RankAPlace() {
   })
 
   const [pickedId, setPickedId] = useState<string | null>(search.restaurant ?? null)
+  const [pickQuery, setPickQuery] = useState('')
+  const [priceFilter, setPriceFilter] = useState<number | null>(null)
   const [sentiment, setSentiment] = useState<Sentiment | null>(null)
   const [position, setPosition] = useState<number | null>(null)
+  const [revealed, setRevealed] = useState(false)
   const [note, setNote] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [dish, setDish] = useState('')
@@ -58,6 +64,7 @@ export function RankAPlace() {
         cuisine: r.restaurant.cuisine,
         coverImageId: r.restaurant.coverImageId,
         neighborhood: r.neighborhood,
+        priceTier: r.restaurant.priceTier,
       })),
     [mine.data],
   )
@@ -110,35 +117,150 @@ export function RankAPlace() {
     )
   }
 
-  // Step: pick a place (skipped when arriving with a preselected restaurant).
+  // Step: find the place — a search field + price filters over full rows
+  // (skipped when arriving with a preselected restaurant).
   if (!picked) {
+    const q = pickQuery.trim().toLowerCase()
+    const results = candList.filter((r) => {
+      if (priceFilter && r.priceTier !== priceFilter) return false
+      if (!q) return true
+      return (
+        r.name.toLowerCase().includes(q) ||
+        (r.cuisine ?? '').toLowerCase().includes(q) ||
+        (r.neighborhood ?? '').toLowerCase().includes(q)
+      )
+    })
     return (
       <div className="screen">
         <BackBar onBack={() => navigate({ to: '/rankings' })} />
         <div className="stack stack--tight" style={{ marginTop: 'var(--space-4)' }}>
           <Eyebrow>Rank a place</Eyebrow>
-          <Title>Which spot?</Title>
-          <Body>Pick somewhere you've been. You'll place it next.</Body>
+          <Title>Find the place</Title>
         </div>
-        <div className="rank-grid" style={{ marginTop: 'var(--space-5)' }}>
-          {candList.length === 0 && <Body>You've ranked everything on Mesa. 👏</Body>}
-          {candList.map((r) => (
-            <PickCard key={r.id} item={r} onClick={() => setPickedId(r.id)} />
+        <input
+          className="field"
+          style={{ marginTop: 'var(--space-4)' }}
+          type="search"
+          placeholder="Search a spot you've been…"
+          value={pickQuery}
+          onChange={(e) => setPickQuery(e.target.value)}
+        />
+        <ChipRail style={{ marginTop: 'var(--space-3)' }}>
+          {[1, 2, 3, 4].map((pt) => (
+            <Chip
+              key={pt}
+              size="sm"
+              state={priceFilter === pt ? 'selected' : 'default'}
+              onClick={() => setPriceFilter(priceFilter === pt ? null : pt)}
+            >
+              {'$'.repeat(pt)}
+            </Chip>
           ))}
+        </ChipRail>
+        <div className="rank-results" style={{ marginTop: 'var(--space-4)' }}>
+          {candList.length === 0 ? (
+            <Body>You've ranked everything on Mesa. 👏</Body>
+          ) : results.length === 0 ? (
+            <Body>Nothing matches. Try another name.</Body>
+          ) : (
+            results.map((r) => {
+              const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  className="rank-row"
+                  onClick={() => setPickedId(r.id)}
+                >
+                  {thumb ? (
+                    <img className="rank-row__thumb" src={thumb} alt="" loading="lazy" />
+                  ) : (
+                    <div className="rank-row__thumb" />
+                  )}
+                  <div className="rank-row__main">
+                    <div className="rank-row__name">{r.name}</div>
+                    <Characteristics
+                      priceTier={r.priceTier}
+                      cuisine={r.cuisine}
+                      neighborhood={r.neighborhood}
+                    />
+                  </div>
+                  <span className="rank-row__badge">not ranked</span>
+                </button>
+              )
+            })
+          )}
         </div>
       </div>
     )
   }
 
-  // Step: note + tags + dish (reached once the position is settled).
-  if (position !== null) {
+  // Step: the score reveal — where it landed on your list, with its neighbors.
+  if (position !== null && !revealed) {
+    const ordered = [...(mine.data?.rankings ?? [])].sort((a, b) => a.position - b.position)
+    const total = ordered.length + 1
+    const score = scoreForPosition(position - 1, total)
+    const meta = [priceLabel(picked.priceTier), picked.cuisine, picked.neighborhood]
+      .filter(Boolean)
+      .join(' · ')
+    // The three rows around the landing spot, rescored at the new list length.
+    const around: { pos: number; name: string; score: number; isNew: boolean }[] = []
+    for (const pos of [position - 1, position, position + 1]) {
+      if (pos < 1 || pos > total) continue
+      if (pos === position) {
+        around.push({ pos, name: picked.name, score, isNew: true })
+      } else {
+        const r = ordered[pos < position ? pos - 1 : pos - 2]
+        if (r)
+          around.push({
+            pos,
+            name: r.restaurant.name,
+            score: scoreForPosition(pos - 1, total),
+            isNew: false,
+          })
+      }
+    }
     return (
       <div className="screen">
         <BackBar onBack={() => setPosition(null)} />
+        <div className="rank-reveal">
+          <Eyebrow>Your score</Eyebrow>
+          <div className="rank-reveal__score">{displayScore(score)}</div>
+          <Title style={{ marginTop: 'var(--space-1)' }}>{picked.name}</Title>
+          {meta && <Caption>{meta}</Caption>}
+          <Chip size="sm" state="selected" style={{ marginTop: 'var(--space-3)' }}>
+            #{position} of {total} on your list
+          </Chip>
+        </div>
+        <div className="rank-neighbors">
+          {around.map((n) => (
+            <div key={n.pos} className={`rank-neighbor${n.isNew ? ' rank-neighbor--new' : ''}`}>
+              <span className="rank-neighbor__pos">{n.pos}</span>
+              <span className="rank-neighbor__name">{n.name}</span>
+              <span className="rank-neighbor__score">{displayScore(n.score)}</span>
+            </div>
+          ))}
+        </div>
+        <div className="spacer" />
+        <Body style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          Your answer moved {picked.name}, not the place's rating.
+        </Body>
+        <Button onClick={() => setRevealed(true)}>Add a note</Button>
+      </div>
+    )
+  }
+
+  // Step: note + tags + dish (reached once the score is revealed).
+  if (position !== null) {
+    return (
+      <div className="screen">
+        <BackBar onBack={() => setRevealed(false)} />
         <div className="stack stack--tight" style={{ marginTop: 'var(--space-4)' }}>
-          <Eyebrow>Placed #{position}</Eyebrow>
-          <Title>{picked.name}</Title>
-          <Body>Add the vibe — one line on why. Optional, but it's the point.</Body>
+          <Eyebrow>
+            #{position} · {picked.name}
+          </Eyebrow>
+          <Title>Add a note</Title>
+          <Body>One line on why. Optional, but it's the point.</Body>
         </div>
         <textarea
           className="note-editor"
@@ -148,7 +270,7 @@ export function RankAPlace() {
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <Eyebrow style={{ marginTop: 'var(--space-4)' }}>Tags</Eyebrow>
+        <Eyebrow style={{ marginTop: 'var(--space-4)' }}>Occasion</Eyebrow>
         <div className="tag-row">
           {RANK_TAGS.map((t) => {
             const on = tags.includes(t)
@@ -179,7 +301,7 @@ export function RankAPlace() {
         />
         <div className="spacer" />
         <Button disabled={save.isPending} onClick={() => save.mutate(position)}>
-          {save.isPending ? 'Saving…' : 'Save ranking'}
+          {save.isPending ? 'Posting…' : 'Post ranking'}
         </Button>
       </div>
     )
@@ -247,23 +369,6 @@ const RANK_TAGS = [
   'vinos',
   'hasta tarde',
 ]
-
-function PickCard({ item, onClick }: { item: Item; onClick: () => void }) {
-  const cover = cloudinaryUrl(item.coverImageId, { w: 400, h: 300 })
-  return (
-    <button
-      type="button"
-      className="rank-pick rank-pick--photo"
-      style={cover ? { backgroundImage: `url(${cover})` } : undefined}
-      onClick={onClick}
-    >
-      <span className="rank-pick__name">{item.name}</span>
-      <span className="rank-pick__meta">
-        {[item.cuisine, item.neighborhood].filter(Boolean).join(' · ')}
-      </span>
-    </button>
-  )
-}
 
 function PlaceStep({
   existing,

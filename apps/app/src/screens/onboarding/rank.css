@@ -117,6 +117,117 @@
   transform: scale(0.96);
 }
 
+/* --- Find-the-place rows (rank-a-place B1) — thumb · name+meta · badge --- */
+.rank-results {
+  display: flex;
+  flex-direction: column;
+}
+.rank-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  transition: opacity 0.12s ease;
+}
+.rank-row:active {
+  opacity: 0.6;
+}
+.rank-row__thumb {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+}
+.rank-row__main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rank-row__name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  line-height: 1.1;
+  color: var(--text);
+}
+.rank-row__badge {
+  flex: none;
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  color: var(--text-muted);
+}
+
+/* --- The score reveal (rank-a-place B3) --- */
+.rank-reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: var(--space-6);
+}
+.rank-reveal__score {
+  font-family: var(--font-serif);
+  font-size: 4.5rem;
+  line-height: 1;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+.rank-neighbors {
+  margin-top: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.rank-neighbor {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+.rank-neighbor:last-child {
+  border-bottom: 0;
+}
+.rank-neighbor--new {
+  background: var(--surface-raised);
+}
+.rank-neighbor__pos {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.rank-neighbor--new .rank-neighbor__pos {
+  color: var(--accent-strong);
+}
+.rank-neighbor__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.rank-neighbor--new .rank-neighbor__name {
+  font-weight: 600;
+}
+.rank-neighbor__score {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Each comparison round slides in. */
 .compare--battle {
   animation: battle-in 0.35s var(--ease-spring) both;

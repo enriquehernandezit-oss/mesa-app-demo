@@ -120,6 +120,7 @@ export const rankingsRoutes = new Hono<AppEnv>()
         cuisine: restaurants.cuisine,
         coverImageId: restaurants.coverImageId,
         neighborhood: neighborhoods.name,
+        priceTier: restaurants.priceTier,
       })
       .from(restaurants)
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
