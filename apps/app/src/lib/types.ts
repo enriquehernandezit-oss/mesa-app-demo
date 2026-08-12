@@ -40,6 +40,7 @@ export interface RankedRestaurant {
   name: string
   cuisine: string | null
   coverImageId?: string | null
+  priceTier?: number | null
 }
 
 // A row in a ranked list (mine or someone else's).

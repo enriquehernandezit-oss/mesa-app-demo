@@ -50,6 +50,7 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
         name: restaurants.name,
         cuisine: restaurants.cuisine,
         coverImageId: restaurants.coverImageId,
+        priceTier: restaurants.priceTier,
       },
       neighborhood: neighborhoods.name,
       note: vibeNotes.body,

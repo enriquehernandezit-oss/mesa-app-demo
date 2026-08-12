@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PullToRefresh } from '../../components/PullToRefresh'
 import { Body, ErrorState, Eyebrow, SerifItalic, Skeleton, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { Characteristics } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
@@ -263,9 +264,11 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
 
       <div className="feed-body">
         <div className="feed-body__row">
-          <div className="feed-meta">
-            {[item.restaurant.cuisine, item.neighborhood].filter(Boolean).join(' · ')}
-          </div>
+          <Characteristics
+            priceTier={item.restaurant.priceTier}
+            cuisine={item.restaurant.cuisine}
+            neighborhood={item.neighborhood}
+          />
           <CheersButton
             rankingId={item.rankingId}
             count={item.cheersCount ?? 0}
