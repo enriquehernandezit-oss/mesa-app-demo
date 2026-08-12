@@ -135,6 +135,7 @@ export function ExploreScreen() {
                     size="sm"
                     score={r.friendAvg}
                     attribution={{ kind: 'friends', count: r.friendCount }}
+                    caption={r.friendCount === 1 ? 'friend' : 'friends'}
                   />
                 )}
               </Link>
