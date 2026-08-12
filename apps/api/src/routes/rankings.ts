@@ -85,6 +85,7 @@ export const rankingsRoutes = new Hono<AppEnv>()
           name: restaurants.name,
           cuisine: restaurants.cuisine,
           coverImageId: restaurants.coverImageId,
+          priceTier: restaurants.priceTier,
         },
         neighborhood: neighborhoods.name,
         note: vibeNotes.body,

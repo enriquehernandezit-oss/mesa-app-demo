@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Characteristics } from '../../components/ui/patterns'
 import { useProfile } from '../../hooks/useProfile'
 import { api, apiOrigin } from '../../lib/api'
 import { displayScore } from '../../lib/display'
@@ -235,9 +236,11 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
       )}
       <div className="ranking-main">
         <div className="ranking-name">{ranking.restaurant.name}</div>
-        <div className="ranking-meta">
-          {[ranking.restaurant.cuisine, ranking.neighborhood].filter(Boolean).join(' · ')}
-        </div>
+        <Characteristics
+          priceTier={ranking.restaurant.priceTier}
+          cuisine={ranking.restaurant.cuisine}
+          neighborhood={ranking.neighborhood}
+        />
 
         {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
           <div className="ranking-extras">
@@ -316,9 +319,11 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
     <div className="saved-row">
       <div className="ranking-main">
         <div className="ranking-name">{saved.restaurant.name}</div>
-        <div className="ranking-meta">
-          {[saved.restaurant.cuisine, saved.neighborhood].filter(Boolean).join(' · ')}
-        </div>
+        <Characteristics
+          priceTier={saved.restaurant.priceTier}
+          cuisine={saved.restaurant.cuisine}
+          neighborhood={saved.neighborhood}
+        />
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flex: 'none' }}>
         <Button

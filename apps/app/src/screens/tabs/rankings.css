@@ -233,27 +233,6 @@
   border-color: var(--accent);
 }
 
-/* Floating rank-a-place button. */
-.fab {
-  position: fixed;
-  right: var(--space-5);
-  bottom: calc(72px + var(--safe-bottom) + var(--space-4));
-  height: 52px;
-  padding: 0 var(--space-5);
-  border-radius: var(--radius-pill);
-  border: none;
-  background: var(--accent-fill);
-  color: var(--on-accent);
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: var(--text-label);
-  box-shadow: 0 8px 24px var(--shadow-card);
-  z-index: 20;
-}
-.fab:active {
-  transform: scale(0.97);
-}
-
 /* Saved (want-to-try) rows. */
 .saved-row {
   display: flex;

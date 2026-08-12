@@ -18,7 +18,12 @@ export const savedRoutes = new Hono<AppEnv>()
     if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .select({
-        restaurant: { id: restaurants.id, name: restaurants.name, cuisine: restaurants.cuisine },
+        restaurant: {
+          id: restaurants.id,
+          name: restaurants.name,
+          cuisine: restaurants.cuisine,
+          priceTier: restaurants.priceTier,
+        },
         neighborhood: neighborhoods.name,
         savedAt: savedPlaces.createdAt,
       })
