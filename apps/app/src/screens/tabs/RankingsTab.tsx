@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { useProfile } from '../../hooks/useProfile'
@@ -152,10 +152,6 @@ export function RankingsTab() {
             <Body>Places you want to try will collect here.</Body>
           </div>
         ))}
-
-      <Link to="/rank" className="fab">
-        + Rank a place
-      </Link>
     </div>
   )
 }

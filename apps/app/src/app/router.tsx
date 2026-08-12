@@ -9,10 +9,12 @@ import {
 } from '@tanstack/react-router'
 import { TopBar } from '../components/TopBar'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
+import { ExploreScreen } from '../screens/explore/ExploreScreen'
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
 import { MapScreen } from '../screens/map/MapScreen'
 import { RankAPlace } from '../screens/rank/RankAPlace'
 import { RestaurantProfile } from '../screens/restaurant/RestaurantProfile'
+import { SettingsScreen } from '../screens/settings/SettingsScreen'
 import { DiscoverTab } from '../screens/tabs/DiscoverTab'
 import { ProfileTab } from '../screens/tabs/ProfileTab'
 import { RankingsTab } from '../screens/tabs/RankingsTab'
@@ -45,30 +47,53 @@ function Icon({ d }: { d: string }) {
 }
 
 // Minimal line icons, brass when active: compass / laurel list / martini / person.
+// A center "+" FAB (rank a place) sits between the two pairs — the 5-slot bar.
 const TABS = [
   {
     to: '/discover',
-    label: 'Discover',
+    label: 'Feed',
     d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3.5-12.5-2 5-5 2 2-5 5-2Z',
   },
   { to: '/rankings', label: 'Rankings', d: 'M8 6h13M8 12h13M8 18h13M4 6h.01M4 12h.01M4 18h.01' },
   { to: '/tonight', label: 'Tonight', d: 'M5 3h14l-7 8v7m0 0H8m4 0h4M5 3l7 8M19 3l-7 8' },
   {
     to: '/profile',
-    label: 'Profile',
+    label: 'You',
     d: 'M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z',
   },
 ] as const
 
+function TabLink({ to, label, d }: (typeof TABS)[number]) {
+  return (
+    <Link to={to} className="tab-link">
+      <Icon d={d} />
+      {label}
+    </Link>
+  )
+}
+
 function TabBar() {
   return (
     <nav className="tab-bar">
-      {TABS.map((t) => (
-        <Link key={t.to} to={t.to} className="tab-link">
-          <Icon d={t.d} />
-          {t.label}
-        </Link>
-      ))}
+      <TabLink {...TABS[0]} />
+      <TabLink {...TABS[1]} />
+      <Link to="/rank" className="tab-fab" aria-label="Rank a place">
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          aria-hidden
+          role="presentation"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </Link>
+      <TabLink {...TABS[2]} />
+      <TabLink {...TABS[3]} />
     </nav>
   )
 }
@@ -155,6 +180,16 @@ const mapRoute = createRoute({
   path: '/map',
   component: MapScreen,
 })
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsScreen,
+})
+const exploreRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/explore',
+  component: ExploreScreen,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -165,6 +200,8 @@ const routeTree = rootRoute.addChildren([
   activityRoute,
   leaderboardRoute,
   mapRoute,
+  settingsRoute,
+  exploreRoute,
 ])
 
 const router = createRouter({ routeTree })

@@ -1,0 +1,70 @@
+/* Settings — sectioned list of appearance, data, and account controls. */
+
+.settings-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-title);
+  color: var(--text);
+}
+
+.settings-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  margin-bottom: var(--space-5);
+}
+.settings-id__name {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.settings-eyebrow {
+  margin: var(--space-5) 0 var(--space-3);
+}
+
+.settings-group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-4);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  text-align: left;
+  text-decoration: none;
+}
+.settings-group > .settings-row:last-child {
+  border-bottom: 0;
+}
+.settings-row--btn,
+.settings-row--link {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.settings-row--btn:hover,
+.settings-row--link:hover {
+  background: var(--surface-raised);
+}
+.settings-row--accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+.settings-row__meta {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}

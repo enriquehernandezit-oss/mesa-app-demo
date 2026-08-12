@@ -71,6 +71,25 @@
 .tab-link[data-status="active"] {
   color: var(--accent);
 }
+
+/* Center "+" FAB — rank a place, raised above the bar. */
+.tab-fab {
+  flex: none;
+  align-self: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 var(--space-2);
+  transform: translateY(-14px);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: 0 8px 20px -6px var(--shadow-card);
+}
+.tab-fab:active {
+  transform: translateY(-14px) scale(0.94);
+}
 .tab-link__dot {
   width: 5px;
   height: 5px;

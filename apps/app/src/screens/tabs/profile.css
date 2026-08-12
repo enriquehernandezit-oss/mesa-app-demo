@@ -1,5 +1,12 @@
 /* Profile danger zone (account deletion) + avatar upload. Tokens only. */
 
+/* Settings entry (gear), top-right of the profile. */
+.profile-settings-row {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
 /* Taste Profile card. */
 .taste-card {
   padding: var(--space-4);

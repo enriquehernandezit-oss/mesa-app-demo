@@ -14,11 +14,38 @@ const { neighborhoods } = schema
 
 export const restaurantRoutes = new Hono<AppEnv>()
   .use(requireAuth)
-  // Search — the only way to find a spot by name/cuisine/neighborhood. One query.
+  // Explore/search — find a spot by name/cuisine/neighborhood, optionally
+  // filtered by neighborhood slug + price tier and sorted by friends' score.
+  // Each row carries the signal from people you follow (avg + count). One query.
   .get('/', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
-    if (q.length < 2) return c.json({ restaurants: [] })
-    const pattern = `%${q}%`
+    const hood = (c.req.query('neighborhood') ?? '').trim()
+    const price = Number(c.req.query('price')) || null
+    const sort = c.req.query('sort') === 'score' ? 'score' : 'name'
+    // Nothing to do without a query or a filter (avoids dumping the whole table).
+    if (q.length < 2 && !hood && !price) return c.json({ restaurants: [] })
+
+    const following = db
+      .select({ id: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, me.id))
+
+    const conds = []
+    if (q.length >= 2) {
+      const pattern = `%${q}%`
+      conds.push(
+        or(
+          ilike(restaurants.name, pattern),
+          ilike(restaurants.cuisine, pattern),
+          ilike(neighborhoods.name, pattern),
+        ),
+      )
+    }
+    if (hood) conds.push(eq(neighborhoods.slug, hood))
+    if (price) conds.push(eq(restaurants.priceTier, price))
+
     const rows = await db
       .select({
         id: restaurants.id,
@@ -26,18 +53,22 @@ export const restaurantRoutes = new Hono<AppEnv>()
         cuisine: restaurants.cuisine,
         coverImageId: restaurants.coverImageId,
         neighborhood: neighborhoods.name,
+        priceTier: restaurants.priceTier,
+        friendAvg: sql<number | null>`avg(${rankings.score})::float`,
+        friendCount: sql<number>`count(${rankings.id})::int`,
       })
       .from(restaurants)
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .where(
-        or(
-          ilike(restaurants.name, pattern),
-          ilike(restaurants.cuisine, pattern),
-          ilike(neighborhoods.name, pattern),
-        ),
+      .leftJoin(
+        rankings,
+        and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
       )
-      .orderBy(asc(restaurants.name))
-      .limit(25)
+      .where(and(...conds))
+      .groupBy(restaurants.id, neighborhoods.name)
+      .orderBy(
+        sort === 'score' ? sql`avg(${rankings.score}) desc nulls last` : asc(restaurants.name),
+      )
+      .limit(30)
     return c.json({ restaurants: rows })
   })
   // Trending: most-cheered places of the last two weeks — the Discover rail.

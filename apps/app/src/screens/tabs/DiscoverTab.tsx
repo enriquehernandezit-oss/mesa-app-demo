@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { PullToRefresh } from '../../components/PullToRefresh'
 import { Body, ErrorState, Eyebrow, SerifItalic, Skeleton, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
@@ -25,9 +25,6 @@ interface FeedPage {
 }
 
 export function DiscoverTab() {
-  const [query, setQuery] = useState('')
-  const searching = query.trim().length >= 2
-
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
     queryFn: ({ pageParam }) =>
@@ -57,21 +54,15 @@ export function DiscoverTab() {
       <div className="tab-header">
         <Eyebrow>Discover</Eyebrow>
         <Title>Where your friends eat</Title>
-        <input
-          className="search-field"
-          type="search"
-          placeholder="Search spots, cuisines, neighborhoods…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
+        <Link to="/explore" className="search-field search-field--link">
+          Search a place, dish, or member…
+        </Link>
         <Link to="/map" className="map-pill">
           🗺 Ver en el mapa
         </Link>
       </div>
 
-      {searching ? (
-        <SearchResults query={query.trim()} />
-      ) : feed.isPending ? (
+      {feed.isPending ? (
         <FeedSkeleton />
       ) : feed.isError ? (
         <ErrorState>Couldn't load the feed. Try again in a moment.</ErrorState>
@@ -154,61 +145,6 @@ function SpotRail({
         })}
       </div>
     </section>
-  )
-}
-
-interface SearchHit {
-  id: string
-  name: string
-  cuisine: string | null
-  coverImageId: string | null
-  neighborhood: string | null
-}
-
-function SearchResults({ query }: { query: string }) {
-  const q = useQuery({
-    queryKey: ['search', query],
-    queryFn: () =>
-      api.get<{ restaurants: SearchHit[] }>(`/restaurants?q=${encodeURIComponent(query)}`),
-  })
-  if (q.isPending) return <Body>Searching…</Body>
-  const results = q.data?.restaurants ?? []
-  if (results.length === 0) {
-    return (
-      <div className="tab-empty">
-        <SerifItalic style={{ fontSize: '1.15rem' }}>Nothing matches "{query}".</SerifItalic>
-      </div>
-    )
-  }
-  return (
-    <div className="search-results">
-      {results.map((r) => {
-        const cover = cloudinaryUrl(r.coverImageId, { w: 200, h: 200 })
-        return (
-          <Link
-            key={r.id}
-            to="/r/$restaurantId"
-            params={{ restaurantId: r.id }}
-            className="search-row"
-          >
-            {cover ? (
-              <img className="search-thumb" src={cover} alt="" />
-            ) : (
-              <div className="search-thumb" />
-            )}
-            <div className="ranking-main">
-              <div className="ranking-name" style={{ fontSize: '1.25rem' }}>
-                {r.name}
-              </div>
-              <div className="ranking-meta">
-                {[r.cuisine, r.neighborhood].filter(Boolean).join(' · ')}
-              </div>
-            </div>
-            <span className="link-action">→</span>
-          </Link>
-        )
-      })}
-    </div>
   )
 }
 

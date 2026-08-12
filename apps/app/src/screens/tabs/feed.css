@@ -187,6 +187,13 @@
 .search-field:focus {
   border-color: var(--accent);
 }
+/* The Discover search box is a link into /explore, styled like the field. */
+.search-field--link {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  text-decoration: none;
+}
 .search-results {
   display: flex;
   flex-direction: column;

@@ -68,6 +68,17 @@ export interface RailSpot {
   friendCount?: number
 }
 
+export interface ExploreHit {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  priceTier: number | null
+  friendAvg: number | null
+  friendCount: number
+}
+
 export interface MapSpot {
   id: string
   name: string
