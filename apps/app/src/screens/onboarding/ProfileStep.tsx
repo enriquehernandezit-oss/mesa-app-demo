@@ -20,18 +20,22 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
     staleTime: Number.POSITIVE_INFINITY, // reference data
   })
 
+  // Instagram username — stored without the "@" (it's a display prefix). We let
+  // the user type "@" for familiarity, then strip it.
+  const igUser = handle.trim().replace(/@/g, '').toLowerCase()
+
   const save = useMutation({
     mutationFn: () =>
       api.patch('/me/profile', {
         name: name.trim(),
-        handle: handle.trim().toLowerCase(),
+        handle: igUser,
         neighborhoodSlug,
         acceptEula: true,
       }),
     onSuccess: onNext,
   })
 
-  const handleValid = /^[a-z0-9_.]{2,30}$/.test(handle.trim().toLowerCase())
+  const handleValid = /^[a-z0-9_.]{2,30}$/.test(igUser)
   const canSubmit = name.trim().length > 0 && handleValid && neighborhoodSlug !== '' && accepted
 
   const errorText =
@@ -60,14 +64,15 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Handle</Eyebrow>
+        <Eyebrow>Instagram</Eyebrow>
         <input
           className="field"
-          placeholder="@yourhandle"
+          placeholder="@yourusername"
           autoCapitalize="none"
           autoCorrect="off"
+          inputMode="text"
           value={handle}
-          onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_.]/g, ''))}
+          onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_.@]/g, ''))}
         />
         {handle.length > 0 && !handleValid && (
           <div className="error-text">2–30 characters: letters, numbers, _ or .</div>
