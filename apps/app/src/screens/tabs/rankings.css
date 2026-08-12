@@ -58,7 +58,9 @@
   font-family: var(--font-serif);
   font-size: 1.35rem;
   color: var(--accent-strong);
-  font-variant-numeric: tabular-nums;
+  /* Proportional, not tabular: Cormorant's tabular figures box a leading "1"
+     wide enough to read as "1 8". Stat cells don't need column alignment. */
+  font-variant-numeric: proportional-nums;
   line-height: 1;
 }
 .stat__l {
