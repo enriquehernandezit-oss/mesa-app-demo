@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { Body, Button, Caption, Eyebrow, Title } from '../../components/ui'
+import { Body, Button, Caption, Chip, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
 import {
@@ -153,10 +153,10 @@ export function RankAPlace() {
           {RANK_TAGS.map((t) => {
             const on = tags.includes(t)
             return (
-              <button
-                type="button"
+              <Chip
                 key={t}
-                className={`tag-chip${on ? ' tag-chip--on' : ''}`}
+                size="sm"
+                state={on ? 'selected' : 'default'}
                 onClick={() =>
                   setTags((cur) =>
                     on ? cur.filter((x) => x !== t) : cur.length < 3 ? [...cur, t] : cur,
@@ -164,7 +164,7 @@ export function RankAPlace() {
                 }
               >
                 {t}
-              </button>
+              </Chip>
             )
           })}
         </div>

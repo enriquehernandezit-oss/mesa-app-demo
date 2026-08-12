@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Caption, Eyebrow } from '../../components/ui'
+import { Button, Caption, Chip, Eyebrow } from '../../components/ui'
 import { useProfile } from '../../hooks/useProfile'
 import { reserveMessage, telUrl, whatsappUrl } from '../../lib/reserve'
 import './reserve.css'
@@ -57,28 +57,28 @@ export function ReserveSheet({
       <Caption>Party</Caption>
       <div className="reserve__chips">
         {PARTIES.map((n) => (
-          <button
-            type="button"
+          <Chip
             key={n}
-            className={`reserve-chip${party === n ? ' reserve-chip--on' : ''}`}
+            size="sm"
+            state={party === n ? 'selected' : 'default'}
             onClick={() => setParty(n)}
           >
             {n === 8 ? '6+' : n}
-          </button>
+          </Chip>
         ))}
       </div>
 
       <Caption>When</Caption>
       <div className="reserve__chips">
         {WHENS.map((w) => (
-          <button
-            type="button"
+          <Chip
             key={w}
-            className={`reserve-chip${when === w ? ' reserve-chip--on' : ''}`}
+            size="sm"
+            state={when === w ? 'selected' : 'default'}
             onClick={() => setWhen(w)}
           >
             {w}
-          </button>
+          </Chip>
         ))}
         <input
           className="reserve-time"

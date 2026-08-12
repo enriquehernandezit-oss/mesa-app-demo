@@ -74,13 +74,13 @@
   opacity: 0.45;
   pointer-events: none;
 }
-/* Primary — solid brass, the single accent used sparingly */
+/* Primary — the CTA fill (dark on paper, brass on oxblood; see --btn-primary-*) */
 .mesa-btn--primary {
-  background: var(--accent-fill);
-  color: var(--on-accent);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
 }
 .mesa-btn--primary:hover {
-  background: var(--accent-strong);
+  background: var(--btn-primary-bg-hover);
 }
 /* Secondary — hairline on the ground */
 .mesa-btn--secondary {

@@ -116,14 +116,14 @@ export function RankingsTab() {
       {tab === 'mine' && myTags.length > 0 && (
         <div className="tag-row" style={{ marginBottom: 'var(--space-4)' }}>
           {myTags.map((t) => (
-            <button
-              type="button"
+            <Chip
               key={t}
-              className={`tag-chip${tagFilter === t ? ' tag-chip--on' : ''}`}
+              size="sm"
+              state={tagFilter === t ? 'selected' : 'default'}
               onClick={() => setTagFilter(tagFilter === t ? null : t)}
             >
               {t}
-            </button>
+            </Chip>
           ))}
         </div>
       )}

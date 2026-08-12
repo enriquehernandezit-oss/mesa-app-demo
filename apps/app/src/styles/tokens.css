@@ -23,9 +23,15 @@
   --text-muted: #8a7167; /* muted / captions only (3.9:1) */
   --accent: #8a5f22; /* accent text, hairlines, active states (5.4:1) */
   --accent-strong: #6b4715; /* heavier accent, emphasis (7.6:1) — DARKER than --accent on paper */
-  --accent-fill: #c09050; /* solid brass fill (buttons, chips) — brass in both themes */
+  --accent-fill: #c09050; /* solid brass fill (chips, small fills) — brass in both themes */
   --on-accent: #241012; /* text/icon on an --accent-fill surface */
   --line: rgba(36, 16, 18, 0.1); /* faint dark hairline */
+
+  /* Primary CTA — diverges by theme: a dark ink button on paper (per the mock),
+     brass on oxblood (a dark button would vanish on the dark ground). */
+  --btn-primary-bg: #241012;
+  --btn-primary-fg: #f3efe6;
+  --btn-primary-bg-hover: #3d2226;
 
   /* Elevation & emphasis — warm brown on paper, never black. */
   --shadow-card: rgba(60, 40, 30, 0.14); /* soft warm drop shadow on cards/sheets */
@@ -117,6 +123,10 @@ html[data-theme="candlelit"] {
   --accent-fill: #c09050;
   --on-accent: #210104;
   --line: rgba(235, 228, 214, 0.1);
+
+  --btn-primary-bg: #c09050;
+  --btn-primary-fg: #210104;
+  --btn-primary-bg-hover: #e2c179;
 
   --shadow-card: rgba(0, 0, 0, 0.5);
   --shadow-text: rgba(0, 0, 0, 0.65);

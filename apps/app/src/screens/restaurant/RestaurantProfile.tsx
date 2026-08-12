@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api, apiOrigin } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
@@ -61,9 +62,19 @@ export function RestaurantProfile() {
     )
   }
 
-  const { restaurant, friendsRankings, friendAvg, similar, myRanking, saved } = q.data
+  const {
+    restaurant,
+    friendsRankings,
+    friendAvg,
+    occasionTags,
+    allMesa,
+    similar,
+    myRanking,
+    saved,
+  } = q.data
   const cover = cloudinaryUrl(restaurant.coverImageId, { w: 1000, h: 750 })
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`
   const meta = [restaurant.cuisine, restaurant.neighborhood?.name, priceLabel(restaurant.priceTier)]
     .filter(Boolean)
     .join(' · ')
@@ -86,7 +97,7 @@ export function RestaurantProfile() {
 
   return (
     <div className="resto-screen">
-      {/* Full-bleed film-photo hero. */}
+      {/* Film-photo hero — clean image, floating controls; identity sits below. */}
       <div className={`resto-photo${cover ? '' : ' resto-photo--empty'}`}>
         {cover && <img src={cover} alt={restaurant.name} />}
         <button
@@ -105,57 +116,76 @@ export function RestaurantProfile() {
         >
           ↗
         </button>
-        <div className="resto-photo__caption">
-          <Eyebrow style={{ color: 'var(--accent-strong)' }}>
-            {restaurant.neighborhood?.name ?? 'Santo Domingo'}
-          </Eyebrow>
-          <h1 className="resto-name">{restaurant.name}</h1>
-          <div className="resto-cuisine">{meta}</div>
-        </div>
+        <span className="resto-photo__tag">film · candlelit</span>
       </div>
 
       <div className="resto-content">
-        {/* The Beli-signature number: your friends' average, with their faces. */}
-        {friendAvg != null && (
-          <div className="friend-avg">
-            <span className="friend-avg__n">{displayScore(friendAvg)}</span>
-            <div className="friend-avg__who">
-              <div className="avatar-stack">
-                {friendsRankings.slice(0, 4).map((fr) => (
-                  <Avatar
-                    key={fr.user.id}
-                    name={fr.user.name || fr.user.handle || 'm'}
-                    src={fr.user.image}
-                    size={26}
-                  />
-                ))}
-              </div>
-              <span className="friend-avg__label">
-                {friendsRankings.length} amig{friendsRankings.length === 1 ? 'o' : 'os'} · promedio
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Identity, on the paper ground below the photo. */}
+        <div className="resto-head">
+          <Eyebrow style={{ color: 'var(--accent)' }}>
+            {restaurant.neighborhood?.name ?? 'Santo Domingo'}
+          </Eyebrow>
+          <h1 className="resto-title">{restaurant.name}</h1>
+          <Characteristics
+            occasionTags={occasionTags}
+            priceTier={restaurant.priceTier}
+            cuisine={restaurant.cuisine}
+            neighborhood={restaurant.neighborhood?.name}
+          />
+        </div>
 
-        {myRanking && (
-          <div className="resto-mine">
-            You ranked this <b>#{myRanking.position}</b> · {displayScore(myRanking.score)}
+        {/* Utility pills. */}
+        <div className="resto-pills">
+          {restaurant.phone && (
+            <UtilityPill icon="☏" href={`tel:${restaurant.phone}`}>
+              Llamar
+            </UtilityPill>
+          )}
+          <UtilityPill icon="▸" href={mapsUrl} target="_blank" rel="noreferrer">
+            Cómo llegar
+          </UtilityPill>
+        </div>
+
+        {/* The badged score trio — every score is attributed, never the place's own. */}
+        {(myRanking || friendAvg != null || allMesa.avg != null) && (
+          <div className="resto-scores">
+            {myRanking && (
+              <ScoreBadge
+                score={myRanking.score}
+                attribution={{ kind: 'you' }}
+                caption={`#${myRanking.position} on your list`}
+              />
+            )}
+            {friendAvg != null && (
+              <ScoreBadge
+                score={friendAvg}
+                attribution={{ kind: 'friends', count: friendsRankings.length }}
+                caption="what they think"
+              />
+            )}
+            {allMesa.avg != null && (
+              <ScoreBadge
+                score={allMesa.avg}
+                attribution={{ kind: 'mesa', count: allMesa.count }}
+                caption={`${allMesa.count} ranked`}
+              />
+            )}
           </div>
         )}
 
         <div className="resto-actions">
           <Button
-            variant={saved ? 'secondary' : 'primary'}
+            variant="primary"
+            onClick={() => navigate({ to: '/rank', search: { restaurant: restaurantId } })}
+          >
+            {myRanking ? 'Re-rank' : 'Rank it'}
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => toggleSave.mutate(!saved)}
             disabled={toggleSave.isPending}
           >
             {saved ? 'Saved ✓' : 'Want to try'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => navigate({ to: '/rank', search: { restaurant: restaurantId } })}
-          >
-            {myRanking ? 'Re-rank' : 'Rank it'}
           </Button>
         </div>
 

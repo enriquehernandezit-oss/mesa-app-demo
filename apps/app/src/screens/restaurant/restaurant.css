@@ -95,6 +95,51 @@
   padding: var(--space-5) var(--space-5) 0;
 }
 
+/* Small film label at the photo's bottom-left (clear of the back/share buttons). */
+.resto-photo__tag {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: 1;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--photo-scrim-3);
+  color: var(--on-photo-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  letter-spacing: 0.08em;
+}
+
+/* Identity block, on the paper ground below the photo. */
+.resto-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.resto-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.2rem, 9vw, 2.8rem);
+  line-height: 1.02;
+  color: var(--text);
+}
+
+/* Utility pill row. */
+.resto-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+/* The three attributed score circles. */
+.resto-scores {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--space-3);
+  padding: var(--space-2) 0 var(--space-6);
+}
+
 /* Friends' average — the signature number. */
 .friend-avg {
   display: flex;
