@@ -4,23 +4,49 @@ import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '../compon
 import { authClient } from '../lib/auth-client'
 import '../styles/screens.css'
 
-// Sign-in. App Store 4.8: because Instagram login is offered, Sign in with Apple
-// must appear alongside it with equal prominence — so all three providers are
-// the same size and weight here. Phone works in every build; Apple/Instagram
-// complete only when the server has their secrets (dev shows a soft message).
+// Sign-in. Four ways in: email + password (first-party), phone OTP, Apple, and
+// Instagram. App Store 4.8: because Instagram login is offered, Sign in with
+// Apple appears alongside it with equal prominence. Email/password and phone
+// work in every build; Apple/Instagram complete only when the server has their
+// secrets (dev shows a soft message).
 //
 // The visible agreement line is the signup-time EULA/terms consent (App Store
 // 1.2); acceptance is also recorded server-side when the profile is completed.
 
-type Step = 'choose' | 'phone' | 'verify'
+type Step = 'choose' | 'email' | 'phone' | 'verify'
 
 export function AuthFlow() {
   const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>('choose')
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [emailMode, setEmailMode] = useState<'signup' | 'signin'>('signup')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Email + password — a first-party account. Sign-up mints the session and drops
+  // the user into onboarding (name, optional handle, neighborhood, EULA); the
+  // temp name from the local-part is overwritten there.
+  async function emailAuth() {
+    setError(null)
+    setBusy(true)
+    const addr = email.trim()
+    const res =
+      emailMode === 'signup'
+        ? await authClient.signUp.email({ email: addr, password, name: addr.split('@')[0] ?? addr })
+        : await authClient.signIn.email({ email: addr, password })
+    setBusy(false)
+    if (res.error)
+      return setError(
+        res.error.message ??
+          (emailMode === 'signup'
+            ? 'Could not create the account.'
+            : 'That email or password is wrong.'),
+      )
+    queryClient.invalidateQueries({ queryKey: ['session'] })
+  }
 
   async function oauth(provider: 'apple' | 'instagram') {
     setError(null)
@@ -85,6 +111,16 @@ export function AuthFlow() {
             <Button disabled={busy} onClick={() => oauth('apple')}>
               Continue with Apple
             </Button>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                setError(null)
+                setStep('email')
+              }}
+            >
+              Use email & password
+            </Button>
             <Button variant="secondary" disabled={busy} onClick={() => setStep('phone')}>
               Use a phone number
             </Button>
@@ -98,6 +134,52 @@ export function AuthFlow() {
             <a href="/eula">EULA</a>, and acknowledge our <a href="/privacy">Privacy Policy</a>.
           </div>
         </>
+      )}
+
+      {step === 'email' && (
+        <div className="stack">
+          <Eyebrow>{emailMode === 'signup' ? 'Create your account' : 'Welcome back'}</Eyebrow>
+          <input
+            className="field"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            placeholder="you@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className="field"
+            type="password"
+            autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
+            placeholder="Password (8+ characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Button
+            disabled={busy || !email.includes('@') || password.length < 8}
+            onClick={emailAuth}
+          >
+            {busy ? '…' : emailMode === 'signup' ? 'Create account' : 'Sign in'}
+          </Button>
+          {error && <div className="error-text">{error}</div>}
+          <button
+            type="button"
+            className="auth-toggle"
+            onClick={() => {
+              setEmailMode(emailMode === 'signup' ? 'signin' : 'signup')
+              setError(null)
+            }}
+          >
+            {emailMode === 'signup'
+              ? 'Already have an account? Sign in'
+              : 'New here? Create an account'}
+          </button>
+          <Button variant="ghost" onClick={() => setStep('choose')}>
+            Back
+          </Button>
+        </div>
       )}
 
       {step === 'phone' && (

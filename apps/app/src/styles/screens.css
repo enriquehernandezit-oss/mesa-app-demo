@@ -70,6 +70,18 @@
   text-decoration: underline;
 }
 
+/* Sign-in ⇄ create-account toggle under the email form. */
+.auth-toggle {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  text-decoration: underline;
+  text-align: center;
+}
+
 /* Auth hero — the candlelit bar photo behind the sign-in screen. */
 .auth-screen {
   position: relative;

@@ -23,7 +23,10 @@ feature is not load-bearing for that loop, it is not Phase 1.
 - **Backend API:** Hono (typed, runs on Bun)
 - **Database:** PostgreSQL (hosted on Railway)
 - **ORM:** Drizzle — schema-first, the schema is the single source of truth
-- **Auth:** Better Auth (Instagram OAuth + phone). Nothing else.
+- **Auth:** Better Auth — email + password, phone (OTP), Sign in with Apple, and
+  Instagram OAuth. Instagram is optional (a display @handle, set in onboarding),
+  never required for membership. (Email+password was added post-Phase-6 by founder
+  decision, alongside the original phone/OAuth methods.)
 - **App:** React + Vite (SPA) wrapped with **Capacitor** for iOS/Android; the
   same Vite build is also the web app. TanStack Query (data/cache) + TanStack
   Router. Native access (contacts, share, push, camera, secure storage) via

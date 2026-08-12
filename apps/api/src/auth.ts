@@ -50,6 +50,17 @@ export const auth = betterAuth({
   trustedOrigins: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
   database: drizzleAdapter(db, { provider: 'pg', schema }),
 
+  // Email + password — a first-party account alongside phone/Apple/Instagram, so
+  // membership never depends on owning a social identity. The hash lands in
+  // account.password (providerId 'credential'); the user table already carries
+  // email + emailVerified. Verification isn't required to sign in in this build
+  // (no mail sender wired yet); the real profile is still gathered in onboarding.
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    requireEmailVerification: false,
+  },
+
   // Surface Mesa's server-managed profile/moderation columns on the session user
   // so route handlers and middleware can read them (e.g. the ban gate and the
   // moderator check) without an extra query. input:false — clients can't set

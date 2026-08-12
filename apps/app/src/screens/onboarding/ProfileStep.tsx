@@ -20,22 +20,24 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
     staleTime: Number.POSITIVE_INFINITY, // reference data
   })
 
-  // Instagram username — stored without the "@" (it's a display prefix). We let
-  // the user type "@" for familiarity, then strip it.
+  // Instagram username — optional. Stored without the "@" (it's a display
+  // prefix). We let the user type "@" for familiarity, then strip it. When left
+  // blank it's simply omitted; the handle stays null.
   const igUser = handle.trim().replace(/@/g, '').toLowerCase()
+  const handleProvided = igUser.length > 0
+  const handleValid = !handleProvided || /^[a-z0-9_.]{2,30}$/.test(igUser)
 
   const save = useMutation({
     mutationFn: () =>
       api.patch('/me/profile', {
         name: name.trim(),
-        handle: igUser,
+        ...(handleProvided ? { handle: igUser } : {}),
         neighborhoodSlug,
         acceptEula: true,
       }),
     onSuccess: onNext,
   })
 
-  const handleValid = /^[a-z0-9_.]{2,30}$/.test(igUser)
   const canSubmit = name.trim().length > 0 && handleValid && neighborhoodSlug !== '' && accepted
 
   const errorText =
@@ -64,7 +66,7 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Instagram</Eyebrow>
+        <Eyebrow>Instagram · optional</Eyebrow>
         <input
           className="field"
           placeholder="@yourusername"

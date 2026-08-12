@@ -16,11 +16,14 @@ import { requireAuth } from '../middleware/session'
 
 const profileSchema = z.object({
   name: z.string().trim().min(1).max(60),
+  // Instagram @handle is optional — membership doesn't require a social identity.
+  // When present it must be well-formed and unique; when omitted it stays null.
   handle: z
     .string()
     .trim()
     .toLowerCase()
-    .regex(/^[a-z0-9_.]{2,30}$/, 'handle must be 2–30 chars: a–z, 0–9, _ or .'),
+    .regex(/^[a-z0-9_.]{2,30}$/, 'handle must be 2–30 chars: a–z, 0–9, _ or .')
+    .optional(),
   neighborhoodSlug: z.string().trim().min(1),
   bio: z.string().trim().max(160).optional(),
   acceptEula: z.literal(true), // must be explicitly accepted (App Store 1.2)
@@ -52,11 +55,10 @@ export const meRoutes = new Hono<AppEnv>()
     if (!row) return c.json({ error: 'not_found' }, 404)
 
     const { rankings, eulaAcceptedAt, neighborhoodId, ...profile } = row
+    // Handle (Instagram) is optional, so it's no longer part of the gate —
+    // a neighborhood, an accepted EULA, and at least one ranking complete it.
     const onboardingComplete =
-      Boolean(profile.handle) &&
-      Boolean(neighborhoodId) &&
-      Boolean(eulaAcceptedAt) &&
-      rankings.length > 0
+      Boolean(neighborhoodId) && Boolean(eulaAcceptedAt) && rankings.length > 0
 
     return c.json({
       profile: { ...profile, neighborhood: row.neighborhood },
@@ -82,13 +84,14 @@ export const meRoutes = new Hono<AppEnv>()
     if (!neighborhood) return c.json({ error: 'unknown_neighborhood' }, 400)
 
     // Handle uniqueness is enforced by the DB unique constraint; catch the
-    // collision and return a clean 409 instead of a 500.
+    // collision and return a clean 409 instead of a 500. Handle is only written
+    // when provided — an omitted handle leaves the column null (optional).
     try {
       await db
         .update(schema.user)
         .set({
           name,
-          handle,
+          ...(handle ? { handle } : {}),
           neighborhoodId: neighborhood.id,
           bio: bio ?? null,
           eulaAcceptedAt: new Date(),
