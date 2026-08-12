@@ -75,12 +75,17 @@ export const Card = ({ raised, className, ...p }: DivProps & { raised?: boolean 
   <div className={cx('mesa-card', raised && 'mesa-card--raised', className)} {...p} />
 )
 
-/* --- Chip --- */
+/* --- Chip --- the one chip in the app. `.tag-chip` and `.reserve-chip` were
+ * folded into this in Phase 6; do not add a fourth. */
 type ChipProps = HTMLAttributes<HTMLButtonElement> & {
   state?: 'default' | 'active' | 'selected'
+  size?: 'sm' | 'md'
+  icon?: ReactNode
 }
 export const Chip = ({
   state = 'default',
+  size = 'md',
+  icon,
   className,
   children,
   ...p
@@ -89,12 +94,19 @@ export const Chip = ({
     type="button"
     className={cx(
       'mesa-chip',
+      size === 'sm' && 'mesa-chip--sm',
       state === 'active' && 'mesa-chip--active',
       state === 'selected' && 'mesa-chip--selected',
       className,
     )}
     {...p}
   >
+    {icon}
     {children}
   </button>
+)
+
+/* Horizontal scrolling row of chips (Explore filters, rank search, Activity). */
+export const ChipRail = ({ className, ...p }: DivProps) => (
+  <div className={cx('mesa-chiprail', className)} {...p} />
 )

@@ -171,6 +171,8 @@ export interface RestaurantProfileResponse {
   }
   friendsRankings: FriendRanking[]
   friendAvg: number | null
+  occasionTags: string[]
+  allMesa: { avg: number | null; count: number }
   similar: RailSpot[]
   myRanking: { position: number; score: number } | null
   saved: boolean

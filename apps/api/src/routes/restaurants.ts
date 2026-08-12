@@ -204,11 +204,38 @@ export const restaurantRoutes = new Hono<AppEnv>()
         ? friendsRankings.reduce((s, f) => s + f.score, 0) / friendsRankings.length
         : null
 
+    // Occasion tags for the whole place: the 3 most-common tags across all of its
+    // rankings, requiring ≥2 raters so one person's idiosyncrasy doesn't stick.
+    // unnest the per-ranking text[] and count — one query, no loop.
+    const tagRes = await db.execute(sql`
+      SELECT t AS tag
+      FROM ${rankings}, unnest(${rankings.tags}) AS t
+      WHERE ${rankings.restaurantId} = ${id}
+      GROUP BY t
+      HAVING count(*) >= 2
+      ORDER BY count(*) DESC
+      LIMIT 3
+    `)
+    const occasionTags = (tagRes.rows as { tag: string }[]).map((r) => r.tag)
+
+    // "All of Mesa" score — the average + count over EVERY ranking of this place
+    // (not just friends), for the third score circle. One grouped query.
+    const [mesaAgg] = await db
+      .select({
+        avg: sql<number | null>`avg(${rankings.score})::float`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(rankings)
+      .where(eq(rankings.restaurantId, id))
+    const allMesa = { avg: mesaAgg?.avg ?? null, count: mesaAgg?.count ?? 0 }
+
     const { neighborhoodId: _nid, ...restaurantOut } = restaurant
     return c.json({
       restaurant: restaurantOut,
       friendsRankings,
       friendAvg,
+      occasionTags,
+      allMesa,
       similar,
       myRanking: myRanking ?? null,
       saved: Boolean(savedRow),
