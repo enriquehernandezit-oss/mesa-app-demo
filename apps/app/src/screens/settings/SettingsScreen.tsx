@@ -6,7 +6,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { ThemePicker } from '../../components/ui/ThemePicker'
 import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
-import { signOut } from '../../lib/auth-client'
+import { authClient, signOut } from '../../lib/auth-client'
 import type { BlockedUser, Ranking } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/profile.css'
@@ -33,6 +33,17 @@ export function SettingsScreen() {
 
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [verifySent, setVerifySent] = useState(false)
+
+  // Real email only — phone-first accounts carry a placeholder inbox we never
+  // surface or ask to verify.
+  const realEmail = p?.email && !p.email.endsWith('@phone.mesa.local') ? p.email : null
+
+  async function resendVerification() {
+    if (!realEmail) return
+    await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
+    setVerifySent(true)
+  }
 
   async function handleSignOut() {
     await signOut()
@@ -131,6 +142,20 @@ export function SettingsScreen() {
         {/* Account. */}
         <Eyebrow className="settings-eyebrow">Account</Eyebrow>
         <div className="settings-group">
+          {realEmail && (
+            <div className="settings-row">
+              <span className="settings-row__email">{realEmail}</span>
+              {p?.emailVerified ? (
+                <span className="settings-row__meta">Verified ✓</span>
+              ) : verifySent ? (
+                <span className="settings-row__meta">Link sent ›</span>
+              ) : (
+                <button type="button" className="link-action" onClick={resendVerification}>
+                  Verify email
+                </button>
+              )}
+            </div>
+          )}
           <a className="settings-row settings-row--link" href="/privacy">
             <span>Privacy Policy</span>
             <span className="settings-row__meta">›</span>

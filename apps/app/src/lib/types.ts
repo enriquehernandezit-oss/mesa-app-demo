@@ -13,6 +13,8 @@ export interface MeResponse {
     handle: string | null
     bio: string | null
     image: string | null
+    email: string | null
+    emailVerified: boolean
     neighborhood: Neighborhood | null
   }
   onboardingComplete: boolean

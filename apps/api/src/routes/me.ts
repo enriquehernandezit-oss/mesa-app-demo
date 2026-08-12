@@ -43,6 +43,8 @@ export const meRoutes = new Hono<AppEnv>()
         handle: true,
         bio: true,
         image: true,
+        email: true,
+        emailVerified: true,
         neighborhoodId: true,
         eulaAcceptedAt: true,
       },

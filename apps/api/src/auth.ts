@@ -21,6 +21,24 @@ import { genericOAuth, phoneNumber } from 'better-auth/plugins'
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET)
 
+// The app origin — where reset-password links land (a frontend page that
+// collects the new password). First of APP_ORIGINS, same list CORS/trust use.
+const appOrigin = (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(',')[0]
+
+// Transactional email (password reset + verification). Dev logs the link to the
+// API console — the exact mirror of the phone-OTP dev path — so the flows are
+// fully exercisable locally with no provider. Prod must wire a real sender via
+// env, or this throws rather than silently dropping a security-critical link.
+// Placeholder phone accounts (<digits>@phone.mesa.local) have no real inbox, so
+// they're skipped: a phone-first user simply never triggers these.
+async function sendMail(to: string, subject: string, body: string) {
+  if (to.endsWith('@phone.mesa.local')) return
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Email provider not configured (set EMAIL_PROVIDER_API_KEY)')
+  }
+  console.log(`[dev email] to=${to} · ${subject}\n${body}\n`)
+}
+
 const instagramPlugin = genericOAuth({
   config: [
     {
@@ -59,6 +77,25 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     requireEmailVerification: false,
+    // Forgot-password: the emailed link points at the app's /reset-password page
+    // carrying the one-time token; that page collects the new password and calls
+    // resetPassword({ newPassword, token }).
+    sendResetPassword: async ({ user, token }) => {
+      const url = `${appOrigin}/reset-password?token=${token}`
+      await sendMail(user.email, 'Reset your Mesa password', `Reset your password:\n${url}`)
+    },
+  },
+
+  // Email verification. A link is sent on email/password signup (skipped for
+  // placeholder phone accounts inside sendMail); clicking it hits Better Auth's
+  // verify endpoint and signs the user in. Not required to use the app in this
+  // build (requireEmailVerification:false) — it confirms the address, no gate.
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendMail(user.email, 'Verify your email for Mesa', `Confirm your email:\n${url}`)
+    },
   },
 
   // Surface Mesa's server-managed profile/moderation columns on the session user

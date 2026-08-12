@@ -23,8 +23,20 @@ export function AuthFlow() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailMode, setEmailMode] = useState<'signup' | 'signin'>('signup')
+  const [resetSent, setResetSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Forgot password — emails a link to /reset-password carrying a one-time token.
+  // The response is intentionally the same whether or not the address exists, so
+  // this never reveals whether an email is registered.
+  async function sendReset() {
+    setError(null)
+    setBusy(true)
+    await authClient.requestPasswordReset({ email: email.trim(), redirectTo: '/reset-password' })
+    setBusy(false)
+    setResetSent(true)
+  }
 
   // Email + password — a first-party account. Sign-up mints the session and drops
   // the user into onboarding (name, optional handle, neighborhood, EULA); the
@@ -164,12 +176,29 @@ export function AuthFlow() {
             {busy ? '…' : emailMode === 'signup' ? 'Create account' : 'Sign in'}
           </Button>
           {error && <div className="error-text">{error}</div>}
+          {resetSent ? (
+            <Caption style={{ textAlign: 'center', color: 'var(--text-2)' }}>
+              If that email is registered, a reset link is on its way.
+            </Caption>
+          ) : (
+            emailMode === 'signin' && (
+              <button
+                type="button"
+                className="auth-toggle"
+                disabled={busy || !email.includes('@')}
+                onClick={sendReset}
+              >
+                Forgot password?
+              </button>
+            )
+          )}
           <button
             type="button"
             className="auth-toggle"
             onClick={() => {
               setEmailMode(emailMode === 'signup' ? 'signin' : 'signup')
               setError(null)
+              setResetSent(false)
             }}
           >
             {emailMode === 'signup'

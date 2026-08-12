@@ -81,6 +81,9 @@
   text-decoration: underline;
   text-align: center;
 }
+.auth-toggle:disabled {
+  opacity: 0.5;
+}
 
 /* Auth hero — the candlelit bar photo behind the sign-in screen. */
 .auth-screen {

@@ -4,6 +4,7 @@ import { useProfile } from './hooks/useProfile'
 import { useSession } from './lib/auth-client'
 import { AuthFlow } from './screens/AuthFlow'
 import { Onboarding } from './screens/Onboarding'
+import { ResetPassword } from './screens/auth/ResetPassword'
 import { LegalPage } from './screens/legal/LegalPage'
 
 // Legal pages must be reachable even signed-out (App Store 5.1), so they're
@@ -27,11 +28,14 @@ function legalDoc(): 'terms' | 'eula' | 'privacy' | null {
 //   session, onboarded     -> TabApp (Discover / Rankings / Tonight / Profile)
 export function App() {
   const doc = legalDoc()
+  const isReset = window.location.pathname === '/reset-password'
   const { data: session, isPending: sessionLoading } = useSession()
   const authed = Boolean(session?.user)
   const { data: me, isPending: profileLoading } = useProfile(authed)
 
   if (doc) return <LegalPage doc={doc} />
+  // Password-reset link — signed-out, resolved by path before the auth gate.
+  if (isReset) return <ResetPassword />
   if (sessionLoading) return <Splash />
   if (!authed) return <AuthFlow />
   // Authed but the profile hasn't resolved yet.

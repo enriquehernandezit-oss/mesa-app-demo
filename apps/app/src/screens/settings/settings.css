@@ -67,4 +67,11 @@
 .settings-row__meta {
   color: var(--text-muted);
   font-size: var(--text-label);
+  flex: none;
+}
+.settings-row__email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
