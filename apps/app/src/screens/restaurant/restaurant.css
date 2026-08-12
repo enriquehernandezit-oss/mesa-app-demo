@@ -132,6 +132,14 @@
   margin-bottom: var(--space-5);
 }
 
+/* List-membership pills, just under the name. */
+.resto-lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-2);
+}
+
 /* The three attributed score circles. */
 .resto-scores {
   display: flex;

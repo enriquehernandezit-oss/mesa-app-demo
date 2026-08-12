@@ -7,6 +7,7 @@ import { activityRoutes } from './routes/activity'
 import { cheersRoutes } from './routes/cheers'
 import { feedRoutes } from './routes/feed'
 import { leaderboardRoutes } from './routes/leaderboard'
+import { listsRoutes } from './routes/lists'
 import { meRoutes } from './routes/me'
 import { moderationRoutes } from './routes/moderation'
 import { onboardingRoutes } from './routes/onboarding'
@@ -52,6 +53,7 @@ app.route('/feed', feedRoutes)
 app.route('/restaurants', restaurantRoutes)
 app.route('/cheers', cheersRoutes)
 app.route('/leaderboard', leaderboardRoutes)
+app.route('/lists', listsRoutes)
 app.route('/activity', activityRoutes)
 
 // Uniform JSON error + 404 handling.

@@ -11,6 +11,7 @@ import { TopBar } from '../components/TopBar'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
 import { ExploreScreen } from '../screens/explore/ExploreScreen'
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
+import { ListScreen } from '../screens/list/ListScreen'
 import { MapScreen } from '../screens/map/MapScreen'
 import { RankAPlace } from '../screens/rank/RankAPlace'
 import { RestaurantProfile } from '../screens/restaurant/RestaurantProfile'
@@ -190,6 +191,11 @@ const exploreRoute = createRoute({
   path: '/explore',
   component: ExploreScreen,
 })
+const listRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/lists/$slug',
+  component: ListScreen,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -202,6 +208,7 @@ const routeTree = rootRoute.addChildren([
   mapRoute,
   settingsRoute,
   exploreRoute,
+  listRoute,
 ])
 
 const router = createRouter({ routeTree })

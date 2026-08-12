@@ -9,7 +9,7 @@ import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
-import type { FeedItem, RailSpot } from '../../lib/types'
+import type { FeaturedList, FeedItem, RailSpot } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
@@ -68,6 +68,7 @@ export function DiscoverTab() {
         <ErrorState>Couldn't load the feed. Try again in a moment.</ErrorState>
       ) : items.length > 0 ? (
         <>
+          <ListsRail />
           <SpotRail title="Trending esta semana" endpoint="/restaurants/trending" kind="cheers" />
           <div className="feed">
             {items.slice(0, 2).map((item, i) => (
@@ -140,6 +141,44 @@ function SpotRail({
               <span className="rail-card__meta">
                 {[s.cuisine, s.neighborhood].filter(Boolean).join(' · ')}
               </span>
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+// Featured editorial lists — a carousel with your own progress through each.
+function ListsRail() {
+  const q = useQuery({
+    queryKey: ['lists'],
+    queryFn: () => api.get<{ lists: FeaturedList[] }>('/lists'),
+    staleTime: 120_000,
+  })
+  const lists = q.data?.lists ?? []
+  if (lists.length === 0) return null
+  return (
+    <section className="rail">
+      <div className="rail__head">
+        <span className="rail__title">Featured lists</span>
+      </div>
+      <div className="rail__scroll">
+        {lists.map((l) => {
+          const cover = cloudinaryUrl(l.coverImageId, { w: 320, h: 400 })
+          return (
+            <Link
+              key={l.slug}
+              to="/lists/$slug"
+              params={{ slug: l.slug }}
+              className="rail-card"
+              style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+            >
+              <span className="rail-card__badge">
+                {l.mine} of {l.total}
+              </span>
+              <span className="rail-card__name">{l.title}</span>
+              <span className="rail-card__meta">{l.subtitle}</span>
             </Link>
           )
         })}

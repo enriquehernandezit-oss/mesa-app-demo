@@ -68,6 +68,33 @@ export interface RailSpot {
   friendCount?: number
 }
 
+export interface FeaturedList {
+  id: string
+  slug: string
+  title: string
+  subtitle: string | null
+  coverImageId: string | null
+  total: number
+  mine: number
+}
+
+export interface ListDetailItem {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  priceTier: number | null
+  position: number
+  friendAvg: number | null
+  friendCount: number
+}
+
+export interface ListDetailResponse {
+  list: { slug: string; title: string; subtitle: string | null; coverImageId: string | null }
+  items: ListDetailItem[]
+}
+
 export interface ExploreHit {
   id: string
   name: string
@@ -185,6 +212,7 @@ export interface RestaurantProfileResponse {
   friendAvg: number | null
   occasionTags: string[]
   allMesa: { avg: number | null; count: number }
+  lists: { slug: string; title: string }[]
   similar: RailSpot[]
   myRanking: { position: number; score: number } | null
   saved: boolean

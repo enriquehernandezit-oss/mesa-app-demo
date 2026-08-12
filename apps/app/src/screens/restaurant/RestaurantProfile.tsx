@@ -68,6 +68,7 @@ export function RestaurantProfile() {
     friendAvg,
     occasionTags,
     allMesa,
+    lists,
     similar,
     myRanking,
     saved,
@@ -126,6 +127,19 @@ export function RestaurantProfile() {
             {restaurant.neighborhood?.name ?? 'Santo Domingo'}
           </Eyebrow>
           <h1 className="resto-title">{restaurant.name}</h1>
+          {lists.length > 0 && (
+            <div className="resto-lists">
+              {lists.map((l) => (
+                <UtilityPill
+                  key={l.slug}
+                  icon="▤"
+                  onClick={() => navigate({ to: '/lists/$slug', params: { slug: l.slug } })}
+                >
+                  {l.title}
+                </UtilityPill>
+              ))}
+            </div>
+          )}
           <Characteristics
             occasionTags={occasionTags}
             priceTier={restaurant.priceTier}

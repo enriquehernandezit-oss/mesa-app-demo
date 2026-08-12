@@ -1,0 +1,22 @@
+/* Curated list detail — a film-photo hero over the members. */
+.list-hero {
+  position: relative;
+  height: 180px;
+  margin-top: var(--space-3);
+  border-radius: var(--radius);
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 14px 40px -18px var(--shadow-card);
+}
+.list-hero__tag {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--photo-scrim-3);
+  color: var(--on-photo-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  letter-spacing: 0.08em;
+}

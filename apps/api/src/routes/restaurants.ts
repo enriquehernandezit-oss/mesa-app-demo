@@ -10,7 +10,7 @@ import { requireAuth } from '../middleware/session'
 // ships the social substance. Each piece is one indexed read; none loop.
 const { rankings, vibeNotes, restaurants, follows, userBlocks, user, savedPlaces } = schema
 
-const { neighborhoods } = schema
+const { neighborhoods, lists, listItems } = schema
 
 export const restaurantRoutes = new Hono<AppEnv>()
   .use(requireAuth)
@@ -260,6 +260,14 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .where(eq(rankings.restaurantId, id))
     const allMesa = { avg: mesaAgg?.avg ?? null, count: mesaAgg?.count ?? 0 }
 
+    // Editorial lists this place belongs to → the "▤ Mesa Best" membership pills.
+    const memberships = await db
+      .select({ slug: lists.slug, title: lists.title })
+      .from(listItems)
+      .innerJoin(lists, eq(lists.id, listItems.listId))
+      .where(eq(listItems.restaurantId, id))
+      .orderBy(asc(lists.sortOrder))
+
     const { neighborhoodId: _nid, ...restaurantOut } = restaurant
     return c.json({
       restaurant: restaurantOut,
@@ -267,6 +275,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
       friendAvg,
       occasionTags,
       allMesa,
+      lists: memberships,
       similar,
       myRanking: myRanking ?? null,
       saved: Boolean(savedRow),
