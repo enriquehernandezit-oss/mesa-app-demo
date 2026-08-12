@@ -1,0 +1,75 @@
+/* Dish compose + the popular-dishes rail. */
+
+.dish-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-top: var(--space-4);
+  border-radius: var(--radius);
+  border: 1px dashed var(--line);
+  background: var(--surface);
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+}
+.dish-photo--set {
+  border-style: solid;
+}
+.dish-photo__hint {
+  font-family: var(--font-ui);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.dish-grain {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.dish-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+}
+
+/* Popular dishes on the restaurant profile — a horizontal photo rail. */
+.dish-rail {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.dish-rail::-webkit-scrollbar {
+  display: none;
+}
+.dish-card {
+  flex: none;
+  width: 150px;
+}
+.dish-card__photo {
+  width: 150px;
+  height: 150px;
+  border-radius: var(--radius);
+  object-fit: cover;
+  display: block;
+  background: var(--surface);
+}
+.dish-card__name {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--text);
+  margin-top: var(--space-2);
+  line-height: 1.1;
+}
+.dish-card__by {
+  font-size: var(--text-eyebrow);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}

@@ -5,6 +5,7 @@ import type { AppEnv } from './context'
 import { sessionMiddleware } from './middleware/session'
 import { activityRoutes } from './routes/activity'
 import { cheersRoutes } from './routes/cheers'
+import { dishesRoutes } from './routes/dishes'
 import { feedRoutes } from './routes/feed'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { listsRoutes } from './routes/lists'
@@ -54,6 +55,7 @@ app.route('/restaurants', restaurantRoutes)
 app.route('/cheers', cheersRoutes)
 app.route('/leaderboard', leaderboardRoutes)
 app.route('/lists', listsRoutes)
+app.route('/dishes', dishesRoutes)
 app.route('/activity', activityRoutes)
 
 // Uniform JSON error + 404 handling.

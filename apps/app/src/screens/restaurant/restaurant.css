@@ -132,6 +132,13 @@
   margin-bottom: var(--space-5);
 }
 
+/* Popular-dishes section header: title + "add a dish". */
+.resto-dishes-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
 /* List-membership pills, just under the name. */
 .resto-lists {
   display: flex;

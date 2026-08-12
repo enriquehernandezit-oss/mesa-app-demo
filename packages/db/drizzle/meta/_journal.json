@@ -36,6 +36,20 @@
       "when": 1785946878019,
       "tag": "0004_purple_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786531650728,
+      "tag": "0005_curvy_rockslide",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786539892928,
+      "tag": "0006_legal_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

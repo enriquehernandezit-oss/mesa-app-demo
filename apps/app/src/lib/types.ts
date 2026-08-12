@@ -68,6 +68,16 @@ export interface RailSpot {
   friendCount?: number
 }
 
+export interface Dish {
+  id: string
+  name: string
+  caption: string | null
+  imageId: string
+  grain: string
+  createdAt: string
+  user: { id: string; name: string; handle: string | null; image: string | null }
+}
+
 export interface FeaturedList {
   id: string
   slug: string

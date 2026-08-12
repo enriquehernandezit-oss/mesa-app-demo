@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 import { TopBar } from '../components/TopBar'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
+import { DishCompose } from '../screens/dish/DishCompose'
 import { ExploreScreen } from '../screens/explore/ExploreScreen'
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
 import { ListScreen } from '../screens/list/ListScreen'
@@ -196,6 +197,14 @@ const listRoute = createRoute({
   path: '/lists/$slug',
   component: ListScreen,
 })
+const dishRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dish',
+  validateSearch: (s: Record<string, unknown>): { restaurant: string } => ({
+    restaurant: typeof s.restaurant === 'string' ? s.restaurant : '',
+  }),
+  component: DishCompose,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -209,6 +218,7 @@ const routeTree = rootRoute.addChildren([
   settingsRoute,
   exploreRoute,
   listRoute,
+  dishRoute,
 ])
 
 const router = createRouter({ routeTree })

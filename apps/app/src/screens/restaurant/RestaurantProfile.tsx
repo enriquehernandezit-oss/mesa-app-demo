@@ -6,9 +6,11 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api, apiOrigin } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
+import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
-import type { RestaurantProfileResponse } from '../../lib/types'
+import type { Dish, RestaurantProfileResponse } from '../../lib/types'
+import '../dish/dish.css'
 import { ReserveSheet } from './ReserveSheet'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
@@ -203,6 +205,8 @@ export function RestaurantProfile() {
           </Button>
         </div>
 
+        <PopularDishes restaurantId={restaurantId} canAdd={Boolean(myRanking)} />
+
         {restaurant.phone &&
           (reserving ? (
             <ReserveSheet
@@ -289,6 +293,54 @@ export function RestaurantProfile() {
         )}
       </div>
     </div>
+  )
+}
+
+// Popular dishes — a photo rail of dishes friends posted here, with an entry to
+// post your own (only if you've ranked the place).
+function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd: boolean }) {
+  const navigate = useNavigate()
+  const q = useQuery({
+    queryKey: ['dishes', restaurantId],
+    queryFn: () => api.get<{ dishes: Dish[] }>(`/dishes/restaurant/${restaurantId}`),
+  })
+  const dishes = q.data?.dishes ?? []
+  if (dishes.length === 0 && !canAdd) return null
+
+  return (
+    <>
+      <div className="resto-dishes-head">
+        <Eyebrow style={{ margin: 'var(--space-6) 0 var(--space-3)' }}>Popular dishes</Eyebrow>
+        {canAdd && (
+          <button
+            type="button"
+            className="link-action"
+            onClick={() => navigate({ to: '/dish', search: { restaurant: restaurantId } })}
+          >
+            + Add a dish
+          </button>
+        )}
+      </div>
+      {dishes.length === 0 ? (
+        <Body>No dishes yet — be the first.</Body>
+      ) : (
+        <div className="dish-rail">
+          {dishes.map((d) => (
+            <div key={d.id} className="dish-card">
+              <img
+                className="dish-card__photo"
+                src={d.imageId}
+                alt={d.name}
+                style={{ filter: filterForGrain(d.grain) }}
+                loading="lazy"
+              />
+              <div className="dish-card__name">{d.name}</div>
+              <div className="dish-card__by">{d.user.name || d.user.handle}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   )
 }
 

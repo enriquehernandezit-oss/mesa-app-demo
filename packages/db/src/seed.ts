@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import { db, pool } from './client'
 import * as schema from './schema'
+import { seedCuration } from './seed-curation'
 import { friends, neighborhoods, restaurants, scoreForPosition, waitlist } from './seed-data'
 import {
   COVER_BY_CUISINE,
@@ -268,6 +269,10 @@ async function seed() {
   // --- waitlist (mirror of the quiz) ---
   await db.insert(schema.waitlist).values(waitlist)
 
+  // --- editorial curated lists (chosen from the rankings just inserted) ---
+  const listCount = await seedCuration(db)
+
+  console.log(`inserted: ${listCount} curated lists`)
   console.log(
     `inserted: ${nRows.length} neighborhoods, ${rRows.length} restaurants, ` +
       `${friends.length + generated.length} users, ${followRows.length} follows, ` +

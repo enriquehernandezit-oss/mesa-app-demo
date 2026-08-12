@@ -13,7 +13,11 @@ export function cloudinaryUrl(
   opts: { w?: number; h?: number } = {},
 ): string | null {
   if (!publicId) return null
-  if (publicId.startsWith('/') || publicId.startsWith('http')) return publicId
+  // Full URLs, local seed paths, and inline data URLs (dish posts in dev) pass
+  // through untouched; only a bare Cloudinary public id gets expanded.
+  if (publicId.startsWith('/') || publicId.startsWith('http') || publicId.startsWith('data:')) {
+    return publicId
+  }
   if (!CLOUD) return null
   const { w = 800, h = 460 } = opts
   return `https://res.cloudinary.com/${CLOUD}/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/${publicId}`

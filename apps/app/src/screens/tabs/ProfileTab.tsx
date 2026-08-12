@@ -6,40 +6,11 @@ import { Avatar } from '../../components/ui/Avatar'
 import { useProfile } from '../../hooks/useProfile'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
+import { resizeToJpeg } from '../../lib/image'
 import type { MeStats, SuggestedUser } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
 import './profile.css'
-
-// Resize a picked photo to a small square JPEG data URL for the avatar column.
-async function fileToAvatar(file: File): Promise<string> {
-  const url = URL.createObjectURL(file)
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const i = new Image()
-      i.onload = () => resolve(i)
-      i.onerror = reject
-      i.src = url
-    })
-    const size = 192
-    const canvas = document.createElement('canvas')
-    canvas.width = size
-    canvas.height = size
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('canvas unsupported')
-    const s = Math.max(size / img.width, size / img.height)
-    ctx.drawImage(
-      img,
-      (size - img.width * s) / 2,
-      (size - img.height * s) / 2,
-      img.width * s,
-      img.height * s,
-    )
-    return canvas.toDataURL('image/jpeg', 0.8)
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
 
 // The user's own profile. M2 showed identity + sign out; M3 adds the doorway to
 // other people's ranked passports (where reporting/blocking happen) and blocked-
@@ -69,7 +40,8 @@ export function ProfileTab() {
   })
   async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) setAvatar.mutate(await fileToAvatar(file))
+    if (file)
+      setAvatar.mutate(await resizeToJpeg(file, { maxEdge: 192, square: true, quality: 0.8 }))
     e.target.value = ''
   }
 
