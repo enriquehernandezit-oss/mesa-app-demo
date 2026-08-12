@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Caption, Chip, Eyebrow, SerifItalic } from '../../components/ui'
+import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
 import { displayScore, matchColor } from '../../lib/display'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
@@ -145,9 +146,11 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
       <div className="ranking-numeral">{ranking.position}</div>
       <div className="ranking-main">
         <div className="ranking-name">{ranking.restaurant.name}</div>
-        <div className="ranking-meta">
-          {[ranking.restaurant.cuisine, ranking.neighborhood].filter(Boolean).join(' · ')}
-        </div>
+        <Characteristics
+          priceTier={ranking.restaurant.priceTier}
+          cuisine={ranking.restaurant.cuisine}
+          neighborhood={ranking.neighborhood}
+        />
         {ranking.note && <div className="ranking-note">“{ranking.note}”</div>}
         {ranking.note && ranking.noteId && (
           <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
