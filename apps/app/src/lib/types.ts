@@ -197,6 +197,9 @@ export interface FeedItem {
   note: string | null
   cheersCount?: number
   cheeredByMe?: boolean
+  dishImage?: string | null
+  dishName?: string | null
+  dishGrain?: string | null
 }
 
 export interface FriendRanking {

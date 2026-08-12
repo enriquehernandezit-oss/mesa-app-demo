@@ -7,8 +7,17 @@ import { requireAuth } from '../middleware/session'
 // The discovery feed (M4) — the payoff of the core loop: what the people you
 // follow ranked, and their vibe notes, most recent first. One round trip; the
 // same block/ban visibility rules as the rest of the app. Cached client-side.
-const { rankings, vibeNotes, restaurants, neighborhoods, follows, userBlocks, user, cheers } =
-  schema
+const {
+  rankings,
+  vibeNotes,
+  restaurants,
+  neighborhoods,
+  follows,
+  userBlocks,
+  user,
+  cheers,
+  dishes,
+} = schema
 
 const PAGE = 20
 
@@ -38,6 +47,21 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
     .from(userBlocks)
     .where(eq(userBlocks.blockedId, me.id))
 
+  // The latest visible dish per ranking — a dish is evidence attached to a
+  // ranking, so it rides on the same feed row (no second feed type, no cursor
+  // change). DISTINCT ON keeps it to the newest one.
+  const latestDish = db
+    .selectDistinctOn([dishes.rankingId], {
+      rankingId: dishes.rankingId,
+      imageId: dishes.imageId,
+      name: dishes.name,
+      grain: dishes.grain,
+    })
+    .from(dishes)
+    .where(isNull(dishes.removedAt))
+    .orderBy(dishes.rankingId, desc(dishes.createdAt))
+    .as('latest_dish')
+
   const items = await db
     .select({
       rankingId: rankings.id,
@@ -54,11 +78,15 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
       },
       neighborhood: neighborhoods.name,
       note: vibeNotes.body,
+      dishImage: latestDish.imageId,
+      dishName: latestDish.name,
+      dishGrain: latestDish.grain,
     })
     .from(rankings)
     .innerJoin(user, eq(user.id, rankings.userId))
     .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
     .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+    .leftJoin(latestDish, eq(latestDish.rankingId, rankings.id))
     .leftJoin(
       vibeNotes,
       and(

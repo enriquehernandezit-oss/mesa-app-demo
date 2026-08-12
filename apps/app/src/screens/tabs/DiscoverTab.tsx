@@ -7,6 +7,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
+import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
 import type { FeaturedList, FeedItem, RailSpot } from '../../lib/types'
@@ -207,14 +208,17 @@ function FeedSkeleton() {
 }
 
 function FeedCard({ item, index }: { item: FeedItem; index: number }) {
-  const cover = cloudinaryUrl(item.restaurant.coverImageId, { w: 800, h: 534 })
+  // A dish photo, when present, is the card's image (with its grain treatment);
+  // otherwise the restaurant cover.
+  const cover = item.dishImage ?? cloudinaryUrl(item.restaurant.coverImageId, { w: 800, h: 534 })
   return (
     <div className="feed-card" style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}>
       <Link to="/u/$userId" params={{ userId: item.user.id }} className="feed-who">
         <Avatar name={item.user.name || item.user.handle || 'm'} src={item.user.image} size={32} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="feed-who__name">
-            {item.user.name || item.user.handle} <span className="feed-verb">ranked</span>
+            {item.user.name || item.user.handle}{' '}
+            <span className="feed-verb">{item.dishImage ? 'posted a dish' : 'ranked'}</span>
           </div>
           {item.user.handle && <div className="feed-who__meta">@{item.user.handle}</div>}
         </div>
@@ -227,10 +231,16 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
         className={`feed-cover${cover ? '' : ' feed-cover--empty'}`}
       >
         {cover ? (
-          <img src={cover} alt={item.restaurant.name} loading="lazy" />
+          <img
+            src={cover}
+            alt={item.dishName ?? item.restaurant.name}
+            loading="lazy"
+            style={item.dishImage ? { filter: filterForGrain(item.dishGrain) } : undefined}
+          />
         ) : (
           item.restaurant.name
         )}
+        {item.dishName && <span className="feed-dish-tag">🍽 {item.dishName}</span>}
         <div className="feed-caption">
           <span className="feed-name">{item.restaurant.name}</span>
           <span className="feed-score">{displayScore(item.score)}</span>

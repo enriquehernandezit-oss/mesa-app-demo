@@ -284,6 +284,25 @@
   color: var(--text-muted);
 }
 
+/* "posted a dish" tag, top-left over the photo. */
+.feed-dish-tag {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 1;
+  max-width: 70%;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--photo-scrim-3);
+  color: var(--on-photo);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Name + score laid over the bottom of the photo. */
 .feed-caption {
   position: absolute;
