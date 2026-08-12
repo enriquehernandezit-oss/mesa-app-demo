@@ -1,8 +1,16 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { PullToRefresh } from '../../components/PullToRefresh'
-import { Body, ErrorState, Eyebrow, SerifItalic, Skeleton, Title } from '../../components/ui'
+import {
+  Body,
+  Button,
+  ErrorState,
+  Eyebrow,
+  SerifItalic,
+  Skeleton,
+  Title,
+} from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
@@ -10,7 +18,7 @@ import { displayScore } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
-import type { FeaturedList, FeedItem, RailSpot } from '../../lib/types'
+import type { FeaturedList, FeedItem, RailSpot, SuggestedUser } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
@@ -88,12 +96,58 @@ export function DiscoverTab() {
           )}
         </>
       ) : (
-        <div className="tab-empty">
-          <SerifItalic style={{ fontSize: '1.25rem' }}>Follow a few people.</SerifItalic>
-          <Body>Their rankings and vibe notes fill this feed.</Body>
-        </div>
+        <EmptyFeed />
       )}
     </PullToRefresh>
+  )
+}
+
+// Empty feed — the invite card + a few people to follow so the feed fills.
+function EmptyFeed() {
+  const queryClient = useQueryClient()
+  const suggested = useQuery({
+    queryKey: ['people'],
+    queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
+  })
+  const follow = useMutation({
+    mutationFn: (userId: string) => api.post('/social/follow', { userId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['people'] })
+    },
+  })
+  const users = suggested.data?.users ?? []
+  return (
+    <div>
+      <div className="empty-feed__card">
+        <SerifItalic style={{ fontSize: '1.6rem' }}>Your table is set</SerifItalic>
+        <Body>Follow a few friends — their rankings and vibe notes fill this feed.</Body>
+      </div>
+      {users.length > 0 && (
+        <Eyebrow style={{ margin: 'var(--space-5) 0 var(--space-3)' }}>Start with these</Eyebrow>
+      )}
+      {users.map((u) => (
+        <div key={u.id} className="empty-feed__row">
+          <Link to="/u/$userId" params={{ userId: u.id }} className="empty-feed__who">
+            <Avatar name={u.name || u.handle || 'm'} src={u.image} size={40} />
+            <div style={{ minWidth: 0 }}>
+              <div className="feed-who__name">{u.name || u.handle}</div>
+              <div className="feed-who__meta">
+                {[u.handle ? `@${u.handle}` : null, u.neighborhood].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+          </Link>
+          <Button
+            variant="secondary"
+            style={{ width: 'auto', minHeight: 40, padding: '0 var(--space-4)' }}
+            onClick={() => follow.mutate(u.id)}
+            disabled={follow.isPending}
+          >
+            Follow
+          </Button>
+        </div>
+      ))}
+    </div>
   )
 }
 

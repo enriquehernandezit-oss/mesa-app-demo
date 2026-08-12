@@ -66,22 +66,30 @@ export function AuthFlow() {
     <div className="screen screen--center auth-screen">
       {/* Film-photo hero behind everything — the first thing anyone sees. */}
       <div className="auth-hero" aria-hidden />
-      <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
+      <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={64} />
-        <SerifItalic style={{ fontSize: '1.15rem' }}>where your friends actually eat</SerifItalic>
+        <Eyebrow>Invite only · Santo Domingo</Eyebrow>
+        <SerifItalic style={{ fontSize: '1.5rem', lineHeight: 1.15, marginTop: 'var(--space-2)' }}>
+          Rank where you eat. Trust who you know.
+        </SerifItalic>
+        <Body style={{ color: 'var(--text-2)', maxWidth: '19rem' }}>
+          No stars, no strangers. Just your friends' numbers, in order.
+        </Body>
       </div>
 
       {step === 'choose' && (
         <>
           <div className="stack">
-            <Button variant="secondary" disabled={busy} onClick={() => oauth('instagram')}>
-              Continue with Instagram
-            </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => oauth('apple')}>
+            {/* Apple-forward per the design; Instagram + phone stay available so
+                Sign in with Apple is offered alongside social login (App Store 4.8). */}
+            <Button disabled={busy} onClick={() => oauth('apple')}>
               Continue with Apple
             </Button>
             <Button variant="secondary" disabled={busy} onClick={() => setStep('phone')}>
-              Continue with phone
+              Use a phone number
+            </Button>
+            <Button variant="secondary" disabled={busy} onClick={() => oauth('instagram')}>
+              Continue with Instagram
             </Button>
           </div>
           {error && <div className="error-text">{error}</div>}

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { useProfile } from '../../hooks/useProfile'
@@ -14,7 +14,8 @@ import './rankings.css'
 // The ranked passport (M3). Mine = the ordered list with serif numerals, brass
 // scores, and vibe notes. Want-to-try = saved places waiting to be ranked.
 export function RankingsTab() {
-  const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>('mine')
+  const search = useSearch({ strict: false }) as { tab?: 'mine' | 'saved' | 'barrios' }
+  const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(search.tab ?? 'mine')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
   const [sharing, setSharing] = useState(false)
   const { data: me } = useProfile(true)

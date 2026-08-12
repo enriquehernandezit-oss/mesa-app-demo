@@ -136,6 +136,8 @@ const discoverRoute = createRoute({
 const rankingsRoute = createRoute({
   getParentRoute: () => tabsLayout,
   path: '/rankings',
+  validateSearch: (s: Record<string, unknown>): { tab?: 'saved' | 'barrios' } =>
+    s.tab === 'saved' || s.tab === 'barrios' ? { tab: s.tab } : {},
   component: RankingsTab,
 })
 const tonightRoute = createRoute({

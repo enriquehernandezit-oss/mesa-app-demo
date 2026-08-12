@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { Body, Button, Caption, Eyebrow } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { useProfile } from '../../hooks/useProfile'
-import { api } from '../../lib/api'
+import { api, apiOrigin } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import { resizeToJpeg } from '../../lib/image'
 import type { MeStats, SuggestedUser } from '../../lib/types'
@@ -52,6 +52,14 @@ export function ProfileTab() {
     else await navigator.clipboard.writeText(text).catch(() => {})
   }
 
+  // Share my public passport (the /p/u/handle page).
+  async function shareProfile() {
+    const link = p?.handle ? `${apiOrigin}/p/u/${p.handle}` : apiOrigin
+    if (navigator.share)
+      await navigator.share({ text: `Mi ranking en Mesa 🥂\n${link}` }).catch(() => {})
+    else await navigator.clipboard.writeText(link).catch(() => {})
+  }
+
   return (
     <div>
       <div className="profile-settings-row">
@@ -88,16 +96,18 @@ export function ProfileTab() {
       {stats.data && (
         <div className="stats-row">
           <div className="stat">
-            <span className="stat__n">{stats.data.places}</span>
-            <span className="stat__l">places</span>
-          </div>
-          <div className="stat">
             <span className="stat__n">{stats.data.followers}</span>
             <span className="stat__l">followers</span>
           </div>
           <div className="stat">
             <span className="stat__n">{stats.data.following}</span>
             <span className="stat__l">following</span>
+          </div>
+          <div className="stat">
+            <span className="stat__n">
+              {stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
+            </span>
+            <span className="stat__l">rank in DR</span>
           </div>
           <div className="stat">
             <span className="stat__n">
@@ -135,12 +145,32 @@ export function ProfileTab() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', marginBottom: 'var(--space-5)' }}>
+        <Button variant="secondary" onClick={shareProfile}>
+          Share profile
+        </Button>
         <Button variant="secondary" onClick={invite}>
           Invite friends 🥂
         </Button>
-        <Link to="/leaderboard" style={{ flex: 1 }}>
-          <Button variant="secondary">Leaderboard</Button>
+      </div>
+
+      {/* Your lists — the routes into the passport. */}
+      <div className="profile-nav">
+        <Link to="/rankings" className="profile-nav__row">
+          <span>Ranked</span>
+          <span className="profile-nav__meta">{stats.data?.places ?? 0} ›</span>
+        </Link>
+        <Link to="/rankings" search={{ tab: 'saved' }} className="profile-nav__row">
+          <span>Want to try</span>
+          <span className="profile-nav__meta">›</span>
+        </Link>
+        <Link to="/explore" className="profile-nav__row">
+          <span>Recs for you</span>
+          <span className="profile-nav__meta">›</span>
+        </Link>
+        <Link to="/leaderboard" className="profile-nav__row">
+          <span>Leaderboard</span>
+          <span className="profile-nav__meta">›</span>
         </Link>
       </div>
 

@@ -7,6 +7,37 @@
   padding-top: var(--space-2);
 }
 
+/* Your-lists navigation rows (Ranked / Want to try / Recs / Leaderboard). */
+.profile-nav {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: var(--space-6);
+}
+.profile-nav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  text-decoration: none;
+  transition: background 0.12s ease;
+}
+.profile-nav__row:last-child {
+  border-bottom: 0;
+}
+.profile-nav__row:hover {
+  background: var(--surface-raised);
+}
+.profile-nav__meta {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
 /* Taste Profile card. */
 .taste-card {
   padding: var(--space-4);

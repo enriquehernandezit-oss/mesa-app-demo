@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
@@ -148,11 +148,26 @@ export const meRoutes = new Hono<AppEnv>()
       return best
     }
 
+    // City rank (same ordering as the leaderboard): how many people have ranked
+    // more places than me, + 1. Null until I've ranked anything.
+    let rankInDr: number | null = null
+    if (mine.length > 0) {
+      const rankRes = await db.execute(sql`
+        SELECT count(*)::int AS ahead
+        FROM (
+          SELECT user_id FROM rankings GROUP BY user_id HAVING count(*) > ${mine.length}
+        ) t
+      `)
+      const ahead = Number((rankRes.rows[0] as { ahead: number } | undefined)?.ahead ?? 0)
+      rankInDr = ahead + 1
+    }
+
     return c.json({
       places: mine.length,
       followers,
       following: followingCount,
       streakWeeks: streak,
+      rankInDr,
       avgScore: mine.length ? mine.reduce((s, r) => s + r.score, 0) / mine.length : null,
       topCuisine: top(mine.map((r) => r.cuisine)),
       topNeighborhood: top(mine.map((r) => r.neighborhood)),

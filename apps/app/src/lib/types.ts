@@ -134,6 +134,7 @@ export interface MeStats {
   followers: number
   following: number
   streakWeeks: number
+  rankInDr: number | null
   avgScore: number | null
   topCuisine: string | null
   topNeighborhood: string | null
