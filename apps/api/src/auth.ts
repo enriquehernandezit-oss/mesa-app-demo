@@ -25,18 +25,37 @@ const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INST
 // collects the new password). First of APP_ORIGINS, same list CORS/trust use.
 const appOrigin = (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(',')[0]
 
-// Transactional email (password reset + verification). Dev logs the link to the
-// API console — the exact mirror of the phone-OTP dev path — so the flows are
-// fully exercisable locally with no provider. Prod must wire a real sender via
-// env, or this throws rather than silently dropping a security-critical link.
-// Placeholder phone accounts (<digits>@phone.mesa.local) have no real inbox, so
-// they're skipped: a phone-first user simply never triggers these.
+// Transactional email (password reset + verification), sent through Resend — a
+// plain HTTPS POST, no new dependency (same ethos as the hand-rolled Cloudinary
+// signature). When EMAIL_PROVIDER_API_KEY is set the mail goes out for real;
+// with no key, dev prints the link to the console (the exact mirror of the
+// phone-OTP dev path) so the flows stay exercisable locally, while prod fails
+// loud rather than silently dropping a security-critical link. Placeholder phone
+// accounts (<digits>@phone.mesa.local) have no real inbox and are skipped.
+const RESEND_KEY = process.env.EMAIL_PROVIDER_API_KEY
+// The verified sender. Defaults to Resend's shared onboarding@resend.dev, which
+// only delivers to the Resend account owner's own address — fine for a first
+// test; set EMAIL_FROM to your verified domain address (e.g. "Mesa <mail@…>").
+const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Mesa <onboarding@resend.dev>'
+
 async function sendMail(to: string, subject: string, body: string) {
   if (to.endsWith('@phone.mesa.local')) return
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Email provider not configured (set EMAIL_PROVIDER_API_KEY)')
+  if (!RESEND_KEY) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Email provider not configured (set EMAIL_PROVIDER_API_KEY + EMAIL_FROM)')
+    }
+    console.log(`[dev email] to=${to} · ${subject}\n${body}\n`)
+    return
   }
-  console.log(`[dev email] to=${to} · ${subject}\n${body}\n`)
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: EMAIL_FROM, to, subject, text: body }),
+  })
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Email send failed (${res.status}): ${detail.slice(0, 300)}`)
+  }
 }
 
 const instagramPlugin = genericOAuth({
