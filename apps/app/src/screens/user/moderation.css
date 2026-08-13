@@ -52,12 +52,16 @@
   margin-top: var(--space-2);
 }
 
-/* Taste-match chip on the passport header. */
+/* Taste-match pill — the reason to follow. Brass-wash, mono (Phase 6). */
 .match-chip {
-  margin-top: var(--space-2);
-  font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  display: inline-block;
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--accent);
+  background: var(--brass-wash);
+  border: 1px solid var(--brass-line-soft);
+  border-radius: var(--radius-pill);
+  padding: 6px 11px;
+  white-space: nowrap;
 }

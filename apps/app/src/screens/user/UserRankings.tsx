@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Body, Caption, Chip, Eyebrow, SerifItalic } from '../../components/ui'
 import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
-import { displayScore, matchColor } from '../../lib/display'
+import { displayScore } from '../../lib/display'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
@@ -103,8 +103,8 @@ export function UserRankings() {
               {followerCount} followers · {followingCount} following
             </Caption>
             {matchPercent != null && (
-              <span className="match-chip" style={{ color: matchColor(matchPercent) }}>
-                {matchPercent}% match · {sharedCount} spots en común
+              <span className="match-chip">
+                +{matchPercent}% taste match · {sharedCount} en común
               </span>
             )}
           </div>
