@@ -75,3 +75,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Add-email-sign-in form (phone/OAuth-first upgrade). */
+.settings-linkform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}

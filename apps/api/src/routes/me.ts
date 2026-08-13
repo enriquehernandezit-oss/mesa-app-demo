@@ -1,7 +1,8 @@
 import { db, schema } from '@mesa/db'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { auth } from '../auth'
 import type { AppEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
@@ -27,6 +28,11 @@ const profileSchema = z.object({
   neighborhoodSlug: z.string().trim().min(1),
   bio: z.string().trim().max(160).optional(),
   acceptEula: z.literal(true), // must be explicitly accepted (App Store 1.2)
+})
+
+const linkEmailSchema = z.object({
+  email: z.string().trim().toLowerCase().email(),
+  password: z.string().min(8).max(128),
 })
 
 export const meRoutes = new Hono<AppEnv>()
@@ -105,6 +111,56 @@ export const meRoutes = new Hono<AppEnv>()
         return c.json({ error: 'handle_taken' }, 409)
       }
       throw err
+    }
+
+    return c.json({ ok: true })
+  })
+  // Upgrade a phone/OAuth-first account with email + password sign-in. These
+  // accounts carry a placeholder inbox (<digits>@phone.mesa.local) and no
+  // credential, so there's no current password to check — setting the first one
+  // is privileged, hence server-side via Better Auth's setPassword (not the
+  // client changePassword, which requires the existing password). The gate is
+  // "has no credential account yet"; once linked, the real change-password /
+  // change-email flows apply instead. The new email lands unverified — the user
+  // confirms it from the same Settings screen.
+  .post('/link-email', async (c) => {
+    const current = c.get('user')
+    if (!current) return c.json({ error: 'unauthorized' }, 401)
+
+    const parsed = linkEmailSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
+    }
+    const { email, password } = parsed.data
+
+    // Already has a password? Then this is the wrong path (use change-password).
+    const cred = await db.query.account.findFirst({
+      where: and(
+        eq(schema.account.userId, current.id),
+        eq(schema.account.providerId, 'credential'),
+      ),
+      columns: { id: true },
+    })
+    if (cred) return c.json({ error: 'already_linked' }, 409)
+
+    // The email must be free (unique constraint also guards this).
+    const taken = await db.query.user.findFirst({
+      where: eq(schema.user.email, email),
+      columns: { id: true },
+    })
+    if (taken && taken.id !== current.id) return c.json({ error: 'email_taken' }, 409)
+
+    // Point the account at the real email first (unverified), then set the first
+    // password — so the credential is created against the correct address. If the
+    // password step fails, the credential still doesn't exist, so a retry is clean.
+    await db
+      .update(schema.user)
+      .set({ email, emailVerified: false, updatedAt: new Date() })
+      .where(eq(schema.user.id, current.id))
+    try {
+      await auth.api.setPassword({ body: { newPassword: password }, headers: c.req.raw.headers })
+    } catch {
+      return c.json({ error: 'set_password_failed' }, 400)
     }
 
     return c.json({ ok: true })

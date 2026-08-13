@@ -5,7 +5,7 @@ import { Button, Caption, Eyebrow } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { ThemePicker } from '../../components/ui/ThemePicker'
 import { useProfile } from '../../hooks/useProfile'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { authClient, signOut } from '../../lib/auth-client'
 import type { BlockedUser, Ranking } from '../../lib/types'
 import '../tabs/tabs.css'
@@ -44,6 +44,25 @@ export function SettingsScreen() {
     await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
     setVerifySent(true)
   }
+
+  // Phone/OAuth-first accounts (no real email) can add email + password sign-in.
+  const [linkEmail, setLinkEmail] = useState('')
+  const [linkPassword, setLinkPassword] = useState('')
+  const linkCredential = useMutation({
+    mutationFn: () =>
+      api.post('/me/link-email', { email: linkEmail.trim(), password: linkPassword }),
+    onSuccess: () => {
+      setLinkEmail('')
+      setLinkPassword('')
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+  })
+  const linkError =
+    linkCredential.error instanceof ApiError && linkCredential.error.code === 'email_taken'
+      ? 'That email is already in use.'
+      : linkCredential.isError
+        ? 'Could not add email sign-in — try again.'
+        : null
 
   async function handleSignOut() {
     await signOut()
@@ -135,6 +154,43 @@ export function SettingsScreen() {
                   </button>
                 </div>
               ))}
+            </div>
+          </>
+        )}
+
+        {/* Add email sign-in — phone/OAuth-first accounts with no real email. */}
+        {p && !realEmail && (
+          <>
+            <Eyebrow className="settings-eyebrow">Add email sign-in</Eyebrow>
+            <div className="settings-linkform">
+              <Caption>Add an email and password so you can sign in without your phone.</Caption>
+              <input
+                className="field"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                placeholder="you@email.com"
+                value={linkEmail}
+                onChange={(e) => setLinkEmail(e.target.value)}
+              />
+              <input
+                className="field"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Password (8+ characters)"
+                value={linkPassword}
+                onChange={(e) => setLinkPassword(e.target.value)}
+              />
+              <Button
+                disabled={
+                  linkCredential.isPending || !linkEmail.includes('@') || linkPassword.length < 8
+                }
+                onClick={() => linkCredential.mutate()}
+              >
+                {linkCredential.isPending ? 'Adding…' : 'Add email & password'}
+              </Button>
+              {linkError && <div className="error-text">{linkError}</div>}
             </div>
           </>
         )}
