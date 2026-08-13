@@ -28,7 +28,7 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <Wordmark size={26} />
+      <Wordmark size={22} />
       <div className="topbar__actions">
         <Link to="/leaderboard" className="topbar__btn" aria-label="Leaderboard">
           <svg

@@ -12,6 +12,10 @@
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
+/* Phase 6 wordmark: heavy serif, ink. */
+.topbar .mesa-wordmark {
+  font-weight: 900;
+}
 
 .topbar__actions {
   display: flex;
@@ -26,7 +30,7 @@
   display: grid;
   place-items: center;
   color: var(--text-2);
-  border: 1px solid var(--line);
+  border: 1.5px solid var(--glyph-line);
   transition: color 0.15s ease, transform 0.15s var(--ease-spring);
 }
 .topbar__btn:active {

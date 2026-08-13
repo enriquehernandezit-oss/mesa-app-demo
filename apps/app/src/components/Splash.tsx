@@ -1,7 +1,7 @@
 import { Wordmark } from './ui'
 
-// Shown while auth/profile state resolves. Just the wordmark on the oxblood
-// ground — the same first thing a quiz-taker sees, so there's no seam.
+// Shown while auth/profile state resolves. Just the wordmark on the paper
+// ground (--bg) — the same first thing anyone sees, so there's no seam.
 export function Splash() {
   return (
     <div

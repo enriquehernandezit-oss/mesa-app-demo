@@ -33,6 +33,8 @@
   --brass-line: rgba(154, 106, 40, 0.4); /* outlined pills */
   --brass-line-soft: rgba(154, 106, 40, 0.28); /* active chip outline */
   --brass-wash: rgba(154, 106, 40, 0.1); /* filled chip / active chip bg */
+  --glyph-line: #b7a893; /* outlined top-bar glyph buttons */
+  --shimmer-mid: #f0e7d8; /* skeleton shimmer highlight (base is --bg-sunk) */
 
   /* Primary CTA — the one filled button per screen: dark ink with cream text and
      a brass glow (per the handoff). Brass on oxblood in Candlelit. */
@@ -56,6 +58,14 @@
   --status-good: #9a6a28;
   --status-building: #97794f;
   --status-slow: #8a7b6c;
+
+  /* ── Theme-INVARIANT chrome (Phase 6) ── */
+  --glow-brass: 0 0 18px rgba(154, 106, 40, 0.35); /* FAB + one-CTA brass halo */
+  --avatar-hue-1: #b5773c; /* warm avatar gradient hues, rotated by name */
+  --avatar-hue-2: #c8703f;
+  --avatar-hue-3: #a98a63;
+  --avatar-ink: #fdf7ec; /* cream initials on the warm avatar gradient (both themes) */
+  --sheet-scrim: rgba(42, 21, 18, 0.28); /* dim behind bottom sheets — warm, never a black scrim */
 
   /* ── Theme-INVARIANT: photos carry their own dark island in both themes ── */
   --on-photo: #ebe4d6; /* primary text over photography */
@@ -139,6 +149,8 @@ html[data-theme="candlelit"] {
   --brass-line: rgba(226, 193, 121, 0.4);
   --brass-line-soft: rgba(226, 193, 121, 0.28);
   --brass-wash: rgba(226, 193, 121, 0.12);
+  --glyph-line: #6d574c;
+  --shimmer-mid: #3a1e1f;
 
   --btn-primary-bg: #c09050;
   --btn-primary-fg: #210104;

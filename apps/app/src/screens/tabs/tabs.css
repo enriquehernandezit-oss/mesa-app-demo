@@ -50,9 +50,12 @@
   right: 0;
   bottom: 0;
   display: flex;
-  background: var(--bg-sunk);
+  align-items: center;
+  justify-content: space-around;
+  min-height: 52px;
+  padding: 0 10px var(--safe-bottom);
+  background: var(--surface);
   border-top: 1px solid var(--line);
-  padding-bottom: var(--safe-bottom);
   z-index: 10;
 }
 .tab-link {
@@ -60,35 +63,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: var(--space-3) 0 var(--space-4);
-  color: var(--text-muted);
+  gap: 2px;
+  color: var(--tab-inactive);
   font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
+  font-size: 8.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+}
+.tab-link svg {
+  width: 18px;
+  height: 18px;
 }
 .tab-link[data-status="active"] {
   color: var(--accent);
 }
 
-/* Center "+" FAB — rank a place, raised above the bar. */
+/* Center "+" FAB — rank a place, a 40px ink circle that breaks the bar's top
+   edge with a brass halo. */
 .tab-fab {
   flex: none;
-  align-self: center;
-  width: 54px;
-  height: 54px;
-  margin: 0 var(--space-2);
-  transform: translateY(-14px);
+  width: 40px;
+  height: 40px;
+  margin-top: -8px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-  box-shadow: 0 8px 20px -6px var(--shadow-card);
+  box-shadow: var(--glow-brass);
+  transition: transform 0.15s var(--ease-spring);
+}
+.tab-fab svg {
+  width: 20px;
+  height: 20px;
 }
 .tab-fab:active {
-  transform: translateY(-14px) scale(0.94);
+  transform: scale(0.94);
 }
 .tab-link__dot {
   width: 5px;
