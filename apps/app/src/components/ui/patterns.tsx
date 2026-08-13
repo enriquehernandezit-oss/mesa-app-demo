@@ -2,6 +2,7 @@
 // them rather than re-implementing. Tokens only; theme-agnostic.
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
 import { displayScore, priceLabel } from '../../lib/display'
+import { Avatar } from './Avatar'
 import './patterns.css'
 
 /* --- Characteristics block ---------------------------------------------------
@@ -13,8 +14,11 @@ export interface CharacteristicsProps {
   priceTier?: number | null
   cuisine?: string | null
   neighborhood?: string | null
+  city?: string | null // appended after the neighbourhood ("Piantini, Santo Domingo")
   hours?: string | null // deferred — renders when the data exists
   distance?: string | null // deferred
+  // Social proof line 4: an avatar stack + a label ("2 friends want to try").
+  social?: { people: { name: string; image?: string | null }[]; label: string } | null
   className?: string
 }
 export function Characteristics({
@@ -22,12 +26,17 @@ export function Characteristics({
   priceTier,
   cuisine,
   neighborhood,
+  city,
   hours,
   distance,
+  social,
   className,
 }: CharacteristicsProps) {
-  const priceCuisine = [priceLabel(priceTier), cuisine].filter(Boolean).join(' · ')
-  const place = [neighborhood, distance].filter(Boolean).join(' · ')
+  // Price and cuisine are pipe-separated per the design: "$$$ | Parrilla, Argentine".
+  const priceCuisine = [priceLabel(priceTier), cuisine].filter(Boolean).join(' | ')
+  const place = [[neighborhood, city].filter(Boolean).join(', '), distance]
+    .filter(Boolean)
+    .join(' · ')
   const openHours = hours ?? null
   return (
     <div className={['chars', className].filter(Boolean).join(' ')}>
@@ -37,6 +46,16 @@ export function Characteristics({
       {priceCuisine && <div className="chars__line">{priceCuisine}</div>}
       {place && <div className="chars__line chars__line--muted">{place}</div>}
       {openHours && <div className="chars__line chars__line--muted">{openHours}</div>}
+      {social && social.people.length > 0 && (
+        <div className="chars__social">
+          <div className="chars__social-avatars">
+            {social.people.slice(0, 3).map((p) => (
+              <Avatar key={p.name} name={p.name} src={p.image} size={20} />
+            ))}
+          </div>
+          <span className="chars__social-text">{social.label}</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -55,7 +74,8 @@ export interface ScoreBadgeProps {
   score: number // 0–100 stored; shown 0–10
   attribution: ScoreAttribution
   size?: 'sm' | 'md' | 'lg'
-  caption?: string
+  caption?: string // 10px ink label under the circle
+  sub?: string // mono 8px muted sub-line ("#3 on your list")
 }
 function badgeText(a: ScoreAttribution): string | null {
   switch (a.kind) {
@@ -69,15 +89,20 @@ function badgeText(a: ScoreAttribution): string | null {
       return null // the caption ("All of Mesa") carries the attribution
   }
 }
-export function ScoreBadge({ score, attribution, size = 'md', caption }: ScoreBadgeProps) {
+export function ScoreBadge({ score, attribution, size = 'md', caption, sub }: ScoreBadgeProps) {
   const badge = badgeText(attribution)
+  // "All of Mesa" reads as a quiet, unbadged, muted number.
+  const mesa = attribution.kind === 'mesa'
   return (
     <div className="scorebadge">
-      <div className={`scorebadge__circle scorebadge__circle--${size}`}>
+      <div
+        className={`scorebadge__circle scorebadge__circle--${size}${mesa ? ' scorebadge__circle--mesa' : ''}`}
+      >
         <span className="scorebadge__n">{displayScore(score)}</span>
         {badge && <span className="scorebadge__badge">{badge}</span>}
       </div>
       {caption && <span className="scorebadge__caption">{caption}</span>}
+      {sub && <span className="scorebadge__sub">{sub}</span>}
     </div>
   )
 }

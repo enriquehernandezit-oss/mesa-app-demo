@@ -192,10 +192,23 @@
   border-color: var(--accent);
   color: var(--on-accent);
 }
+/* Small chip = the Phase 6 filter-rail chip: mono, 8px radius, card fill;
+   active/selected fills with a brass wash. */
 .mesa-chip--sm {
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-eyebrow);
-  font-weight: 600;
+  padding: 6px 9px;
+  border-radius: 8px;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 400;
+}
+.mesa-chip--sm.mesa-chip--active,
+.mesa-chip--sm.mesa-chip--selected {
+  background: var(--brass-wash);
+  border-color: var(--brass-line-soft);
+  color: var(--accent-strong);
 }
 
 /* Horizontal scrolling chip row — filters, rank search, activity. */
