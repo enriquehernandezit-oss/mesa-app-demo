@@ -106,7 +106,9 @@ export function AuthFlow() {
       <div className="auth-hero" aria-hidden />
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={64} />
-        <Eyebrow>Invite only · Santo Domingo</Eyebrow>
+        <Eyebrow style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-strong)' }}>
+          Invite only · Santo Domingo
+        </Eyebrow>
         <SerifItalic style={{ fontSize: '1.5rem', lineHeight: 1.15, marginTop: 'var(--space-2)' }}>
           Rank where you eat. Trust who you know.
         </SerifItalic>

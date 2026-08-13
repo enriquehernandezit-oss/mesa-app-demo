@@ -94,7 +94,15 @@ export function ActivityScreen() {
         ) : (
           sections.map((s) => (
             <div key={s.key}>
-              <Eyebrow style={{ margin: 'var(--space-5) 0 var(--space-2)' }}>{s.label}</Eyebrow>
+              <Eyebrow
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-muted)',
+                  margin: 'var(--space-5) 0 var(--space-2)',
+                }}
+              >
+                {s.label}
+              </Eyebrow>
               {s.items.map((a) => (
                 <ActivityRow key={`${a.type}-${a.user.id}-${a.at}`} a={a} />
               ))}
