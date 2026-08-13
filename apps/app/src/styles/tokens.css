@@ -5,32 +5,39 @@
  * hand-pick colors anywhere else in the app; reference the semantic variables
  * (--bg, --text, --accent, …), never a raw brand color or hex.
  *
- * M6.2 note: both theme blocks currently hold the SAME oxblood values, so the
- * app renders visually identical while the whole codebase moves to semantic
- * names. M6.3 fills in the real Afternoon (paper) palette by editing ONLY the
- * :root color block below — the candlelit block stays as-is.
+ * Phase 6 (docs/DESIGN-PHASE6.md) retunes the Afternoon (:root) palette to the
+ * exact design-handoff values — warm-paper grounds, ink-brown text, a darker
+ * brass, and a NEW monospace family (--font-mono) that carries all metadata,
+ * eyebrows, and pill labels. Candlelit (the dark theme) is kept and simply
+ * carries dark-appropriate values for the tokens Phase 6 adds.
  */
 
 :root {
-  /* ── Afternoon (paper) — the light theme, and the default. Warm ivory grounds,
-        ink-brown text, aged-brass accent. Never a pure-white ground. ── */
-  --bg: #f3efe6; /* primary ground — warm ivory */
-  --bg-sunk: #e8e2d5; /* deepest wells, tab-bar base */
-  --surface: #fbf8f2; /* cards, sheets */
-  --surface-raised: #ffffff; /* raised elements — always lighter than --surface */
-  --text: #241012; /* primary text — near-black ink-brown (14.9:1 on --bg) */
-  --text-2: #4a3236; /* secondary text (9.4:1) */
-  --text-muted: #8a7167; /* muted / captions only (3.9:1) */
-  --accent: #8a5f22; /* accent text, hairlines, active states (5.4:1) */
-  --accent-strong: #6b4715; /* heavier accent, emphasis (7.6:1) — DARKER than --accent on paper */
-  --accent-fill: #c09050; /* solid brass fill (chips, small fills) — brass in both themes */
-  --on-accent: #241012; /* text/icon on an --accent-fill surface */
-  --line: rgba(36, 16, 18, 0.1); /* faint dark hairline */
+  /* ── Afternoon (paper) — the light theme, and the default. Exact Phase 6
+        handoff palette. Never a pure-white ground; never a flat-grey hairline. ── */
+  --bg: #f5efe4; /* --screen: screen background inside the frame */
+  --bg-sunk: #e7dccb; /* --paper: app bg / behind cards / photo fallback (darkest ground) */
+  --surface: #fffdf8; /* --card: cards, sheets, tab bar, raised elements */
+  --surface-raised: #fffdf8; /* one card color in Phase 6; skeletons shimmer via --bg-sunk */
+  --text: #2a1512; /* --ink: primary text, FAB fill, dark badges */
+  --text-2: #4a3b32; /* --body: body copy where --ink is too heavy */
+  --text-muted: #a2917f; /* --muted: captions, metadata, inactive */
+  --text-faint: #b0a08e; /* --faint: annotation-level text only */
+  --accent: #9a6a28; /* brass — active states, scores, primary accent */
+  --accent-strong: #8a5a2a; /* --deep: brass on small text / eyebrows / pill labels */
+  --accent-fill: #9a6a28; /* solid brass fill (the one filled CTA / chips) */
+  --on-accent: #fdf7ec; /* cream text/icon on a brass or ink fill */
+  --tab-inactive: #8a7b6c; /* inactive tab-bar item */
+  --line: rgba(120, 80, 60, 0.12); /* warm hairline — never flat grey */
+  --line-strong: rgba(120, 80, 60, 0.16); /* stronger warm hairline */
+  --brass-line: rgba(154, 106, 40, 0.4); /* outlined pills */
+  --brass-line-soft: rgba(154, 106, 40, 0.28); /* active chip outline */
+  --brass-wash: rgba(154, 106, 40, 0.1); /* filled chip / active chip bg */
 
-  /* Primary CTA — diverges by theme: a dark ink button on paper (per the mock),
-     brass on oxblood (a dark button would vanish on the dark ground). */
-  --btn-primary-bg: #241012;
-  --btn-primary-fg: #f3efe6;
+  /* Primary CTA — the one filled button per screen: dark ink with cream text and
+     a brass glow (per the handoff). Brass on oxblood in Candlelit. */
+  --btn-primary-bg: #2a1512;
+  --btn-primary-fg: #fdf7ec;
   --btn-primary-bg-hover: #3d2226;
 
   /* Elevation & emphasis — warm brown on paper, never black. */
@@ -44,11 +51,11 @@
   --grain-blend: multiply;
   --grain-opacity: 0.6;
 
-  /* Nightlife status colors (shared across themes). */
-  --status-packed: #e0865a;
-  --status-good: #c09050;
-  --status-building: #a98a63;
-  --status-slow: #7a6258;
+  /* Nightlife status colors — re-tuned for the light ground (Phase 6). */
+  --status-packed: #c2603a;
+  --status-good: #9a6a28;
+  --status-building: #97794f;
+  --status-slow: #8a7b6c;
 
   /* ── Theme-INVARIANT: photos carry their own dark island in both themes ── */
   --on-photo: #ebe4d6; /* primary text over photography */
@@ -65,7 +72,7 @@
 
   /* Theme-picker swatches — both grounds shown at once, whatever the active
      theme, so they must be literal (not --bg). */
-  --swatch-afternoon: #f3efe6;
+  --swatch-afternoon: #f5efe4;
   --swatch-candlelit: #210104;
 
   /* Type families. Cormorant is the display serif (wordmark, restaurant names,
@@ -74,6 +81,9 @@
   --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-ui: "Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
     sans-serif;
+  /* Monospace (Phase 6) — theme-invariant. Carries metadata, eyebrows, pill
+     labels: the "spec sheet" voice that makes a place read as a real listing. */
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 
   /* Type scale — editorial: big serif, restrained UI text */
   --text-display: 2.4rem; /* hero serif moments */
@@ -118,11 +128,17 @@ html[data-theme="candlelit"] {
   --text: #ebe4d6;
   --text-2: #dcccbb;
   --text-muted: #a3867a;
+  --text-faint: #7d6459;
   --accent: #c09050;
   --accent-strong: #e2c179;
   --accent-fill: #c09050;
   --on-accent: #210104;
+  --tab-inactive: #8a7166;
   --line: rgba(235, 228, 214, 0.1);
+  --line-strong: rgba(235, 228, 214, 0.16);
+  --brass-line: rgba(226, 193, 121, 0.4);
+  --brass-line-soft: rgba(226, 193, 121, 0.28);
+  --brass-wash: rgba(226, 193, 121, 0.12);
 
   --btn-primary-bg: #c09050;
   --btn-primary-fg: #210104;

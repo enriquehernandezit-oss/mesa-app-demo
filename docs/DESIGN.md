@@ -40,43 +40,46 @@ inline boot script in `index.html`). There is no third CSS state.
 
 ### Semantic tokens
 
+Afternoon values are the **exact Phase 6 handoff palette** (see `docs/DESIGN-PHASE6.md`).
+
 | Token | Role | Afternoon | Candlelit |
 |---|---|---|---|
-| `--bg` | primary ground | `#f3efe6` | `#210104` |
-| `--bg-sunk` | deepest wells, tab-bar base | `#e8e2d5` | `#180b0b` |
-| `--surface` | cards, sheets | `#fbf8f2` | `#2c1516` |
-| `--surface-raised` | raised elements — **always lighter than `--surface`** | `#ffffff` | `#391c1d` |
-| `--text` | primary text | `#241012` | `#ebe4d6` |
-| `--text-2` | secondary text | `#4a3236` | `#dcccbb` |
-| `--text-muted` | muted / captions only | `#8a7167` | `#a3867a` |
-| `--accent` | accent text, hairlines, active | `#8a5f22` | `#c09050` |
-| `--accent-strong` | brighter/heavier accent, highlights | `#6b4715` | `#e2c179` |
-| `--accent-fill` | solid brass fill (buttons, chips) — **brass in both** | `#c09050` | `#c09050` |
-| `--on-accent` | text/icon **on** an `--accent-fill` surface | `#241012` | `#210104` |
-| `--line` | hairlines / dividers | (warm, low-alpha) | `rgba(235,228,214,.10)` |
-| `--line-strong` | heavier dividers | — | — |
-| `--on-photo` / `--on-photo-2` / `--on-photo-accent` | text over photography — **theme-invariant, always light** | (light) | (light) |
-| `--scrim-strong` / `--scrim-soft` / `--scrim-control` | photo scrims — **theme-invariant** | (dark) | (dark) |
-| `--shadow-card` / `--shadow-lift` | elevation | warm brown, never black | warm black |
-| `--glow-stamp` / `--glow-pin` | the celebration/pin emphasis | warm drop shadow | brass bloom |
-| `--grain-tint` / `--grain-blend` / `--grain-opacity` | the film-grain overlay | `multiply`, warm | `soft-light`, black |
-| `--status-packed/good/building/slow` | nightlife status | per-theme | per-theme |
+| `--bg` | screen ground (`--screen`) | `#f5efe4` | `#210104` |
+| `--bg-sunk` | app bg / behind cards / photo fallback (`--paper`) | `#e7dccb` | `#180b0b` |
+| `--surface` | cards, sheets, tab bar (`--card`) | `#fffdf8` | `#2c1516` |
+| `--surface-raised` | raised elements (one card color in Phase 6) | `#fffdf8` | `#391c1d` |
+| `--text` | primary text, FAB fill, dark badges (`--ink`) | `#2a1512` | `#ebe4d6` |
+| `--text-2` | body copy where `--ink` is too heavy (`--body`) | `#4a3b32` | `#dcccbb` |
+| `--text-muted` | captions, metadata, inactive (`--muted`) | `#a2917f` | `#a3867a` |
+| `--text-faint` | annotation-level text only (`--faint`) | `#b0a08e` | `#7d6459` |
+| `--accent` | brass — active states, scores, primary accent | `#9a6a28` | `#c09050` |
+| `--accent-strong` | brass on small text / eyebrows / pill labels (`--deep`) | `#8a5a2a` | `#e2c179` |
+| `--accent-fill` | solid brass fill (the one filled CTA / chips) | `#9a6a28` | `#c09050` |
+| `--on-accent` | text/icon **on** a brass or ink fill | `#fdf7ec` | `#210104` |
+| `--tab-inactive` | inactive tab-bar item | `#8a7b6c` | `#8a7166` |
+| `--line` / `--line-strong` | warm hairlines — **never flat grey** | `rgba(120,80,60,.12/.16)` | `rgba(235,228,214,.10/.16)` |
+| `--brass-line` / `--brass-line-soft` / `--brass-wash` | outlined pills, active chips, filled chips | `rgba(154,106,40,.4/.28/.1)` | `rgba(226,193,121,.4/.28/.12)` |
+| `--on-photo*` / photo scrims | text/scrims over photography — **theme-invariant** | light / dark | light / dark |
+| `--shadow-card` / `--glow-*` | elevation & emphasis | warm brown, never black | warm black / brass bloom |
+| `--grain-tint` / `--grain-blend` / `--grain-opacity` | film-grain overlay | `multiply`, warm | `soft-light`, black |
+| `--status-packed/good/building/slow` | nightlife status | `#c2603a`/`#9a6a28`/`#97794f`/`#8a7b6c` | per-theme |
 
 Notes that are load-bearing, not stylistic:
 
-- **`--accent` inverts in emphasis.** On Candlelit, `--accent-strong` is
-  *brighter* than `--accent`; on Afternoon it is *darker* (a light brass on
-  ivory fails contrast as text). That is why nothing references "brass-2"
-  directly — the name would lie on paper.
-- **`--accent-fill` stays `#c09050` in both themes.** Brass-on-a-button is brass
-  regardless of ground; the text on it flips via `--on-accent`.
-- **`--surface-raised` must be lighter than `--surface` in both themes.** The
-  skeleton-shimmer gradient depends on that direction; keep it and the shimmer
-  needs no per-theme code.
+- **Brass darkens on paper.** Afternoon `--accent` is `#9a6a28`, `--accent-strong`
+  (`--deep`) `#8a5a2a` — a *dark* accent on a light field. On Candlelit it inverts
+  (`--accent-strong` is *brighter* than `--accent`). Nothing references a raw
+  "brass" name — it would lie on paper.
+- **`--accent-fill` is now per-theme** (`#9a6a28` on paper, `#c09050` on oxblood);
+  the text on it flips via `--on-accent` (cream on paper's ink/brass fills).
+- **One card color in Phase 6.** `--surface`/`--surface-raised` are both `#fffdf8`
+  on paper; the skeleton shimmer no longer depends on the two differing — it
+  shimmers across `--bg-sunk → #f0e7d8 → --bg-sunk`.
+- **Monospace is a first-class family (`--font-mono`, JetBrains Mono).** It carries
+  all metadata, eyebrows, and pill labels — the "spec-sheet" voice. Theme-invariant.
 - **Photos carry their own dark island.** Text over a photograph is always
-  light-on-a-dark-scrim, in *both* themes — the seed imagery is candlelit bar
-  interiors, and a paper scrim would fight the art direction. `--on-photo*` and
-  `--scrim-*` are deliberately theme-invariant.
+  light-on-a-dark-scrim, in *both* themes. `--on-photo*` and the scrims are
+  deliberately theme-invariant.
 
 ### Type & spacing
 
@@ -87,7 +90,9 @@ also live in `tokens.css` (`--font-serif`, `--font-ui`, `--text-*`, `--space-*`,
 - **Display serif:** Cormorant Garamond (wordmark `mesa`, restaurant names, the
   big rank numerals). Georgia is the fallback.
 - **UI / body:** Plus Jakarta Sans.
-- **Eyebrows:** Jakarta, uppercase, letter-spaced ~0.16em, small, in `--accent`.
+- **Metadata / eyebrows / pill labels:** JetBrains Mono (`--font-mono`), weights
+  400–500 — the Phase 6 "spec-sheet" voice on every place listing.
+- **Eyebrows:** uppercase, letter-spaced ~0.16em, small, in `--accent`.
 - **Editorial italic:** the quiz tagline treatment — italic serif for editorial
   moments.
 
@@ -151,8 +156,8 @@ it's right.
   the place's own rating.
 - **Brass is the only accent.** No system-blue, no second accent hue.
 - **Text over photography is always light-on-a-dark-scrim**, in both themes.
-- **Never a pure-white ground.** Afternoon's `--bg` is warm ivory (`#f3efe6`),
-  not `#ffffff`.
+- **Never a pure-white ground, never pure black.** Afternoon's `--bg` is warm
+  ivory (`#f5efe4`); the extremes are `#fffdf8` and `#2a1512`.
 - **No raw brand colors or hex/rgba outside `tokens.css`** and the four sites
   named above. Enforce with:
   ```

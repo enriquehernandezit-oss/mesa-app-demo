@@ -8,3 +8,7 @@ import '@fontsource/cormorant-garamond/600.css'
 import '@fontsource/cormorant-garamond/400-italic.css'
 // Plus Jakarta Sans as a variable font — one file covers every UI weight.
 import '@fontsource-variable/plus-jakarta-sans'
+// JetBrains Mono (Phase 6) — carries all metadata, eyebrows, and pill labels.
+// Weights 400 + 500 only, matching the design.
+import '@fontsource/jetbrains-mono/400.css'
+import '@fontsource/jetbrains-mono/500.css'
