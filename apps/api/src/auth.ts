@@ -101,7 +101,16 @@ export const auth = betterAuth({
     // resetPassword({ newPassword, token }).
     sendResetPassword: async ({ user, token }) => {
       const url = `${appOrigin}/reset-password?token=${token}`
-      await sendMail(user.email, 'Reset your Mesa password', `Reset your password:\n${url}`)
+      await sendMail(
+        user.email,
+        'Reset your Mesa password',
+        `Someone requested a password reset for your Mesa account.
+
+Choose a new password here:
+${url}
+
+This link expires in about an hour. If you didn't request it, you can safely ignore this email.`,
+      )
     },
   },
 
@@ -113,7 +122,14 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendMail(user.email, 'Verify your email for Mesa', `Confirm your email:\n${url}`)
+      await sendMail(
+        user.email,
+        'Verify your email for Mesa',
+        `Welcome to Mesa. Confirm your email to finish setting up your account:
+${url}
+
+If you didn't create a Mesa account, you can ignore this email.`,
+      )
     },
   },
 
