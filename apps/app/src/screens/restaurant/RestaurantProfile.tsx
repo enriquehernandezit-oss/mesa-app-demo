@@ -147,6 +147,7 @@ export function RestaurantProfile() {
             priceTier={restaurant.priceTier}
             cuisine={restaurant.cuisine}
             neighborhood={restaurant.neighborhood?.name}
+            city="Santo Domingo"
           />
         </div>
 
@@ -164,29 +165,37 @@ export function RestaurantProfile() {
 
         {/* The badged score trio — every score is attributed, never the place's own. */}
         {(myRanking || friendAvg != null || allMesa.avg != null) && (
-          <div className="resto-scores">
-            {myRanking && (
-              <ScoreBadge
-                score={myRanking.score}
-                attribution={{ kind: 'you' }}
-                caption={`#${myRanking.position} on your list`}
-              />
-            )}
-            {friendAvg != null && (
-              <ScoreBadge
-                score={friendAvg}
-                attribution={{ kind: 'friends', count: friendsRankings.length }}
-                caption="what they think"
-              />
-            )}
-            {allMesa.avg != null && (
-              <ScoreBadge
-                score={allMesa.avg}
-                attribution={{ kind: 'mesa', count: allMesa.count }}
-                caption={`${allMesa.count} ranked`}
-              />
-            )}
-          </div>
+          <>
+            <Eyebrow style={{ color: 'var(--accent-strong)', marginBottom: 'var(--space-3)' }}>
+              Scores
+            </Eyebrow>
+            <div className="resto-scores">
+              {myRanking && (
+                <ScoreBadge
+                  score={myRanking.score}
+                  attribution={{ kind: 'you' }}
+                  caption="Your score"
+                  sub={`#${myRanking.position} on your list`}
+                />
+              )}
+              {friendAvg != null && (
+                <ScoreBadge
+                  score={friendAvg}
+                  attribution={{ kind: 'friends', count: friendsRankings.length }}
+                  caption="Friends"
+                  sub="what they think"
+                />
+              )}
+              {allMesa.avg != null && (
+                <ScoreBadge
+                  score={allMesa.avg}
+                  attribution={{ kind: 'mesa', count: allMesa.count }}
+                  caption="All of Mesa"
+                  sub={`${allMesa.count} ranked`}
+                />
+              )}
+            </div>
+          </>
         )}
 
         <div className="resto-actions">

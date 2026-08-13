@@ -74,10 +74,11 @@
   opacity: 0.45;
   pointer-events: none;
 }
-/* Primary — the CTA fill (dark on paper, brass on oxblood; see --btn-primary-*) */
+/* Primary — the one filled CTA per screen: dark ink with a brass halo. */
 .mesa-btn--primary {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
+  box-shadow: var(--glow-brass);
 }
 .mesa-btn--primary:hover {
   background: var(--btn-primary-bg-hover);
