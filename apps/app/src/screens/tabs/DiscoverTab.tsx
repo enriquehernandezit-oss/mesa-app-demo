@@ -12,7 +12,7 @@ import {
   Title,
 } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
-import { Characteristics } from '../../components/ui/patterns'
+import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
@@ -261,61 +261,94 @@ function FeedSkeleton() {
   )
 }
 
-function FeedCard({ item, index }: { item: FeedItem; index: number }) {
-  // A dish photo, when present, is the card's image (with its grain treatment);
-  // otherwise the restaurant cover.
-  const cover = item.dishImage ?? cloudinaryUrl(item.restaurant.coverImageId, { w: 800, h: 534 })
+function FeedFooter({ item }: { item: FeedItem }) {
   return (
-    <div className="feed-card" style={{ animationDelay: `${Math.min(index, 5) * 60}ms` }}>
-      <Link to="/u/$userId" params={{ userId: item.user.id }} className="feed-who">
-        <Avatar name={item.user.name || item.user.handle || 'm'} src={item.user.image} size={32} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="feed-who__name">
-            {item.user.name || item.user.handle}{' '}
-            <span className="feed-verb">{item.dishImage ? 'posted a dish' : 'ranked'}</span>
-          </div>
-          {item.user.handle && <div className="feed-who__meta">@{item.user.handle}</div>}
+    <div className="feed-footer">
+      <CheersButton
+        rankingId={item.rankingId}
+        count={item.cheersCount ?? 0}
+        cheered={item.cheeredByMe ?? false}
+      />
+    </div>
+  )
+}
+
+// Phase 6: two card types on paper. A dish post carries a warm-veiled photo; a
+// ranking is a compact card with the characteristics block and an inline badged
+// score circle (attributed to the friend — never the place's own rating).
+function FeedCard({ item, index }: { item: FeedItem; index: number }) {
+  const style = { animationDelay: `${Math.min(index, 5) * 60}ms` }
+  const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
+  const chars = (
+    <Characteristics
+      priceTier={item.restaurant.priceTier}
+      cuisine={item.restaurant.cuisine}
+      neighborhood={item.neighborhood}
+    />
+  )
+
+  if (item.dishImage) {
+    return (
+      <div className="feed-card" style={style}>
+        <Link
+          to="/r/$restaurantId"
+          params={{ restaurantId: item.restaurant.id }}
+          className="ph feed-photo"
+        >
+          <img
+            src={item.dishImage}
+            alt={item.dishName ?? item.restaurant.name}
+            loading="lazy"
+            style={{ filter: filterForGrain(item.dishGrain) }}
+          />
+          {item.dishName && <span className="ph-tag">🍽 {item.dishName}</span>}
+        </Link>
+        <div className="feed-card__body">
+          <Link
+            to="/u/$userId"
+            params={{ userId: item.user.id }}
+            className="feed-who feed-who--tight"
+          >
+            <Avatar
+              name={item.user.name || item.user.handle || 'm'}
+              src={item.user.image}
+              size={24}
+            />
+            <div className="feed-who__name" style={{ flex: 1 }}>
+              <strong>{firstName}</strong> posted a dish
+            </div>
+            <span className="feed-time">{timeAgo(item.rankedAt)}</span>
+          </Link>
+          <div className="feed-dish-name">{item.dishName || item.restaurant.name}</div>
+          {chars}
+          <FeedFooter item={item} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="feed-card feed-card--rank" style={style}>
+      <Link to="/u/$userId" params={{ userId: item.user.id }} className="feed-who feed-who--tight">
+        <Avatar name={item.user.name || item.user.handle || 'm'} src={item.user.image} size={28} />
+        <div className="feed-who__name" style={{ flex: 1 }}>
+          <strong>{firstName}</strong> ranked a place
         </div>
         <span className="feed-time">{timeAgo(item.rankedAt)}</span>
       </Link>
-
       <Link
         to="/r/$restaurantId"
         params={{ restaurantId: item.restaurant.id }}
-        className={`feed-cover${cover ? '' : ' feed-cover--empty'}`}
+        className="feed-rank-body"
       >
-        {cover ? (
-          <img
-            src={cover}
-            alt={item.dishName ?? item.restaurant.name}
-            loading="lazy"
-            style={item.dishImage ? { filter: filterForGrain(item.dishGrain) } : undefined}
-          />
-        ) : (
-          item.restaurant.name
-        )}
-        {item.dishName && <span className="feed-dish-tag">🍽 {item.dishName}</span>}
-        <div className="feed-caption">
-          <span className="feed-name">{item.restaurant.name}</span>
-          <span className="feed-score">{displayScore(item.score)}</span>
+        <div className="feed-rank-main">
+          <div className="feed-rank-name">{item.restaurant.name}</div>
+          {chars}
         </div>
+        <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
       </Link>
-
-      <div className="feed-body">
-        <div className="feed-body__row">
-          <Characteristics
-            priceTier={item.restaurant.priceTier}
-            cuisine={item.restaurant.cuisine}
-            neighborhood={item.neighborhood}
-          />
-          <CheersButton
-            rankingId={item.rankingId}
-            count={item.cheersCount ?? 0}
-            cheered={item.cheeredByMe ?? false}
-          />
-        </div>
-        {item.note && <div className="feed-note">“{item.note}”</div>}
-      </div>
+      {item.note && <div className="feed-note">“{item.note}”</div>}
+      <FeedFooter item={item} />
     </div>
   )
 }

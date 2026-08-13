@@ -12,9 +12,67 @@
   background: var(--surface);
   overflow: hidden;
   border: 1px solid var(--line);
-  box-shadow: 0 18px 40px -24px var(--shadow-card);
   animation: feed-card-in 0.5s var(--ease-spring) both;
   transition: transform 0.15s var(--ease-spring);
+}
+/* Ranking card — a compact paper card, no photo. */
+.feed-card--rank {
+  padding: 12px;
+}
+/* Dish-post card — the photo bleeds to the edges; text sits in the padded body. */
+.feed-card__body {
+  padding: 11px 12px;
+}
+.feed-photo {
+  display: block;
+  height: 132px;
+}
+/* Who-ranked row inside a card body (compact — no full-bleed padding). */
+.feed-who--tight {
+  padding: 0;
+  gap: 9px;
+  margin-bottom: 0;
+}
+/* Only the name is bold; "ranked a place / posted a dish" stays regular. */
+.feed-who--tight .feed-who__name {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text);
+}
+.feed-who__name strong {
+  font-weight: 600;
+}
+.feed-time {
+  font-family: var(--font-mono);
+}
+/* Name + characteristics beside the inline score circle. */
+.feed-rank-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  text-decoration: none;
+}
+.feed-rank-main {
+  flex: 1;
+  min-width: 0;
+}
+.feed-rank-name {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  line-height: 1.1;
+  color: var(--text);
+}
+.feed-dish-name {
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 8px;
+}
+.feed-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
 .feed-card:active {
   transform: scale(0.985);
@@ -371,11 +429,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Text over photography stays light in BOTH themes — the photo carries its own
-   dark scrim, so paper's dark --text would vanish here. These overrides are
-   no-ops in Candlelit (the on-photo values equal the dark palette). */
-.rail-card,
-.feed-caption {
+/* Rail cards still overlay text on a scrimmed photo, so text stays light there
+   in BOTH themes (no-op in Candlelit). Feed cards no longer overlay text. */
+.rail-card {
   --text: var(--on-photo);
   --text-2: var(--on-photo-2);
   --accent-strong: var(--on-photo-accent);
@@ -397,7 +453,8 @@
 .feed-note {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.2rem;
-  line-height: 1.4;
-  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  margin-top: 8px;
 }
