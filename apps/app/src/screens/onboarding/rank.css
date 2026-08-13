@@ -139,12 +139,12 @@
   opacity: 0.6;
 }
 .rank-row__thumb {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border-radius: var(--radius-sm);
   object-fit: cover;
-  background: var(--surface-raised);
+  background: var(--bg-sunk);
   border: 1px solid var(--line);
 }
 .rank-row__main {
@@ -161,9 +161,8 @@
 }
 .rank-row__badge {
   flex: none;
-  font-size: var(--text-eyebrow);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-eyebrow);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
   color: var(--text-muted);
 }
 
@@ -177,9 +176,9 @@
 }
 .rank-reveal__score {
   font-family: var(--font-serif);
-  font-size: 4.5rem;
-  line-height: 1;
-  color: var(--accent-strong);
+  font-size: 5.5rem; /* ~88px — the design's hero score */
+  line-height: 0.9;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .rank-neighbors {
@@ -203,10 +202,9 @@
   background: var(--surface-raised);
 }
 .rank-neighbor__pos {
-  font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
 }
 .rank-neighbor--new .rank-neighbor__pos {
   color: var(--accent-strong);
