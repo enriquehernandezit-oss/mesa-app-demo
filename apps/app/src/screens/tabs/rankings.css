@@ -64,9 +64,8 @@
   line-height: 1;
 }
 .stat__l {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
   color: var(--text-muted);
 }
 
@@ -183,14 +182,22 @@
   line-height: 1.35;
 }
 
-/* Score sits to the right, brass, tabular. */
+/* Score sits to the right as a compact brass circle (the design's ranking-card
+   score). Implicitly yours, so it carries no attribution badge. */
 .ranking-score {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--brass-line);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
   font-family: var(--font-serif);
-  font-size: 1.5rem;
-  color: var(--accent-strong);
+  font-size: 1rem;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  padding-top: 4px;
 }
 
 /* Small inline row actions (edit note / remove). */

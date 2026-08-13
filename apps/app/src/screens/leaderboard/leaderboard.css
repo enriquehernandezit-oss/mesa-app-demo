@@ -35,7 +35,8 @@
   white-space: nowrap;
 }
 .lb-meta {
-  font-size: var(--text-eyebrow);
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--text-muted);
 }
 .lb-stats {
