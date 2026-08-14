@@ -216,7 +216,7 @@
 /* Horizontal scrolling chip row — filters, rank search, activity. */
 .mesa-chiprail {
   display: flex;
-  gap: var(--space-2);
+  gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;

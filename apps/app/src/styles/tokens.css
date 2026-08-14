@@ -70,7 +70,6 @@
   --avatar-hue-2: #c8703f;
   --avatar-hue-3: #a98a63;
   --avatar-ink: #fdf7ec; /* cream initials on the warm avatar gradient (both themes) */
-  --sheet-scrim: rgba(42, 21, 18, 0.28); /* dim behind bottom sheets — warm, never a black scrim */
 
   /* ── Theme-INVARIANT: photos carry their own dark island in both themes ── */
   --on-photo: #ebe4d6; /* primary text over photography */

@@ -70,8 +70,8 @@
   font-weight: 600;
 }
 .tab-link svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 .tab-link[data-status="active"] {
   color: var(--accent);
