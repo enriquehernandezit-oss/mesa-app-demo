@@ -1,5 +1,11 @@
 # Mesa — Design & Aesthetic
 
+> **Screen-level source of truth:** `docs/DESIGN-PHASE6-SCREENS.md` transcribes
+> the authoritative 18-screen Phase 6 design (what each screen contains, in what
+> order, with exact copy). `docs/DESIGN-PHASE6.md` is the token + four-pattern +
+> chrome handoff. This file is the aesthetic rationale below both. When a screen's
+> composition is in question, the screen spec wins.
+
 Mesa ships **two themes**, and both are first-class. The look is still fixed —
 you do not invent a style — but "fixed" now means *these two palettes and this
 one semantic token layer*, not a single oxblood ground.
