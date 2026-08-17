@@ -48,16 +48,17 @@ function Icon({ d }: { d: string }) {
   )
 }
 
-// Minimal line icons, brass when active: compass / laurel list / martini / person.
-// A center "+" FAB (rank a place) sits between the two pairs — the 5-slot bar.
+// Minimal line icons, brass when active (per the 18-screen design): hatched
+// plate / bulleted list / half-moon / person. A center "+" FAB (rank a place)
+// sits between the two pairs — the 5-slot bar.
 const TABS = [
   {
     to: '/discover',
     label: 'Feed',
-    d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm3.5-12.5-2 5-5 2 2-5 5-2Z',
+    d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9 4.4v15.2M12 3.1v17.8M15 4.4v15.2',
   },
   { to: '/rankings', label: 'Rankings', d: 'M8 6h13M8 12h13M8 18h13M4 6h.01M4 12h.01M4 18h.01' },
-  { to: '/tonight', label: 'Tonight', d: 'M5 3h14l-7 8v7m0 0H8m4 0h4M5 3l7 8M19 3l-7 8' },
+  { to: '/tonight', label: 'Tonight', d: 'M12 3a9 9 0 1 0 0 18V3Z' },
   {
     to: '/profile',
     label: 'You',

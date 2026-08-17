@@ -110,3 +110,52 @@ export const Chip = ({
 export const ChipRail = ({ className, ...p }: DivProps) => (
   <div className={cx('mesa-chiprail', className)} {...p} />
 )
+
+/* --- SectionHeader --- mono brass eyebrow + optional right-aligned mono link.
+ * The repeating "FEATURED LISTS … See all" / "THEIR SCORES" header everywhere a
+ * screen names a section. `action` renders on the right (a Link or a button). */
+export const SectionHeader = ({
+  children,
+  action,
+  className,
+  ...p
+}: PropsWithChildren<DivProps & { action?: ReactNode }>) => (
+  <div className={cx('section-head', className)} {...p}>
+    <span className="section-head__title">{children}</span>
+    {action && <span className="section-head__action">{action}</span>}
+  </div>
+)
+
+/* --- ActionRail --- the feed/explore quick-action row: Reserve · Order · Nearby.
+ * Reserve + Order are inert-by-design (they look live, do nothing); Nearby is a
+ * real link. Built from the outlined utility-pill language. */
+export const ActionRail = ({ className, ...p }: DivProps) => (
+  <div className={cx('action-rail', className)} {...p} />
+)
+
+/* --- Toggle --- brass switch. Replaces raw checkboxes. Controlled: pass
+ * `checked` + `onChange(next)`. `stale` marks an inert-by-design switch (still
+ * flips visually, persists nothing meaningful) so it reads as live per design. */
+export const Toggle = ({
+  checked,
+  onChange,
+  label,
+  className,
+  ...p
+}: Omit<HTMLAttributes<HTMLButtonElement>, 'onChange'> & {
+  checked: boolean
+  onChange?: (next: boolean) => void
+  label?: string
+}) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-label={label}
+    className={cx('mesa-toggle', checked && 'mesa-toggle--on', className)}
+    onClick={() => onChange?.(!checked)}
+    {...p}
+  >
+    <span className="mesa-toggle__knob" />
+  </button>
+)

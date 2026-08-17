@@ -197,8 +197,8 @@
 /* Small chip = the Phase 6 filter-rail chip: mono, 8px radius, card fill;
    active/selected fills with a brass wash. */
 .mesa-chip--sm {
-  padding: 6px 9px;
-  border-radius: 8px;
+  padding: 6px 11px;
+  border-radius: var(--radius-pill);
   border-color: var(--line-strong);
   background: var(--surface);
   color: var(--text);
@@ -227,4 +227,74 @@
 }
 .mesa-chiprail > * {
   flex: none;
+}
+
+/* --- SectionHeader — mono brass eyebrow + optional right-aligned mono link --- */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-5) 0 var(--space-3);
+}
+.section-head__title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+.section-head__action {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.section-head__action a,
+.section-head__action button {
+  color: inherit;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* --- ActionRail — outlined mono quick-action pills (Reserve · Order · Nearby) --- */
+.action-rail {
+  display: flex;
+  gap: 7px;
+  margin-bottom: var(--space-4);
+}
+.action-rail > * {
+  flex: 1;
+}
+
+/* --- Toggle — brass switch (replaces raw checkboxes) --- */
+.mesa-toggle {
+  flex: none;
+  width: 42px;
+  height: 25px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--toggle-track);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  transition: background 0.18s var(--ease-spring);
+}
+.mesa-toggle__knob {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--on-accent);
+  box-shadow: 0 1px 2px rgba(42, 21, 18, 0.28);
+  transition: transform 0.18s var(--ease-spring);
+}
+.mesa-toggle--on {
+  background: var(--accent-fill);
+}
+.mesa-toggle--on .mesa-toggle__knob {
+  transform: translateX(17px);
 }

@@ -99,15 +99,6 @@
 .tab-fab:active {
   transform: scale(0.94);
 }
-.tab-link__dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: transparent;
-}
-.tab-link[data-status="active"] .tab-link__dot {
-  background: var(--accent-fill);
-}
 
 .profile-hero {
   display: flex;
