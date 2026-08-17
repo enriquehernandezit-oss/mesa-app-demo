@@ -30,6 +30,13 @@ export const restaurants = pgTable(
     // is a handoff, not a booking engine — DR restaurants have no supply behind
     // it yet (BUILD_PLAN M5 / Phase 3).
     phone: text('phone'),
+    // Homepage for the "Website" utility pill (Phase 6 profile). Nullable — the
+    // pill only renders when present.
+    website: text('website'),
+    // Closing-time display label, e.g. "1a", "11p", "12a". Feeds the "till 1a"
+    // fragment in characteristics + the "Open now" filter. Display-only string,
+    // not a parsed time — the demo has no real hours supply.
+    closesAt: text('closes_at'),
     // 1–4 ($ – $$$$), shown in meta lines and usable as a filter.
     priceTier: integer('price_tier'),
     // Marks seed/demo rows so they are never confused with real listings later.

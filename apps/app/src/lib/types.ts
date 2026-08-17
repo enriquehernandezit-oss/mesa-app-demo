@@ -16,6 +16,7 @@ export interface MeResponse {
     email: string | null
     emailVerified: boolean
     neighborhood: Neighborhood | null
+    createdAt?: string // ISO — "Member since {month} {year}" on the profile
   }
   onboardingComplete: boolean
 }
@@ -35,6 +36,7 @@ export interface SuggestedUser {
   image: string | null
   neighborhood?: string | null
   followerCount?: number
+  rankedCount?: number // "41 ranked · Piantini" on start-with-these rows
 }
 
 export interface RankedRestaurant {
@@ -80,6 +82,32 @@ export interface Dish {
   user: { id: string; name: string; handle: string | null; image: string | null }
 }
 
+// The dish-detail screen (C3): a dish + its linked ranking/place.
+export interface DishDetail {
+  id: string
+  name: string
+  caption: string | null
+  imageId: string
+  grain: string
+  createdAt: string
+  user: { id: string; name: string; handle: string | null; image: string | null }
+  score: number // the poster's own score for the linked place (0–100)
+  posterIsMe: boolean
+  restaurant: {
+    id: string
+    name: string
+    cuisine: string | null
+    priceTier: number | null
+    phone: string | null
+    website: string | null
+    closesAt: string | null
+    lat: number
+    lng: number
+    coverImageId: string | null
+  }
+  neighborhood: string | null
+}
+
 export interface FeaturedList {
   id: string
   slug: string
@@ -114,8 +142,41 @@ export interface ExploreHit {
   coverImageId: string | null
   neighborhood: string | null
   priceTier: number | null
+  closesAt?: string | null
   friendAvg: number | null
   friendCount: number
+}
+
+// A member row in "place, dish, or member" search results.
+export interface ExploreMember {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  neighborhood: string | null
+  rankedCount: number
+}
+
+export interface ExploreResponse {
+  restaurants: ExploreHit[]
+  members: ExploreMember[]
+}
+
+// POST /restaurants body — the client passes a neighborhood slug (it has slugs,
+// not UUIDs). The restaurant returned by POST /restaurants ("Add a new restaurant").
+export interface NewRestaurantInput {
+  name: string
+  cuisine?: string
+  neighborhoodSlug: string
+  priceTier?: number
+}
+export interface NewRestaurant {
+  id: string
+  name: string
+  cuisine: string | null
+  priceTier: number | null
+  coverImageId: string | null
+  neighborhood: string | null
 }
 
 export interface MapSpot {
@@ -153,10 +214,12 @@ export interface LeaderboardRow {
 }
 
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked'
+  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
-  restaurant?: { id: string; name: string } | null
+  restaurant?: { id: string; name: string; coverImageId: string | null } | null
+  score?: number | null // friend_ranked: their score (0–100)
+  yourScore?: number | null // friend_ranked: mine, for "— above your 8.8"
 }
 
 export interface SavedPlace {
@@ -221,6 +284,8 @@ export interface RestaurantProfileResponse {
     lng: number
     coverImageId: string | null
     phone: string | null
+    website: string | null
+    closesAt: string | null
     priceTier: number | null
     neighborhood: { slug: string; name: string } | null
   }
@@ -230,6 +295,8 @@ export interface RestaurantProfileResponse {
   allMesa: { avg: number | null; count: number }
   lists: { slug: string; title: string }[]
   similar: RailSpot[]
+  // Friends who saved this place → the "N friends want to try" social line.
+  friendsWantToTry: { count: number; people: { name: string; image: string | null }[] }
   myRanking: { position: number; score: number } | null
   saved: boolean
 }

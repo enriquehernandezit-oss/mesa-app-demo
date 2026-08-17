@@ -355,17 +355,19 @@ const DISHES: Record<string, string[]> = {
   Peruvian: ['ceviche mixto', 'lomo saltado', 'causa'],
 }
 
+// Occasion vocabulary (Phase 6 mocks). The first five are the settable chips in
+// the rank flow's note step (B4); the rest enrich the aggregated characteristics
+// line on a profile (D1). Title-case, English — a controlled vocabulary, unlike
+// the free-form Spanish vibe notes.
 export const TAGS = [
-  'date night',
-  'en grupo',
-  'terraza',
-  'brunch',
-  'chichi',
-  'casual',
-  'buena música',
-  'vinos',
-  'hasta tarde',
-  'pet friendly',
+  'Date Night',
+  'Special Occasion',
+  'Group Dinner',
+  'Outdoor',
+  'Solo',
+  'Fine Dining',
+  'Casual',
+  'Late Night',
 ]
 
 export interface GeneratedUser {

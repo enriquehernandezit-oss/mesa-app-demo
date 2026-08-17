@@ -53,6 +53,7 @@ export const meRoutes = new Hono<AppEnv>()
         emailVerified: true,
         neighborhoodId: true,
         eulaAcceptedAt: true,
+        createdAt: true, // "Member since {month} {year}" on the profile (Phase 6)
       },
       with: {
         neighborhood: { columns: { slug: true, name: true } },

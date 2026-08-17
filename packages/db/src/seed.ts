@@ -3,7 +3,14 @@ import { eq, sql } from 'drizzle-orm'
 import { db, pool } from './client'
 import * as schema from './schema'
 import { seedCuration } from './seed-curation'
-import { friends, neighborhoods, restaurants, scoreForPosition, waitlist } from './seed-data'
+import {
+  dishPosts,
+  friends,
+  neighborhoods,
+  restaurants,
+  scoreForPosition,
+  waitlist,
+} from './seed-data'
 import {
   COVER_BY_CUISINE,
   extraNeighborhoods,
@@ -58,6 +65,17 @@ const PRICE_BY_KEY: Record<string, number> = {
 
 const DAY = 24 * 60 * 60 * 1000
 
+// Closing-time labels, cycled deterministically by index so "till 1a" varies.
+const CLOSES_AT = ['11p', '12a', '1a', '2a', '10p']
+// A plausible demo homepage from the name (isDemo data; real URLs replace these
+// at launch). Given to ~two-thirds of spots so the Website pill shows variety.
+const siteFor = (name: string): string =>
+  `https://${name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9]+/g, '')}.do`
+
 async function seed() {
   console.log('seeding…')
 
@@ -99,6 +117,9 @@ async function seed() {
         lat: r.lat,
         lng: r.lng,
         phone: `+1809555${String(1000 + i)}`,
+        // Every spot carries a closing label; ~2/3 carry a website (i % 3 !== 2).
+        closesAt: CLOSES_AT[i % CLOSES_AT.length],
+        website: i % 3 === 2 ? null : siteFor(r.name),
         priceTier: r.priceTier,
         coverImageId: `/restaurants/${r.cover}.jpg`,
         isDemo: true,
@@ -224,11 +245,34 @@ async function seed() {
       }
     })
   }
-  const insertedRankings = await db
-    .insert(schema.rankings)
-    .values(rankingRows)
-    .returning({ id: schema.rankings.id, userId: schema.rankings.userId })
+  const insertedRankings = await db.insert(schema.rankings).values(rankingRows).returning({
+    id: schema.rankings.id,
+    userId: schema.rankings.userId,
+    restaurantId: schema.rankings.restaurantId,
+  })
   await db.insert(schema.vibeNotes).values(noteRows)
+
+  // --- dish posts: each attaches to the poster's own ranking of that place ---
+  const rankingByUserPlace = new Map<string, string>()
+  for (const r of insertedRankings) rankingByUserPlace.set(`${r.userId}:${r.restaurantId}`, r.id)
+  const dishRows: (typeof schema.dishes.$inferInsert)[] = []
+  for (const d of dishPosts) {
+    const uId = uid(d.handle)
+    const rId = rid(d.key)
+    const rankingId = rankingByUserPlace.get(`${uId}:${rId}`)
+    if (!rankingId) throw new Error(`dish "${d.name}": ${d.handle} has no ranking for ${d.key}`)
+    dishRows.push({
+      userId: uId,
+      rankingId,
+      restaurantId: rId,
+      name: d.name,
+      caption: d.caption,
+      imageId: `/restaurants/${d.photo}.jpg`,
+      grain: d.grain,
+      visibility: 'public',
+    })
+  }
+  await db.insert(schema.dishes).values(dishRows)
 
   // --- cheers: 0–6 per ranking, drawn from the owner's followers ---
   const followersOf = new Map<string, string[]>()
@@ -277,6 +321,7 @@ async function seed() {
     `inserted: ${nRows.length} neighborhoods, ${rRows.length} restaurants, ` +
       `${friends.length + generated.length} users, ${followRows.length} follows, ` +
       `${rankingRows.length} rankings, ${noteRows.length} vibe notes, ` +
+      `${dishRows.length} dishes, ` +
       `${cheerRows.length} cheers, ${savedRows.length} saved, ${waitlist.length} waitlist`,
   )
 

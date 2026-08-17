@@ -113,6 +113,9 @@ export const onboardingRoutes = new Hono<AppEnv>()
         image: schema.user.image,
         neighborhood: schema.neighborhoods.name,
         followerCount: sql<number>`count(${schema.follows.followerId})::int`,
+        // Scalar subquery (still one statement) — "41 ranked · Piantini" on the
+        // empty-feed / start-with-these rows (Phase 6).
+        rankedCount: sql<number>`(select count(*) from ${schema.rankings} where ${schema.rankings.userId} = ${schema.user.id})::int`,
       })
       .from(schema.user)
       .leftJoin(schema.neighborhoods, eq(schema.user.neighborhoodId, schema.neighborhoods.id))

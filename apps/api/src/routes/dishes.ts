@@ -122,6 +122,72 @@ export const dishesRoutes = new Hono<AppEnv>()
     return c.json({ dishes: rows.filter((d) => !blocked.has(d.user.id)) })
   })
 
+  // One dish + its linked ranking summary (Phase 6 dish detail, screen C3).
+  // Visible if it's mine, public, or from someone I follow — and never if the
+  // poster is banned or blocked. Returns the linked place so the detail can show
+  // the characteristics block + the poster's own score, attributed.
+  .get('/:id', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const id = c.req.param('id')
+    const { restaurants, neighborhoods } = schema
+
+    const [row] = await db
+      .select({
+        id: dishes.id,
+        name: dishes.name,
+        caption: dishes.caption,
+        imageId: dishes.imageId,
+        grain: dishes.grain,
+        createdAt: dishes.createdAt,
+        visibility: dishes.visibility,
+        user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+        score: rankings.score,
+        restaurant: {
+          id: restaurants.id,
+          name: restaurants.name,
+          cuisine: restaurants.cuisine,
+          priceTier: restaurants.priceTier,
+          phone: restaurants.phone,
+          website: restaurants.website,
+          closesAt: restaurants.closesAt,
+          lat: restaurants.lat,
+          lng: restaurants.lng,
+          coverImageId: restaurants.coverImageId,
+        },
+        neighborhood: neighborhoods.name,
+      })
+      .from(dishes)
+      .innerJoin(user, eq(user.id, dishes.userId))
+      .innerJoin(rankings, eq(rankings.id, dishes.rankingId))
+      .innerJoin(restaurants, eq(restaurants.id, dishes.restaurantId))
+      .innerJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .where(and(eq(dishes.id, id), isNull(dishes.removedAt), isNull(user.bannedAt)))
+      .limit(1)
+    if (!row) return c.json({ error: 'not_found' }, 404)
+
+    // Visibility: mine, public, or someone I follow.
+    const posterIsMe = row.user.id === me.id
+    if (!posterIsMe && row.visibility !== 'public') {
+      const [f] = await db
+        .select({ id: follows.followingId })
+        .from(follows)
+        .where(and(eq(follows.followerId, me.id), eq(follows.followingId, row.user.id)))
+        .limit(1)
+      if (!f) return c.json({ error: 'not_found' }, 404)
+    }
+    // Never surface a blocked poster's dish.
+    const [blocked] = await db
+      .select({ id: userBlocks.blockedId })
+      .from(userBlocks)
+      .where(and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, row.user.id)))
+      .limit(1)
+    if (blocked) return c.json({ error: 'not_found' }, 404)
+
+    const { visibility: _v, ...dish } = row
+    return c.json({ dish: { ...dish, posterIsMe } })
+  })
+
   // Soft-remove my own dish.
   .delete('/:id', async (c) => {
     const me = c.get('user')

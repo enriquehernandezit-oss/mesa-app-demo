@@ -1,5 +1,6 @@
 import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
 import { requireAuth } from '../middleware/session'
@@ -10,10 +11,14 @@ import { requireAuth } from '../middleware/session'
 const { cheers, rankings, restaurants, follows, savedPlaces, user } = schema
 
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked'
+  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
-  restaurant?: { id: string; name: string } | null
+  restaurant?: { id: string; name: string; coverImageId: string | null } | null
+  // friend_ranked carries the comparison numbers ("ranked Lumbre 9.1 — above
+  // your 8.8"). score = their score, yourScore = mine (both 0–100, shown /10).
+  score?: number | null
+  yourScore?: number | null
 }
 
 export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
@@ -25,7 +30,11 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .select({
       at: cheers.createdAt,
       user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
-      restaurant: { id: restaurants.id, name: restaurants.name },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
     })
     .from(cheers)
     .innerJoin(rankings, eq(rankings.id, cheers.rankingId))
@@ -60,7 +69,11 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .select({
       at: rankings.updatedAt,
       user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
-      restaurant: { id: restaurants.id, name: restaurants.name },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
     })
     .from(rankings)
     .innerJoin(user, eq(user.id, rankings.userId))
@@ -72,6 +85,33 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
         isNull(user.bannedAt),
       ),
     )
+    .orderBy(desc(rankings.updatedAt))
+    .limit(15)
+
+  // 4) People I follow ranked a place I've ALSO ranked → the comparison row
+  // ("ranked Lumbre 9.1 — above your 8.8"). My score comes in via a self-join on
+  // the same restaurant; disjoint from (3), which is want-to-try places.
+  const myRank = alias(rankings, 'my_rank')
+  const friendRanked = await db
+    .select({
+      at: rankings.updatedAt,
+      user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
+      score: rankings.score,
+      yourScore: myRank.score,
+    })
+    .from(rankings)
+    .innerJoin(user, eq(user.id, rankings.userId))
+    .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+    .innerJoin(
+      myRank,
+      and(eq(myRank.restaurantId, rankings.restaurantId), eq(myRank.userId, me.id)),
+    )
+    .where(and(inArray(rankings.userId, following), isNull(user.bannedAt)))
     .orderBy(desc(rankings.updatedAt))
     .limit(15)
 
@@ -93,6 +133,14 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
       at: x.at.toISOString(),
       user: x.user,
       restaurant: x.restaurant,
+    })),
+    ...friendRanked.map((x) => ({
+      type: 'friend_ranked' as const,
+      at: x.at.toISOString(),
+      user: x.user,
+      restaurant: x.restaurant,
+      score: x.score,
+      yourScore: x.yourScore,
     })),
   ]
     .sort((a, b) => (a.at < b.at ? 1 : -1))

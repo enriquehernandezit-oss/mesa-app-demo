@@ -286,6 +286,119 @@ export const friends: FriendSeed[] = [
   },
 ]
 
+// Seeded dish posts (Phase 6). Each attaches to a ranking a curated friend
+// actually holds (handle must appear with `key` in that friend's `ranked` list
+// above) so the NOT-NULL rankingId constraint is satisfied. `photo` is one of the
+// shared food JPEGs in apps/app/public/restaurants/. Dish names/captions are the
+// one place we write in English — the dish post is the new hero content and the
+// design mocks it in English; the vibe notes stay Spanish.
+export type DishSeed = {
+  handle: string
+  key: string
+  name: string
+  caption: string
+  photo: string
+  grain: 'candlelit' | 'daylight' | 'none'
+}
+export const dishPosts: DishSeed[] = [
+  {
+    handle: 'caro',
+    key: 'boga',
+    name: 'Branzino a la sal',
+    caption: 'Get the branzino, sit outside.',
+    photo: 'branzino',
+    grain: 'candlelit',
+  },
+  {
+    handle: 'caro',
+    key: 'peperoni',
+    name: 'Wild mushroom risotto',
+    caption: 'Order it, thank me later.',
+    photo: 'pasta',
+    grain: 'none',
+  },
+  {
+    handle: 'dieguito',
+    key: 'cava',
+    name: 'Short rib, 14 hours',
+    caption: 'Falls apart under the fork.',
+    photo: 'steak',
+    grain: 'candlelit',
+  },
+  {
+    handle: 'dieguito',
+    key: 'bottega',
+    name: 'Cacio e pepe',
+    caption: 'Fixes my whole week.',
+    photo: 'pasta',
+    grain: 'daylight',
+  },
+  {
+    handle: 'valen',
+    key: 'positano',
+    name: 'Grilled octopus',
+    caption: 'Octopus and a view. I ask for nothing else.',
+    photo: 'branzino',
+    grain: 'none',
+  },
+  {
+    handle: 'valen',
+    key: 'vesuvio',
+    name: 'Margherita, wood-fired',
+    caption: 'The oven does all the work.',
+    photo: 'pizza',
+    grain: 'daylight',
+  },
+  {
+    handle: 'isa',
+    key: 'lulu',
+    name: 'Burrata, green oil',
+    caption: 'My second home. The burrata, please.',
+    photo: 'tapas',
+    grain: 'candlelit',
+  },
+  {
+    handle: 'isa',
+    key: 'mesonbari',
+    name: 'Sancocho de la casa',
+    caption: 'Art on the walls, sancocho on the table.',
+    photo: 'mofongo',
+    grain: 'none',
+  },
+  {
+    handle: 'mateo',
+    key: 'segundo',
+    name: 'Ceviche mixto',
+    caption: 'How every plan should start.',
+    photo: 'ceviche',
+    grain: 'daylight',
+  },
+  {
+    handle: 'lucia',
+    key: 'positano',
+    name: 'Tagliatelle al mare',
+    caption: 'Sunday pasta by the sea.',
+    photo: 'pasta',
+    grain: 'none',
+  },
+  {
+    handle: 'rafa',
+    key: 'mitre',
+    name: 'Cheese board + tinto',
+    caption: "A pour you won't find anywhere else.",
+    photo: 'wine',
+    grain: 'candlelit',
+  },
+  {
+    handle: 'nati',
+    key: 'mijas',
+    name: 'Croquetas de jamón',
+    caption: 'Thursday tapas, no excuses.',
+    photo: 'tapas',
+    grain: 'daylight',
+  },
+]
+
 // Waitlist rows mirror the pre-launch quiz so quiz-takers are known users.
 export const waitlist = [
   { email: 'quiz-lead-1@example.com', instagramHandle: 'foodie.rd', quizResult: 'La Anfitriona' },
