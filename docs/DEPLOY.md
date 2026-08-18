@@ -84,6 +84,21 @@ curl https://YOUR-API-URL/health
 
 Expected: `{"ok":true,"service":"mesa-api"}`.
 
+`/health` only proves the API process is up — it never touches Postgres, so it
+can return `ok:true` even if the database connection is broken. To actually
+confirm the DB + migration worked, hit a route that reads data and needs no
+login — the public share page for the seeded demo user:
+
+```bash
+curl https://YOUR-API-URL/p/u/demo
+```
+
+- Branded HTML back → DB connection and migration are both good.
+- `{"error":"internal_error"}` (500) → connection/schema problem; check the
+  Railway deploy logs for the actual Postgres error.
+- `{"error":"not_found"}` (404) → the API is fine, but `bun run db:seed`
+  hasn't been run against this database yet (see below).
+
 ---
 
 ## Seeding the demo data (optional, ONE time only)
@@ -101,7 +116,7 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
 
 ---
 
-## Two gotchas to expect
+## Three gotchas to expect
 
 1. **Phone login won't work in prod** until you add an SMS provider
    (`SMS_PROVIDER_API_KEY`). Everything else runs without it. For a first live
@@ -110,6 +125,14 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
    than the API, the session cookie needs `SameSite=None; Secure`. If sign-in
    "works but doesn't stick" in the browser, that's the cause — flag it and
    we'll adjust the Better Auth cookie config for the real frontend origin.
+3. **Nixpacks build fails with "Node.js 18.x has reached End-Of-Life and has
+   been removed."** Railway's Nixpacks builder auto-detects a Node toolchain
+   from `package.json` even though the app runs on Bun, and without a pinned
+   version it defaulted to Node 18 — which nixpkgs has since deleted outright.
+   Fixed by pinning `"engines": {"node": "22"}` in the root `package.json`
+   (already done). If a future build somehow regresses to this error, set
+   `NIXPACKS_NODE_VERSION=22` as a service variable to force it regardless of
+   any cached build plan.
 
 ---
 
