@@ -1,13 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Button, Caption, Eyebrow } from '../../components/ui'
+import { Button, Caption, Eyebrow, Toggle } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { ThemePicker } from '../../components/ui/ThemePicker'
 import { useProfile } from '../../hooks/useProfile'
 import { ApiError, api } from '../../lib/api'
 import { authClient, signOut } from '../../lib/auth-client'
-import type { BlockedUser, Ranking } from '../../lib/types'
+import {
+  getFriendsOnlyScores,
+  getStealthMode,
+  setFriendsOnlyScores,
+  setStealthMode,
+} from '../../lib/prefs'
+import type { BlockedUser, MeStats, Ranking } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/profile.css'
 import './settings.css'
@@ -31,9 +37,18 @@ export function SettingsScreen() {
   })
   const blocked = blocks.data?.blocked ?? []
 
+  const stats = useQuery({
+    queryKey: ['me-stats'],
+    queryFn: () => api.get<MeStats>('/me/stats'),
+  })
+
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [verifySent, setVerifySent] = useState(false)
+  // Client-only "Your list" prefs (mock H1). Friends-only is real (it hides the
+  // all-of-Mesa score); stealth persists but is inert.
+  const [friendsOnly, setFriendsOnly] = useState(getFriendsOnlyScores)
+  const [stealth, setStealth] = useState(getStealthMode)
 
   // Real email only — phone-first accounts carry a placeholder inbox we never
   // surface or ask to verify.
@@ -102,21 +117,22 @@ export function SettingsScreen() {
     <div className="tab-shell">
       <div className="tab-body">
         <button type="button" className="link-action" onClick={() => navigate({ to: '/profile' })}>
-          ← Back
+          ‹ Settings
         </button>
-        <div className="tab-header" style={{ marginTop: 'var(--space-3)' }}>
-          <Eyebrow>Mesa</Eyebrow>
-          <div className="settings-title">Settings</div>
-        </div>
 
-        {/* Identity row. */}
-        <div className="settings-id">
+        {/* Tappable profile card → /profile. */}
+        <Link to="/profile" className="settings-id settings-id--link">
           <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={44} />
-          <div style={{ minWidth: 0 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div className="settings-id__name">{p?.name || 'You'}</div>
-            {p?.handle && <Caption>@{p.handle}</Caption>}
+            <div className="settings-id__meta">
+              {[p?.handle ? `@${p.handle}` : null, `${stats.data?.places ?? 0} ranked`]
+                .filter(Boolean)
+                .join(' · ')}
+            </div>
           </div>
-        </div>
+          <span className="settings-row__meta">›</span>
+        </Link>
 
         {/* Appearance. */}
         <Eyebrow className="settings-eyebrow">Appearance</Eyebrow>
@@ -125,6 +141,29 @@ export function SettingsScreen() {
         {/* Your list. */}
         <Eyebrow className="settings-eyebrow">Your list</Eyebrow>
         <div className="settings-group">
+          <div className="settings-row">
+            <span>Friends-only scores</span>
+            <Toggle
+              checked={friendsOnly}
+              onChange={(v) => {
+                setFriendsOnly(v)
+                setFriendsOnlyScores(v)
+                queryClient.invalidateQueries({ queryKey: ['restaurant'] })
+              }}
+              label="Friends-only scores"
+            />
+          </div>
+          <div className="settings-row">
+            <span>Stealth mode</span>
+            <Toggle
+              checked={stealth}
+              onChange={(v) => {
+                setStealth(v)
+                setStealthMode(v)
+              }}
+              label="Stealth mode"
+            />
+          </div>
           <button
             type="button"
             className="settings-row settings-row--btn"
@@ -132,7 +171,7 @@ export function SettingsScreen() {
             disabled={exporting}
           >
             <span>Export my rankings</span>
-            <span className="settings-row__meta">{exporting ? '…' : 'JSON ›'}</span>
+            <span className="settings-row__meta">{exporting ? '…' : '›'}</span>
           </button>
         </div>
 
@@ -198,6 +237,15 @@ export function SettingsScreen() {
         {/* Account. */}
         <Eyebrow className="settings-eyebrow">Account</Eyebrow>
         <div className="settings-group">
+          {/* Notifications + Invites are inert-by-design (no backend yet). */}
+          <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
+            <span>Notifications</span>
+            <span className="settings-row__meta">›</span>
+          </button>
+          <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
+            <span>Invites</span>
+            <span className="settings-row__meta settings-row__meta--mono">4 left</span>
+          </button>
           {realEmail && (
             <div className="settings-row">
               <span className="settings-row__email">{realEmail}</span>

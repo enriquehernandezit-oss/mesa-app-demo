@@ -16,11 +16,9 @@
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--text-2);
-  font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 9px;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
 .theme-swatch--on {

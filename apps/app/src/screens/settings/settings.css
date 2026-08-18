@@ -14,12 +14,30 @@
   border-radius: var(--radius);
   border: 1px solid var(--line);
   background: var(--surface);
-  margin-bottom: var(--space-5);
+  margin: var(--space-3) 0 var(--space-5);
+  text-decoration: none;
+}
+.settings-id--link {
+  transition: background 0.12s ease;
+}
+.settings-id--link:hover {
+  background: var(--surface-raised);
 }
 .settings-id__name {
   font-family: var(--font-serif);
   font-size: 1.25rem;
   color: var(--text);
+}
+.settings-id__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.settings-row__meta--mono {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
 }
 
 .settings-eyebrow {

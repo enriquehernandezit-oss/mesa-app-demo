@@ -8,6 +8,7 @@ import { api, apiOrigin } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
+import { getFriendsOnlyScores } from '../../lib/prefs'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
 import type { Dish, RestaurantProfileResponse } from '../../lib/types'
 import '../dish/dish.css'
@@ -91,6 +92,8 @@ export function RestaurantProfile() {
     .filter(Boolean)
     .join(' · ')
   const rankHref = { to: '/rank', search: { restaurant: restaurantId } } as const
+  // "Friends-only scores" pref (Settings H1) hides the all-of-Mesa aggregate.
+  const showMesa = !getFriendsOnlyScores()
 
   async function shareSpot() {
     const blob = await renderSpotCard({
@@ -163,7 +166,7 @@ export function RestaurantProfile() {
               ✓
             </button>
           </div>
-          {allMesa.avg != null && (
+          {allMesa.avg != null && showMesa && (
             <div className="resto-agg">
               <span className="resto-agg__score">{displayScore(allMesa.avg)}</span>
               <span className="resto-agg__count">{allMesa.count} rankings</span>
@@ -238,7 +241,7 @@ export function RestaurantProfile() {
                   sub="what they think"
                 />
               )}
-              {allMesa.avg != null && (
+              {allMesa.avg != null && showMesa && (
                 <ScoreBadge
                   score={allMesa.avg}
                   attribution={{ kind: 'mesa', count: allMesa.count }}
