@@ -3,7 +3,68 @@
 .resto-screen {
   min-height: 100dvh;
   background: var(--bg);
-  padding-bottom: calc(var(--safe-bottom) + var(--space-7));
+  /* Room for the fixed "Rank this place" CTA bar. */
+  padding-bottom: calc(var(--safe-bottom) + 88px);
+}
+
+/* --- Condensed sticky header ("‹ Lumbre 8.8") — fades in past the hero (D2) --- */
+.resto-condensed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-5) var(--space-3);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+.resto-condensed--shown {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.resto-condensed__back {
+  font-size: 1.4rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  line-height: 1;
+}
+.resto-condensed__name {
+  flex: 1;
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resto-condensed__score {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Fixed one-CTA bar — it never leaves (D2) --- */
+.resto-cta-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  padding: var(--space-3) var(--space-5) calc(var(--safe-bottom) + var(--space-3));
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
 }
 
 /* Full-bleed hero photo with a scrim; name + neighborhood laid over it. */
@@ -123,11 +184,72 @@
   gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
+/* Name row: title + "Rank again" pill + a circled save check (mock D1). */
+.resto-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
 .resto-title {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-serif);
   font-size: 1.9rem; /* ~30px, the design's restaurant-name size */
   line-height: 1;
   color: var(--text);
+}
+.resto-rankagain {
+  flex: none;
+  padding: 7px 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--brass-line);
+  background: transparent;
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  cursor: pointer;
+}
+.resto-savecheck {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--brass-line);
+  background: transparent;
+  color: var(--accent-strong);
+  font-size: 0.95rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.resto-savecheck--on {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+
+/* Aggregate line under the name: outlined score pill + mono count. */
+.resto-agg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+.resto-agg__score {
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--brass-line);
+  color: var(--accent);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.resto-agg__count {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-muted);
 }
 
 /* Utility pill row — Website / Call / Directions share the width equally. */
@@ -141,11 +263,48 @@
   padding: 9px 0;
 }
 
-/* Popular-dishes section header: title + "add a dish". */
-.resto-dishes-head {
+/* Reserve a table — inert time slots (mock D2). */
+.resto-reserve__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.resto-reserve {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  gap: 7px;
+  margin-bottom: var(--space-5);
+}
+.resto-time {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+.resto-time--more {
+  color: var(--text-muted);
+}
+
+/* "See all N rankings" expander + "+ Add a dish" link. */
+.resto-seeall,
+.resto-adddish {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.resto-seeall {
+  display: block;
+  margin-top: var(--space-3);
+  color: var(--accent-strong);
 }
 
 /* List-membership pills, just under the name. */
@@ -217,18 +376,14 @@
   font-weight: 600;
 }
 
-.resto-actions {
-  display: flex;
-  gap: var(--space-3);
-}
-
-/* Friends who ranked it. */
+/* Friends who ranked it (mock D2 "Their scores"). */
 .resto-friend {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4) 0;
   border-bottom: 1px solid var(--line);
+  text-decoration: none;
 }
 .resto-friend__main {
   flex: 1;
@@ -236,6 +391,13 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.resto-friend__note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  color: var(--text-2);
 }
 .resto-friend .feed-place__score {
   flex: none;
