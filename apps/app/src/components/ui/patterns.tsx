@@ -34,10 +34,11 @@ export function Characteristics({
 }: CharacteristicsProps) {
   // Price and cuisine are pipe-separated per the design: "$$$ | Parrilla, Argentine".
   const priceCuisine = [priceLabel(priceTier), cuisine].filter(Boolean).join(' | ')
-  const place = [[neighborhood, city].filter(Boolean).join(', '), distance]
+  // Line 3 folds neighbourhood · distance · hours onto one muted line, per the
+  // mocks ("Piantini · 1.2 km · till 1a").
+  const place = [[neighborhood, city].filter(Boolean).join(', '), distance, hours]
     .filter(Boolean)
     .join(' · ')
-  const openHours = hours ?? null
   return (
     <div className={['chars', className].filter(Boolean).join(' ')}>
       {occasionTags && occasionTags.length > 0 && (
@@ -45,7 +46,6 @@ export function Characteristics({
       )}
       {priceCuisine && <div className="chars__line">{priceCuisine}</div>}
       {place && <div className="chars__line chars__line--muted">{place}</div>}
-      {openHours && <div className="chars__line chars__line--muted">{openHours}</div>}
       {social && social.people.length > 0 && (
         <div className="chars__social">
           <div className="chars__social-avatars">

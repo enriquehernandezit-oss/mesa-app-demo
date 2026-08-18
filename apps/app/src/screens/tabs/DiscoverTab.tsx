@@ -3,10 +3,12 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { PullToRefresh } from '../../components/PullToRefresh'
 import {
+  ActionRail,
   Body,
   Button,
   ErrorState,
   Eyebrow,
+  SectionHeader,
   SerifItalic,
   Skeleton,
   Title,
@@ -14,19 +16,18 @@ import {
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
-import { displayScore } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
-import type { FeaturedList, FeedItem, RailSpot, SuggestedUser } from '../../lib/types'
+import type { FeaturedList, FeedItem, SuggestedUser } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
 import '../map/map.css'
 
-// The discovery feed (M4, redesigned in the viral pass): photo-forward cards,
-// infinite scroll (cursor pagination), pull-to-refresh, timestamps, cheers.
-// Search sits above the feed — the only way to find a spot by name.
+// The discovery feed (Phase 6 mocks A1–A3): a quick-action rail, a featured-lists
+// carousel, then the feed column. Ranking cards are compact paper cards; dish
+// posts carry a warm-veiled photo. Reserve/Order are inert-by-design; Nearby → map.
 
 interface FeedPage {
   feed: FeedItem[]
@@ -66,10 +67,8 @@ export function DiscoverTab() {
         <Link to="/explore" className="search-field search-field--link">
           Search a place, dish, or member…
         </Link>
-        <Link to="/map" className="map-pill">
-          🗺 Ver en el mapa
-        </Link>
       </div>
+      <FeedActionRail />
 
       {feed.isPending ? (
         <FeedSkeleton />
@@ -78,16 +77,9 @@ export function DiscoverTab() {
       ) : items.length > 0 ? (
         <>
           <ListsRail />
-          <SpotRail title="Trending esta semana" endpoint="/restaurants/trending" kind="cheers" />
           <div className="feed">
-            {items.slice(0, 2).map((item, i) => (
+            {items.map((item, i) => (
               <FeedCard key={item.rankingId} item={item} index={i} />
-            ))}
-          </div>
-          <SpotRail title="Para ti" endpoint="/feed/recs" kind="avg" />
-          <div className="feed" style={{ marginTop: 'var(--space-5)' }}>
-            {items.slice(2).map((item, i) => (
-              <FeedCard key={item.rankingId} item={item} index={i + 2} />
             ))}
           </div>
           <div ref={sentinel} style={{ height: 1 }} />
@@ -99,6 +91,25 @@ export function DiscoverTab() {
         <EmptyFeed />
       )}
     </PullToRefresh>
+  )
+}
+
+// The quick-action rail under the search field (mock A1–A3). Reserve + Order are
+// inert-by-design — they look live but do nothing (no reservation supply yet);
+// Nearby opens the map. Built from the outlined utility-pill language.
+function FeedActionRail() {
+  return (
+    <ActionRail>
+      <button type="button" className="upill" data-stale aria-disabled>
+        <span className="upill__icon">◉</span> Reserve
+      </button>
+      <button type="button" className="upill" data-stale aria-disabled>
+        <span className="upill__icon">▤</span> Order
+      </button>
+      <Link to="/map" className="upill">
+        <span className="upill__icon">➤</span> Nearby
+      </Link>
+    </ActionRail>
   )
 }
 
@@ -133,7 +144,7 @@ function EmptyFeed() {
             <div style={{ minWidth: 0 }}>
               <div className="feed-who__name">{u.name || u.handle}</div>
               <div className="feed-who__meta">
-                {[u.handle ? `@${u.handle}` : null, u.neighborhood].filter(Boolean).join(' · ')}
+                {[`${u.rankedCount ?? 0} ranked`, u.neighborhood].filter(Boolean).join(' · ')}
               </div>
             </div>
           </Link>
@@ -151,60 +162,8 @@ function EmptyFeed() {
   )
 }
 
-// Horizontal rail of spot cards — Trending (by cheers) and For-you (by friends'
-// average). The chrome that makes Discover feel like an app, not a list.
-function SpotRail({
-  title,
-  endpoint,
-  kind,
-}: {
-  title: string
-  endpoint: string
-  kind: 'cheers' | 'avg'
-}) {
-  const q = useQuery({
-    queryKey: ['rail', endpoint],
-    queryFn: () => api.get<{ restaurants?: RailSpot[]; recs?: RailSpot[] }>(endpoint),
-    staleTime: 120_000,
-  })
-  const spots = q.data?.restaurants ?? q.data?.recs ?? []
-  if (spots.length < 3) return null
-  return (
-    <section className="rail">
-      <div className="rail__head">
-        <span className="rail__title">{title}</span>
-      </div>
-      <div className="rail__scroll">
-        {spots.map((s) => {
-          const cover = cloudinaryUrl(s.coverImageId, { w: 320, h: 400 })
-          return (
-            <Link
-              key={s.id}
-              to="/r/$restaurantId"
-              params={{ restaurantId: s.id }}
-              className="rail-card"
-              style={cover ? { backgroundImage: `url(${cover})` } : undefined}
-            >
-              <span className="rail-card__badge">
-                {kind === 'cheers'
-                  ? `🥂 ${s.cheerCount}`
-                  : s.friendAvg
-                    ? displayScore(s.friendAvg)
-                    : ''}
-              </span>
-              <span className="rail-card__name">{s.name}</span>
-              <span className="rail-card__meta">
-                {[s.cuisine, s.neighborhood].filter(Boolean).join(' · ')}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-    </section>
-  )
-}
-
-// Featured editorial lists — a carousel with your own progress through each.
+// Featured editorial lists — a carousel of light paper cards (mock A3): a warm-
+// veiled photo on top, then the title + your progress in mono, on paper below.
 function ListsRail() {
   const q = useQuery({
     queryKey: ['lists'],
@@ -215,25 +174,20 @@ function ListsRail() {
   if (lists.length === 0) return null
   return (
     <section className="rail">
-      <div className="rail__head">
-        <span className="rail__title">Featured lists</span>
-      </div>
+      <SectionHeader>Featured lists</SectionHeader>
       <div className="rail__scroll">
         {lists.map((l) => {
-          const cover = cloudinaryUrl(l.coverImageId, { w: 320, h: 400 })
+          const cover = cloudinaryUrl(l.coverImageId, { w: 320, h: 300 })
           return (
-            <Link
-              key={l.slug}
-              to="/lists/$slug"
-              params={{ slug: l.slug }}
-              className="rail-card"
-              style={cover ? { backgroundImage: `url(${cover})` } : undefined}
-            >
-              <span className="rail-card__badge">
-                {l.mine} of {l.total}
-              </span>
-              <span className="rail-card__name">{l.title}</span>
-              <span className="rail-card__meta">{l.subtitle}</span>
+            <Link key={l.slug} to="/lists/$slug" params={{ slug: l.slug }} className="list-card">
+              <div
+                className="ph list-card__photo"
+                style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+              />
+              <div className="list-card__title">{l.title}</div>
+              <div className="list-card__progress">
+                {l.mine} of {l.total} ranked
+              </div>
             </Link>
           )
         })}
@@ -242,21 +196,42 @@ function ListsRail() {
   )
 }
 
+// The skeleton holds the SAME shapes as the loaded feed — the lists carousel and
+// the ranking-card geometry — so nothing reflows when data arrives (mock A1).
 function FeedSkeleton() {
   return (
-    <div className="feed">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="feed-card">
-          <div className="feed-who">
-            <Skeleton height={32} width={32} style={{ borderRadius: '50%' }} />
-            <Skeleton height={14} width={140} />
-          </div>
-          <Skeleton height={220} width="100%" style={{ borderRadius: 0 }} />
-          <div className="feed-body">
-            <Skeleton height={12} width="45%" />
-          </div>
+    <div>
+      <section className="rail">
+        <Skeleton height={12} width={110} style={{ margin: 'var(--space-5) 0 var(--space-3)' }} />
+        <div className="rail__scroll">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="list-card">
+              <Skeleton height={104} width="100%" style={{ borderRadius: 'var(--radius-sm)' }} />
+              <Skeleton height={13} width="80%" style={{ marginTop: 8 }} />
+              <Skeleton height={10} width="55%" style={{ marginTop: 6 }} />
+            </div>
+          ))}
         </div>
-      ))}
+      </section>
+      <div className="feed">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="feed-card feed-card--rank">
+            <div className="feed-rank-head">
+              <div className="feed-who feed-who--tight">
+                <Skeleton height={28} width={28} style={{ borderRadius: '50%' }} />
+                <div className="feed-who__stack" style={{ flex: 1 }}>
+                  <Skeleton height={12} width={130} />
+                  <Skeleton height={9} width={44} style={{ marginTop: 5 }} />
+                </div>
+              </div>
+              <Skeleton height={46} width={46} style={{ borderRadius: '50%' }} />
+            </div>
+            <Skeleton height={18} width="55%" style={{ marginTop: 10 }} />
+            <Skeleton height={11} width="80%" style={{ marginTop: 8 }} />
+            <Skeleton height={11} width="60%" style={{ marginTop: 5 }} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -284,7 +259,25 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
       priceTier={item.restaurant.priceTier}
       cuisine={item.restaurant.cuisine}
       neighborhood={item.neighborhood}
+      hours={item.restaurant.closesAt ? `till ${item.restaurant.closesAt}` : null}
     />
+  )
+
+  // Who-ranked/posted header: avatar + a stacked (name-line / mono timestamp).
+  const who = (verb: string, avatarSize: number) => (
+    <Link to="/u/$userId" params={{ userId: item.user.id }} className="feed-who feed-who--tight">
+      <Avatar
+        name={item.user.name || item.user.handle || 'm'}
+        src={item.user.image}
+        size={avatarSize}
+      />
+      <div className="feed-who__stack">
+        <div className="feed-who__name">
+          <strong>{firstName}</strong> {verb}
+        </div>
+        <span className="feed-time">{timeAgo(item.rankedAt)}</span>
+      </div>
+    </Link>
   )
 
   if (item.dishImage) {
@@ -301,24 +294,10 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
             loading="lazy"
             style={{ filter: filterForGrain(item.dishGrain) }}
           />
-          {item.dishName && <span className="ph-tag">🍽 {item.dishName}</span>}
+          <span className="ph-tag">film · {item.dishGrain ?? 'candlelit'}</span>
         </Link>
         <div className="feed-card__body">
-          <Link
-            to="/u/$userId"
-            params={{ userId: item.user.id }}
-            className="feed-who feed-who--tight"
-          >
-            <Avatar
-              name={item.user.name || item.user.handle || 'm'}
-              src={item.user.image}
-              size={24}
-            />
-            <div className="feed-who__name" style={{ flex: 1 }}>
-              <strong>{firstName}</strong> posted a dish
-            </div>
-            <span className="feed-time">{timeAgo(item.rankedAt)}</span>
-          </Link>
+          {who('posted a dish', 24)}
           <div className="feed-dish-name">{item.dishName || item.restaurant.name}</div>
           {chars}
           <FeedFooter item={item} />
@@ -329,23 +308,17 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
 
   return (
     <div className="feed-card feed-card--rank" style={style}>
-      <Link to="/u/$userId" params={{ userId: item.user.id }} className="feed-who feed-who--tight">
-        <Avatar name={item.user.name || item.user.handle || 'm'} src={item.user.image} size={28} />
-        <div className="feed-who__name" style={{ flex: 1 }}>
-          <strong>{firstName}</strong> ranked a place
-        </div>
-        <span className="feed-time">{timeAgo(item.rankedAt)}</span>
-      </Link>
+      <div className="feed-rank-head">
+        {who('ranked a place', 28)}
+        <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
+      </div>
       <Link
         to="/r/$restaurantId"
         params={{ restaurantId: item.restaurant.id }}
         className="feed-rank-body"
       >
-        <div className="feed-rank-main">
-          <div className="feed-rank-name">{item.restaurant.name}</div>
-          {chars}
-        </div>
-        <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
+        <div className="feed-rank-name">{item.restaurant.name}</div>
+        {chars}
       </Link>
       {item.note && <div className="feed-note">“{item.note}”</div>}
       <FeedFooter item={item} />

@@ -75,6 +75,7 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
         cuisine: restaurants.cuisine,
         coverImageId: restaurants.coverImageId,
         priceTier: restaurants.priceTier,
+        closesAt: restaurants.closesAt,
       },
       neighborhood: neighborhoods.name,
       note: vibeNotes.body,
