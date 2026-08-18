@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { api } from '../lib/api'
-import type { ActivityItem } from '../lib/types'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { api, apiOrigin } from '../lib/api'
+import type { ActivityItem, MeResponse } from '../lib/types'
 import { Wordmark } from './ui'
 import './topbar.css'
 
 // Persistent app bar over the tab shell: small wordmark, leaderboard, and the
 // notification bell. The unseen badge compares activity timestamps against a
-// local watermark that the Activity screen advances when opened.
+// local watermark that the Activity screen advances when opened. On /profile it
+// swaps to the profile variant (name + share + settings) per mock E1.
 const SEEN_KEY = 'mesa-activity-seen'
 
 export function activitySeenWatermark(): string {
@@ -18,6 +19,45 @@ export function markActivitySeen(): void {
 }
 
 export function TopBar() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  if (pathname === '/profile') return <ProfileTopBar />
+  return <DiscoverTopBar />
+}
+
+// Own-profile top bar (mock E1): the member's name left, share + settings right.
+function ProfileTopBar() {
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get<MeResponse>('/me'),
+  })
+  const p = me.data?.profile
+  async function shareProfile() {
+    const link = p?.handle ? `${apiOrigin}/p/u/${p.handle}` : apiOrigin
+    if (navigator.share)
+      await navigator.share({ text: `Mi ranking en Mesa 🥂\n${link}` }).catch(() => {})
+    else await navigator.clipboard.writeText(link).catch(() => {})
+  }
+  return (
+    <header className="topbar">
+      <span className="topbar__title">{p?.name || 'You'}</span>
+      <div className="topbar__actions">
+        <button
+          type="button"
+          className="topbar__btn"
+          aria-label="Share profile"
+          onClick={shareProfile}
+        >
+          ↗
+        </button>
+        <Link to="/settings" className="topbar__btn" aria-label="Settings">
+          ☰
+        </Link>
+      </div>
+    </header>
+  )
+}
+
+function DiscoverTopBar() {
   const activity = useQuery({
     queryKey: ['activity'],
     queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Body, Caption, Chip, Eyebrow, SerifItalic } from '../../components/ui'
+import { Body, Button, Caption, Chip, SectionHeader, SerifItalic } from '../../components/ui'
+import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
@@ -11,16 +12,19 @@ import '../tabs/rankings.css'
 import '../onboarding/friends.css'
 import './moderation.css'
 
-// Another person's ranked passport — and the surface where UGC moderation is
-// exercised (App Store 1.2): report any vibe note, block the user. Blocking
-// severs the graph and hides their content everywhere; the API 404s a blocked or
-// banned user, so this view empties out.
+// Another person's ranked passport (mock E2) — and the surface where UGC
+// moderation is exercised (App Store 1.2): report a vibe note or the user, block
+// them. Blocking severs the graph and hides their content; the API 404s a blocked
+// user, so this view empties out.
 const REASONS = ['Spam', 'Harassment', 'Inappropriate', 'Other'] as const
 
 export function UserRankings() {
   const { userId } = useParams({ from: '/u/$userId' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const q = useQuery({
     queryKey: ['user-rankings', userId],
@@ -31,14 +35,10 @@ export function UserRankings() {
   const block = useMutation({
     mutationFn: () => api.post('/moderation/blocks', { userId }),
     onSuccess: () => {
-      // Their content is gone now — drop caches that could still show them.
       queryClient.invalidateQueries()
       navigate({ to: '/discover' })
     },
   })
-
-  // Follow/unfollow. Optimistically flip the cached profile, and refresh the
-  // feed since following changes what it shows.
   const follow = useMutation({
     mutationFn: (next: boolean) =>
       next ? api.post('/social/follow', { userId }) : api.del(`/social/follow/${userId}`),
@@ -57,8 +57,6 @@ export function UserRankings() {
       </div>
     )
   }
-
-  // Blocked / banned / missing → the API hides the user.
   if (q.isError) {
     const gone = q.error instanceof ApiError && q.error.status === 404
     return (
@@ -69,7 +67,7 @@ export function UserRankings() {
             className="link-action"
             onClick={() => navigate({ to: '/discover' })}
           >
-            ← Back
+            ‹ Back
           </button>
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>
@@ -81,59 +79,99 @@ export function UserRankings() {
     )
   }
 
-  const { user, rankings, isFollowing, followerCount, followingCount, matchPercent, sharedCount } =
-    q.data
+  const { user, rankings, isFollowing, matchPercent } = q.data
+  const firstName = (user.name || user.handle || '').split(' ')[0] || 'Their'
+  const barrio = user.neighborhood?.name
+  const shown = expanded ? rankings : rankings.slice(0, 4)
+
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
-
-        <div className="mod-header">
-          <div>
-            <Eyebrow>{user.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
-            <div
-              style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--text)' }}
-            >
-              {user.name || user.handle}
-            </div>
-            {user.handle && <Caption>@{user.handle}</Caption>}
-            <Caption style={{ marginTop: 'var(--space-2)' }}>
-              {followerCount} followers · {followingCount} following
-            </Caption>
-            {matchPercent != null && (
-              <span className="match-chip">
-                +{matchPercent}% taste match · {sharedCount} en común
-              </span>
-            )}
-          </div>
+        <div className="user-headbar">
           <button
             type="button"
-            className="mod-block-btn"
-            onClick={() => block.mutate()}
-            disabled={block.isPending}
+            className="link-action"
+            onClick={() => navigate({ to: '/discover' })}
           >
-            Block
+            ‹ {user.name || user.handle}
           </button>
+          <div className="user-menu-wrap">
+            <button
+              type="button"
+              className="user-menu-btn"
+              aria-label="More"
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              ⋯
+            </button>
+            {menuOpen && (
+              <div className="user-menu">
+                <button type="button" onClick={() => setReporting(true)}>
+                  Report
+                </button>
+                <button
+                  type="button"
+                  className="user-menu__danger"
+                  onClick={() => block.mutate()}
+                  disabled={block.isPending}
+                >
+                  Block
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <button
-          type="button"
-          className={`friend-follow${isFollowing ? ' friend-follow--on' : ''}`}
-          style={{ alignSelf: 'flex-start', marginBottom: 'var(--space-5)' }}
-          onClick={() => follow.mutate(!isFollowing)}
-          disabled={follow.isPending}
-        >
-          {isFollowing ? 'Following' : 'Follow'}
-        </button>
+        <div className="user-identity">
+          <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
+          {user.handle && <div className="user-identity__handle">@{user.handle}</div>}
+          <div className="user-identity__meta">
+            {[`${rankings.length} ranked`, barrio].filter(Boolean).join(' · ')}
+          </div>
+          {matchPercent != null && <span className="match-chip">+{matchPercent}% taste match</span>}
+          <div className="user-actions">
+            <Button
+              variant="primary"
+              style={{ width: 'auto', minHeight: 44, padding: '0 var(--space-6)' }}
+              onClick={() => follow.mutate(!isFollowing)}
+              disabled={follow.isPending}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </Button>
+            <button type="button" className="user-message" data-stale aria-disabled>
+              Message
+            </button>
+          </div>
+        </div>
+
+        {reporting && (
+          <ReportUser
+            userId={userId}
+            onDone={() => {
+              setReporting(false)
+              setMenuOpen(false)
+            }}
+          />
+        )}
 
         {rankings.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>No rankings yet.</SerifItalic>
           </div>
         ) : (
-          rankings.map((r) => <TheirRow key={r.id} ranking={r} />)
+          <>
+            <SectionHeader action={<span>All {rankings.length}</span>}>
+              {firstName}'s top places
+            </SectionHeader>
+            {shown.map((r) => (
+              <TheirRow key={r.id} ranking={r} />
+            ))}
+            {rankings.length > 4 && (
+              <button type="button" className="resto-seeall" onClick={() => setExpanded((v) => !v)}>
+                {expanded ? 'Show fewer' : `See all ${rankings.length} ›`}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -161,23 +199,42 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
   )
 }
 
+// Report the whole user (from the ⋯ menu) — targetType 'user'.
+function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const report = useMutation({
+    mutationFn: (reason: string) =>
+      api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
+    onSuccess: onDone,
+  })
+  return (
+    <div className="report-panel">
+      <Caption>Why are you reporting this person?</Caption>
+      <div className="report-reasons">
+        {REASONS.map((reason) => (
+          <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
+            {reason}
+          </Chip>
+        ))}
+      </div>
+      <button type="button" className="link-action" onClick={onDone}>
+        Cancel
+      </button>
+    </div>
+  )
+}
+
 function ReportControl({
   targetType,
   targetId,
-}: {
-  targetType: 'vibe_note' | 'user'
-  targetId: string
-}) {
+}: { targetType: 'vibe_note' | 'user'; targetId: string }) {
   const [open, setOpen] = useState(false)
   const report = useMutation({
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType, targetId, reason }),
   })
-
   if (report.isSuccess) {
     return <div className="report-done">Reported. Thank you — we'll review it.</div>
   }
-
   return (
     <div className="ranking-actions">
       {!open ? (

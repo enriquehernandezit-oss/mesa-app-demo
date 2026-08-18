@@ -17,6 +17,15 @@
   font-weight: 900;
 }
 
+/* Profile variant (mock E1): the member's name in place of the wordmark. */
+.topbar__title {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
 .topbar__actions {
   display: flex;
   gap: var(--space-2);

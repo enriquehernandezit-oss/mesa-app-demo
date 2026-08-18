@@ -52,6 +52,96 @@
   margin-top: var(--space-2);
 }
 
+/* --- E2 someone-else's profile --- */
+.user-headbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+}
+.user-menu-wrap {
+  position: relative;
+}
+.user-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glyph-line);
+  background: none;
+  color: var(--text-2);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.user-menu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  z-index: 5;
+  min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px var(--shadow-card);
+  overflow: hidden;
+}
+.user-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  color: var(--text);
+  cursor: pointer;
+}
+.user-menu button:hover {
+  background: var(--surface-raised);
+}
+.user-menu__danger {
+  color: var(--status-packed);
+  border-top: 1px solid var(--line) !important;
+}
+.user-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-4) 0 var(--space-5);
+  gap: 4px;
+}
+.user-identity__handle {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
+  margin-top: var(--space-2);
+}
+.user-identity__meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.user-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.user-message {
+  padding: 0 var(--space-6);
+  min-height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 /* Taste-match pill — the reason to follow. Brass-wash, mono (Phase 6). */
 .match-chip {
   display: inline-block;

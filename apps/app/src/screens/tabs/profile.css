@@ -82,6 +82,98 @@
   padding: 0;
   margin-bottom: var(--space-2);
 }
+.avatar-btn--center {
+  align-self: center;
+}
+
+/* --- E1 own profile (centred identity) --- */
+.profile-hero--center {
+  align-items: center;
+  text-align: center;
+  border-bottom: none;
+  padding: var(--space-5) 0 var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.profile-handle {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--text);
+  margin-top: var(--space-1);
+}
+.profile-since {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.stats-row--trio {
+  margin-bottom: var(--space-5);
+}
+/* The trio reads as plain columns (mock E1), not carded stats. */
+.stats-row--trio .stat {
+  border: none;
+  background: none;
+  padding: var(--space-2) 0;
+}
+.profile-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.profile-nav__label {
+  font-family: var(--font-ui);
+}
+/* The two gamified stat cards (rank + streak). */
+.profile-statcards {
+  display: flex;
+  gap: var(--space-3);
+}
+.statcard {
+  flex: 1;
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.statcard__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.statcard__value {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--accent-strong);
+}
+
+/* Edit-profile sheet. */
+.profile-edit {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: var(--space-6);
+}
+.profile-edit__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.profile-edit__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 .avatar-btn__hint {
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
