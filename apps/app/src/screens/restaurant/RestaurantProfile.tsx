@@ -435,7 +435,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
       ) : (
         <div className="dish-rail">
           {dishes.map((d) => (
-            <div key={d.id} className="dish-card">
+            <Link key={d.id} to="/dish/$dishId" params={{ dishId: d.id }} className="dish-card">
               <img
                 className="dish-card__photo"
                 src={d.imageId}
@@ -447,7 +447,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
               <div className="dish-card__by">
                 by {(d.user.name || d.user.handle || '').split(' ')[0]}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

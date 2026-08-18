@@ -262,21 +262,33 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
   )
 
   if (item.dishImage) {
+    // The photo opens the dish's detail (C3) when we have its id, else the place.
+    const photoInner = (
+      <>
+        <img
+          src={item.dishImage}
+          alt={item.dishName ?? item.restaurant.name}
+          loading="lazy"
+          style={{ filter: filterForGrain(item.dishGrain) }}
+        />
+        <span className="ph-tag">film · {item.dishGrain ?? 'candlelit'}</span>
+      </>
+    )
     return (
       <div className="feed-card" style={style}>
-        <Link
-          to="/r/$restaurantId"
-          params={{ restaurantId: item.restaurant.id }}
-          className="ph feed-photo"
-        >
-          <img
-            src={item.dishImage}
-            alt={item.dishName ?? item.restaurant.name}
-            loading="lazy"
-            style={{ filter: filterForGrain(item.dishGrain) }}
-          />
-          <span className="ph-tag">film · {item.dishGrain ?? 'candlelit'}</span>
-        </Link>
+        {item.dishId ? (
+          <Link to="/dish/$dishId" params={{ dishId: item.dishId }} className="ph feed-photo">
+            {photoInner}
+          </Link>
+        ) : (
+          <Link
+            to="/r/$restaurantId"
+            params={{ restaurantId: item.restaurant.id }}
+            className="ph feed-photo"
+          >
+            {photoInner}
+          </Link>
+        )}
         <div className="feed-card__body">
           {who('posted a dish', 24)}
           <div className="feed-dish-name">{item.dishName || item.restaurant.name}</div>

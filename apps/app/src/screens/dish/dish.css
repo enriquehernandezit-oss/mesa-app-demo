@@ -1,6 +1,23 @@
 /* Dish compose + the popular-dishes rail. */
 
+/* C1 header — ✕ Recents (close) + Camera (opens picker). */
+.dish-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dish-head__camera {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--accent-strong);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
 .dish-photo {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   margin-top: var(--space-4);
@@ -11,6 +28,11 @@
   background-position: center;
   display: grid;
   place-items: center;
+  overflow: hidden;
+}
+.dish-photo__tag {
+  top: 10px;
+  left: 10px;
 }
 .dish-photo--set {
   border-style: solid;
@@ -68,8 +90,148 @@
   line-height: 1.1;
 }
 .dish-card__by {
-  font-size: var(--text-eyebrow);
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--text-muted);
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+
+/* --- C2 compose: thumb + name (mono sub-label) + serif-italic caption --- */
+.dish-compose-head {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.dish-compose-head__thumb {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--line);
+}
+.dish-compose-head__fields {
+  flex: 1;
+  min-width: 0;
+}
+.dish-name-input {
+  width: 100%;
+  border: none;
+  background: none;
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  color: var(--text);
+  outline: none;
+  padding: 0;
+}
+.dish-name-input::placeholder {
+  color: var(--text-muted);
+}
+.dish-name-input__label {
+  font-family: var(--font-mono);
+  font-size: 9px;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 2px 0 var(--space-3);
+}
+.dish-caption-input {
+  width: 100%;
+  border: none;
+  background: none;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--text-2);
+  outline: none;
+  padding: 0;
+}
+.dish-caption-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Linked-ranking card (C2). */
+.dish-linked {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.dish-linked__main {
+  flex: 1;
+  min-width: 0;
+}
+.dish-linked__name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+/* Toggle rows (C2) — label left, brass switch right. */
+.dish-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  color: var(--text);
+}
+
+/* --- C3 dish detail --- */
+.dish-detail {
+  min-height: 100dvh;
+  background: var(--bg);
+  padding-bottom: calc(var(--safe-bottom) + var(--space-7));
+}
+.dish-hero {
+  height: 42vh;
+  min-height: 280px;
+}
+.dish-detail__body {
+  padding: var(--space-5) var(--space-5) 0;
+}
+.dish-detail__title {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  line-height: 1.05;
+  color: var(--text);
+}
+.dish-detail__caption {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--text-2);
+  margin-top: var(--space-2);
+}
+.dish-place-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-5) 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-decoration: none;
+}
+.dish-place-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.dish-place-card__name {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 2px;
 }

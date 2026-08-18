@@ -266,6 +266,7 @@ export interface FeedItem {
   note: string | null
   cheersCount?: number
   cheeredByMe?: boolean
+  dishId?: string | null
   dishImage?: string | null
   dishName?: string | null
   dishGrain?: string | null

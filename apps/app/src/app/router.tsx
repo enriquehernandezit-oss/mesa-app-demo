@@ -10,6 +10,7 @@ import {
 import { TopBar } from '../components/TopBar'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
 import { DishCompose } from '../screens/dish/DishCompose'
+import { DishDetail } from '../screens/dish/DishDetail'
 import { ExploreScreen } from '../screens/explore/ExploreScreen'
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen'
 import { ListScreen } from '../screens/list/ListScreen'
@@ -208,6 +209,11 @@ const dishRoute = createRoute({
   }),
   component: DishCompose,
 })
+const dishDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dish/$dishId',
+  component: DishDetail,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -222,6 +228,7 @@ const routeTree = rootRoute.addChildren([
   exploreRoute,
   listRoute,
   dishRoute,
+  dishDetailRoute,
 ])
 
 const router = createRouter({ routeTree })

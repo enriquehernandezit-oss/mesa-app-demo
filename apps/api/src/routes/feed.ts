@@ -53,6 +53,7 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
   const latestDish = db
     .selectDistinctOn([dishes.rankingId], {
       rankingId: dishes.rankingId,
+      id: dishes.id,
       imageId: dishes.imageId,
       name: dishes.name,
       grain: dishes.grain,
@@ -79,6 +80,7 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
       },
       neighborhood: neighborhoods.name,
       note: vibeNotes.body,
+      dishId: latestDish.id,
       dishImage: latestDish.imageId,
       dishName: latestDish.name,
       dishGrain: latestDish.grain,
