@@ -21,7 +21,8 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen'
 import { DiscoverTab } from '../screens/tabs/DiscoverTab'
 import { ProfileTab } from '../screens/tabs/ProfileTab'
 import { RankingsTab } from '../screens/tabs/RankingsTab'
-import { TonightTab } from '../screens/tabs/placeholders'
+import { TonightDetail } from '../screens/tonight/TonightDetail'
+import { TonightTab } from '../screens/tonight/TonightTab'
 import { UserRankings } from '../screens/user/UserRankings'
 import '../screens/tabs/tabs.css'
 
@@ -214,6 +215,11 @@ const dishDetailRoute = createRoute({
   path: '/dish/$dishId',
   component: DishDetail,
 })
+const tonightDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/tonight/$tableId',
+  component: TonightDetail,
+})
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -229,6 +235,7 @@ const routeTree = rootRoute.addChildren([
   listRoute,
   dishRoute,
   dishDetailRoute,
+  tonightDetailRoute,
 ])
 
 const router = createRouter({ routeTree })

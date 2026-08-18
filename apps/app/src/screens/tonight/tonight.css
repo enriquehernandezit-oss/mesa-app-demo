@@ -1,0 +1,186 @@
+/* Tonight / Sobremesa (mocks I1–I2). Tokens only. */
+
+.tonight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tonight-date {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--accent-strong);
+  border: 1px solid var(--brass-line-soft);
+  background: var(--brass-wash);
+  border-radius: var(--radius-pill);
+  padding: 5px 11px;
+}
+
+/* Backdrop image inside a .ph / .resto-photo veil (below the ::before veil). */
+.tonight-card__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+/* --- I1 table cards --- */
+.tonight-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.tonight-card {
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.tonight-card__photo {
+  display: block;
+  height: 150px;
+}
+.tonight-card__seats {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(2px);
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+}
+.tonight-card__body {
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+.tonight-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.tonight-card__name {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.05;
+  color: var(--text);
+  text-decoration: none;
+}
+.tonight-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.tonight-card__who {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.tonight-card__who .chars__social-avatars > * {
+  border: 1.5px solid var(--surface);
+}
+.tonight-card__who .chars__social-avatars > * + * {
+  margin-left: -7px;
+}
+.tonight-card__wholabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Inert Join pill — looks live, does nothing (fixture demo). */
+.tonight-join {
+  flex: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--brass-line);
+  background: transparent;
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.tonight-join:disabled {
+  color: var(--text-muted);
+  border-color: var(--line-strong);
+  cursor: default;
+}
+
+/* --- I2 detail --- */
+.tonight-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.tonight-kv {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--line);
+}
+.tonight-kv__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+.tonight-kv__k {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tonight-kv__v {
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  color: var(--text);
+}
+.tonight-kv__host {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Who's in — avatar row + a dashed "open seats" tile. */
+.tonight-whos {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.tonight-whos__person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 52px;
+}
+.tonight-whos__name {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.tonight-whos__open {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--brass-line-soft);
+  display: grid;
+  place-items: center;
+  color: var(--accent-strong);
+  font-size: 1.3rem;
+}
