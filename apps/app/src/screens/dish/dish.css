@@ -49,16 +49,6 @@
   margin-top: var(--space-3);
 }
 
-.dish-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  color: var(--text-2);
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-}
-
 /* Popular dishes on the restaurant profile — a horizontal photo rail. */
 .dish-rail {
   display: flex;

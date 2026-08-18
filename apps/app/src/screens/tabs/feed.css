@@ -138,13 +138,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.feed-body__row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
 /* --- Cheers (🥂) --- */
 .cheers {
   display: inline-flex;
@@ -189,20 +182,6 @@
 /* --- Horizontal rails (Trending / For you) --- */
 .rail {
   margin: var(--space-4) 0 var(--space-5);
-}
-.rail__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-bottom: var(--space-3);
-}
-.rail__title {
-  font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-eyebrow);
-  color: var(--accent);
 }
 .rail__scroll {
   display: flex;
@@ -327,17 +306,6 @@
   color: var(--text-muted);
   text-decoration: none;
 }
-.search-results {
-  display: flex;
-  flex-direction: column;
-}
-.search-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--line);
-}
 .search-thumb {
   width: 52px;
   height: 52px;
@@ -355,19 +323,6 @@
   gap: var(--space-3);
   padding: var(--space-4) var(--space-4) var(--space-3);
 }
-.feed-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  flex: none;
-  background: var(--surface-raised);
-  border: 1px solid var(--accent);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-serif);
-  font-size: 1rem;
-  color: var(--accent);
-}
 .feed-who__name {
   font-family: var(--font-ui);
   font-weight: 600;
@@ -380,100 +335,6 @@
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
-.feed-verb {
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-/* The film-photo cover — the heart of the card. */
-.feed-cover {
-  position: relative;
-  display: block;
-  aspect-ratio: 16 / 10;
-  background: var(--bg-sunk);
-}
-.feed-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-/* Bottom scrim so the name/score read over any photo. */
-.feed-cover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    var(--photo-scrim-1) 0%,
-    var(--photo-scrim-4) 32%,
-    transparent 60%
-  );
-  pointer-events: none;
-}
-.feed-cover--empty {
-  display: grid;
-  place-items: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  color: var(--text-muted);
-}
-
-/* "posted a dish" tag, top-left over the photo. */
-.feed-dish-tag {
-  position: absolute;
-  top: var(--space-3);
-  left: var(--space-3);
-  z-index: 1;
-  max-width: 70%;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  background: var(--photo-scrim-3);
-  color: var(--on-photo);
-  font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Name + score laid over the bottom of the photo. */
-.feed-caption {
-  position: absolute;
-  left: var(--space-4);
-  right: var(--space-4);
-  bottom: var(--space-4);
-  z-index: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-.feed-name {
-  font-family: var(--font-serif);
-  font-size: 1.55rem;
-  line-height: 1.02;
-  color: var(--text);
-  text-shadow: 0 2px 12px var(--shadow-text);
-}
-.feed-score {
-  flex: none;
-  min-width: 48px;
-  height: 34px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--photo-scrim-3);
-  border: 1px solid var(--accent);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  color: var(--accent-strong);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Rail cards still overlay text on a scrimmed photo, so text stays light there
    in BOTH themes (no-op in Candlelit). Feed cards no longer overlay text. */
 .rail-card {
@@ -482,19 +343,6 @@
   --accent-strong: var(--on-photo-accent);
 }
 
-/* Below the photo — meta + the vibe note. */
-.feed-body {
-  padding: var(--space-3) var(--space-4) var(--space-5);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.feed-meta {
-  font-size: var(--text-eyebrow);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-}
 .feed-note {
   font-family: var(--font-serif);
   font-style: italic;

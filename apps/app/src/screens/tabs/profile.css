@@ -1,13 +1,6 @@
 /* Profile danger zone (account deletion) + avatar upload. Tokens only. */
 
-/* Settings entry (gear), top-right of the profile. */
-.profile-settings-row {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: var(--space-2);
-}
-
-/* Your-lists navigation rows (Ranked / Want to try / Recs / Leaderboard). */
+/* Your-lists navigation rows (Ranked / Want to try / Recs). */
 .profile-nav {
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -36,39 +29,6 @@
 .profile-nav__meta {
   color: var(--text-muted);
   font-size: var(--text-label);
-}
-
-/* Taste Profile card. */
-.taste-card {
-  padding: var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  margin-bottom: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-.taste-card__rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.taste-card__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.taste-card__k {
-  font-size: var(--text-eyebrow);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.taste-card__v {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  color: var(--text);
 }
 
 .avatar-btn {
