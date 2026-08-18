@@ -87,6 +87,18 @@ export const auth = betterAuth({
   trustedOrigins: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
   database: drizzleAdapter(db, { provider: 'pg', schema }),
 
+  // The app is on a different origin than the API (phone on the Wi-Fi LAN,
+  // native shell, or a separately hosted web build), so the session cookie must
+  // be sendable cross-origin. SameSite=None requires Secure; the API itself is
+  // always served over HTTPS (Railway), so this is safe even when the *page*
+  // loading it is on plain http (e.g. a LAN dev server).
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: 'none',
+      secure: true,
+    },
+  },
+
   // Email + password — a first-party account alongside phone/Apple/Instagram, so
   // membership never depends on owning a social identity. The hash lands in
   // account.password (providerId 'credential'); the user table already carries

@@ -160,6 +160,19 @@ export function AuthFlow() {
           </div>
           {error && <div className="error-text">{error}</div>}
 
+          <button
+            type="button"
+            className="auth-toggle"
+            disabled={busy}
+            onClick={() => {
+              setError(null)
+              setEmailMode('signin')
+              setStep('email')
+            }}
+          >
+            Already on Mesa? Sign in
+          </button>
+
           {/* Invite code — display affordance; soft-fails (no invite backend). */}
           {inviteOpen ? (
             <div className="invite-row">
