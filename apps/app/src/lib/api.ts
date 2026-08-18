@@ -1,7 +1,11 @@
 // Thin typed fetch wrapper for Mesa's own API routes (everything that isn't
-// Better Auth). Always sends the session cookie (credentials: 'include') so
-// authed routes resolve the current user. Throws ApiError on non-2xx so
-// TanStack Query surfaces failures through its error channel.
+// Better Auth). Sends the session cookie (credentials: 'include') AND the
+// Bearer token when we have one — authed routes resolve the current user via
+// Better Auth's getSession, which accepts either. The Bearer path is what keeps
+// auth working where cross-site cookies are blocked (iOS Safari, native shell).
+// Throws ApiError on non-2xx so TanStack Query surfaces failures.
+import { getToken } from './auth-token'
+
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 // The API origin, also where the public share pages (/p/*) are served. Used to
@@ -19,10 +23,12 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit & { json?: unknown }): Promise<T> {
   const { json, headers, ...rest } = init ?? {}
+  const token = getToken()
   const res = await fetch(`${baseURL}${path}`, {
     credentials: 'include',
     headers: {
       ...(json !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     ...(json !== undefined ? { body: JSON.stringify(json) } : {}),

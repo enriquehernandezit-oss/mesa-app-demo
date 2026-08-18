@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { genericOAuth, phoneNumber } from 'better-auth/plugins'
+import { bearer, genericOAuth, phoneNumber } from 'better-auth/plugins'
 
 // Better Auth wired to Postgres via the pooled Drizzle client from @mesa/db.
 //
@@ -170,6 +170,13 @@ If you didn't create a Mesa account, you can ignore this email.`,
     : undefined,
 
   plugins: [
+    // Bearer-token auth alongside cookies. On sign-in the server returns the
+    // session token in a `set-auth-token` response header; the client stores it
+    // and sends `Authorization: Bearer <token>` on every request. This is the
+    // auth path that survives where cross-site cookies don't — iOS Safari's
+    // tracking prevention and the Capacitor native webview. Cookies still work
+    // untouched for first-party/same-origin web.
+    bearer(),
     phoneNumber({
       sendOTP: async ({ phoneNumber: to, code }) => {
         // Dev path: no SMS provider needed to exercise phone login locally.

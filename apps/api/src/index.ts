@@ -20,13 +20,17 @@ import { socialRoutes } from './routes/social'
 
 const app = new Hono<AppEnv>()
 
-// CORS for the Vite app / Capacitor webview; credentials so the session cookie
-// rides along.
+// CORS for the Vite app / Capacitor webview. credentials:true lets the session
+// cookie ride along for same-origin/first-party web; exposeHeaders lets the
+// client JS READ the Better Auth `set-auth-token` header on a cross-origin
+// response, so it can store the Bearer token — the auth path that works where
+// cross-site cookies are blocked (iOS Safari, the Capacitor native shell).
 app.use(
   '*',
   cors({
     origin: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
     credentials: true,
+    exposeHeaders: ['set-auth-token'],
   }),
 )
 
