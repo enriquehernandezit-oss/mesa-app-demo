@@ -2,8 +2,8 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { Link } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
 import { PullToRefresh } from '../../components/PullToRefresh'
+import { QuickActions } from '../../components/QuickActions'
 import {
-  ActionRail,
   Body,
   Button,
   ErrorState,
@@ -68,7 +68,7 @@ export function DiscoverTab() {
           Search a place, dish, or member…
         </Link>
       </div>
-      <FeedActionRail />
+      <QuickActions />
 
       {feed.isPending ? (
         <FeedSkeleton />
@@ -91,25 +91,6 @@ export function DiscoverTab() {
         <EmptyFeed />
       )}
     </PullToRefresh>
-  )
-}
-
-// The quick-action rail under the search field (mock A1–A3). Reserve + Order are
-// inert-by-design — they look live but do nothing (no reservation supply yet);
-// Nearby opens the map. Built from the outlined utility-pill language.
-function FeedActionRail() {
-  return (
-    <ActionRail>
-      <button type="button" className="upill" data-stale aria-disabled>
-        <span className="upill__icon">◉</span> Reserve
-      </button>
-      <button type="button" className="upill" data-stale aria-disabled>
-        <span className="upill__icon">▤</span> Order
-      </button>
-      <Link to="/map" className="upill">
-        <span className="upill__icon">➤</span> Nearby
-      </Link>
-    </ActionRail>
   )
 }
 

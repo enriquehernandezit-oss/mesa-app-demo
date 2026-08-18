@@ -221,6 +221,7 @@ export interface ActivityItem {
   restaurant?: { id: string; name: string; coverImageId: string | null } | null
   score?: number | null // friend_ranked: their score (0–100)
   yourScore?: number | null // friend_ranked: mine, for "— above your 8.8"
+  followsBack?: boolean // follow rows: do I already follow them back?
 }
 
 export interface SavedPlace {

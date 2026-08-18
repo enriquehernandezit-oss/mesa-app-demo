@@ -1,4 +1,21 @@
-/* Activity rows. Tokens only. */
+/* Activity rows (mock F2) — avatar · text + mono time · thumbnail or action.
+   Every row carries its own action. Tokens only. */
+
+.activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-2);
+}
+.activity-markread {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
 
 .activity-row {
   display: flex;
@@ -10,12 +27,15 @@
 .activity-row__main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .activity-row__text {
   font-family: var(--font-ui);
   font-size: var(--text-label);
   color: var(--text-2);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 .activity-row__text b {
   color: var(--text);
@@ -23,4 +43,42 @@
 }
 .activity-row__place {
   color: var(--accent);
+}
+/* The mono timestamp under the row text (self-contained — activity doesn't
+   import feed.css). */
+.activity-row .feed-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Right-hand affordance: a restaurant thumbnail or a follow-back pill. */
+.activity-row__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+.activity-row__follow {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.activity-row__following {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
 }

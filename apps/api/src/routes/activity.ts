@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
@@ -19,6 +19,7 @@ export interface ActivityItem {
   // your 8.8"). score = their score, yourScore = mine (both 0–100, shown /10).
   score?: number | null
   yourScore?: number | null
+  followsBack?: boolean // follow rows: do I already follow them back?
 }
 
 export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
@@ -44,14 +45,18 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .orderBy(desc(cheers.createdAt))
     .limit(25)
 
-  // 2) New followers.
+  // 2) New followers. `followsBack` says whether I already follow them, so the
+  // row's Follow button knows to render as "Following".
+  const back = alias(follows, 'back')
   const followed = await db
     .select({
       at: follows.createdAt,
       user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+      followsBack: sql<boolean>`${back.followerId} is not null`,
     })
     .from(follows)
     .innerJoin(user, eq(user.id, follows.followerId))
+    .leftJoin(back, and(eq(back.followerId, me.id), eq(back.followingId, follows.followerId)))
     .where(and(eq(follows.followingId, me.id), isNull(user.bannedAt)))
     .orderBy(desc(follows.createdAt))
     .limit(25)
@@ -127,6 +132,7 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
       at: x.at.toISOString(),
       user: x.user,
       restaurant: null,
+      followsBack: x.followsBack,
     })),
     ...savedRanked.map((x) => ({
       type: 'saved_ranked' as const,

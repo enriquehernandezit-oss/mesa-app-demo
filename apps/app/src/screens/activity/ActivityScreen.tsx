@@ -1,21 +1,24 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { markActivitySeen } from '../../components/TopBar'
-import { Body, Chip, ChipRail, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, Chip, ChipRail, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
+import { displayScore } from '../../lib/display'
+import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
 import type { ActivityItem } from '../../lib/types'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
 import './activity.css'
 
-type Filter = 'all' | 'follows' | 'rankings'
+type Filter = 'all' | 'follows' | 'rankings' | 'tables'
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'follows', label: 'Follows' },
   { value: 'rankings', label: 'Rankings' },
+  { value: 'tables', label: 'Tables' },
 ]
 
 // Bucket an event into Today / This week / Earlier for the section grouping.
@@ -33,28 +36,31 @@ const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
   { key: 'earlier', label: 'Earlier' },
 ]
 
-// The screen behind the bell: cheers on your rankings, new followers, and
-// friends ranking spots you saved. Opening it advances the seen-watermark.
+// The screen behind the bell (mock F2): cheers, new followers, friends ranking
+// your saved spots, and friends out-ranking you — every row carries its own
+// action, so it's a place to DO things, not only read them. "Mark read" clears
+// the bell's badge. (Table activity arrives with the Tonight fixtures.)
 export function ActivityScreen() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('all')
   const q = useQuery({
     queryKey: ['activity'],
     queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),
   })
 
-  useEffect(() => {
+  const markRead = () => {
     markActivitySeen()
-  }, [])
+    queryClient.invalidateQueries({ queryKey: ['activity'] })
+  }
 
   const items = q.data?.activity ?? []
-  const shown = items.filter((a) =>
-    filter === 'all'
-      ? true
-      : filter === 'follows'
-        ? a.type === 'follow'
-        : a.type === 'cheers' || a.type === 'saved_ranked',
-  )
+  const shown = items.filter((a) => {
+    if (filter === 'all') return true
+    if (filter === 'follows') return a.type === 'follow'
+    if (filter === 'tables') return false // table activity lands with Tonight (M11)
+    return a.type === 'cheers' || a.type === 'saved_ranked' || a.type === 'friend_ranked'
+  })
   const sections = SECTIONS.map((s) => ({
     ...s,
     items: shown.filter((a) => bucket(a.at) === s.key),
@@ -63,15 +69,20 @@ export function ActivityScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
-        <div className="tab-header" style={{ marginTop: 'var(--space-3)' }}>
-          <Eyebrow>Activity</Eyebrow>
-          <Title>What you missed</Title>
+        <div className="activity-head">
+          <button
+            type="button"
+            className="link-action"
+            onClick={() => navigate({ to: '/discover' })}
+          >
+            ‹ Activity
+          </button>
+          <button type="button" className="activity-markread" onClick={markRead}>
+            Mark read
+          </button>
         </div>
 
-        <ChipRail style={{ marginBottom: 'var(--space-4)' }}>
+        <ChipRail style={{ margin: 'var(--space-3) 0 var(--space-4)' }}>
           {FILTERS.map((f) => (
             <Chip
               key={f.value}
@@ -115,6 +126,25 @@ export function ActivityScreen() {
 }
 
 function ActivityRow({ a }: { a: ActivityItem }) {
+  const queryClient = useQueryClient()
+  const [followed, setFollowed] = useState(Boolean(a.followsBack))
+  const follow = useMutation({
+    mutationFn: () => api.post('/social/follow', { userId: a.user.id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+    },
+  })
+  const place = a.restaurant && (
+    <Link
+      to="/r/$restaurantId"
+      params={{ restaurantId: a.restaurant.id }}
+      className="activity-row__place"
+    >
+      {a.restaurant.name}
+    </Link>
+  )
+  const thumb = a.restaurant && cloudinaryUrl(a.restaurant.coverImageId, { w: 96, h: 96 })
+
   return (
     <div className="activity-row">
       <Link to="/u/$userId" params={{ userId: a.user.id }}>
@@ -123,40 +153,41 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       <div className="activity-row__main">
         <span className="activity-row__text">
           <b>{a.user.name || a.user.handle}</b>{' '}
-          {a.type === 'cheers' && (
+          {a.type === 'cheers' && <>cheered your ranking of {place} 🥂</>}
+          {a.type === 'follow' && 'started following you'}
+          {a.type === 'saved_ranked' && <>ranked {place} — it's on your list</>}
+          {a.type === 'friend_ranked' && a.score != null && (
             <>
-              brindó por tu ranking de{' '}
-              {a.restaurant && (
-                <Link
-                  to="/r/$restaurantId"
-                  params={{ restaurantId: a.restaurant.id }}
-                  className="activity-row__place"
-                >
-                  {a.restaurant.name}
-                </Link>
-              )}{' '}
-              🥂
-            </>
-          )}
-          {a.type === 'follow' && 'empezó a seguirte'}
-          {a.type === 'saved_ranked' && (
-            <>
-              rankeó{' '}
-              {a.restaurant && (
-                <Link
-                  to="/r/$restaurantId"
-                  params={{ restaurantId: a.restaurant.id }}
-                  className="activity-row__place"
-                >
-                  {a.restaurant.name}
-                </Link>
-              )}{' '}
-              — está en tu lista
+              ranked {place} {displayScore(a.score)}
+              {a.yourScore != null && (
+                <>
+                  {' — '}
+                  {a.score >= a.yourScore ? 'above' : 'below'} your {displayScore(a.yourScore)}
+                </>
+              )}
             </>
           )}
         </span>
+        <span className="feed-time">{timeAgo(a.at)}</span>
       </div>
-      <span className="feed-time">{timeAgo(a.at)}</span>
+      {a.type === 'follow' ? (
+        followed ? (
+          <span className="activity-row__following">Following</span>
+        ) : (
+          <button
+            type="button"
+            className="activity-row__follow"
+            onClick={() => {
+              setFollowed(true)
+              follow.mutate()
+            }}
+          >
+            Follow
+          </button>
+        )
+      ) : (
+        thumb && <img className="activity-row__thumb" src={thumb} alt="" />
+      )}
     </div>
   )
 }

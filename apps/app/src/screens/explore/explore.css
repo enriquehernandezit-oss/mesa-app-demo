@@ -19,3 +19,20 @@
   width: 20px;
   text-align: center;
 }
+
+/* Member result row ("place, dish, or member"). */
+.explore-member {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+}
+.explore-member__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
