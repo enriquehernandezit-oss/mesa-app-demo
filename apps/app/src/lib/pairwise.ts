@@ -133,6 +133,18 @@ export function choose<T>(s: PairwiseState<T>, currentWins: boolean): PairwiseSt
   return { ...s, lo, hi }
 }
 
+/**
+ * The user judged the current spot ≈ the pivot ("About the same"). Settle it
+ * immediately, adjacent to (just below) the pivot — no more comparisons for it.
+ */
+export function tie<T>(s: PairwiseState<T>): PairwiseState<T> {
+  if (s.current === null) return s
+  const mid = (s.lo + s.hi) >> 1
+  const ordered = [...s.ordered]
+  ordered.splice(mid + 1, 0, s.current)
+  return startNext({ ...s, ordered, lo: 0, hi: 0 })
+}
+
 /** True once every spot is placed. */
 export function isDone<T>(s: PairwiseState<T>): boolean {
   return s.current === null && s.queue.length === 0
@@ -142,4 +154,15 @@ export function isDone<T>(s: PairwiseState<T>): boolean {
 export function progress<T>(s: PairwiseState<T>): { placed: number; total: number } {
   // `ordered` holds settled spots; `current` is mid-placement so not yet counted.
   return { placed: s.ordered.length, total: s.total }
+}
+
+/**
+ * Comparisons still needed to settle the CURRENT spot — a binary search over
+ * [lo, hi) takes ~ceil(log2(span)) more answers. Used for the "N of M" progress
+ * on the single-insert rank flow (B2), where `total` is the count at the start.
+ */
+export function comparisonsLeft<T>(s: PairwiseState<T>): number {
+  if (s.current === null) return 0
+  const span = s.hi - s.lo
+  return span <= 1 ? (span === 1 ? 1 : 0) : Math.ceil(Math.log2(span))
 }

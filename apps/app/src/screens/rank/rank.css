@@ -1,0 +1,165 @@
+/* Rank-a-place — Phase 6 (B1–B4) additions. The base card-battle + reveal styles
+   live in ../onboarding/rank.css; this file carries the B1–B4 specifics. */
+
+/* B1 — score circle on an already-ranked row (mirrors "not ranked" placement). */
+.rank-row__score {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--brass-line);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+/* B1 — "Can't find it? Add a new restaurant" footer + inline form. */
+.rank-addnew {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-4) 0;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--accent-strong);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+}
+.rank-addform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--line);
+}
+.rank-addform__actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+/* B2 — comparison progress ("3 of 5") + subtitle, mono. */
+.rank-progress {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-align: center;
+}
+.rank-progress--sub {
+  font-size: 10px;
+  margin-top: var(--space-2);
+  max-width: 30ch;
+}
+/* B2 — "About the same" between the two compare cards. */
+.compare__same {
+  align-self: center;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+/* B3 — centred characteristics under the revealed score. */
+.rank-reveal__chars {
+  align-items: center;
+  text-align: center;
+  margin-top: var(--space-2);
+}
+.rank-reveal__chars .chars__tags,
+.rank-reveal__chars .chars__line {
+  text-align: center;
+}
+
+/* B4 — header (back + Skip), place summary, occasion tags, add-a-dish tile. */
+.rank-note-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rank-skip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.rank-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.rank-summary__thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+}
+.rank-summary__main {
+  flex: 1;
+  min-width: 0;
+}
+.rank-summary__name {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+/* Add-a-dish dashed tile. */
+.rank-dish-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border: 1.5px dashed var(--brass-line-soft);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.rank-dish-tile--on {
+  border-style: solid;
+  border-color: var(--brass-line);
+  background: var(--brass-wash);
+}
+.rank-dish-tile__plus {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--brass-line-soft);
+  color: var(--accent-strong);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.rank-dish-tile__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
