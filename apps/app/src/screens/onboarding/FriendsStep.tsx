@@ -100,10 +100,9 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
             <div key={u.id} className="friend-row">
               <div className="friend-row__id">
                 <span className="friend-row__name">{u.name || u.handle}</span>
-                <Caption>
-                  {u.handle ? `@${u.handle}` : ''}
-                  {u.neighborhood ? ` · ${u.neighborhood}` : ''}
-                </Caption>
+                <span className="friend-row__meta">
+                  {[u.handle ? `@${u.handle}` : null, u.neighborhood].filter(Boolean).join(' · ')}
+                </span>
               </div>
               <button
                 type="button"

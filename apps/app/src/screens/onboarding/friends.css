@@ -28,6 +28,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.friend-row__meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
 
 .friend-follow {
   flex: none;

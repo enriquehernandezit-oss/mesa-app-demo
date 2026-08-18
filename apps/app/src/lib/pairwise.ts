@@ -145,6 +145,15 @@ export function tie<T>(s: PairwiseState<T>): PairwiseState<T> {
   return startNext({ ...s, ordered, lo: 0, hi: 0 })
 }
 
+/**
+ * Drop the current spot without placing it ("Haven't been to one? Swap it out")
+ * and move on to the next. Total shrinks so progress stays honest.
+ */
+export function skip<T>(s: PairwiseState<T>): PairwiseState<T> {
+  if (s.current === null) return s
+  return startNext({ ...s, lo: 0, hi: 0, total: Math.max(s.ordered.length, s.total - 1) })
+}
+
 /** True once every spot is placed. */
 export function isDone<T>(s: PairwiseState<T>): boolean {
   return s.current === null && s.queue.length === 0

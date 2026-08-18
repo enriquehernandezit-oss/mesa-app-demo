@@ -90,6 +90,13 @@
   color: var(--text);
   border-color: var(--line);
 }
+/* Mono label (auth's outlined buttons, mock G1). */
+.mesa-btn--mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
 .mesa-btn--secondary:hover {
   background: var(--surface);
 }

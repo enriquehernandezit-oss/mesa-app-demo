@@ -1,11 +1,21 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { Body, Button, Caption, Eyebrow, Title } from '../../components/ui'
+import { Body, Button, Title } from '../../components/ui'
+import { CompareCard } from '../../components/ui/CompareCard'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
-import { choose, initPairwise, isDone, nextComparison, progress } from '../../lib/pairwise'
+import {
+  choose,
+  initPairwise,
+  isDone,
+  nextComparison,
+  progress,
+  skip,
+  tie,
+} from '../../lib/pairwise'
 import type { Restaurant } from '../../lib/types'
 import './rank.css'
+import '../rank/rank.css'
 
 // Step 2: the atomic mechanic. First pick the spots you've actually been to
 // (you can't rank a place you haven't visited), then place them by answering a
@@ -124,36 +134,34 @@ function ComparePhase({
   }
 
   const pick = (currentWins: boolean) => setState((s) => choose(s, currentWins))
+  const toItem = (r: Restaurant) => ({
+    id: r.id,
+    name: r.name,
+    cuisine: r.cuisine,
+    neighborhood: r.neighborhood?.name ?? null,
+    coverImageId: r.coverImageId,
+  })
 
   return (
-    <div className="stack stack--loose" style={{ marginTop: 'var(--space-6)' }}>
+    <div className="stack stack--loose" style={{ marginTop: 'var(--space-5)' }}>
+      <div className="rank-progress">
+        {placed + 1} of {total}
+      </div>
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <Eyebrow>
-          {placed + 1} of {total}
-        </Eyebrow>
-        <Title>Which do you like more?</Title>
+        <Title>Which was better?</Title>
       </div>
 
       <div className="compare">
-        <VersusCard r={comparison.current} onClick={() => pick(true)} />
-        <div className="compare__or">or</div>
-        <VersusCard r={comparison.pivot} onClick={() => pick(false)} />
+        <CompareCard item={toItem(comparison.current)} onClick={() => pick(true)} />
+        <button type="button" className="compare__same" onClick={() => setState((s) => tie(s))}>
+          About the same
+        </button>
+        <CompareCard item={toItem(comparison.pivot)} onClick={() => pick(false)} />
       </div>
-    </div>
-  )
-}
 
-function VersusCard({ r, onClick }: { r: Restaurant; onClick: () => void }) {
-  const cover = cloudinaryUrl(r.coverImageId, { w: 700, h: 340 })
-  return (
-    <button
-      type="button"
-      className="versus versus--photo"
-      style={cover ? { backgroundImage: `url(${cover})` } : undefined}
-      onClick={onClick}
-    >
-      <span className="versus__name">{r.name}</span>
-      <Caption>{[r.cuisine, r.neighborhood?.name].filter(Boolean).join(' · ')}</Caption>
-    </button>
+      <button type="button" className="onboard-swap" onClick={() => setState((s) => skip(s))}>
+        Haven't been to one? Swap it out
+      </button>
+    </div>
   )
 }

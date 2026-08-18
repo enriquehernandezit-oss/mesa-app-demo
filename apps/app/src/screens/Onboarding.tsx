@@ -1,6 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Eyebrow } from '../components/ui'
 import { FriendsStep } from './onboarding/FriendsStep'
 import { ProfileStep } from './onboarding/ProfileStep'
 import { RankStep } from './onboarding/RankStep'
@@ -28,15 +27,16 @@ export function Onboarding() {
   }
 
   const stepIndex = STEPS.indexOf(step)
+  const pct = Math.round(((stepIndex + 1) / STEPS.length) * 100)
 
   return (
     <div className="screen">
-      <div className="stack" style={{ alignItems: 'center' }}>
-        <Eyebrow>Welcome to Mesa</Eyebrow>
-        <div className="progress-dots" aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}>
-          {STEPS.map((s, i) => (
-            <span key={s} data-active={i <= stepIndex} />
-          ))}
+      <div className="onboard-progress" aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}>
+        <div className="onboard-progress__track">
+          <div className="onboard-progress__fill" style={{ width: `${pct}%` }} />
+        </div>
+        <div className="onboard-progress__label">
+          Step {stepIndex + 1} of {STEPS.length} · builds your starting list
         </div>
       </div>
 

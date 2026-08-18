@@ -26,6 +26,11 @@ export function AuthFlow() {
   const [resetSent, setResetSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Invite code — display affordance from the mock (G1). Mesa has no invite
+  // backend, so any code soft-fails with a friendly, honest message.
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteMsg, setInviteMsg] = useState<string | null>(null)
 
   // Forgot password — emails a link to /reset-password carrying a one-time token.
   // The response is intentionally the same whether or not the address exists, so
@@ -127,22 +132,64 @@ export function AuthFlow() {
             </Button>
             <Button
               variant="secondary"
+              className="mesa-btn--mono"
               disabled={busy}
               onClick={() => {
                 setError(null)
                 setStep('email')
               }}
             >
-              Use email & password
+              Use email &amp; password
             </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => setStep('phone')}>
+            <Button
+              variant="secondary"
+              className="mesa-btn--mono"
+              disabled={busy}
+              onClick={() => setStep('phone')}
+            >
               Use a phone number
             </Button>
-            <Button variant="secondary" disabled={busy} onClick={() => oauth('instagram')}>
+            <Button
+              variant="secondary"
+              className="mesa-btn--mono"
+              disabled={busy}
+              onClick={() => oauth('instagram')}
+            >
               Continue with Instagram
             </Button>
           </div>
           {error && <div className="error-text">{error}</div>}
+
+          {/* Invite code — display affordance; soft-fails (no invite backend). */}
+          {inviteOpen ? (
+            <div className="invite-row">
+              <input
+                className="field"
+                placeholder="Invite code"
+                value={inviteCode}
+                onChange={(e) => {
+                  setInviteCode(e.target.value)
+                  setInviteMsg(null)
+                }}
+              />
+              <Button
+                variant="secondary"
+                className="mesa-btn--mono"
+                style={{ width: 'auto', padding: '0 var(--space-4)' }}
+                onClick={() =>
+                  setInviteMsg('Invites are personal — ask a friend on Mesa to send you one.')
+                }
+              >
+                Enter
+              </Button>
+            </div>
+          ) : (
+            <button type="button" className="invite-link" onClick={() => setInviteOpen(true)}>
+              Have an invite code? Enter it
+            </button>
+          )}
+          {inviteMsg && <div className="invite-msg">{inviteMsg}</div>}
+
           <div className="legal-text">
             By continuing you agree to Mesa's <a href="/terms">Terms</a> and{' '}
             <a href="/eula">EULA</a>, and acknowledge our <a href="/privacy">Privacy Policy</a>.
