@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#f3efe6" />
     <title>mesa</title>
+
+    <!--
+      PWA "Add to Home Screen": these make the site install to the home screen
+      and launch FULLSCREEN (no browser chrome), so it reads as a real app
+      without the App Store / TestFlight. `apple-*` tags are iOS-specific (Safari
+      ignores the manifest's display mode); the manifest covers Android/Chrome.
+      apple-touch-icon must be a 180x180 PNG (iOS won't use an SVG here).
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Mesa" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
     <!--
       Resolve the theme synchronously, before any CSS paints, so there is no
       flash of the wrong ground. Reads the same localStorage key as
