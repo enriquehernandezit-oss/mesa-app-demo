@@ -186,7 +186,9 @@
 .dish-detail {
   min-height: 100dvh;
   background: var(--bg);
-  padding-bottom: calc(var(--safe-bottom) + var(--space-7));
+  /* Clear the fixed .resto-cta-bar (~72px) so its blur doesn't cover the last
+     lines of content. */
+  padding-bottom: calc(var(--safe-bottom) + var(--space-8) + var(--space-5));
 }
 .dish-hero {
   height: 42vh;

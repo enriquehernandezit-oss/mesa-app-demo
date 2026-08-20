@@ -209,6 +209,7 @@ function EmptyMine() {
 function RankingRow({ ranking }: { ranking: Ranking }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [draft, setDraft] = useState(ranking.note ?? '')
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['rankings'] })
@@ -288,17 +289,39 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
           <>
             {ranking.note && <div className="ranking-note">“{ranking.note}”</div>}
             <div className="ranking-actions">
-              <button type="button" className="link-action" onClick={() => setEditing(true)}>
-                {ranking.note ? 'Edit note' : 'Add note'}
-              </button>
-              <button
-                type="button"
-                className="link-action link-action--danger"
-                onClick={() => remove.mutate()}
-                disabled={remove.isPending}
-              >
-                Remove
-              </button>
+              {confirmingRemove ? (
+                <>
+                  <button
+                    type="button"
+                    className="link-action link-action--danger"
+                    onClick={() => remove.mutate()}
+                    disabled={remove.isPending}
+                  >
+                    {remove.isPending ? 'Removing…' : 'Confirm remove'}
+                  </button>
+                  <button
+                    type="button"
+                    className="link-action"
+                    onClick={() => setConfirmingRemove(false)}
+                    disabled={remove.isPending}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button type="button" className="link-action" onClick={() => setEditing(true)}>
+                    {ranking.note ? 'Edit note' : 'Add note'}
+                  </button>
+                  <button
+                    type="button"
+                    className="link-action link-action--danger"
+                    onClick={() => setConfirmingRemove(true)}
+                  >
+                    Remove
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}
@@ -337,8 +360,9 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
           type="button"
           className="link-action link-action--danger"
           onClick={() => remove.mutate()}
+          disabled={remove.isPending}
         >
-          Remove
+          {remove.isPending ? 'Removing…' : 'Remove'}
         </button>
       </div>
     </div>

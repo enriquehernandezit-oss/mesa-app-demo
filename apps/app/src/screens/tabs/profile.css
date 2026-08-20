@@ -120,7 +120,6 @@
 .profile-edit {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
   padding-bottom: var(--space-6);
 }
 .profile-edit__field {

@@ -345,3 +345,27 @@
   color: var(--accent-strong);
   font-variant-numeric: tabular-nums;
 }
+
+/* Static map thumbnail near the foot of the profile. The @2x source is
+   intrinsically ~1400px wide; width:100% + height:auto keeps it inside the
+   column (the global img guard covers this too — this rule adds the framing). */
+.resto-map {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: var(--space-2) 0 var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+}
+.resto-map--fallback {
+  height: auto;
+  min-height: 120px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-sunk);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

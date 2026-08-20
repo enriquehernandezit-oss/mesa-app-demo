@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
-import { Body, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
@@ -105,6 +105,8 @@ export function MapScreen() {
 
         {q.isPending ? (
           <Body>Cargando el mapa…</Body>
+        ) : q.isError ? (
+          <ErrorState>No se pudo cargar el mapa. Intenta de nuevo.</ErrorState>
         ) : placed.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Aún no hay spots.</SerifItalic>

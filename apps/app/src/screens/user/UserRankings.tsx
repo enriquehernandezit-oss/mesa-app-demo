@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Button, Caption, Chip, SectionHeader, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
@@ -26,6 +26,24 @@ export function UserRankings() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const menuWrapRef = useRef<HTMLDivElement>(null)
+
+  // Dismiss the ⋯ menu on an outside tap or Escape (it had no way to close).
+  useEffect(() => {
+    if (!menuOpen) return
+    const onPointer = (e: PointerEvent) => {
+      if (!menuWrapRef.current?.contains(e.target as Node)) setMenuOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
 
   const q = useQuery({
     queryKey: ['user-rankings', userId],
@@ -86,7 +104,7 @@ export function UserRankings() {
           onBack={() => navigate({ to: '/discover' })}
           backLabel={user.name || user.handle || 'Back'}
           right={
-            <div className="user-menu-wrap">
+            <div className="user-menu-wrap" ref={menuWrapRef}>
               <button
                 type="button"
                 className="user-menu-btn"

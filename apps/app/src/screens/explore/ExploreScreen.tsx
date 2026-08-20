@@ -7,6 +7,7 @@ import {
   Body,
   Chip,
   ChipRail,
+  ErrorState,
   Eyebrow,
   SectionHeader,
   SerifItalic,
@@ -125,6 +126,8 @@ export function ExploreScreen() {
 
         {results.isPending ? (
           <Body>Searching…</Body>
+        ) : results.isError ? (
+          <ErrorState>Couldn't search right now. Try again in a moment.</ErrorState>
         ) : hits.length === 0 && members.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Nothing matches.</SerifItalic>

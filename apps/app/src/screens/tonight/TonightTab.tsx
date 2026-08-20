@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Chip, ChipRail, Title } from '../../components/ui'
+import { Body, Chip, ChipRail, SerifItalic, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import {
@@ -54,9 +54,14 @@ export function TonightTab() {
       </ChipRail>
 
       <div className="tonight-list">
-        {tables.map((t) => (
-          <TableCard key={t.id} table={t} />
-        ))}
+        {tables.length === 0 ? (
+          <div className="tab-empty">
+            <SerifItalic style={{ fontSize: '1.15rem' }}>No tables match.</SerifItalic>
+            <Body>Try a different filter — more open up as the night fills in.</Body>
+          </div>
+        ) : (
+          tables.map((t) => <TableCard key={t.id} table={t} />)
+        )}
       </div>
     </div>
   )

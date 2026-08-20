@@ -54,6 +54,14 @@ h3 {
   line-height: 1.05;
 }
 
+/* Never let an intrinsically-large image (e.g. a @2x static map) overflow its
+   column and drag the whole page into horizontal scroll. Explicitly-sized
+   images (avatars, thumbnails, .ph > img) override this via higher specificity. */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 button {
   font-family: inherit;
   cursor: pointer;

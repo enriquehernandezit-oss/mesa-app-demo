@@ -276,30 +276,41 @@ transition, where overshoot reads as a lurch (color/width can't visibly overshoo
 
 ## 3f. Discrete bugs (each verified)
 
-- [ ] **`.resto-map` has NO CSS rule anywhere** and there's no global `img{max-width:100%}`
+- [x] **`.resto-map` has NO CSS rule anywhere** and there's no global `img{max-width:100%}`
   reset. `mapboxStaticUrl` (`lib/media.ts:36`) requests `700x260@2x` → **1400px intrinsic**
   inside a 327px column. Fires page-wide horizontal scroll the moment `VITE_MAPBOX_TOKEN`
   is set (`RestaurantProfile.tsx:279`). Fix: add a `.resto-map` rule
   (`max-width:100%; height:auto; …`) and/or a global `img { max-width: 100%; height: auto }`.
-- [ ] **Profile-edit Save off-screen:** `.profile-edit { min-height: 100dvh }`
+- [x] **Profile-edit Save off-screen:** `.profile-edit { min-height: 100dvh }`
   (`screens/tabs/profile.css:118`) is nested inside `.tab-body`'s padding, pushing the
   `.spacer`-anchored Save button a full viewport + ~140px down, behind the tab bar
   (`ProfileTab.tsx:184-235`). Remove the `min-height:100dvh` / restructure.
-- [ ] **Errors render as empty states** (failed query looks like "no data"): add an
+- [x] **Errors render as empty states** (failed query looks like "no data"): add an
   `isError → <ErrorState>` branch to `ExploreScreen.tsx:127`, `MapScreen.tsx:107`,
   `ActivityScreen.tsx:98`. Pattern already exists in `ListScreen`/`RankingsTab`.
-- [ ] **Destructive delete with no confirm:** `RankingsTab.tsx:294` deletes a ranking
+- [x] **Destructive delete with no confirm:** `RankingsTab.tsx:294` deletes a ranking
   outright; account deletion on the same screen confirms. Add a confirm step.
-- [ ] **`⋯` menu never dismisses:** `UserRankings.tsx:98-122` menu has no outside-click /
+- [x] **`⋯` menu never dismisses:** `UserRankings.tsx:98-122` menu has no outside-click /
   Escape handler.
-- [ ] **CTA bar covers content:** `TonightDetail`'s fixed `.resto-cta-bar` (~76px) covers
+- [x] **CTA bar covers content:** `TonightDetail`'s fixed `.resto-cta-bar` (~76px) covers
   the last ~28px of `.dish-detail` (bottom padding only `safe + 48px`, `dish.css:184`).
   Increase bottom padding to clear the bar.
-- [ ] **Missing filtered-empty state:** `TonightTab.tsx:56` renders a blank region when the
+- [x] **Missing filtered-empty state:** `TonightTab.tsx:56` renders a blank region when the
   "Seats left"/"8p+" filter matches nothing. Add a message.
-- [ ] **Missing pending/disabled:** `SavedRow` Remove lacks `disabled={remove.isPending}`
+- [x] **Missing pending/disabled:** `SavedRow` Remove lacks `disabled={remove.isPending}`
   (`RankingsTab.tsx:336`); "Verify email" not disabled while in flight
   (`SettingsScreen.tsx:257`).
+
+**DONE (this session, group #5):** global `img { max-width:100%; height:auto }`
+guard + a proper `.resto-map` rule (verified: guard active on a bare img, no
+h-scroll, fallback framed). Removed `.profile-edit { min-height:100dvh }` — Save
+now renders at y≈495 (was off-screen). `isError → <ErrorState>` on Explore/Map/
+Activity. Ranking Remove is now a two-step confirm (verified Remove→Confirm/
+Cancel, Cancel reverts). `⋯` menu closes on outside-pointerdown **and** Escape
+(both verified). `.dish-detail` bottom padding raised to clear the ~77px CTA bar
+(verified content clears at scroll bottom). Tonight filtered-empty message added.
+SavedRow Remove + Verify-email now disable while pending. *The two remaining 3f
+items (dead `.versus`/`.map-pill` CSS, ad-hoc z-index) are deferred to group #6.*
 - [ ] **Dead CSS to delete:** the entire `.versus*` block (`onboarding/rank.css:47-118`)
   and `.map-pill` (`map.css:159-172`) — no TSX renders them.
 - [ ] **Ad-hoc z-index:** `map.css:72,82` use `40`/`41`, above the app's implicit ladder

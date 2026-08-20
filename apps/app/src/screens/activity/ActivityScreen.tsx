@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { markActivitySeen } from '../../components/TopBar'
-import { Body, Chip, ChipRail, Eyebrow, SerifItalic } from '../../components/ui'
+import { Body, Chip, ChipRail, ErrorState, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
@@ -95,6 +95,8 @@ export function ActivityScreen() {
 
         {q.isPending ? (
           <Body>Loading…</Body>
+        ) : q.isError ? (
+          <ErrorState>Couldn't load activity. Try again in a moment.</ErrorState>
         ) : sections.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Quiet for now.</SerifItalic>

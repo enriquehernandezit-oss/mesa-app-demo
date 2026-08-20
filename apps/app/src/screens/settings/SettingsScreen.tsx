@@ -46,6 +46,7 @@ export function SettingsScreen() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [verifySent, setVerifySent] = useState(false)
+  const [verifying, setVerifying] = useState(false)
   // Client-only "Your list" prefs (mock H1). Friends-only is real (it hides the
   // all-of-Mesa score); stealth persists but is inert.
   const [friendsOnly, setFriendsOnly] = useState(getFriendsOnlyScores)
@@ -56,9 +57,14 @@ export function SettingsScreen() {
   const realEmail = p?.email && !p.email.endsWith('@phone.mesa.local') ? p.email : null
 
   async function resendVerification() {
-    if (!realEmail) return
-    await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
-    setVerifySent(true)
+    if (!realEmail || verifying) return
+    setVerifying(true)
+    try {
+      await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
+      setVerifySent(true)
+    } finally {
+      setVerifying(false)
+    }
   }
 
   // Phone/OAuth-first accounts (no real email) can add email + password sign-in.
@@ -253,8 +259,13 @@ export function SettingsScreen() {
               ) : verifySent ? (
                 <span className="settings-row__meta">Link sent ›</span>
               ) : (
-                <button type="button" className="link-action" onClick={resendVerification}>
-                  Verify email
+                <button
+                  type="button"
+                  className="link-action"
+                  onClick={resendVerification}
+                  disabled={verifying}
+                >
+                  {verifying ? 'Sending…' : 'Verify email'}
                 </button>
               )}
             </div>
