@@ -23,8 +23,10 @@
 .profile-nav__row:last-child {
   border-bottom: 0;
 }
-.profile-nav__row:hover {
-  background: var(--surface-raised);
+@media (hover: hover) and (pointer: fine) {
+  .profile-nav__row:hover {
+    background: var(--surface-raised);
+  }
 }
 .profile-nav__meta {
   color: var(--text-muted);

@@ -88,6 +88,39 @@ select {
   }
 }
 
+/* Press feedback — a subtle scale on :active for tappable controls that lacked
+   any. Ungated: :active is the correct signal on touch (unlike :hover). Defined
+   once here so it can't drift; the transition rides on :active (higher
+   specificity than the base rule) so it never clobbers a component's own
+   transition. Controls with bespoke press motion (FAB, cheers, share) keep
+   their own :active and aren't listed. Reduced-motion users get the reset above. */
+.link-action:active,
+.settings-row--btn:active,
+.settings-row--link:active,
+.settings-id--link:active,
+.profile-nav__row:active,
+.upill:active,
+.mesa-chip:active,
+.mesa-toggle:active,
+.theme-swatch:active,
+.user-menu-btn:active,
+.activity-row__follow:active,
+.activity-markread:active,
+.tonight-join:active,
+.resto-rankagain:active,
+.resto-savecheck:active,
+.resto-time:active,
+.resto-seeall:active,
+.resto-friend:active,
+.danger-btn:active,
+.avatar-btn:active,
+.explore-row:active,
+.explore-member:active,
+.saved-row:active {
+  transform: scale(0.97);
+  transition: transform 0.12s var(--ease-out);
+}
+
 /* Warm photo veil (Phase 6) — any photo container gets `.ph`. The veil + grain
    settle the image onto paper so it doesn't read as a foreign object; a `.ph-tag`
    labels it in mono. Text never sits over the photo — it goes below, on paper. */

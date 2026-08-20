@@ -20,8 +20,10 @@
 .settings-id--link {
   transition: background 0.12s ease;
 }
-.settings-id--link:hover {
-  background: var(--surface-raised);
+@media (hover: hover) and (pointer: fine) {
+  .settings-id--link:hover {
+    background: var(--surface-raised);
+  }
 }
 .settings-id__name {
   font-family: var(--font-serif);
@@ -74,9 +76,11 @@
   cursor: pointer;
   transition: background 0.12s ease;
 }
-.settings-row--btn:hover,
-.settings-row--link:hover {
-  background: var(--surface-raised);
+@media (hover: hover) and (pointer: fine) {
+  .settings-row--btn:hover,
+  .settings-row--link:hover {
+    background: var(--surface-raised);
+  }
 }
 .settings-row--accent {
   color: var(--accent);

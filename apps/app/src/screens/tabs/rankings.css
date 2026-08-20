@@ -34,8 +34,10 @@
 .share-pill:active {
   transform: scale(0.92);
 }
-.share-pill:hover {
-  background: var(--accent-strong);
+@media (hover: hover) and (pointer: fine) {
+  .share-pill:hover {
+    background: var(--accent-strong);
+  }
 }
 .share-pill:disabled {
   opacity: 0.6;
@@ -223,11 +225,13 @@
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
-.link-action:hover {
-  color: var(--accent);
-}
-.link-action--danger:hover {
-  color: var(--status-packed);
+@media (hover: hover) and (pointer: fine) {
+  .link-action:hover {
+    color: var(--accent);
+  }
+  .link-action--danger:hover {
+    color: var(--status-packed);
+  }
 }
 
 .note-editor {

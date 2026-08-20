@@ -135,9 +135,11 @@
   cursor: pointer;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
-.upill:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .upill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
 }
 .upill__icon {
   display: inline-flex;

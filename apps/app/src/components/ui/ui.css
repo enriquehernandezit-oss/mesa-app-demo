@@ -81,8 +81,10 @@
   color: var(--btn-primary-fg);
   box-shadow: var(--glow-brass);
 }
-.mesa-btn--primary:hover {
-  background: var(--btn-primary-bg-hover);
+@media (hover: hover) and (pointer: fine) {
+  .mesa-btn--primary:hover {
+    background: var(--btn-primary-bg-hover);
+  }
 }
 /* Secondary — hairline on the ground */
 .mesa-btn--secondary {
@@ -97,8 +99,10 @@
   font-weight: 500;
   letter-spacing: 0.04em;
 }
-.mesa-btn--secondary:hover {
-  background: var(--surface);
+@media (hover: hover) and (pointer: fine) {
+  .mesa-btn--secondary:hover {
+    background: var(--surface);
+  }
 }
 /* Ghost — text only */
 .mesa-btn--ghost {
@@ -106,8 +110,10 @@
   color: var(--text-2);
   min-height: 44px;
 }
-.mesa-btn--ghost:hover {
-  color: var(--text);
+@media (hover: hover) and (pointer: fine) {
+  .mesa-btn--ghost:hover {
+    color: var(--text);
+  }
 }
 
 /* --- Card --- */

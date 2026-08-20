@@ -45,8 +45,10 @@
 .topbar__btn:active {
   transform: scale(0.9);
 }
-.topbar__btn:hover {
-  color: var(--accent);
+@media (hover: hover) and (pointer: fine) {
+  .topbar__btn:hover {
+    color: var(--accent);
+  }
 }
 
 .topbar__badge {

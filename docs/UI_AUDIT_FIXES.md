@@ -221,10 +221,18 @@ you prefer the tighter look.
 On iOS, tapping fires `:hover` and it **sticks** until the next tap elsewhere — reads as
 a stuck state. **14 `:hover` rules, 0 gated.**
 
-- [ ] Wrap every `:hover` rule in `@media (hover: hover) and (pointer: fine) { … }`.
+- [x] Wrap every `:hover` rule in `@media (hover: hover) and (pointer: fine) { … }`.
   Grep: `grep -rn ':hover' apps/app/src --include='*.css'`. Known files: `topbar.css:47`,
   `feed.css`, `rankings.css:219,222`, `onboarding/rank.css:61` (this one is **dead CSS**
   — see 3f), plus others the grep finds.
+
+**DONE (this session):** wrapped all 13 live `:hover` rules in `@media (hover:
+hover) and (pointer: fine)` across topbar, ui (3 button variants), patterns
+(upill), rankings (share-pill, link-action×2), profile-nav, settings (id-link,
+row btn/link), moderation (menu). `.versus:hover` left ungated — it's dead CSS
+removed in group #6. `.screen-header__back:hover` was already gated (Pass 1).
+**Verified** on the touch-emulated viewport: `(hover: hover)` resolves **false**,
+so none of the gated hovers apply on tap (no sticky-hover).
 
 ## 3d. Add `:active` press feedback (~25 tappable elements have none)
 
@@ -237,6 +245,14 @@ Only 14 elements have `:active`; ~25 more tappable elements have none. Add a sub
 (profile.css:155), `.avatar-btn`, `.explore-row`/`.explore-member`, `.resto-friend`,
 `.saved-row`, `.map-card__go`. Gate under `@media (hover: hover)`? No — `:active` is
 correct on touch; keep it ungated.
+
+**DONE (this session):** added one consolidated, ungated press-feedback block in
+`styles/global.css` (23 selectors → `transform: scale(0.97)` + `transition:
+transform 0.12s var(--ease-out)`). Placed in global (not per-component) so it
+can't drift, and the transition rides on `:active` — higher specificity than the
+base rule — so it never clobbers a component's own transition. `.map-card__go`
+/ `.map-card__dir` got their own `:active` (Option A). **Verified** the block
+matches all 23 selectors in the live stylesheet; app renders clean.
 
 ## 3e. Motion: one bouncy curve is used for everything (Emil lens)
 
