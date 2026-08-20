@@ -40,7 +40,7 @@
   place-items: center;
   color: var(--text-2);
   border: 1.5px solid var(--glyph-line);
-  transition: color 0.15s ease, transform 0.15s var(--ease-spring);
+  transition: color 0.15s ease, transform 0.15s var(--ease-out);
 }
 .topbar__btn:active {
   transform: scale(0.9);

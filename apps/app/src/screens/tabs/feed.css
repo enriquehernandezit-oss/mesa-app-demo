@@ -12,8 +12,11 @@
   background: var(--surface);
   overflow: hidden;
   border: 1px solid var(--line);
-  animation: feed-card-in 0.5s var(--ease-spring) both;
-  transition: transform 0.15s var(--ease-spring);
+  /* Quick ease-out entrance (was 0.5s spring — too long, overshoot). The
+     per-card stagger is applied inline in DiscoverTab (index * 60ms, capped),
+     so the feed cascades in rather than popping all at once. */
+  animation: feed-card-in 0.3s var(--ease-out) both;
+  transition: transform 0.15s var(--ease-out);
 }
 /* Ranking card — a compact paper card, no photo. */
 .feed-card--rank {
@@ -77,7 +80,7 @@
   width: 150px;
   display: block;
   text-decoration: none;
-  transition: transform 0.15s var(--ease-spring);
+  transition: transform 0.15s var(--ease-out);
 }
 .list-card:active {
   transform: scale(0.96);
@@ -153,7 +156,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 600;
-  transition: border-color 0.15s ease, transform 0.15s var(--ease-spring);
+  transition: border-color 0.15s ease, transform 0.15s var(--ease-out);
 }
 .cheers:active {
   transform: scale(0.9);
@@ -213,7 +216,7 @@
   justify-content: flex-end;
   padding: var(--space-3);
   isolation: isolate;
-  transition: transform 0.15s var(--ease-spring);
+  transition: transform 0.15s var(--ease-out);
 }
 .rail-card:active {
   transform: scale(0.95);

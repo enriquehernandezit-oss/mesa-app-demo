@@ -44,44 +44,11 @@
   gap: var(--space-3);
   align-items: stretch;
 }
-.versus {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--space-7) var(--space-5);
-  min-height: 140px;
-  border-radius: var(--radius);
-  border: 1px solid var(--line);
-  background: var(--surface);
-  transition: transform 0.12s ease, border-color 0.12s ease;
-}
-.versus:hover {
-  border-color: var(--accent);
-}
-.versus:active {
-  transform: scale(0.98);
-}
-.versus__name {
-  font-family: var(--font-serif);
-  font-size: 1.75rem;
-  line-height: 1.05;
-  color: var(--text);
-}
-.compare__or {
-  text-align: center;
-  font-family: var(--font-serif);
-  font-style: italic;
-  color: var(--accent);
-  font-size: 1.1rem;
-}
-
-/* --- Photo variants (the card battle) --- */
-.rank-pick--photo,
-.versus--photo {
+/* --- Photo variant (the rank-a-place picker card) --- */
+.rank-pick--photo {
   position: relative;
+  justify-content: flex-end;
+  min-height: 128px;
   background-size: cover;
   background-position: center;
   overflow: hidden;
@@ -91,30 +58,15 @@
   --text-2: var(--on-photo-2);
   --accent-strong: var(--on-photo-accent);
 }
-.rank-pick--photo::before,
-.versus--photo::before {
+.rank-pick--photo::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   background: linear-gradient(to top, var(--photo-scrim-1) 10%, var(--photo-scrim-4) 60%);
 }
-.rank-pick--photo {
-  justify-content: flex-end;
-  min-height: 128px;
-}
-.rank-pick--photo .rank-pick__name,
-.versus--photo .versus__name {
+.rank-pick--photo .rank-pick__name {
   text-shadow: 0 2px 10px var(--shadow-text);
-}
-.versus--photo {
-  min-height: 170px;
-  justify-content: flex-end;
-  padding-bottom: var(--space-4);
-  transition: transform 0.18s var(--ease-spring), border-color 0.15s ease;
-}
-.versus--photo:active {
-  transform: scale(0.96);
 }
 
 /* --- Find-the-place rows (rank-a-place B1) — thumb · name+meta · badge --- */
@@ -228,7 +180,7 @@
 
 /* Each comparison round slides in. */
 .compare--battle {
-  animation: battle-in 0.35s var(--ease-spring) both;
+  animation: battle-in 0.35s var(--ease-out) both;
 }
 @keyframes battle-in {
   from {

@@ -67,6 +67,8 @@
 }
 
 /* Selection card + scrim. */
+/* Modal tier — one step above the app's chrome ladder (tab-bar 10, cta-bar 15,
+   condensed 20, topbar 30): the scrim and its sheet sit over everything. */
 .map-scrim {
   position: fixed;
   inset: 0;
@@ -188,22 +190,6 @@
 }
 .map-card__go:active {
   transform: scale(0.97);
-}
-
-/* Discover entry pill. */
-.map-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: var(--space-3);
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
 }
 
 @keyframes map-rise {

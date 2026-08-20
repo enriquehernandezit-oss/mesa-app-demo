@@ -29,7 +29,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 700;
-  transition: transform 0.15s var(--ease-spring), background 0.15s ease;
+  transition: transform 0.15s var(--ease-out), background 0.15s ease;
 }
 .share-pill:active {
   transform: scale(0.92);

@@ -260,19 +260,30 @@ matches all 23 selectors in the live stylesheet; app renders clean.
 applied **18 times** — including press feedback, a `width` transition, and a `background`
 transition, where overshoot reads as a lurch (color/width can't visibly overshoot).
 
-- [ ] Add `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)` to tokens.css. Use it for press
+- [x] Add `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)` to tokens.css. Use it for press
   feedback and entrances. **Keep** `--ease-spring` only for genuine celebration moments
   (`cheers-pop`, `stamp-in`).
-- [ ] `transition: width 0.3s var(--ease-spring)` (`styles/screens.css:232`) → animate
+- [x] `transition: width 0.3s var(--ease-spring)` (`styles/screens.css:232`) → animate
   `transform: scaleX()` with `transform-origin: left` (GPU, not layout).
-- [ ] `transition: background 0.18s var(--ease-spring)` (`components/ui/ui.css:292`) →
+- [x] `transition: background 0.18s var(--ease-spring)` (`components/ui/ui.css:292`) →
   `... ease` (no spring on a color).
-- [ ] `transition: all 0.12s ease` ×2 (`components/ui/ui.css:193`,
+- [x] `transition: all 0.12s ease` ×2 (`components/ui/ui.css:193`,
   `screens/onboarding/friends.css:48`) → explicit properties.
-- [ ] `.feed-card { animation: feed-card-in 0.5s … }` (`feed.css:15`) — 500ms is long and
+- [x] `.feed-card { animation: feed-card-in 0.5s … }` (`feed.css:15`) — 500ms is long and
   every card enters at once. Reduce to ~300ms + `nth-child` stagger (~40ms, cap ~6).
-- [ ] `.tab-body { animation: screen-in 0.3s … }` fires on every tab switch (tens/day) —
+- [x] `.tab-body { animation: screen-in 0.3s … }` fires on every tab switch (tens/day) —
   reduce to ~180ms or drop.
+
+**DONE (this session, group #6):** `--ease-out` added Pass 1; here every remaining
+`--ease-spring` was swapped to `--ease-out` across press-feedback + entrances so
+**only `cheers-pop` and `stamp-in` keep the spring** (grep-verified). Progress bar
+now animates `transform: scaleX(pct/100)` (`transform-origin:left`, ease-out) —
+GPU, no overshoot; TSX in `Onboarding.tsx` updated to match (synthetic-verified:
+`scaleX(0.4)` → 40% width, left-aligned). Toggle background → `ease`; `.mesa-chip`
++ `.friend-follow` `all` → explicit props. `.feed-card` entrance **0.5s spring →
+0.3s ease-out** (the per-card stagger already lives inline in `DiscoverTab`, so no
+`nth-child` block was needed — verified 0.3s duration live). `.tab-body` screen-in
+**0.3s → 0.18s** ease-out.
 
 ## 3f. Discrete bugs (each verified)
 
@@ -311,11 +322,18 @@ Cancel, Cancel reverts). `⋯` menu closes on outside-pointerdown **and** Escape
 (verified content clears at scroll bottom). Tonight filtered-empty message added.
 SavedRow Remove + Verify-email now disable while pending. *The two remaining 3f
 items (dead `.versus`/`.map-pill` CSS, ad-hoc z-index) are deferred to group #6.*
-- [ ] **Dead CSS to delete:** the entire `.versus*` block (`onboarding/rank.css:47-118`)
+- [x] **Dead CSS to delete:** the entire `.versus*` block (`onboarding/rank.css:47-118`)
   and `.map-pill` (`map.css:159-172`) — no TSX renders them.
-- [ ] **Ad-hoc z-index:** `map.css:72,82` use `40`/`41`, above the app's implicit ladder
+- [x] **Ad-hoc z-index:** `map.css:72,82` use `40`/`41`, above the app's implicit ladder
   (tab-bar 10, cta-bar 15, condensed 20, topbar 30). Harmless today (Map has no bars) but
   align to a documented scale if touched.
+
+**DONE (this session, group #6):** removed the dead `.versus`, `.versus--photo`,
+`.versus__name`, `.compare__or` (0 TSX refs — grep-verified) while preserving the
+shared `.rank-pick--photo` selectors, and deleted `.map-pill`. That also cleared
+the last ungated `.versus:hover` from 3c. Documented the map scrim/sheet `40/41`
+as an explicit "modal tier, one step above the chrome ladder" (values kept — a
+modal correctly sits above topbar 30).
 
 ## 3g. Accessibility (from the technical pass)
 

@@ -6,7 +6,7 @@
   gap: var(--space-3);
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--line);
-  animation: feed-card-in 0.4s var(--ease-spring) both;
+  animation: feed-card-in 0.4s var(--ease-out) both;
 }
 .lb-pos {
   min-width: 34px;

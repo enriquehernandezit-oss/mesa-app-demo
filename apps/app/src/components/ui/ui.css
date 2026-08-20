@@ -199,7 +199,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 500;
-  transition: all 0.12s ease;
+  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
 }
 .mesa-chip--active {
   border-color: var(--accent);
@@ -299,7 +299,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  transition: background 0.18s var(--ease-spring);
+  transition: background 0.18s ease;
 }
 /* Expand the tap target to ≥44×44 without enlarging the visual switch. */
 .mesa-toggle::before {
@@ -313,7 +313,7 @@
   border-radius: 50%;
   background: var(--on-accent);
   box-shadow: 0 1px 2px rgba(42, 21, 18, 0.28);
-  transition: transform 0.18s var(--ease-spring);
+  transition: transform 0.18s var(--ease-out);
 }
 .mesa-toggle--on {
   background: var(--accent-fill);
