@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { markActivitySeen } from '../../components/TopBar'
 import { Body, Chip, ChipRail, Eyebrow, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
@@ -69,18 +70,15 @@ export function ActivityScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <div className="activity-head">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => navigate({ to: '/discover' })}
-          >
-            ‹ Activity
-          </button>
-          <button type="button" className="activity-markread" onClick={markRead}>
-            Mark read
-          </button>
-        </div>
+        <ScreenHeader
+          onBack={() => navigate({ to: '/discover' })}
+          backLabel="Activity"
+          right={
+            <button type="button" className="activity-markread" onClick={markRead}>
+              Mark read
+            </button>
+          }
+        />
 
         <ChipRail style={{ margin: 'var(--space-3) 0 var(--space-4)' }}>
           {FILTERS.map((f) => (

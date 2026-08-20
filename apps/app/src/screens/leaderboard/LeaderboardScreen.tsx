@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Chip, Eyebrow, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
@@ -28,10 +29,8 @@ export function LeaderboardScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
-        <div className="tab-header" style={{ marginTop: 'var(--space-3)' }}>
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>Leaderboard</Title>
         </div>

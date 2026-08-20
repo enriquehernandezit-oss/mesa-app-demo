@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { Button, Caption, Eyebrow, Toggle } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { ThemePicker } from '../../components/ui/ThemePicker'
@@ -116,9 +117,7 @@ export function SettingsScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/profile' })}>
-          ‹ Settings
-        </button>
+        <ScreenHeader onBack={() => navigate({ to: '/profile' })} backLabel="Settings" />
 
         {/* Tappable profile card → /profile. */}
         <Link to="/profile" className="settings-id settings-id--link">

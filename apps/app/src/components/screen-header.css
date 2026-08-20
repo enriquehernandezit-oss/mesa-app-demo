@@ -1,0 +1,57 @@
+/* Header for full-screen routes outside TabsLayout. Tokens only.
+   Placed as the first child of .tab-body; negative margins pull it out to the
+   shell edges so it can own the --safe-top inset (tab-body's own top padding is
+   cancelled here, so the inset is not double-counted). */
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: calc(var(--space-4) * -1) calc(var(--space-5) * -1) var(--space-3);
+  padding: calc(var(--safe-top) + var(--space-3)) var(--space-5) var(--space-3);
+}
+
+.screen-header__back {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  /* Pull the glyph to the content edge while keeping a 44px hit area. */
+  margin-left: calc(var(--space-2) * -1);
+  padding: 0 var(--space-2);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: transform 0.15s var(--ease-out);
+}
+.screen-header__back:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .screen-header__back:hover {
+    color: var(--accent);
+  }
+}
+.screen-header__chev {
+  font-size: 1.2rem;
+  line-height: 1;
+  /* Optical: the chevron sits a hair high against the small-caps label. */
+  margin-top: -1px;
+}
+.screen-header__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screen-header__right {
+  display: flex;
+  align-items: center;
+  flex: none;
+}

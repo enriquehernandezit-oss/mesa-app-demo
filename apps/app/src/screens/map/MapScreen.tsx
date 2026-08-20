@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { displayScore, priceLabel } from '../../lib/display'
@@ -91,10 +92,8 @@ export function MapScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
-        <div className="tab-header" style={{ marginTop: 'var(--space-3)' }}>
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>El mapa</Title>
           {rankedByFriends > 0 && (

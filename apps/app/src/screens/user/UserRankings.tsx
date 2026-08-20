@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Button, Caption, Chip, SectionHeader, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
@@ -62,13 +63,7 @@ export function UserRankings() {
     return (
       <div className="tab-shell">
         <div className="tab-body">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => navigate({ to: '/discover' })}
-          >
-            ‹ Back
-          </button>
+          <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>
               {gone ? 'This profile is unavailable.' : 'Could not load this profile.'}
@@ -87,40 +82,37 @@ export function UserRankings() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <div className="user-headbar">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => navigate({ to: '/discover' })}
-          >
-            ‹ {user.name || user.handle}
-          </button>
-          <div className="user-menu-wrap">
-            <button
-              type="button"
-              className="user-menu-btn"
-              aria-label="More"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              ⋯
-            </button>
-            {menuOpen && (
-              <div className="user-menu">
-                <button type="button" onClick={() => setReporting(true)}>
-                  Report
-                </button>
-                <button
-                  type="button"
-                  className="user-menu__danger"
-                  onClick={() => block.mutate()}
-                  disabled={block.isPending}
-                >
-                  Block
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <ScreenHeader
+          onBack={() => navigate({ to: '/discover' })}
+          backLabel={user.name || user.handle || 'Back'}
+          right={
+            <div className="user-menu-wrap">
+              <button
+                type="button"
+                className="user-menu-btn"
+                aria-label="More"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                ⋯
+              </button>
+              {menuOpen && (
+                <div className="user-menu">
+                  <button type="button" onClick={() => setReporting(true)}>
+                    Report
+                  </button>
+                  <button
+                    type="button"
+                    className="user-menu__danger"
+                    onClick={() => block.mutate()}
+                    disabled={block.isPending}
+                  >
+                    Block
+                  </button>
+                </div>
+              )}
+            </div>
+          }
+        />
 
         <div className="user-identity">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />

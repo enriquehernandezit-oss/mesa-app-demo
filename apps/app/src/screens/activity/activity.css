@@ -1,12 +1,6 @@
 /* Activity rows (mock F2) — avatar · text + mono time · thumbnail or action.
    Every row carries its own action. Tokens only. */
 
-.activity-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: var(--space-2);
-}
 .activity-markread {
   font-family: var(--font-mono);
   font-size: 9px;

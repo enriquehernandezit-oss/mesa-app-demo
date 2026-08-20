@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
@@ -25,9 +26,7 @@ export function ListScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
 
         {q.isPending ? (
           <Body style={{ marginTop: 'var(--space-4)' }}>Loading…</Body>

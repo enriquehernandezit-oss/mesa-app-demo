@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { QuickActions } from '../../components/QuickActions'
+import { ScreenHeader } from '../../components/ScreenHeader'
 import {
   Body,
   Chip,
@@ -61,10 +62,8 @@ export function ExploreScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ← Back
-        </button>
-        <div className="tab-header" style={{ marginTop: 'var(--space-3)' }}>
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <div className="tab-header">
           <Eyebrow>Explore</Eyebrow>
           <Title>Find a spot</Title>
           <input

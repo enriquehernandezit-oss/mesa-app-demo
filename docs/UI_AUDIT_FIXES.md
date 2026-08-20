@@ -68,13 +68,23 @@ Seven of them render their **own** `.tab-shell` with no TopBar, and `.tab-body`
 **The 7 trapped screens** (each renders `<div className="tab-shell">` with a
 `.link-action` back button and no `<TopBar/>`):
 
-- [ ] `screens/settings/SettingsScreen.tsx:119` — "‹ Settings"
-- [ ] `screens/activity/ActivityScreen.tsx:73` — "‹ Activity" (+ `:80` "Mark read")
-- [ ] `screens/user/UserRankings.tsx:65` — "‹ Back" (+ `:99` `.user-menu-btn`)
-- [ ] `screens/leaderboard/LeaderboardScreen.tsx:32` — "← Back"
-- [ ] `screens/explore/ExploreScreen.tsx:64` — "← Back"
-- [ ] `screens/map/MapScreen.tsx:94` — "← Back"
-- [ ] `screens/list/ListScreen.tsx:28` — "← Back"
+- [x] `screens/settings/SettingsScreen.tsx:119` — "‹ Settings"
+- [x] `screens/activity/ActivityScreen.tsx:73` — "‹ Activity" (+ `:80` "Mark read")
+- [x] `screens/user/UserRankings.tsx:65` — "‹ Back" (+ `:99` `.user-menu-btn`)
+- [x] `screens/leaderboard/LeaderboardScreen.tsx:32` — "← Back"
+- [x] `screens/explore/ExploreScreen.tsx:64` — "← Back"
+- [x] `screens/map/MapScreen.tsx:94` — "← Back"
+- [x] `screens/list/ListScreen.tsx:28` — "← Back"
+
+**DONE (this session):** New `components/ScreenHeader.tsx` + `screen-header.css`
+replaces the inline `.link-action` back button on all 7 screens; it owns
+`--safe-top` (negative margins cancel `.tab-body`'s top padding so the inset is
+not double-counted) and gives the back control a 44px hit area. Added
+`--ease-out` to `tokens.css` (used for the header's `:active`). Removed the now
+orphaned `.user-headbar` / `.activity-head` rules. **Browser-verified** at 375px
+with `--safe-top:59px`: all 7 back controls render at `top:79`, box `44px` tall
+(Settings, Leaderboard, Explore, Map, Activity[+Mark read@95], List,
+User[success: name + ⋯ menu@83; error: "Back"]). ⋯ menu still opens (Report/Block).
 
 **Fix (recommended):** create one shared header component so this can't drift again.
 
