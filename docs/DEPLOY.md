@@ -184,6 +184,42 @@ Symptom if this is misconfigured: visiting the app URL returns the API's
 `{"error":"not_found"}` JSON instead of HTML — that means the service is running
 the API's start command, i.e. it's still on the shared root `railway.json`.
 
+---
+
+## Production readiness checklist
+
+A first deploy runs fine in a **half-dev mode**: with `NODE_ENV` unset and no
+email/SMS providers, the auth code falls back to dev behaviour — OTP codes and
+email links are `console.log`'d to the server instead of delivered. Flows return
+`200` and *look* healthy, but no real user ever receives a code or a link. Before
+letting anyone but yourself sign in, close the gap in this order:
+
+1. **Wire the email provider first.** Set `EMAIL_PROVIDER_API_KEY` (Resend) and
+   `EMAIL_FROM` (a verified sender on your domain, e.g. `Mesa <mail@yourdomain>`;
+   the default `onboarding@resend.dev` only delivers to the Resend account
+   owner). This makes verification + password-reset emails actually send.
+   - `sendMail` is **best-effort by design** — if the key is missing or Resend
+     errors, it logs `[email] send failed…` / `[email] NOT SENT…` and returns,
+     so a mail outage never 500s signup or reset. Watch the logs for those lines;
+     they mean mail isn't going out even though the request succeeded.
+2. **Wire the SMS provider** if you want phone login: `SMS_PROVIDER_API_KEY`.
+   Until it's set, phone `send-otp` returns `200` but only logs the code — it is
+   not a working login path for real users.
+3. **Then set `NODE_ENV=production`** on the `mesa-api` service. This turns off
+   the dev fallbacks (no more secrets/links in logs). Do this step *after* #1 so
+   verification-on-signup has a real sender; the best-effort `sendMail` means a
+   missing key won't break signup, but you still want mail actually delivering.
+4. **Lock `APP_ORIGINS`** to real deployed origins only — no `localhost`/LAN (see
+   Step 3's trust-boundary note).
+5. **Custom domain** (for the App Store, and to make the web cookie first-party):
+   put the app and API under one registrable domain (`app.` + `api.`). Bearer
+   auth works regardless, but a shared root domain also restores same-site
+   cookies for the web build.
+
+Env-gated features that stay safely off until you add their keys — the code
+simply skips them: `APPLE_*`, `INSTAGRAM_*` (social login), `CLOUDINARY_*`
+(image upload), `MAPBOX_*` (maps).
+
 ## What is NOT on Railway (Phase 1)
 
 - **Native iOS/Android build** — that's Xcode + (eventually) the Apple Developer
