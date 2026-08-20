@@ -53,7 +53,17 @@ On the **mesa-api** service → **Variables**, add:
 | `NODE_ENV` | `production` |
 | `BETTER_AUTH_SECRET` | a long random string — run `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | the API's public URL (see Step 4 — you'll set this after you have the domain) |
-| `APP_ORIGINS` | the origin(s) that call the API, comma-separated (your web build's URL and/or `capacitor://localhost`) |
+| `APP_ORIGINS` | the origin(s) that call the API, comma-separated (the deployed web app's URL and/or `capacitor://localhost`) |
+
+**`APP_ORIGINS` is a production trust boundary — put ONLY real deployed origins
+here.** It feeds both the CORS allowlist and Better Auth's `trustedOrigins`, so
+every origin listed is one the live API will accept credentialed, state-changing
+requests from. Never add `http://localhost:*` or a LAN IP (`http://192.168.x.x`)
+to the **production** service — that trusts anyone's laptop. For local phone
+testing, run the API locally instead (its code default is `http://localhost:5173`),
+or stand up a **separate** staging service with the dev origins — never widen
+prod. No spaces around the commas: Better Auth matches origins exactly, so a
+stray space makes the origin silently fail (`403 INVALID_ORIGIN`).
 
 **Do NOT set `PORT`.** Railway injects it and the API already reads
 `process.env.PORT`. Setting it yourself will break the bind.
@@ -68,9 +78,24 @@ and simply keeps those features off:
 1. API service → **Settings** → **Networking** → **Generate Domain**.
    You'll get something like `https://mesa-api-production.up.railway.app`.
 2. Set `BETTER_AUTH_URL` to that exact URL and redeploy.
-3. Set `APP_ORIGINS` to wherever the frontend runs (your Cloudflare Pages /
-   Netlify URL for the web build, and/or `capacitor://localhost` for the native
-   shell).
+3. Set `APP_ORIGINS` to wherever the frontend runs — the deployed web app's URL
+   and/or `capacitor://localhost` for the native shell. Real origins only (see
+   the trust-boundary note in Step 3).
+
+### How auth crosses origins (why cookies aren't enough)
+
+The web app and the API are on different origins (different Railway subdomains,
+and in the native app the shell runs from `capacitor://localhost`). Browsers —
+iOS Safari especially — refuse to store the API's session **cookie** on a
+cross-site response, so cookie-only auth hangs on sign-in. Mesa therefore
+authenticates cross-origin with a **Bearer token**: on sign-in the API returns
+the session token in a `set-auth-token` header (exposed via CORS), the app
+stores it and sends `Authorization: Bearer <token>` on every request. The
+cookie stays `SameSite=Lax` (Better Auth's default) and is only used for
+first-party/same-origin web — a header is never auto-attached cross-site, so
+this also keeps CSRF off our own state-changing routes. Nothing to configure;
+it's wired in `apps/api/src/auth.ts` (the `bearer()` plugin) and the app's
+`src/lib/auth-token.ts`.
 
 ## Step 5 — First deploy
 
@@ -121,10 +146,12 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
 1. **Phone login won't work in prod** until you add an SMS provider
    (`SMS_PROVIDER_API_KEY`). Everything else runs without it. For a first live
    smoke test, hitting `/health` and the read endpoints is enough.
-2. **Cross-origin session cookie.** Once the frontend is on a different domain
-   than the API, the session cookie needs `SameSite=None; Secure`. If sign-in
-   "works but doesn't stick" in the browser, that's the cause — flag it and
-   we'll adjust the Better Auth cookie config for the real frontend origin.
+2. **Cross-origin auth "works but doesn't stick."** If sign-in hangs — most
+   visibly on an iPhone — it's the browser refusing the cross-site session
+   cookie. This is already solved by Bearer-token auth (see "How auth crosses
+   origins" in Step 4); the fix is NOT to reintroduce `SameSite=None`. If it
+   recurs, check that the API emits `set-auth-token` and exposes it via CORS,
+   and that the app is sending `Authorization: Bearer`.
 3. **Nixpacks build fails with "Node.js 18.x has reached End-Of-Life and has
    been removed."** Railway's Nixpacks builder auto-detects a Node toolchain
    from `package.json` even though the app runs on Bun, and without a pinned
@@ -136,11 +163,31 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
 
 ---
 
+## The web frontend service (`@mesa/app`)
+
+The Vite web build is deployed as a **second Railway service** in the same
+project, served as static files. It shares the monorepo, so it needs its own
+config to avoid inheriting the API's `railway.json`:
+
+- **Root Directory:** repo root (`/`) — NOT `apps/app`. `bun install` must run
+  from the root so the `@mesa/db` workspace resolves (same reason as the API).
+- **Config file:** point Config-as-code at **`/apps/app/railway.json`** (in the
+  service's Settings → Config-as-code). That file sets the build
+  (`bun install && bun run --filter '@mesa/app' build`) and start
+  (`bunx serve -s apps/app/dist -l $PORT`) commands and, crucially, has **no**
+  `preDeployCommand` — the DB migration belongs only to the API.
+- **`VITE_API_URL`:** the API's public URL. Vite **inlines this at build time**,
+  so changing it requires a rebuild, not just a restart — and a stale value
+  (e.g. `http://localhost:*`) ships a build that calls a URL that doesn't exist.
+
+Symptom if this is misconfigured: visiting the app URL returns the API's
+`{"error":"not_found"}` JSON instead of HTML — that means the service is running
+the API's start command, i.e. it's still on the shared root `railway.json`.
+
 ## What is NOT on Railway (Phase 1)
 
-- **The frontend** (`apps/app`) — bundled into the native app via Capacitor. A
-  free web version is a separate static deploy (Cloudflare Pages / Netlify),
-  pointed at the API via `VITE_API_URL`.
 - **Native iOS/Android build** — that's Xcode + (eventually) the Apple Developer
   account, tracked in `docs/SUBMISSION.md`. Deferred until you're ready to put
-  it on other people's phones.
+  it on other people's phones. (The web `@mesa/app` service above is separate
+  from the native build; the native app bundles the same Vite output via
+  Capacitor and talks to the same API over Bearer-token auth.)
