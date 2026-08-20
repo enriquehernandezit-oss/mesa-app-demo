@@ -38,23 +38,38 @@ const RESEND_KEY = process.env.EMAIL_PROVIDER_API_KEY
 // test; set EMAIL_FROM to your verified domain address (e.g. "Mesa <mail@…>").
 const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Mesa <onboarding@resend.dev>'
 
+// Best-effort transactional email. It NEVER throws: a mail-provider outage or an
+// unset key must not 500 an auth flow. Verification-on-signup is not a gate
+// (requireEmailVerification is false), and password reset returns the same
+// generic response whether or not the mail goes out — so a thrown error would
+// only break signup/reset and, on reset, leak which addresses exist (only a
+// registered email triggers a send). Failures are logged as errors instead, so
+// a misconfiguration is loud in the server logs — the "fail loud" the original
+// design wanted, moved off the user-facing response.
 async function sendMail(to: string, subject: string, body: string) {
   if (to.endsWith('@phone.mesa.local')) return
-  if (!RESEND_KEY) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Email provider not configured (set EMAIL_PROVIDER_API_KEY + EMAIL_FROM)')
+  try {
+    if (!RESEND_KEY) {
+      if (process.env.NODE_ENV === 'production') {
+        console.error(
+          `[email] NOT SENT to=${to} · ${subject} — EMAIL_PROVIDER_API_KEY unset in production`,
+        )
+      } else {
+        console.log(`[dev email] to=${to} · ${subject}\n${body}\n`)
+      }
+      return
     }
-    console.log(`[dev email] to=${to} · ${subject}\n${body}\n`)
-    return
-  }
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: EMAIL_FROM, to, subject, text: body }),
-  })
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '')
-    throw new Error(`Email send failed (${res.status}): ${detail.slice(0, 300)}`)
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: EMAIL_FROM, to, subject, text: body }),
+    })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      console.error(`[email] send failed (${res.status}) to=${to} · ${subject}: ${detail.slice(0, 300)}`)
+    }
+  } catch (err) {
+    console.error(`[email] send threw to=${to} · ${subject}:`, err)
   }
 }
 
