@@ -201,6 +201,10 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
   const meta = [spot.cuisine, spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
+  // Hand off to the OS maps app for turn-by-turn from the user's location.
+  // Google's universal link deep-links to the Google Maps app on device and
+  // falls back to Apple Maps / the browser when it isn't installed.
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`
   return (
     <div className="map-card">
       {thumb ? (
@@ -224,14 +228,24 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
           )}
         </div>
       </div>
-      <Link
-        to="/r/$restaurantId"
-        params={{ restaurantId: spot.id }}
-        className="map-card__go"
-        onClick={onClose}
-      >
-        Ver →
-      </Link>
+      <div className="map-card__actions">
+        <a
+          className="map-card__dir"
+          href={directionsUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Cómo llegar
+        </a>
+        <Link
+          to="/r/$restaurantId"
+          params={{ restaurantId: spot.id }}
+          className="map-card__go"
+          onClick={onClose}
+        >
+          Ver →
+        </Link>
+      </div>
     </div>
   )
 }
