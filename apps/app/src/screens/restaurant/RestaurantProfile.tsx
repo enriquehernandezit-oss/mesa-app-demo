@@ -276,7 +276,7 @@ export function RestaurantProfile() {
         <TheirScores rankings={friendsRankings} />
 
         {mapUrl ? (
-          <img className="resto-map" src={mapUrl} alt={`Map of ${restaurant.name}`} />
+          <img className="resto-map" src={mapUrl} alt={`Map of ${restaurant.name}`} loading="lazy" />
         ) : (
           <div className="resto-map resto-map--fallback">
             {restaurant.neighborhood?.name ?? 'Santo Domingo'} · map

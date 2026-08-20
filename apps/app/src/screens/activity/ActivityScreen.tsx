@@ -186,7 +186,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           </button>
         )
       ) : (
-        thumb && <img className="activity-row__thumb" src={thumb} alt="" />
+        thumb && <img className="activity-row__thumb" src={thumb} alt="" loading="lazy" />
       )}
     </div>
   )

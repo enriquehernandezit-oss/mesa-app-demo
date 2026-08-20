@@ -210,7 +210,7 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
   return (
     <div className="map-card">
       {thumb ? (
-        <img className="map-card__thumb" src={thumb} alt="" />
+        <img className="map-card__thumb" src={thumb} alt="" loading="lazy" />
       ) : (
         <div className="map-card__thumb" />
       )}

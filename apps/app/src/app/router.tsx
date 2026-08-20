@@ -70,7 +70,7 @@ const TABS = [
 
 function TabLink({ to, label, d }: (typeof TABS)[number]) {
   return (
-    <Link to={to} className="tab-link">
+    <Link to={to} className="tab-link" activeProps={{ 'aria-current': 'page' }}>
       <Icon d={d} />
       {label}
     </Link>
@@ -79,7 +79,7 @@ function TabLink({ to, label, d }: (typeof TABS)[number]) {
 
 function TabBar() {
   return (
-    <nav className="tab-bar">
+    <nav className="tab-bar" aria-label="Primary">
       <TabLink {...TABS[0]} />
       <TabLink {...TABS[1]} />
       <Link to="/rank" className="tab-fab" aria-label="Rank a place">

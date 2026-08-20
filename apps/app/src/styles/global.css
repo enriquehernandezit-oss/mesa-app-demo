@@ -72,6 +72,20 @@ a {
   text-decoration: none;
 }
 
+/* Visible keyboard-focus ring (WCAG 2.4.7 Focus Visible). :focus-visible fires
+   for keyboard / switch navigation but not for pointer taps, so touch users
+   never see it. The outline follows each control's border-radius and sits
+   outside layout, so it never shifts content. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Inputs inherit the ground; no bright default fields. */
 input,
 textarea,

@@ -337,22 +337,37 @@ modal correctly sits above topbar 30).
 
 ## 3g. Accessibility (from the technical pass)
 
-- [ ] No `:focus-visible` anywhere (only 3 `:focus` rules, all form fields). Add visible
+- [x] No `:focus-visible` anywhere (only 3 `:focus` rules, all form fields). Add visible
   focus rings to buttons/links (WCAG 2.4.7).
-- [ ] Tab bar `<nav>` has no `aria-label`; active tab uses `data-status` with no
+- [x] Tab bar `<nav>` has no `aria-label`; active tab uses `data-status` with no
   `aria-current="page"` (`app/router.tsx` TabBar/TabLink).
-- [ ] `loading="lazy"` on the ~8 `<img>` without it (13 total, 5 have it).
+- [x] `loading="lazy"` on the ~8 `<img>` without it (13 total, 5 have it).
+
+**DONE (this session, group #7 / 3g):** one global `:focus-visible` rule in
+`global.css` (2px brass outline + offset, follows border-radius, layout-safe) on
+`a/button/input/select/textarea/[tabindex]` — **verified** a real Tab keypress
+paints the ring (script `.focus()` correctly does not). Tab `<nav aria-label=
+"Primary">` and `aria-current="page"` on the active `TabLink` via Link
+`activeProps` (verified: active tab carries it, inactive don't). Added
+`loading="lazy"` to the 6 list/below-fold thumbnails (activity, explore, list,
+map-card, rank-summary, resto-map); the two hero images (restaurant cover, dish
+detail) were **kept eager** on purpose — they're the LCP element on their screen.
 
 ---
 
 ## Suggested commit grouping (user runs git themselves — hand over blocks)
 
-1. `fix(mobile): safe-area screen header — 7 trapped screens reachable (P0)`
-2. `fix(theme): avatar-ink + scorebadge contrast; retune Afternoon muted text (P1)`
-3. `fix(mobile): 44px touch targets + tab bar sizing (P1)`
-4. `fix(mobile): gate :hover for touch, add :active press feedback`
-5. `fix(ui): resto-map overflow, profile-edit save, error/empty/confirm states`
-6. `refactor(motion): split ease-out from spring; stagger feed; drop dead CSS`
+1. `fix(mobile): safe-area screen header — 7 trapped screens reachable (P0)` ✅
+2. `fix(theme): avatar-ink + scorebadge contrast; retune Afternoon muted text (P1)` ✅
+3. `fix(mobile): 44px touch targets + tab bar sizing (P1)` ✅
+4. `fix(mobile): gate :hover for touch, add :active press feedback` ✅
+5. `fix(ui): resto-map overflow, profile-edit save, error/empty/confirm states` ✅
+6. `refactor(motion): split ease-out from spring; stagger feed; drop dead CSS` ✅
+7. `a11y: focus-visible rings, tab-bar aria, lazy images (3g)` ✅ — added after the
+   original plan; 3g wasn't mapped to a commit in the first six.
+
+**All passes executed and browser-verified.** A `feat(map): 'Cómo llegar'
+directions button` also shipped alongside (user-requested, outside the audit).
 
 ## Verify each pass before moving on
 

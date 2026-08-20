@@ -266,7 +266,7 @@ export function RankAPlace() {
           {(() => {
             const thumb = cloudinaryUrl(picked.coverImageId, { w: 120, h: 120 })
             return thumb ? (
-              <img className="rank-summary__thumb" src={thumb} alt="" />
+              <img className="rank-summary__thumb" src={thumb} alt="" loading="lazy" />
             ) : (
               <div className="rank-summary__thumb" />
             )

@@ -146,7 +146,7 @@ export function ExploreScreen() {
                 >
                   <span className="explore-row__rank">{i + 1}</span>
                   {cover ? (
-                    <img className="search-thumb" src={cover} alt="" />
+                    <img className="search-thumb" src={cover} alt="" loading="lazy" />
                   ) : (
                     <div className="search-thumb" />
                   )}

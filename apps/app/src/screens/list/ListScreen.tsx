@@ -58,7 +58,7 @@ export function ListScreen() {
                 >
                   <span className="explore-row__rank">{r.position}</span>
                   {thumb ? (
-                    <img className="search-thumb" src={thumb} alt="" />
+                    <img className="search-thumb" src={thumb} alt="" loading="lazy" />
                   ) : (
                     <div className="search-thumb" />
                   )}
