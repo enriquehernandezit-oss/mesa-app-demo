@@ -19,7 +19,7 @@ import {
   mulberry32,
 } from './seed-extra'
 
-// Seeds the dense demo world: 7 neighborhoods, 35 real SD restaurants, 40 users
+// Seeds the dense demo world: 7 neighborhoods, 49 real SD restaurants, 40 users
 // (8 curated friends + 32 generated), ~600 rankings with notes/tags/dishes
 // spread over six weeks, an organic follow graph, and cheers throughout.
 // Deterministic (fixed PRNG seeds) and idempotent (truncates first).
@@ -95,7 +95,7 @@ async function seed() {
     return id
   }
 
-  // --- restaurants (15 curated + 20 extra, all isDemo) ---
+  // --- restaurants (15 curated + 34 extra, all isDemo) ---
   const allRestaurants = [
     ...restaurants.map((r) => ({
       ...r,
