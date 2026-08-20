@@ -21,7 +21,7 @@
   --surface-raised: #fffdf8; /* one card color in Phase 6; skeletons shimmer via --bg-sunk */
   --text: #2a1512; /* --ink: primary text, FAB fill, dark badges */
   --text-2: #4a3b32; /* --body: body copy where --ink is too heavy */
-  --text-muted: #a2917f; /* --muted: captions, metadata, inactive */
+  --text-muted: #746253; /* --muted: captions, metadata (≥4.5:1 on paper) */
   --text-faint: #b0a08e; /* --faint: annotation-level text only */
   --accent: #9a6a28; /* brass — active states, scores, primary accent */
   --accent-strong: #8a5a2a; /* --deep: brass on small text / eyebrows / pill labels */
@@ -70,7 +70,11 @@
   --avatar-hue-1: #b5773c; /* warm avatar gradient hues, rotated by name */
   --avatar-hue-2: #c8703f;
   --avatar-hue-3: #a98a63;
-  --avatar-ink: #fdf7ec; /* cream initials on the warm avatar gradient (both themes) */
+  /* Avatar initials — THEME-SPECIFIC. The gradient ends at --bg-sunk, which is
+     light in Afternoon, so cream initials washed out (~1.7:1 at the midpoint);
+     dark ink reads on the warm-tan midpoint here. Candlelit keeps cream, since
+     its --bg-sunk end is near-black. */
+  --avatar-ink: #2a1512; /* dark ink initials on the warm gradient (Afternoon) */
 
   /* ── Theme-INVARIANT: photos carry their own dark island in both themes ── */
   --on-photo: #ebe4d6; /* primary text over photography */
@@ -179,4 +183,8 @@ html[data-theme="candlelit"] {
   --status-good: #c09050;
   --status-building: #a98a63;
   --status-slow: #7a6258;
+
+  /* Avatar initials — cream reads on the near-black gradient end here (Afternoon
+     overrides to dark ink; see the :root note). */
+  --avatar-ink: #fdf7ec;
 }

@@ -117,30 +117,45 @@ themes, in opposite places:
   `color: var(--avatar-ink)` (cream) → **1.19:1** (`components/ui/patterns.css:90-100`).
 
 **Fix:**
-- [ ] Make `--avatar-ink` **theme-specific**: keep cream in Candlelit; use a dark
+- [x] Make `--avatar-ink` **theme-specific**: keep cream in Candlelit; use a dark
   ink-brown in Afternoon. Verify the chosen ink hits **≥4.5:1** (small text) against the
   gradient **midpoint** (hue mixed 50/50 with `--bg-sunk`) in *both* themes. Gradient
   hues: `--avatar-hue-1/2/3` = #b5773c / #c8703f / #a98a63.
-- [ ] `.scorebadge__badge`: give it a foreground that contrasts with its `var(--text)`
+- [x] `.scorebadge__badge`: give it a foreground that contrasts with its `var(--text)`
   background (e.g. a dark token like `--bg`/`--on-accent`), verified ≥4.5:1 in both
   themes. Also bump its `font-size: 7px` → ≥10px (see Pass 3 text sizing).
+
+**DONE (this session):** `--avatar-ink` → `#2a1512` (dark ink) in `:root`, cream
+override in the Candlelit block. `.scorebadge__badge` → `color: var(--on-accent)`
+(always the counterpart of its `var(--text)` bg) + `font-size: 10px`. **Browser-
+verified** both themes: avatar ink vs gradient midpoints **Afternoon 7.99–8.52:1**,
+**Candlelit 7.66–8.35:1** (was ~1.7); scorebadge **Afternoon 16.2:1 / Candlelit
+15.5:1** (was 1.19).
 
 ## 2b. Afternoon (the default theme) fails contrast widely
 
 `:root` is Afternoon, so light-mode users get the weaker experience. Failing text
 (normal text needs 4.5:1; measured on the deployed app):
 
-- [ ] `.lb-meta` 9px → **2.66:1** (×82) — `screens/leaderboard/*`
-- [ ] `.link-action` 11px → **2.66:1** (×60)
-- [ ] `.feed-time` 11px → **3.00:1** (×20)
-- [ ] `.cheers__glass` / `.cheers__count` 13px → **3.00:1**
-- [ ] `.chars__line` 11.5px → **2.66–3.00:1**
-- [ ] `.ranking-score` 16px → 4.11:1 (just under)
+- [x] `.lb-meta` 9px → **2.66:1** (×82) — `screens/leaderboard/*`
+- [x] `.link-action` 11px → **2.66:1** (×60)
+- [x] `.feed-time` 11px → **3.00:1** (×20)
+- [x] `.cheers__glass` / `.cheers__count` 13px → **3.00:1**
+- [x] `.chars__line` 11.5px → **2.66–3.00:1**
+- [x] `.ranking-score` 16px → 4.11:1 (just under)
 
 **Fix:** retune the Afternoon (`:root`) muted text tokens (`--text-muted`,
 `--text-faint`, and whatever `.lb-meta`/`.link-action`/`.feed-time` resolve to) so body
 text hits **≥4.5:1** on its actual background. Do **not** touch Candlelit values (they
 mostly pass — only the badge above fails there). Re-verify both themes after.
+
+**DONE (this session):** the failing classes all resolve to `--text-muted`, so
+the single lever was `--text-muted` `#a2917f` → `#746253` (`:root` only).
+`.ranking-score` uses `--accent`, switched to `--accent-strong` (the "brass on
+small text" token). `--text-faint` has **no CSS consumers** (dead token), left
+as-is. **Browser-verified Afternoon** on real elements: lb-meta 5.08 (on paper),
+feed-time 5.72, link-action 5.08, cheers 5.72, chars--muted 5.72, ranking-score
+5.13 — all ≥4.5. Candlelit `--text-muted` untouched (feed-time still 5.1).
 
 ---
 

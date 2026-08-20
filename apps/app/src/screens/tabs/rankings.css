@@ -195,7 +195,7 @@
   place-items: center;
   font-family: var(--font-serif);
   font-size: 1rem;
-  color: var(--accent);
+  color: var(--accent-strong); /* deeper brass clears 4.5:1 on paper (was --accent, 4.11) */
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }

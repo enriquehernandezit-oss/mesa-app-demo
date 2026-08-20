@@ -94,9 +94,11 @@
   padding: 2px 4px;
   border-radius: var(--radius-pill);
   background: var(--text);
-  color: var(--avatar-ink);
+  /* --on-accent is the counterpart of --text in both themes (cream on ink in
+     Afternoon, ink on cream in Candlelit), so it always contrasts the badge. */
+  color: var(--on-accent);
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: 10px;
   white-space: nowrap;
 }
 .scorebadge__caption {
