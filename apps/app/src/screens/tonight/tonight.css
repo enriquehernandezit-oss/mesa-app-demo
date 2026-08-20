@@ -101,6 +101,10 @@
 /* Inert Join pill — looks live, does nothing (fixture demo). */
 .tonight-join {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 8px 16px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--brass-line);

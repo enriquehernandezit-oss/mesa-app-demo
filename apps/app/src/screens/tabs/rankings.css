@@ -17,6 +17,10 @@
 /* Share pill — brass, small, unmistakable. */
 .share-pill {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-pill);
   border: none;
@@ -207,6 +211,9 @@
   margin-top: var(--space-2);
 }
 .link-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   background: none;
   border: none;
   padding: 0;

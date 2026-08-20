@@ -151,6 +151,15 @@ export function MapScreen() {
                     tabIndex={0}
                     aria-label={p.name}
                   >
+                    {/* Transparent hit target — enlarges the tap area well beyond
+                        the 3–6px dot. Capped short of a full 44px so adjacent pins
+                        in dense barrios stay individually tappable. */}
+                    <circle
+                      cx={p.x}
+                      cy={p.y}
+                      r={pinRadius(p.friendCount) + 11}
+                      className="map-pin__hit"
+                    />
                     {isSel && (
                       <circle
                         cx={p.x}

@@ -37,6 +37,10 @@
 .map-pin {
   cursor: pointer;
 }
+/* Invisible, but fill:transparent still receives pointer events (unlike none). */
+.map-pin__hit {
+  fill: transparent;
+}
 
 .map-pin__dot {
   fill: color-mix(in srgb, var(--text) 28%, transparent);

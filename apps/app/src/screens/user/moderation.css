@@ -29,8 +29,11 @@
   position: relative;
 }
 .user-menu-btn {
-  width: 36px;
-  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--glyph-line);
   background: none;

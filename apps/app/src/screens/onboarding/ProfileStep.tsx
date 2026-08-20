@@ -104,16 +104,25 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
           display: 'flex',
           gap: 'var(--space-3)',
           alignItems: 'flex-start',
+          minHeight: 44,
           color: 'var(--text-muted)',
           fontSize: 'var(--text-eyebrow)',
           lineHeight: 1.5,
+          cursor: 'pointer',
         }}
       >
         <input
           type="checkbox"
           checked={accepted}
           onChange={(e) => setAccepted(e.target.checked)}
-          style={{ marginTop: 2, accentColor: 'var(--accent)' }}
+          style={{
+            flex: 'none',
+            width: 22,
+            height: 22,
+            marginTop: 1,
+            accentColor: 'var(--accent)',
+            cursor: 'pointer',
+          }}
         />
         <span>
           I agree to Mesa's Terms and EULA, and I understand objectionable content and abusive users

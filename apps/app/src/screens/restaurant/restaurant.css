@@ -32,6 +32,13 @@
   pointer-events: auto;
 }
 .resto-condensed__back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: calc(var(--space-2) * -1);
   font-size: 1.4rem;
   color: var(--text);
   background: none;
@@ -112,8 +119,8 @@
   top: calc(var(--safe-top) + var(--space-4));
   left: var(--space-4);
   z-index: 2;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--photo-scrim-3);
@@ -173,6 +180,10 @@
 }
 .resto-rankagain {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 7px 13px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--brass-line);
@@ -184,8 +195,8 @@
 }
 .resto-savecheck {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--brass-line);
   background: transparent;
@@ -249,6 +260,10 @@
 }
 .resto-time {
   flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 9px 0;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
@@ -266,6 +281,9 @@
 /* "See all N rankings" expander + "+ Add a dish" link. */
 .resto-seeall,
 .resto-adddish {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.04em;
@@ -275,8 +293,7 @@
   cursor: pointer;
 }
 .resto-seeall {
-  display: block;
-  margin-top: var(--space-3);
+  margin-top: var(--space-2);
   color: var(--accent-strong);
 }
 

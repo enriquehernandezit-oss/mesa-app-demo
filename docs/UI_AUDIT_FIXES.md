@@ -168,31 +168,46 @@ Measured live across 8 routes: **330 interactive elements, 191 fail** WCAG 2.5.5
 for controls that must stay visually small (map pins, badges, icon buttons), expand the
 **hit area** (padding / invisible `::before`) without enlarging the glyph.
 
-- [ ] `.tab-link` 79×**31** — grow `.tab-bar` (`screens/tabs/tabs.css:47`) so links are
+- [x] `.tab-link` 79×**31** — grow `.tab-bar` (`screens/tabs/tabs.css:47`) so links are
   ≥44 tall: `align-items: stretch`, raise min-height (~49pt + `--safe-bottom`), bump
   label `font-size: 8.5px` → 11px, icons 16px → ~22-24px.
-- [ ] `.link-action` 53×**28** (the back buttons, `screens/tabs/rankings.css:209`,
+- [x] `.link-action` 53×**28** (the back buttons, `screens/tabs/rankings.css:209`,
   `padding:0`) — subsumed by the ScreenHeader in Pass 1 where it's a back control;
   elsewhere give it a 44px tap height.
-- [ ] `.topbar__btn` 38×38 → 44 (`components/topbar.css:34`)
-- [ ] `.tab-fab` 40×40 → 44 (`screens/tabs/tabs.css:82`)
-- [ ] `.cheers` 53×**28** (`screens/tabs/feed.css:142`) — core interaction
-- [ ] `.mesa-chip` 40×**26** / `.mesa-chip--sm` ~25 (`components/ui/ui.css:181,206`)
-- [ ] `.upill` ~32 tall (`components/ui/patterns.css:118`)
-- [ ] `.map-pin` **5–12px** hit area (`screens/map/map.css:37`) — expand hit area only
-- [ ] `.mesa-toggle` 42×25 (`components/ui/ui.css:281`)
-- [ ] `.compare__same` ~27 (`screens/rank/rank.css:62`), `.rank-skip` ~12
+- [x] `.topbar__btn` 38×38 → 44 (`components/topbar.css:34`)
+- [x] `.tab-fab` 40×40 → 44 (`screens/tabs/tabs.css:82`)
+- [x] `.cheers` 53×**28** (`screens/tabs/feed.css:142`) — core interaction
+- [x] `.mesa-chip` 40×**26** / `.mesa-chip--sm` ~25 (`components/ui/ui.css:181,206`)
+- [x] `.upill` ~32 tall (`components/ui/patterns.css:118`)
+- [x] `.map-pin` **5–12px** hit area (`screens/map/map.css:37`) — expand hit area only
+- [x] `.mesa-toggle` 42×25 (`components/ui/ui.css:281`)
+- [x] `.compare__same` ~27 (`screens/rank/rank.css:62`), `.rank-skip` ~12
   (`rank.css:92`), `.dish-head__camera` ~12 (`screens/dish/dish.css:9`),
   `.friend-follow` ~34 (`screens/onboarding/friends.css:38`), `.dish-name-input` /
   `.dish-caption-input` 21-26 (`dish.css:109,130`)
-- [ ] `<input type="checkbox">` UA default (`screens/onboarding/ProfileStep.tsx:112`) —
+- [x] `<input type="checkbox">` UA default (`screens/onboarding/ProfileStep.tsx:112`) —
   gates onboarding submit; make it a ≥44px labelled control
-- [ ] `.resto-back` 40×40 → 44 (`screens/restaurant/restaurant.css:115`),
+- [x] `.resto-back` 40×40 → 44 (`screens/restaurant/restaurant.css:115`),
   `.resto-condensed__back` ~22 (`restaurant.css:34`), `.resto-time` / `.resto-savecheck`
   / `.resto-rankagain` / `.resto-seeall` (restaurant.css), `.tonight-join`
   (`screens/tonight/tonight.css:102`), `.share-pill` (rankings.css:18),
   `.activity-markread` (`screens/activity/activity.css:10`), `.user-menu-btn` 36×36
   (`screens/user/moderation.css:38`)
+
+**DONE (this session):** icon buttons bumped to 44×44 (topbar, fab, resto-back,
+resto-savecheck, user-menu-btn); pills/text-buttons given `min-height:44px` +
+flex-centering (cheers, mesa-chip [+`min-width:44`], upill, share-pill, link-action,
+resto-rankagain/time/seeall, tonight-join, friend-follow, compare__same, rank-skip,
+dish-head__camera, activity-markread, resto-condensed__back); dish inputs
+`min-height:44`; `.mesa-toggle` keeps its 42×25 visual with a `::before` hit area
+(measured **44×44**); onboarding checkbox → 22px in a `min-height:44` label. Tab bar
+`align-items:stretch` + min-height 56 → **tab-link 78×55**; label 8.5→**10px**
+(not 11 — 11 crowded 4 labels), icons 16→**22px**. `.map-pin` gets a transparent
+SVG hit circle → **27×27** hit (was 5–12); a full 44 was capped short so dense
+barrio pins stay individually tappable. **Browser-verified** the measured sizes above.
+*Tradeoff:* 44px filter chips read chunkier than the old tight mono rail — the
+accessibility cost of WCAG 2.5.5; can revert to the AA 2.5.8 (24px + spacing) rule if
+you prefer the tighter look.
 
 ## 3b. Sub-11px text (raise to ≥11px, ideally native minimums)
 

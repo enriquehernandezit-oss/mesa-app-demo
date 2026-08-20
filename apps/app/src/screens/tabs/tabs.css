@@ -50,9 +50,10 @@
   right: 0;
   bottom: 0;
   display: flex;
-  align-items: center;
+  /* stretch so each link fills the bar height → a ≥44px tap target (was 31px). */
+  align-items: stretch;
   justify-content: space-around;
-  min-height: 52px;
+  min-height: 56px;
   padding: 0 10px var(--safe-bottom);
   background: var(--surface);
   border-top: 1px solid var(--line);
@@ -63,15 +64,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
   color: var(--tab-inactive);
   font-family: var(--font-ui);
-  font-size: 8.5px;
+  font-size: 10px;
   font-weight: 600;
 }
 .tab-link svg {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
 }
 .tab-link[data-status="active"] {
   color: var(--accent);
@@ -81,8 +83,8 @@
    edge with a brass halo. */
 .tab-fab {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   margin-top: -8px;
   border-radius: 50%;
   display: grid;
