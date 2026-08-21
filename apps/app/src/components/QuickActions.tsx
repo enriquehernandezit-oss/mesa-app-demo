@@ -9,13 +9,13 @@ export function QuickActions() {
   return (
     <ActionRail>
       <button type="button" className="upill" data-stale aria-disabled>
-        <span className="upill__icon">◉</span> Reserve
+        <span className="upill__icon">◉</span> Reservar
       </button>
       <button type="button" className="upill" data-stale aria-disabled>
-        <span className="upill__icon">▤</span> Order
+        <span className="upill__icon">▤</span> Pedir
       </button>
       <Link to="/map" className="upill">
-        <span className="upill__icon">➤</span> Nearby
+        <span className="upill__icon">➤</span> Cerca
       </Link>
     </ActionRail>
   )

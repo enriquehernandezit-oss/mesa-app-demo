@@ -60,10 +60,10 @@ const TABS = [
     d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9 4.4v15.2M12 3.1v17.8M15 4.4v15.2',
   },
   { to: '/rankings', label: 'Rankings', d: 'M8 6h13M8 12h13M8 18h13M4 6h.01M4 12h.01M4 18h.01' },
-  { to: '/tonight', label: 'Tonight', d: 'M12 3a9 9 0 1 0 0 18V3Z' },
+  { to: '/tonight', label: 'Esta noche', d: 'M12 3a9 9 0 1 0 0 18V3Z' },
   {
     to: '/profile',
-    label: 'You',
+    label: 'Perfil',
     d: 'M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z',
   },
 ] as const
@@ -79,10 +79,10 @@ function TabLink({ to, label, d }: (typeof TABS)[number]) {
 
 function TabBar() {
   return (
-    <nav className="tab-bar" aria-label="Primary">
+    <nav className="tab-bar" aria-label="Principal">
       <TabLink {...TABS[0]} />
       <TabLink {...TABS[1]} />
-      <Link to="/rank" className="tab-fab" aria-label="Rank a place">
+      <Link to="/rank" className="tab-fab" aria-label="Rankear un spot">
         <svg
           width="26"
           height="26"

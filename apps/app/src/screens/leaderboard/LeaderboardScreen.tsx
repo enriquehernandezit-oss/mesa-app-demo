@@ -29,10 +29,10 @@ export function LeaderboardScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
         <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
-          <Title>Leaderboard</Title>
+          <Title>Clasificación</Title>
         </div>
 
         <div className="rank-toggle">
@@ -40,21 +40,21 @@ export function LeaderboardScreen() {
             state={period === 'month' ? 'selected' : 'default'}
             onClick={() => setPeriod('month')}
           >
-            This month
+            Este mes
           </Chip>
           <Chip state={period === 'all' ? 'selected' : 'default'} onClick={() => setPeriod('all')}>
-            All time
+            Todo el tiempo
           </Chip>
         </div>
 
         {q.data?.myRank && (
           <Body style={{ marginBottom: 'var(--space-4)', color: 'var(--accent)' }}>
-            You're #{q.data.myRank} in the city.
+            Eres #{q.data.myRank} en la ciudad.
           </Body>
         )}
 
         {q.isPending ? (
-          <Body>Loading…</Body>
+          <Body>Cargando…</Body>
         ) : (
           rows.map((r, i) => (
             <Link
@@ -74,7 +74,7 @@ export function LeaderboardScreen() {
               </div>
               <div className="lb-stats">
                 <span className="lb-count">{r.count}</span>
-                <span className="lb-meta">spots · avg {displayScore(r.avgScore)}</span>
+                <span className="lb-meta">spots · prom. {displayScore(r.avgScore)}</span>
               </div>
             </Link>
           ))

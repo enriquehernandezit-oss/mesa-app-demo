@@ -92,7 +92,7 @@ export function MapScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
         <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>El mapa</Title>
@@ -231,12 +231,7 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
         </div>
       </div>
       <div className="map-card__actions">
-        <a
-          className="map-card__dir"
-          href={directionsUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a className="map-card__dir" href={directionsUrl} target="_blank" rel="noreferrer">
           Cómo llegar
         </a>
         <Link

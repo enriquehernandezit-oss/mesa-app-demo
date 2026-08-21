@@ -59,8 +59,8 @@ export function AuthFlow() {
       return setError(
         res.error.message ??
           (emailMode === 'signup'
-            ? 'Could not create the account.'
-            : 'That email or password is wrong.'),
+            ? 'No se pudo crear la cuenta.'
+            : 'El correo o la contraseña están mal.'),
       )
     queryClient.invalidateQueries({ queryKey: ['session'] })
   }
@@ -76,7 +76,7 @@ export function AuthFlow() {
       }
     } catch {
       setError(
-        `${provider === 'apple' ? 'Apple' : 'Instagram'} sign-in isn't available in this build yet.`,
+        `El inicio de sesión con ${provider === 'apple' ? 'Apple' : 'Instagram'} no está disponible todavía en esta versión.`,
       )
     } finally {
       setBusy(false)
@@ -88,7 +88,7 @@ export function AuthFlow() {
     setBusy(true)
     const { error } = await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
     setBusy(false)
-    if (error) return setError(error.message ?? 'Could not send the code.')
+    if (error) return setError(error.message ?? 'No se pudo enviar el código.')
     setStep('verify')
   }
 
@@ -100,7 +100,7 @@ export function AuthFlow() {
       code,
     })
     setBusy(false)
-    if (error) return setError(error.message ?? 'That code did not match.')
+    if (error) return setError(error.message ?? 'Ese código no coincide.')
     // Session cookie is set — refresh the cached session so App re-gates.
     queryClient.invalidateQueries({ queryKey: ['session'] })
   }
@@ -112,13 +112,13 @@ export function AuthFlow() {
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={64} />
         <Eyebrow style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-strong)' }}>
-          Invite only · Santo Domingo
+          Solo por invitación · Santo Domingo
         </Eyebrow>
         <SerifItalic style={{ fontSize: '1.5rem', lineHeight: 1.15, marginTop: 'var(--space-2)' }}>
-          Rank where you eat. Trust who you know.
+          Rankea donde comes. Confía en quien conoces.
         </SerifItalic>
         <Body style={{ color: 'var(--text-2)', maxWidth: '19rem' }}>
-          No stars, no strangers. Just your friends' numbers, in order.
+          Sin estrellas, sin desconocidos. Solo los números de tus amigos, en orden.
         </Body>
       </div>
 
@@ -128,7 +128,7 @@ export function AuthFlow() {
             {/* Apple-forward per the design; Instagram + phone stay available so
                 Sign in with Apple is offered alongside social login (App Store 4.8). */}
             <Button disabled={busy} onClick={() => oauth('apple')}>
-              Continue with Apple
+              Continuar con Apple
             </Button>
             <Button
               variant="secondary"
@@ -139,7 +139,7 @@ export function AuthFlow() {
                 setStep('email')
               }}
             >
-              Use email &amp; password
+              Usar correo y contraseña
             </Button>
             <Button
               variant="secondary"
@@ -147,7 +147,7 @@ export function AuthFlow() {
               disabled={busy}
               onClick={() => setStep('phone')}
             >
-              Use a phone number
+              Usar un número de teléfono
             </Button>
             <Button
               variant="secondary"
@@ -155,7 +155,7 @@ export function AuthFlow() {
               disabled={busy}
               onClick={() => oauth('instagram')}
             >
-              Continue with Instagram
+              Continuar con Instagram
             </Button>
           </div>
           {error && <div className="error-text">{error}</div>}
@@ -170,7 +170,7 @@ export function AuthFlow() {
               setStep('email')
             }}
           >
-            Already on Mesa? Sign in
+            ¿Ya estás en Mesa? Inicia sesión
           </button>
 
           {/* Invite code — display affordance; soft-fails (no invite backend). */}
@@ -178,7 +178,7 @@ export function AuthFlow() {
             <div className="invite-row">
               <input
                 className="field"
-                placeholder="Invite code"
+                placeholder="Código de invitación"
                 value={inviteCode}
                 onChange={(e) => {
                   setInviteCode(e.target.value)
@@ -190,36 +190,36 @@ export function AuthFlow() {
                 className="mesa-btn--mono"
                 style={{ width: 'auto', padding: '0 var(--space-4)' }}
                 onClick={() =>
-                  setInviteMsg('Invites are personal — ask a friend on Mesa to send you one.')
+                  setInviteMsg('Las invitaciones son personales — pídele una a un amigo en Mesa.')
                 }
               >
-                Enter
+                Enviar
               </Button>
             </div>
           ) : (
             <button type="button" className="invite-link" onClick={() => setInviteOpen(true)}>
-              Have an invite code? Enter it
+              ¿Tienes un código de invitación? Ingrésalo
             </button>
           )}
           {inviteMsg && <div className="invite-msg">{inviteMsg}</div>}
 
           <div className="legal-text">
-            By continuing you agree to Mesa's <a href="/terms">Terms</a> and{' '}
-            <a href="/eula">EULA</a>, and acknowledge our <a href="/privacy">Privacy Policy</a>.
+            Al continuar aceptas los <a href="/terms">Términos</a> y el <a href="/eula">EULA</a> de
+            Mesa, y reconoces nuestra <a href="/privacy">Política de Privacidad</a>.
           </div>
         </>
       )}
 
       {step === 'email' && (
         <div className="stack">
-          <Eyebrow>{emailMode === 'signup' ? 'Create your account' : 'Welcome back'}</Eyebrow>
+          <Eyebrow>{emailMode === 'signup' ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</Eyebrow>
           <input
             className="field"
             type="email"
             inputMode="email"
             autoComplete="email"
             autoCapitalize="none"
-            placeholder="you@email.com"
+            placeholder="tu@correo.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -227,7 +227,7 @@ export function AuthFlow() {
             className="field"
             type="password"
             autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
-            placeholder="Password (8+ characters)"
+            placeholder="Contraseña (8+ caracteres)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -235,12 +235,12 @@ export function AuthFlow() {
             disabled={busy || !email.includes('@') || password.length < 8}
             onClick={emailAuth}
           >
-            {busy ? '…' : emailMode === 'signup' ? 'Create account' : 'Sign in'}
+            {busy ? '…' : emailMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}
           </Button>
           {error && <div className="error-text">{error}</div>}
           {resetSent ? (
             <Caption style={{ textAlign: 'center', color: 'var(--text-2)' }}>
-              If that email is registered, a reset link is on its way.
+              Si ese correo está registrado, te llegará un enlace para restablecerla.
             </Caption>
           ) : (
             emailMode === 'signin' && (
@@ -250,7 +250,7 @@ export function AuthFlow() {
                 disabled={busy || !email.includes('@')}
                 onClick={sendReset}
               >
-                Forgot password?
+                ¿Olvidaste tu contraseña?
               </button>
             )
           )}
@@ -264,18 +264,18 @@ export function AuthFlow() {
             }}
           >
             {emailMode === 'signup'
-              ? 'Already have an account? Sign in'
-              : 'New here? Create an account'}
+              ? '¿Ya tienes una cuenta? Inicia sesión'
+              : '¿Nuevo aquí? Crea una cuenta'}
           </button>
           <Button variant="ghost" onClick={() => setStep('choose')}>
-            Back
+            Atrás
           </Button>
         </div>
       )}
 
       {step === 'phone' && (
         <div className="stack">
-          <Eyebrow>Your number</Eyebrow>
+          <Eyebrow>Tu número</Eyebrow>
           <input
             className="field"
             type="tel"
@@ -286,19 +286,19 @@ export function AuthFlow() {
             onChange={(e) => setPhone(e.target.value)}
           />
           <Button disabled={busy || phone.trim().length < 8} onClick={sendCode}>
-            Send code
+            Enviar código
           </Button>
           {error && <div className="error-text">{error}</div>}
           <Button variant="ghost" onClick={() => setStep('choose')}>
-            Back
+            Atrás
           </Button>
         </div>
       )}
 
       {step === 'verify' && (
         <div className="stack">
-          <Eyebrow>Enter the 6-digit code</Eyebrow>
-          <Caption>Sent to {phone}</Caption>
+          <Eyebrow>Ingresa el código de 6 dígitos</Eyebrow>
+          <Caption>Enviado a {phone}</Caption>
           <input
             className="field field--code"
             type="text"
@@ -310,18 +310,18 @@ export function AuthFlow() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           />
           <Button disabled={busy || code.length !== 6} onClick={verify}>
-            Verify
+            Verificar
           </Button>
           {error && <div className="error-text">{error}</div>}
           <Button variant="ghost" onClick={() => setStep('phone')}>
-            Use a different number
+            Usar otro número
           </Button>
         </div>
       )}
 
       {step === 'choose' && (
         <Body style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          Ranking + vibe notes. No stars, ever.
+          Ranking + notas de vibe. Sin estrellas, nunca.
         </Body>
       )}
     </div>

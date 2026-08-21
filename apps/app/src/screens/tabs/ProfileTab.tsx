@@ -53,7 +53,7 @@ export function ProfileTab() {
 
   const memberSince =
     p?.createdAt &&
-    new Date(p.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    new Date(p.createdAt).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })
   const barrio = p?.neighborhood?.name
 
   return (
@@ -63,10 +63,10 @@ export function ProfileTab() {
           type="button"
           className="avatar-btn avatar-btn--center"
           onClick={() => fileInput.current?.click()}
-          aria-label="Change photo"
+          aria-label="Cambiar foto"
         >
           <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={88} />
-          <span className="avatar-btn__hint">{setAvatar.isPending ? '…' : '+ photo'}</span>
+          <span className="avatar-btn__hint">{setAvatar.isPending ? '…' : '+ foto'}</span>
         </button>
         <input
           ref={fileInput}
@@ -77,7 +77,7 @@ export function ProfileTab() {
         />
         {p?.handle && <div className="profile-handle">@{p.handle}</div>}
         <div className="profile-since">
-          {[memberSince && `Member since ${memberSince}`, barrio].filter(Boolean).join(' · ')}
+          {[memberSince && `Miembro desde ${memberSince}`, barrio].filter(Boolean).join(' · ')}
         </div>
       </div>
 
@@ -85,41 +85,41 @@ export function ProfileTab() {
         <div className="stats-row stats-row--trio">
           <div className="stat">
             <span className="stat__n">{stats.data.followers}</span>
-            <span className="stat__l">Followers</span>
+            <span className="stat__l">Seguidores</span>
           </div>
           <div className="stat">
             <span className="stat__n">{stats.data.following}</span>
-            <span className="stat__l">Following</span>
+            <span className="stat__l">Siguiendo</span>
           </div>
           <div className="stat">
             <span className="stat__n">
               {stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
             </span>
-            <span className="stat__l">Rank in DR</span>
+            <span className="stat__l">Rank en RD</span>
           </div>
         </div>
       )}
 
       <div className="profile-actions">
         <Button variant="secondary" onClick={() => setEditing(true)}>
-          Edit profile
+          Editar perfil
         </Button>
         <Button variant="secondary" onClick={shareProfile}>
-          Share profile
+          Compartir perfil
         </Button>
       </div>
 
       <div className="profile-nav">
         <Link to="/rankings" className="profile-nav__row">
-          <span className="profile-nav__label">✓ Ranked</span>
+          <span className="profile-nav__label">✓ Rankeados</span>
           <span className="profile-nav__meta">{stats.data?.places ?? 0} ›</span>
         </Link>
         <Link to="/rankings" search={{ tab: 'saved' }} className="profile-nav__row">
-          <span className="profile-nav__label">◇ Want to try</span>
+          <span className="profile-nav__label">◇ Quiero probar</span>
           <span className="profile-nav__meta">›</span>
         </Link>
         <Link to="/explore" className="profile-nav__row">
-          <span className="profile-nav__label">♡ Recs for you</span>
+          <span className="profile-nav__label">♡ Recomendados para ti</span>
           <span className="profile-nav__meta">›</span>
         </Link>
       </div>
@@ -127,17 +127,17 @@ export function ProfileTab() {
       {stats.data && (
         <div className="profile-statcards">
           <div className="statcard">
-            <span className="statcard__label">Rank in DR</span>
+            <span className="statcard__label">Rank en RD</span>
             <span className="statcard__value">
               {stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
             </span>
           </div>
           <div className="statcard">
-            <span className="statcard__label">Current streak</span>
+            <span className="statcard__label">Racha actual</span>
             <span className="statcard__value">
               {stats.data.streakWeeks > 0
-                ? `${stats.data.streakWeeks} week${stats.data.streakWeeks > 1 ? 's' : ''}`
-                : 'None yet'}
+                ? `${stats.data.streakWeeks} semana${stats.data.streakWeeks > 1 ? 's' : ''}`
+                : 'Aún ninguna'}
             </span>
           </div>
         </div>
@@ -184,10 +184,10 @@ function EditProfile({ onClose }: { onClose: () => void }) {
   return (
     <div className="profile-edit">
       <button type="button" className="link-action" onClick={onClose}>
-        ‹ Edit profile
+        ‹ Editar perfil
       </button>
       <label className="profile-edit__field">
-        <span className="profile-edit__label">Name</span>
+        <span className="profile-edit__label">Nombre</span>
         <input
           className="field"
           value={name}
@@ -196,20 +196,20 @@ function EditProfile({ onClose }: { onClose: () => void }) {
         />
       </label>
       <label className="profile-edit__field">
-        <span className="profile-edit__label">@handle</span>
+        <span className="profile-edit__label">@usuario</span>
         <input
           className="field"
           value={handle}
           onChange={(e) => setHandle(e.target.value)}
-          placeholder="yourusername"
+          placeholder="tuusuario"
           maxLength={30}
         />
       </label>
       <label className="profile-edit__field">
-        <span className="profile-edit__label">Neighbourhood</span>
+        <span className="profile-edit__label">Barrio</span>
         <select className="field" value={currentSlug} onChange={(e) => setSlug(e.target.value)}>
           <option value="" disabled>
-            Where do you go out?
+            ¿Dónde sales?
           </option>
           {neighborhoods.data?.neighborhoods.map((n) => (
             <option key={n.slug} value={n.slug}>
@@ -227,10 +227,12 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           maxLength={120}
         />
       </label>
-      {save.error && <div className="error-text">Couldn't save — try a different handle.</div>}
+      {save.error && (
+        <div className="error-text">No se pudo guardar — prueba con otro usuario.</div>
+      )}
       <div className="spacer" />
       <Button disabled={!canSave} onClick={() => save.mutate()}>
-        {save.isPending ? 'Saving…' : 'Save'}
+        {save.isPending ? 'Guardando…' : 'Guardar'}
       </Button>
     </div>
   )

@@ -303,7 +303,7 @@
 }
 /* Expand the tap target to ≥44×44 without enlarging the visual switch. */
 .mesa-toggle::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -10px -3px;
 }

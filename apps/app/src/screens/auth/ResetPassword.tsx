@@ -25,7 +25,7 @@ export function ResetPassword() {
     setBusy(true)
     const { error } = await authClient.resetPassword({ newPassword: password, token })
     setBusy(false)
-    if (error) return setError(error.message ?? 'This link is invalid or has expired.')
+    if (error) return setError(error.message ?? 'Este enlace no es válido o ya venció.')
     setDone(true)
   }
 
@@ -34,25 +34,25 @@ export function ResetPassword() {
       <div className="auth-hero" aria-hidden />
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={56} />
-        <Eyebrow>Reset password</Eyebrow>
+        <Eyebrow>Restablecer contraseña</Eyebrow>
       </div>
 
       {!token ? (
         <div className="stack">
           <SerifItalic style={{ fontSize: '1.2rem', textAlign: 'center' }}>
-            This link is missing its token.
+            A este enlace le falta el token.
           </SerifItalic>
           <Body style={{ textAlign: 'center', color: 'var(--text-2)' }}>
-            Request a new reset link from the sign-in screen.
+            Pide un nuevo enlace desde la pantalla de inicio de sesión.
           </Body>
-          <Button onClick={goSignIn}>Back to sign in</Button>
+          <Button onClick={goSignIn}>Volver a iniciar sesión</Button>
         </div>
       ) : done ? (
         <div className="stack">
           <SerifItalic style={{ fontSize: '1.3rem', textAlign: 'center' }}>
-            Password updated.
+            Contraseña actualizada.
           </SerifItalic>
-          <Button onClick={goSignIn}>Sign in</Button>
+          <Button onClick={goSignIn}>Iniciar sesión</Button>
         </div>
       ) : (
         <div className="stack">
@@ -60,7 +60,7 @@ export function ResetPassword() {
             className="field"
             type="password"
             autoComplete="new-password"
-            placeholder="New password (8+ characters)"
+            placeholder="Nueva contraseña (8+ caracteres)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -68,15 +68,15 @@ export function ResetPassword() {
             className="field"
             type="password"
             autoComplete="new-password"
-            placeholder="Confirm new password"
+            placeholder="Confirma la nueva contraseña"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
           />
           <Button disabled={busy || password.length < 8 || password !== confirm} onClick={submit}>
-            {busy ? '…' : 'Set new password'}
+            {busy ? '…' : 'Guardar nueva contraseña'}
           </Button>
           {password.length > 0 && confirm.length > 0 && password !== confirm && (
-            <div className="error-text">Passwords don't match.</div>
+            <div className="error-text">Las contraseñas no coinciden.</div>
           )}
           {error && <div className="error-text">{error}</div>}
         </div>

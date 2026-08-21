@@ -62,10 +62,10 @@ export function DiscoverTab() {
   return (
     <PullToRefresh onRefresh={() => feed.refetch()}>
       <div className="tab-header">
-        <Eyebrow>Discover</Eyebrow>
-        <Title>Where your friends eat</Title>
+        <Eyebrow>Descubre</Eyebrow>
+        <Title>Donde comen tus amigos</Title>
         <Link to="/explore" className="search-field search-field--link">
-          Search a place, dish, or member…
+          Busca un spot, plato o miembro…
         </Link>
       </div>
       <QuickActions />
@@ -73,7 +73,7 @@ export function DiscoverTab() {
       {feed.isPending ? (
         <FeedSkeleton />
       ) : feed.isError ? (
-        <ErrorState>Couldn't load the feed. Try again in a moment.</ErrorState>
+        <ErrorState>No se pudo cargar el feed. Intenta de nuevo en un momento.</ErrorState>
       ) : items.length > 0 ? (
         <>
           <ListsRail />
@@ -112,11 +112,11 @@ function EmptyFeed() {
   return (
     <div>
       <div className="empty-feed__card">
-        <SerifItalic style={{ fontSize: '1.6rem' }}>Your table is set</SerifItalic>
-        <Body>Follow a few friends — their rankings and vibe notes fill this feed.</Body>
+        <SerifItalic style={{ fontSize: '1.6rem' }}>Tu mesa está lista</SerifItalic>
+        <Body>Sigue a algunos amigos — sus rankings y notas de vibe llenan este feed.</Body>
       </div>
       {users.length > 0 && (
-        <Eyebrow style={{ margin: 'var(--space-5) 0 var(--space-3)' }}>Start with these</Eyebrow>
+        <Eyebrow style={{ margin: 'var(--space-5) 0 var(--space-3)' }}>Empieza con estos</Eyebrow>
       )}
       {users.map((u) => (
         <div key={u.id} className="empty-feed__row">
@@ -125,7 +125,7 @@ function EmptyFeed() {
             <div style={{ minWidth: 0 }}>
               <div className="feed-who__name">{u.name || u.handle}</div>
               <div className="feed-who__meta">
-                {[`${u.rankedCount ?? 0} ranked`, u.neighborhood].filter(Boolean).join(' · ')}
+                {[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
               </div>
             </div>
           </Link>
@@ -135,7 +135,7 @@ function EmptyFeed() {
             onClick={() => follow.mutate(u.id)}
             disabled={follow.isPending}
           >
-            Follow
+            Seguir
           </Button>
         </div>
       ))}
@@ -155,7 +155,7 @@ function ListsRail() {
   if (lists.length === 0) return null
   return (
     <section className="rail">
-      <SectionHeader>Featured lists</SectionHeader>
+      <SectionHeader>Listas destacadas</SectionHeader>
       <div className="rail__scroll">
         {lists.map((l) => {
           const cover = cloudinaryUrl(l.coverImageId, { w: 320, h: 300 })
@@ -167,7 +167,7 @@ function ListsRail() {
               />
               <div className="list-card__title">{l.title}</div>
               <div className="list-card__progress">
-                {l.mine} of {l.total} ranked
+                {l.mine} de {l.total} rankeados
               </div>
             </Link>
           )
@@ -240,7 +240,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
       priceTier={item.restaurant.priceTier}
       cuisine={item.restaurant.cuisine}
       neighborhood={item.neighborhood}
-      hours={item.restaurant.closesAt ? `till ${item.restaurant.closesAt}` : null}
+      hours={item.restaurant.closesAt ? `hasta ${item.restaurant.closesAt}` : null}
     />
   )
 
@@ -290,7 +290,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
           </Link>
         )}
         <div className="feed-card__body">
-          {who('posted a dish', 24)}
+          {who('publicó un plato', 24)}
           <div className="feed-dish-name">{item.dishName || item.restaurant.name}</div>
           {chars}
           <FeedFooter item={item} />
@@ -302,7 +302,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
   return (
     <div className="feed-card feed-card--rank" style={style}>
       <div className="feed-rank-head">
-        {who('ranked a place', 28)}
+        {who('rankeó un spot', 28)}
         <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
       </div>
       <Link

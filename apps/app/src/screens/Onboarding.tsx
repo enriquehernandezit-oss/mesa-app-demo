@@ -31,12 +31,12 @@ export function Onboarding() {
 
   return (
     <div className="screen">
-      <div className="onboard-progress" aria-label={`Step ${stepIndex + 1} of ${STEPS.length}`}>
+      <div className="onboard-progress" aria-label={`Paso ${stepIndex + 1} de ${STEPS.length}`}>
         <div className="onboard-progress__track">
           <div className="onboard-progress__fill" style={{ transform: `scaleX(${pct / 100})` }} />
         </div>
         <div className="onboard-progress__label">
-          Step {stepIndex + 1} of {STEPS.length} · builds your starting list
+          Paso {stepIndex + 1} de {STEPS.length} · arma tu lista inicial
         </div>
       </div>
 

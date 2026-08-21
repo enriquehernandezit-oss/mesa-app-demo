@@ -80,7 +80,7 @@ export interface ScoreBadgeProps {
 function badgeText(a: ScoreAttribution): string | null {
   switch (a.kind) {
     case 'you':
-      return 'You'
+      return 'Tú'
     case 'user':
       return a.label
     case 'friends':

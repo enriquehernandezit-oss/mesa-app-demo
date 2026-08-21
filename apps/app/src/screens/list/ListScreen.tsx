@@ -26,13 +26,13 @@ export function ListScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
 
         {q.isPending ? (
-          <Body style={{ marginTop: 'var(--space-4)' }}>Loading…</Body>
+          <Body style={{ marginTop: 'var(--space-4)' }}>Cargando…</Body>
         ) : q.isError || !q.data ? (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>List not found.</SerifItalic>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Lista no encontrada.</SerifItalic>
           </div>
         ) : (
           <>
@@ -42,7 +42,7 @@ export function ListScreen() {
               </div>
             )}
             <div className="tab-header" style={{ marginTop: 'var(--space-4)' }}>
-              <Eyebrow>Featured · {q.data.items.length} spots</Eyebrow>
+              <Eyebrow>Destacada · {q.data.items.length} spots</Eyebrow>
               <Title>{q.data.list.title}</Title>
               {q.data.list.subtitle && <Body>{q.data.list.subtitle}</Body>}
             </div>

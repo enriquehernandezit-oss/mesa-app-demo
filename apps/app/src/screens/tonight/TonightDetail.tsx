@@ -19,10 +19,10 @@ export function TonightDetail() {
     return (
       <div className="screen">
         <button type="button" className="link-action" onClick={() => navigate({ to: '/tonight' })}>
-          ‹ Back
+          ‹ Atrás
         </button>
         <div className="tab-empty">
-          <SerifItalic style={{ fontSize: '1.15rem' }}>Table not found.</SerifItalic>
+          <SerifItalic style={{ fontSize: '1.15rem' }}>Mesa no encontrada.</SerifItalic>
         </div>
       </div>
     )
@@ -45,7 +45,7 @@ export function TonightDetail() {
           type="button"
           className="resto-back"
           onClick={() => navigate({ to: '/tonight' })}
-          aria-label="Back"
+          aria-label="Atrás"
         >
           ‹
         </button>
@@ -69,29 +69,29 @@ export function TonightDetail() {
 
         <div className="resto-pills" style={{ marginTop: 'var(--space-4)' }}>
           <button type="button" className="upill" data-stale aria-disabled>
-            <span className="upill__icon">◉</span> Website
+            <span className="upill__icon">◉</span> Sitio web
           </button>
           <button type="button" className="upill" data-stale aria-disabled>
-            <span className="upill__icon">☏</span> Call
+            <span className="upill__icon">☏</span> Llamar
           </button>
           <a className="upill" href={mapsUrl} target="_blank" rel="noreferrer">
-            <span className="upill__icon">▸</span> Directions
+            <span className="upill__icon">▸</span> Cómo llegar
           </a>
         </div>
 
         <div className="tonight-kv">
           <div className="tonight-kv__row">
-            <span className="tonight-kv__k">When</span>
-            <span className="tonight-kv__v">Tonight · {t.time}</span>
+            <span className="tonight-kv__k">Cuándo</span>
+            <span className="tonight-kv__v">Esta noche · {t.time}</span>
           </div>
           <div className="tonight-kv__row">
-            <span className="tonight-kv__k">Table</span>
+            <span className="tonight-kv__k">Mesa</span>
             <span className="tonight-kv__v">
-              {t.seatsTaken} of {t.seatsTotal} seats taken
+              {t.seatsTaken} de {t.seatsTotal} cupos ocupados
             </span>
           </div>
           <div className="tonight-kv__row">
-            <span className="tonight-kv__k">Host</span>
+            <span className="tonight-kv__k">Organiza</span>
             <span className="tonight-kv__v tonight-kv__host">
               <Avatar name={t.host.name} src={t.host.image} size={24} />
               {t.host.name}
@@ -100,7 +100,7 @@ export function TonightDetail() {
         </div>
 
         <div className="section-head">
-          <span className="section-head__title">Who's in</span>
+          <span className="section-head__title">Quién está</span>
         </div>
         <div className="tonight-whos">
           <div className="tonight-whos__person">
@@ -115,20 +115,20 @@ export function TonightDetail() {
           ))}
           <div className="tonight-whos__person">
             <div className="tonight-whos__open">+</div>
-            <span className="tonight-whos__name">{left} open</span>
+            <span className="tonight-whos__name">{left} libres</span>
           </div>
         </div>
 
         {left === 0 && (
           <Body style={{ marginTop: 'var(--space-4)', color: 'var(--text-muted)' }}>
-            This table is full.
+            Esta mesa está llena.
           </Body>
         )}
       </div>
 
       <div className="resto-cta-bar">
         <Button variant="primary" data-stale aria-disabled disabled={left === 0}>
-          {left === 0 ? 'Table full' : 'Take a seat'}
+          {left === 0 ? 'Mesa llena' : 'Tomar un puesto'}
         </Button>
       </div>
     </div>

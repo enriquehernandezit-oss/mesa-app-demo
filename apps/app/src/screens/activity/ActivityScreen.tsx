@@ -16,10 +16,10 @@ import './activity.css'
 
 type Filter = 'all' | 'follows' | 'rankings' | 'tables'
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'follows', label: 'Follows' },
+  { value: 'all', label: 'Todo' },
+  { value: 'follows', label: 'Seguidores' },
   { value: 'rankings', label: 'Rankings' },
-  { value: 'tables', label: 'Tables' },
+  { value: 'tables', label: 'Mesas' },
 ]
 
 // Bucket an event into Today / This week / Earlier for the section grouping.
@@ -32,9 +32,9 @@ function bucket(at: string): 'today' | 'week' | 'earlier' {
   return 'earlier'
 }
 const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'week', label: 'This week' },
-  { key: 'earlier', label: 'Earlier' },
+  { key: 'today', label: 'Hoy' },
+  { key: 'week', label: 'Esta semana' },
+  { key: 'earlier', label: 'Antes' },
 ]
 
 // The screen behind the bell (mock F2): cheers, new followers, friends ranking
@@ -72,10 +72,10 @@ export function ActivityScreen() {
       <div className="tab-body">
         <ScreenHeader
           onBack={() => navigate({ to: '/discover' })}
-          backLabel="Activity"
+          backLabel="Actividad"
           right={
             <button type="button" className="activity-markread" onClick={markRead}>
-              Mark read
+              Marcar leído
             </button>
           }
         />
@@ -94,13 +94,15 @@ export function ActivityScreen() {
         </ChipRail>
 
         {q.isPending ? (
-          <Body>Loading…</Body>
+          <Body>Cargando…</Body>
         ) : q.isError ? (
-          <ErrorState>Couldn't load activity. Try again in a moment.</ErrorState>
+          <ErrorState>No se pudo cargar la actividad. Intenta de nuevo en un momento.</ErrorState>
         ) : sections.length === 0 ? (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Quiet for now.</SerifItalic>
-            <Body>Cheers, new followers, and friends trying your saved spots land here.</Body>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Tranquilo por ahora.</SerifItalic>
+            <Body>
+              Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí.
+            </Body>
           </div>
         ) : (
           sections.map((s) => (
@@ -153,16 +155,17 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       <div className="activity-row__main">
         <span className="activity-row__text">
           <b>{a.user.name || a.user.handle}</b>{' '}
-          {a.type === 'cheers' && <>cheered your ranking of {place} 🥂</>}
-          {a.type === 'follow' && 'started following you'}
-          {a.type === 'saved_ranked' && <>ranked {place} — it's on your list</>}
+          {a.type === 'cheers' && <>le dio cheers a tu ranking de {place} 🥂</>}
+          {a.type === 'follow' && 'empezó a seguirte'}
+          {a.type === 'saved_ranked' && <>rankeó {place} — está en tu lista</>}
           {a.type === 'friend_ranked' && a.score != null && (
             <>
-              ranked {place} {displayScore(a.score)}
+              rankeó {place} con {displayScore(a.score)}
               {a.yourScore != null && (
                 <>
                   {' — '}
-                  {a.score >= a.yourScore ? 'above' : 'below'} your {displayScore(a.yourScore)}
+                  {a.score >= a.yourScore ? 'por encima de' : 'por debajo de'} tu{' '}
+                  {displayScore(a.yourScore)}
                 </>
               )}
             </>
@@ -172,7 +175,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       </div>
       {a.type === 'follow' ? (
         followed ? (
-          <span className="activity-row__following">Following</span>
+          <span className="activity-row__following">Siguiendo</span>
         ) : (
           <button
             type="button"
@@ -182,7 +185,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
               follow.mutate()
             }}
           >
-            Follow
+            Seguir
           </button>
         )
       ) : (

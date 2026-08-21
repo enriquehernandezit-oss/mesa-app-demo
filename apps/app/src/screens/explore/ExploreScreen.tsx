@@ -63,14 +63,14 @@ export function ExploreScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
         <div className="tab-header">
-          <Eyebrow>Explore</Eyebrow>
-          <Title>Find a spot</Title>
+          <Eyebrow>Explorar</Eyebrow>
+          <Title>Encuentra un spot</Title>
           <input
             className="search-field"
             type="search"
-            placeholder="Search a place, dish, or member"
+            placeholder="Busca un spot, plato o miembro"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -84,14 +84,14 @@ export function ExploreScreen() {
             state={sort === 'score' ? 'selected' : 'default'}
             onClick={() => setSort(sort === 'score' ? 'name' : 'score')}
           >
-            ⇅ Score
+            ⇅ Puntuación
           </Chip>
           <Chip
             size="sm"
             state={openNow ? 'selected' : 'default'}
             onClick={() => setOpenNow((v) => !v)}
           >
-            Open now
+            Abierto ahora
           </Chip>
           {PRICES.map((pt) => (
             <Chip
@@ -117,7 +117,7 @@ export function ExploreScreen() {
 
         {members.length > 0 && (
           <>
-            <SectionHeader>Members</SectionHeader>
+            <SectionHeader>Miembros</SectionHeader>
             {members.map((m) => (
               <MemberRow key={m.id} m={m} />
             ))}
@@ -125,16 +125,16 @@ export function ExploreScreen() {
         )}
 
         {results.isPending ? (
-          <Body>Searching…</Body>
+          <Body>Buscando…</Body>
         ) : results.isError ? (
-          <ErrorState>Couldn't search right now. Try again in a moment.</ErrorState>
+          <ErrorState>No se pudo buscar. Intenta de nuevo en un momento.</ErrorState>
         ) : hits.length === 0 && members.length === 0 ? (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Nothing matches.</SerifItalic>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Nada coincide.</SerifItalic>
           </div>
         ) : (
           <>
-            {members.length > 0 && hits.length > 0 && <SectionHeader>Places</SectionHeader>}
+            {members.length > 0 && hits.length > 0 && <SectionHeader>Spots</SectionHeader>}
             {hits.map((r, i) => {
               const cover = cloudinaryUrl(r.coverImageId, { w: 200, h: 200 })
               return (
@@ -158,7 +158,7 @@ export function ExploreScreen() {
                       priceTier={r.priceTier}
                       cuisine={r.cuisine}
                       neighborhood={r.neighborhood}
-                      hours={r.closesAt ? `till ${r.closesAt}` : null}
+                      hours={r.closesAt ? `hasta ${r.closesAt}` : null}
                     />
                   </div>
                   {r.friendCount > 0 && r.friendAvg != null && (
@@ -188,7 +188,7 @@ function MemberRow({ m }: { m: ExploreMember }) {
           {m.name || m.handle}
         </div>
         <div className="explore-member__meta">
-          {[m.handle ? `@${m.handle}` : null, `${m.rankedCount} ranked`, m.neighborhood]
+          {[m.handle ? `@${m.handle}` : null, `${m.rankedCount} rankeados`, m.neighborhood]
             .filter(Boolean)
             .join(' · ')}
         </div>

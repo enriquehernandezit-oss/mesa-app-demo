@@ -20,7 +20,7 @@ export function ThemePicker() {
   }
 
   return (
-    <div className="theme-picker" aria-label="Appearance">
+    <div className="theme-picker" aria-label="Apariencia">
       {OPTIONS.map((o) => (
         <button
           key={o.value}

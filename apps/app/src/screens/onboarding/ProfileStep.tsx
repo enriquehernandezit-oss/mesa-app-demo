@@ -42,23 +42,23 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
 
   const errorText =
     save.error instanceof ApiError && save.error.code === 'handle_taken'
-      ? 'That handle is taken — try another.'
+      ? 'Ese usuario ya está en uso — prueba con otro.'
       : save.isError
-        ? 'Could not save — check your details and try again.'
+        ? 'No se pudo guardar — revisa tus datos e intenta de nuevo.'
         : null
 
   return (
     <div className="stack stack--loose" style={{ marginTop: 'var(--space-6)' }}>
       <div className="stack stack--tight">
-        <Title>Who are you at the table?</Title>
-        <Body>This is how friends find and recognize you on Mesa.</Body>
+        <Title>¿Quién eres en la mesa?</Title>
+        <Body>Así te encuentran y reconocen tus amigos en Mesa.</Body>
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Name</Eyebrow>
+        <Eyebrow>Nombre</Eyebrow>
         <input
           className="field"
-          placeholder="Your name"
+          placeholder="Tu nombre"
           autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -66,10 +66,10 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Instagram · optional</Eyebrow>
+        <Eyebrow>Instagram · opcional</Eyebrow>
         <input
           className="field"
-          placeholder="@yourusername"
+          placeholder="@tuusuario"
           autoCapitalize="none"
           autoCorrect="off"
           inputMode="text"
@@ -77,19 +77,19 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
           onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_.@]/g, ''))}
         />
         {handle.length > 0 && !handleValid && (
-          <div className="error-text">2–30 characters: letters, numbers, _ or .</div>
+          <div className="error-text">2–30 caracteres: letras, números, _ o .</div>
         )}
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Neighborhood</Eyebrow>
+        <Eyebrow>Barrio</Eyebrow>
         <select
           className="field"
           value={neighborhoodSlug}
           onChange={(e) => setNeighborhood(e.target.value)}
         >
           <option value="" disabled>
-            Where do you go out?
+            ¿Dónde sales?
           </option>
           {data?.neighborhoods.map((n) => (
             <option key={n.slug} value={n.slug}>
@@ -125,15 +125,15 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
           }}
         />
         <span>
-          I agree to Mesa's Terms and EULA, and I understand objectionable content and abusive users
-          can be reported, blocked, and removed.
+          Acepto los Términos y el EULA de Mesa, y entiendo que el contenido inapropiado y los
+          usuarios abusivos pueden ser reportados, bloqueados y eliminados.
         </span>
       </label>
 
       {errorText && <div className="error-text">{errorText}</div>}
 
       <Button disabled={!canSubmit || save.isPending} onClick={() => save.mutate()}>
-        {save.isPending ? 'Saving…' : 'Continue'}
+        {save.isPending ? 'Guardando…' : 'Continuar'}
       </Button>
     </div>
   )

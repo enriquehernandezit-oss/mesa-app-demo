@@ -19,7 +19,7 @@ import './restaurant.css'
 
 // Reserve time slots (mock D2). Inert-by-design — Mesa has no booking supply, so
 // these render live but do nothing, like the feed's Reserve pill.
-const RESERVE_SLOTS = ['7:00p', '7:15p', '9:30p', 'more']
+const RESERVE_SLOTS = ['7:00p', '7:15p', '9:30p', 'más']
 
 // Restaurant profile (Phase 6 mocks D1/D2): film-photo hero, identity with the
 // aggregate score + list pills, the attributed score trio, an inert reserve
@@ -49,7 +49,7 @@ export function RestaurantProfile() {
     return (
       <div className="resto-screen">
         <div className="resto-content">
-          <Body>Loading…</Body>
+          <Body>Cargando…</Body>
         </div>
       </div>
     )
@@ -63,10 +63,10 @@ export function RestaurantProfile() {
             className="link-action"
             onClick={() => navigate({ to: '/discover' })}
           >
-            ← Back
+            ← Atrás
           </button>
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Place not found.</SerifItalic>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Spot no encontrado.</SerifItalic>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function RestaurantProfile() {
           type="button"
           className="resto-back"
           onClick={() => navigate({ to: '/discover' })}
-          aria-label="Back"
+          aria-label="Atrás"
         >
           ←
         </button>
@@ -134,7 +134,7 @@ export function RestaurantProfile() {
           type="button"
           className="resto-back resto-share"
           onClick={shareSpot}
-          aria-label="Share"
+          aria-label="Compartir"
         >
           ↗
         </button>
@@ -152,13 +152,13 @@ export function RestaurantProfile() {
             <h1 className="resto-title">{restaurant.name}</h1>
             {myRanking && (
               <button type="button" className="resto-rankagain" onClick={() => navigate(rankHref)}>
-                Rank again
+                Rankear otra vez
               </button>
             )}
             <button
               type="button"
               className={`resto-savecheck${saved ? ' resto-savecheck--on' : ''}`}
-              aria-label={saved ? 'Saved — tap to remove' : 'Want to try'}
+              aria-label={saved ? 'Guardado — toca para quitar' : 'Quiero probar'}
               aria-pressed={saved}
               onClick={() => toggleSave.mutate(!saved)}
               disabled={toggleSave.isPending}
@@ -191,12 +191,12 @@ export function RestaurantProfile() {
             cuisine={restaurant.cuisine}
             neighborhood={restaurant.neighborhood?.name}
             city="Santo Domingo"
-            hours={restaurant.closesAt ? `till ${restaurant.closesAt}` : null}
+            hours={restaurant.closesAt ? `hasta ${restaurant.closesAt}` : null}
             social={
               friendsWantToTry.count > 0
                 ? {
                     people: friendsWantToTry.people,
-                    label: `${friendsWantToTry.count} friend${friendsWantToTry.count > 1 ? 's' : ''} want to try`,
+                    label: `${friendsWantToTry.count} amigo${friendsWantToTry.count > 1 ? 's' : ''} quiere${friendsWantToTry.count > 1 ? 'n' : ''} probar`,
                   }
                 : null
             }
@@ -207,46 +207,46 @@ export function RestaurantProfile() {
         <div className="resto-pills">
           {restaurant.website && (
             <UtilityPill icon="◉" href={restaurant.website} target="_blank" rel="noreferrer">
-              Website
+              Sitio web
             </UtilityPill>
           )}
           {restaurant.phone && (
             <UtilityPill icon="☏" href={`tel:${restaurant.phone}`}>
-              Call
+              Llamar
             </UtilityPill>
           )}
           <UtilityPill icon="▸" href={mapsUrl} target="_blank" rel="noreferrer">
-            Directions
+            Cómo llegar
           </UtilityPill>
         </div>
 
         {/* The badged score trio — every score is attributed, never the place's own. */}
         {(myRanking || friendAvg != null || allMesa.avg != null) && (
           <>
-            <SectionHeader>Scores</SectionHeader>
+            <SectionHeader>Puntuaciones</SectionHeader>
             <div className="resto-scores">
               {myRanking && (
                 <ScoreBadge
                   score={myRanking.score}
                   attribution={{ kind: 'you' }}
-                  caption="Your score"
-                  sub={`#${myRanking.position} on your list`}
+                  caption="Tu puntuación"
+                  sub={`#${myRanking.position} en tu lista`}
                 />
               )}
               {friendAvg != null && (
                 <ScoreBadge
                   score={friendAvg}
                   attribution={{ kind: 'friends', count: friendsRankings.length }}
-                  caption="Friends"
-                  sub="what they think"
+                  caption="Amigos"
+                  sub="lo que piensan"
                 />
               )}
               {allMesa.avg != null && showMesa && (
                 <ScoreBadge
                   score={allMesa.avg}
                   attribution={{ kind: 'mesa', count: allMesa.count }}
-                  caption="All of Mesa"
-                  sub={`${allMesa.count} ranked`}
+                  caption="Todo Mesa"
+                  sub={`${allMesa.count} rankeados`}
                 />
               )}
             </div>
@@ -254,8 +254,8 @@ export function RestaurantProfile() {
         )}
 
         {/* Reserve a table — inert-by-design (no booking supply). */}
-        <SectionHeader action={<span className="resto-reserve__meta">2 · tonight ✎</span>}>
-          Reserve a table
+        <SectionHeader action={<span className="resto-reserve__meta">2 · esta noche ✎</span>}>
+          Reservar una mesa
         </SectionHeader>
         <div className="resto-reserve">
           {RESERVE_SLOTS.map((slot) => (
@@ -276,17 +276,22 @@ export function RestaurantProfile() {
         <TheirScores rankings={friendsRankings} />
 
         {mapUrl ? (
-          <img className="resto-map" src={mapUrl} alt={`Map of ${restaurant.name}`} loading="lazy" />
+          <img
+            className="resto-map"
+            src={mapUrl}
+            alt={`Mapa de ${restaurant.name}`}
+            loading="lazy"
+          />
         ) : (
           <div className="resto-map resto-map--fallback">
-            {restaurant.neighborhood?.name ?? 'Santo Domingo'} · map
+            {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
           </div>
         )}
 
         {/* Similar spots rail. */}
         {similar.length > 0 && (
           <>
-            <SectionHeader>Similar spots</SectionHeader>
+            <SectionHeader>Spots parecidos</SectionHeader>
             <div className="rail__scroll">
               {similar.map((s) => {
                 const sc = cloudinaryUrl(s.coverImageId, { w: 320, h: 400 })
@@ -313,7 +318,7 @@ export function RestaurantProfile() {
       {/* The one ink CTA — fixed, never leaves (mock D2). */}
       <div className="resto-cta-bar">
         <Button variant="primary" onClick={() => navigate(rankHref)}>
-          Rank this place
+          Rankear este spot
         </Button>
       </div>
     </div>
@@ -356,7 +361,7 @@ function CondensedHeader({
       className={`resto-condensed${shown ? ' resto-condensed--shown' : ''}`}
       aria-hidden={!shown}
     >
-      <button type="button" className="resto-condensed__back" onClick={onBack} aria-label="Back">
+      <button type="button" className="resto-condensed__back" onClick={onBack} aria-label="Atrás">
         ‹
       </button>
       <span className="resto-condensed__name">{name}</span>
@@ -372,15 +377,15 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
   if (rankings.length === 0) {
     return (
       <>
-        <SectionHeader>Their scores</SectionHeader>
-        <Body>When people you follow rank this, they'll show up here.</Body>
+        <SectionHeader>Sus puntuaciones</SectionHeader>
+        <Body>Cuando alguien que sigues rankee esto, aparecerá aquí.</Body>
       </>
     )
   }
   const shown = expanded ? rankings : rankings.slice(0, 3)
   return (
     <>
-      <SectionHeader>Their scores</SectionHeader>
+      <SectionHeader>Sus puntuaciones</SectionHeader>
       {shown.map((fr) => (
         <Link
           key={fr.user.id}
@@ -398,7 +403,7 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
       ))}
       {rankings.length > 3 && (
         <button type="button" className="resto-seeall" onClick={() => setExpanded((v) => !v)}>
-          {expanded ? 'Show fewer' : `See all ${rankings.length} rankings ›`}
+          {expanded ? 'Mostrar menos' : `Ver los ${rankings.length} rankings ›`}
         </button>
       )}
     </>
@@ -426,15 +431,15 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
               className="resto-adddish"
               onClick={() => navigate({ to: '/dish', search: { restaurant: restaurantId } })}
             >
-              + Add a dish
+              + Agregar un plato
             </button>
           ) : undefined
         }
       >
-        Popular dishes
+        Platos populares
       </SectionHeader>
       {dishes.length === 0 ? (
-        <Body>No dishes yet — be the first.</Body>
+        <Body>Todavía no hay platos — sé el primero.</Body>
       ) : (
         <div className="dish-rail">
           {dishes.map((d) => (
@@ -448,7 +453,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
               />
               <div className="dish-card__name">{d.name}</div>
               <div className="dish-card__by">
-                by {(d.user.name || d.user.handle || '').split(' ')[0]}
+                por {(d.user.name || d.user.handle || '').split(' ')[0]}
               </div>
             </Link>
           ))}

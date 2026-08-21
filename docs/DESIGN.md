@@ -155,6 +155,55 @@ like a dining magazine printed on warm stock, it's right. When Candlelit feels
 like a tech dashboard, it's wrong; when it feels like a dim restaurant at 9pm,
 it's right.
 
+## Language & voice
+
+**Spanish-first, informal "tú."** Mesa is built for Santo Domingo, not
+translated for it after the fact. A UX audit found the shell (tab bar,
+Settings, buttons, empty/error states) was English while only the ranking
+flow ("¿Cómo estuvo?", "Me encantó") had been written in Spanish — copy that
+drifted screen to screen instead of being decided once. This section is that
+decision, so it doesn't drift again.
+
+- **Register:** informal *tú*, never *usted*. Direct and a little breezy —
+  "Intenta de nuevo," not "Por favor, inténtelo de nuevo." This was already
+  the voice of the existing rank-flow copy; the sweep matched it, not the
+  other way around.
+- **The brand name never translates.** "Mesa" stays "Mesa" in every string,
+  including ones that would otherwise read as a common noun ("tu mesa" is
+  fine in prose; the product name is never re-cased or translated).
+- **Kept as English loanwords** — because the 22–35 Piantini/Naco/Zona
+  Colonial audience already says these, not because translating was hard:
+  - **spot(s)** — Mesa's word for a restaurant/venue. Never "lugar" or
+    "sitio." Established in the original rank-flow copy ("Aún no hay
+    spots") before this sweep; extended everywhere "place" appeared in
+    English UI, so the vocabulary is now consistent in both languages.
+  - **rankear / rankeado** — the anglicized verb for the core action. Never
+    "clasificar" or "calificar" (the latter also risks reading as "rate,"
+    which the product explicitly is not — see the star-rating ban below).
+  - **vibe** — Mesa's differentiator ("vibe-check notes, not star
+    ratings"). Kept in both languages; "nota de humor" or similar loses the
+    brand term.
+  - **Feed, Rankings** — tab-bar nouns Spanish speakers already use
+    unborrowed in this context (sports/music charts, social feeds).
+- **Translated, not borrowed:** everything else. Screen titles, button
+  labels, empty/error states, Settings, onboarding, legal-page entry
+  copy. When in doubt, translate — the loanword list above is deliberately
+  short; don't grow it by default.
+- **A short glossary**, to keep new copy consistent (extend this list
+  instead of re-deciding a term per screen):
+
+  | English | Spanish | Notes |
+  |---|---|---|
+  | Rank a place | Rankear un spot | FAB, screen titles |
+  | Tonight (tab) | Esta noche | wraps to 2 lines in the tab bar; that's fine |
+  | You (tab) | Perfil | "Tú" reads wrong as a tab label |
+  | Reserve / Order / Nearby | Reservar / Pedir / Cerca | quick-action pills |
+  | Settings | Ajustes | |
+  | Sign in / Sign out | Iniciar sesión / Cerrar sesión | |
+  | Loading… | Cargando… | |
+  | Something went wrong | Algo salió mal | pair with a concrete retry, not just this line |
+  | Try again | Intentar de nuevo | |
+
 ## Hard "don'ts"
 
 - **No star ratings, anywhere, in any form.** Ranking + vibe notes only. A score

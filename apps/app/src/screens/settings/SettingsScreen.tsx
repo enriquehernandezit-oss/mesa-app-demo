@@ -81,9 +81,9 @@ export function SettingsScreen() {
   })
   const linkError =
     linkCredential.error instanceof ApiError && linkCredential.error.code === 'email_taken'
-      ? 'That email is already in use.'
+      ? 'Ese correo ya está en uso.'
       : linkCredential.isError
-        ? 'Could not add email sign-in — try again.'
+        ? 'No se pudo agregar el inicio de sesión — intenta de nuevo.'
         : null
 
   async function handleSignOut() {
@@ -123,15 +123,15 @@ export function SettingsScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/profile' })} backLabel="Settings" />
+        <ScreenHeader onBack={() => navigate({ to: '/profile' })} backLabel="Ajustes" />
 
         {/* Tappable profile card → /profile. */}
         <Link to="/profile" className="settings-id settings-id--link">
           <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={44} />
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="settings-id__name">{p?.name || 'You'}</div>
+            <div className="settings-id__name">{p?.name || 'Tú'}</div>
             <div className="settings-id__meta">
-              {[p?.handle ? `@${p.handle}` : null, `${stats.data?.places ?? 0} ranked`]
+              {[p?.handle ? `@${p.handle}` : null, `${stats.data?.places ?? 0} rankeados`]
                 .filter(Boolean)
                 .join(' · ')}
             </div>
@@ -140,14 +140,14 @@ export function SettingsScreen() {
         </Link>
 
         {/* Appearance. */}
-        <Eyebrow className="settings-eyebrow">Appearance</Eyebrow>
+        <Eyebrow className="settings-eyebrow">Apariencia</Eyebrow>
         <ThemePicker />
 
         {/* Your list. */}
-        <Eyebrow className="settings-eyebrow">Your list</Eyebrow>
+        <Eyebrow className="settings-eyebrow">Tu lista</Eyebrow>
         <div className="settings-group">
           <div className="settings-row">
-            <span>Friends-only scores</span>
+            <span>Puntuaciones solo de amigos</span>
             <Toggle
               checked={friendsOnly}
               onChange={(v) => {
@@ -155,18 +155,18 @@ export function SettingsScreen() {
                 setFriendsOnlyScores(v)
                 queryClient.invalidateQueries({ queryKey: ['restaurant'] })
               }}
-              label="Friends-only scores"
+              label="Puntuaciones solo de amigos"
             />
           </div>
           <div className="settings-row">
-            <span>Stealth mode</span>
+            <span>Modo sigiloso</span>
             <Toggle
               checked={stealth}
               onChange={(v) => {
                 setStealth(v)
                 setStealthMode(v)
               }}
-              label="Stealth mode"
+              label="Modo sigiloso"
             />
           </div>
           <button
@@ -175,7 +175,7 @@ export function SettingsScreen() {
             onClick={exportRankings}
             disabled={exporting}
           >
-            <span>Export my rankings</span>
+            <span>Exportar mis rankings</span>
             <span className="settings-row__meta">{exporting ? '…' : '›'}</span>
           </button>
         </div>
@@ -183,18 +183,18 @@ export function SettingsScreen() {
         {/* Blocked accounts (App Store 1.2). */}
         {blocked.length > 0 && (
           <>
-            <Eyebrow className="settings-eyebrow">Blocked accounts</Eyebrow>
+            <Eyebrow className="settings-eyebrow">Cuentas bloqueadas</Eyebrow>
             <div className="settings-group">
               {blocked.map((u) => (
                 <div key={u.id} className="settings-row">
-                  <span>{u.name || (u.handle ? `@${u.handle}` : 'Someone')}</span>
+                  <span>{u.name || (u.handle ? `@${u.handle}` : 'Alguien')}</span>
                   <button
                     type="button"
                     className="link-action"
                     onClick={() => unblock.mutate(u.id)}
                     disabled={unblock.isPending}
                   >
-                    Unblock
+                    Desbloquear
                   </button>
                 </div>
               ))}
@@ -205,16 +205,18 @@ export function SettingsScreen() {
         {/* Add email sign-in — phone/OAuth-first accounts with no real email. */}
         {p && !realEmail && (
           <>
-            <Eyebrow className="settings-eyebrow">Add email sign-in</Eyebrow>
+            <Eyebrow className="settings-eyebrow">Agregar inicio con correo</Eyebrow>
             <div className="settings-linkform">
-              <Caption>Add an email and password so you can sign in without your phone.</Caption>
+              <Caption>
+                Agrega un correo y contraseña para poder iniciar sesión sin tu teléfono.
+              </Caption>
               <input
                 className="field"
                 type="email"
                 inputMode="email"
                 autoComplete="email"
                 autoCapitalize="none"
-                placeholder="you@email.com"
+                placeholder="tu@correo.com"
                 value={linkEmail}
                 onChange={(e) => setLinkEmail(e.target.value)}
               />
@@ -222,7 +224,7 @@ export function SettingsScreen() {
                 className="field"
                 type="password"
                 autoComplete="new-password"
-                placeholder="Password (8+ characters)"
+                placeholder="Contraseña (8+ caracteres)"
                 value={linkPassword}
                 onChange={(e) => setLinkPassword(e.target.value)}
               />
@@ -232,7 +234,7 @@ export function SettingsScreen() {
                 }
                 onClick={() => linkCredential.mutate()}
               >
-                {linkCredential.isPending ? 'Adding…' : 'Add email & password'}
+                {linkCredential.isPending ? 'Agregando…' : 'Agregar correo y contraseña'}
               </Button>
               {linkError && <div className="error-text">{linkError}</div>}
             </div>
@@ -240,24 +242,24 @@ export function SettingsScreen() {
         )}
 
         {/* Account. */}
-        <Eyebrow className="settings-eyebrow">Account</Eyebrow>
+        <Eyebrow className="settings-eyebrow">Cuenta</Eyebrow>
         <div className="settings-group">
           {/* Notifications + Invites are inert-by-design (no backend yet). */}
           <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
-            <span>Notifications</span>
+            <span>Notificaciones</span>
             <span className="settings-row__meta">›</span>
           </button>
           <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
-            <span>Invites</span>
-            <span className="settings-row__meta settings-row__meta--mono">4 left</span>
+            <span>Invitaciones</span>
+            <span className="settings-row__meta settings-row__meta--mono">4 restantes</span>
           </button>
           {realEmail && (
             <div className="settings-row">
               <span className="settings-row__email">{realEmail}</span>
               {p?.emailVerified ? (
-                <span className="settings-row__meta">Verified ✓</span>
+                <span className="settings-row__meta">Verificado ✓</span>
               ) : verifySent ? (
-                <span className="settings-row__meta">Link sent ›</span>
+                <span className="settings-row__meta">Enlace enviado ›</span>
               ) : (
                 <button
                   type="button"
@@ -265,17 +267,17 @@ export function SettingsScreen() {
                   onClick={resendVerification}
                   disabled={verifying}
                 >
-                  {verifying ? 'Sending…' : 'Verify email'}
+                  {verifying ? 'Enviando…' : 'Verificar correo'}
                 </button>
               )}
             </div>
           )}
           <a className="settings-row settings-row--link" href="/privacy">
-            <span>Privacy Policy</span>
+            <span>Política de Privacidad</span>
             <span className="settings-row__meta">›</span>
           </a>
           <a className="settings-row settings-row--link" href="/terms">
-            <span>Terms</span>
+            <span>Términos</span>
             <span className="settings-row__meta">›</span>
           </a>
           <a className="settings-row settings-row--link" href="/eula">
@@ -287,30 +289,30 @@ export function SettingsScreen() {
             className="settings-row settings-row--btn settings-row--accent"
             onClick={handleSignOut}
           >
-            <span>Log out</span>
+            <span>Cerrar sesión</span>
           </button>
         </div>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
         <div className="danger-zone">
-          <Eyebrow style={{ color: 'var(--status-packed)' }}>Danger zone</Eyebrow>
+          <Eyebrow style={{ color: 'var(--status-packed)' }}>Zona de peligro</Eyebrow>
           {!confirmingDelete ? (
             <>
               <Caption>
-                Deleting your account permanently erases your rankings, notes, follows, and profile.
-                This can't be undone.
+                Eliminar tu cuenta borra permanentemente tus rankings, notas, follows y perfil. Esto
+                no se puede deshacer.
               </Caption>
               <button
                 type="button"
                 className="danger-btn"
                 onClick={() => setConfirmingDelete(true)}
               >
-                Delete account
+                Eliminar cuenta
               </button>
             </>
           ) : (
             <>
-              <Caption>Are you sure? This erases everything and can't be undone.</Caption>
+              <Caption>¿Estás seguro? Esto borra todo y no se puede deshacer.</Caption>
               <div className="stack stack--tight">
                 <button
                   type="button"
@@ -318,10 +320,10 @@ export function SettingsScreen() {
                   onClick={() => deleteAccount.mutate()}
                   disabled={deleteAccount.isPending}
                 >
-                  {deleteAccount.isPending ? 'Deleting…' : 'Yes, delete everything'}
+                  {deleteAccount.isPending ? 'Eliminando…' : 'Sí, eliminar todo'}
                 </button>
                 <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
-                  Cancel
+                  Cancelar
                 </Button>
               </div>
             </>

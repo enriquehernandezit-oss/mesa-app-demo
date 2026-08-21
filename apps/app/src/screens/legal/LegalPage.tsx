@@ -13,36 +13,42 @@ import '../tabs/rankings.css'
 
 type Doc = 'terms' | 'eula' | 'privacy'
 
+// NOTE (language sweep): translated to Spanish alongside the rest of the app's
+// copy, per docs/DESIGN.md § Language & voice. This was already a STARTER
+// DRAFT in English (see the file header) — it still needs counsel review
+// before submission, now in Spanish instead of English. Register here is
+// neutral/formal (not the app's usual informal tú), which is normal for legal
+// text even in an otherwise casual product.
 const DOCS: Record<Doc, { title: string; body: string[] }> = {
   privacy: {
-    title: 'Privacy Policy',
+    title: 'Política de Privacidad',
     body: [
-      'Mesa is a social restaurant & nightlife discovery app for Santo Domingo. This policy explains what we collect and why.',
-      'Account info: when you sign in with Instagram, Apple, or phone, we store the identifier that provider gives us plus the profile you set (name, handle, neighborhood).',
-      'Contacts: if you choose to find friends from your contacts, we match phone numbers against Mesa users on our server and never store your contact list. This is opt-in and requested only at that moment.',
-      'Content you create: your rankings and vibe notes are visible to people who follow you. You can edit or delete them anytime.',
-      'Usage: basic app activity to keep the service working. We do not track you across other apps or sell your data.',
-      'Deletion: you can delete your account from Profile → settings at any time; this erases your data.',
-      'DRAFT — finalize with counsel before submission.',
+      'Mesa es una app social de descubrimiento de restaurantes y vida nocturna para Santo Domingo. Esta política explica qué recopilamos y por qué.',
+      'Información de cuenta: cuando inicias sesión con Instagram, Apple, o tu teléfono, guardamos el identificador que nos da ese proveedor más el perfil que configuras (nombre, usuario, barrio).',
+      'Contactos: si eliges buscar amigos en tus contactos, comparamos números de teléfono contra los usuarios de Mesa en nuestro servidor y nunca guardamos tu lista de contactos. Esto es opcional y se pide solo en ese momento.',
+      'Contenido que creas: tus rankings y notas de vibe son visibles para las personas que te siguen. Puedes editarlos o eliminarlos cuando quieras.',
+      'Uso: actividad básica de la app para mantener el servicio funcionando. No te rastreamos en otras apps ni vendemos tus datos.',
+      'Eliminación: puedes eliminar tu cuenta desde Perfil → ajustes en cualquier momento; esto borra tus datos.',
+      'BORRADOR — pendiente de revisión legal antes de publicar.',
     ],
   },
   terms: {
-    title: 'Terms of Service',
+    title: 'Términos de Servicio',
     body: [
-      'By using Mesa you agree to these terms.',
-      'Be a good guest: no harassment, spam, or objectionable content. Vibe notes are user content and are subject to moderation — content can be reported, removed, and accounts can be blocked or ejected.',
-      'Reserve requests are a handoff: Mesa opens WhatsApp or a call to the restaurant with your request. Mesa does not make or guarantee reservations.',
-      'Mesa is provided as-is while we build. Features may change.',
-      'DRAFT — finalize with counsel before submission.',
+      'Al usar Mesa aceptas estos términos.',
+      'Sé un buen invitado: nada de acoso, spam, o contenido inapropiado. Las notas de vibe son contenido de usuario y están sujetas a moderación — el contenido puede ser reportado, eliminado, y las cuentas pueden ser bloqueadas o expulsadas.',
+      'Las solicitudes de reserva son un enlace: Mesa abre WhatsApp o una llamada al restaurante con tu solicitud. Mesa no hace ni garantiza reservas.',
+      'Mesa se ofrece tal cual mientras seguimos construyendo. Las funciones pueden cambiar.',
+      'BORRADOR — pendiente de revisión legal antes de publicar.',
     ],
   },
   eula: {
-    title: 'End User License Agreement',
+    title: 'Acuerdo de Licencia de Usuario Final',
     body: [
-      'Mesa grants you a personal, non-transferable license to use the app.',
-      'There is zero tolerance for objectionable content or abusive behavior. You agree not to post such content. We may remove content and terminate accounts that violate this agreement.',
-      'Apple’s standard EULA also applies where required.',
-      'DRAFT — an Apple-standard EULA is acceptable here (App Store 1.2).',
+      'Mesa te otorga una licencia personal e intransferible para usar la app.',
+      'Hay tolerancia cero para contenido inapropiado o comportamiento abusivo. Aceptas no publicar ese tipo de contenido. Podemos eliminar contenido y cerrar cuentas que violen este acuerdo.',
+      'El EULA estándar de Apple también aplica donde sea requerido.',
+      'BORRADOR — un EULA estándar de Apple es aceptable aquí (App Store 1.2).',
     ],
   },
 }
@@ -52,7 +58,7 @@ export function LegalPage({ doc }: { doc: Doc }) {
   return (
     <div className="screen" style={{ overflowY: 'auto' }}>
       <a href="/" className="link-action" style={{ marginBottom: 'var(--space-4)' }}>
-        ← Back to Mesa
+        ← Volver a Mesa
       </a>
       <Wordmark size={32} style={{ marginBottom: 'var(--space-4)' }} />
       <Eyebrow>Legal</Eyebrow>

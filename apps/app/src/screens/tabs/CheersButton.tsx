@@ -45,7 +45,7 @@ export function CheersButton({
       type="button"
       className={`cheers${on ? ' cheers--on' : ''}${popping ? ' cheers--pop' : ''}`}
       onClick={onTap}
-      aria-label={on ? 'Remove cheers' : 'Cheers'}
+      aria-label={on ? 'Quitar cheers' : 'Cheers'}
     >
       <span className="cheers__glass">🥂</span>
       {n > 0 && <span className="cheers__count">{n}</span>}

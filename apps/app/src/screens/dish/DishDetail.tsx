@@ -24,7 +24,7 @@ export function DishDetail() {
   if (q.isPending) {
     return (
       <div className="screen">
-        <Body>Loading…</Body>
+        <Body>Cargando…</Body>
       </div>
     )
   }
@@ -32,10 +32,10 @@ export function DishDetail() {
     return (
       <div className="screen">
         <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
-          ‹ Back
+          ‹ Atrás
         </button>
         <div className="tab-empty">
-          <SerifItalic style={{ fontSize: '1.15rem' }}>Dish not found.</SerifItalic>
+          <SerifItalic style={{ fontSize: '1.15rem' }}>Plato no encontrado.</SerifItalic>
         </div>
       </div>
     )
@@ -43,7 +43,7 @@ export function DishDetail() {
 
   const { dish } = q.data
   const { restaurant } = dish
-  const firstName = (dish.user.name || dish.user.handle || '').split(' ')[0] || 'them'
+  const firstName = (dish.user.name || dish.user.handle || '').split(' ')[0] || 'alguien'
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`
 
   return (
@@ -56,7 +56,7 @@ export function DishDetail() {
           onClick={() =>
             navigate({ to: '/r/$restaurantId', params: { restaurantId: restaurant.id } })
           }
-          aria-label="Back"
+          aria-label="Atrás"
         >
           ‹
         </button>
@@ -78,7 +78,7 @@ export function DishDetail() {
               priceTier={restaurant.priceTier}
               cuisine={restaurant.cuisine}
               neighborhood={dish.neighborhood}
-              hours={restaurant.closesAt ? `till ${restaurant.closesAt}` : null}
+              hours={restaurant.closesAt ? `hasta ${restaurant.closesAt}` : null}
             />
           </div>
           <ScoreBadge
@@ -91,16 +91,16 @@ export function DishDetail() {
         <div className="resto-pills">
           {restaurant.website && (
             <UtilityPill icon="◉" href={restaurant.website} target="_blank" rel="noreferrer">
-              Website
+              Sitio web
             </UtilityPill>
           )}
           {restaurant.phone && (
             <UtilityPill icon="☏" href={`tel:${restaurant.phone}`}>
-              Call
+              Llamar
             </UtilityPill>
           )}
           <UtilityPill icon="▸" href={mapsUrl} target="_blank" rel="noreferrer">
-            Route
+            Cómo llegar
           </UtilityPill>
         </div>
       </div>

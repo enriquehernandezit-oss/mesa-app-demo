@@ -39,17 +39,17 @@ function ProfileTopBar() {
   }
   return (
     <header className="topbar">
-      <span className="topbar__title">{p?.name || 'You'}</span>
+      <span className="topbar__title">{p?.name || 'Tú'}</span>
       <div className="topbar__actions">
         <button
           type="button"
           className="topbar__btn"
-          aria-label="Share profile"
+          aria-label="Compartir perfil"
           onClick={shareProfile}
         >
           ↗
         </button>
-        <Link to="/settings" className="topbar__btn" aria-label="Settings">
+        <Link to="/settings" className="topbar__btn" aria-label="Ajustes">
           ☰
         </Link>
       </div>
@@ -70,7 +70,7 @@ function DiscoverTopBar() {
     <header className="topbar">
       <Wordmark size={22} />
       <div className="topbar__actions">
-        <Link to="/leaderboard" className="topbar__btn" aria-label="Leaderboard">
+        <Link to="/leaderboard" className="topbar__btn" aria-label="Clasificación">
           <svg
             width="21"
             height="21"
@@ -86,7 +86,7 @@ function DiscoverTopBar() {
             <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4ZM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" />
           </svg>
         </Link>
-        <Link to="/activity" className="topbar__btn" aria-label="Activity">
+        <Link to="/activity" className="topbar__btn" aria-label="Actividad">
           <svg
             width="21"
             height="21"

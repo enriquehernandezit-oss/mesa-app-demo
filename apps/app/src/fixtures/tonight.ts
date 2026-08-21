@@ -108,9 +108,28 @@ export function tonightTable(id: string): TonightTable | undefined {
   return TONIGHT_TABLES.find((t) => t.id === id)
 }
 
-// "Fri 9 Aug" — the mono date pill. Computed at render (browser Date is fine).
+// "Vie 9 ago" — the mono date pill. Computed at render (browser Date is fine).
+// Spelled out manually (not toLocaleDateString) so the format stays "Vie 9 ago"
+// — capitalized, no trailing periods — regardless of what a given browser's
+// es-DO short-format returns.
+const WEEKDAYS_ES = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+const MONTHS_ES = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+]
 export function tonightDateLabel(d: Date): string {
-  const wd = d.toLocaleDateString('en-US', { weekday: 'short' })
-  const mo = d.toLocaleDateString('en-US', { month: 'short' })
-  return `${wd} ${d.getDate()} ${mo}`
+  const wd = WEEKDAYS_ES[d.getDay()]
+  const mo = MONTHS_ES[d.getMonth()]
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+  return `${cap(wd ?? '')} ${d.getDate()} ${mo}`
 }

@@ -66,7 +66,7 @@ export const Skeleton = ({
 /* Error — a quiet retry-friendly message when a query fails. */
 export const ErrorState = ({ className, children, ...p }: DivProps) => (
   <div className={cx('mesa-error', className)} {...p}>
-    {children ?? 'Something went wrong. Pull to refresh, or try again in a moment.'}
+    {children ?? 'Algo salió mal. Desliza para actualizar, o intenta de nuevo en un momento.'}
   </div>
 )
 

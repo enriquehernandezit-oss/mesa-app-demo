@@ -18,9 +18,9 @@ import './tonight.css'
 // every Join is inert-by-design (Mesa has no live table supply yet).
 type Filter = 'all' | 'near' | 'seats' | 'late'
 const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'near', label: 'Near me' },
-  { value: 'seats', label: 'Seats left' },
+  { value: 'all', label: 'Todo' },
+  { value: 'near', label: 'Cerca de mí' },
+  { value: 'seats', label: 'Con cupo' },
   { value: 'late', label: '8p+' },
 ]
 
@@ -36,7 +36,7 @@ export function TonightTab() {
   return (
     <div>
       <div className="tonight-head">
-        <Title>Tonight</Title>
+        <Title>Esta noche</Title>
         <span className="tonight-date">{dateLabel}</span>
       </div>
 
@@ -56,8 +56,8 @@ export function TonightTab() {
       <div className="tonight-list">
         {tables.length === 0 ? (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>No tables match.</SerifItalic>
-            <Body>Try a different filter — more open up as the night fills in.</Body>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Ninguna mesa coincide.</SerifItalic>
+            <Body>Prueba otro filtro — se abren más a medida que avanza la noche.</Body>
           </div>
         ) : (
           tables.map((t) => <TableCard key={t.id} table={t} />)
@@ -79,7 +79,7 @@ function TableCard({ table: t }: { table: TonightTable }) {
           style={{ backgroundImage: `url(/restaurants/${t.restaurant.photo}.jpg)` }}
         />
         <span className="tonight-card__seats">
-          {left > 0 ? `${left} seat${left > 1 ? 's' : ''} left` : 'Full'}
+          {left > 0 ? `${left} cupo${left > 1 ? 's' : ''}` : 'Lleno'}
         </span>
       </Link>
       <div className="tonight-card__body">
@@ -105,7 +105,7 @@ function TableCard({ table: t }: { table: TonightTable }) {
               {t.whoIn[0] && <Avatar name={t.whoIn[0].name} src={t.whoIn[0].image} size={20} />}
             </div>
             <span className="tonight-card__wholabel">
-              {hostFirst} hosting{inFirst ? ` · ${inFirst} in` : ''}
+              {hostFirst} organiza{inFirst ? ` · ${inFirst} está` : ''}
             </span>
           </div>
           <button
@@ -115,7 +115,7 @@ function TableCard({ table: t }: { table: TonightTable }) {
             aria-disabled
             disabled={left === 0}
           >
-            {left === 0 ? 'Full' : 'Join'}
+            {left === 0 ? 'Lleno' : 'Unirme'}
           </button>
         </div>
       </div>

@@ -17,7 +17,7 @@ import './moderation.css'
 // moderation is exercised (App Store 1.2): report a vibe note or the user, block
 // them. Blocking severs the graph and hides their content; the API 404s a blocked
 // user, so this view empties out.
-const REASONS = ['Spam', 'Harassment', 'Inappropriate', 'Other'] as const
+const REASONS = ['Spam', 'Acoso', 'Inapropiado', 'Otro'] as const
 
 export function UserRankings() {
   const { userId } = useParams({ from: '/u/$userId' })
@@ -71,7 +71,7 @@ export function UserRankings() {
     return (
       <div className="tab-shell">
         <div className="tab-body">
-          <Body>Loading…</Body>
+          <Body>Cargando…</Body>
         </div>
       </div>
     )
@@ -81,10 +81,10 @@ export function UserRankings() {
     return (
       <div className="tab-shell">
         <div className="tab-body">
-          <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Back" />
+          <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>
-              {gone ? 'This profile is unavailable.' : 'Could not load this profile.'}
+              {gone ? 'Este perfil no está disponible.' : 'No se pudo cargar este perfil.'}
             </SerifItalic>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function UserRankings() {
   }
 
   const { user, rankings, isFollowing, matchPercent } = q.data
-  const firstName = (user.name || user.handle || '').split(' ')[0] || 'Their'
+  const firstName = (user.name || user.handle || '').split(' ')[0] || 'esta persona'
   const barrio = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
 
@@ -102,13 +102,13 @@ export function UserRankings() {
       <div className="tab-body">
         <ScreenHeader
           onBack={() => navigate({ to: '/discover' })}
-          backLabel={user.name || user.handle || 'Back'}
+          backLabel={user.name || user.handle || 'Atrás'}
           right={
             <div className="user-menu-wrap" ref={menuWrapRef}>
               <button
                 type="button"
                 className="user-menu-btn"
-                aria-label="More"
+                aria-label="Más opciones"
                 onClick={() => setMenuOpen((v) => !v)}
               >
                 ⋯
@@ -116,7 +116,7 @@ export function UserRankings() {
               {menuOpen && (
                 <div className="user-menu">
                   <button type="button" onClick={() => setReporting(true)}>
-                    Report
+                    Reportar
                   </button>
                   <button
                     type="button"
@@ -124,7 +124,7 @@ export function UserRankings() {
                     onClick={() => block.mutate()}
                     disabled={block.isPending}
                   >
-                    Block
+                    Bloquear
                   </button>
                 </div>
               )}
@@ -136,9 +136,11 @@ export function UserRankings() {
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
           {user.handle && <div className="user-identity__handle">@{user.handle}</div>}
           <div className="user-identity__meta">
-            {[`${rankings.length} ranked`, barrio].filter(Boolean).join(' · ')}
+            {[`${rankings.length} rankeados`, barrio].filter(Boolean).join(' · ')}
           </div>
-          {matchPercent != null && <span className="match-chip">+{matchPercent}% taste match</span>}
+          {matchPercent != null && (
+            <span className="match-chip">+{matchPercent}% de gustos en común</span>
+          )}
           <div className="user-actions">
             <Button
               variant="primary"
@@ -146,10 +148,10 @@ export function UserRankings() {
               onClick={() => follow.mutate(!isFollowing)}
               disabled={follow.isPending}
             >
-              {isFollowing ? 'Following' : 'Follow'}
+              {isFollowing ? 'Siguiendo' : 'Seguir'}
             </Button>
             <button type="button" className="user-message" data-stale aria-disabled>
-              Message
+              Mensaje
             </button>
           </div>
         </div>
@@ -166,19 +168,19 @@ export function UserRankings() {
 
         {rankings.length === 0 ? (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>No rankings yet.</SerifItalic>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Todavía no hay rankings.</SerifItalic>
           </div>
         ) : (
           <>
-            <SectionHeader action={<span>All {rankings.length}</span>}>
-              {firstName}'s top places
+            <SectionHeader action={<span>Todos {rankings.length}</span>}>
+              Los favoritos de {firstName}
             </SectionHeader>
             {shown.map((r) => (
               <TheirRow key={r.id} ranking={r} />
             ))}
             {rankings.length > 4 && (
               <button type="button" className="resto-seeall" onClick={() => setExpanded((v) => !v)}>
-                {expanded ? 'Show fewer' : `See all ${rankings.length} ›`}
+                {expanded ? 'Mostrar menos' : `Ver los ${rankings.length} ›`}
               </button>
             )}
           </>
@@ -218,7 +220,7 @@ function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) 
   })
   return (
     <div className="report-panel">
-      <Caption>Why are you reporting this person?</Caption>
+      <Caption>¿Por qué reportas a esta persona?</Caption>
       <div className="report-reasons">
         {REASONS.map((reason) => (
           <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
@@ -227,7 +229,7 @@ function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) 
         ))}
       </div>
       <button type="button" className="link-action" onClick={onDone}>
-        Cancel
+        Cancelar
       </button>
     </div>
   )
@@ -243,7 +245,7 @@ function ReportControl({
       api.post('/moderation/reports', { targetType, targetId, reason }),
   })
   if (report.isSuccess) {
-    return <div className="report-done">Reported. Thank you — we'll review it.</div>
+    return <div className="report-done">Reportado. Gracias — lo revisaremos.</div>
   }
   return (
     <div className="ranking-actions">
@@ -253,11 +255,11 @@ function ReportControl({
           className="link-action link-action--danger"
           onClick={() => setOpen(true)}
         >
-          Report
+          Reportar
         </button>
       ) : (
         <div className="report-panel">
-          <Caption>Why are you reporting this note?</Caption>
+          <Caption>¿Por qué reportas esta nota?</Caption>
           <div className="report-reasons">
             {REASONS.map((reason) => (
               <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
@@ -266,7 +268,7 @@ function ReportControl({
             ))}
           </div>
           <button type="button" className="link-action" onClick={() => setOpen(false)}>
-            Cancel
+            Cancelar
           </button>
         </div>
       )}

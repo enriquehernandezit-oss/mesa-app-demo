@@ -41,11 +41,11 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
     mutationFn: async () => {
       const result = await importContactPhones()
       if (result.status === 'unsupported') {
-        setContactMsg('Contact import works on the phone app.')
+        setContactMsg('Importar contactos funciona en la app del teléfono.')
         return
       }
       if (result.status === 'denied') {
-        setContactMsg('No problem — you can add friends anytime from your profile.')
+        setContactMsg('No hay problema — puedes agregar amigos cuando quieras desde tu perfil.')
         return
       }
       const { users } = await api.post<{ users: SuggestedUser[] }>('/onboarding/contacts/match', {
@@ -53,7 +53,9 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
       })
       setMatched(users)
       setContactMsg(
-        users.length ? `${users.length} contacts are on Mesa.` : 'No contacts on Mesa yet.',
+        users.length
+          ? `${users.length} contactos están en Mesa.`
+          : 'Todavía no hay contactos en Mesa.',
       )
     },
   })
@@ -77,8 +79,8 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
   return (
     <div className="stack stack--loose" style={{ marginTop: 'var(--space-6)', flex: 1 }}>
       <div className="stack stack--tight">
-        <Title>Follow a few friends</Title>
-        <Body>Their rankings fill your feed. This is the whole point of Mesa.</Body>
+        <Title>Sigue a algunos amigos</Title>
+        <Body>Sus rankings llenan tu feed. Ese es el punto de Mesa.</Body>
       </div>
 
       {contactsAvailable() && (
@@ -87,13 +89,13 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
           disabled={contactMatch.isPending}
           onClick={() => contactMatch.mutate()}
         >
-          {contactMatch.isPending ? 'Checking…' : 'Find friends from contacts'}
+          {contactMatch.isPending ? 'Buscando…' : 'Buscar amigos en tus contactos'}
         </Button>
       )}
       {contactMsg && <Caption>{contactMsg}</Caption>}
 
       <div className="friend-list">
-        {suggested.isPending && <Body>Finding people…</Body>}
+        {suggested.isPending && <Body>Buscando gente…</Body>}
         {list.map((u) => {
           const on = following.has(u.id)
           return (
@@ -109,7 +111,7 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
                 className={`friend-follow${on ? ' friend-follow--on' : ''}`}
                 onClick={() => toggleFollow(u.id)}
               >
-                {on ? 'Following' : 'Follow'}
+                {on ? 'Siguiendo' : 'Seguir'}
               </button>
             </div>
           )
@@ -118,7 +120,7 @@ export function FriendsStep({ onFinish }: { onFinish: () => void }) {
 
       <div className="spacer" />
       <Button onClick={done}>
-        {followedCount > 0 ? `Done — following ${followedCount}` : 'Skip for now'}
+        {followedCount > 0 ? `Listo — siguiendo a ${followedCount}` : 'Omitir por ahora'}
       </Button>
     </div>
   )

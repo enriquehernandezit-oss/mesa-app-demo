@@ -14,7 +14,7 @@ type Grain = 'candlelit' | 'daylight' | 'none'
 const GRAINS: { value: Grain; label: string }[] = [
   { value: 'candlelit', label: 'Candlelit' },
   { value: 'daylight', label: 'Daylight' },
-  { value: 'none', label: 'None' },
+  { value: 'none', label: 'Ninguno' },
 ]
 
 // Post a dish (Phase 6 mocks C1–C2) — a photo attached to a place you've ranked.
@@ -79,19 +79,19 @@ export function DishCompose() {
           className="link-action"
           onClick={() => navigate({ to: '/r/$restaurantId', params: { restaurantId } })}
         >
-          ‹ Back
+          ‹ Atrás
         </button>
         <div className="stack stack--tight" style={{ marginTop: 'var(--space-3)' }}>
-          <Eyebrow>Post a dish</Eyebrow>
-          <Title>{restaurant?.name ?? 'A dish'}</Title>
+          <Eyebrow>Publicar un plato</Eyebrow>
+          <Title>{restaurant?.name ?? 'Un plato'}</Title>
         </div>
         <div className="tab-empty">
-          <Body>Rank this place first — a dish attaches to your ranking.</Body>
+          <Body>Rankea este spot primero — un plato se vincula a tu ranking.</Body>
           <Button
             style={{ marginTop: 'var(--space-4)' }}
             onClick={() => navigate({ to: '/rank', search: { restaurant: restaurantId } })}
           >
-            Rank it
+            Rankear
           </Button>
         </div>
       </div>
@@ -119,14 +119,14 @@ export function DishCompose() {
             className="link-action"
             onClick={() => navigate({ to: '/r/$restaurantId', params: { restaurantId } })}
           >
-            ✕ Recents
+            ✕ Recientes
           </button>
           <button
             type="button"
             className="dish-head__camera"
             onClick={() => fileInput.current?.click()}
           >
-            Camera
+            Cámara
           </button>
         </div>
         {hiddenFile}
@@ -139,7 +139,7 @@ export function DishCompose() {
             image ? { backgroundImage: `url(${image})`, filter: filterForGrain(grain) } : undefined
           }
         >
-          {!image && <span className="dish-photo__hint">＋ Add a photo</span>}
+          {!image && <span className="dish-photo__hint">＋ Agregar una foto</span>}
           {image && <span className="ph-tag dish-photo__tag">film · {grain}</span>}
         </button>
 
@@ -160,7 +160,7 @@ export function DishCompose() {
 
         <div className="spacer" />
         <Button disabled={!image} onClick={() => setStep('details')}>
-          Next
+          Siguiente
         </Button>
       </div>
     )
@@ -171,7 +171,7 @@ export function DishCompose() {
   return (
     <div className="screen">
       <button type="button" className="link-action" onClick={() => setStep('photo')}>
-        ‹ New dish
+        ‹ Nuevo plato
       </button>
 
       <div className="dish-compose-head">
@@ -184,15 +184,15 @@ export function DishCompose() {
         <div className="dish-compose-head__fields">
           <input
             className="dish-name-input"
-            placeholder="Short rib, 14 hours…"
+            placeholder="Short rib, 14 horas…"
             maxLength={60}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <div className="dish-name-input__label">Dish name</div>
+          <div className="dish-name-input__label">Nombre del plato</div>
           <input
             className="dish-caption-input"
-            placeholder="Falls apart under the fork."
+            placeholder="Se deshace con el tenedor."
             maxLength={140}
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -202,7 +202,7 @@ export function DishCompose() {
 
       {myRanking && restaurant && (
         <>
-          <SectionHeader>Linked ranking</SectionHeader>
+          <SectionHeader>Ranking vinculado</SectionHeader>
           <div className="dish-linked">
             <div className="dish-linked__main">
               <div className="dish-linked__name">{restaurant.name}</div>
@@ -218,21 +218,25 @@ export function DishCompose() {
       )}
 
       <div className="dish-toggle-row">
-        <span>Also add to Want to try</span>
-        <Toggle checked={wantToTry} onChange={setWantToTry} label="Also add to Want to try" />
+        <span>También agregar a Quiero probar</span>
+        <Toggle
+          checked={wantToTry}
+          onChange={setWantToTry}
+          label="También agregar a Quiero probar"
+        />
       </div>
       <div className="dish-toggle-row">
-        <span>Share to friends only</span>
-        <Toggle checked={friendsOnly} onChange={setFriendsOnly} label="Share to friends only" />
+        <span>Compartir solo con amigos</span>
+        <Toggle checked={friendsOnly} onChange={setFriendsOnly} label="Compartir solo con amigos" />
       </div>
 
       {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
-        <div className="error-text">Rank this place first.</div>
+        <div className="error-text">Rankea este spot primero.</div>
       )}
 
       <div className="spacer" />
       <Button disabled={!canPost} onClick={() => post.mutate()}>
-        {post.isPending ? 'Posting…' : 'Post dish'}
+        {post.isPending ? 'Publicando…' : 'Publicar plato'}
       </Button>
     </div>
   )

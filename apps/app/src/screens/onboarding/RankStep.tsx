@@ -46,7 +46,7 @@ export function RankStep({ onNext }: { onNext: () => void }) {
   })
 
   if (isPending) {
-    return <Body style={{ marginTop: 'var(--space-6)' }}>Loading spots…</Body>
+    return <Body style={{ marginTop: 'var(--space-6)' }}>Cargando spots…</Body>
   }
 
   // --- Phase A: which have you been to? ---
@@ -63,9 +63,9 @@ export function RankStep({ onNext }: { onNext: () => void }) {
     return (
       <div className="stack stack--loose" style={{ marginTop: 'var(--space-6)' }}>
         <div className="stack stack--tight">
-          <Title>Which of these have you been to?</Title>
+          <Title>¿A cuáles de estos has ido?</Title>
           <Body>
-            Pick {MIN_TO_RANK}–{MAX_TO_RANK}. Next you'll place them in order.
+            Elige {MIN_TO_RANK}–{MAX_TO_RANK}. Después los pondrás en orden.
           </Body>
         </div>
 
@@ -93,8 +93,8 @@ export function RankStep({ onNext }: { onNext: () => void }) {
         <div className="spacer" />
         <Button disabled={selectedIds.length < MIN_TO_RANK} onClick={() => setPhase('compare')}>
           {selectedIds.length < MIN_TO_RANK
-            ? `Pick ${MIN_TO_RANK - selectedIds.length} more`
-            : `Rank these ${selectedIds.length}`}
+            ? `Elige ${MIN_TO_RANK - selectedIds.length} más`
+            : `Rankear estos ${selectedIds.length}`}
         </Button>
       </div>
     )
@@ -128,7 +128,7 @@ function ComparePhase({
     if (isDone(state) && !saving) onComplete(state.ordered)
     return (
       <div className="stack" style={{ marginTop: 'var(--space-7)', alignItems: 'center' }}>
-        <Body>Saving your rankings…</Body>
+        <Body>Guardando tus rankings…</Body>
       </div>
     )
   }
@@ -145,22 +145,22 @@ function ComparePhase({
   return (
     <div className="stack stack--loose" style={{ marginTop: 'var(--space-5)' }}>
       <div className="rank-progress">
-        {placed + 1} of {total}
+        {placed + 1} de {total}
       </div>
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <Title>Which was better?</Title>
+        <Title>¿Cuál estuvo mejor?</Title>
       </div>
 
       <div className="compare">
         <CompareCard item={toItem(comparison.current)} onClick={() => pick(true)} />
         <button type="button" className="compare__same" onClick={() => setState((s) => tie(s))}>
-          About the same
+          Más o menos igual
         </button>
         <CompareCard item={toItem(comparison.pivot)} onClick={() => pick(false)} />
       </div>
 
       <button type="button" className="onboard-swap" onClick={() => setState((s) => skip(s))}>
-        Haven't been to one? Swap it out
+        ¿No has ido a uno? Cámbialo
       </button>
     </div>
   )

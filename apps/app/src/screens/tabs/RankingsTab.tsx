@@ -51,7 +51,7 @@ export function RankingsTab() {
       const first = top[0]
       const name = (me?.profile.name || me?.profile.handle || 'my').split(' ')[0]
       const blob = await renderListCard({
-        eyebrow: `${name}'s top ${top.length}`,
+        eyebrow: `Top ${top.length} de ${name}`,
         subtitle: `${me?.profile.neighborhood?.name ?? 'Santo Domingo'} · Mesa`,
         items: top.map((r) => ({
           position: r.position,
@@ -70,12 +70,12 @@ export function RankingsTab() {
   return (
     <div>
       <div className="tab-header">
-        <Eyebrow>Your list</Eyebrow>
+        <Eyebrow>Tu lista</Eyebrow>
         <div className="rankings-title-row">
           <Title>Rankings</Title>
           {tab === 'mine' && (mine.data?.rankings.length ?? 0) > 0 && (
             <button type="button" className="share-pill" onClick={shareMyList} disabled={sharing}>
-              {sharing ? '…' : '↗ Share'}
+              {sharing ? '…' : '↗ Compartir'}
             </button>
           )}
         </div>
@@ -86,29 +86,29 @@ export function RankingsTab() {
         <div className="stats-row">
           <div className="stat">
             <span className="stat__n">{stats.data.places}</span>
-            <span className="stat__l">places</span>
+            <span className="stat__l">lugares</span>
           </div>
           <div className="stat">
             <span className="stat__n">
               {stats.data.avgScore != null ? displayScore(stats.data.avgScore) : '—'}
             </span>
-            <span className="stat__l">avg</span>
+            <span className="stat__l">prom.</span>
           </div>
           <div className="stat">
             <span className="stat__n">
-              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks}w 🔥` : '—'}
+              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks}s 🔥` : '—'}
             </span>
-            <span className="stat__l">streak</span>
+            <span className="stat__l">racha</span>
           </div>
         </div>
       )}
 
       <div className="rank-toggle">
         <Chip state={tab === 'mine' ? 'selected' : 'default'} onClick={() => setTab('mine')}>
-          Mine
+          Mía
         </Chip>
         <Chip state={tab === 'saved' ? 'selected' : 'default'} onClick={() => setTab('saved')}>
-          Want to try
+          Quiero probar
         </Chip>
         <Chip state={tab === 'barrios' ? 'selected' : 'default'} onClick={() => setTab('barrios')}>
           Barrios
@@ -132,9 +132,9 @@ export function RankingsTab() {
 
       {tab === 'mine' &&
         (mine.isPending ? (
-          <Body>Loading your list…</Body>
+          <Body>Cargando tu lista…</Body>
         ) : mine.isError ? (
-          <ErrorState>Couldn't load your rankings.</ErrorState>
+          <ErrorState>No se pudieron cargar tus rankings.</ErrorState>
         ) : visibleRankings.length > 0 ? (
           visibleRankings.map((r) => <RankingRow key={r.id} ranking={r} />)
         ) : (
@@ -145,13 +145,13 @@ export function RankingsTab() {
 
       {tab === 'saved' &&
         (saved.isPending ? (
-          <Body>Loading…</Body>
+          <Body>Cargando…</Body>
         ) : saved.data && saved.data.saved.length > 0 ? (
           saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
         ) : (
           <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Nothing saved yet.</SerifItalic>
-            <Body>Places you want to try will collect here.</Body>
+            <SerifItalic style={{ fontSize: '1.15rem' }}>Nada guardado todavía.</SerifItalic>
+            <Body>Los lugares que quieras probar se juntarán aquí.</Body>
           </div>
         ))}
     </div>
@@ -174,7 +174,7 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
   if (hoods.length === 0) {
     return (
       <div className="tab-empty">
-        <SerifItalic style={{ fontSize: '1.15rem' }}>Rank a few places first.</SerifItalic>
+        <SerifItalic style={{ fontSize: '1.15rem' }}>Rankea algunos lugares primero.</SerifItalic>
       </div>
     )
   }
@@ -185,7 +185,7 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
           <div className="hood-row__top">
             <span className="hood-row__name">{h.name}</span>
             <span className="hood-row__stats">
-              {h.count} · avg {displayScore(h.avg)}
+              {h.count} · prom. {displayScore(h.avg)}
             </span>
           </div>
           <div className="hood-bar">
@@ -200,8 +200,8 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
 function EmptyMine() {
   return (
     <div className="tab-empty">
-      <SerifItalic style={{ fontSize: '1.15rem' }}>Your list is empty.</SerifItalic>
-      <Body>Rank a place and it takes its spot in your passport.</Body>
+      <SerifItalic style={{ fontSize: '1.15rem' }}>Tu lista está vacía.</SerifItalic>
+      <Body>Rankea un spot y ocupa su puesto en tu pasaporte.</Body>
     </div>
   )
 }
@@ -260,7 +260,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             <textarea
               className="note-editor"
               maxLength={140}
-              placeholder="One line on why…"
+              placeholder="Una línea sobre por qué…"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
             />
@@ -271,7 +271,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                 onClick={() => saveNote.mutate()}
                 disabled={saveNote.isPending}
               >
-                Save
+                Guardar
               </button>
               <button
                 type="button"
@@ -281,7 +281,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                   setEditing(false)
                 }}
               >
-                Cancel
+                Cancelar
               </button>
             </div>
           </>
@@ -297,7 +297,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                     onClick={() => remove.mutate()}
                     disabled={remove.isPending}
                   >
-                    {remove.isPending ? 'Removing…' : 'Confirm remove'}
+                    {remove.isPending ? 'Quitando…' : 'Confirmar'}
                   </button>
                   <button
                     type="button"
@@ -305,20 +305,20 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                     onClick={() => setConfirmingRemove(false)}
                     disabled={remove.isPending}
                   >
-                    Cancel
+                    Cancelar
                   </button>
                 </>
               ) : (
                 <>
                   <button type="button" className="link-action" onClick={() => setEditing(true)}>
-                    {ranking.note ? 'Edit note' : 'Add note'}
+                    {ranking.note ? 'Editar nota' : 'Agregar nota'}
                   </button>
                   <button
                     type="button"
                     className="link-action link-action--danger"
                     onClick={() => setConfirmingRemove(true)}
                   >
-                    Remove
+                    Quitar
                   </button>
                 </>
               )}
@@ -354,7 +354,7 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
           style={{ width: 'auto', minHeight: 40, padding: '0 var(--space-4)' }}
           onClick={() => navigate({ to: '/rank', search: { restaurant: saved.restaurant.id } })}
         >
-          Rank it
+          Rankear
         </Button>
         <button
           type="button"
@@ -362,7 +362,7 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
           onClick={() => remove.mutate()}
           disabled={remove.isPending}
         >
-          {remove.isPending ? 'Removing…' : 'Remove'}
+          {remove.isPending ? 'Quitando…' : 'Quitar'}
         </button>
       </div>
     </div>

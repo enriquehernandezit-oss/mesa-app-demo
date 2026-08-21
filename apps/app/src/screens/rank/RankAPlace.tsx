@@ -50,7 +50,7 @@ type Item = {
 }
 
 // The five occasion tags from the mocks (B4). Title-case, matching the seed vocab.
-const RANK_TAGS = ['Date Night', 'Special Occasion', 'Group Dinner', 'Outdoor', 'Solo']
+const RANK_TAGS = ['Cena romántica', 'Ocasión especial', 'Cena en grupo', 'Al aire libre', 'Solo']
 
 export function RankAPlace() {
   const navigate = useNavigate()
@@ -203,7 +203,7 @@ export function RankAPlace() {
             <span className="stamp__numeral">#{position}</span>
           </div>
           <div className="stamp__name">{picked.name}</div>
-          <Caption>added to your passport</Caption>
+          <Caption>añadido a tu pasaporte</Caption>
         </div>
       </div>
     )
@@ -212,7 +212,7 @@ export function RankAPlace() {
   if (candidates.isPending || mine.isPending) {
     return (
       <div className="screen">
-        <Body>Loading…</Body>
+        <Body>Cargando…</Body>
       </div>
     )
   }
@@ -261,7 +261,7 @@ export function RankAPlace() {
     return (
       <div className="screen">
         <BackBar
-          label="‹ Back"
+          label="‹ Atrás"
           onBack={() => {
             // Re-arm the auto-commit: if they redo the comparisons and land on
             // a different spot, the next reveal must re-save at that position.
@@ -270,7 +270,7 @@ export function RankAPlace() {
           }}
         />
         <div className="rank-reveal">
-          <Eyebrow>Your score</Eyebrow>
+          <Eyebrow>Tu puntuación</Eyebrow>
           <div className="rank-reveal__score">{displayScore(score)}</div>
           <Title style={{ marginTop: 'var(--space-1)' }}>{picked.name}</Title>
           <Characteristics
@@ -280,7 +280,7 @@ export function RankAPlace() {
             neighborhood={picked.neighborhood}
           />
           <Chip size="sm" state="selected" style={{ marginTop: 'var(--space-3)' }}>
-            #{position} of {total} on your list
+            #{position} de {total} en tu lista
           </Chip>
         </div>
         <div className="rank-neighbors">
@@ -296,15 +296,16 @@ export function RankAPlace() {
         {/* The other half of the core loop: where friends put this same place.
             Fetched off the restaurant profile once the score is on screen. */}
         <div className="rank-reveal__friends">
-          <Eyebrow>Your friends</Eyebrow>
+          <Eyebrow>Tus amigos</Eyebrow>
           {friendsQuery.isPending ? (
-            <Caption>Checking…</Caption>
+            <Caption>Buscando…</Caption>
           ) : (friendsQuery.data?.friendsRankings.length ?? 0) > 0 ? (
             <>
               <Caption className="rank-reveal__friends-meta">
-                {friendsQuery.data?.friendsRankings.length} friend
-                {friendsQuery.data?.friendsRankings.length === 1 ? '' : 's'} ranked this · avg{' '}
-                {displayScore(friendsQuery.data?.friendAvg ?? 0)}
+                {friendsQuery.data?.friendsRankings.length === 1
+                  ? '1 amigo rankeó esto'
+                  : `${friendsQuery.data?.friendsRankings.length} amigos rankearon esto`}{' '}
+                · prom. {displayScore(friendsQuery.data?.friendAvg ?? 0)}
               </Caption>
               {friendsQuery.data?.friendsRankings.slice(0, 3).map((f) => (
                 <Link
@@ -322,7 +323,7 @@ export function RankAPlace() {
             </>
           ) : (
             <SerifItalic className="rank-reveal__friends-empty">
-              None of your friends have ranked this yet — you're first.
+              Ninguno de tus amigos ha rankeado esto todavía — vas primero.
             </SerifItalic>
           )}
         </div>
@@ -330,20 +331,20 @@ export function RankAPlace() {
         <div className="spacer" />
         {commitInitial.isError && (
           <div className="rank-reveal__save-error">
-            <Caption>Couldn't save this ranking.</Caption>
+            <Caption>No se pudo guardar este ranking.</Caption>
             <button
               type="button"
               className="link-action"
               onClick={() => position !== null && commitInitial.mutate(position)}
             >
-              Retry
+              Reintentar
             </button>
           </div>
         )}
         <Body style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-          Your answer moved {picked.name}, not the place's rating.
+          Tu respuesta movió a {picked.name}, no la puntuación del spot.
         </Body>
-        <Button onClick={() => setRevealed(true)}>Add a note</Button>
+        <Button onClick={() => setRevealed(true)}>Agregar una nota</Button>
       </div>
     )
   }
@@ -354,7 +355,7 @@ export function RankAPlace() {
       <div className="screen">
         <div className="rank-note-head">
           <button type="button" className="link-action" onClick={() => setRevealed(false)}>
-            ‹ Add a note
+            ‹ Agregar nota
           </button>
           <button
             type="button"
@@ -363,8 +364,9 @@ export function RankAPlace() {
             onClick={() => save.mutate(position)}
           >
             {/* The ranking itself already saved on reveal; this just finalizes
-                without a note/tags/dish, so "Done" (not "Skip") is accurate. */}
-            Done
+                without a note/tags/dish, so "Listo" ("Done", not "Skip") is
+                accurate. */}
+            Listo
           </button>
         </div>
 
@@ -394,13 +396,13 @@ export function RankAPlace() {
           className="note-editor"
           style={{ marginTop: 'var(--space-4)', minHeight: 84 }}
           maxLength={140}
-          placeholder="candlelit, natural wine, go for the branzino…"
+          placeholder="con velas, vino natural, pide el branzino…"
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
 
         <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
-          Occasion
+          Ocasión
         </Eyebrow>
         <div className="tag-row">
           {RANK_TAGS.map((t) => {
@@ -423,7 +425,7 @@ export function RankAPlace() {
         </div>
 
         <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
-          Add a dish
+          Agregar un plato
         </Eyebrow>
         <button
           type="button"
@@ -432,13 +434,13 @@ export function RankAPlace() {
         >
           <span className="rank-dish-tile__plus">+</span>
           <span className="rank-dish-tile__label">
-            {chainDish ? 'Photo after posting' : 'Add a photo'}
+            {chainDish ? 'Foto después de publicar' : 'Agregar una foto'}
           </span>
         </button>
 
         <div className="spacer" />
         <Button disabled={save.isPending} onClick={() => save.mutate(position)}>
-          {save.isPending ? 'Saving…' : 'Save note'}
+          {save.isPending ? 'Guardando…' : 'Guardar nota'}
         </Button>
       </div>
     )
@@ -449,7 +451,7 @@ export function RankAPlace() {
     return (
       <div className="screen">
         <BackBar
-          label="‹ Back"
+          label="‹ Atrás"
           onBack={() => {
             if (search.restaurant || addedPlace) navigate({ to: '/rankings' })
             else setPickedId(null)
@@ -488,7 +490,7 @@ export function RankAPlace() {
   // B2 — pairwise placement, the compare-card battle, banded by sentiment.
   return (
     <div className="screen">
-      <BackBar label="‹ Back" onBack={() => setSentiment(null)} />
+      <BackBar label="‹ Atrás" onBack={() => setSentiment(null)} />
       <PlaceStep
         existing={existingForCompare}
         item={picked}
@@ -523,10 +525,12 @@ function PlaceStep({
     if (!done) return
     const pos = state.ordered.findIndex((x) => x.id === item.id) + 1
     onPlaced(pos > 0 ? pos : 1)
-  }, [done])
+    // Once `done` is true the comparisons have stopped, so `state` no longer
+    // changes — this can't re-fire on a later render.
+  }, [done, state.ordered, item.id, onPlaced])
 
   if (comparison === null) {
-    return <Body style={{ marginTop: 'var(--space-6)' }}>Placing…</Body>
+    return <Body style={{ marginTop: 'var(--space-6)' }}>Ubicando…</Body>
   }
 
   const step = Math.min(total - comparisonsLeft(state) + 1, total)
@@ -535,26 +539,26 @@ function PlaceStep({
   return (
     <div className="stack stack--loose" style={{ marginTop: 'var(--space-4)' }}>
       <div className="rank-progress">
-        {step} of {total}
+        {step} de {total}
       </div>
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <Title>Which was better?</Title>
+        <Title>¿Cuál estuvo mejor?</Title>
         <div className="rank-progress rank-progress--sub">
-          Your answer moves {item.name}, not the place's rating.
+          Tu respuesta mueve a {item.name}, no la puntuación del spot.
         </div>
       </div>
       <div className="compare compare--battle" key={comparison.pivot.id}>
         <CompareCard
           item={comparison.current}
-          subline="new to your list"
+          subline="nuevo en tu lista"
           onClick={() => setState((s) => choose(s, true))}
         />
         <button type="button" className="compare__same" onClick={() => setState((s) => tie(s))}>
-          About the same
+          Más o menos igual
         </button>
         <CompareCard
           item={comparison.pivot}
-          subline={`#${pivotPos} on your list`}
+          subline={`#${pivotPos} en tu lista`}
           score={comparison.pivot.score ?? null}
           onClick={() => setState((s) => choose(s, false))}
         />
@@ -645,15 +649,15 @@ function FindStep({
 
   return (
     <div className="screen">
-      <BackBar label="✕ Rank a place" onBack={onBack} />
+      <BackBar label="✕ Rankear un spot" onBack={onBack} />
       <div className="stack stack--tight" style={{ marginTop: 'var(--space-4)' }}>
-        <Title>Find the place</Title>
+        <Title>Encuentra el spot</Title>
       </div>
       <input
         className="field"
         style={{ marginTop: 'var(--space-4)' }}
         type="search"
-        placeholder="Search a spot you've been…"
+        placeholder="Busca un spot donde hayas estado…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
@@ -663,21 +667,21 @@ function FindStep({
           state={nearby ? 'selected' : 'default'}
           onClick={() => setNearby((v) => !v)}
         >
-          Nearby
+          Cerca
         </Chip>
         <Chip
           size="sm"
           state={openNow ? 'selected' : 'default'}
           onClick={() => setOpenNow((v) => !v)}
         >
-          Open now
+          Abierto ahora
         </Chip>
         <Chip
           size="sm"
           state={reserveOnly ? 'selected' : 'default'}
           onClick={() => setReserveOnly((v) => !v)}
         >
-          Reserve
+          Reservar
         </Chip>
         {[1, 2, 3, 4].map((pt) => (
           <Chip
@@ -693,9 +697,9 @@ function FindStep({
 
       <div className="rank-results" style={{ marginTop: 'var(--space-4)' }}>
         {results.length === 0 && !q ? (
-          <Body>You've ranked everything on Mesa. 👏</Body>
+          <Body>Ya rankeaste todo en Mesa. 👏</Body>
         ) : results.length === 0 ? (
-          <Body>Nothing matches. Try another name.</Body>
+          <Body>Nada coincide. Prueba con otro nombre.</Body>
         ) : (
           results.map((r) => {
             const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
@@ -712,13 +716,13 @@ function FindStep({
                     priceTier={r.priceTier}
                     cuisine={r.cuisine}
                     neighborhood={r.neighborhood}
-                    hours={r.closesAt ? `till ${r.closesAt}` : null}
+                    hours={r.closesAt ? `hasta ${r.closesAt}` : null}
                   />
                 </div>
                 {r.score != null ? (
                   <div className="rank-row__score">{displayScore(r.score)}</div>
                 ) : (
-                  <span className="rank-row__badge">not ranked</span>
+                  <span className="rank-row__badge">sin rankear</span>
                 )}
               </button>
             )
@@ -728,7 +732,7 @@ function FindStep({
           <AddPlaceForm addPlace={addPlace} onCancel={() => setAdding(false)} />
         ) : (
           <button type="button" className="rank-addnew" onClick={() => setAdding(true)}>
-            + Can't find it? Add a new restaurant
+            + ¿No lo encuentras? Agrega un restaurante
           </button>
         )}
       </div>
@@ -763,14 +767,14 @@ function AddPlaceForm({
     <div className="rank-addform">
       <input
         className="field"
-        placeholder="Restaurant name"
+        placeholder="Nombre del restaurante"
         value={name}
         onChange={(e) => setName(e.target.value)}
         maxLength={80}
       />
       <select className="field" value={slug} onChange={(e) => setSlug(e.target.value)}>
         <option value="" disabled>
-          Neighbourhood
+          Barrio
         </option>
         {neighborhoods.data?.neighborhoods.map((n) => (
           <option key={n.slug} value={n.slug}>
@@ -784,14 +788,14 @@ function AddPlaceForm({
           style={{ width: 'auto', minHeight: 44, padding: '0 var(--space-4)' }}
           onClick={onCancel}
         >
-          Cancel
+          Cancelar
         </Button>
         <Button
           disabled={!canAdd}
           style={{ width: 'auto', minHeight: 44, padding: '0 var(--space-5)' }}
           onClick={() => addPlace.mutate({ name: name.trim(), neighborhoodSlug: slug })}
         >
-          {addPlace.isPending ? 'Adding…' : 'Add & rank'}
+          {addPlace.isPending ? 'Agregando…' : 'Agregar y rankear'}
         </Button>
       </div>
     </div>
