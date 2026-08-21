@@ -178,6 +178,73 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* The other half of the core loop, right on the reveal: where friends put this
+   same place. Mirrors .rank-neighbors' card treatment so the two read as one
+   family — "your list" then "their list" — not a bolted-on afterthought. */
+.rank-reveal__friends {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.rank-reveal__friends-meta {
+  display: block;
+  margin: var(--space-1) 0 var(--space-3);
+  color: var(--text-muted);
+}
+.rank-reveal__friends-empty {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--text-2);
+}
+.rank-reveal__friend-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+  text-decoration: none;
+}
+.rank-reveal__friend-row:first-of-type {
+  border-top: 0;
+}
+.rank-reveal__friend-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+}
+.rank-reveal__friend-pos {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.rank-reveal__friend-score {
+  flex: none;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Inline retry when the reveal's auto-save fails — the ranking already looks
+   posted on screen, so a silent failure here would be the worst kind. */
+.rank-reveal__save-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  color: var(--status-packed);
+}
+
 /* Each comparison round slides in. */
 .compare--battle {
   animation: battle-in 0.35s var(--ease-out) both;

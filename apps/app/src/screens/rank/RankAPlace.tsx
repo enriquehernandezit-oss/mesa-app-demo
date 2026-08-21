@@ -1,7 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { Body, Button, Caption, Chip, ChipRail, Eyebrow, Title } from '../../components/ui'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Body,
+  Button,
+  Caption,
+  Chip,
+  ChipRail,
+  Eyebrow,
+  SerifItalic,
+  Title,
+} from '../../components/ui'
+import { Avatar } from '../../components/ui/Avatar'
 import { CompareCard } from '../../components/ui/CompareCard'
 import { Characteristics } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
@@ -17,7 +27,7 @@ import {
   nextComparison,
   tie,
 } from '../../lib/pairwise'
-import type { MeResponse, NewRestaurant, Ranking } from '../../lib/types'
+import type { MeResponse, NewRestaurant, Ranking, RestaurantProfileResponse } from '../../lib/types'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
 import '../../styles/screens.css'
@@ -110,6 +120,39 @@ export function RankAPlace() {
     [isRerank, existing, pickedId],
   )
 
+  // Commits the ranking the moment its score is revealed — not three screens
+  // later at "Post ranking" — so an interrupted or abandoned flow never loses
+  // the ranking itself (only the optional note/tags/dish, which are cheap to
+  // redo). The note step's final save re-POSTs the same (userId, restaurantId)
+  // pair, which the API upserts, so this is safe to fire again from there.
+  const commitInitial = useMutation({
+    mutationFn: (pos: number) => api.post('/rankings', { restaurantId: pickedId, position: pos }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rankings'] })
+      queryClient.invalidateQueries({ queryKey: ['saved'] })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
+    },
+  })
+  const committedForId = useRef<string | null>(null)
+  useEffect(() => {
+    if (pickedId && position !== null && committedForId.current !== pickedId) {
+      committedForId.current = pickedId
+      commitInitial.mutate(position)
+    }
+    // committedForId is the real guard against a duplicate POST — it's fine
+    // for this effect to also re-run on a commitInitial.mutate identity change.
+  }, [pickedId, position, commitInitial.mutate])
+
+  // The friend signal for the reveal screen — the same profile data the
+  // restaurant page shows, fetched once the score is on screen.
+  const friendsQuery = useQuery({
+    queryKey: ['restaurant', pickedId],
+    queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${pickedId}`),
+    enabled: Boolean(pickedId) && position !== null,
+    staleTime: 30_000,
+  })
+
   const save = useMutation({
     mutationFn: (pos: number) =>
       api.post('/rankings', {
@@ -122,6 +165,7 @@ export function RankAPlace() {
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
       // If they attached a dish, chain into the composer; else stamp + passport.
       if (chainDish && pickedId) {
         navigate({ to: '/dish', search: { restaurant: pickedId } })
@@ -216,7 +260,15 @@ export function RankAPlace() {
     }
     return (
       <div className="screen">
-        <BackBar label="‹ Back" onBack={() => setPosition(null)} />
+        <BackBar
+          label="‹ Back"
+          onBack={() => {
+            // Re-arm the auto-commit: if they redo the comparisons and land on
+            // a different spot, the next reveal must re-save at that position.
+            committedForId.current = null
+            setPosition(null)
+          }}
+        />
         <div className="rank-reveal">
           <Eyebrow>Your score</Eyebrow>
           <div className="rank-reveal__score">{displayScore(score)}</div>
@@ -240,7 +292,54 @@ export function RankAPlace() {
             </div>
           ))}
         </div>
+
+        {/* The other half of the core loop: where friends put this same place.
+            Fetched off the restaurant profile once the score is on screen. */}
+        <div className="rank-reveal__friends">
+          <Eyebrow>Your friends</Eyebrow>
+          {friendsQuery.isPending ? (
+            <Caption>Checking…</Caption>
+          ) : (friendsQuery.data?.friendsRankings.length ?? 0) > 0 ? (
+            <>
+              <Caption className="rank-reveal__friends-meta">
+                {friendsQuery.data?.friendsRankings.length} friend
+                {friendsQuery.data?.friendsRankings.length === 1 ? '' : 's'} ranked this · avg{' '}
+                {displayScore(friendsQuery.data?.friendAvg ?? 0)}
+              </Caption>
+              {friendsQuery.data?.friendsRankings.slice(0, 3).map((f) => (
+                <Link
+                  key={f.user.id}
+                  to="/u/$userId"
+                  params={{ userId: f.user.id }}
+                  className="rank-reveal__friend-row"
+                >
+                  <Avatar name={f.user.name || f.user.handle || 'm'} src={f.user.image} size={28} />
+                  <span className="rank-reveal__friend-name">{f.user.name || f.user.handle}</span>
+                  <span className="rank-reveal__friend-pos">#{f.position}</span>
+                  <span className="rank-reveal__friend-score">{displayScore(f.score)}</span>
+                </Link>
+              ))}
+            </>
+          ) : (
+            <SerifItalic className="rank-reveal__friends-empty">
+              None of your friends have ranked this yet — you're first.
+            </SerifItalic>
+          )}
+        </div>
+
         <div className="spacer" />
+        {commitInitial.isError && (
+          <div className="rank-reveal__save-error">
+            <Caption>Couldn't save this ranking.</Caption>
+            <button
+              type="button"
+              className="link-action"
+              onClick={() => position !== null && commitInitial.mutate(position)}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <Body style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
           Your answer moved {picked.name}, not the place's rating.
         </Body>
@@ -257,8 +356,15 @@ export function RankAPlace() {
           <button type="button" className="link-action" onClick={() => setRevealed(false)}>
             ‹ Add a note
           </button>
-          <button type="button" className="rank-skip" onClick={() => save.mutate(position)}>
-            Skip
+          <button
+            type="button"
+            className="rank-skip"
+            disabled={save.isPending}
+            onClick={() => save.mutate(position)}
+          >
+            {/* The ranking itself already saved on reveal; this just finalizes
+                without a note/tags/dish, so "Done" (not "Skip") is accurate. */}
+            Done
           </button>
         </div>
 
@@ -332,7 +438,7 @@ export function RankAPlace() {
 
         <div className="spacer" />
         <Button disabled={save.isPending} onClick={() => save.mutate(position)}>
-          {save.isPending ? 'Posting…' : 'Post ranking'}
+          {save.isPending ? 'Saving…' : 'Save note'}
         </Button>
       </div>
     )
