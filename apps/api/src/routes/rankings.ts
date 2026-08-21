@@ -12,7 +12,8 @@ import { requireAuth } from '../middleware/session'
 // pairwise comparisons, never a star input. Vibe notes are the one-line "why"
 // attached to a ranking — Mesa's identity, and the app's only UGC in Phase 1.
 
-const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user, follows } = schema
+const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user, follows, savedPlaces } =
+  schema
 
 // The transaction executor type, so helpers can run against either db or an open
 // transaction without an unsafe cast.
@@ -252,6 +253,12 @@ export const rankingsRoutes = new Hono<AppEnv>()
       const idx = Math.min(Math.max(position - 1, 0), order.length)
       order.splice(idx, 0, restaurantId)
       await rewrite(tx, me.id, order)
+
+      // Ranking a place resolves its "want to try" entry — a no-op delete if
+      // it was never saved, so this is safe to run on every rank/re-rank.
+      await tx
+        .delete(savedPlaces)
+        .where(and(eq(savedPlaces.userId, me.id), eq(savedPlaces.restaurantId, restaurantId)))
 
       if (tags?.length || favoriteDish) {
         await tx
