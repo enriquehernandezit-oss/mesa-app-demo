@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db, pool } from './client'
 import * as schema from './schema'
 import { COVER_BY_CUISINE, extraNeighborhoods, extraRestaurants, mulberry32 } from './seed-extra'
@@ -6,12 +6,17 @@ import { COVER_BY_CUISINE, extraNeighborhoods, extraRestaurants, mulberry32 } fr
 // ADDITIVE, one-off migration — inserts ONLY the "+14" batch of restaurants plus
 // a spread of realistic community rankings/notes, WITHOUT truncating anything.
 // Unlike `seed.ts` (which TRUNCATEs and regenerates the whole demo world), this
-// is safe to run against a live/prod database and is idempotent: it skips any of
-// the 14 whose name already exists, so re-running is a no-op.
+// is safe to run against a live/prod database and is idempotent.
 //
 //   DATABASE_URL="<public url>" bun run src/seed-add-restaurants.ts
 //
-// It touches only these 14 keys — running the full seed later is unaffected.
+// Two independent guarantees, each idempotent, so it's safe to re-run and also
+// safe to run when the restaurants already exist (e.g. a deploy already seeded
+// them from seed-extra.ts):
+//   1) the 14 restaurants exist (skips any already present, by name);
+//   2) the demo account ranks all 14 (adds only the ones it doesn't rank yet).
+// Community rankings are only ever added for restaurants THIS run inserts, so a
+// place that already carries seed rankings is never double-populated.
 const NEW_KEYS = new Set([
   'ajuala',
   'casaluca',
@@ -44,7 +49,7 @@ const siteFor = (name: string): string =>
     .replace(/\p{Diacritic}/gu, '')
     .replace(/[^a-z0-9]+/g, '')}.do`
 
-// A small pool of vibe notes, assigned deterministically to ~half the rankings.
+// A small pool of vibe notes, assigned deterministically.
 const NOTES = [
   'Reservá con tiempo, se llena.',
   'Pedí lo del día, nunca falla.',
@@ -72,28 +77,17 @@ async function run() {
 
   // 2) Which of the 14 are missing (dedupe by name → idempotent).
   const targets = extraRestaurants.filter((r) => NEW_KEYS.has(r.key))
+  const targetNames = targets.map((r) => r.name)
   const existing = await db
     .select({ name: schema.restaurants.name })
     .from(schema.restaurants)
-    .where(
-      inArray(
-        schema.restaurants.name,
-        targets.map((r) => r.name),
-      ),
-    )
+    .where(inArray(schema.restaurants.name, targetNames))
   const have = new Set(existing.map((r) => r.name))
   const missing = targets.filter((r) => !have.has(r.name))
 
-  if (missing.length === 0) {
-    console.log(`all ${targets.length} restaurants already present — nothing to insert.`)
-    await pool.end()
-    return
-  }
-
-  // 3) Insert the missing restaurants (columns mirror seed.ts).
-  const inserted = await db
-    .insert(schema.restaurants)
-    .values(
+  // 3) Insert the missing restaurants (may be none). Columns mirror seed.ts.
+  if (missing.length > 0) {
+    await db.insert(schema.restaurants).values(
       missing.map((r, i) => {
         const neighborhoodId = nidBySlug.get(r.neighborhood)
         if (!neighborhoodId) throw new Error(`unknown neighborhood slug: ${r.neighborhood}`)
@@ -112,23 +106,25 @@ async function run() {
         }
       }),
     )
-    .returning({ id: schema.restaurants.id, name: schema.restaurants.name })
-
-  // 4) Existing users + their current max ranking position (to append cleanly).
-  const users = await db.select({ id: schema.user.id }).from(schema.user)
-  if (users.length === 0) {
-    console.log(`inserted ${inserted.length} restaurants; no users to rank them.`)
-    await pool.end()
-    return
   }
-  // The demo account is ranked explicitly (below), so keep it out of the random
-  // community sample to avoid handling it twice.
+
+  // Resolve ids for all 14 (pre-existing + just-inserted); flag the new ones.
+  const all14 = await db
+    .select({ id: schema.restaurants.id, name: schema.restaurants.name })
+    .from(schema.restaurants)
+    .where(inArray(schema.restaurants.name, targetNames))
+  const missingNames = new Set(missing.map((r) => r.name))
+  const newlyInserted = all14.filter((r) => missingNames.has(r.name))
+
+  // 4) Users, the demo account, and each user's current max ranking position.
+  const users = await db.select({ id: schema.user.id }).from(schema.user)
   const demoRow = await db
     .select({ id: schema.user.id })
     .from(schema.user)
     .where(eq(schema.user.email, DEMO_EMAIL))
     .limit(1)
   const demoId = demoRow[0]?.id ?? null
+  // Demo is ranked explicitly (step 6), so keep it out of the random sample.
   const community = users.filter((u) => u.id !== demoId)
   const maxPos = await db
     .select({
@@ -144,16 +140,16 @@ async function run() {
     return p
   }
 
-  // 5) A spread of rankings (+ ~half with a note) per new restaurant, from a
-  //    deterministic sample of existing users. Scores are stored (not derived
-  //    from position here), landing 6.8–9.5 so the "All of Mesa" average reads
-  //    healthy. Whether a given followed friend lands in a sample is chance, so
-  //    feed/explore presence for a specific viewer isn't guaranteed — the
-  //    catalog entry, profile, and scores always are.
   const rankingRows: (typeof schema.rankings.$inferInsert)[] = []
   const noteRows: (typeof schema.vibeNotes.$inferInsert)[] = []
   const now = Date.now()
-  for (const r of inserted) {
+
+  // 5) Community spread — ONLY for restaurants this run inserted. Scores are
+  //    stored (not derived from position here), landing 6.8–9.5 so the "All of
+  //    Mesa" average reads healthy. Whether a followed friend lands in a sample
+  //    is chance, so feed presence for a specific viewer isn't guaranteed — the
+  //    catalog entry, profile, and scores always are.
+  for (const r of newlyInserted) {
     const shuffled = [...community]
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1))
@@ -163,13 +159,12 @@ async function run() {
     }
     const sampleSize = Math.min(8 + Math.floor(rng() * 5), shuffled.length) // 8–12
     for (const u of shuffled.slice(0, sampleSize)) {
-      const score = 68 + Math.round(rng() * 27) // 68..95  → 6.8..9.5
       const at = new Date(now - Math.floor(rng() * 40) * DAY)
       rankingRows.push({
         userId: u.id,
         restaurantId: r.id,
         position: posFor(u.id),
-        score,
+        score: 68 + Math.round(rng() * 27), // 68..95 → 6.8..9.5
         createdAt: at,
         updatedAt: at,
       })
@@ -183,10 +178,31 @@ async function run() {
         })
       }
     }
+  }
 
-    // Guarantee the demo account ranks every new place (biased high — it's their
-    // own list), each with a note. onConflictDoNothing below keeps it idempotent.
-    if (demoId) {
+  // 6) Guarantee the demo account ranks ALL 14 — including ones that already
+  //    existed before this run. Add only the ones it doesn't rank yet (biased
+  //    high; it's their own list), so re-running never piles on duplicates.
+  let demoAdded = 0
+  if (demoId) {
+    const alreadyRanked = new Set(
+      (
+        await db
+          .select({ rid: schema.rankings.restaurantId })
+          .from(schema.rankings)
+          .where(
+            and(
+              eq(schema.rankings.userId, demoId),
+              inArray(
+                schema.rankings.restaurantId,
+                all14.map((r) => r.id),
+              ),
+            ),
+          )
+      ).map((x) => x.rid),
+    )
+    for (const r of all14) {
+      if (alreadyRanked.has(r.id)) continue
       const at = new Date(now - Math.floor(rng() * 30) * DAY)
       rankingRows.push({
         userId: demoId,
@@ -203,14 +219,18 @@ async function run() {
         createdAt: at,
         updatedAt: at,
       })
+      demoAdded++
     }
   }
 
-  await db
-    .insert(schema.rankings)
-    .values(rankingRows)
-    .onConflictDoNothing({ target: [schema.rankings.userId, schema.rankings.restaurantId] })
-  if (noteRows.length) {
+  // 7) Insert (idempotent; guard empty — an empty VALUES list is an error).
+  if (rankingRows.length > 0) {
+    await db
+      .insert(schema.rankings)
+      .values(rankingRows)
+      .onConflictDoNothing({ target: [schema.rankings.userId, schema.rankings.restaurantId] })
+  }
+  if (noteRows.length > 0) {
     await db
       .insert(schema.vibeNotes)
       .values(noteRows)
@@ -218,9 +238,11 @@ async function run() {
   }
 
   console.log(
-    `inserted: ${inserted.length} restaurants, ${rankingRows.length} rankings, ${noteRows.length} notes`,
+    `restaurants: ${missing.length} inserted (${all14.length}/14 present) · ` +
+      `${rankingRows.length} rankings added (demo: ${demoAdded}/14 newly ranked) · ` +
+      `${noteRows.length} notes`,
   )
-  console.log(`  ${inserted.map((r) => r.name).join(', ')}`)
+  if (missing.length) console.log(`  new: ${missing.map((r) => r.name).join(', ')}`)
   await pool.end()
 }
 
