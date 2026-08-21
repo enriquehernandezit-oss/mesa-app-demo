@@ -517,12 +517,15 @@ function PlaceStep({
   const [state, setState] = useState<PairwiseState<Item>>(initial)
   const total = useMemo(() => comparisonsLeft(initial), [initial])
   const comparison = nextComparison(state)
+  const done = comparison === null && isDone(state)
+
+  useEffect(() => {
+    if (!done) return
+    const pos = state.ordered.findIndex((x) => x.id === item.id) + 1
+    onPlaced(pos > 0 ? pos : 1)
+  }, [done])
 
   if (comparison === null) {
-    if (isDone(state)) {
-      const pos = state.ordered.findIndex((x) => x.id === item.id) + 1
-      onPlaced(pos > 0 ? pos : 1)
-    }
     return <Body style={{ marginTop: 'var(--space-6)' }}>Placing…</Body>
   }
 
