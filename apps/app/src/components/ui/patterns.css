@@ -101,6 +101,19 @@
   font-size: 10px;
   white-space: nowrap;
 }
+/* On the 34px --sm circle the corner-badge overlapped up to a third of the
+   number (worst case: a long name like "Valentina" at 10px). Below the circle
+   there's room, so pin it there instead of over the score. Assumes no --sm
+   ScoreBadge also renders `caption`/`sub` (true today, all call sites checked)
+   — that flow content would sit directly under this absolute badge otherwise. */
+.scorebadge__circle--sm .scorebadge__badge {
+  top: 100%;
+  right: auto;
+  bottom: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+}
 .scorebadge__caption {
   font-family: var(--font-ui);
   font-size: 10px;
