@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Body, Button, Chip, Eyebrow, SectionHeader, Title, Toggle } from '../../components/ui'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
+import { GRAIN_LABEL_ES } from '../../lib/display'
 import { filterForGrain, resizeToJpeg } from '../../lib/image'
 import type { RestaurantProfileResponse } from '../../lib/types'
 import '../tabs/tabs.css'
@@ -12,9 +13,9 @@ import './dish.css'
 
 type Grain = 'candlelit' | 'daylight' | 'none'
 const GRAINS: { value: Grain; label: string }[] = [
-  { value: 'candlelit', label: 'Candlelit' },
-  { value: 'daylight', label: 'Daylight' },
-  { value: 'none', label: 'Ninguno' },
+  { value: 'candlelit', label: GRAIN_LABEL_ES.candlelit as string },
+  { value: 'daylight', label: GRAIN_LABEL_ES.daylight as string },
+  { value: 'none', label: GRAIN_LABEL_ES.none as string },
 ]
 
 // Post a dish (Phase 6 mocks C1–C2) — a photo attached to a place you've ranked.

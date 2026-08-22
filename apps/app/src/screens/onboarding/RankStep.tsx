@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Body, Button, Title } from '../../components/ui'
 import { CompareCard } from '../../components/ui/CompareCard'
 import { api } from '../../lib/api'
+import { cuisineLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import {
   choose,
@@ -83,7 +84,7 @@ export function RankStep({ onNext }: { onNext: () => void }) {
               >
                 <span className="rank-pick__name">{r.name}</span>
                 <span className="rank-pick__meta">
-                  {[r.cuisine, r.neighborhood?.name].filter(Boolean).join(' · ')}
+                  {[cuisineLabel(r.cuisine), r.neighborhood?.name].filter(Boolean).join(' · ')}
                 </span>
               </button>
             )

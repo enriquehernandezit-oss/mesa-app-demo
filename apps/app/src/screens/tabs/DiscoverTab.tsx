@@ -16,6 +16,7 @@ import {
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
+import { grainLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
@@ -271,7 +272,7 @@ function FeedCard({ item, index }: { item: FeedItem; index: number }) {
           loading="lazy"
           style={{ filter: filterForGrain(item.dishGrain) }}
         />
-        <span className="ph-tag">film · {item.dishGrain ?? 'candlelit'}</span>
+        <span className="ph-tag">film · {grainLabel(item.dishGrain).toLowerCase()}</span>
       </>
     )
     return (

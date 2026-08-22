@@ -5,7 +5,7 @@ import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../
 import { Characteristics } from '../../components/ui/patterns'
 import { useProfile } from '../../hooks/useProfile'
 import { api, apiOrigin } from '../../lib/api'
-import { displayScore } from '../../lib/display'
+import { displayScore, tagLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { renderListCard, shareCard } from '../../lib/shareCard'
 import type { MeStats, Ranking, SavedPlace } from '../../lib/types'
@@ -96,7 +96,7 @@ export function RankingsTab() {
           </div>
           <div className="stat">
             <span className="stat__n">
-              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks}s 🔥` : '—'}
+              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem. 🔥` : '—'}
             </span>
             <span className="stat__l">racha</span>
           </div>
@@ -124,7 +124,7 @@ export function RankingsTab() {
               state={tagFilter === t ? 'selected' : 'default'}
               onClick={() => setTagFilter(tagFilter === t ? null : t)}
             >
-              {t}
+              {tagLabel(t)}
             </Chip>
           ))}
         </div>
@@ -250,7 +250,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             )}
             {(ranking.tags ?? []).map((t) => (
               <span key={t} className="mini-tag">
-                {t}
+                {tagLabel(t)}
               </span>
             ))}
           </div>

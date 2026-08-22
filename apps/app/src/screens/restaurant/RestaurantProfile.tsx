@@ -5,7 +5,7 @@ import { Body, Button, Eyebrow, SectionHeader, SerifItalic } from '../../compone
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api, apiOrigin } from '../../lib/api'
-import { displayScore, priceLabel } from '../../lib/display'
+import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import { getFriendsOnlyScores } from '../../lib/prefs'
@@ -88,7 +88,11 @@ export function RestaurantProfile() {
   const cover = cloudinaryUrl(restaurant.coverImageId, { w: 1000, h: 750 })
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`
-  const meta = [restaurant.cuisine, restaurant.neighborhood?.name, priceLabel(restaurant.priceTier)]
+  const meta = [
+    cuisineLabel(restaurant.cuisine),
+    restaurant.neighborhood?.name,
+    priceLabel(restaurant.priceTier),
+  ]
     .filter(Boolean)
     .join(' · ')
   const rankHref = { to: '/rank', search: { restaurant: restaurantId } } as const
@@ -138,7 +142,7 @@ export function RestaurantProfile() {
         >
           ↗
         </button>
-        <span className="resto-photo__tag">film · candlelit</span>
+        <span className="resto-photo__tag">film · con velas</span>
       </div>
       <div id="resto-hero-end" />
 
@@ -169,7 +173,7 @@ export function RestaurantProfile() {
           {allMesa.avg != null && showMesa && (
             <div className="resto-agg">
               <span className="resto-agg__score">{displayScore(allMesa.avg)}</span>
-              <span className="resto-agg__count">{allMesa.count} rankings</span>
+              <span className="resto-agg__count">{allMesa.count} rankeados</span>
             </div>
           )}
           {lists.length > 0 && (
@@ -305,7 +309,7 @@ export function RestaurantProfile() {
                   >
                     <span className="rail-card__name">{s.name}</span>
                     <span className="rail-card__meta">
-                      {[s.cuisine, s.neighborhood].filter(Boolean).join(' · ')}
+                      {[cuisineLabel(s.cuisine), s.neighborhood].filter(Boolean).join(' · ')}
                     </span>
                   </Link>
                 )

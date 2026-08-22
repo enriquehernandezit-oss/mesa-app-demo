@@ -1,7 +1,7 @@
 // Phase 6's four shared patterns. Built once here so the screens (M6.5) compose
 // them rather than re-implementing. Tokens only; theme-agnostic.
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from 'react'
-import { displayScore, priceLabel } from '../../lib/display'
+import { cuisineLabel, displayScore, priceLabel, tagLabel } from '../../lib/display'
 import { Avatar } from './Avatar'
 import './patterns.css'
 
@@ -33,7 +33,7 @@ export function Characteristics({
   className,
 }: CharacteristicsProps) {
   // Price and cuisine are pipe-separated per the design: "$$$ | Parrilla, Argentine".
-  const priceCuisine = [priceLabel(priceTier), cuisine].filter(Boolean).join(' | ')
+  const priceCuisine = [priceLabel(priceTier), cuisineLabel(cuisine)].filter(Boolean).join(' | ')
   // Line 3 folds neighbourhood · distance · hours onto one muted line, per the
   // mocks ("Piantini · 1.2 km · till 1a").
   const place = [[neighborhood, city].filter(Boolean).join(', '), distance, hours]
@@ -42,7 +42,7 @@ export function Characteristics({
   return (
     <div className={['chars', className].filter(Boolean).join(' ')}>
       {occasionTags && occasionTags.length > 0 && (
-        <div className="chars__tags">{occasionTags.join(' · ')}</div>
+        <div className="chars__tags">{occasionTags.map(tagLabel).join(' · ')}</div>
       )}
       {priceCuisine && <div className="chars__line">{priceCuisine}</div>}
       {place && <div className="chars__line chars__line--muted">{place}</div>}

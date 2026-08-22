@@ -38,7 +38,7 @@ export function ListScreen() {
           <>
             {cover && (
               <div className="list-hero" style={{ backgroundImage: `url(${cover})` }}>
-                <span className="list-hero__tag">film · candlelit</span>
+                <span className="list-hero__tag">film · con velas</span>
               </div>
             )}
             <div className="tab-header" style={{ marginTop: 'var(--space-4)' }}>

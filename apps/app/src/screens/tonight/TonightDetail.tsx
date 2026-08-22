@@ -49,7 +49,7 @@ export function TonightDetail() {
         >
           ‹
         </button>
-        <span className="resto-photo__tag">film · candlelit</span>
+        <span className="resto-photo__tag">film · con velas</span>
       </div>
 
       <div className="dish-detail__body">

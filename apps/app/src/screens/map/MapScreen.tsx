@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { api } from '../../lib/api'
-import { displayScore, priceLabel } from '../../lib/display'
+import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import type { MapSpot } from '../../lib/types'
 import '../tabs/tabs.css'
@@ -200,7 +200,7 @@ export function MapScreen() {
 
 function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
   const thumb = cloudinaryUrl(spot.coverImageId, { w: 200, h: 200 })
-  const meta = [spot.cuisine, spot.neighborhood, priceLabel(spot.priceTier)]
+  const meta = [cuisineLabel(spot.cuisine), spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
   // Hand off to the OS maps app for turn-by-turn from the user's location.

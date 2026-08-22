@@ -73,7 +73,7 @@ function drawChrome(ctx: CanvasRenderingContext2D) {
   // footer
   ctx.font = 'italic 400 40px "Cormorant Garamond", Georgia, serif'
   ctx.fillStyle = CREAM_DIM
-  ctx.fillText('where your friends actually eat', W / 2, H - 90)
+  ctx.fillText('donde tus amigos comen de verdad', W / 2, H - 90)
 }
 
 function truncate(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string {
