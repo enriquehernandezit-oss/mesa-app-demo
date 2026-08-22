@@ -166,12 +166,18 @@ export function progress<T>(s: PairwiseState<T>): { placed: number; total: numbe
 }
 
 /**
- * Comparisons still needed to settle the CURRENT spot — a binary search over
- * [lo, hi) takes ~ceil(log2(span)) more answers. Used for the "N of M" progress
- * on the single-insert rank flow (B2), where `total` is the count at the start.
+ * Comparisons still needed (worst case) to settle the CURRENT spot — a span of
+ * `n` open slots has `n + 1` possible insertion points, so a balanced
+ * comparison-based search needs ceil(log2(n + 1)) more answers. (Note: this
+ * search narrows asymmetrically — a "wins" answer keeps the pivot's index as
+ * the new upper bound while a "loses" answer drops it entirely — so the plain
+ * ceil(log2(n)) undercounts the worst path; +1 accounts for that discard.)
+ * Used for the "N of M" progress on the single-insert rank flow (B2), where
+ * the caller recomputes this each step rather than trusting a fixed estimate,
+ * since the actual number of answers still depends on which path is taken.
  */
 export function comparisonsLeft<T>(s: PairwiseState<T>): number {
   if (s.current === null) return 0
   const span = s.hi - s.lo
-  return span <= 1 ? (span === 1 ? 1 : 0) : Math.ceil(Math.log2(span))
+  return Math.ceil(Math.log2(span + 1))
 }

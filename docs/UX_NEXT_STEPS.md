@@ -130,6 +130,71 @@ this conversation:
   `name`/`caption` text in `packages/db/src/seed-data.ts` — documented as
   "the one place we write in English," a Phase 6 mock decision, not a miss.
 
+### 4. P2 behavioral fixes (this session, after pass 2 — committed 214e9c2 was
+   pushed at the start of this session; these are on top, **not yet
+   committed** — see the commit block at the end of this file)
+
+All three deferred P2 behavioral bugs from the 2026-08-22 re-critique are now
+fixed:
+
+- **No link from a ranked place back to its profile** — `RankingRow` in
+  `RankingsTab.tsx` was a plain `<div>`; its thumbnail and name/characteristics
+  now link to `/r/$restaurantId` (matching feed-card behavior). New CSS in
+  `rankings.css` (`.ranking-thumb img`, `.ranking-name-link`) keeps the visual
+  layout identical.
+- **`"nuevo en tu lista"` persisting on re-ranks** — `RankAPlace.tsx` already
+  computed an `isRerank` flag but never passed it to `PlaceStep`; now it does,
+  and the compare-card subline reads `"ya en tu lista"` when re-ranking an
+  already-ranked place.
+- **Pairwise progress counter unreliable** — root cause found: `pairwise.ts`'s
+  `comparisonsLeft()` used `ceil(log2(span))`, but this binary search's
+  asymmetric branching (a "wins" answer keeps the pivot's index as the new
+  bound, a "loses" answer drops it) means the true worst case is
+  `ceil(log2(span + 1))` — the old formula silently undercounted, so the
+  displayed total would cap out while more comparisons were still coming.
+  Fixed the formula, and additionally made `RankAPlace.tsx`'s on-screen total
+  recompute live each step (`answered + comparisonsLeft(state)`) instead of
+  freezing an initial estimate, so it also self-corrects on a "lucky" path
+  that finishes early. Verified a 5-question re-rank end to end: 1 de 5 → 2 de
+  4 → 3 de 4 → 4 de 4 → done, no stalls or repeats.
+
+All three verified live in-browser (see "Local dev sign-in was broken" below
+for how — the previous `vite.verify.config.ts` pattern didn't survive between
+sessions and had to be rebuilt). `bunx tsc --noEmit` and `bunx biome check`
+clean on every file touched.
+
+### 5. Local dev sign-in was broken — found and fixed this session
+
+While setting up browser verification, `bun run dev` sign-in (any method)
+crashed the client with `BetterAuthError: Invalid base URL: /api-proxy`.
+Root cause, in `apps/app/src/lib/auth-client.ts`:
+- `VITE_API_URL=/api-proxy` (relative, dev-only, routes through the
+  same-origin proxy in `vite.config.ts` for cookie reasons) — but
+  `better-auth` 1.6.25's client requires an **absolute** URL with a protocol
+  and throws otherwise. This is new/stricter behavior since the
+  1.1.14→1.6.25 bump noted earlier in this file's history.
+- Fixing just the absolute-URL requirement (resolving the relative path
+  against `window.location.origin`) surfaced a **second**, related bug: the
+  API mounts Better Auth at `/api/auth/*` (`apps/api/src/index.ts:38`), not
+  at the API root that `VITE_API_URL` points at. Once the URL is absolute,
+  `better-auth`'s client only auto-appends `/api/auth` for a *bare origin
+  with no path* — `/api-proxy` already has a path segment, so the
+  auto-append never fired, and requests 404'd one segment short
+  (`/api-proxy/sign-in/email` instead of `/api-proxy/api/auth/sign-in/email`).
+
+Fix: `auth-client.ts` now resolves a relative `VITE_API_URL` against the
+current origin, then explicitly appends `/api/auth` itself rather than
+relying on `better-auth`'s implicit default-path behavior. Prod's
+`VITE_API_URL` (an absolute URL with no path, per `docs/DEPLOY.md`) is
+unaffected either way — this fix and the previous behavior are equivalent
+there.
+
+Verified: reproduced the original crash, applied the fix, then confirmed a
+real email/password sign-in as `demo@mesa.test` round-trips correctly —
+`POST http://localhost:5173/api-proxy/api/auth/sign-in/email → 200 OK` — and
+lands on the feed with no console errors. `bunx tsc --noEmit` / `bunx biome
+check` clean.
+
 ## Open items
 
 ### 1. Confirm prod seed state — see the ⚠️ above
@@ -138,19 +203,7 @@ The one long-standing unresolved item from this whole session. Needs a human
 (or a future session with the real credential) to run `seed:add` against prod
 and actually read the output line, not just check that it exits 0.
 
-### 2. [P2] From the re-critique, not yet fixed — behavioral, not language
-
-Deliberately deferred (user chose the "data-layer i18n pass" scope this
-round, not this one):
-- No link from a Rankings-list row back to the restaurant's own profile
-  (`RankingRow` in `RankingsTab.tsx:230` is a plain `<div>`).
-- Pairwise comparison progress counter is unreliable (observed "2 de 4" →
-  "4 de 4" twice in one flow).
-- `"nuevo en tu lista"` wrongly persists when re-ranking an already-ranked
-  place (factually wrong state shown to the user).
-
-Full detail, suggested fixes, and `/impeccable` commands for each are in the
-2026-08-22 critique doc linked above.
+### 2. [P2] From the re-critique — now fixed, see §4 above
 
 ### 3. [P3] Confirm the ScoreBadge / `#N of M` chip false affordance — not prioritized
 

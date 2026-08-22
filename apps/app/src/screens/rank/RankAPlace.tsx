@@ -495,6 +495,7 @@ export function RankAPlace() {
         existing={existingForCompare}
         item={picked}
         sentiment={sentiment}
+        isRerank={isRerank}
         onPlaced={setPosition}
       />
     </div>
@@ -505,11 +506,13 @@ function PlaceStep({
   existing,
   item,
   sentiment,
+  isRerank,
   onPlaced,
 }: {
   existing: Item[]
   item: Item
   sentiment: Sentiment
+  isRerank: boolean
   onPlaced: (position: number) => void
 }) {
   const initial = useMemo(
@@ -517,7 +520,11 @@ function PlaceStep({
     [existing, item, sentiment],
   )
   const [state, setState] = useState<PairwiseState<Item>>(initial)
-  const total = useMemo(() => comparisonsLeft(initial), [initial])
+  // Comparisons already answered for this spot — the live remaining count is
+  // recomputed from `state` each render (not a fixed initial estimate), so
+  // the displayed total always matches the path actually being taken instead
+  // of stalling at a stale "N de M" once the real count runs past it.
+  const [answered, setAnswered] = useState(0)
   const comparison = nextComparison(state)
   const done = comparison === null && isDone(state)
 
@@ -533,7 +540,8 @@ function PlaceStep({
     return <Body style={{ marginTop: 'var(--space-6)' }}>Ubicando…</Body>
   }
 
-  const step = Math.min(total - comparisonsLeft(state) + 1, total)
+  const step = answered + 1
+  const total = answered + comparisonsLeft(state)
   const pivotPos = state.ordered.findIndex((x) => x.id === comparison.pivot.id) + 1
 
   return (
@@ -550,17 +558,30 @@ function PlaceStep({
       <div className="compare compare--battle" key={comparison.pivot.id}>
         <CompareCard
           item={comparison.current}
-          subline="nuevo en tu lista"
-          onClick={() => setState((s) => choose(s, true))}
+          subline={isRerank ? 'ya en tu lista' : 'nuevo en tu lista'}
+          onClick={() => {
+            setAnswered((a) => a + 1)
+            setState((s) => choose(s, true))
+          }}
         />
-        <button type="button" className="compare__same" onClick={() => setState((s) => tie(s))}>
+        <button
+          type="button"
+          className="compare__same"
+          onClick={() => {
+            setAnswered((a) => a + 1)
+            setState((s) => tie(s))
+          }}
+        >
           Más o menos igual
         </button>
         <CompareCard
           item={comparison.pivot}
           subline={`#${pivotPos} en tu lista`}
           score={comparison.pivot.score ?? null}
-          onClick={() => setState((s) => choose(s, false))}
+          onClick={() => {
+            setAnswered((a) => a + 1)
+            setState((s) => choose(s, false))
+          }}
         />
       </div>
     </div>

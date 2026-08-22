@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { Characteristics } from '../../components/ui/patterns'
@@ -230,18 +230,26 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
   return (
     <div className="ranking-row" style={{ gridTemplateColumns: 'auto auto 1fr auto' }}>
       <div className="ranking-numeral">{ranking.position}</div>
-      {thumb ? (
-        <img className="ranking-thumb" src={thumb} alt="" loading="lazy" />
-      ) : (
-        <div className="ranking-thumb" />
-      )}
+      <Link
+        to="/r/$restaurantId"
+        params={{ restaurantId: ranking.restaurant.id }}
+        className="ranking-thumb"
+      >
+        {thumb && <img src={thumb} alt="" loading="lazy" />}
+      </Link>
       <div className="ranking-main">
-        <div className="ranking-name">{ranking.restaurant.name}</div>
-        <Characteristics
-          priceTier={ranking.restaurant.priceTier}
-          cuisine={ranking.restaurant.cuisine}
-          neighborhood={ranking.neighborhood}
-        />
+        <Link
+          to="/r/$restaurantId"
+          params={{ restaurantId: ranking.restaurant.id }}
+          className="ranking-name-link"
+        >
+          <div className="ranking-name">{ranking.restaurant.name}</div>
+          <Characteristics
+            priceTier={ranking.restaurant.priceTier}
+            cuisine={ranking.restaurant.cuisine}
+            neighborhood={ranking.neighborhood}
+          />
+        </Link>
 
         {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
           <div className="ranking-extras">

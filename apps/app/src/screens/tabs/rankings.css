@@ -132,6 +132,7 @@
 
 /* Thumbnail in ranking rows. */
 .ranking-thumb {
+  display: block;
   width: 56px;
   height: 56px;
   flex: none;
@@ -139,6 +140,12 @@
   object-fit: cover;
   background: var(--surface-raised);
   border: 1px solid var(--line);
+}
+.ranking-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
 }
 
 .ranking-row {
@@ -166,6 +173,13 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+.ranking-name-link {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: inherit;
+  text-decoration: none;
 }
 .ranking-name {
   font-family: var(--font-serif);

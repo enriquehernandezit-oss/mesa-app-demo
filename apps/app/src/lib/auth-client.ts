@@ -11,7 +11,22 @@ import { clearToken, getToken, setToken } from './auth-token'
 //   - Instagram        — generic OAuth (Meta's sanctioned endpoints, App Store 4.5)
 // Whether Apple/Instagram actually complete depends on the server having their
 // secrets set; email/password and phone work in every build.
-const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+//
+// VITE_API_URL is `/api-proxy` (a same-origin relative path) in local dev, so
+// the dev-server proxy in vite.config.ts can make the session cookie
+// first-party — see that file's comment; in prod it's the API's absolute
+// public URL (docs/DEPLOY.md). better-auth's client requires an absolute URL
+// with a protocol, so a relative dev value is resolved against the current
+// origin. The server mounts Better Auth at `/api/auth/*` (apps/api/src/index.ts),
+// not at the API root that VITE_API_URL/api.ts point at, so `/api/auth` is
+// appended explicitly here rather than relying on better-auth's own
+// auto-append — that only kicks in for a bare origin with no path, and
+// `/api-proxy` already has one.
+const rawBaseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+const origin = /^https?:\/\//.test(rawBaseURL)
+  ? rawBaseURL
+  : new URL(rawBaseURL, window.location.origin).toString()
+const baseURL = `${origin.replace(/\/$/, '')}/api/auth`
 
 export const authClient = createAuthClient({
   baseURL,
