@@ -127,7 +127,7 @@ export function ExploreScreen() {
         {results.isPending ? (
           <Body>Buscando…</Body>
         ) : results.isError ? (
-          <ErrorState>No se pudo buscar. Intenta de nuevo en un momento.</ErrorState>
+          <ErrorState onRetry={() => results.refetch()}>No se pudo buscar.</ErrorState>
         ) : hits.length === 0 && members.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Nada coincide.</SerifItalic>

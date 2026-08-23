@@ -74,7 +74,7 @@ export function DiscoverTab() {
       {feed.isPending ? (
         <FeedSkeleton />
       ) : feed.isError ? (
-        <ErrorState>No se pudo cargar el feed. Intenta de nuevo en un momento.</ErrorState>
+        <ErrorState onRetry={() => feed.refetch()}>No se pudo cargar el feed.</ErrorState>
       ) : items.length > 0 ? (
         <>
           <ListsRail />

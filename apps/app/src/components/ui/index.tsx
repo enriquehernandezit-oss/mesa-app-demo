@@ -63,10 +63,25 @@ export const Skeleton = ({
   <div className={cx('mesa-skeleton', className)} style={{ height, width, ...style }} {...p} />
 )
 
-/* Error — a quiet retry-friendly message when a query fails. */
-export const ErrorState = ({ className, children, ...p }: DivProps) => (
+/* Error — a quiet message when a query fails. Pass `onRetry` (usually the
+ * query's refetch) to render a concrete retry control; without it, the message
+ * stands alone. The copy no longer promises "pull to refresh" — several screens
+ * that use this aren't pull-to-refresh surfaces. */
+export const ErrorState = ({
+  className,
+  children,
+  onRetry,
+  ...p
+}: DivProps & { onRetry?: () => void }) => (
   <div className={cx('mesa-error', className)} {...p}>
-    {children ?? 'Algo salió mal. Desliza para actualizar, o intenta de nuevo en un momento.'}
+    <p className="mesa-error__msg">
+      {children ?? 'Algo salió mal. Intenta de nuevo en un momento.'}
+    </p>
+    {onRetry && (
+      <button type="button" className="mesa-error__retry" onClick={onRetry}>
+        Intentar de nuevo
+      </button>
+    )}
   </div>
 )
 

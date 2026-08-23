@@ -139,7 +139,9 @@ select {
 .explore-row:active,
 .explore-member:active,
 .saved-row:active,
-.toast__action:active {
+.toast__action:active,
+.mesa-error__retry:active,
+.notfound__cta:active {
   transform: scale(0.97);
   transition: transform var(--dur-fast) var(--ease-out);
 }

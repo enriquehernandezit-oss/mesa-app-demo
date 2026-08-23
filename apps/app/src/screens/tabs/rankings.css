@@ -243,12 +243,15 @@
   letter-spacing: 0.1em;
   color: var(--text-muted);
 }
+/* Destructive actions read as destructive at rest — not only on hover, which
+   never fires on touch, where "Quitar" was otherwise identical to the benign
+   "Editar nota" beside it. */
+.link-action--danger {
+  color: var(--status-packed);
+}
 @media (hover: hover) and (pointer: fine) {
   .link-action:hover {
     color: var(--accent);
-  }
-  .link-action--danger:hover {
-    color: var(--status-packed);
   }
 }
 

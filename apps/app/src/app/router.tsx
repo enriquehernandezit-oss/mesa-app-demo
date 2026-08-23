@@ -8,6 +8,7 @@ import {
   redirect,
 } from '@tanstack/react-router'
 import { TopBar } from '../components/TopBar'
+import { Body, SerifItalic, Wordmark } from '../components/ui'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
 import { DishCompose } from '../screens/dish/DishCompose'
 import { DishDetail } from '../screens/dish/DishDetail'
@@ -238,7 +239,24 @@ const routeTree = rootRoute.addChildren([
   tonightDetailRoute,
 ])
 
-const router = createRouter({ routeTree })
+// A bad link in a Capacitor shell has no browser chrome to escape with, so the
+// 404 must carry its own way out. Themed, safe-area-aware, one CTA back to safety.
+function NotFound() {
+  return (
+    <div className="notfound">
+      <Wordmark size={30} />
+      <SerifItalic style={{ fontSize: '1.3rem' }}>Esta página no existe.</SerifItalic>
+      <Body style={{ maxWidth: '22rem' }}>
+        El enlace que seguiste no lleva a ningún spot de Mesa.
+      </Body>
+      <Link to="/discover" className="notfound__cta">
+        Volver al feed
+      </Link>
+    </div>
+  )
+}
+
+const router = createRouter({ routeTree, defaultNotFoundComponent: NotFound })
 
 declare module '@tanstack/react-router' {
   interface Register {

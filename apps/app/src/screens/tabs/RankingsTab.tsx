@@ -136,7 +136,9 @@ export function RankingsTab() {
         (mine.isPending ? (
           <Body>Cargando tu lista…</Body>
         ) : mine.isError ? (
-          <ErrorState>No se pudieron cargar tus rankings.</ErrorState>
+          <ErrorState onRetry={() => mine.refetch()}>
+            No se pudieron cargar tus rankings.
+          </ErrorState>
         ) : visibleRankings.length > 0 ? (
           visibleRankings.map((r) => <RankingRow key={r.id} ranking={r} />)
         ) : (

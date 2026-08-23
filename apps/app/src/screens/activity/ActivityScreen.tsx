@@ -96,7 +96,7 @@ export function ActivityScreen() {
         {q.isPending ? (
           <Body>Cargando…</Body>
         ) : q.isError ? (
-          <ErrorState>No se pudo cargar la actividad. Intenta de nuevo en un momento.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la actividad.</ErrorState>
         ) : sections.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Tranquilo por ahora.</SerifItalic>

@@ -124,3 +124,31 @@
   color: var(--accent);
   margin-bottom: var(--space-2);
 }
+
+/* 404 — a full-screen, safe-area-aware dead-end recovery (router NotFound). */
+.notfound {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: calc(var(--safe-top) + var(--space-6)) var(--space-5)
+    calc(var(--safe-bottom) + var(--space-6));
+  text-align: center;
+  background: var(--bg);
+}
+.notfound__cta {
+  margin-top: var(--space-2);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  box-shadow: var(--glow-brass);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: var(--text-label);
+}

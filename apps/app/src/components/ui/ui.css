@@ -183,6 +183,26 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
 }
+.mesa-error__msg {
+  margin: 0;
+}
+.mesa-error__retry {
+  margin-top: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--brass-line);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--accent-strong);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mesa-error__retry:hover {
+    background: var(--brass-wash);
+  }
+}
 
 /* --- Chip --- */
 .mesa-chip {

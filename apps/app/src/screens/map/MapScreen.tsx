@@ -106,7 +106,7 @@ export function MapScreen() {
         {q.isPending ? (
           <Body>Cargando el mapa…</Body>
         ) : q.isError ? (
-          <ErrorState>No se pudo cargar el mapa. Intenta de nuevo.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el mapa.</ErrorState>
         ) : placed.length === 0 ? (
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>Aún no hay spots.</SerifItalic>
