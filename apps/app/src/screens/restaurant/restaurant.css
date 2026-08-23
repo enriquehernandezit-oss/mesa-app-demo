@@ -125,7 +125,11 @@
   border: 1px solid var(--line);
   background: var(--photo-scrim-3);
   backdrop-filter: blur(8px);
-  color: var(--text);
+  /* These controls sit on a dark photo scrim in BOTH themes, so they take the
+     on-photo (light) glyph tokens, not the page --text — which is dark ink in
+     Afternoon and measured 1.09:1 here. Light-on-scrim is the DESIGN.md rule for
+     anything over photography. */
+  color: var(--on-photo);
   font-size: 1.2rem;
   display: grid;
   place-items: center;
@@ -135,7 +139,7 @@
 .resto-share {
   left: auto;
   right: var(--space-4);
-  color: var(--accent-strong);
+  color: var(--on-photo-accent);
 }
 
 .resto-content {
@@ -363,7 +367,9 @@
   display: grid;
   place-items: center;
   background: var(--bg-sunk);
-  color: var(--text-muted);
+  /* --text-muted on --bg-sunk (the darker ground) measured 4.29:1; --text-2 is
+     the readable step for a label sitting on the sunk surface. */
+  color: var(--text-2);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.04em;

@@ -23,11 +23,17 @@
   --text-2: #4a3b32; /* --body: body copy where --ink is too heavy */
   --text-muted: #746253; /* --muted: captions, metadata (≥4.5:1 on paper) */
   --text-faint: #b0a08e; /* --faint: annotation-level text only */
-  --accent: #9a6a28; /* brass — active states, scores, primary accent */
+  /* Brass deepened from #9a6a28 → #8a5f24 so brass-on-paper text clears WCAG AA:
+     #9a6a28 on --bg measured 4.11:1 (fail) across eyebrows/scores/labels; #8a5f24
+     is 4.90:1 and still unmistakably brass. --accent is text/glyph only (never a
+     background), so this doesn't shift any fill on its own. */
+  --accent: #8a5f24; /* brass — active states, scores, primary accent (text/glyph) */
   --accent-strong: #8a5a2a; /* --deep: brass on small text / eyebrows / pill labels */
-  --accent-fill: #9a6a28; /* solid brass fill (the one filled CTA / chips) */
+  /* Matched to --accent so cream-on-brass fills clear AA too: #fdf7ec on the old
+     #9a6a28 was 4.41:1 (fail); on #8a5f24 it's 5.26:1. */
+  --accent-fill: #8a5f24; /* solid brass fill (the one filled CTA / chips) */
   --on-accent: #fdf7ec; /* cream text/icon on a brass or ink fill */
-  --tab-inactive: #8a7b6c; /* inactive tab-bar item */
+  --tab-inactive: #786a5b; /* inactive tab-bar item — darkened from #8a7b6c (4.03:1) to 5.15:1 on --surface */
   --line: rgba(120, 80, 60, 0.12); /* warm hairline — never flat grey */
   --line-strong: rgba(120, 80, 60, 0.16); /* stronger warm hairline */
   --brass-line: rgba(154, 106, 40, 0.4); /* outlined pills */
@@ -60,7 +66,9 @@
   --grain-opacity: 0.6;
 
   /* Nightlife status colors — re-tuned for the light ground (Phase 6). */
-  --status-packed: #c2603a;
+  /* Deepened from #c2603a (3.65:1 on --bg, and the danger "Eliminar cuenta"
+     text/eyebrow rode on it) to #b0512e = 4.52:1 text and 4.85:1 cream-on-fill. */
+  --status-packed: #b0512e;
   --status-good: #9a6a28;
   --status-building: #97794f;
   --status-slow: #8a7b6c;
@@ -161,7 +169,7 @@ html[data-theme="candlelit"] {
   --accent-strong: #e2c179;
   --accent-fill: #c09050;
   --on-accent: #210104;
-  --tab-inactive: #8a7166;
+  --tab-inactive: #9a8175; /* lightened from #8a7166 (3.78:1) to 4.71:1 on Candlelit --surface */
   --line: rgba(235, 228, 214, 0.1);
   --line-strong: rgba(235, 228, 214, 0.16);
   --brass-line: rgba(226, 193, 121, 0.4);
