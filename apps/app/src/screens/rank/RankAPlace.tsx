@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { Link, useBlocker, useNavigate, useSearch } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Body,
@@ -15,6 +15,7 @@ import {
 import { Avatar } from '../../components/ui/Avatar'
 import { CompareCard } from '../../components/ui/CompareCard'
 import { Characteristics } from '../../components/ui/patterns'
+import { toast } from '../../components/ui/toast-store'
 import { api } from '../../lib/api'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
@@ -196,8 +197,64 @@ export function RankAPlace() {
         setTimeout(() => navigate({ to: '/rankings' }), 1300)
       }
     },
+    // The ranking itself already committed at reveal (commitInitial), so a
+    // failure here only risks the optional note/tags — but silently dropping a
+    // note the user just wrote is the worst outcome in this step. Surface a
+    // retry, matching the reveal screen's own commitInitial retry pattern.
+    onError: (_err, pos) => {
+      toast({
+        variant: 'error',
+        message: 'No se pudo guardar tu nota',
+        action: { label: 'Intentar de nuevo', onClick: () => save.mutate(pos) },
+      })
+    },
   })
   const [placedStamp, setPlacedStamp] = useState(false)
+
+  // Guard the multi-step flow against the platform back-gesture and reload/close.
+  // The whole flow lives at one route on local state, so without this a single
+  // iOS edge-swipe / Android back / accidental reload would unwind straight to
+  // the Feed and silently lose an in-progress ranking. Instead we intercept the
+  // BACK action and step backward through the flow's own state — mirroring what
+  // the in-app "‹ Atrás" controls already do — and only let navigation leave the
+  // route once there's nothing left to unwind. `placedStamp` (the save landed,
+  // celebration is showing) turns the guard off so the success navigation and
+  // the dish-chain both pass through. beforeUnload covers reload/tab-close.
+  // A spot is picked → we're in the flow (the sentiment step onward), so a spot
+  // arrived-at via deep link (?restaurant=) counts too.
+  const inFlow = pickedId !== null && !placedStamp
+  const deepLinked = Boolean(search.restaurant || addedPlace)
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === 'BACK' && inFlow,
+    enableBeforeUnload: () => inFlow,
+    withResolver: true,
+  })
+  useEffect(() => {
+    if (blocker.status !== 'blocked') return
+    // Consume the back press as one in-flow step (mirroring the in-app "‹ Atrás"
+    // controls), unwinding note → reveal → compare → sentiment → find; once
+    // there's nothing left to unwind, let it through so a second back leaves.
+    if (revealed) {
+      setRevealed(false)
+      blocker.reset()
+    } else if (position !== null) {
+      // Re-arm the auto-commit so redoing the comparisons re-saves at the new slot.
+      committedForId.current = null
+      setPosition(null)
+      blocker.reset()
+    } else if (sentiment !== null) {
+      setSentiment(null)
+      blocker.reset()
+    } else if (!deepLinked) {
+      // At the sentiment step with a real find-step behind us → return to it.
+      setPickedId(null)
+      blocker.reset()
+    } else {
+      // Arrived straight into this spot (deep link / just-added) — no find step
+      // to fall back to, so let back leave the flow.
+      blocker.proceed()
+    }
+  }, [blocker, revealed, position, sentiment, deepLinked])
 
   const addPlace = useMutation({
     mutationFn: (body: { name: string; neighborhoodSlug: string }) =>

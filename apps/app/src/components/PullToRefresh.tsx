@@ -41,40 +41,53 @@ export function PullToRefresh({
     }
   }
 
-  // A fixed-height clipped track (never animated) with the spinner slid in via
-  // transform — height/layout properties trigger layout+paint on every drag
-  // frame; transform/opacity are compositor-only. Dragging gets no transition
-  // (1:1 with the finger); releasing settles with --ease-out.
+  // Zero-layout reveal: the spinner is absolutely positioned in the strip the
+  // content vacates, and the content itself translates down by `pull` to expose
+  // it. Nothing consumes layout height at rest (pull === 0 → no gap, no reflow),
+  // and only transform/opacity animate. Dragging tracks the finger 1:1 (no
+  // transition); releasing settles both back with --ease-out.
   const maxHeight = THRESHOLD * 1.4
   const dragging = startY.current !== null
+  const settle = dragging ? undefined : 'transform var(--dur-base) var(--ease-out)'
   return (
-    <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      <div aria-hidden style={{ height: maxHeight, overflow: 'hidden' }}>
+    <div
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{ position: 'relative' }}
+    >
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: maxHeight,
+          display: 'grid',
+          placeItems: 'center',
+          transform: `translateY(${pull - maxHeight}px)`,
+          transition: settle,
+          pointerEvents: 'none',
+        }}
+      >
         <div
           style={{
-            display: 'grid',
-            placeItems: 'center',
-            height: maxHeight,
-            transform: `translateY(${pull - maxHeight}px)`,
-            transition: dragging ? undefined : 'transform var(--dur-base) var(--ease-out)',
+            width: 22,
+            height: 22,
+            borderRadius: '50%',
+            border: '2px solid var(--line)',
+            borderTopColor: 'var(--accent)',
+            opacity: Math.min(pull / THRESHOLD, 1),
+            transform: `rotate(${pull * 3}deg)`,
+            transition: dragging ? undefined : 'opacity var(--dur-base) var(--ease-out)',
+            animation: refreshing ? 'mesa-spin .8s linear infinite' : undefined,
           }}
-        >
-          <div
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: '50%',
-              border: '2px solid var(--line)',
-              borderTopColor: 'var(--accent)',
-              opacity: Math.min(pull / THRESHOLD, 1),
-              transform: `rotate(${pull * 3}deg)`,
-              transition: dragging ? undefined : 'opacity var(--dur-base) var(--ease-out)',
-              animation: refreshing ? 'mesa-spin .8s linear infinite' : undefined,
-            }}
-          />
-        </div>
+        />
       </div>
-      {children}
+      <div style={{ transform: pull ? `translateY(${pull}px)` : undefined, transition: settle }}>
+        {children}
+      </div>
     </div>
   )
 }
