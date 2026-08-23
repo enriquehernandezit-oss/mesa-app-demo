@@ -241,7 +241,6 @@ export function RestaurantProfile() {
                 <ScoreBadge
                   score={friendAvg}
                   attribution={{ kind: 'friends', count: friendsRankings.length }}
-                  caption="Amigos"
                   sub="lo que piensan"
                 />
               )}

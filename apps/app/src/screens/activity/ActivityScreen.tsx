@@ -161,12 +161,13 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           {a.type === 'friend_ranked' && a.score != null && (
             <>
               rankeó {place} con {displayScore(a.score)}
-              {a.yourScore != null && (
-                <>
-                  {' — '}
-                  {a.score >= a.yourScore ? 'por encima de' : 'por debajo de'} tu{' '}
-                  {displayScore(a.yourScore)}
-                </>
+              {/* Lead with the place and their score; only surface the
+                  comparison when you two genuinely disagree (≥1 point apart),
+                  framed as taste, not a scoreboard. A small gap or a tie shows
+                  nothing — which also fixes the old `>=` that reported ties as
+                  "por encima de tu". */}
+              {a.yourScore != null && Math.abs(a.score - a.yourScore) >= 10 && (
+                <> — {a.score > a.yourScore ? 'le gustó más que a ti' : 'a ti te gustó más'}</>
               )}
             </>
           )}

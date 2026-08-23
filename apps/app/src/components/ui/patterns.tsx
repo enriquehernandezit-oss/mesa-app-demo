@@ -84,9 +84,27 @@ function badgeText(a: ScoreAttribution): string | null {
     case 'user':
       return a.label
     case 'friends':
-      return String(a.count)
+      // The word travels with the count so a bare "2" never reads as a review
+      // count — the badge is self-describing on the rails, which pass no caption.
+      return `${a.count} ${a.count === 1 ? 'amigo' : 'amigos'}`
     case 'mesa':
       return null // the caption ("All of Mesa") carries the attribution
+  }
+}
+// The score read aloud in full, so a screen reader never hears a bare "8.8, 2"
+// (which reads as a rating with a review count). Every score is attributed here
+// in words, matching the visual badge's promise.
+function ariaScore(score: number, a: ScoreAttribution): string {
+  const s = displayScore(score)
+  switch (a.kind) {
+    case 'you':
+      return `${s}, tu puntuación`
+    case 'user':
+      return `${s}, de ${a.label}`
+    case 'friends':
+      return `${s}, promedio de ${a.count} ${a.count === 1 ? 'amigo' : 'amigos'}`
+    case 'mesa':
+      return `${s}, en todo Mesa`
   }
 }
 export function ScoreBadge({ score, attribution, size = 'md', caption, sub }: ScoreBadgeProps) {
@@ -97,9 +115,17 @@ export function ScoreBadge({ score, attribution, size = 'md', caption, sub }: Sc
     <div className="scorebadge">
       <div
         className={`scorebadge__circle scorebadge__circle--${size}${mesa ? ' scorebadge__circle--mesa' : ''}`}
+        role="img"
+        aria-label={ariaScore(score, attribution)}
       >
-        <span className="scorebadge__n">{displayScore(score)}</span>
-        {badge && <span className="scorebadge__badge">{badge}</span>}
+        <span className="scorebadge__n" aria-hidden="true">
+          {displayScore(score)}
+        </span>
+        {badge && (
+          <span className="scorebadge__badge" aria-hidden="true">
+            {badge}
+          </span>
+        )}
       </div>
       {caption && <span className="scorebadge__caption">{caption}</span>}
       {sub && <span className="scorebadge__sub">{sub}</span>}

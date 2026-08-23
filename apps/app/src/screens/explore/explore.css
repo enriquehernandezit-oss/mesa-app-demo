@@ -18,6 +18,9 @@
   color: var(--accent);
   width: 20px;
   text-align: center;
+  /* Lining figures so the position "1" reads as a 1, not Cormorant's old-style
+     "I" (matches .ranking-numeral / .lb-pos). */
+  font-variant-numeric: lining-nums proportional-nums;
 }
 
 /* Member result row ("place, dish, or member"). */
