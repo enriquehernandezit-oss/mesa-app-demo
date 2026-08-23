@@ -82,7 +82,7 @@ export function ProfileStep({ onNext }: { onNext: () => void }) {
       </div>
 
       <div className="stack stack--tight">
-        <Eyebrow>Barrio</Eyebrow>
+        <Eyebrow>Sector</Eyebrow>
         <select
           className="field"
           value={neighborhoodSlug}

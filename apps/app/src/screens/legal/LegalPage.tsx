@@ -24,7 +24,7 @@ const DOCS: Record<Doc, { title: string; body: string[] }> = {
     title: 'Política de Privacidad',
     body: [
       'Mesa es una app social de descubrimiento de restaurantes y vida nocturna para Santo Domingo. Esta política explica qué recopilamos y por qué.',
-      'Información de cuenta: cuando inicias sesión con Instagram, Apple, o tu teléfono, guardamos el identificador que nos da ese proveedor más el perfil que configuras (nombre, usuario, barrio).',
+      'Información de cuenta: cuando inicias sesión con Instagram, Apple, o tu teléfono, guardamos el identificador que nos da ese proveedor más el perfil que configuras (nombre, usuario, sector).',
       'Contactos: si eliges buscar amigos en tus contactos, comparamos números de teléfono contra los usuarios de Mesa en nuestro servidor y nunca guardamos tu lista de contactos. Esto es opcional y se pide solo en ese momento.',
       'Contenido que creas: tus rankings y notas de vibe son visibles para las personas que te siguen. Puedes editarlos o eliminarlos cuando quieras.',
       'Uso: actividad básica de la app para mantener el servicio funcionando. No te rastreamos en otras apps ni vendemos tus datos.',

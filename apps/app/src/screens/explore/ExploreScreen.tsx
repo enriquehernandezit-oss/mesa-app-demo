@@ -24,8 +24,9 @@ import './explore.css'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
-// dish-matched places ("place, dish, or member"). One filter rail: score / open
-// now / price / barrio. The action rail matches the feed's.
+// dish-matched places ("place, dish, or member"). Two filter rails: attributes
+// (score / open now / price) and, on its own line, barrio. The action rail
+// matches the feed's.
 const PRICES = [1, 2, 3, 4]
 
 export function ExploreScreen() {
@@ -78,7 +79,12 @@ export function ExploreScreen() {
 
         <QuickActions />
 
-        <ChipRail style={{ marginBottom: 'var(--space-4)' }}>
+        {/* Two rails: attribute filters (sort/open/price) and, on its own line,
+            sector. Sector is the highest-value filter for a
+            neighbourhood-driven city — one crammed rail buried all 7 sectors
+            ~600px off-screen behind the price chips. Each rail scrolls on its
+            own now, so the sectors are visible from the start of their line. */}
+        <ChipRail style={{ marginBottom: 'var(--space-2)' }}>
           <Chip
             size="sm"
             state={sort === 'score' ? 'selected' : 'default'}
@@ -103,6 +109,8 @@ export function ExploreScreen() {
               {'$'.repeat(pt)}
             </Chip>
           ))}
+        </ChipRail>
+        <ChipRail aria-label="Filtrar por sector" style={{ marginBottom: 'var(--space-4)' }}>
           {neighborhoods.data?.neighborhoods.map((n) => (
             <Chip
               key={n.slug}

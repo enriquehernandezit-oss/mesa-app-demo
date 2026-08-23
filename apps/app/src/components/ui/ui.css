@@ -232,8 +232,9 @@
   border-color: var(--accent);
   color: var(--on-accent);
 }
-/* Small chip = the Phase 6 filter-rail chip: mono, 8px radius, card fill;
-   active/selected fills with a brass wash. */
+/* Small chip = the Phase 6 filter-rail chip: mono, pill, card fill. Bumped
+   9px → 10px: these are interactive filter controls, not decorative metadata,
+   and 9px mono sat below a comfortable tap-read size. */
 .mesa-chip--sm {
   padding: 6px 11px;
   border-radius: var(--radius-pill);
@@ -241,14 +242,17 @@
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 400;
 }
+/* Selected fills solid brass (matching the md chip) rather than a 10% wash —
+   against the near-white unselected chips the wash read as LESS prominent than
+   the options it was chosen over, inverting the signal. */
 .mesa-chip--sm.mesa-chip--active,
 .mesa-chip--sm.mesa-chip--selected {
-  background: var(--brass-wash);
-  border-color: var(--brass-line-soft);
-  color: var(--accent-strong);
+  background: var(--accent-fill);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 /* Horizontal scrolling chip row — filters, rank search, activity. */

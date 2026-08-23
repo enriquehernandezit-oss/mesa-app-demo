@@ -206,7 +206,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
         />
       </label>
       <label className="profile-edit__field">
-        <span className="profile-edit__label">Barrio</span>
+        <span className="profile-edit__label">Sector</span>
         <select className="field" value={currentSlug} onChange={(e) => setSlug(e.target.value)}>
           <option value="" disabled>
             ¿Dónde sales?

@@ -940,7 +940,7 @@ function AddPlaceForm({
       />
       <select className="field" value={slug} onChange={(e) => setSlug(e.target.value)}>
         <option value="" disabled>
-          Barrio
+          Sector
         </option>
         {neighborhoods.data?.neighborhoods.map((n) => (
           <option key={n.slug} value={n.slug}>

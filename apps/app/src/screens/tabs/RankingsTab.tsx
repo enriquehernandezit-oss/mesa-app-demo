@@ -113,7 +113,7 @@ export function RankingsTab() {
           Quiero probar
         </Chip>
         <Chip state={tab === 'barrios' ? 'selected' : 'default'} onClick={() => setTab('barrios')}>
-          Barrios
+          Sectores
         </Chip>
       </div>
 

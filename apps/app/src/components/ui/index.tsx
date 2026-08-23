@@ -107,6 +107,10 @@ export const Chip = ({
 }: PropsWithChildren<ChipProps>) => (
   <button
     type="button"
+    // A selected/active chip is a toggle in the "pressed" state — announce it,
+    // so filter chips aren't silent to a screen reader (the sibling Toggle
+    // already does role="switch"/aria-checked). Default chips report unpressed.
+    aria-pressed={state !== 'default'}
     className={cx(
       'mesa-chip',
       size === 'sm' && 'mesa-chip--sm',
