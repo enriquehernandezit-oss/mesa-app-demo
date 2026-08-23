@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { comingSoon } from '../lib/comingSoon'
 import { ActionRail } from './ui'
 
 // The quick-action rail shared by the feed (A1–A3) and Explore (F1): Reserve ·
@@ -8,10 +9,22 @@ import { ActionRail } from './ui'
 export function QuickActions() {
   return (
     <ActionRail>
-      <button type="button" className="upill" data-stale aria-disabled>
+      <button
+        type="button"
+        className="upill"
+        data-stale
+        aria-disabled
+        onClick={() => comingSoon('Reservar llega pronto a Mesa.')}
+      >
         <span className="upill__icon">◉</span> Reservar
       </button>
-      <button type="button" className="upill" data-stale aria-disabled>
+      <button
+        type="button"
+        className="upill"
+        data-stale
+        aria-disabled
+        onClick={() => comingSoon('Pedir a domicilio llega pronto a Mesa.')}
+      >
         <span className="upill__icon">▤</span> Pedir
       </button>
       <Link to="/map" className="upill">

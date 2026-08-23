@@ -154,6 +154,19 @@
     color: var(--accent);
   }
 }
+/* Inert-by-design pill (Reserve / Order): render live, but signal "not wired
+   yet" with a dashed outline — present, not greyed-out — and don't brighten to
+   full brass on hover, since that would falsely promise a live action. The tap
+   still fires a "coming soon" toast (see lib/comingSoon.ts). */
+.upill[data-stale] {
+  border-style: dashed;
+}
+@media (hover: hover) and (pointer: fine) {
+  .upill[data-stale]:hover {
+    border-color: var(--brass-line);
+    color: var(--accent-strong);
+  }
+}
 .upill__icon {
   display: inline-flex;
 }

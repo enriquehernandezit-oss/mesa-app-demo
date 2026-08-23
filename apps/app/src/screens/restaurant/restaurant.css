@@ -283,6 +283,11 @@
 .resto-time--more {
   color: var(--text-muted);
 }
+/* Inert-by-design (no booking supply yet): a dashed edge marks the slot as
+   provisional without greying it out; the tap explains itself via a toast. */
+.resto-time[data-stale] {
+  border-style: dashed;
+}
 
 /* "See all N rankings" expander + "+ Add a dish" link. */
 .resto-seeall,

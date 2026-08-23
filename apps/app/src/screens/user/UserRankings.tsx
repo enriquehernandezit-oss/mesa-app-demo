@@ -6,6 +6,7 @@ import { Body, Button, Caption, Chip, SectionHeader, SerifItalic } from '../../c
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
+import { comingSoon } from '../../lib/comingSoon'
 import { displayScore } from '../../lib/display'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
@@ -152,7 +153,13 @@ export function UserRankings() {
             >
               {isFollowing ? 'Siguiendo' : 'Seguir'}
             </Button>
-            <button type="button" className="user-message" data-stale aria-disabled>
+            <button
+              type="button"
+              className="user-message"
+              data-stale
+              aria-disabled
+              onClick={() => comingSoon('Los mensajes llegan pronto a Mesa.')}
+            >
               Mensaje
             </button>
           </div>

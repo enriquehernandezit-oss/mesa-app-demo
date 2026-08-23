@@ -3,6 +3,7 @@ import { Body, Button, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { seatsLeft, tonightTable } from '../../fixtures/tonight'
+import { comingSoon } from '../../lib/comingSoon'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
@@ -65,10 +66,22 @@ export function TonightDetail() {
         />
 
         <div className="resto-pills" style={{ marginTop: 'var(--space-4)' }}>
-          <button type="button" className="upill" data-stale aria-disabled>
+          <button
+            type="button"
+            className="upill"
+            data-stale
+            aria-disabled
+            onClick={() => comingSoon('El sitio web llega pronto a Mesa.')}
+          >
             <span className="upill__icon">◉</span> Sitio web
           </button>
-          <button type="button" className="upill" data-stale aria-disabled>
+          <button
+            type="button"
+            className="upill"
+            data-stale
+            aria-disabled
+            onClick={() => comingSoon('Llamar llega pronto a Mesa.')}
+          >
             <span className="upill__icon">☏</span> Llamar
           </button>
           <a className="upill" href={mapsUrl} target="_blank" rel="noreferrer">
@@ -124,7 +137,13 @@ export function TonightDetail() {
       </div>
 
       <div className="resto-cta-bar">
-        <Button variant="primary" data-stale aria-disabled disabled={left === 0}>
+        <Button
+          variant="primary"
+          data-stale
+          aria-disabled
+          disabled={left === 0}
+          onClick={() => comingSoon('Unirte a una mesa llega pronto a Mesa.')}
+        >
           {left === 0 ? 'Mesa llena' : 'Tomar un puesto'}
         </Button>
       </div>

@@ -8,6 +8,7 @@ import { ThemePicker } from '../../components/ui/ThemePicker'
 import { useProfile } from '../../hooks/useProfile'
 import { ApiError, api } from '../../lib/api'
 import { authClient, signOut } from '../../lib/auth-client'
+import { comingSoon } from '../../lib/comingSoon'
 import {
   getFriendsOnlyScores,
   getStealthMode,
@@ -247,11 +248,23 @@ export function SettingsScreen() {
         <Eyebrow className="settings-eyebrow">Cuenta</Eyebrow>
         <div className="settings-group">
           {/* Notifications + Invites are inert-by-design (no backend yet). */}
-          <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
+          <button
+            type="button"
+            className="settings-row settings-row--btn"
+            data-stale
+            aria-disabled
+            onClick={() => comingSoon('Las notificaciones llegan pronto a Mesa.')}
+          >
             <span>Notificaciones</span>
             <span className="settings-row__meta">›</span>
           </button>
-          <button type="button" className="settings-row settings-row--btn" data-stale aria-disabled>
+          <button
+            type="button"
+            className="settings-row settings-row--btn"
+            data-stale
+            aria-disabled
+            onClick={() => comingSoon('Las invitaciones llegan pronto a Mesa.')}
+          >
             <span>Invitaciones</span>
             <span className="settings-row__meta settings-row__meta--mono">4 restantes</span>
           </button>

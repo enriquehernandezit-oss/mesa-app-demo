@@ -9,6 +9,7 @@ import {
   seatsLeft,
   tonightDateLabel,
 } from '../../fixtures/tonight'
+import { comingSoon } from '../../lib/comingSoon'
 import '../tabs/tabs.css'
 import '../tabs/feed.css'
 import './tonight.css'
@@ -114,6 +115,7 @@ function TableCard({ table: t }: { table: TonightTable }) {
             data-stale
             aria-disabled
             disabled={left === 0}
+            onClick={() => comingSoon('Unirte a una mesa llega pronto a Mesa.')}
           >
             {left === 0 ? 'Lleno' : 'Unirme'}
           </button>

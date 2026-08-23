@@ -5,6 +5,7 @@ import { Body, Button, Eyebrow, SectionHeader, SerifItalic } from '../../compone
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api, apiOrigin } from '../../lib/api'
+import { comingSoon } from '../../lib/comingSoon'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
@@ -257,6 +258,7 @@ export function RestaurantProfile() {
               className={`resto-time${slot === 'more' ? ' resto-time--more' : ''}`}
               data-stale
               aria-disabled
+              onClick={() => comingSoon('Reservar una mesa llega pronto a Mesa.')}
             >
               {slot}
             </button>
