@@ -5,6 +5,7 @@ import {
   Body,
   Button,
   Caption,
+  Card,
   Chip,
   ChipRail,
   Eyebrow,
@@ -27,7 +28,14 @@ import {
   nextComparison,
   tie,
 } from '../../lib/pairwise'
-import type { MeResponse, NewRestaurant, Ranking, RestaurantProfileResponse } from '../../lib/types'
+import { markRankExplainerSeen, rankExplainerSeen } from '../../lib/rankExplainer'
+import type {
+  MeResponse,
+  NewRestaurant,
+  Ranking,
+  RestaurantProfileResponse,
+  SavedPlace,
+} from '../../lib/types'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
 import '../../styles/screens.css'
@@ -65,6 +73,13 @@ export function RankAPlace() {
     queryKey: ['rankings'],
     queryFn: () => api.get<{ rankings: Ranking[] }>('/rankings'),
   })
+  // Want-to-try order — the honest "recency" signal for the find-step's lead
+  // group (there's no visit-history to draw on, but a saved place is a real
+  // signal the user meant to come back and rank it).
+  const saved = useQuery({
+    queryKey: ['saved'],
+    queryFn: () => api.get<{ saved: SavedPlace[] }>('/saved'),
+  })
   const me = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get<MeResponse>('/me'),
@@ -75,7 +90,6 @@ export function RankAPlace() {
   const [pickedId, setPickedId] = useState<string | null>(search.restaurant ?? null)
   const [addedPlace, setAddedPlace] = useState<Item | null>(null)
   const [pickQuery, setPickQuery] = useState('')
-  const [priceFilter, setPriceFilter] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [reserveOnly, setReserveOnly] = useState(false)
   const [nearby, setNearby] = useState(false)
@@ -103,6 +117,14 @@ export function RankAPlace() {
     [mine.data],
   )
   const candList = candidates.data?.restaurants ?? []
+  // Most-recently-saved first — the find-step's "Quiero probar" lead group.
+  const wantToTryIds = useMemo(
+    () =>
+      [...(saved.data?.saved ?? [])]
+        .sort((a, b) => b.savedAt.localeCompare(a.savedAt))
+        .map((s) => s.restaurant.id),
+    [saved.data],
+  )
 
   // Resolve the picked spot from candidates, my list, or a just-added place.
   const picked = useMemo<Item | null>(() => {
@@ -223,10 +245,9 @@ export function RankAPlace() {
       <FindStep
         candList={candList}
         existing={existing}
+        wantToTryIds={wantToTryIds}
         query={pickQuery}
         setQuery={setPickQuery}
-        priceFilter={priceFilter}
-        setPriceFilter={setPriceFilter}
         openNow={openNow}
         setOpenNow={setOpenNow}
         reserveOnly={reserveOnly}
@@ -525,6 +546,9 @@ function PlaceStep({
   // the displayed total always matches the path actually being taken instead
   // of stalling at a stale "N de M" once the real count runs past it.
   const [answered, setAnswered] = useState(0)
+  // First-run "how it works" coachmark — reads localStorage only on mount
+  // (StrictMode-safe: the write happens on explicit dismiss, not here).
+  const [showCoach, setShowCoach] = useState(() => !rankExplainerSeen())
   const comparison = nextComparison(state)
   const done = comparison === null && isDone(state)
 
@@ -584,6 +608,58 @@ function PlaceStep({
           }}
         />
       </div>
+      {showCoach && (
+        <RankCoachmark
+          onDismiss={() => {
+            markRankExplainerSeen()
+            setShowCoach(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// First-run explainer for the pairwise mechanic — the one non-self-evident
+// step in an otherwise clear flow. Never blocks: tapping the scrim or the CTA
+// both dismiss, and answering the comparison underneath is never gated.
+function RankCoachmark({ onDismiss }: { onDismiss: () => void }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setMounted(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  // Keyboard users dismiss via Escape or the "Entendido" button — the scrim's
+  // click-to-dismiss is a mouse-only convenience layered on top, same as any
+  // modal backdrop, so it isn't itself a focusable/keyboard target.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDismiss()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onDismiss])
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: mouse-only backdrop convenience; Escape (above) and the CTA button are the real keyboard paths
+    <div className="rank-coach-scrim" data-mounted={mounted} onClick={onDismiss}>
+      <Card className="rank-coach" onClick={(e) => e.stopPropagation()}>
+        <Eyebrow>Cómo funciona</Eyebrow>
+        <Title style={{ marginTop: 'var(--space-2)' }}>Sin estrellas. Solo comparas.</Title>
+        {/* Purely illustrative — the Body text below carries the real
+            explanation, so these are hidden from assistive tech rather than
+            announced as buttons that do nothing. */}
+        <div className="rank-coach__demo" aria-hidden="true">
+          <Chip size="sm" state="selected" tabIndex={-1}>
+            Este
+          </Chip>
+          <Chip size="sm" tabIndex={-1}>
+            O este
+          </Chip>
+        </div>
+        <Body className="rank-coach__body">
+          Te mostramos dos spots a la vez. Eliges el que estuvo mejor, unas cuantas veces, y con eso
+          encontramos el orden exacto de tu lista — la puntuación sale de ahí.
+        </Body>
+        <Button onClick={onDismiss}>Entendido</Button>
+      </Card>
     </div>
   )
 }
@@ -602,14 +678,15 @@ function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
 }
 
 // B1 — Find the place. Merged rows (ranked show their score, unranked "not
-// ranked"), four filter chips, and an "Add a new restaurant" footer.
+// ranked"), filter chips, a "Quiero probar" lead group when browsing
+// unfiltered (the fast path for "rank last night's dinner" — see
+// docs/UX_NEXT_STEPS.md §3), and an "Add a new restaurant" footer.
 function FindStep({
   candList,
   existing,
+  wantToTryIds,
   query,
   setQuery,
-  priceFilter,
-  setPriceFilter,
   openNow,
   setOpenNow,
   reserveOnly,
@@ -623,10 +700,9 @@ function FindStep({
 }: {
   candList: Item[]
   existing: Item[]
+  wantToTryIds: string[]
   query: string
   setQuery: (v: string) => void
-  priceFilter: number | null
-  setPriceFilter: (v: number | null) => void
   openNow: boolean
   setOpenNow: (v: (p: boolean) => boolean) => void
   reserveOnly: boolean
@@ -647,8 +723,7 @@ function FindStep({
   const [adding, setAdding] = useState(false)
   const q = query.trim().toLowerCase()
   const merged: Item[] = [...candList, ...existing]
-  let results = merged.filter((r) => {
-    if (priceFilter && r.priceTier !== priceFilter) return false
+  let filtered = merged.filter((r) => {
     if (openNow && !r.closesAt) return false
     if (reserveOnly && !r.phone) return false
     if (!q) return true
@@ -659,13 +734,50 @@ function FindStep({
     )
   })
   if (nearby && myHood) {
-    results = [...results].sort((a, b) => {
+    filtered = [...filtered].sort((a, b) => {
       const am = a.neighborhood === myHood ? 0 : 1
       const bm = b.neighborhood === myHood ? 0 : 1
       return am - bm || a.name.localeCompare(b.name)
     })
   } else {
-    results = [...results].sort((a, b) => a.name.localeCompare(b.name))
+    filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  // Once actively searching by name, a flat list is enough — the lead group
+  // only earns its place on the unfiltered "just browsing" screen.
+  const leadGroup = q
+    ? []
+    : wantToTryIds
+        .map((id) => filtered.find((r) => r.id === id))
+        .filter((r): r is Item => Boolean(r))
+  const leadIds = new Set(leadGroup.map((r) => r.id))
+  const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
+
+  const renderRow = (r: Item) => {
+    const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
+    return (
+      <button key={r.id} type="button" className="rank-row" onClick={() => onPick(r.id)}>
+        {thumb ? (
+          <img className="rank-row__thumb" src={thumb} alt="" loading="lazy" />
+        ) : (
+          <div className="rank-row__thumb" />
+        )}
+        <div className="rank-row__main">
+          <div className="rank-row__name">{r.name}</div>
+          <Characteristics
+            priceTier={r.priceTier}
+            cuisine={r.cuisine}
+            neighborhood={r.neighborhood}
+            hours={r.closesAt ? `hasta ${r.closesAt}` : null}
+          />
+        </div>
+        {r.score != null ? (
+          <div className="rank-row__score">{displayScore(r.score)}</div>
+        ) : (
+          <span className="rank-row__badge">sin rankear</span>
+        )}
+      </button>
+    )
   }
 
   return (
@@ -704,50 +816,26 @@ function FindStep({
         >
           Reservar
         </Chip>
-        {[1, 2, 3, 4].map((pt) => (
-          <Chip
-            key={pt}
-            size="sm"
-            state={priceFilter === pt ? 'selected' : 'default'}
-            onClick={() => setPriceFilter(priceFilter === pt ? null : pt)}
-          >
-            {'$'.repeat(pt)}
-          </Chip>
-        ))}
       </ChipRail>
 
       <div className="rank-results" style={{ marginTop: 'var(--space-4)' }}>
-        {results.length === 0 && !q ? (
+        {leadGroup.length === 0 && results.length === 0 && !q ? (
           <Body>Ya rankeaste todo en Mesa. 👏</Body>
-        ) : results.length === 0 ? (
+        ) : leadGroup.length === 0 && results.length === 0 ? (
           <Body>Nada coincide. Prueba con otro nombre.</Body>
         ) : (
-          results.map((r) => {
-            const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
-            return (
-              <button key={r.id} type="button" className="rank-row" onClick={() => onPick(r.id)}>
-                {thumb ? (
-                  <img className="rank-row__thumb" src={thumb} alt="" loading="lazy" />
-                ) : (
-                  <div className="rank-row__thumb" />
-                )}
-                <div className="rank-row__main">
-                  <div className="rank-row__name">{r.name}</div>
-                  <Characteristics
-                    priceTier={r.priceTier}
-                    cuisine={r.cuisine}
-                    neighborhood={r.neighborhood}
-                    hours={r.closesAt ? `hasta ${r.closesAt}` : null}
-                  />
-                </div>
-                {r.score != null ? (
-                  <div className="rank-row__score">{displayScore(r.score)}</div>
-                ) : (
-                  <span className="rank-row__badge">sin rankear</span>
-                )}
-              </button>
-            )
-          })
+          <>
+            {leadGroup.length > 0 && (
+              <>
+                <Eyebrow style={{ fontFamily: 'var(--font-mono)' }}>Quiero probar</Eyebrow>
+                {leadGroup.map(renderRow)}
+                <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-3)' }}>
+                  Todos
+                </Eyebrow>
+              </>
+            )}
+            {results.map(renderRow)}
+          </>
         )}
         {adding ? (
           <AddPlaceForm addPlace={addPlace} onCancel={() => setAdding(false)} />

@@ -18,7 +18,7 @@
   text-decoration: none;
 }
 .settings-id--link {
-  transition: background 0.12s ease;
+  transition: background var(--dur-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .settings-id--link:hover {
@@ -74,7 +74,7 @@
 .settings-row--btn,
 .settings-row--link {
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--dur-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .settings-row--btn:hover,

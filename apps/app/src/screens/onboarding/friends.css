@@ -49,7 +49,8 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 600;
-  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, color
+    var(--dur-fast) ease;
 }
 .friend-follow--on {
   background: var(--accent-fill);

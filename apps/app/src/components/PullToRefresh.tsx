@@ -41,30 +41,38 @@ export function PullToRefresh({
     }
   }
 
+  // A fixed-height clipped track (never animated) with the spinner slid in via
+  // transform — height/layout properties trigger layout+paint on every drag
+  // frame; transform/opacity are compositor-only. Dragging gets no transition
+  // (1:1 with the finger); releasing settles with --ease-out.
+  const maxHeight = THRESHOLD * 1.4
+  const dragging = startY.current !== null
   return (
     <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
-      <div
-        aria-hidden
-        style={{
-          height: pull,
-          transition: startY.current === null ? 'height .25s ease' : undefined,
-          display: 'grid',
-          placeItems: 'center',
-          overflow: 'hidden',
-        }}
-      >
+      <div aria-hidden style={{ height: maxHeight, overflow: 'hidden' }}>
         <div
           style={{
-            width: 22,
-            height: 22,
-            borderRadius: '50%',
-            border: '2px solid var(--line)',
-            borderTopColor: 'var(--accent)',
-            opacity: Math.min(pull / THRESHOLD, 1),
-            transform: `rotate(${pull * 3}deg)`,
-            animation: refreshing ? 'mesa-spin .8s linear infinite' : undefined,
+            display: 'grid',
+            placeItems: 'center',
+            height: maxHeight,
+            transform: `translateY(${pull - maxHeight}px)`,
+            transition: dragging ? undefined : 'transform var(--dur-base) var(--ease-out)',
           }}
-        />
+        >
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              border: '2px solid var(--line)',
+              borderTopColor: 'var(--accent)',
+              opacity: Math.min(pull / THRESHOLD, 1),
+              transform: `rotate(${pull * 3}deg)`,
+              transition: dragging ? undefined : 'opacity var(--dur-base) var(--ease-out)',
+              animation: refreshing ? 'mesa-spin .8s linear infinite' : undefined,
+            }}
+          />
+        </div>
       </div>
       {children}
     </div>

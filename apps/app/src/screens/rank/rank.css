@@ -170,3 +170,41 @@
   font-size: 10px;
   letter-spacing: 0.04em;
 }
+
+/* B2 — first-run "how it works" coachmark over the pairwise compare step.
+   Rare/first-time moment — --ease-spring is licensed here (the one place
+   outside cheers/stamp where a little overshoot fits); the scrim itself stays
+   on --ease-out since a dimming fade is never a celebration. */
+.rank-coach-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  background: var(--overlay-scrim);
+  opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.rank-coach-scrim[data-mounted="false"] {
+  opacity: 0;
+}
+.rank-coach {
+  width: 100%;
+  margin: var(--space-4);
+  border-top: 2px solid var(--brass-line);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform var(--dur-slow) var(--ease-spring), opacity var(--dur-slow) var(--ease-out);
+}
+.rank-coach-scrim[data-mounted="false"] .rank-coach {
+  transform: translateY(16px);
+  opacity: 0;
+}
+.rank-coach__demo {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+.rank-coach__body {
+  margin-bottom: var(--space-4);
+}

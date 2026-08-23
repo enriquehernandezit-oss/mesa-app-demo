@@ -123,7 +123,7 @@
 }
 .scorebadge__sub {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   color: var(--text-muted);
   text-align: center;
   margin-top: 2px;
@@ -146,7 +146,7 @@
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 @media (hover: hover) and (pointer: fine) {
   .upill:hover {

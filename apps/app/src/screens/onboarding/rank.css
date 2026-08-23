@@ -17,7 +17,7 @@
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--text);
-  transition: border-color 0.12s ease, background 0.12s ease;
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 .rank-pick--on {
   border-color: var(--accent);
@@ -85,7 +85,7 @@
   border: 0;
   border-bottom: 1px solid var(--line);
   background: transparent;
-  transition: opacity 0.12s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 .rank-row:active {
   opacity: 0.6;
@@ -132,6 +132,21 @@
   line-height: 0.9;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+  /* The rare payoff moment (once per rank, never the frequent compare
+     screen) — a settle earns --ease-spring, alongside stamp-in/cheers-pop.
+     Reduced motion zeroes animation-duration globally, so it lands on the
+     final frame immediately instead of counting up. */
+  animation: score-settle 0.5s var(--ease-spring) both;
+}
+@keyframes score-settle {
+  0% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 .rank-neighbors {
   margin-top: var(--space-6);

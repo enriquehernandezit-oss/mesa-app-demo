@@ -18,7 +18,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-body);
   text-decoration: none;
-  transition: background 0.12s ease;
+  transition: background var(--dur-fast) ease;
 }
 .profile-nav__row:last-child {
   border-bottom: 0;

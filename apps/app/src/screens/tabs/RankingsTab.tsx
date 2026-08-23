@@ -3,10 +3,12 @@ import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
 import { Characteristics } from '../../components/ui/patterns'
+import { toast } from '../../components/ui/toast-store'
 import { useProfile } from '../../hooks/useProfile'
 import { api, apiOrigin } from '../../lib/api'
 import { displayScore, tagLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
+import { removeRankingWithUndo } from '../../lib/rankingRemoval'
 import { renderListCard, shareCard } from '../../lib/shareCard'
 import type { MeStats, Ranking, SavedPlace } from '../../lib/types'
 import './tabs.css'
@@ -209,7 +211,6 @@ function EmptyMine() {
 function RankingRow({ ranking }: { ranking: Ranking }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
-  const [confirmingRemove, setConfirmingRemove] = useState(false)
   const [draft, setDraft] = useState(ranking.note ?? '')
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['rankings'] })
@@ -220,10 +221,13 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
       setEditing(false)
       invalidate()
     },
-  })
-  const remove = useMutation({
-    mutationFn: () => api.del(`/rankings/${ranking.id}`),
-    onSuccess: invalidate,
+    onError: () => {
+      toast({
+        variant: 'error',
+        message: 'No se pudo guardar la nota',
+        action: { label: 'Intentar de nuevo', onClick: () => saveNote.mutate() },
+      })
+    },
   })
 
   const thumb = cloudinaryUrl(ranking.restaurant.coverImageId, { w: 160, h: 160 })
@@ -297,39 +301,16 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
           <>
             {ranking.note && <div className="ranking-note">“{ranking.note}”</div>}
             <div className="ranking-actions">
-              {confirmingRemove ? (
-                <>
-                  <button
-                    type="button"
-                    className="link-action link-action--danger"
-                    onClick={() => remove.mutate()}
-                    disabled={remove.isPending}
-                  >
-                    {remove.isPending ? 'Quitando…' : 'Confirmar'}
-                  </button>
-                  <button
-                    type="button"
-                    className="link-action"
-                    onClick={() => setConfirmingRemove(false)}
-                    disabled={remove.isPending}
-                  >
-                    Cancelar
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button type="button" className="link-action" onClick={() => setEditing(true)}>
-                    {ranking.note ? 'Editar nota' : 'Agregar nota'}
-                  </button>
-                  <button
-                    type="button"
-                    className="link-action link-action--danger"
-                    onClick={() => setConfirmingRemove(true)}
-                  >
-                    Quitar
-                  </button>
-                </>
-              )}
+              <button type="button" className="link-action" onClick={() => setEditing(true)}>
+                {ranking.note ? 'Editar nota' : 'Agregar nota'}
+              </button>
+              <button
+                type="button"
+                className="link-action link-action--danger"
+                onClick={() => removeRankingWithUndo(ranking)}
+              >
+                Quitar
+              </button>
             </div>
           </>
         )}
@@ -345,6 +326,13 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
   const remove = useMutation({
     mutationFn: () => api.del(`/saved/${saved.restaurant.id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved'] }),
+    onError: () => {
+      toast({
+        variant: 'error',
+        message: 'No se pudo quitar de tu lista',
+        action: { label: 'Intentar de nuevo', onClick: () => remove.mutate() },
+      })
+    },
   })
   return (
     <div className="saved-row">

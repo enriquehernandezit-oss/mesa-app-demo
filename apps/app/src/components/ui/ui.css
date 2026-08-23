@@ -66,7 +66,8 @@
   font-size: var(--text-label);
   font-weight: 600;
   letter-spacing: 0.01em;
-  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
+  transition: transform var(--dur-fast) ease, opacity var(--dur-fast) ease, background
+    var(--dur-fast) ease;
 }
 .mesa-btn:active {
   transform: scale(0.985);
@@ -199,7 +200,8 @@
   font-family: var(--font-ui);
   font-size: var(--text-label);
   font-weight: 500;
-  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease, color
+    var(--dur-fast) ease;
 }
 .mesa-chip--active {
   border-color: var(--accent);

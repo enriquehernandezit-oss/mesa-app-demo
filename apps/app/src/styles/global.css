@@ -138,9 +138,10 @@ select {
 .avatar-btn:active,
 .explore-row:active,
 .explore-member:active,
-.saved-row:active {
+.saved-row:active,
+.toast__action:active {
   transform: scale(0.97);
-  transition: transform 0.12s var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 /* Warm photo veil (Phase 6) — any photo container gets `.ph`. The veil + grain
