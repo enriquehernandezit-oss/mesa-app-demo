@@ -18,6 +18,7 @@ import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
 import type { ExploreMember, ExploreResponse, Neighborhood } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../tabs/feed.css'
 import './explore.css'
@@ -31,6 +32,7 @@ const PRICES = [1, 2, 3, 4]
 
 export function ExploreScreen() {
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
   const [price, setPrice] = useState<number | null>(null)
@@ -64,7 +66,7 @@ export function ExploreScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
         <div className="tab-header">
           <Eyebrow>Explorar</Eyebrow>
           <Title>Encuentra un spot</Title>

@@ -6,6 +6,7 @@ import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
 import type { ListDetailResponse } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../explore/explore.css'
 import './list.css'
@@ -15,6 +16,7 @@ import './list.css'
 export function ListScreen() {
   const { slug } = useParams({ from: '/lists/$slug' })
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const q = useQuery({
     queryKey: ['list', slug],
     queryFn: () => api.get<ListDetailResponse>(`/lists/${slug}`),
@@ -26,7 +28,7 @@ export function ListScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
 
         {q.isPending ? (
           <Body style={{ marginTop: 'var(--space-4)' }}>Cargando…</Body>

@@ -11,6 +11,7 @@ import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import { getFriendsOnlyScores } from '../../lib/prefs'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
 import type { Dish, RestaurantProfileResponse } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../dish/dish.css'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
@@ -28,6 +29,7 @@ const RESERVE_SLOTS = ['7:00p', '7:15p', '9:30p', 'más']
 export function RestaurantProfile() {
   const { restaurantId } = useParams({ from: '/r/$restaurantId' })
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const queryClient = useQueryClient()
 
   const q = useQuery({
@@ -58,11 +60,7 @@ export function RestaurantProfile() {
     return (
       <div className="resto-screen">
         <div className="resto-content">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => navigate({ to: '/discover' })}
-          >
+          <button type="button" className="link-action" onClick={goBack}>
             ← Atrás
           </button>
           <div className="tab-empty">
@@ -117,21 +115,12 @@ export function RestaurantProfile() {
 
   return (
     <div className="resto-screen">
-      <CondensedHeader
-        name={restaurant.name}
-        score={allMesa.avg}
-        onBack={() => navigate({ to: '/discover' })}
-      />
+      <CondensedHeader name={restaurant.name} score={allMesa.avg} onBack={goBack} />
 
       {/* Film-photo hero — clean image, floating controls; identity sits below. */}
       <div className={`resto-photo${cover ? '' : ' resto-photo--empty'}`}>
         {cover && <img src={cover} alt={restaurant.name} />}
-        <button
-          type="button"
-          className="resto-back"
-          onClick={() => navigate({ to: '/discover' })}
-          aria-label="Atrás"
-        >
+        <button type="button" className="resto-back" onClick={goBack} aria-label="Atrás">
           ←
         </button>
         <button

@@ -5,6 +5,7 @@ import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/pa
 import { api } from '../../lib/api'
 import { filterForGrain } from '../../lib/image'
 import type { DishDetail as DishDetailData } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
 import './dish.css'
@@ -15,6 +16,7 @@ import './dish.css'
 export function DishDetail() {
   const { dishId } = useParams({ from: '/dish/$dishId' })
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const q = useQuery({
     queryKey: ['dish', dishId],
     queryFn: () => api.get<{ dish: DishDetailData }>(`/dishes/${dishId}`),
@@ -31,7 +33,7 @@ export function DishDetail() {
   if (q.isError || !q.data) {
     return (
       <div className="screen">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/discover' })}>
+        <button type="button" className="link-action" onClick={goBack}>
           ‹ Atrás
         </button>
         <div className="tab-empty">
@@ -50,14 +52,7 @@ export function DishDetail() {
     <div className="dish-detail">
       <div className="resto-photo dish-hero">
         <img src={dish.imageId} alt={dish.name} style={{ filter: filterForGrain(dish.grain) }} />
-        <button
-          type="button"
-          className="resto-back"
-          onClick={() =>
-            navigate({ to: '/r/$restaurantId', params: { restaurantId: restaurant.id } })
-          }
-          aria-label="Atrás"
-        >
+        <button type="button" className="resto-back" onClick={goBack} aria-label="Atrás">
           ‹
         </button>
         <span className="resto-photo__tag">film · {dish.grain}</span>

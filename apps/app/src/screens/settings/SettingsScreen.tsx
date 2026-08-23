@@ -15,6 +15,7 @@ import {
   setStealthMode,
 } from '../../lib/prefs'
 import type { BlockedUser, MeStats, Ranking } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../tabs/profile.css'
 import './settings.css'
@@ -24,6 +25,7 @@ import './settings.css'
 // legal copy points here ("Profile → settings"). Full-screen, no tab bar.
 export function SettingsScreen() {
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/profile' }))
   const queryClient = useQueryClient()
   const { data } = useProfile(true)
   const p = data?.profile
@@ -123,7 +125,7 @@ export function SettingsScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/profile' })} backLabel="Ajustes" />
+        <ScreenHeader onBack={goBack} backLabel="Ajustes" />
 
         {/* Tappable profile card → /profile. */}
         <Link to="/profile" className="settings-id settings-id--link">

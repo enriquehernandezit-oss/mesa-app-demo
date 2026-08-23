@@ -10,6 +10,7 @@ import { displayScore } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
 import type { ActivityItem } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
 import './activity.css'
@@ -43,6 +44,7 @@ const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
 // the bell's badge. (Table activity arrives with the Tonight fixtures.)
 export function ActivityScreen() {
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('all')
   const q = useQuery({
@@ -71,7 +73,7 @@ export function ActivityScreen() {
     <div className="tab-shell">
       <div className="tab-body">
         <ScreenHeader
-          onBack={() => navigate({ to: '/discover' })}
+          onBack={goBack}
           backLabel="Actividad"
           right={
             <button type="button" className="activity-markread" onClick={markRead}>

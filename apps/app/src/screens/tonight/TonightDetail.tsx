@@ -3,6 +3,7 @@ import { Body, Button, SerifItalic } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { seatsLeft, tonightTable } from '../../fixtures/tonight'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
 import './tonight.css'
@@ -13,12 +14,13 @@ import './tonight.css'
 export function TonightDetail() {
   const { tableId } = useParams({ from: '/tonight/$tableId' })
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/tonight' }))
   const t = tonightTable(tableId)
 
   if (!t) {
     return (
       <div className="screen">
-        <button type="button" className="link-action" onClick={() => navigate({ to: '/tonight' })}>
+        <button type="button" className="link-action" onClick={goBack}>
           ‹ Atrás
         </button>
         <div className="tab-empty">
@@ -41,12 +43,7 @@ export function TonightDetail() {
           className="tonight-card__img"
           style={{ backgroundImage: `url(/restaurants/${t.restaurant.photo}.jpg)` }}
         />
-        <button
-          type="button"
-          className="resto-back"
-          onClick={() => navigate({ to: '/tonight' })}
-          aria-label="Atrás"
-        >
+        <button type="button" className="resto-back" onClick={goBack} aria-label="Atrás">
           ‹
         </button>
         <span className="resto-photo__tag">film · con velas</span>

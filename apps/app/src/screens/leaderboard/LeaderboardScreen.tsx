@@ -7,6 +7,7 @@ import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import type { LeaderboardRow } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
 import './leaderboard.css'
@@ -15,6 +16,7 @@ import './leaderboard.css'
 // design: brass serif numerals, no badges, the brand's version of gamification.
 export function LeaderboardScreen() {
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const [period, setPeriod] = useState<'all' | 'month'>('month')
   const q = useQuery({
     queryKey: ['leaderboard', period],
@@ -29,7 +31,7 @@ export function LeaderboardScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
         <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>Clasificación</Title>

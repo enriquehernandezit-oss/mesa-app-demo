@@ -8,6 +8,7 @@ import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
 import type { Ranking, UserRankingsResponse } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../tabs/rankings.css'
 import '../onboarding/friends.css'
@@ -22,6 +23,7 @@ const REASONS = ['Spam', 'Acoso', 'Inapropiado', 'Otro'] as const
 export function UserRankings() {
   const { userId } = useParams({ from: '/u/$userId' })
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
@@ -81,7 +83,7 @@ export function UserRankings() {
     return (
       <div className="tab-shell">
         <div className="tab-body">
-          <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
+          <ScreenHeader onBack={goBack} backLabel="Atrás" />
           <div className="tab-empty">
             <SerifItalic style={{ fontSize: '1.15rem' }}>
               {gone ? 'Este perfil no está disponible.' : 'No se pudo cargar este perfil.'}
@@ -101,7 +103,7 @@ export function UserRankings() {
     <div className="tab-shell">
       <div className="tab-body">
         <ScreenHeader
-          onBack={() => navigate({ to: '/discover' })}
+          onBack={goBack}
           backLabel={user.name || user.handle || 'Atrás'}
           right={
             <div className="user-menu-wrap" ref={menuWrapRef}>

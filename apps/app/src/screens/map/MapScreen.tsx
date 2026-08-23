@@ -7,6 +7,7 @@ import { api } from '../../lib/api'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import type { MapSpot } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import './map.css'
 
@@ -75,6 +76,7 @@ function pinRadius(friendCount: number): number {
 
 export function MapScreen() {
   const navigate = useNavigate()
+  const goBack = useBack(() => navigate({ to: '/discover' }))
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const q = useQuery({
@@ -92,7 +94,7 @@ export function MapScreen() {
   return (
     <div className="tab-shell">
       <div className="tab-body">
-        <ScreenHeader onBack={() => navigate({ to: '/discover' })} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
         <div className="tab-header">
           <Eyebrow>Santo Domingo</Eyebrow>
           <Title>El mapa</Title>
