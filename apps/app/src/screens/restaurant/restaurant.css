@@ -123,13 +123,15 @@
   height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: var(--photo-scrim-3);
+  /* A deeper scrim (0.65, was 0.55) so the light glyph keeps a dark backing even
+     over a bright cover photo, plus the design's on-photo legibility text-shadow
+     so the glyph stays defined on any image. Colour is the on-photo (light)
+     token in BOTH themes — light-on-dark-scrim is the DESIGN.md rule over
+     photography (the page --text was dark ink in Afternoon, measured 1.09:1). */
+  background: var(--photo-scrim-2);
   backdrop-filter: blur(8px);
-  /* These controls sit on a dark photo scrim in BOTH themes, so they take the
-     on-photo (light) glyph tokens, not the page --text — which is dark ink in
-     Afternoon and measured 1.09:1 here. Light-on-scrim is the DESIGN.md rule for
-     anything over photography. */
   color: var(--on-photo);
+  text-shadow: 0 1px 3px var(--shadow-text);
   font-size: 1.2rem;
   display: grid;
   place-items: center;

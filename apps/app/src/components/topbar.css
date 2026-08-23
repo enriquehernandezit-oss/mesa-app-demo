@@ -38,6 +38,10 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
+  /* Explicitly transparent: the one topbar control that's a <button> (share)
+     rather than an <a> otherwise falls through to the UA `buttonface` grey,
+     since the global button reset sets no background. */
+  background: transparent;
   color: var(--text-2);
   border: 1.5px solid var(--glyph-line);
   transition: color 0.15s ease, transform 0.15s var(--ease-out);
