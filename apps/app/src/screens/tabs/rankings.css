@@ -64,9 +64,10 @@
   font-family: var(--font-serif);
   font-size: 1.35rem;
   color: var(--accent-strong);
-  /* Proportional, not tabular: Cormorant's tabular figures box a leading "1"
-     wide enough to read as "1 8". Stat cells don't need column alignment. */
-  font-variant-numeric: proportional-nums;
+  /* Proportional (not tabular) so a leading "1" tucks in, and lining (not
+     Cormorant's default old-style) so a count like "0" reads as a zero, not a
+     lowercase "o". Stat cells don't need column alignment. */
+  font-variant-numeric: lining-nums proportional-nums;
   line-height: 1;
 }
 .stat__l {
@@ -163,7 +164,10 @@
   font-size: var(--text-rank);
   line-height: 1;
   color: var(--accent);
-  font-variant-numeric: tabular-nums;
+  /* lining-nums: Cormorant defaults to old-style figures, so a position "1"
+     rendered as a small-caps-looking "I" and "2,3" sat at x-height. Lining
+     figures read as the plain counting numbers a rank position must be. */
+  font-variant-numeric: lining-nums tabular-nums;
   min-width: 1.4em;
   text-align: center;
 }

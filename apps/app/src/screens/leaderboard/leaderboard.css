@@ -14,9 +14,9 @@
   font-size: 1.5rem;
   color: var(--accent);
   text-align: center;
-  /* Cormorant's tabular figures are boxed very wide — a leading "1" reads as
-     "1 8". Proportional figures tuck together correctly. */
-  font-variant-numeric: proportional-nums;
+  /* Proportional so a leading "1" tucks in, lining so the rank reads as a plain
+     number rather than Cormorant's old-style figures (a "1" looked like "I"). */
+  font-variant-numeric: lining-nums proportional-nums;
 }
 .lb-main {
   flex: 1;
@@ -49,5 +49,5 @@
   font-family: var(--font-serif);
   font-size: 1.3rem;
   color: var(--accent-strong);
-  font-variant-numeric: proportional-nums;
+  font-variant-numeric: lining-nums proportional-nums;
 }

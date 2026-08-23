@@ -114,6 +114,9 @@
   font-size: 1.5rem;
   line-height: 1;
   color: var(--accent-strong);
+  /* Lining figures — this is a rank ("#1") / streak count, not editorial text,
+     so it must read as plain numerals rather than Cormorant's old-style set. */
+  font-variant-numeric: lining-nums proportional-nums;
 }
 
 /* Edit-profile sheet. */

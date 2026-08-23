@@ -129,7 +129,11 @@
 .rank-reveal__score {
   font-family: var(--font-serif);
   font-size: 5.5rem; /* ~88px — the design's hero score */
-  line-height: 0.9;
+  /* Old-style figures stay here (they read as an editorial score, not a bug),
+     but at line-height 0.9 the "9"/"3"/etc. descenders overhung the box and
+     collided with the restaurant name below. 1.05 gives the box room to
+     contain them without visibly changing the score's vertical placement. */
+  line-height: 1.05;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
   /* The rare payoff moment (once per rank, never the frequent compare
