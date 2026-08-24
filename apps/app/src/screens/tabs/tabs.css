@@ -50,8 +50,9 @@
 /* --- Tab bar --- */
 .tab-bar {
   position: fixed;
-  left: 0;
-  right: 0;
+  /* The frame, not the window — see --frame-inset. */
+  left: var(--frame-inset);
+  right: var(--frame-inset);
   bottom: 0;
   display: flex;
   /* stretch so each link fills the bar height → a ≥44px tap target (was 31px). */

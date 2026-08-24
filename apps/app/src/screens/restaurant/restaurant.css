@@ -11,8 +11,8 @@
 .resto-condensed {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  left: var(--frame-inset);
+  right: var(--frame-inset);
   z-index: 20;
   display: flex;
   align-items: center;
@@ -64,8 +64,8 @@
 /* --- Fixed one-CTA bar — it never leaves (D2) --- */
 .resto-cta-bar {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: var(--frame-inset);
+  right: var(--frame-inset);
   bottom: 0;
   z-index: 15;
   padding: var(--space-3) var(--space-5) calc(var(--safe-bottom) + var(--space-3));

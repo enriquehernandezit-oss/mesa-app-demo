@@ -158,6 +158,19 @@
      proportions, not a "mobile web app" breakpoint. */
   --frame-max: 480px;
 
+  /* Horizontal gap between the viewport edge and the frame edge: 0 on phones,
+     half the leftover once the viewport is wider than --frame-max. Fixed
+     chrome that belongs to the app column (tab bar, restaurant CTA bar,
+     condensed header, toast viewport) uses this for its left/right instead of
+     0, so it spans the FRAME rather than the whole window. It has to be stated
+     per-element like this: a `position: fixed` box is laid out against the
+     viewport, and the only way to change that is to give an ancestor a
+     transform/filter/containment — all of which also break fixed's
+     scroll-independence, which is the whole point of the tab bar. The `50%`
+     resolves against the initial containing block (the viewport, excluding
+     scrollbars — unlike 50vw, which includes them). */
+  --frame-inset: max(0px, calc(50% - var(--frame-max) / 2));
+
   /* Motion — --ease-out for press feedback + entrances (no overshoot), and
      --ease-spring reserved for genuine celebration moments (cheers, stamp). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

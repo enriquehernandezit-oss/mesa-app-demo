@@ -181,6 +181,7 @@
   z-index: 30;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   background: var(--overlay-scrim);
   opacity: 1;
   transition: opacity var(--dur-base) var(--ease-out);
@@ -190,6 +191,12 @@
 }
 .rank-coach {
   width: 100%;
+  /* The scrim covers the whole window (dimming only part of it would look
+     broken), but the panel itself is app chrome — keep it to the frame, less
+     its own margins. Centering is the container's justify-content, not an auto
+     margin: auto margins collapse to 0 in a flex row with no free space, which
+     would drop the phone's 16px inset. */
+  max-width: calc(var(--frame-max) - 2 * var(--space-4));
   margin: var(--space-4);
   border-top: 2px solid var(--brass-line);
   transform: translateY(0);

@@ -11,9 +11,11 @@
   box-sizing: border-box;
 }
 
+/* Only html/body are pinned to the viewport. #root must NOT be — it has to be
+   free to grow to its content's height so (a) the document scrolls normally
+   and (b) its --bg paints the full page, not just the first viewport. */
 html,
-body,
-#root {
+body {
   height: 100%;
 }
 
@@ -45,21 +47,24 @@ body {
 
 /* The phone-width frame. On a tablet/desktop browser the app was stretching
    full-bleed — pills spanning the whole screen, cards blowing up well past
-   their designed proportions. `contain: layout` is doing real work here, not
-   just visual tidiness: per the CSS containing-block spec it makes #root the
-   containing block for every `position: fixed` descendant (the tab bar, the
-   restaurant CTA bar, the condensed header, the toast viewport, …), so their
-   existing `left: 0; right: 0` rules resolve against the FRAME's edges
-   instead of the viewport's — no per-component inset math needed anywhere
-   else. (Fixed-position scrims that intentionally cover the whole page —
-   the map sheet's backdrop, the rank coachmark's — are unaffected either
-   way, since covering everything is correct for those.) */
+   their designed proportions. This centers the app as a phone-width column
+   over the sunk ground on anything wider.
+
+   Deliberately plain: no `contain`, no `transform`, no `filter`, and no
+   `position: relative` it doesn't need. An earlier version used
+   `contain: layout` to make #root the containing block for the fixed chrome
+   (so `left: 0; right: 0` would mean the frame, not the window). That works
+   for positioning but is a trap: layout containment also isolates #root's
+   internal layout, so its children's overflow stops propagating to body/html —
+   the document loses its scrollable overflow entirely and the page cannot
+   scroll at all. Frame-aligning the fixed chrome is done per-element with
+   --frame-inset instead; see tokens.css. Do not reintroduce containment or a
+   transform here — any of them re-breaks scrolling and/or re-anchors every
+   fixed descendant to this box. */
 #root {
   max-width: var(--frame-max);
   margin-inline: auto;
   min-height: 100%;
-  position: relative;
-  contain: layout;
   background: var(--bg);
 }
 @media (min-width: 520px) {
