@@ -56,6 +56,7 @@
 
   /* Elevation & emphasis — warm brown on paper, never black. */
   --shadow-card: rgba(60, 40, 30, 0.14); /* soft warm drop shadow on cards/sheets */
+  --shadow-knob: rgba(42, 21, 18, 0.28); /* ink drop under the toggle knob (light in both themes) */
   --shadow-text: rgba(0, 0, 0, 0.65); /* legibility shadow BEHIND light text over photos (stays dark) */
   --glow-stamp: 0 12px 30px -12px rgba(107, 71, 21, 0.35); /* warm drop, not a bloom, on paper */
   --glow-pin: drop-shadow(0 1px 3px rgba(36, 16, 18, 0.3)); /* subtle pin definition on the light map */
