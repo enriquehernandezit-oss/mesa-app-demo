@@ -130,6 +130,9 @@ export const dishesRoutes = new Hono<AppEnv>()
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
     const id = c.req.param('id')
+    // A malformed id would otherwise reach Postgres as an invalid uuid cast
+    // and surface as a 500 — reject it as not-found before it gets there.
+    if (!z.string().uuid().safeParse(id).success) return c.json({ error: 'not_found' }, 404)
     const { restaurants, neighborhoods } = schema
 
     const [row] = await db
