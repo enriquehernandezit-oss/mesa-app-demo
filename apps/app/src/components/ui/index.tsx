@@ -85,6 +85,24 @@ export const ErrorState = ({
   </div>
 )
 
+/* --- EmptyState --- the "nothing here yet" pattern repeated across every
+ * list/detail screen (Rankings, Explore, Map, a restaurant/dish/table that
+ * 404s, …). Was copy-pasted ~13x as
+ * `<div className="tab-empty"><SerifItalic style={{fontSize:'1.15rem'}}>`;
+ * one component now owns that composition and its size (styles/tabs.css
+ * .tab-empty__title, on the serif ramp — see tokens.css). */
+export const EmptyState = ({
+  children,
+  body,
+  className,
+  ...p
+}: DivProps & { body?: ReactNode }) => (
+  <div className={cx('tab-empty', className)} {...p}>
+    <SerifItalic className="tab-empty__title">{children}</SerifItalic>
+    {body && <Body>{body}</Body>}
+  </div>
+)
+
 /* --- Card --- */
 export const Card = ({ raised, className, ...p }: DivProps & { raised?: boolean }) => (
   <div className={cx('mesa-card', raised && 'mesa-card--raised', className)} {...p} />

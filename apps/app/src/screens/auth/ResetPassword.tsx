@@ -39,7 +39,7 @@ export function ResetPassword() {
 
       {!token ? (
         <div className="stack">
-          <SerifItalic style={{ fontSize: '1.2rem', textAlign: 'center' }}>
+          <SerifItalic style={{ fontSize: 'var(--text-serif-sm)', textAlign: 'center' }}>
             A este enlace le falta el token.
           </SerifItalic>
           <Body style={{ textAlign: 'center', color: 'var(--text-2)' }}>
@@ -49,7 +49,7 @@ export function ResetPassword() {
         </div>
       ) : done ? (
         <div className="stack">
-          <SerifItalic style={{ fontSize: '1.3rem', textAlign: 'center' }}>
+          <SerifItalic style={{ fontSize: 'var(--text-serif-md)', textAlign: 'center' }}>
             Contraseña actualizada.
           </SerifItalic>
           <Button onClick={goSignIn}>Iniciar sesión</Button>

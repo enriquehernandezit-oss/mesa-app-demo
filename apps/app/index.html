@@ -23,17 +23,23 @@
     <!--
       Resolve the theme synchronously, before any CSS paints, so there is no
       flash of the wrong ground. Reads the same localStorage key as
-      styles/theme.ts; Auto follows the OS. Keep the fallbacks (#f3efe6 paper /
-      #210104 oxblood) in sync with --bg in styles/tokens.css.
+      styles/theme.ts; Auto follows the OS AND the clock (Candlelit from 6pm
+      to 6am local — keep the EVENING_START_HOUR/MORNING_END_HOUR here in
+      sync with theme.ts). Keep the fallbacks (#f3efe6 paper / #210104
+      oxblood) in sync with --bg in styles/tokens.css.
     -->
     <script>
       (function () {
         try {
           var c = localStorage.getItem('mesa.theme');
+          var isEvening = function () {
+            var h = new Date().getHours();
+            return h >= 18 || h < 6;
+          };
           var r =
             c === 'afternoon' || c === 'candlelit'
               ? c
-              : window.matchMedia('(prefers-color-scheme: dark)').matches
+              : window.matchMedia('(prefers-color-scheme: dark)').matches || isEvening()
                 ? 'candlelit'
                 : 'afternoon';
           var el = document.documentElement;

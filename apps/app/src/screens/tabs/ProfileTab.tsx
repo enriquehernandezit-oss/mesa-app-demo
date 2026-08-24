@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { Button } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { BookmarkIcon, CheckIcon, HeartIcon } from '../../components/ui/icons'
 import { useProfile } from '../../hooks/useProfile'
 import { api, apiOrigin } from '../../lib/api'
 import { resizeToJpeg } from '../../lib/image'
@@ -111,15 +112,21 @@ export function ProfileTab() {
 
       <div className="profile-nav">
         <Link to="/rankings" className="profile-nav__row">
-          <span className="profile-nav__label">✓ Rankeados</span>
+          <span className="profile-nav__label">
+            <CheckIcon size={15} /> Rankeados
+          </span>
           <span className="profile-nav__meta">{stats.data?.places ?? 0} ›</span>
         </Link>
         <Link to="/rankings" search={{ tab: 'saved' }} className="profile-nav__row">
-          <span className="profile-nav__label">◇ Quiero probar</span>
+          <span className="profile-nav__label">
+            <BookmarkIcon size={15} /> Quiero probar
+          </span>
           <span className="profile-nav__meta">›</span>
         </Link>
         <Link to="/explore" className="profile-nav__row">
-          <span className="profile-nav__label">♡ Recomendados para ti</span>
+          <span className="profile-nav__label">
+            <HeartIcon size={15} /> Recomendados para ti
+          </span>
           <span className="profile-nav__meta">›</span>
         </Link>
       </div>

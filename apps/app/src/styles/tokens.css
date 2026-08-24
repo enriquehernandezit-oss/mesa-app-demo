@@ -121,6 +121,18 @@
   --text-label: 0.8125rem; /* buttons, metadata */
   --text-eyebrow: 0.6875rem; /* uppercase letter-spaced labels */
 
+  /* The serif/display ramp. Every serif size in the app used to be a
+     one-off rem value picked per component — 11 distinct sizes between
+     1.05rem and 1.9rem doing the job three or four deliberate steps could
+     cover. These three fill that gap (--text-title above is the fourth
+     step, unchanged); each collects a cluster of the old ad hoc values that
+     were visually indistinguishable from each other. Mono metadata sizes
+     are a separate, intentionally fine-grained "spec sheet" scale — this
+     ramp does not touch them. */
+  --text-serif-sm: 1.15rem; /* empty states, quotes, friend notes, secondary scores */
+  --text-serif-md: 1.35rem; /* card/list/row names, restaurant names in a list */
+  --text-serif-lg: 1.9rem; /* the restaurant/dish hero name */
+
   /* Eyebrow/label letter-spacing per DESIGN.md (~0.14–0.18em) */
   --tracking-eyebrow: 0.16em;
 
@@ -137,6 +149,14 @@
   --radius: 14px;
   --radius-sm: 10px;
   --radius-pill: 999px;
+
+  /* The app is designed at phone width and never had a wide-viewport frame,
+     so on a tablet/desktop browser everything stretched full-bleed — pills
+     spanning the whole screen, cards blowing up. This is the ceiling: #root
+     (see global.css) becomes a centered phone-width column above the sunk
+     ground on anything wider. Value matches a large phone in landscape-ish
+     proportions, not a "mobile web app" breakpoint. */
+  --frame-max: 480px;
 
   /* Motion — --ease-out for press feedback + entrances (no overshoot), and
      --ease-spring reserved for genuine celebration moments (cheers, stamp). */

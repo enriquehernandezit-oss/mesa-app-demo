@@ -58,7 +58,7 @@ export function LegalPage({ doc }: { doc: Doc }) {
   return (
     <div className="screen" style={{ overflowY: 'auto' }}>
       <a href="/" className="link-action" style={{ marginBottom: 'var(--space-4)' }}>
-        ← Volver a Mesa
+        ‹ Volver a Mesa
       </a>
       <Wordmark size={32} style={{ marginBottom: 'var(--space-4)' }} />
       <Eyebrow>Legal</Eyebrow>

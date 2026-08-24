@@ -85,6 +85,9 @@
   margin-bottom: var(--space-5);
 }
 .profile-nav__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-family: var(--font-ui);
 }
 /* The two gamified stat cards (rank + streak). */
@@ -111,7 +114,7 @@
 }
 .statcard__value {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: var(--text-title);
   line-height: 1;
   color: var(--accent-strong);
   /* Lining figures — this is a rank ("#1") / streak count, not editorial text,

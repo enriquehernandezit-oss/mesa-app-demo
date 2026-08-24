@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Body, Chip, ChipRail, SerifItalic, Title } from '../../components/ui'
+import { Chip, ChipRail, EmptyState, Title } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import {
@@ -56,10 +56,9 @@ export function TonightTab() {
 
       <div className="tonight-list">
         {tables.length === 0 ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Ninguna mesa coincide.</SerifItalic>
-            <Body>Prueba otro filtro — se abren más a medida que avanza la noche.</Body>
-          </div>
+          <EmptyState body="Prueba otro filtro — se abren más a medida que avanza la noche.">
+            Ninguna mesa coincide.
+          </EmptyState>
         ) : (
           tables.map((t) => <TableCard key={t.id} table={t} />)
         )}

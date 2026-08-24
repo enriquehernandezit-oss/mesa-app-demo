@@ -114,7 +114,9 @@ export function AuthFlow() {
         <Eyebrow style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-strong)' }}>
           Solo por invitación · Santo Domingo
         </Eyebrow>
-        <SerifItalic style={{ fontSize: '1.5rem', lineHeight: 1.15, marginTop: 'var(--space-2)' }}>
+        <SerifItalic
+          style={{ fontSize: 'var(--text-title)', lineHeight: 1.15, marginTop: 'var(--space-2)' }}
+        >
           Rankea donde comes. Confía en quien conoces.
         </SerifItalic>
         <Body style={{ color: 'var(--text-2)', maxWidth: '19rem' }}>

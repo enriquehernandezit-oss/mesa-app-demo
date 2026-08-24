@@ -5,6 +5,10 @@
 import '@fontsource/cormorant-garamond/400.css'
 import '@fontsource/cormorant-garamond/500.css'
 import '@fontsource/cormorant-garamond/600.css'
+// 700 is the family's heaviest real face — the wordmark asks for it (see
+// components/ui/ui.css .mesa-wordmark). Without this the browser fakes bold
+// off the 600 face (font-synthesis), which smears the serif's fine strokes.
+import '@fontsource/cormorant-garamond/700.css'
 import '@fontsource/cormorant-garamond/400-italic.css'
 // Plus Jakarta Sans as a variable font — one file covers every UI weight.
 import '@fontsource-variable/plus-jakarta-sans'

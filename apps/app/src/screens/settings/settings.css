@@ -27,7 +27,7 @@
 }
 .settings-id__name {
   font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-size: var(--text-serif-md);
   color: var(--text);
 }
 .settings-id__meta {

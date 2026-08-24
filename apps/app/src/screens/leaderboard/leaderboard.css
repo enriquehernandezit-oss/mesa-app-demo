@@ -11,7 +11,7 @@
 .lb-pos {
   min-width: 34px;
   font-family: var(--font-serif);
-  font-size: 1.5rem;
+  font-size: var(--text-title);
   color: var(--accent);
   text-align: center;
   /* Proportional so a leading "1" tucks in, lining so the rank reads as a plain
@@ -47,7 +47,7 @@
 }
 .lb-count {
   font-family: var(--font-serif);
-  font-size: 1.3rem;
+  font-size: var(--text-serif-md);
   color: var(--accent-strong);
   font-variant-numeric: lining-nums proportional-nums;
 }

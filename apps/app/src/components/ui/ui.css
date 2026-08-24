@@ -39,12 +39,14 @@
   color: var(--text-muted);
 }
 
-/* The wordmark: lowercase serif "mesa" in ink, heavy (Phase 6 uses weight 900
-   everywhere it appears — top bar, splash, auth). Kept as text so it scales and
-   themes cleanly. */
+/* The wordmark: lowercase serif "mesa" in ink, heavy — top bar, splash, auth.
+   700 is Cormorant Garamond's heaviest real face (the design called for 900,
+   which the family doesn't have; that weight was being faked by the browser
+   off the 600 face, softening the serif's fine strokes — see fonts.ts). Kept
+   as text so it scales and themes cleanly. */
 .mesa-wordmark {
   font-family: var(--font-serif);
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text);
   line-height: 1;
   letter-spacing: -0.01em;

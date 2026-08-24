@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Body, Button, Chip, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, Button, Chip, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
+import { ShareIcon } from '../../components/ui/icons'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { useProfile } from '../../hooks/useProfile'
@@ -77,7 +78,13 @@ export function RankingsTab() {
           <Title>Rankings</Title>
           {tab === 'mine' && (mine.data?.rankings.length ?? 0) > 0 && (
             <button type="button" className="share-pill" onClick={shareMyList} disabled={sharing}>
-              {sharing ? '…' : '↗ Compartir'}
+              {sharing ? (
+                '…'
+              ) : (
+                <>
+                  <ShareIcon size={14} /> Compartir
+                </>
+              )}
             </button>
           )}
         </div>
@@ -98,7 +105,7 @@ export function RankingsTab() {
           </div>
           <div className="stat">
             <span className="stat__n">
-              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem. 🔥` : '—'}
+              {stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem.` : '—'}
             </span>
             <span className="stat__l">racha</span>
           </div>
@@ -153,10 +160,9 @@ export function RankingsTab() {
         ) : saved.data && saved.data.saved.length > 0 ? (
           saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
         ) : (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Nada guardado todavía.</SerifItalic>
-            <Body>Los lugares que quieras probar se juntarán aquí.</Body>
-          </div>
+          <EmptyState body="Los lugares que quieras probar se juntarán aquí.">
+            Nada guardado todavía.
+          </EmptyState>
         ))}
     </div>
   )
@@ -176,11 +182,7 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
   const max = hoods[0]?.count ?? 1
 
   if (hoods.length === 0) {
-    return (
-      <div className="tab-empty">
-        <SerifItalic style={{ fontSize: '1.15rem' }}>Rankea algunos lugares primero.</SerifItalic>
-      </div>
-    )
+    return <EmptyState>Rankea algunos lugares primero.</EmptyState>
   }
   return (
     <div>
@@ -203,10 +205,9 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
 
 function EmptyMine() {
   return (
-    <div className="tab-empty">
-      <SerifItalic style={{ fontSize: '1.15rem' }}>Tu lista está vacía.</SerifItalic>
-      <Body>Rankea un spot y ocupa su puesto en tu pasaporte.</Body>
-    </div>
+    <EmptyState body="Rankea un spot y ocupa su puesto en tu pasaporte.">
+      Tu lista está vacía.
+    </EmptyState>
   )
 }
 

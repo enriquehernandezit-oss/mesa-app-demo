@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
-import { Body, Button, SerifItalic } from '../../components/ui'
+import { Body, Button, EmptyState } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { seatsLeft, tonightTable } from '../../fixtures/tonight'
 import { comingSoon } from '../../lib/comingSoon'
@@ -24,9 +25,7 @@ export function TonightDetail() {
         <button type="button" className="link-action" onClick={goBack}>
           ‹ Atrás
         </button>
-        <div className="tab-empty">
-          <SerifItalic style={{ fontSize: '1.15rem' }}>Mesa no encontrada.</SerifItalic>
-        </div>
+        <EmptyState>Mesa no encontrada.</EmptyState>
       </div>
     )
   }
@@ -73,7 +72,10 @@ export function TonightDetail() {
             aria-disabled
             onClick={() => comingSoon('El sitio web llega pronto a Mesa.')}
           >
-            <span className="upill__icon">◉</span> Sitio web
+            <span className="upill__icon">
+              <WebIcon size={13} />
+            </span>{' '}
+            Sitio web
           </button>
           <button
             type="button"
@@ -82,10 +84,16 @@ export function TonightDetail() {
             aria-disabled
             onClick={() => comingSoon('Llamar llega pronto a Mesa.')}
           >
-            <span className="upill__icon">☏</span> Llamar
+            <span className="upill__icon">
+              <PhoneIcon size={13} />
+            </span>{' '}
+            Llamar
           </button>
           <a className="upill" href={mapsUrl} target="_blank" rel="noreferrer">
-            <span className="upill__icon">▸</span> Cómo llegar
+            <span className="upill__icon">
+              <DirectionsIcon size={13} />
+            </span>{' '}
+            Cómo llegar
           </a>
         </div>
 

@@ -14,7 +14,7 @@
 }
 .explore-row__rank {
   font-family: var(--font-serif);
-  font-size: 1.25rem;
+  font-size: var(--text-serif-md);
   color: var(--accent);
   width: 20px;
   text-align: center;

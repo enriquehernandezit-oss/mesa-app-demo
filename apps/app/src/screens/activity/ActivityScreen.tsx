@@ -3,7 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { markActivitySeen } from '../../components/TopBar'
-import { Body, Chip, ChipRail, ErrorState, Eyebrow, SerifItalic } from '../../components/ui'
+import { Body, Chip, ChipRail, EmptyState, ErrorState, Eyebrow } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
@@ -100,12 +100,9 @@ export function ActivityScreen() {
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la actividad.</ErrorState>
         ) : sections.length === 0 ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Tranquilo por ahora.</SerifItalic>
-            <Body>
-              Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí.
-            </Body>
-          </div>
+          <EmptyState body="Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí.">
+            Tranquilo por ahora.
+          </EmptyState>
         ) : (
           sections.map((s) => (
             <div key={s.key}>

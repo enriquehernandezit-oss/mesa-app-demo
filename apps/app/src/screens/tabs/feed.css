@@ -92,7 +92,7 @@
 }
 .list-card__title {
   font-family: var(--font-serif);
-  font-size: 1.05rem;
+  font-size: var(--text-serif-sm);
   line-height: 1.15;
   color: var(--text);
   margin-top: 8px;
@@ -242,7 +242,7 @@
 }
 .rail-card__name {
   font-family: var(--font-serif);
-  font-size: 1.05rem;
+  font-size: var(--text-serif-sm);
   line-height: 1.1;
   color: var(--text);
 }

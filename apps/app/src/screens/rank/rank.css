@@ -130,7 +130,7 @@
 }
 .rank-summary__name {
   font-family: var(--font-serif);
-  font-size: 1.2rem;
+  font-size: var(--text-serif-sm);
   line-height: 1.1;
   color: var(--text);
   margin-bottom: 2px;

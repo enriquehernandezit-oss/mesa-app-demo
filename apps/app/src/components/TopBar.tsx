@@ -3,6 +3,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { api, apiOrigin } from '../lib/api'
 import type { ActivityItem, MeResponse } from '../lib/types'
 import { Wordmark } from './ui'
+import { SettingsIcon, ShareIcon } from './ui/icons'
 import './topbar.css'
 
 // Persistent app bar over the tab shell: small wordmark, leaderboard, and the
@@ -47,10 +48,10 @@ function ProfileTopBar() {
           aria-label="Compartir perfil"
           onClick={shareProfile}
         >
-          ↗
+          <ShareIcon size={19} />
         </button>
         <Link to="/settings" className="topbar__btn" aria-label="Ajustes">
-          ☰
+          <SettingsIcon size={19} />
         </Link>
       </div>
     </header>

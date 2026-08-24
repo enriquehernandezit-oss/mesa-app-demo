@@ -12,15 +12,11 @@
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
-/* Phase 6 wordmark: heavy serif, ink. */
-.topbar .mesa-wordmark {
-  font-weight: 900;
-}
 
 /* Profile variant (mock E1): the member's name in place of the wordmark. */
 .topbar__title {
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: var(--text-serif-md);
   font-weight: 700;
   color: var(--text);
   line-height: 1;

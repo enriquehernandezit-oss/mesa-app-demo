@@ -7,13 +7,14 @@ import {
   Body,
   Chip,
   ChipRail,
+  EmptyState,
   ErrorState,
   Eyebrow,
   SectionHeader,
-  SerifItalic,
   Title,
 } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
@@ -89,10 +90,11 @@ export function ExploreScreen() {
         <ChipRail style={{ marginBottom: 'var(--space-2)' }}>
           <Chip
             size="sm"
+            icon={<SortIcon size={12} />}
             state={sort === 'score' ? 'selected' : 'default'}
             onClick={() => setSort(sort === 'score' ? 'name' : 'score')}
           >
-            ⇅ Puntuación
+            Puntuación
           </Chip>
           <Chip
             size="sm"
@@ -139,9 +141,7 @@ export function ExploreScreen() {
         ) : results.isError ? (
           <ErrorState onRetry={() => results.refetch()}>No se pudo buscar.</ErrorState>
         ) : hits.length === 0 && members.length === 0 ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Nada coincide.</SerifItalic>
-          </div>
+          <EmptyState>Nada coincide.</EmptyState>
         ) : (
           <>
             {members.length > 0 && hits.length > 0 && <SectionHeader>Spots</SectionHeader>}
@@ -161,7 +161,7 @@ export function ExploreScreen() {
                     <div className="search-thumb" />
                   )}
                   <div className="ranking-main">
-                    <div className="ranking-name" style={{ fontSize: '1.2rem' }}>
+                    <div className="ranking-name" style={{ fontSize: 'var(--text-serif-sm)' }}>
                       {r.name}
                     </div>
                     <Characteristics
@@ -194,7 +194,7 @@ function MemberRow({ m }: { m: ExploreMember }) {
     <Link to="/u/$userId" params={{ userId: m.id }} className="explore-member">
       <Avatar name={m.name || m.handle || 'm'} src={m.image} size={44} />
       <div className="ranking-main">
-        <div className="ranking-name" style={{ fontSize: '1.05rem' }}>
+        <div className="ranking-name" style={{ fontSize: 'var(--text-serif-sm)' }}>
           {m.name || m.handle}
         </div>
         <div className="explore-member__meta">

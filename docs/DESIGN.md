@@ -15,8 +15,12 @@ one semantic token layer*, not a single oxblood ground.
   spread, not a startup dashboard.
 - **Candlelit** — the original dark oxblood theme. Deep burgundy grounds, cream
   text, brass accent. After-9 energy.
-- **Auto** — follows the OS `prefers-color-scheme` (dark → Candlelit, else
-  Afternoon).
+- **Auto** — follows the OS `prefers-color-scheme` **and the clock**: Candlelit
+  from 6pm to 6am local time, or whenever the OS is in dark mode; Afternoon
+  otherwise. Mesa is a going-out app, so Auto should read as "after-9 energy"
+  once it's actually evening, not just when the OS happens to be dark. See
+  `apps/app/src/styles/theme.ts` (`resolve()`) and the mirrored boot script in
+  `index.html`.
 
 The two must feel like one product photographed at two times of day — same
 type, same spacing, same brass thread, same imagery. A user switches in Settings
@@ -131,9 +135,38 @@ change, or its second `:root` will drift from the app's.
 
 ## The wordmark
 
-Lowercase serif `mesa`, in `--text` on `--bg`. Rendered as text (it scales and
+Lowercase serif `mesa`, in `--text` on `--bg`, weight 700 — Cormorant
+Garamond's heaviest real face (the family doesn't have 900; a request for 900
+gets synthesized off the 600 face by the browser, softening the serif's fine
+strokes, so `styles/global.css` also sets `font-synthesis: none` on `html` to
+make sure that never happens silently again). Rendered as text (it scales and
 themes cleanly). Real file: `assets/brand/mesa-wordmark-burgundy.png`. A
 hand-drawn table-sign icon variant is the app icon; keep the two consistent.
+
+## Iconography
+
+One stroke-SVG icon language (`components/ui/icons.tsx`), matching the tab
+bar's original style: 24 viewBox, 1.6 stroke, round caps/joins, `currentColor`
+(themes for free). Add new icons there — do not reach for a Unicode dingbat.
+
+- **🥂 is the one sanctioned emoji** — Mesa's cheers gesture (Rankings,
+  Activity, share copy). Nothing else uses emoji.
+- Text-glyph punctuation used *as prose*, matching the mocks' literal copy
+  strings, stays: the `‹`/`›` chevrons in header/link text ("‹ Add a note",
+  "2 friends ›") and the `✕` close-glyph in flow headers ("✕ Recents"). These
+  render identically everywhere (they're common Latin-1-adjacent punctuation)
+  and are part of the authored copy, not a stray icon choice.
+- Everything that was a standalone dingbat acting as an icon — a pill's
+  leading glyph, an icon-only button — is now one of the SVGs above. The
+  Phase 6 screen spec's literal glyphs (`◉ ☏ ▸ ▤ ✎ ⇅ ↗ ☰ ✓ ◇ ♡ ➤`) are
+  superseded by this file; those characters render unpredictably across iOS/
+  Android webviews (tofu or emoji-style substitution on some systems), which
+  an SVG path doesn't.
+- Some of those Unicode glyphs were reused for more than one meaning in the
+  Phase 6 code (`◉` was both "website" and "reserve a table"; `▤` was both
+  "list membership" and "order food") — the SVG set keeps those meanings
+  separate (`WebIcon`/`ReserveIcon`, `ListIcon`/`OrderIcon`) rather than
+  perpetuating the collision.
 
 ## Aesthetic direction (from the moodboard)
 

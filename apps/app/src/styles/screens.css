@@ -146,7 +146,7 @@ html[data-theme="afternoon"] .auth-hero::after {
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-serif);
-  font-size: 1.3rem;
+  font-size: var(--text-serif-md);
   transition: transform 0.15s var(--ease-out), border-color 0.15s ease;
 }
 .sentiment:active {
@@ -207,7 +207,7 @@ html[data-theme="afternoon"] .auth-hero::after {
 }
 .stamp__name {
   font-family: var(--font-serif);
-  font-size: 1.9rem;
+  font-size: var(--text-serif-lg);
   color: var(--text);
   text-align: center;
 }

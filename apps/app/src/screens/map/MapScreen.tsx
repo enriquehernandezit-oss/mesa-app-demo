@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
-import { Body, ErrorState, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
@@ -110,9 +110,7 @@ export function MapScreen() {
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el mapa.</ErrorState>
         ) : placed.length === 0 ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Aún no hay spots.</SerifItalic>
-          </div>
+          <EmptyState>Aún no hay spots.</EmptyState>
         ) : (
           <div className="map-frame">
             <svg
@@ -242,7 +240,7 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
           className="map-card__go"
           onClick={onClose}
         >
-          Ver →
+          Ver ›
         </Link>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { ScreenHeader } from '../../components/ScreenHeader'
-import { Body, Eyebrow, SerifItalic, Title } from '../../components/ui'
+import { Body, EmptyState, Eyebrow, Title } from '../../components/ui'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { cloudinaryUrl } from '../../lib/media'
@@ -33,9 +33,7 @@ export function ListScreen() {
         {q.isPending ? (
           <Body style={{ marginTop: 'var(--space-4)' }}>Cargando…</Body>
         ) : q.isError || !q.data ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Lista no encontrada.</SerifItalic>
-          </div>
+          <EmptyState>Lista no encontrada.</EmptyState>
         ) : (
           <>
             {cover && (
@@ -65,7 +63,7 @@ export function ListScreen() {
                     <div className="search-thumb" />
                   )}
                   <div className="ranking-main">
-                    <div className="ranking-name" style={{ fontSize: '1.2rem' }}>
+                    <div className="ranking-name" style={{ fontSize: 'var(--text-serif-sm)' }}>
                       {r.name}
                     </div>
                     <Characteristics

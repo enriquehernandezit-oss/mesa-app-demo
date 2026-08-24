@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { Body, SerifItalic } from '../../components/ui'
+import { Body, EmptyState } from '../../components/ui'
+import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { filterForGrain } from '../../lib/image'
@@ -36,9 +37,7 @@ export function DishDetail() {
         <button type="button" className="link-action" onClick={goBack}>
           ‹ Atrás
         </button>
-        <div className="tab-empty">
-          <SerifItalic style={{ fontSize: '1.15rem' }}>Plato no encontrado.</SerifItalic>
-        </div>
+        <EmptyState>Plato no encontrado.</EmptyState>
       </div>
     )
   }
@@ -85,16 +84,26 @@ export function DishDetail() {
 
         <div className="resto-pills">
           {restaurant.website && (
-            <UtilityPill icon="◉" href={restaurant.website} target="_blank" rel="noreferrer">
+            <UtilityPill
+              icon={<WebIcon size={13} />}
+              href={restaurant.website}
+              target="_blank"
+              rel="noreferrer"
+            >
               Sitio web
             </UtilityPill>
           )}
           {restaurant.phone && (
-            <UtilityPill icon="☏" href={`tel:${restaurant.phone}`}>
+            <UtilityPill icon={<PhoneIcon size={13} />} href={`tel:${restaurant.phone}`}>
               Llamar
             </UtilityPill>
           )}
-          <UtilityPill icon="▸" href={mapsUrl} target="_blank" rel="noreferrer">
+          <UtilityPill
+            icon={<DirectionsIcon size={13} />}
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             Cómo llegar
           </UtilityPill>
         </div>

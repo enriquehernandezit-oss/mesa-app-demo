@@ -43,6 +43,9 @@
   text-align: center;
   color: var(--text-muted);
 }
+.tab-empty__title {
+  font-size: var(--text-serif-sm);
+}
 
 /* --- Tab bar --- */
 .tab-bar {

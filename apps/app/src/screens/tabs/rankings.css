@@ -20,6 +20,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-1);
   min-height: 44px;
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-pill);
@@ -62,7 +63,7 @@
 }
 .stat__n {
   font-family: var(--font-serif);
-  font-size: 1.35rem;
+  font-size: var(--text-serif-md);
   color: var(--accent-strong);
   /* Proportional (not tabular) so a leading "1" tucks in, and lining (not
      Cormorant's default old-style) so a count like "0" reads as a zero, not a
@@ -89,7 +90,7 @@
 }
 .hood-row__name {
   font-family: var(--font-serif);
-  font-size: 1.2rem;
+  font-size: var(--text-serif-sm);
   color: var(--text);
 }
 .hood-row__stats {
@@ -105,7 +106,11 @@
 .hood-bar__fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  /* --accent is documented text/glyph-only, never a background; --accent-fill
+     is its exact background-safe counterpart (same hex, both themes), so this
+     is a zero-visual-change fix. --accent-strong stays — it isn't the flagged
+     token and swapping it would actually change the Candlelit gradient. */
+  background: linear-gradient(90deg, var(--accent-fill), var(--accent-strong));
 }
 
 /* Dish + tags line inside a ranking row. */
@@ -187,7 +192,7 @@
 }
 .ranking-name {
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: var(--text-serif-md);
   line-height: 1.1;
   color: var(--text);
 }
@@ -201,7 +206,7 @@
   margin-top: var(--space-2);
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: var(--text-serif-sm);
   color: var(--text-2);
   line-height: 1.35;
 }
@@ -266,7 +271,7 @@
   color: var(--text);
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: var(--text-serif-sm);
   resize: none;
   outline: none;
 }

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { comingSoon } from '../lib/comingSoon'
 import { ActionRail } from './ui'
+import { OrderIcon, PinIcon, ReserveIcon } from './ui/icons'
 
 // The quick-action rail shared by the feed (A1–A3) and Explore (F1): Reserve ·
 // Order · Nearby. Reserve + Order are inert-by-design — they render live (pill,
@@ -16,7 +17,10 @@ export function QuickActions() {
         aria-disabled
         onClick={() => comingSoon('Reservar llega pronto a Mesa.')}
       >
-        <span className="upill__icon">◉</span> Reservar
+        <span className="upill__icon">
+          <ReserveIcon size={13} />
+        </span>{' '}
+        Reservar
       </button>
       <button
         type="button"
@@ -25,10 +29,16 @@ export function QuickActions() {
         aria-disabled
         onClick={() => comingSoon('Pedir a domicilio llega pronto a Mesa.')}
       >
-        <span className="upill__icon">▤</span> Pedir
+        <span className="upill__icon">
+          <OrderIcon size={13} />
+        </span>{' '}
+        Pedir
       </button>
       <Link to="/map" className="upill">
-        <span className="upill__icon">➤</span> Cerca
+        <span className="upill__icon">
+          <PinIcon size={13} />
+        </span>{' '}
+        Cerca
       </Link>
     </ActionRail>
   )

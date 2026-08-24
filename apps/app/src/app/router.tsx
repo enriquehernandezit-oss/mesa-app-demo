@@ -245,7 +245,7 @@ function NotFound() {
   return (
     <div className="notfound">
       <Wordmark size={30} />
-      <SerifItalic style={{ fontSize: '1.3rem' }}>Esta página no existe.</SerifItalic>
+      <SerifItalic style={{ fontSize: 'var(--text-serif-md)' }}>Esta página no existe.</SerifItalic>
       <Body style={{ maxWidth: '22rem' }}>
         El enlace que seguiste no lleva a ningún spot de Mesa.
       </Body>

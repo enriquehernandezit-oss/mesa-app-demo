@@ -1,8 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
-import { Body, Button, Eyebrow, SectionHeader, SerifItalic } from '../../components/ui'
+import { Body, Button, EmptyState, Eyebrow, SectionHeader } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import {
+  BackIcon,
+  CheckIcon,
+  DirectionsIcon,
+  ListIcon,
+  PencilIcon,
+  PhoneIcon,
+  ShareIcon,
+  WebIcon,
+} from '../../components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api, apiOrigin } from '../../lib/api'
 import { comingSoon } from '../../lib/comingSoon'
@@ -62,11 +72,9 @@ export function RestaurantProfile() {
       <div className="resto-screen">
         <div className="resto-content">
           <button type="button" className="link-action" onClick={goBack}>
-            ← Atrás
+            ‹ Atrás
           </button>
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Spot no encontrado.</SerifItalic>
-          </div>
+          <EmptyState>Spot no encontrado.</EmptyState>
         </div>
       </div>
     )
@@ -122,7 +130,7 @@ export function RestaurantProfile() {
       <div className={`resto-photo${cover ? '' : ' resto-photo--empty'}`}>
         {cover && <img src={cover} alt={restaurant.name} />}
         <button type="button" className="resto-back" onClick={goBack} aria-label="Atrás">
-          ←
+          <BackIcon size={20} />
         </button>
         <button
           type="button"
@@ -130,7 +138,7 @@ export function RestaurantProfile() {
           onClick={shareSpot}
           aria-label="Compartir"
         >
-          ↗
+          <ShareIcon size={18} />
         </button>
         <span className="resto-photo__tag">film · con velas</span>
       </div>
@@ -156,7 +164,7 @@ export function RestaurantProfile() {
               onClick={() => toggleSave.mutate(!saved)}
               disabled={toggleSave.isPending}
             >
-              ✓
+              <CheckIcon size={17} />
             </button>
           </div>
           {allMesa.avg != null && showMesa && (
@@ -170,7 +178,7 @@ export function RestaurantProfile() {
               {lists.map((l) => (
                 <UtilityPill
                   key={l.slug}
-                  icon="▤"
+                  icon={<ListIcon size={13} />}
                   onClick={() => navigate({ to: '/lists/$slug', params: { slug: l.slug } })}
                 >
                   {l.title}
@@ -199,16 +207,26 @@ export function RestaurantProfile() {
         {/* Utility pills — Website · Call · Directions (mock order). */}
         <div className="resto-pills">
           {restaurant.website && (
-            <UtilityPill icon="◉" href={restaurant.website} target="_blank" rel="noreferrer">
+            <UtilityPill
+              icon={<WebIcon size={13} />}
+              href={restaurant.website}
+              target="_blank"
+              rel="noreferrer"
+            >
               Sitio web
             </UtilityPill>
           )}
           {restaurant.phone && (
-            <UtilityPill icon="☏" href={`tel:${restaurant.phone}`}>
+            <UtilityPill icon={<PhoneIcon size={13} />} href={`tel:${restaurant.phone}`}>
               Llamar
             </UtilityPill>
           )}
-          <UtilityPill icon="▸" href={mapsUrl} target="_blank" rel="noreferrer">
+          <UtilityPill
+            icon={<DirectionsIcon size={13} />}
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
             Cómo llegar
           </UtilityPill>
         </div>
@@ -246,7 +264,13 @@ export function RestaurantProfile() {
         )}
 
         {/* Reserve a table — inert-by-design (no booking supply). */}
-        <SectionHeader action={<span className="resto-reserve__meta">2 · esta noche ✎</span>}>
+        <SectionHeader
+          action={
+            <span className="resto-reserve__meta">
+              2 · esta noche <PencilIcon size={11} />
+            </span>
+          }
+        >
           Reservar una mesa
         </SectionHeader>
         <div className="resto-reserve">

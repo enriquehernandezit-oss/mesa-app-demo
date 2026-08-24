@@ -17,9 +17,22 @@ body,
   height: 100%;
 }
 
+/* Never let the browser fake a weight or slant a font doesn't have — a faux
+   bold/italic softens serif strokes and reads as a rendering bug, not a
+   design choice. Every weight/style the app asks for is a real imported face
+   (see styles/fonts.ts); this guards against a future weight request that
+   quietly falls back to synthesis instead of failing loudly. */
+html {
+  font-synthesis: none;
+}
+
 body {
   margin: 0;
-  background: var(--bg);
+  /* The sunk ground shows either side of the phone-width frame (#root, below)
+     once the viewport is wider than --frame-max — a plain, uncluttered rest
+     for the eye instead of the app's own paper/oxblood stretching edge to
+     edge. On phones #root fills the viewport so this is never visible. */
+  background: var(--bg-sunk);
   color: var(--text);
   font-family: var(--font-ui);
   font-size: var(--text-body);
@@ -28,6 +41,31 @@ body {
   text-rendering: optimizeLegibility;
   /* Never a rubber-band white flash past the oxblood ground on iOS overscroll. */
   overscroll-behavior: none;
+}
+
+/* The phone-width frame. On a tablet/desktop browser the app was stretching
+   full-bleed — pills spanning the whole screen, cards blowing up well past
+   their designed proportions. `contain: layout` is doing real work here, not
+   just visual tidiness: per the CSS containing-block spec it makes #root the
+   containing block for every `position: fixed` descendant (the tab bar, the
+   restaurant CTA bar, the condensed header, the toast viewport, …), so their
+   existing `left: 0; right: 0` rules resolve against the FRAME's edges
+   instead of the viewport's — no per-component inset math needed anywhere
+   else. (Fixed-position scrims that intentionally cover the whole page —
+   the map sheet's backdrop, the rank coachmark's — are unaffected either
+   way, since covering everything is correct for those.) */
+#root {
+  max-width: var(--frame-max);
+  margin-inline: auto;
+  min-height: 100%;
+  position: relative;
+  contain: layout;
+  background: var(--bg);
+}
+@media (min-width: 520px) {
+  #root {
+    border-inline: 1px solid var(--line);
+  }
 }
 
 /* A subtle warm grain/vignette over the whole app — film photography, not

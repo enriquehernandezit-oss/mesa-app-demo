@@ -113,7 +113,7 @@ function EmptyFeed() {
   return (
     <div>
       <div className="empty-feed__card">
-        <SerifItalic style={{ fontSize: '1.6rem' }}>Tu mesa está lista</SerifItalic>
+        <SerifItalic style={{ fontSize: 'var(--text-title)' }}>Tu mesa está lista</SerifItalic>
         <Body>Sigue a algunos amigos — sus rankings y notas de vibe llenan este feed.</Body>
       </div>
       {users.length > 0 && (

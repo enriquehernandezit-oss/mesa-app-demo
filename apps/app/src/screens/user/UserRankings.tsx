@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
-import { Body, Button, Caption, Chip, SectionHeader, SerifItalic } from '../../components/ui'
+import { Body, Button, Caption, Chip, EmptyState, SectionHeader } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
@@ -85,11 +85,9 @@ export function UserRankings() {
       <div className="tab-shell">
         <div className="tab-body">
           <ScreenHeader onBack={goBack} backLabel="Atrás" />
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>
-              {gone ? 'Este perfil no está disponible.' : 'No se pudo cargar este perfil.'}
-            </SerifItalic>
-          </div>
+          <EmptyState>
+            {gone ? 'Este perfil no está disponible.' : 'No se pudo cargar este perfil.'}
+          </EmptyState>
         </div>
       </div>
     )
@@ -176,9 +174,7 @@ export function UserRankings() {
         )}
 
         {rankings.length === 0 ? (
-          <div className="tab-empty">
-            <SerifItalic style={{ fontSize: '1.15rem' }}>Todavía no hay rankings.</SerifItalic>
-          </div>
+          <EmptyState>Todavía no hay rankings.</EmptyState>
         ) : (
           <>
             <SectionHeader action={<span>Todos {rankings.length}</span>}>
