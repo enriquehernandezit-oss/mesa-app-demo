@@ -144,11 +144,10 @@ export function RestaurantProfile() {
           </Eyebrow>
           <div className="resto-title-row">
             <h1 className="resto-title">{restaurant.name}</h1>
-            {myRanking && (
-              <button type="button" className="resto-rankagain" onClick={() => navigate(rankHref)}>
-                Rankear otra vez
-              </button>
-            )}
+            {/* No inline "Rankear otra vez" here: the fixed bottom bar is the one
+               CTA and adapts its label when you've already ranked, so this used
+               to be a duplicate of it (same nav, one screen, two filled-ish
+               calls to action). */}
             <button
               type="button"
               className={`resto-savecheck${saved ? ' resto-savecheck--on' : ''}`}
@@ -309,10 +308,12 @@ export function RestaurantProfile() {
         )}
       </div>
 
-      {/* The one ink CTA — fixed, never leaves (mock D2). */}
+      {/* The one ink CTA — fixed, never leaves (mock D2). Adapts to whether you
+          already have a ranking here, so it carries the re-rank action too and
+          nothing else on the screen has to duplicate it. */}
       <div className="resto-cta-bar">
         <Button variant="primary" onClick={() => navigate(rankHref)}>
-          Rankear este spot
+          {myRanking ? 'Rankear otra vez' : 'Rankear este spot'}
         </Button>
       </div>
     </div>

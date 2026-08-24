@@ -184,21 +184,6 @@
   line-height: 1;
   color: var(--text);
 }
-.resto-rankagain {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 7px 13px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--brass-line);
-  background: transparent;
-  color: var(--accent-strong);
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  cursor: pointer;
-}
 .resto-savecheck {
   flex: none;
   width: 44px;
