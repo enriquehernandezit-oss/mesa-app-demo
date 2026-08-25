@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { aliasedTable, and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
 import { requireAuth } from '../middleware/session'
@@ -50,6 +50,13 @@ export const listsRoutes = new Hono<AppEnv>()
       .from(follows)
       .where(eq(follows.followerId, me.id))
 
+    // Second aliased join for "did I rank it" — the join above is already
+    // filtered to people I follow, so it can't also answer that. Safe to
+    // aggregate with max() rather than adding to GROUP BY: rankings is unique
+    // on (userId, restaurantId), so `mine` contributes at most one row per
+    // restaurant and can't inflate friendAvg/friendCount.
+    const mine = aliasedTable(rankings, 'mine')
+
     const items = await db
       .select({
         id: restaurants.id,
@@ -61,6 +68,7 @@ export const listsRoutes = new Hono<AppEnv>()
         position: listItems.position,
         friendAvg: sql<number | null>`avg(${rankings.score})::float`,
         friendCount: sql<number>`count(${rankings.id})::int`,
+        myScore: sql<number | null>`max(${mine.score})::float`,
       })
       .from(listItems)
       .innerJoin(restaurants, eq(restaurants.id, listItems.restaurantId))
@@ -69,6 +77,7 @@ export const listsRoutes = new Hono<AppEnv>()
         rankings,
         and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
       )
+      .leftJoin(mine, and(eq(mine.restaurantId, restaurants.id), eq(mine.userId, me.id)))
       .where(eq(listItems.listId, list.id))
       .groupBy(restaurants.id, neighborhoods.name, listItems.position)
       .orderBy(asc(listItems.position))

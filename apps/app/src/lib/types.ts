@@ -132,6 +132,7 @@ export interface ListDetailItem {
   position: number
   friendAvg: number | null
   friendCount: number
+  myScore: number | null
 }
 
 export interface ListDetailResponse {

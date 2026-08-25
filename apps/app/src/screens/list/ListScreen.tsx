@@ -72,12 +72,17 @@ export function ListScreen() {
                       neighborhood={r.neighborhood}
                     />
                   </div>
-                  {r.friendCount > 0 && r.friendAvg != null && (
-                    <ScoreBadge
-                      size="sm"
-                      score={r.friendAvg}
-                      attribution={{ kind: 'friends', count: r.friendCount }}
-                    />
+                  {r.myScore != null ? (
+                    <ScoreBadge size="sm" score={r.myScore} attribution={{ kind: 'you' }} />
+                  ) : (
+                    r.friendCount > 0 &&
+                    r.friendAvg != null && (
+                      <ScoreBadge
+                        size="sm"
+                        score={r.friendAvg}
+                        attribution={{ kind: 'friends', count: r.friendCount }}
+                      />
+                    )
                   )}
                 </Link>
               )
