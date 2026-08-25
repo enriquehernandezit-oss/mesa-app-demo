@@ -111,14 +111,45 @@ export const rankingsRoutes = new Hono<AppEnv>()
     return c.json({ rankings: rows })
   })
 
-  // Places I haven't ranked yet — the pool for rank-a-place. One round trip.
+  // Places I haven't ranked yet — the pool for rank-a-place's find step.
+  // Query-driven with a limit, mirroring GET /restaurants: fetching the
+  // WHOLE unranked catalog (once thousands of rows, post-Foursquare-import)
+  // on every open of the rank flow, then filtering with String.includes in
+  // the client, doesn't scale — RankAPlace.tsx now sends q/open/reserve as
+  // real params instead. Re-ranking an already-ranked place is a separate
+  // path (GET /rankings, always small — one user's own list — so it stays a
+  // plain unfiltered fetch, searched client-side there).
   .get('/candidates', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const q = (c.req.query('q') ?? '').trim()
+    const openNow = c.req.query('open') === '1'
+    const reserveOnly = c.req.query('reserve') === '1'
+    const hasQuery = q.length >= 2
+
     const mine = db
       .select({ id: rankings.restaurantId })
       .from(rankings)
       .where(eq(rankings.userId, me.id))
+
+    const conds = [
+      notInArray(restaurants.id, mine),
+      isNull(restaurants.removedAt),
+      isNull(restaurants.closedAt),
+    ]
+    if (openNow) conds.push(sql`${restaurants.closesAt} is not null`)
+    if (reserveOnly) conds.push(sql`${restaurants.phone} is not null`)
+    let norm: ReturnType<typeof sql> | null = null
+    if (hasQuery) {
+      norm = sql`mesa_norm(${q})`
+      const searchCond = or(
+        sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+        sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
+        sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
+      )
+      if (searchCond) conds.push(searchCond)
+    }
+
     const rows = await db
       .select({
         id: restaurants.id,
@@ -134,8 +165,15 @@ export const rankingsRoutes = new Hono<AppEnv>()
       })
       .from(restaurants)
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .where(notInArray(restaurants.id, mine))
-      .orderBy(asc(restaurants.name))
+      .where(and(...conds))
+      .orderBy(
+        norm
+          ? sql`(${restaurants.nameKey} like ${norm} || '%') desc,
+                similarity(${restaurants.nameKey}, ${norm}) desc,
+                ${restaurants.name} asc`
+          : asc(restaurants.name),
+      )
+      .limit(hasQuery ? 40 : 60)
     return c.json({ restaurants: rows })
   })
 

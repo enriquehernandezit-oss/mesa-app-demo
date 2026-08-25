@@ -147,8 +147,13 @@ export interface ExploreHit {
   neighborhood: string | null
   priceTier: number | null
   closesAt?: string | null
+  address?: string | null
   friendAvg: number | null
   friendCount: number
+  mesaCount: number
+  // True only for a searched hit nobody has ranked yet — the no-query browse
+  // pool is restricted to ranked places, so this is always false there.
+  isNew: boolean
 }
 
 // A member row in "place, dish, or member" search results.

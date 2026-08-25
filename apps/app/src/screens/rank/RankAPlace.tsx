@@ -71,10 +71,6 @@ export function RankAPlace() {
   const queryClient = useQueryClient()
   const search = useSearch({ strict: false }) as { restaurant?: string }
 
-  const candidates = useQuery({
-    queryKey: ['rankings', 'candidates'],
-    queryFn: () => api.get<{ restaurants: Item[] }>('/rankings/candidates'),
-  })
   const mine = useQuery({
     queryKey: ['rankings'],
     queryFn: () => api.get<{ rankings: Ranking[] }>('/rankings'),
@@ -99,6 +95,21 @@ export function RankAPlace() {
   const [openNow, setOpenNow] = useState(false)
   const [reserveOnly, setReserveOnly] = useState(false)
   const [nearby, setNearby] = useState(false)
+
+  // Query-driven, mirroring Explore: the server now searches (mesa_norm +
+  // trigram) and bounds the result instead of returning the whole unranked
+  // catalog for the client to filter with String.includes. No debounce, same
+  // as Explore's search — every keystroke past 2 chars is a fresh request.
+  const candidates = useQuery({
+    queryKey: ['rankings', 'candidates', pickQuery.trim(), openNow, reserveOnly],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (pickQuery.trim().length >= 2) params.set('q', pickQuery.trim())
+      if (openNow) params.set('open', '1')
+      if (reserveOnly) params.set('reserve', '1')
+      return api.get<{ restaurants: Item[] }>(`/rankings/candidates?${params}`)
+    },
+  })
   const [sentiment, setSentiment] = useState<Sentiment | null>(null)
   const [position, setPosition] = useState<number | null>(null)
   const [revealed, setRevealed] = useState(false)
@@ -278,6 +289,11 @@ export function RankAPlace() {
       }
       setAddedPlace(item)
       setPickedId(item.id)
+      // The new place is only in this screen's local `addedPlace` state
+      // without this — backing out and re-entering the find step, or
+      // visiting Explore, wouldn't show it until an unrelated cache miss.
+      queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
+      queryClient.invalidateQueries({ queryKey: ['explore'] })
     },
   })
 
@@ -788,8 +804,14 @@ function FindStep({
   const [adding, setAdding] = useState(false)
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
-  const merged: Item[] = [...candList, ...existing]
-  let filtered = merged.filter((r) => {
+  // candList already comes from the server pre-filtered by q/openNow/
+  // reserveOnly (mesa_norm + trigram — see the candidates query above);
+  // re-running a naive client substring filter over it would wrongly EXCLUDE
+  // an accent-insensitive server match ("meson" matching "Mesón" only
+  // server-side, not by plain .includes()). `existing` (my own already-
+  // ranked list, for re-rank) is always fetched in full and never filtered
+  // server-side, so it still needs this.
+  const existingFiltered = existing.filter((r) => {
     if (openNow && !r.closesAt) return false
     if (reserveOnly && !r.phone) return false
     if (!q) return true
@@ -799,6 +821,7 @@ function FindStep({
       (r.neighborhood ?? '').toLowerCase().includes(q)
     )
   })
+  let filtered: Item[] = [...candList, ...existingFiltered]
   const distanceOf = (r: Item) =>
     myPosition && r.lat != null && r.lng != null
       ? haversineM(myPosition, { lat: r.lat, lng: r.lng })
@@ -823,9 +846,16 @@ function FindStep({
       const bm = b.neighborhood === myHood ? 0 : 1
       return am - bm || a.name.localeCompare(b.name)
     })
-  } else {
+  } else if (!q) {
+    // No active search — alphabetical browse, mirroring the server's own
+    // no-query default for candList.
     filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
   }
+  // else: an active search with nearby off — keep candList's server-side
+  // relevance order (prefix match → trigram similarity → name); re-sorting
+  // it alphabetically here would throw away the whole point of that ranking.
+  // existingFiltered's few matches just trail after, in the user's own
+  // rank-position order.
 
   // Once actively searching by name, a flat list is enough — the lead group
   // only earns its place on the unfiltered "just browsing" screen.
