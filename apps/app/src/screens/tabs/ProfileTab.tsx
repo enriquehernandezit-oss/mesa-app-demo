@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { Button } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
-import { BookmarkIcon, CheckIcon, HeartIcon } from '../../components/ui/icons'
+import { BookmarkIcon, CheckIcon, CompassIcon } from '../../components/ui/icons'
 import { useProfile } from '../../hooks/useProfile'
 import { api, apiOrigin } from '../../lib/api'
 import { resizeToJpeg } from '../../lib/image'
@@ -125,7 +125,7 @@ export function ProfileTab() {
         </Link>
         <Link to="/explore" className="profile-nav__row">
           <span className="profile-nav__label">
-            <HeartIcon size={15} /> Recomendados para ti
+            <CompassIcon size={15} /> Recomendados para ti
           </span>
           <span className="profile-nav__meta">›</span>
         </Link>

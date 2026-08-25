@@ -24,7 +24,6 @@ import type { FeaturedList, FeedItem, SuggestedUser } from '../../lib/types'
 import { CheersButton } from './CheersButton'
 import './tabs.css'
 import './feed.css'
-import '../map/map.css'
 
 // The discovery feed (Phase 6 mocks A1–A3): a quick-action rail, a featured-lists
 // carousel, then the feed column. Ranking cards are compact paper cards; dish

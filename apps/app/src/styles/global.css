@@ -105,6 +105,19 @@ img {
   height: auto;
 }
 
+/* Native touch feel — a webview/PWA otherwise reads as a website. Buttons and
+   links only: inputs/textarea keep text-selection (you're meant to select
+   their content) and links inside prose (vibe notes, editorial copy) opt back
+   in with `.selectable` since a member may want to copy that text. */
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
@@ -113,6 +126,16 @@ button {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.selectable {
+  -webkit-touch-callout: default;
+  user-select: text;
+}
+
+::selection {
+  background: var(--accent-fill);
+  color: var(--on-accent);
 }
 
 /* Visible keyboard-focus ring (WCAG 2.4.7 Focus Visible). :focus-visible fires
@@ -136,6 +159,9 @@ select {
   font-family: inherit;
   color: var(--text);
   background: transparent;
+  /* The OS-default blue caret is the only non-brass chrome in an app whose
+     design law is "brass is the only accent." */
+  caret-color: var(--accent);
 }
 
 ::placeholder {

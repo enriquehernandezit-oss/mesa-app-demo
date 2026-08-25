@@ -149,8 +149,12 @@ One stroke-SVG icon language (`components/ui/icons.tsx`), matching the tab
 bar's original style: 24 viewBox, 1.6 stroke, round caps/joins, `currentColor`
 (themes for free). Add new icons there — do not reach for a Unicode dingbat.
 
-- **🥂 is the one sanctioned emoji** — Mesa's cheers gesture (Rankings,
-  Activity, share copy). Nothing else uses emoji.
+- The cheers reaction (feed, Activity) is `HeartIcon`/`HeartFilledIcon` in
+  `components/ui/icons.tsx`, not an emoji — a full-colour glyph was the only
+  thing in the app breaking "brass is the only accent." **🥂 is the one
+  sanctioned emoji**, kept *only* in outbound share copy (WhatsApp/iMessage
+  text that leaves the app) as Mesa's brand voice — an SVG can't travel in a
+  text message. Nothing else uses emoji.
 - Text-glyph punctuation used *as prose*, matching the mocks' literal copy
   strings, stays: the `‹`/`›` chevrons in header/link text ("‹ Add a note",
   "2 friends ›") and the `✕` close-glyph in flow headers ("✕ Recents"). These

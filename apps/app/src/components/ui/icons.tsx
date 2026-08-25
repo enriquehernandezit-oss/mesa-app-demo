@@ -142,9 +142,31 @@ export const BookmarkIcon = (p: IconProps) => (
   </Icon>
 )
 
-// "Recomendados para ti" nav row — was ♡
+// The reaction (Cheers/CheersButton, was 🥂) — outline is the inactive state,
+// HeartFilledIcon is the active one. Was ♡ at "Recomendados para ti" before
+// that row moved to CompassIcon below, freeing the shape for its more literal
+// meaning.
 export const HeartIcon = (p: IconProps) => (
   <Icon {...p}>
     <path d="M12 20.5s-7.5-4.6-9.7-9A5.3 5.3 0 0 1 12 6.3 5.3 5.3 0 0 1 21.7 11.5c-2.2 4.4-9.7 9-9.7 9Z" />
+  </Icon>
+)
+
+export const HeartFilledIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path
+      d="M12 20.5s-7.5-4.6-9.7-9A5.3 5.3 0 0 1 12 6.3 5.3 5.3 0 0 1 21.7 11.5c-2.2 4.4-9.7 9-9.7 9Z"
+      fill="currentColor"
+    />
+  </Icon>
+)
+
+// "Recomendados para ti" nav row. A compass reads as "discovery" without
+// looking like a rating — DESIGN.md bans star glyphs outright, and Mesa never
+// shows a rating symbol of any kind.
+export const CompassIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M15.5 8.5 13.3 13.3 8.5 15.5l2.2-4.8 4.8-2.2Z" />
   </Icon>
 )

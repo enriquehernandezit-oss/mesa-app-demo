@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
+import { HeartFilledIcon, HeartIcon } from '../../components/ui/icons'
 import { api } from '../../lib/api'
+import { tapLight } from '../../lib/haptics'
 import './feed.css'
 
-// 🥂 — the one-tap reaction on a feed item. Optimistic with a pop animation;
-// both API calls are idempotent so a rapid toggle can't drift.
+// The heart — the one-tap reaction on a feed item (was 🥂; see DESIGN.md
+// Iconography). Optimistic with a pop animation; both API calls are
+// idempotent so a rapid toggle can't drift.
 export function CheersButton({
   rankingId,
   count,
@@ -35,6 +38,7 @@ export function CheersButton({
     setN((cur) => cur + (next ? 1 : -1))
     if (next) {
       setPopping(true)
+      tapLight()
       setTimeout(() => setPopping(false), 450)
     }
     toggle.mutate(next)
@@ -47,7 +51,9 @@ export function CheersButton({
       onClick={onTap}
       aria-label={on ? 'Quitar brindis' : 'Brindar'}
     >
-      <span className="cheers__glass">🥂</span>
+      <span className="cheers__icon">
+        {on ? <HeartFilledIcon size={15} /> : <HeartIcon size={15} />}
+      </span>
       {n > 0 && <span className="cheers__count">{n}</span>}
     </button>
   )

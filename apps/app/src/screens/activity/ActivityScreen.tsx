@@ -154,7 +154,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       <div className="activity-row__main">
         <span className="activity-row__text">
           <b>{a.user.name || a.user.handle}</b>{' '}
-          {a.type === 'cheers' && <>le dio cheers a tu ranking de {place} 🥂</>}
+          {a.type === 'cheers' && <>le dio cheers a tu ranking de {place}</>}
           {a.type === 'follow' && 'empezó a seguirte'}
           {a.type === 'saved_ranked' && <>rankeó {place} — está en tu lista</>}
           {a.type === 'friend_ranked' && a.score != null && (

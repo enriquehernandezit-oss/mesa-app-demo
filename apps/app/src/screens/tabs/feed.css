@@ -141,11 +141,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Cheers (🥂) --- */
+/* --- Cheers (the heart reaction) --- */
 .cheers {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
   min-height: 44px;
   gap: 6px;
   padding: var(--space-1) var(--space-3);
@@ -165,19 +166,21 @@
   border-color: var(--accent);
   color: var(--accent-strong);
 }
-.cheers--pop .cheers__glass {
+.cheers__icon {
+  display: inline-flex;
+}
+.cheers--pop .cheers__icon {
   animation: cheers-pop 0.45s var(--ease-spring);
-  display: inline-block;
 }
 @keyframes cheers-pop {
   0% {
-    transform: scale(1) rotate(0);
+    transform: scale(1);
   }
   40% {
-    transform: scale(1.6) rotate(-12deg);
+    transform: scale(1.5);
   }
   100% {
-    transform: scale(1) rotate(0);
+    transform: scale(1);
   }
 }
 .cheers__count {
@@ -192,6 +195,9 @@
   display: flex;
   gap: var(--space-3);
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   margin: 0 calc(-1 * var(--space-5));
   padding: 0 var(--space-5);
@@ -216,6 +222,7 @@
   justify-content: flex-end;
   padding: var(--space-3);
   isolation: isolate;
+  scroll-snap-align: start;
   transition: transform 0.15s var(--ease-out);
 }
 .rail-card:active {
@@ -265,7 +272,10 @@
   background: var(--surface);
   color: var(--text);
   font-family: var(--font-ui);
-  font-size: var(--text-label);
+  /* Below 16px iOS Safari zooms the whole page on focus and never zooms back
+     out. This is the app's primary search box (ExploreScreen's real <input>;
+     the Discover copy is a same-sized <Link>, see .search-field--link). */
+  font-size: var(--text-body);
   outline: none;
   transition: border-color 0.15s ease;
 }

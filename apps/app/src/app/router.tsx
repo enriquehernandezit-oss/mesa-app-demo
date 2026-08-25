@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 import { TopBar } from '../components/TopBar'
 import { Body, SerifItalic, Wordmark } from '../components/ui'
+import { tapLight } from '../lib/haptics'
 import { ActivityScreen } from '../screens/activity/ActivityScreen'
 import { DishCompose } from '../screens/dish/DishCompose'
 import { DishDetail } from '../screens/dish/DishDetail'
@@ -83,7 +84,7 @@ function TabBar() {
     <nav className="tab-bar" aria-label="Principal">
       <TabLink {...TABS[0]} />
       <TabLink {...TABS[1]} />
-      <Link to="/rank" className="tab-fab" aria-label="Rankear un spot">
+      <Link to="/rank" className="tab-fab" aria-label="Rankear un spot" onClick={tapLight}>
         <svg
           width="26"
           height="26"
