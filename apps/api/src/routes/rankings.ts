@@ -89,6 +89,8 @@ export const rankingsRoutes = new Hono<AppEnv>()
           priceTier: restaurants.priceTier,
           closesAt: restaurants.closesAt,
           phone: restaurants.phone,
+          lat: restaurants.lat,
+          lng: restaurants.lng,
         },
         neighborhood: neighborhoods.name,
         note: vibeNotes.body,
@@ -127,6 +129,8 @@ export const rankingsRoutes = new Hono<AppEnv>()
         priceTier: restaurants.priceTier,
         closesAt: restaurants.closesAt,
         phone: restaurants.phone,
+        lat: restaurants.lat,
+        lng: restaurants.lng,
       })
       .from(restaurants)
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))

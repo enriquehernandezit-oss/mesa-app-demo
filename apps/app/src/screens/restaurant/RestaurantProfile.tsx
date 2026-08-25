@@ -19,6 +19,7 @@ import { comingSoon } from '../../lib/comingSoon'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
+import { openNavChooser } from '../../lib/navChooser'
 import { getFriendsOnlyScores } from '../../lib/prefs'
 import { renderSpotCard, shareCard } from '../../lib/shareCard'
 import type { Dish, RestaurantProfileResponse } from '../../lib/types'
@@ -94,7 +95,6 @@ export function RestaurantProfile() {
   } = q.data
   const cover = cloudinaryUrl(restaurant.coverImageId, { w: 1000, h: 750 })
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`
   const meta = [
     cuisineLabel(restaurant.cuisine),
     restaurant.neighborhood?.name,
@@ -223,9 +223,14 @@ export function RestaurantProfile() {
           )}
           <UtilityPill
             icon={<DirectionsIcon size={13} />}
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
+            onClick={() =>
+              openNavChooser({
+                kind: 'coords',
+                lat: restaurant.lat,
+                lng: restaurant.lng,
+                label: restaurant.name,
+              })
+            }
           >
             Cómo llegar
           </UtilityPill>

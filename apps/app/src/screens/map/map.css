@@ -66,6 +66,34 @@
   opacity: 0.9;
 }
 
+/* "You are here" — deliberately neither the dim unranked-pin grey nor brass
+   (brass means "a friend ranked this"; this dot means something else
+   entirely, and isn't a new hue — it's --text, already in the palette).
+   Animates r/opacity, not transform: SVG's CSS transform-origin has known
+   cross-browser inconsistencies for shape elements, not worth it for one
+   small decorative pulse. */
+.map-me__dot {
+  fill: var(--text);
+  stroke: var(--bg);
+  stroke-width: 1.2;
+}
+.map-me__halo {
+  fill: var(--text);
+  opacity: 0.16;
+  animation: map-me-pulse 2.4s var(--ease-out) infinite;
+}
+@keyframes map-me-pulse {
+  0%,
+  100% {
+    r: 9;
+    opacity: 0.16;
+  }
+  50% {
+    r: 13;
+    opacity: 0.04;
+  }
+}
+
 /* Selection card + scrim. */
 /* Modal tier — one step above the app's chrome ladder (tab-bar 10, cta-bar 15,
    condensed 20, topbar 30): the scrim and its sheet sit over everything. */
@@ -82,7 +110,7 @@
 .map-card {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--space-5) + var(--safe-bottom));
   transform: translateX(-50%);
   width: min(440px, calc(100vw - 2 * var(--space-4)));
   z-index: 41;
@@ -162,6 +190,10 @@
   padding: 0 var(--space-3);
   border-radius: 12px;
   border: 1px solid var(--brass-line);
+  /* Now a <button> (opens the nav chooser, not a direct link) — without this
+     it'd show the UA's default grey buttonface through the transparent gaps
+     of the brass border. */
+  background: none;
   color: var(--accent-strong);
   font-family: var(--font-mono);
   font-size: 10px;

@@ -18,6 +18,8 @@ import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { api } from '../../lib/api'
 import { displayScore, scoreForPosition } from '../../lib/display'
+import { formatDistance, haversineM } from '../../lib/geo'
+import { tapSuccess } from '../../lib/haptics'
 import { cloudinaryUrl } from '../../lib/media'
 import {
   type PairwiseState,
@@ -37,6 +39,7 @@ import type {
   RestaurantProfileResponse,
   SavedPlace,
 } from '../../lib/types'
+import { useMyLocation } from '../../lib/useMyLocation'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
 import '../../styles/screens.css'
@@ -55,6 +58,8 @@ type Item = {
   priceTier?: number | null
   closesAt?: string | null
   phone?: string | null
+  lat?: number
+  lng?: number
   score?: number // present when it's already on your list
 }
 
@@ -113,6 +118,8 @@ export function RankAPlace() {
         priceTier: r.restaurant.priceTier,
         closesAt: r.restaurant.closesAt,
         phone: r.restaurant.phone,
+        lat: r.restaurant.lat,
+        lng: r.restaurant.lng,
         score: r.score,
       })),
     [mine.data],
@@ -194,6 +201,7 @@ export function RankAPlace() {
         navigate({ to: '/dish', search: { restaurant: pickedId } })
       } else {
         setPlacedStamp(true)
+        tapSuccess()
         setTimeout(() => navigate({ to: '/rankings' }), 1300)
       }
     },
@@ -778,6 +786,7 @@ function FindStep({
   onBack: () => void
 }) {
   const [adding, setAdding] = useState(false)
+  const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
   const merged: Item[] = [...candList, ...existing]
   let filtered = merged.filter((r) => {
@@ -790,7 +799,25 @@ function FindStep({
       (r.neighborhood ?? '').toLowerCase().includes(q)
     )
   })
-  if (nearby && myHood) {
+  const distanceOf = (r: Item) =>
+    myPosition && r.lat != null && r.lng != null
+      ? haversineM(myPosition, { lat: r.lat, lng: r.lng })
+      : null
+  if (nearby && myPosition) {
+    // Real distance, once we have one. Rows with no coordinates (a member-
+    // added place before it has a geocode) sort to the end rather than being
+    // dropped — they're still real candidates, just an unknown distance.
+    filtered = [...filtered].sort((a, b) => {
+      const da = distanceOf(a)
+      const db = distanceOf(b)
+      if (da == null && db == null) return a.name.localeCompare(b.name)
+      if (da == null) return 1
+      if (db == null) return -1
+      return da - db
+    })
+  } else if (nearby && myHood) {
+    // No position yet (denied, or the request is still in flight) — degrade
+    // to the self-declared-sector match rather than blocking the sort.
     filtered = [...filtered].sort((a, b) => {
       const am = a.neighborhood === myHood ? 0 : 1
       const bm = b.neighborhood === myHood ? 0 : 1
@@ -812,6 +839,7 @@ function FindStep({
 
   const renderRow = (r: Item) => {
     const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
+    const dist = distanceOf(r)
     return (
       <button key={r.id} type="button" className="rank-row" onClick={() => onPick(r.id)}>
         {thumb ? (
@@ -826,6 +854,7 @@ function FindStep({
             cuisine={r.cuisine}
             neighborhood={r.neighborhood}
             hours={r.closesAt ? `hasta ${r.closesAt}` : null}
+            distance={dist != null ? formatDistance(dist) : null}
           />
         </div>
         {r.score != null ? (
@@ -855,7 +884,10 @@ function FindStep({
         <Chip
           size="sm"
           state={nearby ? 'selected' : 'default'}
-          onClick={() => setNearby((v) => !v)}
+          onClick={() => {
+            setNearby((v) => !v)
+            requestLocation()
+          }}
         >
           Cerca
         </Chip>
@@ -877,7 +909,7 @@ function FindStep({
 
       <div className="rank-results" style={{ marginTop: 'var(--space-4)' }}>
         {leadGroup.length === 0 && results.length === 0 && !q ? (
-          <Body>Ya rankeaste todo en Mesa. 👏</Body>
+          <Body>Ya rankeaste todo en Mesa.</Body>
         ) : leadGroup.length === 0 && results.length === 0 ? (
           <Body>Nada coincide. Prueba con otro nombre.</Body>
         ) : (

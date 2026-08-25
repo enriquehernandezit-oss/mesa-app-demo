@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { comingSoon } from '../lib/comingSoon'
+import { requestMyLocation } from '../lib/useMyLocation'
 import { ActionRail } from './ui'
 import { OrderIcon, PinIcon, ReserveIcon } from './ui/icons'
 
@@ -34,7 +35,7 @@ export function QuickActions() {
         </span>{' '}
         Pedir
       </button>
-      <Link to="/map" className="upill">
+      <Link to="/map" className="upill" onClick={() => requestMyLocation()}>
         <span className="upill__icon">
           <PinIcon size={13} />
         </span>{' '}

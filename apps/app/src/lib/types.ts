@@ -47,6 +47,8 @@ export interface RankedRestaurant {
   priceTier?: number | null
   closesAt?: string | null
   phone?: string | null
+  lat?: number
+  lng?: number
 }
 
 // A row in a ranked list (mine or someone else's).

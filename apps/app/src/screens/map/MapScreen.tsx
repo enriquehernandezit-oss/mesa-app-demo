@@ -5,9 +5,12 @@ import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
 import { api } from '../../lib/api'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
+import type { LatLng } from '../../lib/geo'
 import { cloudinaryUrl } from '../../lib/media'
+import { openNavChooser } from '../../lib/navChooser'
 import type { MapSpot } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
+import { useMyLocation } from '../../lib/useMyLocation'
 import '../tabs/tabs.css'
 import './map.css'
 
@@ -29,6 +32,7 @@ interface Placed extends MapSpot {
 interface Projection {
   placed: Placed[]
   vh: number // viewBox height, sized to the data so there's no dead space
+  me: { x: number; y: number } | null
 }
 
 // Equirectangular projection: fit the spots to the fixed width (longitude
@@ -36,10 +40,20 @@ interface Projection {
 // height follow the data's own aspect ratio. Santo Domingo's upscale strip is
 // far wider east–west than north–south, so this keeps the frame from being
 // half-empty. Clamped to a sane band for degenerate spreads.
-function project(spots: MapSpot[]): Projection {
-  if (spots.length === 0) return { placed: [], vh: 260 }
+//
+// `me` (the device's real position, once known) is folded into the SAME
+// bounds as the restaurants before the scale is computed — not projected
+// separately against the restaurants' own bounds — so "you are here" is
+// always inside the viewBox even if the user is a bit outside the usual
+// restaurant cluster, instead of silently landing off-canvas.
+function project(spots: MapSpot[], me: LatLng | null): Projection {
+  if (spots.length === 0) return { placed: [], vh: 260, me: null }
   const lats = spots.map((s) => s.lat)
   const lngs = spots.map((s) => s.lng)
+  if (me) {
+    lats.push(me.lat)
+    lngs.push(me.lng)
+  }
   const minLat = Math.min(...lats)
   const maxLat = Math.max(...lats)
   const minLng = Math.min(...lngs)
@@ -51,12 +65,12 @@ function project(spots: MapSpot[]): Projection {
   const contentH = geoH * scale
   const vh = Math.min(460, Math.max(220, contentH + 2 * PAD))
   const offY = (vh - contentH) / 2
-  const placed = spots.map((s) => ({
-    ...s,
-    x: PAD + (s.lng - minLng) * Math.cos(latRad) * scale,
-    y: offY + (maxLat - s.lat) * scale, // north up
-  }))
-  return { placed, vh }
+  const toXY = (p: LatLng) => ({
+    x: PAD + (p.lng - minLng) * Math.cos(latRad) * scale,
+    y: offY + (maxLat - p.lat) * scale, // north up
+  })
+  const placed = spots.map((s) => ({ ...s, ...toXY(s) }))
+  return { placed, vh, me: me ? toXY(me) : null }
 }
 
 // One label per neighborhood, at the centroid of its plotted spots.
@@ -85,8 +99,10 @@ export function MapScreen() {
     staleTime: 120_000,
   })
 
+  const { position: myPosition } = useMyLocation()
+
   const spots = q.data?.spots ?? []
-  const { placed, vh } = useMemo(() => project(spots), [spots])
+  const { placed, vh, me } = useMemo(() => project(spots, myPosition), [spots, myPosition])
   const labels = useMemo(() => neighborhoodLabels(placed), [placed])
   const selected = placed.find((p) => p.id === selectedId) ?? null
   const rankedByFriends = placed.filter((p) => p.friendCount > 0).length
@@ -135,6 +151,13 @@ export function MapScreen() {
                   {l.name}
                 </text>
               ))}
+
+              {me && (
+                <g aria-hidden className="map-me">
+                  <circle cx={me.x} cy={me.y} r="9" className="map-me__halo" />
+                  <circle cx={me.x} cy={me.y} r="3.4" className="map-me__dot" />
+                </g>
+              )}
 
               {placed.map((p) => {
                 const isSel = p.id === selectedId
@@ -203,10 +226,6 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
   const meta = [cuisineLabel(spot.cuisine), spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
-  // Hand off to the OS maps app for turn-by-turn from the user's location.
-  // Google's universal link deep-links to the Google Maps app on device and
-  // falls back to Apple Maps / the browser when it isn't installed.
-  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`
   return (
     <div className="map-card">
       {thumb ? (
@@ -231,9 +250,15 @@ function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
         </div>
       </div>
       <div className="map-card__actions">
-        <a className="map-card__dir" href={directionsUrl} target="_blank" rel="noreferrer">
+        <button
+          type="button"
+          className="map-card__dir"
+          onClick={() =>
+            openNavChooser({ kind: 'coords', lat: spot.lat, lng: spot.lng, label: spot.name })
+          }
+        >
           Cómo llegar
-        </a>
+        </button>
         <Link
           to="/r/$restaurantId"
           params={{ restaurantId: spot.id }}

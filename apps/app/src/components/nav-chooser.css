@@ -1,0 +1,84 @@
+/* The Waze/Google Maps/Apple Maps chooser — see lib/navChooser.ts. Same
+   modal tier and scrim-covers-window / panel-stays-in-frame split as
+   rank-coach-scrim: the scrim dims the whole viewport (partial dimming would
+   look broken), the panel itself is app chrome and stays within --frame-max. */
+.nav-chooser-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--overlay-scrim);
+  opacity: 1;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.nav-chooser-scrim[data-mounted="false"] {
+  opacity: 0;
+}
+
+.nav-chooser {
+  width: 100%;
+  max-width: calc(var(--frame-max) - 2 * var(--space-4));
+  margin: var(--space-4);
+  margin-bottom: calc(var(--safe-bottom) + var(--space-4));
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 22px 60px var(--shadow-card);
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out);
+}
+.nav-chooser-scrim[data-mounted="false"] .nav-chooser {
+  transform: translateY(16px);
+  opacity: 0;
+}
+
+.nav-chooser__title {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.nav-chooser__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+.nav-chooser__option:active {
+  background: var(--surface-raised);
+}
+.nav-chooser__option svg {
+  color: var(--accent);
+}
+
+.nav-chooser__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--line);
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+}

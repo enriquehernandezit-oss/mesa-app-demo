@@ -5,6 +5,7 @@ import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { seatsLeft, tonightTable } from '../../fixtures/tonight'
 import { comingSoon } from '../../lib/comingSoon'
+import { openNavChooser } from '../../lib/navChooser'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
@@ -32,9 +33,9 @@ export function TonightDetail() {
 
   const left = seatsLeft(t)
   const hostFirst = t.host.name.split(' ')[0] ?? t.host.name
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${t.restaurant.name} ${t.restaurant.neighborhood} Santo Domingo`,
-  )}`
+  // Fixture data has no lat/lng — a text query, not coordinates (Waze can't
+  // take one, so the sheet omits it for a 'query' request; see navChooser.ts).
+  const restaurantQuery = `${t.restaurant.name} ${t.restaurant.neighborhood} Santo Domingo`
 
   return (
     <div className="dish-detail">
@@ -89,12 +90,18 @@ export function TonightDetail() {
             </span>{' '}
             Llamar
           </button>
-          <a className="upill" href={mapsUrl} target="_blank" rel="noreferrer">
+          <button
+            type="button"
+            className="upill"
+            onClick={() =>
+              openNavChooser({ kind: 'query', query: restaurantQuery, label: t.restaurant.name })
+            }
+          >
             <span className="upill__icon">
               <DirectionsIcon size={13} />
             </span>{' '}
             Cómo llegar
-          </a>
+          </button>
         </div>
 
         <div className="tonight-kv">

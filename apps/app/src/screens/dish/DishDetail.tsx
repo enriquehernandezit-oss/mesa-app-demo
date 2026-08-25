@@ -5,6 +5,7 @@ import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { filterForGrain } from '../../lib/image'
+import { openNavChooser } from '../../lib/navChooser'
 import type { DishDetail as DishDetailData } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
@@ -45,7 +46,6 @@ export function DishDetail() {
   const { dish } = q.data
   const { restaurant } = dish
   const firstName = (dish.user.name || dish.user.handle || '').split(' ')[0] || 'alguien'
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${restaurant.lat},${restaurant.lng}`
 
   return (
     <div className="dish-detail">
@@ -100,9 +100,14 @@ export function DishDetail() {
           )}
           <UtilityPill
             icon={<DirectionsIcon size={13} />}
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
+            onClick={() =>
+              openNavChooser({
+                kind: 'coords',
+                lat: restaurant.lat,
+                lng: restaurant.lng,
+                label: restaurant.name,
+              })
+            }
           >
             Cómo llegar
           </UtilityPill>
