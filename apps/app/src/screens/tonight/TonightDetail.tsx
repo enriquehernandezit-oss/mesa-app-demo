@@ -1,11 +1,14 @@
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { Body, Button, EmptyState } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { seatsLeft, tonightTable } from '../../fixtures/tonight'
+import { api } from '../../lib/api'
 import { comingSoon } from '../../lib/comingSoon'
 import { openNavChooser } from '../../lib/navChooser'
+import type { ExploreResponse } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
@@ -19,6 +22,20 @@ export function TonightDetail() {
   const navigate = useNavigate()
   const goBack = useBack(() => navigate({ to: '/tonight' }))
   const t = tonightTable(tableId)
+
+  // The fixture carries no restaurantId (it predates the real catalog), so the
+  // name is resolved to a real place at runtime via the same search endpoint
+  // Explore uses. Falls back to plain text if the lookup misses.
+  const lookup = useQuery({
+    queryKey: ['restaurant-by-name', t?.restaurant.name],
+    queryFn: () =>
+      api.get<ExploreResponse>(`/restaurants?q=${encodeURIComponent(t?.restaurant.name ?? '')}`),
+    enabled: Boolean(t),
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+  // Exact-name match only — the search is a substring ilike, so a partial hit
+  // must not resolve to the wrong restaurant.
+  const linkedId = lookup.data?.restaurants.find((r) => r.name === t?.restaurant.name)?.id ?? null
 
   if (!t) {
     return (
@@ -52,7 +69,19 @@ export function TonightDetail() {
 
       <div className="dish-detail__body">
         <div className="tonight-detail__head">
-          <h1 className="dish-detail__title">{t.restaurant.name}</h1>
+          <h1 className="dish-detail__title">
+            {linkedId ? (
+              <Link
+                to="/r/$restaurantId"
+                params={{ restaurantId: linkedId }}
+                className="tonight-detail__place"
+              >
+                {t.restaurant.name} ›
+              </Link>
+            ) : (
+              t.restaurant.name
+            )}
+          </h1>
           <ScoreBadge
             size="sm"
             score={t.hostScore}
