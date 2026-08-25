@@ -7,14 +7,24 @@
 // confused with real listings later. The friends, their rankings, and the vibe
 // notes are fictional and clearly attributed to demo accounts.
 
-export type NeighborhoodSeed = { slug: string; name: string }
+export type NeighborhoodSeed = {
+  slug: string
+  name: string
+  // Centroid + jitter radius (meters) — the average of this sector's own
+  // restaurants below, not a guess. Kept in sync by hand with migration
+  // 0008's backfill, which computed these same values for an existing DB;
+  // a fresh `db:seed` needs to produce identical numbers.
+  lat: number
+  lng: number
+  radiusM: number
+}
 
 export const neighborhoods: NeighborhoodSeed[] = [
-  { slug: 'piantini', name: 'Piantini' },
-  { slug: 'naco', name: 'Naco' },
-  { slug: 'bella-vista', name: 'Bella Vista' },
-  { slug: 'serralles', name: 'Serrallés' },
-  { slug: 'zona-colonial', name: 'Zona Colonial' },
+  { slug: 'piantini', name: 'Piantini', lat: 18.4688, lng: -69.9374, radiusM: 623 },
+  { slug: 'naco', name: 'Naco', lat: 18.4728, lng: -69.9272, radiusM: 902 },
+  { slug: 'bella-vista', name: 'Bella Vista', lat: 18.455, lng: -69.9417, radiusM: 400 },
+  { slug: 'serralles', name: 'Serrallés', lat: 18.463, lng: -69.9292, radiusM: 400 },
+  { slug: 'zona-colonial', name: 'Zona Colonial', lat: 18.4739, lng: -69.8849, radiusM: 743 },
 ]
 
 export type RestaurantSeed = {

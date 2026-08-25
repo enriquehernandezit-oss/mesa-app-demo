@@ -1,3 +1,4 @@
+import { type SQL, sql } from 'drizzle-orm'
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { restaurants } from './discovery'
@@ -26,6 +27,11 @@ export const dishes = pgTable(
       .notNull()
       .references(() => restaurants.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    // Normalized for search — see restaurants.nameKey in discovery.ts for
+    // why this is a generated column rather than an expression index.
+    nameKey: text('name_key').generatedAlwaysAs(
+      (): SQL => sql`mesa_norm(${sql.identifier('name')})`,
+    ),
     caption: text('caption'),
     imageId: text('image_id').notNull(),
     // Capture-time grain treatment (a Cloudinary transform in prod).
@@ -39,5 +45,6 @@ export const dishes = pgTable(
     index('dishes_restaurant_idx').on(t.restaurantId, t.createdAt),
     index('dishes_user_idx').on(t.userId, t.createdAt),
     index('dishes_ranking_idx').on(t.rankingId),
+    index('dishes_name_key_trgm_idx').using('gin', sql`${t.nameKey} gin_trgm_ops`),
   ],
 )

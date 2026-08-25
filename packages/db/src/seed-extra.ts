@@ -18,8 +18,8 @@ export function mulberry32(seed: number): () => number {
 }
 
 export const extraNeighborhoods = [
-  { slug: 'gazcue', name: 'Gazcue' },
-  { slug: 'evaristo-morales', name: 'Evaristo Morales' },
+  { slug: 'gazcue', name: 'Gazcue', lat: 18.4659, lng: -69.9103, radiusM: 775 },
+  { slug: 'evaristo-morales', name: 'Evaristo Morales', lat: 18.4719, lng: -69.943, radiusM: 700 },
 ]
 
 export type RestaurantSeedX = RestaurantSeed & { priceTier: number }

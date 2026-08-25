@@ -171,12 +171,14 @@ export function ExploreScreen() {
                       hours={r.closesAt ? `hasta ${r.closesAt}` : null}
                     />
                   </div>
-                  {r.friendCount > 0 && r.friendAvg != null && (
+                  {r.friendCount > 0 && r.friendAvg != null ? (
                     <ScoreBadge
                       size="sm"
                       score={r.friendAvg}
                       attribution={{ kind: 'friends', count: r.friendCount }}
                     />
+                  ) : (
+                    r.isNew && <span className="explore-row__new">Sé el primero</span>
                   )}
                 </Link>
               )

@@ -23,6 +23,20 @@
   font-variant-numeric: lining-nums proportional-nums;
 }
 
+/* A searched hit nobody on Mesa has ranked yet — fills the ScoreBadge's slot
+   so the row still reads as a real listing, not a blank space. */
+.explore-row__new {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  color: var(--text-muted);
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* Member result row ("place, dish, or member"). */
 .explore-member {
   display: flex;

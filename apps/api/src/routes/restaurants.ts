@@ -3,6 +3,7 @@ import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from 
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
+import { findExistingMatch } from '../lib/placeMatch'
 import { requireAuth } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
@@ -16,8 +17,24 @@ const { neighborhoods, lists, listItems } = schema
 export const restaurantRoutes = new Hono<AppEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
-  // filtered by neighborhood slug + price tier and sorted by friends' score.
-  // Each row carries the signal from people you follow (avg + count). One query.
+  // filtered by neighborhood slug + price tier. Two phases, not one grouped
+  // query over the whole table: resolve up to 30 matching ids first (cheap —
+  // an index-backed WHERE + ORDER BY + LIMIT, no join), THEN join the friend/
+  // all-Mesa aggregates onto exactly those 30. At 49 rows the old GROUP-BY-
+  // everything-then-LIMIT shape didn't matter; once the catalog is thousands
+  // of rows (Foursquare import, M6) it would mean aggregating rankings across
+  // the entire table on every keystroke.
+  //
+  // Search matches name_key/cuisine_key/dishes.name_key (generated columns,
+  // GIN trigram-indexed — see packages/db/drizzle/0008) against mesa_norm(q),
+  // so "serralles" matches "Serrallés" — both sides normalized the same way.
+  // Ranked prefix-match → similarity → name, which is what makes it feel
+  // Beli-like rather than a plain substring filter.
+  //
+  // No query: browsing the raw catalog is useless once most of it has never
+  // been ranked by anyone (the whole point of the Foursquare import), so the
+  // pool is restaurants with at least one ranking — by anyone on Mesa, not
+  // just people you follow; friends still sort first via friendAvg.
   .get('/', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
@@ -33,55 +50,111 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .from(follows)
       .where(eq(follows.followerId, me.id))
 
-    const conds = []
+    const liveConds = [isNull(restaurants.removedAt), isNull(restaurants.closedAt)]
+    if (hood) liveConds.push(eq(neighborhoods.slug, hood))
+    if (price) liveConds.push(eq(restaurants.priceTier, price))
+    // "Open now" is a demo filter over the display close-time (not real hours).
+    if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
+
+    let ids: string[]
     if (hasQuery) {
-      const pattern = `%${q}%`
-      // A place matches by its own text OR by having a dish whose name matches —
-      // that's the "dish" half of "place, dish, or member". One subquery.
+      const norm = sql`mesa_norm(${q})`
+      // A place matches by its own text OR by having a dish whose name
+      // matches — the "dish" half of "place, dish, or member".
       const dishMatch = db
         .select({ id: schema.dishes.restaurantId })
         .from(schema.dishes)
-        .where(and(ilike(schema.dishes.name, pattern), isNull(schema.dishes.removedAt)))
-      conds.push(
+        .where(
+          and(
+            sql`${schema.dishes.nameKey} ilike '%' || ${norm} || '%'`,
+            isNull(schema.dishes.removedAt),
+          ),
+        )
+      const matchConds = [
+        ...liveConds,
         or(
-          ilike(restaurants.name, pattern),
-          ilike(restaurants.cuisine, pattern),
-          ilike(neighborhoods.name, pattern),
+          sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+          sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
+          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
           inArray(restaurants.id, dishMatch),
         ),
-      )
+      ]
+      const idRows = await db
+        .select({ id: restaurants.id })
+        .from(restaurants)
+        .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+        .where(and(...matchConds))
+        .orderBy(
+          sort === 'name'
+            ? asc(restaurants.name)
+            : sql`(${restaurants.nameKey} like ${norm} || '%') desc,
+                  similarity(${restaurants.nameKey}, ${norm}) desc,
+                  ${restaurants.name} asc`,
+        )
+        .limit(30)
+      ids = idRows.map((r) => r.id)
+    } else {
+      const rankedPool = db.selectDistinct({ id: rankings.restaurantId }).from(rankings)
+      const idRows = await db
+        .select({
+          id: restaurants.id,
+          friendAvg: sql<
+            number | null
+          >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})`,
+          mesaAvg: sql<number | null>`avg(${rankings.score})`,
+        })
+        .from(restaurants)
+        .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+        // The subquery's select key ("id") is a JS-side label only — Drizzle
+        // doesn't rename the column in the generated SQL, so the exposed
+        // column is still restaurant_id (confirmed via .toSQL()).
+        .innerJoin(rankedPool.as('ranked'), sql`ranked.restaurant_id = ${restaurants.id}`)
+        .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
+        .where(and(...liveConds))
+        .groupBy(restaurants.id)
+        .orderBy(
+          sort === 'name'
+            ? asc(restaurants.name)
+            : sql`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)}) desc nulls last,
+                  avg(${rankings.score}) desc nulls last,
+                  ${restaurants.name} asc`,
+        )
+        .limit(30)
+      ids = idRows.map((r) => r.id)
     }
-    if (hood) conds.push(eq(neighborhoods.slug, hood))
-    if (price) conds.push(eq(restaurants.priceTier, price))
-    // "Open now" is a demo filter over the display close-time (not real hours).
-    if (openNow) conds.push(sql`${restaurants.closesAt} is not null`)
 
-    const rows = await db
-      .select({
-        id: restaurants.id,
-        name: restaurants.name,
-        cuisine: restaurants.cuisine,
-        coverImageId: restaurants.coverImageId,
-        neighborhood: neighborhoods.name,
-        priceTier: restaurants.priceTier,
-        closesAt: restaurants.closesAt,
-        friendAvg: sql<number | null>`avg(${rankings.score})::float`,
-        friendCount: sql<number>`count(${rankings.id})::int`,
-      })
-      .from(restaurants)
-      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .leftJoin(
-        rankings,
-        and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
-      )
-      .where(conds.length ? and(...conds) : undefined)
-      .groupBy(restaurants.id, neighborhoods.name)
-      .orderBy(
-        sort === 'name'
-          ? asc(restaurants.name)
-          : sql`avg(${rankings.score}) desc nulls last, ${restaurants.name} asc`,
-      )
-      .limit(30)
+    // Phase 2 — the actual display row, for exactly those ids. Recomputed
+    // fresh rather than reusing phase 1's aggregate: cheap over ≤30 rows, and
+    // keeps the row shape identical whichever phase produced the id list.
+    const rowsUnordered = ids.length
+      ? await db
+          .select({
+            id: restaurants.id,
+            name: restaurants.name,
+            cuisine: restaurants.cuisine,
+            coverImageId: restaurants.coverImageId,
+            neighborhood: neighborhoods.name,
+            priceTier: restaurants.priceTier,
+            closesAt: restaurants.closesAt,
+            address: restaurants.address,
+            friendAvg: sql<
+              number | null
+            >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})::float`,
+            friendCount: sql<number>`count(${rankings.id}) filter (where ${inArray(rankings.userId, following)})::int`,
+            mesaCount: sql<number>`count(${rankings.id})::int`,
+          })
+          .from(restaurants)
+          .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+          .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
+          .where(inArray(restaurants.id, ids))
+          .groupBy(restaurants.id, neighborhoods.name)
+      : []
+    // `WHERE id = ANY(...)` doesn't preserve phase 1's order — reorder in JS
+    // rather than a gnarly array_position SQL expression for ≤30 rows.
+    const order = new Map(ids.map((id, i) => [id, i]))
+    const rows = rowsUnordered
+      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+      .map((r) => ({ ...r, isNew: r.mesaCount === 0 }))
 
     // Members half of "place, dish, or member" — only when there's a query.
     let members: {
@@ -358,8 +431,11 @@ export const restaurantRoutes = new Hono<AppEnv>()
     })
   })
   // Add a place that isn't on Mesa yet ("Can't find it? Add a new restaurant" in
-  // the rank flow). Minimal fields; coordinates default to the city centre since
-  // a member-added spot has no geocode yet. Marked isDemo=false — it's real UGC.
+  // the rank flow). Minimal fields; coordinates land on the neighborhood's
+  // centroid — a real, computed point (see packages/db/drizzle/0008), not the
+  // old hardcoded Santo Domingo city-centre fallback every member-added spot
+  // used to share. Marked source='member', geoPrecision='sector' — it's real
+  // UGC, but not a real geocode.
   .post('/', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
@@ -378,9 +454,20 @@ export const restaurantRoutes = new Hono<AppEnv>()
 
     const hood = await db.query.neighborhoods.findFirst({
       where: eq(neighborhoods.slug, neighborhoodSlug),
-      columns: { id: true, name: true, slug: true },
+      columns: { id: true, name: true, slug: true, lat: true, lng: true },
     })
     if (!hood) return c.json({ error: 'unknown_neighborhood' }, 400)
+
+    // Someone re-typing a restaurant that's already on Mesa becomes an
+    // adoption, not a duplicate row — see placeMatch.ts.
+    const existing = await findExistingMatch({ name, lat: hood.lat, lng: hood.lng })
+    if (existing) {
+      const full = await db.query.restaurants.findFirst({
+        where: eq(restaurants.id, existing.id),
+        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
+      })
+      if (full) return c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200)
+    }
 
     const [created] = await db
       .insert(restaurants)
@@ -388,8 +475,11 @@ export const restaurantRoutes = new Hono<AppEnv>()
         name,
         cuisine: cuisine || null,
         neighborhoodId: hood.id,
-        lat: 18.4801, // Santo Domingo centre — a member-added spot has no geocode
-        lng: -69.9422,
+        lat: hood.lat,
+        lng: hood.lng,
+        geoPrecision: 'sector',
+        source: 'member',
+        createdBy: me.id,
         priceTier: priceTier ?? null,
         isDemo: false,
       })
