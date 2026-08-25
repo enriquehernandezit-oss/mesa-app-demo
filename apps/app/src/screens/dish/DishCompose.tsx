@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useBlocker, useNavigate, useSearch } from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
 import { Body, Button, Chip, Eyebrow, SectionHeader, Title, Toggle } from '../../components/ui'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
 import { GRAIN_LABEL_ES } from '../../lib/display'
 import { filterForGrain, resizeToJpeg } from '../../lib/image'
 import type { RestaurantProfileResponse } from '../../lib/types'
+import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../../styles/screens.css'
 import './dish.css'
@@ -25,6 +26,7 @@ export function DishCompose() {
   const { restaurant: restaurantId } = useSearch({ from: '/dish' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const goBack = useBack(() => navigate({ to: '/r/$restaurantId', params: { restaurantId } }))
 
   const q = useQuery({
     queryKey: ['restaurant', restaurantId],
@@ -40,6 +42,10 @@ export function DishCompose() {
   const [wantToTry, setWantToTry] = useState(false)
   const [friendsOnly, setFriendsOnly] = useState(true)
   const fileInput = useRef<HTMLInputElement>(null)
+  // Set before goBack() fires from onSuccess, so the step-2 blocker below (which
+  // would otherwise intercept that pop) lets it through instead of stepping
+  // back to the photo step.
+  const posted = useRef(false)
 
   const post = useMutation({
     mutationFn: async () => {
@@ -54,12 +60,25 @@ export function DishCompose() {
       if (wantToTry) await api.post('/saved', { restaurantId }).catch(() => {})
     },
     onSuccess: () => {
+      posted.current = true
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
-      navigate({ to: '/r/$restaurantId', params: { restaurantId } })
+      goBack()
     },
   })
+
+  // Hardware back / edge-swipe at step 2 unwinds to the photo step instead of
+  // leaving the composer entirely (mirrors RankAPlace's useBlocker).
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === 'BACK' && step === 'details' && !posted.current,
+    withResolver: true,
+  })
+  useEffect(() => {
+    if (blocker.status !== 'blocked') return
+    setStep('photo')
+    blocker.reset()
+  }, [blocker])
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -75,11 +94,7 @@ export function DishCompose() {
   if (q.isSuccess && !hasRanked) {
     return (
       <div className="screen">
-        <button
-          type="button"
-          className="link-action"
-          onClick={() => navigate({ to: '/r/$restaurantId', params: { restaurantId } })}
-        >
+        <button type="button" className="link-action" onClick={goBack}>
           ‹ Atrás
         </button>
         <div className="stack stack--tight" style={{ marginTop: 'var(--space-3)' }}>
@@ -115,11 +130,7 @@ export function DishCompose() {
     return (
       <div className="screen">
         <div className="dish-head">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => navigate({ to: '/r/$restaurantId', params: { restaurantId } })}
-          >
+          <button type="button" className="link-action" onClick={goBack}>
             ✕ Recientes
           </button>
           <button

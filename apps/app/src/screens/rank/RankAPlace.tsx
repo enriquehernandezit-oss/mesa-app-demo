@@ -208,8 +208,11 @@ export function RankAPlace() {
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
       // If they attached a dish, chain into the composer; else stamp + passport.
+      // replace: true — the ranking is already saved, so cancelling the composer
+      // must not pop back into this (now-finished) rank flow, whose own
+      // useBlocker below would otherwise re-arm and intercept that back press.
       if (chainDish && pickedId) {
-        navigate({ to: '/dish', search: { restaurant: pickedId } })
+        navigate({ to: '/dish', search: { restaurant: pickedId }, replace: true })
       } else {
         setPlacedStamp(true)
         tapSuccess()
