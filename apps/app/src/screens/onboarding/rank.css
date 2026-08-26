@@ -49,14 +49,20 @@
   position: relative;
   justify-content: flex-end;
   min-height: 128px;
-  background-size: cover;
-  background-position: center;
   overflow: hidden;
   isolation: isolate;
   /* Light text over the photo in both themes (no-op in Candlelit). */
   --text: var(--on-photo);
   --text-2: var(--on-photo-2);
   --accent-strong: var(--on-photo-accent);
+}
+/* PlaceCover fills the button; sits behind ::before's scrim (z-index: -1).
+   Compound selector — beats .ph's own position:relative (global.css) on
+   specificity rather than relying on CSS-module load order. */
+.ph.rank-pick__cover {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
 }
 .rank-pick--photo::before {
   content: "";

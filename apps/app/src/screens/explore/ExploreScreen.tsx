@@ -14,10 +14,10 @@ import {
   Title,
 } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
-import { cloudinaryUrl } from '../../lib/media'
 import type { ExploreMember, ExploreResponse, Neighborhood } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
@@ -146,7 +146,6 @@ export function ExploreScreen() {
           <>
             {members.length > 0 && hits.length > 0 && <SectionHeader>Spots</SectionHeader>}
             {hits.map((r, i) => {
-              const cover = cloudinaryUrl(r.coverImageId, { w: 200, h: 200 })
               return (
                 <Link
                   key={r.id}
@@ -155,11 +154,13 @@ export function ExploreScreen() {
                   className="explore-row"
                 >
                   <span className="explore-row__rank">{i + 1}</span>
-                  {cover ? (
-                    <img className="search-thumb" src={cover} alt="" loading="lazy" />
-                  ) : (
-                    <div className="search-thumb" />
-                  )}
+                  <PlaceCover
+                    seed={r.id}
+                    name={r.name}
+                    coverImageId={r.coverImageId}
+                    size={{ w: 200, h: 200 }}
+                    className="search-thumb"
+                  />
                   <div className="ranking-main">
                     <div className="ranking-name" style={{ fontSize: 'var(--text-serif-sm)' }}>
                       {r.name}

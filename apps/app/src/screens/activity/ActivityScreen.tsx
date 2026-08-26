@@ -5,9 +5,9 @@ import { ScreenHeader } from '../../components/ScreenHeader'
 import { markActivitySeen } from '../../components/TopBar'
 import { Body, Chip, ChipRail, EmptyState, ErrorState, Eyebrow } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { api } from '../../lib/api'
 import { displayScore } from '../../lib/display'
-import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
 import type { ActivityItem } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
@@ -144,8 +144,6 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       {a.restaurant.name}
     </Link>
   )
-  const thumb = a.restaurant && cloudinaryUrl(a.restaurant.coverImageId, { w: 96, h: 96 })
-
   return (
     <div className="activity-row">
       <Link to="/u/$userId" params={{ userId: a.user.id }}>
@@ -189,7 +187,15 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           </button>
         )
       ) : (
-        thumb && <img className="activity-row__thumb" src={thumb} alt="" loading="lazy" />
+        a.restaurant && (
+          <PlaceCover
+            seed={a.restaurant.id}
+            name={a.restaurant.name}
+            coverImageId={a.restaurant.coverImageId}
+            size={{ w: 96, h: 96 }}
+            className="activity-row__thumb"
+          />
+        )
       )}
     </div>
   )

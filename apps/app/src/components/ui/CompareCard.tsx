@@ -1,5 +1,5 @@
 import { displayScore } from '../../lib/display'
-import { cloudinaryUrl } from '../../lib/media'
+import { PlaceCover } from './PlaceCover'
 import { Characteristics } from './patterns'
 import './compare-card.css'
 
@@ -27,28 +27,27 @@ export function CompareCard({
   score?: number | null
   onClick?: () => void
 }) {
-  const cover = cloudinaryUrl(item.coverImageId, { w: 700, h: 340 })
   return (
     <button type="button" className="cmp-card" onClick={onClick}>
-      <div className="ph cmp-card__photo">
-        {cover && (
-          // Keyed by URL: a new opponent is a brand-new <img> node, so the
-          // previous photo can never linger under the new name while this one
-          // decodes — it fades in on its own once loaded instead.
-          <img
-            key={cover}
-            src={cover}
-            alt=""
-            className="cmp-card__img"
-            decoding="async"
-            data-loaded="false"
-            ref={(el) => {
-              if (el?.complete) el.setAttribute('data-loaded', 'true')
-            }}
-            onLoad={(e) => e.currentTarget.setAttribute('data-loaded', 'true')}
-          />
-        )}
-      </div>
+      <PlaceCover
+        seed={item.id}
+        name={item.name}
+        coverImageId={item.coverImageId}
+        size={{ w: 700, h: 340 }}
+        className="cmp-card__photo"
+        imgProps={{
+          // Keyed by the cover id: a new opponent is a brand-new <img> node,
+          // so the previous photo can never linger under the new name while
+          // this one decodes — it fades in on its own once loaded instead.
+          key: item.coverImageId ?? item.id,
+          className: 'cmp-card__img',
+          decoding: 'async',
+          ref: (el) => {
+            if (el?.complete) el.setAttribute('data-loaded', 'true')
+          },
+          onLoad: (e) => e.currentTarget.setAttribute('data-loaded', 'true'),
+        }}
+      />
       <div className="cmp-card__body">
         <div className="cmp-card__main">
           <div className="cmp-card__name">{item.name}</div>

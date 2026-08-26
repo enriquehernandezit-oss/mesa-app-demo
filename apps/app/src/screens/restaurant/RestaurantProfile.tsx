@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { Body, Button, EmptyState, Eyebrow, SectionHeader } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import {
   BackIcon,
   CheckIcon,
@@ -93,7 +94,6 @@ export function RestaurantProfile() {
     myRanking,
     saved,
   } = q.data
-  const cover = cloudinaryUrl(restaurant.coverImageId, { w: 1000, h: 750 })
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
   const meta = [
     cuisineLabel(restaurant.cuisine),
@@ -127,8 +127,15 @@ export function RestaurantProfile() {
       <CondensedHeader name={restaurant.name} score={allMesa.avg} onBack={goBack} />
 
       {/* Film-photo hero — clean image, floating controls; identity sits below. */}
-      <div className={`resto-photo${cover ? '' : ' resto-photo--empty'}`}>
-        {cover && <img src={cover} alt={restaurant.name} />}
+      <div className="resto-photo">
+        <PlaceCover
+          seed={restaurant.id}
+          name={restaurant.name}
+          coverImageId={restaurant.coverImageId}
+          size={{ w: 1000, h: 750 }}
+          className="resto-photo__cover"
+          alt={restaurant.name}
+        />
         <button type="button" className="resto-back" onClick={goBack} aria-label="Atrás">
           <BackIcon size={20} />
         </button>
@@ -316,15 +323,20 @@ export function RestaurantProfile() {
             <SectionHeader>Spots parecidos</SectionHeader>
             <div className="rail__scroll">
               {similar.map((s) => {
-                const sc = cloudinaryUrl(s.coverImageId, { w: 320, h: 400 })
                 return (
                   <Link
                     key={s.id}
                     to="/r/$restaurantId"
                     params={{ restaurantId: s.id }}
                     className="rail-card"
-                    style={sc ? { backgroundImage: `url(${sc})` } : undefined}
                   >
+                    <PlaceCover
+                      seed={s.id}
+                      name={s.name}
+                      coverImageId={s.coverImageId}
+                      size={{ w: 320, h: 400 }}
+                      className="rail-card__cover"
+                    />
                     <span className="rail-card__name">{s.name}</span>
                     <span className="rail-card__meta">
                       {[cuisineLabel(s.cuisine), s.neighborhood].filter(Boolean).join(' · ')}

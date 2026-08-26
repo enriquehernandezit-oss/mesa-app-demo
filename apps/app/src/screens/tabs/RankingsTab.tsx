@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Body, Button, Chip, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { ShareIcon } from '../../components/ui/icons'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
@@ -233,16 +234,17 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
     },
   })
 
-  const thumb = cloudinaryUrl(ranking.restaurant.coverImageId, { w: 160, h: 160 })
   return (
     <div className="ranking-row" style={{ gridTemplateColumns: 'auto auto 1fr auto' }}>
       <div className="ranking-numeral">{ranking.position}</div>
-      <Link
-        to="/r/$restaurantId"
-        params={{ restaurantId: ranking.restaurant.id }}
-        className="ranking-thumb"
-      >
-        {thumb && <img src={thumb} alt="" loading="lazy" />}
+      <Link to="/r/$restaurantId" params={{ restaurantId: ranking.restaurant.id }}>
+        <PlaceCover
+          seed={ranking.restaurant.id}
+          name={ranking.restaurant.name}
+          coverImageId={ranking.restaurant.coverImageId}
+          size={{ w: 160, h: 160 }}
+          className="ranking-thumb"
+        />
       </Link>
       <div className="ranking-main">
         <Link

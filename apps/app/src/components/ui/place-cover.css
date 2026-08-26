@@ -1,0 +1,23 @@
+/* PlaceCover's generated mark — the no-photo state. .ph (global.css) already
+   supplies the ground color (--bg-sunk) and the shared veil + grain; this only
+   styles what sits inside it. .ph > img already fills absolutely (global.css);
+   this extends the same contract to the generated mark's <svg>. */
+.ph > .place-cover__mark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.place-cover__mark {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.place-cover__mono {
+  font-family: var(--font-serif);
+  font-size: 64px;
+  fill: var(--text);
+  stroke: none;
+  opacity: 0.85;
+}

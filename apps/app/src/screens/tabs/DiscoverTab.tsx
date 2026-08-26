@@ -14,11 +14,11 @@ import {
   Title,
 } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
 import { grainLabel } from '../../lib/display'
 import { filterForGrain } from '../../lib/image'
-import { cloudinaryUrl } from '../../lib/media'
 import { timeAgo } from '../../lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '../../lib/types'
 import { CheersButton } from './CheersButton'
@@ -158,12 +158,14 @@ function ListsRail() {
       <SectionHeader>Listas destacadas</SectionHeader>
       <div className="rail__scroll">
         {lists.map((l) => {
-          const cover = cloudinaryUrl(l.coverImageId, { w: 320, h: 300 })
           return (
             <Link key={l.slug} to="/lists/$slug" params={{ slug: l.slug }} className="list-card">
-              <div
-                className="ph list-card__photo"
-                style={cover ? { backgroundImage: `url(${cover})` } : undefined}
+              <PlaceCover
+                seed={l.slug}
+                name={l.title}
+                coverImageId={l.coverImageId}
+                size={{ w: 320, h: 300 }}
+                className="list-card__photo"
               />
               <div className="list-card__title">{l.title}</div>
               <div className="list-card__progress">

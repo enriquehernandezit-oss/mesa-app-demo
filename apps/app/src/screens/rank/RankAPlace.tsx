@@ -14,13 +14,13 @@ import {
 } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { CompareCard } from '../../components/ui/CompareCard'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { api } from '../../lib/api'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { formatDistance, haversineM } from '../../lib/geo'
 import { tapSuccess } from '../../lib/haptics'
-import { cloudinaryUrl } from '../../lib/media'
 import {
   type PairwiseState,
   type Sentiment,
@@ -476,14 +476,13 @@ export function RankAPlace() {
         </div>
 
         <div className="rank-summary">
-          {(() => {
-            const thumb = cloudinaryUrl(picked.coverImageId, { w: 120, h: 120 })
-            return thumb ? (
-              <img className="rank-summary__thumb" src={thumb} alt="" loading="lazy" />
-            ) : (
-              <div className="rank-summary__thumb" />
-            )
-          })()}
+          <PlaceCover
+            seed={picked.id}
+            name={picked.name}
+            coverImageId={picked.coverImageId}
+            size={{ w: 120, h: 120 }}
+            className="rank-summary__thumb"
+          />
           <div className="rank-summary__main">
             <div className="rank-summary__name">{picked.name}</div>
             <Characteristics
@@ -871,15 +870,16 @@ function FindStep({
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
   const renderRow = (r: Item) => {
-    const thumb = cloudinaryUrl(r.coverImageId, { w: 160, h: 160 })
     const dist = distanceOf(r)
     return (
       <button key={r.id} type="button" className="rank-row" onClick={() => onPick(r.id)}>
-        {thumb ? (
-          <img className="rank-row__thumb" src={thumb} alt="" loading="lazy" />
-        ) : (
-          <div className="rank-row__thumb" />
-        )}
+        <PlaceCover
+          seed={r.id}
+          name={r.name}
+          coverImageId={r.coverImageId}
+          size={{ w: 160, h: 160 }}
+          className="rank-row__thumb"
+        />
         <div className="rank-row__main">
           <div className="rank-row__name">{r.name}</div>
           <Characteristics

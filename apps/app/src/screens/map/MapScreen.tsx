@@ -3,10 +3,10 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { api } from '../../lib/api'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
 import type { LatLng } from '../../lib/geo'
-import { cloudinaryUrl } from '../../lib/media'
 import { openNavChooser } from '../../lib/navChooser'
 import type { MapSpot } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
@@ -222,17 +222,18 @@ export function MapScreen() {
 }
 
 function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
-  const thumb = cloudinaryUrl(spot.coverImageId, { w: 200, h: 200 })
   const meta = [cuisineLabel(spot.cuisine), spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
   return (
     <div className="map-card">
-      {thumb ? (
-        <img className="map-card__thumb" src={thumb} alt="" loading="lazy" />
-      ) : (
-        <div className="map-card__thumb" />
-      )}
+      <PlaceCover
+        seed={spot.id}
+        name={spot.name}
+        coverImageId={spot.coverImageId}
+        size={{ w: 200, h: 200 }}
+        className="map-card__thumb"
+      />
       <div className="map-card__main">
         <div className="map-card__name">{spot.name}</div>
         <div className="map-card__meta">{meta}</div>

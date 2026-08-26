@@ -74,44 +74,22 @@
   border-top: 1px solid var(--line);
 }
 
-/* Full-bleed hero photo with a scrim; name + neighborhood laid over it. */
+/* Full-bleed hero photo (or generated cover); name + neighborhood laid over
+   it. The veil + grain come from PlaceCover's own .ph (global.css) — one
+   optical layer, shared with every other cover in the app. */
 .resto-photo {
   position: relative;
   width: 100%;
   height: 44vh;
   min-height: 300px;
-  background: linear-gradient(135deg, var(--surface-raised), var(--bg-sunk));
   overflow: hidden;
 }
-.resto-photo img {
+/* Compound selector — beats .ph's own position:relative (global.css) on
+   specificity rather than relying on CSS-module load order, which isn't
+   guaranteed between two same-specificity single-class rules. */
+.ph.resto-photo__cover {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Phase 6 warm veil — the name sits below the photo on paper, so the hero is a
-   clean veiled image (no dark caption scrim). ::before = veil, ::after = grain. */
-.resto-photo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--photo-veil);
-}
-.resto-photo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 0.32;
-  mix-blend-mode: multiply;
-  background-image: var(--photo-grain-dots);
-  background-size: 3px 3px;
-}
-.resto-photo--empty {
-  display: grid;
-  place-items: center;
 }
 
 .resto-back {

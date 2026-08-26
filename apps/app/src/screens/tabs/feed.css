@@ -235,6 +235,14 @@
   z-index: -1;
   background: linear-gradient(to top, var(--photo-scrim-1) 20%, var(--photo-scrim-5) 65%);
 }
+/* PlaceCover fills the card; sits behind ::before's scrim (z-index: -1).
+   Compound selector — beats .ph's own position:relative (global.css) on
+   specificity rather than relying on CSS-module load order. */
+.ph.rail-card__cover {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
 .rail-card__badge {
   position: absolute;
   top: var(--space-2);

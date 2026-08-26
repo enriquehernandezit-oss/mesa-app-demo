@@ -4,9 +4,14 @@
   height: 180px;
   margin-top: var(--space-3);
   border-radius: var(--radius);
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
   box-shadow: 0 14px 40px -18px var(--shadow-card);
+}
+/* Compound selector — beats .ph's own position:relative (global.css) on
+   specificity rather than relying on CSS-module load order. */
+.ph.list-hero__cover {
+  position: absolute;
+  inset: 0;
 }
 .list-hero__tag {
   position: absolute;

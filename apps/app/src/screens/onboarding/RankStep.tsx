@@ -2,9 +2,9 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { Body, Button, Title } from '../../components/ui'
 import { CompareCard } from '../../components/ui/CompareCard'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { api } from '../../lib/api'
 import { cuisineLabel } from '../../lib/display'
-import { cloudinaryUrl } from '../../lib/media'
 import {
   choose,
   initPairwise,
@@ -73,15 +73,20 @@ export function RankStep({ onNext }: { onNext: () => void }) {
         <div className="rank-grid">
           {data?.restaurants.map((r) => {
             const on = selectedIds.includes(r.id)
-            const cover = cloudinaryUrl(r.coverImageId, { w: 400, h: 300 })
             return (
               <button
                 type="button"
                 key={r.id}
                 className={`rank-pick rank-pick--photo${on ? ' rank-pick--on' : ''}`}
-                style={cover ? { backgroundImage: `url(${cover})` } : undefined}
                 onClick={() => toggle(r.id)}
               >
+                <PlaceCover
+                  seed={r.id}
+                  name={r.name}
+                  coverImageId={r.coverImageId}
+                  size={{ w: 400, h: 300 }}
+                  className="rank-pick__cover"
+                />
                 <span className="rank-pick__name">{r.name}</span>
                 <span className="rank-pick__meta">
                   {[cuisineLabel(r.cuisine), r.neighborhood?.name].filter(Boolean).join(' · ')}

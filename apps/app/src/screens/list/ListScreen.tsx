@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, EmptyState, Eyebrow, Title } from '../../components/ui'
+import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
-import { cloudinaryUrl } from '../../lib/media'
 import type { ListDetailResponse } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
@@ -23,8 +23,6 @@ export function ListScreen() {
     retry: false,
   })
 
-  const cover = cloudinaryUrl(q.data?.list.coverImageId, { w: 1000, h: 560 })
-
   return (
     <div className="tab-shell">
       <div className="tab-body">
@@ -36,11 +34,16 @@ export function ListScreen() {
           <EmptyState>Lista no encontrada.</EmptyState>
         ) : (
           <>
-            {cover && (
-              <div className="list-hero" style={{ backgroundImage: `url(${cover})` }}>
-                <span className="list-hero__tag">film · con velas</span>
-              </div>
-            )}
+            <div className="list-hero">
+              <PlaceCover
+                seed={slug}
+                name={q.data.list.title}
+                coverImageId={q.data.list.coverImageId}
+                size={{ w: 1000, h: 560 }}
+                className="list-hero__cover"
+              />
+              <span className="list-hero__tag">film · con velas</span>
+            </div>
             <div className="tab-header" style={{ marginTop: 'var(--space-4)' }}>
               <Eyebrow>Destacada · {q.data.items.length} spots</Eyebrow>
               <Title>{q.data.list.title}</Title>
@@ -48,7 +51,6 @@ export function ListScreen() {
             </div>
 
             {q.data.items.map((r) => {
-              const thumb = cloudinaryUrl(r.coverImageId, { w: 200, h: 200 })
               return (
                 <Link
                   key={r.id}
@@ -57,11 +59,13 @@ export function ListScreen() {
                   className="explore-row"
                 >
                   <span className="explore-row__rank">{r.position}</span>
-                  {thumb ? (
-                    <img className="search-thumb" src={thumb} alt="" loading="lazy" />
-                  ) : (
-                    <div className="search-thumb" />
-                  )}
+                  <PlaceCover
+                    seed={r.id}
+                    name={r.name}
+                    coverImageId={r.coverImageId}
+                    size={{ w: 200, h: 200 }}
+                    className="search-thumb"
+                  />
                   <div className="ranking-main">
                     <div className="ranking-name" style={{ fontSize: 'var(--text-serif-sm)' }}>
                       {r.name}

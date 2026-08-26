@@ -13,7 +13,7 @@ table to see what's actually landed vs. still open.
 | M2 | Heart replaces 🥂 | **done** (commit pending push) |
 | M3 | Real location + Waze/Maps handoff | **done** (commit pending push) |
 | M4 | Catalog schema + search rewrite | **done** (commit pending push — see migration note below) |
-| M5 | Generated editorial covers | not started |
+| M5 | Generated editorial covers | **done** (commit pending push) |
 | M6 | Foursquare import | not started |
 | M7 | Bound map/onboarding/similar for scale | not started |
 | M8 | Google typeahead gap-filler | not started |
