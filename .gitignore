@@ -17,3 +17,7 @@ apps/app/android/
 
 # Drizzle
 packages/db/drizzle/meta/_journal.json.bak
+
+# Foursquare OS Places extract (Stage A output for the M6 importer) — large,
+# regenerated from the source dataset, never committed.
+packages/db/data/

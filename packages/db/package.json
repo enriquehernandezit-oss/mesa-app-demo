@@ -12,7 +12,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "bun run src/migrate.ts",
     "seed": "bun run src/seed.ts",
-    "seed:add": "bun run src/seed-add-restaurants.ts"
+    "seed:add": "bun run src/seed-add-restaurants.ts",
+    "import:foursquare": "bun run src/import-foursquare.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.3",

@@ -41,6 +41,13 @@ const CUISINE_ES: Record<string, string> = {
   Japanese: 'Japonesa',
   Sandwiches: 'Sándwiches',
   Fusion: 'Fusión',
+  // Added for the Foursquare import (M6) — cuisines the seed vocabulary didn't
+  // cover but the real catalog does.
+  Pizza: 'Pizza',
+  Chinese: 'China',
+  Thai: 'Tailandesa',
+  Seafood: 'Mariscos',
+  Café: 'Café',
 }
 export function cuisineLabel(cuisine: string | null | undefined): string | null {
   if (!cuisine) return null

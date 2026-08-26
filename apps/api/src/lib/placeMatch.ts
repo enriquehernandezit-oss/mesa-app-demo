@@ -25,9 +25,12 @@ function distanceSql(lat: number, lng: number) {
 // place as, before inserting a new row — so re-typing "Peperoni" becomes one
 // row, not two. Name similarity alone isn't enough (two genuinely different
 // restaurants can share a generic name — "La Cava" — in different
-// neighborhoods), so every rule is distance-gated too. Shared by
-// POST /restaurants and (once it exists) the Foursquare importer — see
-// docs/LOCATION_CATALOG_PLAN.md M6.
+// neighborhoods), so every rule is distance-gated too. Used by
+// POST /restaurants (one candidate per request). The Foursquare importer
+// (packages/db/src/import-foursquare.ts) does NOT call this — it MIRRORS the
+// same two thresholds in a pure-TS, spatial-grid implementation, because this
+// runs a live query per candidate and the importer's hard rule (CLAUDE.md 3)
+// forbids per-row queries at catalog scale. Keep the thresholds in sync.
 //
 // One real imprecision: a member-added candidate's lat/lng is a sector
 // CENTROID, not a real geocode (Mesa has no geocoding service) — so a

@@ -14,7 +14,7 @@ table to see what's actually landed vs. still open.
 | M3 | Real location + Waze/Maps handoff | **done** (commit pending push) |
 | M4 | Catalog schema + search rewrite | **done** (commit pending push — see migration note below) |
 | M5 | Generated editorial covers | **done** (commit pending push) |
-| M6 | Foursquare import | not started |
+| M6 | Foursquare import | **importer built & verified** (commit pending push) — awaiting Stage A data |
 | M7 | Bound map/onboarding/similar for scale | not started |
 | M8 | Google typeahead gap-filler | not started |
 
@@ -265,6 +265,24 @@ that vanishes from a later extract may already be ranked; it's only ever marked
 `TRUNCATE ... restaurants ... CASCADE`, which after the import destroys the
 catalog *and every ranking pointing at it*. Refuse to run when imported rows
 exist unless `MESA_SEED_FORCE=1`.
+
+**STATUS — Stage B built & verified, Stage A is the founder's to run.**
+`foursquare/fsq-os-places` turned out to be a **gated** HF dataset (account +
+access-request form + token), so Stage A can't be automated here — it needs the
+founder's HF identity. The importer (`import-foursquare.ts`, run via
+`bun --filter @mesa/db import:foursquare -- [--dry-run] [--skip-reconcile]`) is
+done and was verified end-to-end against local Postgres with fabricated
+schema-accurate NDJSON: insert / adopt / cuisine-map (incl. unmapped→null) /
+idempotent re-run / closure / reopen / empty-extract abort / `--skip-reconcile`
+/ the seed guard all confirmed. One correctness fix worth remembering: the
+in-TS `pg_trgm` port had to pad **each word** (2 leading + 1 trailing space) and
+union, not pad the whole string — verified byte-identical to Postgres
+`similarity()` across 6 real pairs (a whole-string pad silently mis-scores any
+repeated word, e.g. "boga boga" vs "boga"). Category **label**-based filtering in
+Stage A (not hardcoded ids) because Foursquare's own docs disagree on the current
+"Dining and Drinking"/"Fast Food" ids. Runbook for the founder's Stage A steps is
+in `~/.claude/plans/` (this session's plan file). Not yet run against production —
+that write is the founder's call, like seeding.
 
 **Commit:** `feat(db): Foursquare OS Places importer`
 

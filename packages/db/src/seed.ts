@@ -79,6 +79,21 @@ const siteFor = (name: string): string =>
 async function seed() {
   console.log('seeding…')
 
+  // Guard: seed TRUNCATEs the whole catalog (and cascades through every ranking
+  // pointing at it). Once the Foursquare importer (M6) has run, that's real,
+  // non-demo data — refuse unless explicitly forced. Mirrors docs/DEPLOY.md's
+  // "only ever run against a fresh/empty database".
+  const fsqRows = await db
+    .select({ fsqCount: sql<number>`count(*)::int` })
+    .from(schema.restaurants)
+    .where(eq(schema.restaurants.source, 'foursquare'))
+  const fsqCount = fsqRows[0]?.fsqCount ?? 0
+  if (fsqCount > 0 && process.env.MESA_SEED_FORCE !== '1') {
+    throw new Error(
+      `refusing to seed: ${fsqCount} Foursquare-imported restaurant(s) present — this would TRUNCATE the real catalog and every ranking on it. Set MESA_SEED_FORCE=1 to override.`,
+    )
+  }
+
   await db.execute(
     sql`TRUNCATE TABLE "user", restaurants, neighborhoods, waitlist RESTART IDENTITY CASCADE`,
   )
