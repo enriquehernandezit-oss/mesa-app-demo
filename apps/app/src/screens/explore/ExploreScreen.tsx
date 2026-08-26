@@ -64,6 +64,13 @@ export function ExploreScreen() {
   const hits = results.data?.restaurants ?? []
   const members = results.data?.members ?? []
 
+  // "Abierto ahora" filters on closesAt, which is null for every imported
+  // catalog row (Foursquare has no hours) — so once results are catalog-heavy
+  // the filter would wipe ~all of them. Hide the chip when few current hits
+  // have hours; keep it while it's active so it can be turned back off. (M7)
+  const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
+  const showOpenChip = openNow || hoursCoverage >= 0.4
+
   return (
     <div className="tab-shell">
       <div className="tab-body">
@@ -96,13 +103,15 @@ export function ExploreScreen() {
           >
             Puntuación
           </Chip>
-          <Chip
-            size="sm"
-            state={openNow ? 'selected' : 'default'}
-            onClick={() => setOpenNow((v) => !v)}
-          >
-            Abierto ahora
-          </Chip>
+          {showOpenChip && (
+            <Chip
+              size="sm"
+              state={openNow ? 'selected' : 'default'}
+              onClick={() => setOpenNow((v) => !v)}
+            >
+              Abierto ahora
+            </Chip>
+          )}
           {PRICES.map((pt) => (
             <Chip
               key={pt}

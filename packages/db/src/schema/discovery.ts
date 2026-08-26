@@ -47,7 +47,8 @@ export const restaurants = pgTable(
     lat: doublePrecision('lat').notNull(),
     lng: doublePrecision('lng').notNull(),
     // 'exact' = a real geocode. 'sector' = sitting on the neighborhood's
-    // centroid (jittered) because no geocode exists yet — see enums.ts.
+    // centroid because no geocode exists yet (the map handler jitters these so
+    // they don't stack) — see enums.ts.
     geoPrecision: geoPrecision('geo_precision').notNull().default('exact'),
     coverImageId: text('cover_image_id'), // Cloudinary public id
     // E.164 phone for the reserve handoff (WhatsApp deep link / call). Reserve

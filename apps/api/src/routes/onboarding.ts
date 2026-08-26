@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, inArray, ne, notInArray, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
@@ -31,16 +31,49 @@ export const onboardingRoutes = new Hono<AppEnv>()
     return c.json({ neighborhoods: rows })
   })
 
-  // The set of places to rank during onboarding — the demo cluster, so the
-  // pairwise flow ("Vela or Lumbre?") has real spots to compare.
+  // The set of places to rank during onboarding — the curated cluster, so the
+  // pairwise flow ("Vela or Lumbre?") has recognizable spots to compare. Bounded
+  // to demo or editorial-list rows and ordered by how much they've been ranked
+  // (most-known first): plain `ORDER BY name LIMIT 15` over the whole catalog
+  // would, post-import (M6), make a newcomer's first impression the 15
+  // alphabetically-first Foursquare rows (fast-food and all). (M7)
   .get('/candidates', async (c) => {
-    const rows = await db.query.restaurants.findMany({
-      columns: { id: true, name: true, cuisine: true, coverImageId: true },
-      with: { neighborhood: { columns: { slug: true, name: true } } },
-      orderBy: (r, { asc }) => asc(r.name),
-      limit: 15,
-    })
-    return c.json({ restaurants: rows })
+    const inAnyList = db
+      .selectDistinct({ id: schema.listItems.restaurantId })
+      .from(schema.listItems)
+    const rows = await db
+      .select({
+        id: schema.restaurants.id,
+        name: schema.restaurants.name,
+        cuisine: schema.restaurants.cuisine,
+        coverImageId: schema.restaurants.coverImageId,
+        neighborhoodSlug: schema.neighborhoods.slug,
+        neighborhoodName: schema.neighborhoods.name,
+      })
+      .from(schema.restaurants)
+      .leftJoin(
+        schema.neighborhoods,
+        eq(schema.neighborhoods.id, schema.restaurants.neighborhoodId),
+      )
+      .leftJoin(schema.rankings, eq(schema.rankings.restaurantId, schema.restaurants.id))
+      .where(
+        and(
+          isNull(schema.restaurants.removedAt),
+          isNull(schema.restaurants.closedAt),
+          or(eq(schema.restaurants.isDemo, true), inArray(schema.restaurants.id, inAnyList)),
+        ),
+      )
+      .groupBy(schema.restaurants.id, schema.neighborhoods.slug, schema.neighborhoods.name)
+      .orderBy(sql`count(${schema.rankings.id}) desc`, asc(schema.restaurants.name))
+      .limit(15)
+    const restaurants = rows.map(({ neighborhoodSlug, neighborhoodName, ...r }) => ({
+      ...r,
+      neighborhood:
+        neighborhoodSlug && neighborhoodName
+          ? { slug: neighborhoodSlug, name: neighborhoodName }
+          : null,
+    }))
+    return c.json({ restaurants })
   })
 
   // Persist the ordered starter list. One multi-row upsert (single round trip):

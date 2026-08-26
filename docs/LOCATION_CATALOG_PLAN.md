@@ -15,7 +15,7 @@ table to see what's actually landed vs. still open.
 | M4 | Catalog schema + search rewrite | **done** (commit pending push — see migration note below) |
 | M5 | Generated editorial covers | **done** (commit pending push) |
 | M6 | Foursquare import | **importer built & verified** (commit pending push) — awaiting Stage A data |
-| M7 | Bound map/onboarding/similar for scale | not started |
+| M7 | Bound map/onboarding/similar for scale | **done & verified** (commit pending push) |
 | M8 | Google typeahead gap-filler | not started |
 
 Update the status column (`not started` → `in progress` → `done (commit <hash>)`)

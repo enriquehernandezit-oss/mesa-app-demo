@@ -14,6 +14,7 @@ export const restaurantSource = pgEnum('restaurant_source', ['seed', 'foursquare
 
 // How trustworthy a restaurant's lat/lng actually is. 'exact' = a real geocode
 // (seeded, or Foursquare-sourced). 'sector' = no geocode exists yet, so it sits
-// on its neighborhood's centroid (jittered — see MapScreen's project()) rather
-// than a fabricated street address.
+// on its neighborhood's centroid rather than a fabricated street address; the
+// map handler (GET /restaurants/map) fans these out with a deterministic
+// per-id jitter so they don't stack on one pixel.
 export const geoPrecision = pgEnum('geo_precision', ['exact', 'sector'])

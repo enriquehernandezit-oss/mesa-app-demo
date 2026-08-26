@@ -14,6 +14,22 @@ const { rankings, vibeNotes, restaurants, follows, userBlocks, user, savedPlaces
 
 const { neighborhoods, lists, listItems } = schema
 
+// Deterministic per-id coordinate jitter for sector-precision map pins, so
+// places sharing a neighborhood centroid fan out instead of stacking. FNV-1a
+// over the id → two independent offsets in ±0.0004° (~44m). Stable across
+// loads (same id → same offset); directions to a sector place are approximate
+// anyway, so the tiny shift is immaterial. (M7)
+function jitter(id: string, lat: number, lng: number): { lat: number; lng: number } {
+  let h = 0x811c9dc5
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  const a = (h >>> 0) / 0xffffffff // [0,1)
+  const b = ((Math.imul(h, 0x01000193) >>> 0) & 0xffff) / 0xffff // a second, decorrelated draw
+  return { lat: lat + (a - 0.5) * 0.0008, lng: lng + (b - 0.5) * 0.0008 }
+}
+
 export const restaurantRoutes = new Hono<AppEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
@@ -236,7 +252,17 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .select({ id: follows.followingId })
       .from(follows)
       .where(eq(follows.followerId, me.id))
-    const spots = await db
+    // Bound the map to places worth plotting: ranked by anyone, saved by me, or
+    // in an editorial list. Unbounded, one imported place near Las Américas
+    // rescales project()'s bbox and squashes Piantini to a few pixels — and a
+    // few-thousand-pin map is noise, not a map. (M7)
+    const rankedPool = db.selectDistinct({ id: rankings.restaurantId }).from(rankings)
+    const savedByMe = db
+      .select({ id: savedPlaces.restaurantId })
+      .from(savedPlaces)
+      .where(eq(savedPlaces.userId, me.id))
+    const inAnyList = db.selectDistinct({ id: listItems.restaurantId }).from(listItems)
+    const rows = await db
       .select({
         id: restaurants.id,
         name: restaurants.name,
@@ -245,6 +271,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
         neighborhood: neighborhoods.name,
         lat: restaurants.lat,
         lng: restaurants.lng,
+        geoPrecision: restaurants.geoPrecision,
         priceTier: restaurants.priceTier,
         friendAvg: sql<number | null>`avg(${rankings.score})::float`,
         friendCount: sql<number>`count(${rankings.id})::int`,
@@ -255,8 +282,26 @@ export const restaurantRoutes = new Hono<AppEnv>()
         rankings,
         and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
       )
+      .where(
+        and(
+          isNull(restaurants.removedAt),
+          isNull(restaurants.closedAt),
+          or(
+            inArray(restaurants.id, rankedPool),
+            inArray(restaurants.id, savedByMe),
+            inArray(restaurants.id, inAnyList),
+          ),
+        ),
+      )
       .groupBy(restaurants.id, neighborhoods.name)
       .orderBy(asc(restaurants.name))
+    // Fan out sector-precision pins (member-added places all share their
+    // neighborhood centroid, so they'd stack on one pixel). Deterministic per
+    // id — a ±0.0004° (~44m) offset, stable across loads. 'exact' rows keep
+    // their real geocode. geoPrecision is internal, so it's dropped here.
+    const spots = rows.map(({ geoPrecision, ...s }) =>
+      geoPrecision === 'sector' ? { ...s, ...jitter(s.id, s.lat, s.lng) } : s,
+    )
     return c.json({ spots })
   })
   .get('/:id', async (c) => {
@@ -335,7 +380,12 @@ export const restaurantRoutes = new Hono<AppEnv>()
       columns: { restaurantId: true },
     })
 
-    // Similar spots: same cuisine or same neighborhood, one query.
+    // Similar spots: same cuisine or same neighborhood. Bounded to places
+    // someone on Mesa has actually ranked and ordered most-ranked first — with
+    // no ORDER BY this returned 6 arbitrary rows, which post-import (M6) means 6
+    // never-heard-of Foursquare unknowns for any common cuisine. HAVING a
+    // ranking also excludes those raw catalog rows outright; the rail hides
+    // itself when empty, so a rare cuisine with no ranked peers is fine. (M7)
     const similar = await db
       .select({
         id: restaurants.id,
@@ -346,15 +396,21 @@ export const restaurantRoutes = new Hono<AppEnv>()
       })
       .from(restaurants)
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
       .where(
         and(
           sql`${restaurants.id} <> ${id}`,
+          isNull(restaurants.removedAt),
+          isNull(restaurants.closedAt),
           or(
             restaurant.cuisine ? eq(restaurants.cuisine, restaurant.cuisine) : sql`false`,
             eq(restaurants.neighborhoodId, restaurant.neighborhoodId),
           ),
         ),
       )
+      .groupBy(restaurants.id, neighborhoods.name)
+      .having(sql`count(${rankings.id}) > 0`)
+      .orderBy(sql`count(${rankings.id}) desc`, asc(restaurants.name))
       .limit(6)
 
     // Beli-style friend average over the visible friends' scores.

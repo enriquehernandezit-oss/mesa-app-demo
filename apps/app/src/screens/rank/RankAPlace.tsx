@@ -806,6 +806,14 @@ function FindStep({
   const [adding, setAdding] = useState(false)
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
+  // Hide "Abierto ahora" once the candidate list is catalog-heavy: it filters on
+  // closesAt, which is null for every imported row (Foursquare has no hours), so
+  // the filter would wipe almost everything. Keep it while active so it can be
+  // turned back off. (M7)
+  const hoursCoverage = candList.length
+    ? candList.filter((r) => r.closesAt).length / candList.length
+    : 1
+  const showOpenChip = openNow || hoursCoverage >= 0.4
   // candList already comes from the server pre-filtered by q/openNow/
   // reserveOnly (mesa_norm + trigram — see the candidates query above);
   // re-running a naive client substring filter over it would wrongly EXCLUDE
@@ -924,13 +932,15 @@ function FindStep({
         >
           Cerca
         </Chip>
-        <Chip
-          size="sm"
-          state={openNow ? 'selected' : 'default'}
-          onClick={() => setOpenNow((v) => !v)}
-        >
-          Abierto ahora
-        </Chip>
+        {showOpenChip && (
+          <Chip
+            size="sm"
+            state={openNow ? 'selected' : 'default'}
+            onClick={() => setOpenNow((v) => !v)}
+          >
+            Abierto ahora
+          </Chip>
+        )}
         <Chip
           size="sm"
           state={reserveOnly ? 'selected' : 'default'}
