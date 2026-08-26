@@ -180,6 +180,17 @@ export interface NewRestaurantInput {
   neighborhoodSlug: string
   priceTier?: number
 }
+
+// A Google Places autocomplete suggestion (M8) — deliberately NOT a Mesa place
+// shape: no id, no coverImageId, no scores, so it can never be rendered through
+// a Mesa place code path by accident. It only becomes a real restaurant when a
+// member confirms it through the add-a-place form.
+export interface ExternalSuggestion {
+  provider: 'google'
+  providerPlaceId: string
+  name: string // structuredFormat.mainText
+  secondaryText: string | null // structuredFormat.secondaryText (address-ish)
+}
 export interface NewRestaurant {
   id: string
   name: string

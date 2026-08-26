@@ -30,6 +30,32 @@ function jitter(id: string, lat: number, lng: number): { lat: number; lng: numbe
   return { lat: lat + (a - 0.5) * 0.0008, lng: lng + (b - 0.5) * 0.0008 }
 }
 
+// Google Places typeahead (M8). Server-only key — NEVER VITE_-prefixed (that
+// would inline it into the public client bundle). Unset → the feature is dark:
+// /restaurants/search-external returns no suggestions and the client's "En
+// Google" section never appears. Same graceful-degradation posture as
+// Cloudinary/MapBox/Resend.
+const GOOGLE_PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY
+
+// A soft per-user rate limit for the paid Google proxy — a cost guard, not a
+// security boundary (the client already debounces, gates on <3 Mesa results,
+// and caches 5min). In-memory sliding window; timestamps older than the window
+// are pruned on each call so the map can't grow unbounded. Single API instance
+// on Railway, so a per-process map is sufficient.
+const EXT_WINDOW_MS = 60_000
+const EXT_MAX_PER_WINDOW = 20
+const extHits = new Map<string, number[]>()
+function extRateLimited(userId: string, now: number): boolean {
+  const recent = (extHits.get(userId) ?? []).filter((t) => now - t < EXT_WINDOW_MS)
+  if (recent.length >= EXT_MAX_PER_WINDOW) {
+    extHits.set(userId, recent)
+    return true
+  }
+  recent.push(now)
+  extHits.set(userId, recent)
+  return false
+}
+
 export const restaurantRoutes = new Hono<AppEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
@@ -304,6 +330,74 @@ export const restaurantRoutes = new Hono<AppEnv>()
     )
     return c.json({ spots })
   })
+  // Google Places typeahead gap-filler (M8) — a server-side proxy so the paid
+  // key never reaches the client. Returns ONLY placeId + main/secondary text
+  // (field-masked): autocomplete carries no coordinates, so nothing Google-
+  // derived beyond the id can land here. Registered before '/:id' so the param
+  // route doesn't capture "search-external". Gated on the key; degrades to an
+  // empty list on any miss so it can never break the rank flow.
+  .get('/search-external', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const q = (c.req.query('q') ?? '').trim()
+    if (!GOOGLE_PLACES_KEY || q.length < 3) return c.json({ suggestions: [] })
+    if (extRateLimited(me.id, Date.now())) return c.json({ error: 'rate_limited' }, 429)
+
+    try {
+      const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
+          // Only the id + the two display strings — keeps it on the cheapest
+          // Autocomplete SKU and means coordinates are never even returned.
+          'X-Goog-FieldMask':
+            'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat',
+        },
+        body: JSON.stringify({
+          input: q,
+          includedRegionCodes: ['do'],
+          includedPrimaryTypes: ['restaurant', 'bar', 'night_club', 'cafe'],
+          languageCode: 'es',
+          regionCode: 'do',
+        }),
+        // Google is on the user's critical path here; don't let a stall hang the
+        // rank flow. Degrades to "no external results" below.
+        signal: AbortSignal.timeout(4000),
+      })
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '')
+        console.error(`[places] autocomplete failed (${res.status}): ${detail.slice(0, 300)}`)
+        return c.json({ suggestions: [] })
+      }
+      const data = (await res.json()) as {
+        suggestions?: {
+          placePrediction?: {
+            placeId?: string
+            structuredFormat?: {
+              mainText?: { text?: string }
+              secondaryText?: { text?: string }
+            }
+          }
+        }[]
+      }
+      const suggestions = (data.suggestions ?? [])
+        .map((s) => s.placePrediction)
+        .filter((p): p is NonNullable<typeof p> =>
+          Boolean(p?.placeId && p.structuredFormat?.mainText?.text),
+        )
+        .map((p) => ({
+          provider: 'google' as const,
+          providerPlaceId: p.placeId as string,
+          name: p.structuredFormat?.mainText?.text as string,
+          secondaryText: p.structuredFormat?.secondaryText?.text ?? null,
+        }))
+      return c.json({ suggestions })
+    } catch (err) {
+      console.error('[places] autocomplete threw:', err)
+      return c.json({ suggestions: [] })
+    }
+  })
   .get('/:id', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
@@ -503,10 +597,24 @@ export const restaurantRoutes = new Hono<AppEnv>()
         // not UUIDs — so accept the slug and resolve it here.
         neighborhoodSlug: z.string().trim().min(1),
         priceTier: z.number().int().min(1).max(4).optional(),
+        // From the Google typeahead (M8) — the ONLY Google-derived value stored.
+        // Everything else (name, sector, coords) is member-confirmed.
+        googlePlaceId: z.string().trim().max(300).optional(),
       })
       .safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
-    const { name, cuisine, neighborhoodSlug, priceTier } = parsed.data
+    const { name, cuisine, neighborhoodSlug, priceTier, googlePlaceId } = parsed.data
+
+    // Per-user daily cap — this is a catalog write path, so bound it (App Store
+    // 1.2; created_by + removedAt make bad rows traceable/removable). ~10/day.
+    const addedToday = await db.$count(
+      restaurants,
+      and(
+        eq(restaurants.createdBy, me.id),
+        sql`${restaurants.createdAt} > now() - interval '1 day'`,
+      ),
+    )
+    if (addedToday >= 10) return c.json({ error: 'rate_limited' }, 429)
 
     const hood = await db.query.neighborhoods.findFirst({
       where: eq(neighborhoods.slug, neighborhoodSlug),
@@ -514,15 +622,31 @@ export const restaurantRoutes = new Hono<AppEnv>()
     })
     if (!hood) return c.json({ error: 'unknown_neighborhood' }, 400)
 
-    // Someone re-typing a restaurant that's already on Mesa becomes an
-    // adoption, not a duplicate row — see placeMatch.ts.
-    const existing = await findExistingMatch({ name, lat: hood.lat, lng: hood.lng })
-    if (existing) {
+    // Dedup by google_place_id first — two members picking the same Google
+    // suggestion must adopt one row, not spawn twins. Then the name/distance
+    // matcher (placeMatch.ts) catches a place already added by hand or imported
+    // within range. Either hit adopts (200); only a double-miss inserts.
+    const adopt = async (rid: string) => {
       const full = await db.query.restaurants.findFirst({
-        where: eq(restaurants.id, existing.id),
+        where: eq(restaurants.id, rid),
         columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
       })
-      if (full) return c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200)
+      return full ? c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200) : null
+    }
+    if (googlePlaceId) {
+      const byPlaceId = await db.query.restaurants.findFirst({
+        where: eq(restaurants.googlePlaceId, googlePlaceId),
+        columns: { id: true },
+      })
+      if (byPlaceId) {
+        const r = await adopt(byPlaceId.id)
+        if (r) return r
+      }
+    }
+    const existing = await findExistingMatch({ name, lat: hood.lat, lng: hood.lng })
+    if (existing) {
+      const r = await adopt(existing.id)
+      if (r) return r
     }
 
     const [created] = await db
@@ -537,6 +661,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
         source: 'member',
         createdBy: me.id,
         priceTier: priceTier ?? null,
+        googlePlaceId: googlePlaceId ?? null,
         isDemo: false,
       })
       .returning({

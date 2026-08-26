@@ -16,7 +16,7 @@ table to see what's actually landed vs. still open.
 | M5 | Generated editorial covers | **done** (commit pending push) |
 | M6 | Foursquare import | **importer built & verified** (commit pending push) — awaiting Stage A data |
 | M7 | Bound map/onboarding/similar for scale | **done & verified** (commit pending push) |
-| M8 | Google typeahead gap-filler | not started |
+| M8 | Google typeahead gap-filler | **built & verified** (commit pending push) — awaiting founder's `GOOGLE_PLACES_API_KEY` |
 
 Update the status column (`not started` → `in progress` → `done (commit <hash>)`)
 as each milestone lands. If a milestone is only partly done, say what's left in

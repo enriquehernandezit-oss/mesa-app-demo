@@ -17,7 +17,7 @@ import { CompareCard } from '../../components/ui/CompareCard'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
-import { api } from '../../lib/api'
+import { ApiError, api } from '../../lib/api'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { formatDistance, haversineM } from '../../lib/geo'
 import { tapSuccess } from '../../lib/haptics'
@@ -33,12 +33,14 @@ import {
 } from '../../lib/pairwise'
 import { markRankExplainerSeen, rankExplainerSeen } from '../../lib/rankExplainer'
 import type {
+  ExternalSuggestion,
   MeResponse,
   NewRestaurant,
   Ranking,
   RestaurantProfileResponse,
   SavedPlace,
 } from '../../lib/types'
+import { useDebounced } from '../../lib/useDebounced'
 import { useMyLocation } from '../../lib/useMyLocation'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
@@ -279,7 +281,7 @@ export function RankAPlace() {
   }, [blocker, revealed, position, sentiment, deepLinked])
 
   const addPlace = useMutation({
-    mutationFn: (body: { name: string; neighborhoodSlug: string }) =>
+    mutationFn: (body: { name: string; neighborhoodSlug: string; googlePlaceId?: string }) =>
       api.post<{ restaurant: NewRestaurant }>('/restaurants', body),
     onSuccess: ({ restaurant }) => {
       const item: Item = {
@@ -297,6 +299,15 @@ export function RankAPlace() {
       // visiting Explore, wouldn't show it until an unrelated cache miss.
       queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
       queryClient.invalidateQueries({ queryKey: ['explore'] })
+    },
+    onError: (err) => {
+      // The per-user daily cap (M8) is the one expected failure worth naming;
+      // anything else falls through to the same generic line.
+      const capped = err instanceof ApiError && err.status === 429
+      toast({
+        variant: 'error',
+        message: capped ? 'Llegaste al límite de lugares por hoy.' : 'No se pudo agregar el lugar.',
+      })
     },
   })
 
@@ -804,6 +815,9 @@ function FindStep({
   onBack: () => void
 }) {
   const [adding, setAdding] = useState(false)
+  // When a Google suggestion is picked, the add form opens pre-filled with its
+  // name + place id — the member still confirms the name and picks a sector.
+  const [prefill, setPrefill] = useState<{ name: string; googlePlaceId: string } | null>(null)
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
   // Hide "Abierto ahora" once the candidate list is catalog-heavy: it filters on
@@ -876,6 +890,25 @@ function FindStep({
         .filter((r): r is Item => Boolean(r))
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
+
+  // Google typeahead gap-filler (M8) — only when Mesa's own catalog comes up
+  // short (<3 hits) for a real query, so it never competes with Mesa data. The
+  // query is debounced so a paid request fires per pause, not per keystroke;
+  // the endpoint is env-gated server-side, so with no key this simply returns
+  // [] and nothing renders. Server also caps abuse; the client just shows what
+  // comes back.
+  const debouncedQuery = useDebounced(query.trim(), 300)
+  const wantExternal = debouncedQuery.length >= 3 && results.length + leadGroup.length < 3
+  const external = useQuery({
+    queryKey: ['restaurants', 'search-external', debouncedQuery],
+    queryFn: () =>
+      api.get<{ suggestions: ExternalSuggestion[] }>(
+        `/restaurants/search-external?q=${encodeURIComponent(debouncedQuery)}`,
+      ),
+    enabled: wantExternal,
+    staleTime: 300_000,
+  })
+  const suggestions = wantExternal ? (external.data?.suggestions ?? []) : []
 
   const renderRow = (r: Item) => {
     const dist = distanceOf(r)
@@ -969,8 +1002,45 @@ function FindStep({
             {results.map(renderRow)}
           </>
         )}
+
+        {/* Google gap-filler — only when Mesa came up short. Tapping a
+            suggestion opens the add form pre-filled; the member confirms the
+            name and picks a sector. "Powered by Google" is required whenever
+            these predictions show off-map (Google ToS); swap this text for the
+            official Google logo asset (light/dark) before a real launch. */}
+        {!adding && suggestions.length > 0 && (
+          <div className="rank-external">
+            <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-3)' }}>
+              En Google
+            </Eyebrow>
+            {suggestions.map((s) => (
+              <button
+                key={s.providerPlaceId}
+                type="button"
+                className="rank-external__row"
+                onClick={() => {
+                  setPrefill({ name: s.name, googlePlaceId: s.providerPlaceId })
+                  setAdding(true)
+                }}
+              >
+                <div className="rank-external__name">{s.name}</div>
+                {s.secondaryText && <div className="rank-external__meta">{s.secondaryText}</div>}
+              </button>
+            ))}
+            <div className="rank-external__attr">Powered by Google</div>
+          </div>
+        )}
+
         {adding ? (
-          <AddPlaceForm addPlace={addPlace} onCancel={() => setAdding(false)} />
+          <AddPlaceForm
+            addPlace={addPlace}
+            initialName={prefill?.name}
+            googlePlaceId={prefill?.googlePlaceId}
+            onCancel={() => {
+              setAdding(false)
+              setPrefill(null)
+            }}
+          />
         ) : (
           <button type="button" className="rank-addnew" onClick={() => setAdding(true)}>
             + ¿No lo encuentras? Agrega un restaurante
@@ -981,21 +1051,28 @@ function FindStep({
   )
 }
 
-// Minimal "add a place that isn't on Mesa" form (name + neighbourhood).
+// Minimal "add a place that isn't on Mesa" form (name + neighbourhood). Can be
+// pre-filled from a Google suggestion (initialName + googlePlaceId, M8) — the
+// member still confirms the name and picks the sector; the place id rides along
+// so the server can dedupe on it.
 function AddPlaceForm({
   addPlace,
   onCancel,
+  initialName,
+  googlePlaceId,
 }: {
   addPlace: ReturnType<
     typeof useMutation<
       { restaurant: NewRestaurant },
       Error,
-      { name: string; neighborhoodSlug: string }
+      { name: string; neighborhoodSlug: string; googlePlaceId?: string }
     >
   >
   onCancel: () => void
+  initialName?: string
+  googlePlaceId?: string
 }) {
-  const [name, setName] = useState('')
+  const [name, setName] = useState(initialName ?? '')
   const neighborhoods = useQuery({
     queryKey: ['neighborhoods'],
     queryFn: () =>
@@ -1034,7 +1111,9 @@ function AddPlaceForm({
         <Button
           disabled={!canAdd}
           style={{ width: 'auto', minHeight: 44, padding: '0 var(--space-5)' }}
-          onClick={() => addPlace.mutate({ name: name.trim(), neighborhoodSlug: slug })}
+          onClick={() =>
+            addPlace.mutate({ name: name.trim(), neighborhoodSlug: slug, googlePlaceId })
+          }
         >
           {addPlace.isPending ? 'Agregando…' : 'Agregar y rankear'}
         </Button>

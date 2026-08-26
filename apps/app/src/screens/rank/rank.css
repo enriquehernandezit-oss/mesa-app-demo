@@ -45,6 +45,45 @@
   justify-content: flex-end;
 }
 
+/* Google typeahead gap-filler (M8) — suggestions when Mesa's catalog comes up
+   short. Deliberately quieter than a Mesa row (no cover, no score) so it never
+   reads as an equal to a real, ranked place. */
+.rank-external__row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.rank-external__row:active {
+  opacity: 0.6;
+}
+.rank-external__name {
+  font-family: var(--font-serif);
+  font-size: var(--text-serif-sm);
+  line-height: 1.15;
+  color: var(--text);
+}
+.rank-external__meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+/* Required Google attribution whenever predictions show off-map. Replace with
+   the official Google logo asset (light/dark) before a real launch. */
+.rank-external__attr {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  padding: var(--space-2) 0;
+}
+
 /* B2 — comparison progress ("3 of 5") + subtitle, mono. */
 .rank-progress {
   font-family: var(--font-mono);
