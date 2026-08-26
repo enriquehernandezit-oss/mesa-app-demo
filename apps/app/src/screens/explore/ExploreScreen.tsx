@@ -18,8 +18,15 @@ import { PlaceCover } from '../../components/ui/PlaceCover'
 import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
-import type { ExploreMember, ExploreResponse, Neighborhood } from '../../lib/types'
+import { cuisineLabel } from '../../lib/display'
+import type {
+  ExploreMember,
+  ExploreResponse,
+  ExternalSuggestion,
+  Neighborhood,
+} from '../../lib/types'
 import { useBack } from '../../lib/useBack'
+import { useDebounced } from '../../lib/useDebounced'
 import '../tabs/tabs.css'
 import '../tabs/feed.css'
 import './explore.css'
@@ -36,6 +43,7 @@ export function ExploreScreen() {
   const goBack = useBack(() => navigate({ to: '/discover' }))
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
+  const [cuisine, setCuisine] = useState<string | null>(null)
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [sort, setSort] = useState<'name' | 'score'>('score')
@@ -46,14 +54,23 @@ export function ExploreScreen() {
     staleTime: Number.POSITIVE_INFINITY,
   })
 
+  // The cuisines actually in the catalog, for the filter rail — reflects real
+  // data, so it stays right as the catalog grows.
+  const cuisines = useQuery({
+    queryKey: ['cuisines'],
+    queryFn: () => api.get<{ cuisines: string[] }>('/restaurants/cuisines'),
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+
   // Default browse: with no query and no filters the API returns the top spots by
   // friends' score. So results always show — Explore is never a blank screen.
   const results = useQuery({
-    queryKey: ['explore', q.trim(), hood, price, openNow, sort],
+    queryKey: ['explore', q.trim(), hood, cuisine, price, openNow, sort],
     queryFn: () => {
       const params = new URLSearchParams()
       if (q.trim().length >= 2) params.set('q', q.trim())
       if (hood) params.set('neighborhood', hood)
+      if (cuisine) params.set('cuisine', cuisine)
       if (price) params.set('price', String(price))
       if (openNow) params.set('open', '1')
       params.set('sort', sort)
@@ -70,6 +87,24 @@ export function ExploreScreen() {
   // have hours; keep it while it's active so it can be turned back off. (M7)
   const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
   const showOpenChip = openNow || hoursCoverage >= 0.4
+
+  // Google gap-filler (M8, extended to Explore) — when Mesa's own catalog comes
+  // up short for a real query, offer online matches. Debounced so the paid
+  // request fires per pause; env-gated server-side (no key → [] → nothing
+  // shows). A pick routes into the rank flow to add + rank it — the only way a
+  // place enters Mesa's catalog.
+  const debouncedQ = useDebounced(q.trim(), 300)
+  const wantExternal = debouncedQ.length >= 3 && hits.length + members.length < 3
+  const external = useQuery({
+    queryKey: ['explore', 'search-external', debouncedQ],
+    queryFn: () =>
+      api.get<{ suggestions: ExternalSuggestion[] }>(
+        `/restaurants/search-external?q=${encodeURIComponent(debouncedQ)}`,
+      ),
+    enabled: wantExternal,
+    staleTime: 300_000,
+  })
+  const suggestions = wantExternal ? (external.data?.suggestions ?? []) : []
 
   return (
     <div className="tab-shell">
@@ -135,6 +170,20 @@ export function ExploreScreen() {
             </Chip>
           ))}
         </ChipRail>
+        {(cuisines.data?.cuisines.length ?? 0) > 0 && (
+          <ChipRail aria-label="Filtrar por cocina" style={{ marginBottom: 'var(--space-4)' }}>
+            {cuisines.data?.cuisines.map((cz) => (
+              <Chip
+                key={cz}
+                size="sm"
+                state={cuisine === cz ? 'selected' : 'default'}
+                onClick={() => setCuisine(cuisine === cz ? null : cz)}
+              >
+                {cuisineLabel(cz)}
+              </Chip>
+            ))}
+          </ChipRail>
+        )}
 
         {members.length > 0 && (
           <>
@@ -149,7 +198,7 @@ export function ExploreScreen() {
           <Body>Buscando…</Body>
         ) : results.isError ? (
           <ErrorState onRetry={() => results.refetch()}>No se pudo buscar.</ErrorState>
-        ) : hits.length === 0 && members.length === 0 ? (
+        ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
           <EmptyState>Nada coincide.</EmptyState>
         ) : (
           <>
@@ -194,6 +243,33 @@ export function ExploreScreen() {
               )
             })}
           </>
+        )}
+
+        {/* Online matches when Mesa's own catalog is thin. Tapping one routes
+            into the rank flow to add + rank it — the only way a place enters
+            Mesa. "Powered by Google" is required off-map (Google ToS); swap the
+            text for the official logo asset before a real launch. */}
+        {suggestions.length > 0 && (
+          <div className="explore-external">
+            <SectionHeader>En Google</SectionHeader>
+            {suggestions.map((s) => (
+              <button
+                key={s.providerPlaceId}
+                type="button"
+                className="explore-external__row"
+                onClick={() =>
+                  navigate({
+                    to: '/rank',
+                    search: { addName: s.name, googlePlaceId: s.providerPlaceId },
+                  })
+                }
+              >
+                <div className="explore-external__name">{s.name}</div>
+                {s.secondaryText && <div className="explore-external__meta">{s.secondaryText}</div>}
+              </button>
+            ))}
+            <div className="explore-external__attr">Powered by Google</div>
+          </div>
         )}
       </div>
     </div>

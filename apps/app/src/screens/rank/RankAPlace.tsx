@@ -71,7 +71,11 @@ const RANK_TAGS = ['Cena romántica', 'Ocasión especial', 'Cena en grupo', 'Al 
 export function RankAPlace() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const search = useSearch({ strict: false }) as { restaurant?: string }
+  const search = useSearch({ strict: false }) as {
+    restaurant?: string
+    addName?: string
+    googlePlaceId?: string
+  }
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -352,6 +356,9 @@ export function RankAPlace() {
         myHood={myHood}
         onPick={setPickedId}
         addPlace={addPlace}
+        initialAdd={
+          search.addName ? { name: search.addName, googlePlaceId: search.googlePlaceId } : null
+        }
         onBack={() => navigate({ to: '/rankings' })}
       />
     )
@@ -790,6 +797,7 @@ function FindStep({
   myHood,
   onPick,
   addPlace,
+  initialAdd,
   onBack,
 }: {
   candList: Item[]
@@ -809,15 +817,20 @@ function FindStep({
     typeof useMutation<
       { restaurant: NewRestaurant },
       Error,
-      { name: string; neighborhoodSlug: string }
+      { name: string; neighborhoodSlug: string; googlePlaceId?: string }
     >
   >
+  // A Google suggestion picked on Explore — open the add form pre-filled (M8).
+  initialAdd: { name: string; googlePlaceId?: string } | null
   onBack: () => void
 }) {
-  const [adding, setAdding] = useState(false)
-  // When a Google suggestion is picked, the add form opens pre-filled with its
-  // name + place id — the member still confirms the name and picks a sector.
-  const [prefill, setPrefill] = useState<{ name: string; googlePlaceId: string } | null>(null)
+  const [adding, setAdding] = useState(Boolean(initialAdd))
+  // When a Google suggestion is picked (here or on Explore), the add form opens
+  // pre-filled with its name + place id — the member still confirms the name and
+  // picks a sector.
+  const [prefill, setPrefill] = useState<{ name: string; googlePlaceId?: string } | null>(
+    initialAdd,
+  )
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
   // Hide "Abierto ahora" once the candidate list is catalog-heavy: it filters on

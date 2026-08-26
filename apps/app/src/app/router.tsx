@@ -160,8 +160,16 @@ const profileRoute = createRoute({
 const rankRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/rank',
-  validateSearch: (s: Record<string, unknown>): { restaurant?: string } =>
-    typeof s.restaurant === 'string' ? { restaurant: s.restaurant } : {},
+  // `restaurant` — rank an existing place by id. `addName`/`googlePlaceId` — a
+  // Google suggestion picked on Explore: land on the find step with the add
+  // form pre-filled so the member adds + ranks it (M8, extended to Explore).
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { restaurant?: string; addName?: string; googlePlaceId?: string } => ({
+    ...(typeof s.restaurant === 'string' ? { restaurant: s.restaurant } : {}),
+    ...(typeof s.addName === 'string' ? { addName: s.addName } : {}),
+    ...(typeof s.googlePlaceId === 'string' ? { googlePlaceId: s.googlePlaceId } : {}),
+  }),
   component: RankAPlace,
 })
 const userRoute = createRoute({

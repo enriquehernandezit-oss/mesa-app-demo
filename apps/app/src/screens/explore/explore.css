@@ -53,3 +53,41 @@
   color: var(--text-muted);
   margin-top: 3px;
 }
+
+/* Google gap-filler rows (M8) — quieter than a Mesa row (no cover, no score):
+   these aren't on Mesa yet, tapping one takes you to add + rank it. */
+.explore-external__row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.explore-external__row:active {
+  opacity: 0.6;
+}
+.explore-external__name {
+  font-family: var(--font-serif);
+  font-size: var(--text-serif-sm);
+  line-height: 1.15;
+  color: var(--text);
+}
+.explore-external__meta {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+/* Required Google attribution when predictions show off-map. Replace with the
+   official Google logo asset (light/dark) before a real launch. */
+.explore-external__attr {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  padding: var(--space-2) 0;
+}

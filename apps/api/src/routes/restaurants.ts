@@ -82,6 +82,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
     if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
     const hood = (c.req.query('neighborhood') ?? '').trim()
+    const cuisine = (c.req.query('cuisine') ?? '').trim()
     const price = Number(c.req.query('price')) || null
     const openNow = c.req.query('open') === '1'
     const sort = c.req.query('sort') === 'name' ? 'name' : 'score'
@@ -95,6 +96,9 @@ export const restaurantRoutes = new Hono<AppEnv>()
     const liveConds = [isNull(restaurants.removedAt), isNull(restaurants.closedAt)]
     if (hood) liveConds.push(eq(neighborhoods.slug, hood))
     if (price) liveConds.push(eq(restaurants.priceTier, price))
+    // Cuisine facet — the chip value is the exact stored English cuisine (from
+    // GET /restaurants/cuisines), so an equality is exact and correct.
+    if (cuisine) liveConds.push(eq(restaurants.cuisine, cuisine))
     // "Open now" is a demo filter over the display close-time (not real hours).
     if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
 
@@ -238,6 +242,26 @@ export const restaurantRoutes = new Hono<AppEnv>()
     }
 
     return c.json({ restaurants: rows, members })
+  })
+  // The distinct cuisines actually present in the live catalog — powers the
+  // Explore cuisine filter chips. Reflects the real data (not a hardcoded list),
+  // so it stays correct as the catalog grows with imported places. Ordered
+  // alphabetically by the stored English value; the client shows cuisineLabel().
+  .get('/cuisines', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const rows = await db
+      .selectDistinct({ cuisine: restaurants.cuisine })
+      .from(restaurants)
+      .where(
+        and(
+          isNull(restaurants.removedAt),
+          isNull(restaurants.closedAt),
+          sql`${restaurants.cuisine} is not null`,
+        ),
+      )
+      .orderBy(asc(restaurants.cuisine))
+    return c.json({ cuisines: rows.map((r) => r.cuisine).filter((c): c is string => Boolean(c)) })
   })
   // Trending: most-cheered places of the last two weeks — the Discover rail.
   // One grouped query (cheers → rankings → restaurants).
