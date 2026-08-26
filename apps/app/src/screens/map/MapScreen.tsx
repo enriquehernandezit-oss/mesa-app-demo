@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
 import { PlaceCover } from '../../components/ui/PlaceCover'
@@ -15,11 +15,13 @@ import '../tabs/tabs.css'
 import './map.css'
 
 // A barrio map of Santo Domingo — every spot plotted from its real lat/lng, the
-// ones people you follow have ranked lit brass. Self-contained SVG: no map
-// library, no token, works offline and in the native webview. (A MapBox street
-// layer can slot in later when a token is configured; the data endpoint already
-// returns coordinates.) Tap a pin → a card with the friends' average and a way
-// into the spot.
+// ones people you follow have ranked lit brass. Two renderers: when
+// VITE_MAPBOX_TOKEN is set, the real pannable MapBox street map (lazy-loaded
+// MapGL); otherwise the self-contained SVG below — no library, no token, works
+// offline and in the native webview. Either way, tapping a pin opens the same
+// card with the friends' average and a way into the spot.
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined
+const MapGL = lazy(() => import('./MapGL'))
 
 const VW = 360
 const PAD = 26
@@ -104,8 +106,9 @@ export function MapScreen() {
   const spots = q.data?.spots ?? []
   const { placed, vh, me } = useMemo(() => project(spots, myPosition), [spots, myPosition])
   const labels = useMemo(() => neighborhoodLabels(placed), [placed])
-  const selected = placed.find((p) => p.id === selectedId) ?? null
-  const rankedByFriends = placed.filter((p) => p.friendCount > 0).length
+  // Selection reads from spots (a MapSpot), so it works for both renderers.
+  const selected = spots.find((s) => s.id === selectedId) ?? null
+  const rankedByFriends = spots.filter((s) => s.friendCount > 0).length
 
   return (
     <div className="tab-shell">
@@ -127,6 +130,10 @@ export function MapScreen() {
           <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el mapa.</ErrorState>
         ) : placed.length === 0 ? (
           <EmptyState>Aún no hay spots.</EmptyState>
+        ) : MAPBOX_TOKEN ? (
+          <Suspense fallback={<Body>Cargando el mapa…</Body>}>
+            <MapGL spots={spots} me={myPosition} token={MAPBOX_TOKEN} onSelect={setSelectedId} />
+          </Suspense>
         ) : (
           <div className="map-frame">
             <svg
@@ -221,7 +228,7 @@ export function MapScreen() {
   )
 }
 
-function SpotCard({ spot, onClose }: { spot: Placed; onClose: () => void }) {
+function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
   const meta = [cuisineLabel(spot.cuisine), spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
