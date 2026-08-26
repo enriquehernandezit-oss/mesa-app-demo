@@ -66,7 +66,9 @@ async function sendMail(to: string, subject: string, body: string) {
     })
     if (!res.ok) {
       const detail = await res.text().catch(() => '')
-      console.error(`[email] send failed (${res.status}) to=${to} · ${subject}: ${detail.slice(0, 300)}`)
+      console.error(
+        `[email] send failed (${res.status}) to=${to} · ${subject}: ${detail.slice(0, 300)}`,
+      )
     }
   } catch (err) {
     console.error(`[email] send threw to=${to} · ${subject}:`, err)
