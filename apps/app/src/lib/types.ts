@@ -311,6 +311,11 @@ export interface RestaurantProfileResponse {
     closesAt: string | null
     priceTier: number | null
     neighborhood: { slug: string; name: string } | null
+    // M9: populated when the profile was created (or enriched) from a Google
+    // Places result.
+    address: string | null
+    geoPrecision: 'exact' | 'sector'
+    google: boolean
   }
   friendsRankings: FriendRanking[]
   friendAvg: number | null

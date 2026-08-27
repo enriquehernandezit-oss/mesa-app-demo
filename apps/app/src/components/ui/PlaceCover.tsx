@@ -1,5 +1,5 @@
 import type { ImgHTMLAttributes, ReactNode, Ref } from 'react'
-import { cloudinaryUrl } from '../../lib/media'
+import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
 import './place-cover.css'
 
 // FNV-1a (32-bit) — deterministic per seed, so the same place always draws the
@@ -43,6 +43,11 @@ export interface PlaceCoverProps {
   seed: string // restaurant id or list slug — anything stable across a rename
   name: string // monogram letter, and the default alt text source
   coverImageId?: string | null
+  // A Mesa-tinted MapBox static map, used instead of the generated mark when
+  // there's no photo but a real geocode exists (M9: a Google-created profile)
+  // — the picture "of" a place with no photo is where it is. Ignored when
+  // coverImageId resolves to a real photo.
+  map?: { lat: number; lng: number } | null
   size?: { w?: number; h?: number }
   className?: string
   alt?: string
@@ -52,15 +57,17 @@ export interface PlaceCoverProps {
   }
 }
 
-// The photo when there's one, else a deterministic generated cover — so the
-// catalog never shows a blank box. `className="ph"` always applies: generated
-// covers and real photographs must sit in the same optical layer (the veil +
-// grain from global.css), or the catalog visibly splits into "real" and
-// "filler". See docs/LOCATION_CATALOG_PLAN.md M5.
+// The photo when there's one, else a Mesa-tinted map (when a real geocode is
+// available), else a deterministic generated cover — so the catalog never
+// shows a blank box. `className="ph"` always applies: every cover type must
+// sit in the same optical layer (the veil + grain from global.css), or the
+// catalog visibly splits into "real" and "filler". See
+// docs/LOCATION_CATALOG_PLAN.md M5 and M9.
 export function PlaceCover({
   seed,
   name,
   coverImageId,
+  map,
   size,
   className,
   alt = '',
@@ -72,6 +79,20 @@ export function PlaceCover({
     return (
       <div className={classes}>
         <img loading="lazy" {...imgProps} src={cover} alt={alt} />
+      </div>
+    )
+  }
+  const mapCover = map ? mapboxStaticUrl(map.lat, map.lng, size) : null
+  if (mapCover) {
+    return (
+      <div className={classes}>
+        <img
+          loading="lazy"
+          {...imgProps}
+          className={['place-cover__map', imgProps?.className].filter(Boolean).join(' ')}
+          src={mapCover}
+          alt={alt}
+        />
       </div>
     )
   }

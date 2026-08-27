@@ -95,6 +95,19 @@ export function RestaurantProfile() {
     saved,
   } = q.data
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng)
+  // M9: a Google-created (or Google-enriched) place with no photo and a real
+  // geocode gets a tinted map as its hero instead of the generated editorial
+  // mark — the picture "of" a place with no photo is where it is. The lower
+  // locator map is then redundant (one map per profile), so it's hidden.
+  // Gated on mapUrl (i.e. a MapBox token is actually configured) — without
+  // one, PlaceCover's map attempt silently falls back to the generated mark
+  // anyway, and this must fall back in lockstep or the locator map disappears
+  // too, leaving the profile with no map at all.
+  const mapCover =
+    Boolean(mapUrl) &&
+    !restaurant.coverImageId &&
+    restaurant.geoPrecision === 'exact' &&
+    restaurant.google
   const meta = [
     cuisineLabel(restaurant.cuisine),
     restaurant.neighborhood?.name,
@@ -126,12 +139,15 @@ export function RestaurantProfile() {
     <div className="resto-screen">
       <CondensedHeader name={restaurant.name} score={allMesa.avg} onBack={goBack} />
 
-      {/* Film-photo hero — clean image, floating controls; identity sits below. */}
+      {/* Film-photo hero — clean image, floating controls; identity sits below.
+          A Google-created place with no photo gets a tinted map hero instead
+          (M9) — its own "Cómo llegar" tap target replaces the film tag. */}
       <div className="resto-photo">
         <PlaceCover
           seed={restaurant.id}
           name={restaurant.name}
           coverImageId={restaurant.coverImageId}
+          map={mapCover ? { lat: restaurant.lat, lng: restaurant.lng } : null}
           size={{ w: 1000, h: 750 }}
           className="resto-photo__cover"
           alt={restaurant.name}
@@ -147,7 +163,24 @@ export function RestaurantProfile() {
         >
           <ShareIcon size={18} />
         </button>
-        <span className="resto-photo__tag">film · con velas</span>
+        {mapCover ? (
+          <button
+            type="button"
+            className="resto-photo__directions"
+            onClick={() =>
+              openNavChooser({
+                kind: 'coords',
+                lat: restaurant.lat,
+                lng: restaurant.lng,
+                label: restaurant.name,
+              })
+            }
+          >
+            Cómo llegar ›
+          </button>
+        ) : (
+          <span className="resto-photo__tag">film · con velas</span>
+        )}
       </div>
       <div id="resto-hero-end" />
 
@@ -180,6 +213,7 @@ export function RestaurantProfile() {
               <span className="resto-agg__count">{allMesa.count} rankeados</span>
             </div>
           )}
+          {restaurant.address && <div className="resto-address">{restaurant.address}</div>}
           {lists.length > 0 && (
             <div className="resto-lists">
               {lists.map((l) => (
@@ -305,34 +339,42 @@ export function RestaurantProfile() {
         <TheirScores rankings={friendsRankings} />
 
         {/* Tapping the map opens directions — same chooser as the "Cómo llegar"
-            pill above. The whole region is the tap target, image or fallback. */}
-        <button
-          type="button"
-          className="resto-map-btn"
-          aria-label={`Cómo llegar a ${restaurant.name}`}
-          onClick={() =>
-            openNavChooser({
-              kind: 'coords',
-              lat: restaurant.lat,
-              lng: restaurant.lng,
-              label: restaurant.name,
-            })
-          }
-        >
-          {mapUrl ? (
-            <img
-              className="resto-map"
-              src={mapUrl}
-              alt={`Mapa de ${restaurant.name}`}
-              loading="lazy"
-            />
-          ) : (
-            <div className="resto-map resto-map--fallback">
-              {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
-            </div>
-          )}
-          <span className="resto-map__hint">Cómo llegar ›</span>
-        </button>
+            pill above. The whole region is the tap target, image or fallback.
+            Hidden when the hero itself is the map (M9) — one map per profile. */}
+        {!mapCover && (
+          <button
+            type="button"
+            className="resto-map-btn"
+            aria-label={`Cómo llegar a ${restaurant.name}`}
+            onClick={() =>
+              openNavChooser({
+                kind: 'coords',
+                lat: restaurant.lat,
+                lng: restaurant.lng,
+                label: restaurant.name,
+              })
+            }
+          >
+            {mapUrl ? (
+              <img
+                className="resto-map"
+                src={mapUrl}
+                alt={`Mapa de ${restaurant.name}`}
+                loading="lazy"
+              />
+            ) : (
+              <div className="resto-map resto-map--fallback">
+                {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
+              </div>
+            )}
+            <span className="resto-map__hint">Cómo llegar ›</span>
+          </button>
+        )}
+
+        {/* Required Google attribution whenever this profile's data came from
+            Google (M9) — off-map, so a text line is the compliant-enough
+            interim; swap for the official logo asset before a real launch. */}
+        {restaurant.google && <div className="resto-google-attr">Powered by Google</div>}
 
         {/* Similar spots rail. */}
         {similar.length > 0 && (

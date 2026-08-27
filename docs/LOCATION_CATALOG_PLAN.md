@@ -345,6 +345,41 @@ guarantee.
 
 ---
 
+## M9 — Tap a Google result → a real, populated profile *(founder decision, reverses two calls above)*
+
+Tapping a suggestion now calls Google Place Details (`POST
+/restaurants/from-google`), populates the row from it, and lands the member
+directly on the new profile — instead of opening the sector-picking form. This
+reverses **"no coordinate cache, ever"** and **"a place only enters the catalog
+by ranking it"**, both stated above: Details' `location` is now stored (exact
+`geo_precision`), and a Google tap alone creates the row.
+
+**Founder call on the caching tension**: Google's terms let `place_id` be
+stored forever and coordinates for 30 days, but name/address/phone/hours have
+no caching exception. Mesa stores them anyway and refreshes every 30 days
+(`restaurants.source_refreshed_at`, reused from M6's Foursquare-refresh
+column — no new column) — the same pattern every app in this category (Beli
+included) uses. Rankings/notes/dishes/lists are Mesa's own data and are never
+affected either way.
+
+Dedup order in `POST /restaurants/from-google`: `google_place_id` first (zero
+extra Details calls for a repeat tap), then `findExistingMatch` against
+Google's real coordinates — a hit **enriches** null columns on the existing
+row (a seeded row's curated name/cover/cuisine are never overwritten) rather
+than duplicating. Shares the ~10/day cap with `POST /`. `GET /restaurants/:id`
+lazily refreshes a stale Google row in the background on view (in-flight
+guarded, so concurrent loads never double-call).
+
+Cover: a photoless, exact-geocode, Google-sourced profile gets a Mesa-tinted
+MapBox static map as its hero (`PlaceCover`'s new `map` prop) instead of the
+generated editorial mark, and the profile's own small locator map is hidden
+(one map per profile). Both fall back together when no MapBox token is
+configured, so a profile never ends up mapless.
+
+**Commit:** `feat(catalog): tap a Google result to create a full profile`
+
+---
+
 ## Critical files
 
 | Area | Files |
@@ -394,6 +429,10 @@ themes, 375px + 1280px.
 ## Not doing
 
 No Google Maps tiles (founder's call). No third-party photos or photo capture
-(deferred). No PostGIS — haversine in TS is enough for one city. No coordinate
-caching from Google, ever. No renaming the `cheers` table. No `catalog-reconcile`
-pass to promote sector pins to street pins — noted as a later option only.
+(deferred). No PostGIS — haversine in TS is enough for one city. ~~No
+coordinate caching from Google, ever~~ — reversed by founder decision in M9:
+coordinates (and the other Details fields) are now cached with a 30-day
+refresh. No renaming the `cheers` table. No `catalog-reconcile` pass to promote
+sector pins to street pins — noted as a later option only. No Google Photos
+(M9) — a separate, pricier SKU with no caching exception at all; the map cover
+is the answer to "what's the picture" for a photoless Google place.

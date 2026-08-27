@@ -160,15 +160,11 @@ const profileRoute = createRoute({
 const rankRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/rank',
-  // `restaurant` — rank an existing place by id. `addName`/`googlePlaceId` — a
-  // Google suggestion picked on Explore: land on the find step with the add
-  // form pre-filled so the member adds + ranks it (M8, extended to Explore).
-  validateSearch: (
-    s: Record<string, unknown>,
-  ): { restaurant?: string; addName?: string; googlePlaceId?: string } => ({
+  // `restaurant` — rank an existing place by id (a Google-picked place now
+  // creates its profile directly via POST /restaurants/from-google (M9) and
+  // navigates to it, rather than deep-linking into this route pre-filled).
+  validateSearch: (s: Record<string, unknown>): { restaurant?: string } => ({
     ...(typeof s.restaurant === 'string' ? { restaurant: s.restaurant } : {}),
-    ...(typeof s.addName === 'string' ? { addName: s.addName } : {}),
-    ...(typeof s.googlePlaceId === 'string' ? { googlePlaceId: s.googlePlaceId } : {}),
   }),
   component: RankAPlace,
 })

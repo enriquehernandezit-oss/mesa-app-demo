@@ -142,6 +142,24 @@
   letter-spacing: 0.08em;
 }
 
+/* The map-cover hero's own directions tap target (M9) — mirrors .resto-photo__tag's
+   bottom placement, on the opposite corner, as a real button rather than a label. */
+.resto-photo__directions {
+  position: absolute;
+  bottom: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--photo-scrim-3);
+  color: var(--on-photo-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
 /* Identity block, on the paper ground below the photo. */
 .resto-head {
   display: flex;
@@ -202,6 +220,14 @@
 .resto-agg__count {
   font-family: var(--font-mono);
   font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+/* Street address (M9 — populated when the profile came from Google). */
+.resto-address {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   color: var(--text-muted);
 }
 
@@ -377,4 +403,15 @@
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* Required Google attribution when this profile's data came from Google (M9)
+   — off-map, so Google's ToS requires it inline. Replace with the official
+   Google logo asset (light/dark) before a real launch. */
+.resto-google-attr {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  padding: var(--space-2) 0;
 }

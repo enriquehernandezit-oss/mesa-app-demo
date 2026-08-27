@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { QuickActions } from '../../components/QuickActions'
@@ -17,16 +17,19 @@ import { Avatar } from '../../components/ui/Avatar'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
-import { api } from '../../lib/api'
+import { toast } from '../../components/ui/toast-store'
+import { ApiError, api } from '../../lib/api'
 import { cuisineLabel } from '../../lib/display'
 import type {
   ExploreMember,
   ExploreResponse,
   ExternalSuggestion,
   Neighborhood,
+  NewRestaurant,
 } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import { useDebounced } from '../../lib/useDebounced'
+import { useGoogleSession } from '../../lib/useGoogleSession'
 import '../tabs/tabs.css'
 import '../tabs/feed.css'
 import './explore.css'
@@ -40,7 +43,9 @@ const PRICES = [1, 2, 3, 4]
 
 export function ExploreScreen() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const goBack = useBack(() => navigate({ to: '/discover' }))
+  const googleSession = useGoogleSession()
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
   const [cuisine, setCuisine] = useState<string | null>(null)
@@ -99,12 +104,38 @@ export function ExploreScreen() {
     queryKey: ['explore', 'search-external', debouncedQ],
     queryFn: () =>
       api.get<{ suggestions: ExternalSuggestion[] }>(
-        `/restaurants/search-external?q=${encodeURIComponent(debouncedQ)}`,
+        `/restaurants/search-external?q=${encodeURIComponent(debouncedQ)}&s=${googleSession.token}`,
       ),
     enabled: wantExternal,
     staleTime: 300_000,
   })
   const suggestions = wantExternal ? (external.data?.suggestions ?? []) : []
+
+  // Tapping a Google result creates a real, populated profile immediately
+  // (M9) and lands on it — Google search is how a place enters Mesa's
+  // catalog, not a form the member fills in by hand.
+  const fromGoogle = useMutation({
+    mutationFn: (placeId: string) =>
+      api.post<{ restaurant: NewRestaurant }>('/restaurants/from-google', {
+        placeId,
+        sessionToken: googleSession.token,
+      }),
+    onSuccess: ({ restaurant }) => {
+      googleSession.reset()
+      queryClient.invalidateQueries({ queryKey: ['explore'] })
+      navigate({ to: '/r/$restaurantId', params: { restaurantId: restaurant.id } })
+    },
+    onError: (err) => {
+      const status = err instanceof ApiError ? err.status : null
+      toast({
+        variant: 'error',
+        message:
+          status === 429
+            ? 'Llegaste al límite de lugares por hoy.'
+            : 'No se pudo conectar con Google. Intenta de nuevo.',
+      })
+    },
+  })
 
   return (
     <div className="tab-shell">
@@ -245,29 +276,33 @@ export function ExploreScreen() {
           </>
         )}
 
-        {/* Online matches when Mesa's own catalog is thin. Tapping one routes
-            into the rank flow to add + rank it — the only way a place enters
-            Mesa. "Powered by Google" is required off-map (Google ToS); swap the
-            text for the official logo asset before a real launch. */}
+        {/* Online matches when Mesa's own catalog is thin. Tapping one creates
+            a full profile from that place's Google listing and lands on it
+            (M9) — the only way a place enters Mesa. "Powered by Google" is
+            required off-map (Google ToS); swap the text for the official logo
+            asset before a real launch. */}
         {suggestions.length > 0 && (
           <div className="explore-external">
             <SectionHeader>En Google</SectionHeader>
-            {suggestions.map((s) => (
-              <button
-                key={s.providerPlaceId}
-                type="button"
-                className="explore-external__row"
-                onClick={() =>
-                  navigate({
-                    to: '/rank',
-                    search: { addName: s.name, googlePlaceId: s.providerPlaceId },
-                  })
-                }
-              >
-                <div className="explore-external__name">{s.name}</div>
-                {s.secondaryText && <div className="explore-external__meta">{s.secondaryText}</div>}
-              </button>
-            ))}
+            {suggestions.map((s) => {
+              const pending = fromGoogle.isPending && fromGoogle.variables === s.providerPlaceId
+              return (
+                <button
+                  key={s.providerPlaceId}
+                  type="button"
+                  className="explore-external__row"
+                  disabled={fromGoogle.isPending}
+                  onClick={() => fromGoogle.mutate(s.providerPlaceId)}
+                >
+                  <div className="explore-external__name">{s.name}</div>
+                  {(pending || s.secondaryText) && (
+                    <div className="explore-external__meta">
+                      {pending ? 'Creando perfil…' : s.secondaryText}
+                    </div>
+                  )}
+                </button>
+              )
+            })}
             <div className="explore-external__attr">Powered by Google</div>
           </div>
         )}

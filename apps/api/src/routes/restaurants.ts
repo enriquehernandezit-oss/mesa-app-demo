@@ -3,6 +3,7 @@ import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from 
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
+import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
 import { findExistingMatch } from '../lib/placeMatch'
 import { requireAuth } from '../middleware/session'
 
@@ -30,12 +31,11 @@ function jitter(id: string, lat: number, lng: number): { lat: number; lng: numbe
   return { lat: lat + (a - 0.5) * 0.0008, lng: lng + (b - 0.5) * 0.0008 }
 }
 
-// Google Places typeahead (M8). Server-only key — NEVER VITE_-prefixed (that
-// would inline it into the public client bundle). Unset → the feature is dark:
-// /restaurants/search-external returns no suggestions and the client's "En
-// Google" section never appears. Same graceful-degradation posture as
-// Cloudinary/MapBox/Resend.
-const GOOGLE_PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY
+// Google Places (M8 typeahead, M9 create + refresh). The key itself lives in
+// lib/googlePlaces.ts — server-only, NEVER VITE_-prefixed. Unset → every
+// Google-backed feature here is dark: no suggestions, POST /from-google
+// 502s cleanly, no background refresh ever fires. Same graceful-degradation
+// posture as Cloudinary/MapBox/Resend.
 
 // A soft per-user rate limit for the paid Google proxy — a cost guard, not a
 // security boundary (the client already debounces, gates on <3 Mesa results,
@@ -54,6 +54,55 @@ function extRateLimited(userId: string, now: number): boolean {
   recent.push(now)
   extHits.set(userId, recent)
   return false
+}
+
+// Per-user daily cap on catalog writes (App Store 1.2 traceability/removal via
+// created_by + removedAt) — shared by POST / and POST /from-google so tapping
+// a Google result and hand-adding a place draw from the same ~10/day budget.
+async function atDailyCap(userId: string): Promise<boolean> {
+  const addedToday = await db.$count(
+    restaurants,
+    and(
+      eq(restaurants.createdBy, userId),
+      sql`${restaurants.createdAt} > now() - interval '1 day'`,
+    ),
+  )
+  return addedToday >= 10
+}
+
+// M9: how long a Google-sourced row's descriptive fields (address/phone/
+// website/hours) are trusted before a profile view triggers a re-fetch —
+// Google's caching terms give no exception for these fields, unlike place_id
+// (forever) and coordinates (30 days), so 30 days is the same budget applied
+// to everything we copy from a Details response.
+const GOOGLE_REFRESH_MS = 30 * 24 * 60 * 60 * 1000
+
+// Prevents a refresh stampede when a stale profile gets several views at
+// once — same in-process, single-Railway-instance assumption as extHits
+// above. Not persisted; worst case after a restart is one extra Details call.
+const refreshing = new Set<string>()
+async function refreshFromGoogle(restaurantId: string, googlePlaceId: string): Promise<void> {
+  if (refreshing.has(restaurantId)) return
+  refreshing.add(restaurantId)
+  try {
+    const details = await placeDetails(googlePlaceId)
+    if (!details) return
+    const fields = toMesaFields(details)
+    await db
+      .update(restaurants)
+      .set({
+        address: fields.address,
+        phone: fields.phone,
+        website: fields.website,
+        priceTier: fields.priceTier,
+        closesAt: fields.closesAt,
+        closedAt: fields.closedAt,
+        sourceRefreshedAt: new Date(),
+      })
+      .where(eq(restaurants.id, restaurantId))
+  } finally {
+    refreshing.delete(restaurantId)
+  }
 }
 
 export const restaurantRoutes = new Hono<AppEnv>()
@@ -364,63 +413,124 @@ export const restaurantRoutes = new Hono<AppEnv>()
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
-    if (!GOOGLE_PLACES_KEY || q.length < 3) return c.json({ suggestions: [] })
+    if (q.length < 3) return c.json({ suggestions: [] })
     if (extRateLimited(me.id, Date.now())) return c.json({ error: 'rate_limited' }, 429)
+    // Optional session token (M9): when the same token terminates in a Details
+    // call (POST /from-google), Google bills these autocomplete requests at
+    // zero. Omitting it still works — it's purely a cost optimization.
+    const sessionToken = c.req.query('s') || undefined
+    const suggestions = await autocomplete(q, sessionToken)
+    return c.json({ suggestions })
+  })
+  // Tap a Google suggestion → a real, populated Mesa profile (M9). Fetches
+  // Place Details ONLY here, never for the typeahead — one billable call per
+  // new place, reused across every member who taps the same suggestion after.
+  .post('/from-google', async (c) => {
+    const me = c.get('user')
+    if (!me) return c.json({ error: 'unauthorized' }, 401)
+    const parsed = z
+      .object({ placeId: z.string().trim().min(1).max(300), sessionToken: z.string().optional() })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
+    const { placeId, sessionToken } = parsed.data
 
-    try {
-      const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
-          // Only the id + the two display strings — keeps it on the cheapest
-          // Autocomplete SKU and means coordinates are never even returned.
-          'X-Goog-FieldMask':
-            'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat',
-        },
-        body: JSON.stringify({
-          input: q,
-          includedRegionCodes: ['do'],
-          includedPrimaryTypes: ['restaurant', 'bar', 'night_club', 'cafe'],
-          languageCode: 'es',
-          regionCode: 'do',
-        }),
-        // Google is on the user's critical path here; don't let a stall hang the
-        // rank flow. Degrades to "no external results" below.
-        signal: AbortSignal.timeout(4000),
+    if (await atDailyCap(me.id)) return c.json({ error: 'rate_limited' }, 429)
+
+    const adopt = async (rid: string) => {
+      const full = await db.query.restaurants.findFirst({
+        where: eq(restaurants.id, rid),
+        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
+        with: { neighborhood: { columns: { name: true } } },
       })
-      if (!res.ok) {
-        const detail = await res.text().catch(() => '')
-        console.error(`[places] autocomplete failed (${res.status}): ${detail.slice(0, 300)}`)
-        return c.json({ suggestions: [] })
-      }
-      const data = (await res.json()) as {
-        suggestions?: {
-          placePrediction?: {
-            placeId?: string
-            structuredFormat?: {
-              mainText?: { text?: string }
-              secondaryText?: { text?: string }
-            }
-          }
-        }[]
-      }
-      const suggestions = (data.suggestions ?? [])
-        .map((s) => s.placePrediction)
-        .filter((p): p is NonNullable<typeof p> =>
-          Boolean(p?.placeId && p.structuredFormat?.mainText?.text),
-        )
-        .map((p) => ({
-          provider: 'google' as const,
-          providerPlaceId: p.placeId as string,
-          name: p.structuredFormat?.mainText?.text as string,
-          secondaryText: p.structuredFormat?.secondaryText?.text ?? null,
-        }))
-      return c.json({ suggestions })
-    } catch (err) {
-      console.error('[places] autocomplete threw:', err)
-      return c.json({ suggestions: [] })
+      return full
+        ? c.json({ restaurant: { ...full, neighborhood: full.neighborhood.name } }, 200)
+        : null
     }
+
+    // Dedup on google_place_id first — costs zero additional Details calls
+    // for the second, third, ... member who taps the same suggestion.
+    const byPlaceId = await db.query.restaurants.findFirst({
+      where: eq(restaurants.googlePlaceId, placeId),
+      columns: { id: true },
+    })
+    if (byPlaceId) {
+      const r = await adopt(byPlaceId.id)
+      if (r) return r
+    }
+
+    const details = await placeDetails(placeId, sessionToken)
+    if (!details) return c.json({ error: 'google_unavailable' }, 502)
+    const fields = toMesaFields(details)
+
+    const hoods = await db.query.neighborhoods.findMany({
+      columns: { id: true, name: true, lat: true, lng: true },
+    })
+    if (hoods.length === 0) return c.json({ error: 'unknown_neighborhood' }, 400)
+    const hood = resolveNeighborhood(details, hoods)
+
+    // Name/distance match against Mesa's real coordinates (far more precise
+    // than M8's sector-centroid guess). A hit is enriched, not duplicated —
+    // only null columns are filled, so a seeded row's curated name/cover/
+    // cuisine survive untouched. This is a real upgrade for that row: its
+    // geoPrecision moves from 'sector' to 'exact' with Google's real coords.
+    const existing = await findExistingMatch({
+      name: fields.name,
+      lat: fields.lat,
+      lng: fields.lng,
+    })
+    if (existing) {
+      await db
+        .update(restaurants)
+        .set({
+          cuisine: existing.cuisine ?? fields.cuisine,
+          address: existing.address ?? fields.address,
+          locality: existing.locality ?? fields.locality,
+          phone: existing.phone ?? fields.phone,
+          website: existing.website ?? fields.website,
+          priceTier: existing.priceTier ?? fields.priceTier,
+          closesAt: existing.closesAt ?? fields.closesAt,
+          closedAt: existing.closedAt ?? fields.closedAt,
+          ...(existing.geoPrecision === 'sector'
+            ? { lat: fields.lat, lng: fields.lng, geoPrecision: 'exact' as const }
+            : {}),
+          googlePlaceId: existing.googlePlaceId ?? placeId,
+          sourceRefreshedAt: new Date(),
+        })
+        .where(eq(restaurants.id, existing.id))
+      const r = await adopt(existing.id)
+      if (r) return r
+    }
+
+    const [created] = await db
+      .insert(restaurants)
+      .values({
+        name: fields.name,
+        cuisine: fields.cuisine,
+        neighborhoodId: hood.id,
+        lat: fields.lat,
+        lng: fields.lng,
+        geoPrecision: 'exact',
+        source: 'member',
+        createdBy: me.id,
+        address: fields.address,
+        locality: fields.locality,
+        phone: fields.phone,
+        website: fields.website,
+        priceTier: fields.priceTier,
+        closesAt: fields.closesAt,
+        closedAt: fields.closedAt,
+        googlePlaceId: placeId,
+        sourceRefreshedAt: new Date(),
+        isDemo: false,
+      })
+      .returning({
+        id: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        priceTier: restaurants.priceTier,
+        coverImageId: restaurants.coverImageId,
+      })
+    return c.json({ restaurant: { ...created, neighborhood: hood.name } }, 201)
   })
   .get('/:id', async (c) => {
     const me = c.get('user')
@@ -441,10 +551,27 @@ export const restaurantRoutes = new Hono<AppEnv>()
         closesAt: true,
         priceTier: true,
         neighborhoodId: true,
+        address: true,
+        geoPrecision: true,
+        googlePlaceId: true,
+        sourceRefreshedAt: true,
       },
       with: { neighborhood: { columns: { slug: true, name: true } } },
     })
     if (!restaurant) return c.json({ error: 'not_found' }, 404)
+
+    // M9: a Google-sourced row past its 30-day refresh window gets refreshed
+    // in the background — the current (seconds-stale-at-worst) values still
+    // serve immediately. See refreshFromGoogle below for the in-flight guard.
+    if (
+      restaurant.googlePlaceId &&
+      (!restaurant.sourceRefreshedAt ||
+        Date.now() - restaurant.sourceRefreshedAt.getTime() > GOOGLE_REFRESH_MS)
+    ) {
+      refreshFromGoogle(restaurant.id, restaurant.googlePlaceId).catch((err) =>
+        console.error('[places] background refresh failed:', err),
+      )
+    }
 
     const following = db
       .select({ id: follows.followingId })
@@ -590,9 +717,14 @@ export const restaurantRoutes = new Hono<AppEnv>()
       people: wantRows.slice(0, 3).map((w) => ({ name: w.name, image: w.image })),
     }
 
-    const { neighborhoodId: _nid, ...restaurantOut } = restaurant
+    const {
+      neighborhoodId: _nid,
+      googlePlaceId,
+      sourceRefreshedAt: _sra,
+      ...restaurantOut
+    } = restaurant
     return c.json({
-      restaurant: restaurantOut,
+      restaurant: { ...restaurantOut, google: googlePlaceId != null },
       friendsRankings,
       friendAvg,
       occasionTags,
@@ -621,24 +753,15 @@ export const restaurantRoutes = new Hono<AppEnv>()
         // not UUIDs — so accept the slug and resolve it here.
         neighborhoodSlug: z.string().trim().min(1),
         priceTier: z.number().int().min(1).max(4).optional(),
-        // From the Google typeahead (M8) — the ONLY Google-derived value stored.
-        // Everything else (name, sector, coords) is member-confirmed.
-        googlePlaceId: z.string().trim().max(300).optional(),
       })
       .safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
-    const { name, cuisine, neighborhoodSlug, priceTier, googlePlaceId } = parsed.data
+    const { name, cuisine, neighborhoodSlug, priceTier } = parsed.data
 
     // Per-user daily cap — this is a catalog write path, so bound it (App Store
-    // 1.2; created_by + removedAt make bad rows traceable/removable). ~10/day.
-    const addedToday = await db.$count(
-      restaurants,
-      and(
-        eq(restaurants.createdBy, me.id),
-        sql`${restaurants.createdAt} > now() - interval '1 day'`,
-      ),
-    )
-    if (addedToday >= 10) return c.json({ error: 'rate_limited' }, 429)
+    // 1.2; created_by + removedAt make bad rows traceable/removable). Shared
+    // with POST /from-google (M9) so both draw from the same ~10/day budget.
+    if (await atDailyCap(me.id)) return c.json({ error: 'rate_limited' }, 429)
 
     const hood = await db.query.neighborhoods.findFirst({
       where: eq(neighborhoods.slug, neighborhoodSlug),
@@ -646,31 +769,15 @@ export const restaurantRoutes = new Hono<AppEnv>()
     })
     if (!hood) return c.json({ error: 'unknown_neighborhood' }, 400)
 
-    // Dedup by google_place_id first — two members picking the same Google
-    // suggestion must adopt one row, not spawn twins. Then the name/distance
-    // matcher (placeMatch.ts) catches a place already added by hand or imported
-    // within range. Either hit adopts (200); only a double-miss inserts.
-    const adopt = async (rid: string) => {
-      const full = await db.query.restaurants.findFirst({
-        where: eq(restaurants.id, rid),
-        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
-      })
-      return full ? c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200) : null
-    }
-    if (googlePlaceId) {
-      const byPlaceId = await db.query.restaurants.findFirst({
-        where: eq(restaurants.googlePlaceId, googlePlaceId),
-        columns: { id: true },
-      })
-      if (byPlaceId) {
-        const r = await adopt(byPlaceId.id)
-        if (r) return r
-      }
-    }
+    // Dedup against an existing place by name/distance (placeMatch.ts) — a hit
+    // adopts (200) rather than spawning a twin; only a miss inserts.
     const existing = await findExistingMatch({ name, lat: hood.lat, lng: hood.lng })
     if (existing) {
-      const r = await adopt(existing.id)
-      if (r) return r
+      const full = await db.query.restaurants.findFirst({
+        where: eq(restaurants.id, existing.id),
+        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
+      })
+      if (full) return c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200)
     }
 
     const [created] = await db
@@ -685,7 +792,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
         source: 'member',
         createdBy: me.id,
         priceTier: priceTier ?? null,
-        googlePlaceId: googlePlaceId ?? null,
         isDemo: false,
       })
       .returning({

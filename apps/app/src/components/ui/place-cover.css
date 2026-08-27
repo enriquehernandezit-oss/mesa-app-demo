@@ -21,3 +21,11 @@
   stroke: none;
   opacity: 0.85;
 }
+
+/* A Google-created place's map cover (M9) — the same warm tint as the "Cerca"
+   interactive map's canvas (screens/map/map-gl.css), so a static map cover and
+   the real pannable map read as the same material. Keep the two filters in
+   sync if either changes. */
+.place-cover__map {
+  filter: sepia(0.35) saturate(1.25) hue-rotate(-12deg) brightness(0.82) contrast(1.05);
+}

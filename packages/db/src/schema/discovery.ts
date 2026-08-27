@@ -83,9 +83,13 @@ export const restaurants = pgTable(
     // per Google's Places policy, place_id is storable indefinitely but
     // coordinates/name/photos are not, so nothing else from Google lands here.
     googlePlaceId: text('google_place_id'),
-    // When a Foursquare-sourced row was last refreshed from an extract —
-    // lets a future reconciliation pass find stale rows without re-deriving
-    // "how old is this" from createdAt (which never changes).
+    // When this row was last refreshed from whichever external source
+    // populated it — a Foursquare extract (M6), or a Google Place Details
+    // call (M9, when googlePlaceId is set). Null means nothing external has
+    // ever refreshed it (seed data, or a plain member add). Lets a
+    // reconciliation pass — or M9's 30-day Google refresh — find stale rows
+    // without re-deriving "how old is this" from createdAt (which never
+    // changes).
     sourceRefreshedAt: timestamp('source_refreshed_at'),
     // Who added a member-sourced row (App Store 1.2 traceability). Null for
     // seed/foursquare rows. Not cascaded — the restaurant (and any rankings
