@@ -326,6 +326,36 @@
 /* Static map thumbnail near the foot of the profile. The @2x source is
    intrinsically ~1400px wide; width:100% + height:auto keeps it inside the
    column (the global img guard covers this too — this rule adds the framing). */
+/* The locator map is a tap target for directions (whole region). */
+.resto-map-btn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  position: relative;
+  margin: var(--space-2) 0 var(--space-5);
+}
+.resto-map-btn:active {
+  opacity: 0.88;
+}
+.resto-map-btn > .resto-map {
+  margin: 0;
+}
+.resto-map__hint {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--photo-scrim-3);
+  color: var(--on-photo-2);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
 .resto-map {
   display: block;
   width: 100%;

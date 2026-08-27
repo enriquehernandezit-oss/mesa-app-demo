@@ -304,18 +304,35 @@ export function RestaurantProfile() {
 
         <TheirScores rankings={friendsRankings} />
 
-        {mapUrl ? (
-          <img
-            className="resto-map"
-            src={mapUrl}
-            alt={`Mapa de ${restaurant.name}`}
-            loading="lazy"
-          />
-        ) : (
-          <div className="resto-map resto-map--fallback">
-            {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
-          </div>
-        )}
+        {/* Tapping the map opens directions — same chooser as the "Cómo llegar"
+            pill above. The whole region is the tap target, image or fallback. */}
+        <button
+          type="button"
+          className="resto-map-btn"
+          aria-label={`Cómo llegar a ${restaurant.name}`}
+          onClick={() =>
+            openNavChooser({
+              kind: 'coords',
+              lat: restaurant.lat,
+              lng: restaurant.lng,
+              label: restaurant.name,
+            })
+          }
+        >
+          {mapUrl ? (
+            <img
+              className="resto-map"
+              src={mapUrl}
+              alt={`Mapa de ${restaurant.name}`}
+              loading="lazy"
+            />
+          ) : (
+            <div className="resto-map resto-map--fallback">
+              {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
+            </div>
+          )}
+          <span className="resto-map__hint">Cómo llegar ›</span>
+        </button>
 
         {/* Similar spots rail. */}
         {similar.length > 0 && (
