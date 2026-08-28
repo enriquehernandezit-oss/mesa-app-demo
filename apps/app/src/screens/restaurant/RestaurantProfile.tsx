@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { PlaceMapSheet } from '../../components/PlaceMapSheet'
 import { Body, Button, EmptyState, Eyebrow, SectionHeader } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { PlaceCover } from '../../components/ui/PlaceCover'
@@ -11,6 +12,7 @@ import {
   ListIcon,
   PencilIcon,
   PhoneIcon,
+  PinIcon,
   ShareIcon,
   WebIcon,
 } from '../../components/ui/icons'
@@ -44,6 +46,7 @@ export function RestaurantProfile() {
   const navigate = useNavigate()
   const goBack = useBack(() => navigate({ to: '/discover' }))
   const queryClient = useQueryClient()
+  const [mapOpen, setMapOpen] = useState(false)
 
   const q = useQuery({
     queryKey: ['restaurant', restaurantId],
@@ -164,20 +167,27 @@ export function RestaurantProfile() {
           <ShareIcon size={18} />
         </button>
         {mapCover ? (
-          <button
-            type="button"
-            className="resto-photo__directions"
-            onClick={() =>
-              openNavChooser({
-                kind: 'coords',
-                lat: restaurant.lat,
-                lng: restaurant.lng,
-                label: restaurant.name,
-              })
-            }
-          >
-            Cómo llegar ›
-          </button>
+          // The whole map is the target — a map you can't touch is a picture.
+          // Sits under the back/share buttons in the DOM so those stay
+          // clickable, and carries the label rather than nesting a button.
+          <>
+            <button
+              type="button"
+              className="resto-photo__open-map"
+              onClick={() => setMapOpen(true)}
+              aria-label={`Ver ${restaurant.name} en el mapa`}
+            >
+              <span className="resto-photo__open-map-cue">
+                <PinIcon size={13} />
+                Ver en el mapa
+              </span>
+            </button>
+            {/* MapBox burns its attribution into the static image's bottom-right
+                corner, which object-fit: cover then crops off — so it's stated
+                here instead. Required by MapBox/OSM terms, and it takes the
+                same hero slot the film tag uses on photo covers. */}
+            <span className="resto-photo__tag resto-photo__attr">© Mapbox © OpenStreetMap</span>
+          </>
         ) : (
           <span className="resto-photo__tag">film · con velas</span>
         )}
@@ -345,15 +355,8 @@ export function RestaurantProfile() {
           <button
             type="button"
             className="resto-map-btn"
-            aria-label={`Cómo llegar a ${restaurant.name}`}
-            onClick={() =>
-              openNavChooser({
-                kind: 'coords',
-                lat: restaurant.lat,
-                lng: restaurant.lng,
-                label: restaurant.name,
-              })
-            }
+            aria-label={`Ver ${restaurant.name} en el mapa`}
+            onClick={() => setMapOpen(true)}
           >
             {mapUrl ? (
               <img
@@ -367,7 +370,10 @@ export function RestaurantProfile() {
                 {restaurant.neighborhood?.name ?? 'Santo Domingo'} · mapa
               </div>
             )}
-            <span className="resto-map__hint">Cómo llegar ›</span>
+            <span className="resto-map__hint">
+              <PinIcon size={12} />
+              Ver en el mapa
+            </span>
           </button>
         )}
 
@@ -416,6 +422,20 @@ export function RestaurantProfile() {
           {myRanking ? 'Rankear otra vez' : 'Rankear este spot'}
         </Button>
       </div>
+
+      {mapOpen && (
+        <PlaceMapSheet
+          target={{
+            id: restaurant.id,
+            name: restaurant.name,
+            lat: restaurant.lat,
+            lng: restaurant.lng,
+            address: restaurant.address,
+            neighborhood: restaurant.neighborhood?.name ?? null,
+          }}
+          onClose={() => setMapOpen(false)}
+        />
+      )}
     </div>
   )
 }

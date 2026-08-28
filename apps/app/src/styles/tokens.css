@@ -98,6 +98,16 @@
   --hero-scrim-2: rgba(33, 1, 4, 0.82);
   --overlay-scrim: rgba(15, 1, 2, 0.4); /* dim behind the map card sheet */
 
+  /* Map tint — the one place MapBox's stock raster is pulled toward Mesa.
+     Consumed by BOTH the static cover (place-cover.css) and the interactive
+     canvas (map-gl.css), so the two can never drift. Afternoon rides on
+     light-v11: a gentle warm push toward paper, no brightness crush — the
+     street network has to stay legible, it's wayfinding, not decoration.
+     --map-style-id is read by lib/media.ts + MapGL to pick the matching
+     MapBox style, so theme and tint are chosen together. */
+  --map-tint: sepia(0.16) saturate(1.08) hue-rotate(-8deg) contrast(0.99);
+  --map-style-id: "light-v11";
+
   /* Theme-picker swatches — both grounds shown at once, whatever the active
      theme, so they must be literal (not --bg). */
   --swatch-afternoon: #f5efe4;
@@ -214,6 +224,12 @@ html[data-theme="candlelit"] {
   --toggle-track: #4a2c2d;
   --photo-veil: linear-gradient(160deg, rgba(24, 4, 6, 0.1), rgba(24, 4, 6, 0.5) 92%);
   --photo-grain-dots: radial-gradient(rgba(0, 0, 0, 0.5) 0.5px, transparent 0.5px);
+
+  /* Candlelit rides dark-v11 and lifts it: the stock dark style is already
+     near-black, so brightness goes UP, not down. (The previous 0.82 crush
+     stacked on top of the photo veil and buried the streets entirely.) */
+  --map-tint: sepia(0.28) saturate(1.18) hue-rotate(-12deg) contrast(1.02) brightness(1.12);
+  --map-style-id: "dark-v11";
 
   --btn-primary-bg: #c09050;
   --btn-primary-fg: #210104;

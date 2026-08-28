@@ -142,22 +142,63 @@
   letter-spacing: 0.08em;
 }
 
-/* The map-cover hero's own directions tap target (M9) — mirrors .resto-photo__tag's
-   bottom placement, on the opposite corner, as a real button rather than a label. */
-.resto-photo__directions {
+/* Map attribution shares the film tag's slot but must never eat a tap meant
+   for the map underneath it, and stays quieter than a piece of Mesa's voice. */
+.resto-photo__attr {
+  z-index: 1;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.85;
+}
+
+/* A map-cover hero is a control, not a picture (M9): the whole surface opens
+   the interactive map. The button fills the hero and carries only a cue chip,
+   so the tap target is the map itself rather than a 20px pill. It sits under
+   the floating back/share buttons in the DOM, so those still win their taps. */
+.resto-photo__open-map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  /* Kills the 300ms mobile tap delay on the biggest target on the screen. */
+  touch-action: manipulation;
+}
+/* Press feedback lives on the cue, not the hero: scaling a full-bleed image
+   would letterbox the corners, and pressed states must not shift layout. */
+.resto-photo__open-map-cue {
   position: absolute;
   bottom: var(--space-4);
   right: var(--space-4);
-  z-index: 1;
-  padding: 3px 10px;
-  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* Reads as a real, hittable control even though the whole hero is the
+     target — 32px tall inside a 300px+ tap area. */
+  min-height: 32px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
-  background: var(--photo-scrim-3);
-  color: var(--on-photo-2);
+  background: var(--photo-scrim-2);
+  backdrop-filter: blur(8px);
+  color: var(--on-photo);
   font-family: var(--font-ui);
   font-size: var(--text-eyebrow);
-  letter-spacing: 0.08em;
-  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+.resto-photo__open-map:active .resto-photo__open-map-cue {
+  transform: scale(0.96);
+  background: var(--photo-scrim-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .resto-photo__open-map:active .resto-photo__open-map-cue {
+    transform: none;
+  }
 }
 
 /* Identity block, on the paper ground below the photo. */
@@ -373,14 +414,29 @@
   position: absolute;
   right: var(--space-3);
   bottom: var(--space-3);
-  padding: 3px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: var(--radius-pill);
-  background: var(--photo-scrim-3);
-  color: var(--on-photo-2);
-  font-family: var(--font-mono);
-  font-size: 9px;
+  background: var(--photo-scrim-2);
+  backdrop-filter: blur(8px);
+  color: var(--on-photo);
+  font-family: var(--font-ui);
+  font-size: var(--text-eyebrow);
   letter-spacing: 0.06em;
+  /* The whole .resto-map-btn is the target; this is a cue, not a second one. */
   pointer-events: none;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.resto-map-btn:active .resto-map__hint {
+  transform: scale(0.96);
+}
+@media (prefers-reduced-motion: reduce) {
+  .resto-map-btn:active .resto-map__hint {
+    transform: none;
+  }
 }
 .resto-map {
   display: block;

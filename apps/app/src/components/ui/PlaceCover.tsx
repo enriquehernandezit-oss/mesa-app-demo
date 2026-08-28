@@ -1,5 +1,6 @@
 import type { ImgHTMLAttributes, ReactNode, Ref } from 'react'
 import { cloudinaryUrl, mapboxStaticUrl } from '../../lib/media'
+import { useResolvedTheme } from '../../lib/useResolvedTheme'
 import './place-cover.css'
 
 // FNV-1a (32-bit) — deterministic per seed, so the same place always draws the
@@ -73,6 +74,7 @@ export function PlaceCover({
   alt = '',
   imgProps,
 }: PlaceCoverProps) {
+  const theme = useResolvedTheme()
   const cover = cloudinaryUrl(coverImageId, size)
   const classes = ['ph', className].filter(Boolean).join(' ')
   if (cover) {
@@ -82,10 +84,14 @@ export function PlaceCover({
       </div>
     )
   }
-  const mapCover = map ? mapboxStaticUrl(map.lat, map.lng, size) : null
+  const mapCover = map ? mapboxStaticUrl(map.lat, map.lng, { ...size, theme }) : null
   if (mapCover) {
+    // data-cover="map" opts this out of .ph's veil + grain (global.css). Those
+    // exist to make photographs of wildly different quality sit in one optical
+    // layer; a map is a drawn graphic, and the same treatment just reads as a
+    // degraded scan. It keeps .ph for the ground colour and clipping only.
     return (
-      <div className={classes}>
+      <div className={classes} data-cover="map">
         <img
           loading="lazy"
           {...imgProps}

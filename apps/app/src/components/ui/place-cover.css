@@ -22,10 +22,18 @@
   opacity: 0.85;
 }
 
-/* A Google-created place's map cover (M9) — the same warm tint as the "Cerca"
-   interactive map's canvas (screens/map/map-gl.css), so a static map cover and
-   the real pannable map read as the same material. Keep the two filters in
-   sync if either changes. */
+/* A Google-created place's map cover (M9) — tinted toward Mesa via --map-tint
+   (tokens.css), the same token the interactive "Cerca" canvas uses, so the
+   static cover and the real map are literally the same treatment. */
 .place-cover__map {
-  filter: sepia(0.35) saturate(1.25) hue-rotate(-12deg) brightness(0.82) contrast(1.05);
+  filter: var(--map-tint);
+}
+
+/* A map is a drawn graphic, not photography: opt out of .ph's veil + grain
+   (global.css) so the street network stays legible. The floating hero controls
+   carry their own --photo-scrim chips, so nothing depends on the veil for
+   contrast. Higher specificity than .ph::before, so load order is irrelevant. */
+.ph[data-cover="map"]::before,
+.ph[data-cover="map"]::after {
+  content: none;
 }

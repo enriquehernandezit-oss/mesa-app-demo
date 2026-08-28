@@ -12,7 +12,7 @@
   border: 1px solid var(--line);
 }
 .map-gl .mapboxgl-canvas {
-  filter: sepia(0.35) saturate(1.25) hue-rotate(-12deg) brightness(0.82) contrast(1.05);
+  filter: var(--map-tint);
 }
 
 /* A ranked-by-friends pin (brass) vs an unranked one (quiet ink). Mirrors the
