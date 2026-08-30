@@ -219,9 +219,7 @@ export function RankAPlace() {
       if (chainDish && pickedId) {
         navigate({ to: '/dish', search: { restaurant: pickedId }, replace: true })
       } else {
-        setPlacedStamp(true)
-        tapSuccess()
-        setTimeout(() => navigate({ to: '/rankings' }), 1300)
+        finishToRankings()
       }
     },
     // The ranking itself already committed at reveal (commitInitial), so a
@@ -237,6 +235,17 @@ export function RankAPlace() {
     },
   })
   const [placedStamp, setPlacedStamp] = useState(false)
+
+  // Finish the flow to the passport. The ranking already committed on reveal
+  // (commitInitial), so this needs no network call — it just plays the stamp
+  // and leaves. Setting placedStamp also disarms the back-gesture blocker
+  // below, so the navigation isn't intercepted. Shared by the reveal's "Listo"
+  // and the note step's own save-success path.
+  const finishToRankings = () => {
+    setPlacedStamp(true)
+    tapSuccess()
+    setTimeout(() => navigate({ to: '/rankings' }), 1300)
+  }
 
   // Guard the multi-step flow against the platform back-gesture and reload/close.
   // The whole flow lives at one route on local state, so without this a single
@@ -419,15 +428,27 @@ export function RankAPlace() {
     }
     return (
       <div className="screen">
-        <BackBar
-          label="‹ Atrás"
-          onBack={() => {
-            // Re-arm the auto-commit: if they redo the comparisons and land on
-            // a different spot, the next reveal must re-save at that position.
-            committedForId.current = null
-            setPosition(null)
-          }}
-        />
+        {/* Back re-enters the comparison; "Listo" leaves for good. The ranking
+            already saved on reveal, so a member who only wanted the score has a
+            one-tap exit instead of having to open the note step or press back
+            (which would drop them back into comparing). */}
+        <div className="rank-note-head">
+          <button
+            type="button"
+            className="link-action"
+            onClick={() => {
+              // Re-arm the auto-commit: if they redo the comparisons and land on
+              // a different spot, the next reveal must re-save at that position.
+              committedForId.current = null
+              setPosition(null)
+            }}
+          >
+            ‹ Atrás
+          </button>
+          <button type="button" className="rank-skip" onClick={finishToRankings}>
+            Listo
+          </button>
+        </div>
         <div className="rank-reveal">
           <Eyebrow>Tu puntuación</Eyebrow>
           <div className="rank-reveal__score">{displayScore(score)}</div>
