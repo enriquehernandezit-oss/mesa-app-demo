@@ -62,3 +62,38 @@ export async function findExistingMatch(candidate: PlaceCandidate) {
     })) ?? null
   )
 }
+
+// The dedup for a place coming from Google Place Details (M9). Its coordinates
+// are a REAL geocode (not a sector centroid), and Google both varies a place's
+// display name between autocomplete and Details AND sometimes carries more than
+// one listing for one physical restaurant — so name-based matching alone lets
+// the same spot get added twice under "Hard Rock Cafe" and "Hard Rock Cafe
+// Santo Domingo". This starts from findExistingMatch (which also promotes a
+// seed/member row to Google's exact coords), then adds one rule that only
+// makes sense when the coordinates are a trustworthy geocode:
+//
+//   • within 120m AND one normalized name contains the other (≥5 chars) — the
+//     subset-name case Google actually produces. Containment, not loose
+//     trigram: "Bruma" ⊂ "Bruma del Malecón" merges, but two genuinely
+//     different neighbours ("Pizza Roma" / "Pizza Napoli") never do, because
+//     neither name contains the other. The ≥5-char floor keeps a generic token
+//     ("Bar", "Café") from matching everything around it.
+export async function findGooglePlaceMatch(candidate: PlaceCandidate) {
+  const byName = await findExistingMatch(candidate)
+  if (byName) return byName
+
+  const dist = distanceSql(candidate.lat, candidate.lng)
+  const cand = sql`mesa_norm(${candidate.name})`
+
+  return (
+    (await db.query.restaurants.findFirst({
+      where: and(
+        isNull(restaurants.removedAt),
+        sql`${dist} <= 120`,
+        sql`least(length(${restaurants.nameKey}), length(${cand})) >= 5`,
+        sql`(${restaurants.nameKey} like '%' || ${cand} || '%'
+             or ${cand} like '%' || ${restaurants.nameKey} || '%')`,
+      ),
+    })) ?? null
+  )
+}

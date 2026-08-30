@@ -19,6 +19,7 @@ import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { ApiError, api } from '../../lib/api'
+import { dedupeExternal } from '../../lib/dedupeExternal'
 import { cuisineLabel } from '../../lib/display'
 import type {
   ExploreMember,
@@ -109,7 +110,15 @@ export function ExploreScreen() {
     enabled: wantExternal,
     staleTime: 300_000,
   })
-  const suggestions = wantExternal ? (external.data?.suggestions ?? []) : []
+  // Hide online matches for places the catalog already shows — a spot you
+  // added (or ranked) shouldn't reappear under "En Google" as if it were new.
+  // Compared against place hits only, never members (people ≠ places).
+  const suggestions = wantExternal
+    ? dedupeExternal(
+        external.data?.suggestions ?? [],
+        hits.map((h) => h.name),
+      )
+    : []
 
   // Tapping a Google result creates a real, populated profile immediately
   // (M9) and lands on it — Google search is how a place enters Mesa's

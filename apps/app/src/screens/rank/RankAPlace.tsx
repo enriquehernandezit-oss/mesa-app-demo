@@ -18,6 +18,7 @@ import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { ApiError, api } from '../../lib/api'
+import { dedupeExternal } from '../../lib/dedupeExternal'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { formatDistance, haversineM } from '../../lib/geo'
 import { tapSuccess } from '../../lib/haptics'
@@ -951,7 +952,14 @@ function FindStep({
     enabled: wantExternal,
     staleTime: 300_000,
   })
-  const suggestions = wantExternal ? (external.data?.suggestions ?? []) : []
+  // Hide online matches for a spot the find list already shows (added and/or
+  // ranked), so it isn't re-offered under "En Google" as if it were new.
+  const suggestions = wantExternal
+    ? dedupeExternal(external.data?.suggestions ?? [], [
+        ...results.map((r) => r.name),
+        ...leadGroup.map((r) => r.name),
+      ])
+    : []
 
   const renderRow = (r: Item) => {
     const dist = distanceOf(r)

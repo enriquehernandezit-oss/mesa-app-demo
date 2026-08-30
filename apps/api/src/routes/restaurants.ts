@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
 import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
-import { findExistingMatch } from '../lib/placeMatch'
+import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { requireAuth } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
@@ -468,12 +468,15 @@ export const restaurantRoutes = new Hono<AppEnv>()
     if (hoods.length === 0) return c.json({ error: 'unknown_neighborhood' }, 400)
     const hood = resolveNeighborhood(details, hoods)
 
-    // Name/distance match against Mesa's real coordinates (far more precise
-    // than M8's sector-centroid guess). A hit is enriched, not duplicated —
-    // only null columns are filled, so a seeded row's curated name/cover/
-    // cuisine survive untouched. This is a real upgrade for that row: its
-    // geoPrecision moves from 'sector' to 'exact' with Google's real coords.
-    const existing = await findExistingMatch({
+    // Match against Mesa's catalog before inserting. Google-specific matcher,
+    // not the plain name/distance one: Google varies a place's display name
+    // and sometimes carries two listings for one spot, so the exact-geocode
+    // proximity rules in findGooglePlaceMatch are what stop the same
+    // restaurant being re-added under a slightly different name on a later
+    // search. A hit is enriched, not duplicated — only null columns are
+    // filled, so a seeded row's curated name/cover/cuisine survive untouched,
+    // and its geoPrecision is promoted from 'sector' to Google's exact coords.
+    const existing = await findGooglePlaceMatch({
       name: fields.name,
       lat: fields.lat,
       lng: fields.lng,
