@@ -5,6 +5,7 @@
 // auth working where cross-site cookies are blocked (iOS Safari, native shell).
 // Throws ApiError on non-2xx so TanStack Query surfaces failures.
 import { getToken } from './auth-token'
+import { reportAuthLost } from './authLost'
 
 const baseURL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -36,7 +37,18 @@ async function request<T>(path: string, init?: RequestInit & { json?: unknown })
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string }
-    throw new ApiError(res.status, body.error ?? 'request_failed')
+    const code = body.error ?? 'request_failed'
+    // One place to notice the session is gone, since every Mesa API call goes
+    // through here. 401 means Better Auth found no session, so any token we
+    // still hold is dead. 403 account_suspended is the ban gate in
+    // middleware/session.ts — the session is technically valid, which is why it
+    // needs its own signal: without it the app can't tell "signed out" from
+    // "ejected", and the user is owed the difference.
+    if (res.status === 401) reportAuthLost('unauthorized')
+    else if (res.status === 403 && code === 'account_suspended') {
+      reportAuthLost('account_suspended')
+    }
+    throw new ApiError(res.status, code)
   }
   return res.json() as Promise<T>
 }

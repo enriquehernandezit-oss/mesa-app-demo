@@ -1,7 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '../components/ui'
-import { authClient } from '../lib/auth-client'
+import { authClient, signOut } from '../lib/auth-client'
+import { clearAuthLost } from '../lib/authLost'
 import '../styles/screens.css'
 
 // Sign-in. Four ways in: email + password (first-party), phone OTP, Apple, and
@@ -15,7 +16,7 @@ import '../styles/screens.css'
 
 type Step = 'choose' | 'email' | 'phone' | 'verify'
 
-export function AuthFlow() {
+export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>('choose')
   const [phone, setPhone] = useState('')
@@ -103,6 +104,44 @@ export function AuthFlow() {
     if (error) return setError(error.message ?? 'Ese código no coincide.')
     // Session cookie is set — refresh the cached session so App re-gates.
     queryClient.invalidateQueries({ queryKey: ['session'] })
+  }
+
+  // Ejected account (App Store 1.2). The server 403s every route, so there is
+  // no app to return to — but the member is owed a reason rather than a splash
+  // screen that never resolves, which is what this used to be.
+  if (suspended) {
+    return (
+      <div className="screen screen--center auth-screen">
+        <div className="auth-hero" aria-hidden />
+        <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
+          <Wordmark size={64} />
+          <Eyebrow style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-strong)' }}>
+            Cuenta suspendida
+          </Eyebrow>
+          <SerifItalic
+            style={{ fontSize: 'var(--text-title)', lineHeight: 1.15, marginTop: 'var(--space-2)' }}
+          >
+            Tu cuenta ya no está activa.
+          </SerifItalic>
+          <Body style={{ color: 'var(--text-2)', maxWidth: '19rem' }}>
+            Suspendimos esta cuenta por incumplir las normas de la comunidad. Si crees que fue un
+            error, responde al correo con el que te registraste.
+          </Body>
+        </div>
+        <div className="stack" style={{ marginTop: 'var(--space-5)' }}>
+          <Button
+            variant="secondary"
+            className="mesa-btn--mono"
+            onClick={async () => {
+              await signOut().catch(() => {})
+              clearAuthLost()
+            }}
+          >
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

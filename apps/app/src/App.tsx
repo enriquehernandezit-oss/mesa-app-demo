@@ -1,7 +1,9 @@
 import { TabApp } from './app/router'
 import { Splash } from './components/Splash'
+import { ErrorState } from './components/ui'
 import { useProfile } from './hooks/useProfile'
 import { useSession } from './lib/auth-client'
+import { useAuthLost } from './lib/authLost'
 import { AuthFlow } from './screens/AuthFlow'
 import { Onboarding } from './screens/Onboarding'
 import { ResetPassword } from './screens/auth/ResetPassword'
@@ -31,15 +33,30 @@ export function App() {
   const isReset = window.location.pathname === '/reset-password'
   const { data: session, isPending: sessionLoading } = useSession()
   const authed = Boolean(session?.user)
-  const { data: me, isPending: profileLoading } = useProfile(authed)
+  const { data: me, isPending: profileLoading, refetch: refetchMe } = useProfile(authed)
+  const authLost = useAuthLost()
 
   if (doc) return <LegalPage doc={doc} />
   // Password-reset link — signed-out, resolved by path before the auth gate.
   if (isReset) return <ResetPassword />
+  // An ejected account keeps a technically-valid session, so this can't be left
+  // to the checks below: requireAuth 403s every route including /me, which used
+  // to strand the user on the splash screen with no explanation. Decided here,
+  // ahead of session state, so there is no way to loop back into the app.
+  if (authLost === 'account_suspended') return <AuthFlow suspended />
   if (sessionLoading) return <Splash />
   if (!authed) return <AuthFlow />
-  // Authed but the profile hasn't resolved yet.
-  if (profileLoading || !me) return <Splash />
+  if (profileLoading) return <Splash />
+  // The profile call failed (offline, a cold-start blip, a 500). Previously
+  // this fell into the same branch as "still loading" and hung forever; it is a
+  // real error state and needs a way out.
+  if (!me) {
+    return (
+      <div className="screen screen--center">
+        <ErrorState onRetry={() => refetchMe()}>No pudimos cargar tu perfil.</ErrorState>
+      </div>
+    )
+  }
   if (!me.onboardingComplete) return <Onboarding />
   return <TabApp />
 }

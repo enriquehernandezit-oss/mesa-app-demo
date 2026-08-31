@@ -154,6 +154,19 @@ export const auth = betterAuth({
     },
   },
 
+  // Sessions last a month rather than the 7-day default. This is a phone app
+  // people open when they're going out, not every day, and the client caches
+  // the session for five minutes — at 7 days a weekly-active member gets
+  // silently bounced to the sign-in screen with no explanation. The exposure
+  // that lengthens with it is a stolen bearer token, which is addressed where
+  // it actually lives: the client now drops a dead token on a 401 (lib/api.ts),
+  // a password reset revokes every other session (above), and updateAge and
+  // freshAge keep Better Auth's 1-day defaults, so destructive operations still
+  // demand a recently-authenticated session.
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,
+  },
+
   // Cookies keep Better Auth's default SameSite=Lax. Cross-site clients (the
   // deployed web app on a different subdomain, iOS Safari, the Capacitor native
   // shell) authenticate via the Bearer token below — a header the browser never
@@ -170,6 +183,11 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     requireEmailVerification: false,
+    // Defaults to FALSE, which quietly defeats the point of a reset: someone
+    // who resets because their account was compromised would leave the
+    // attacker's session alive. Resetting a password must end every other
+    // session.
+    revokeSessionsOnPasswordReset: true,
     // Forgot-password: the emailed link points at the app's /reset-password page
     // carrying the one-time token; that page collects the new password and calls
     // resetPassword({ newPassword, token }).
