@@ -356,7 +356,9 @@ export function RankAPlace() {
         message:
           status === 429
             ? 'Llegaste al límite de lugares por hoy.'
-            : 'No se pudo conectar con Google. Intenta de nuevo.',
+            : status === 409
+              ? 'Google dice que este lugar cerró permanentemente.'
+              : 'No se pudo conectar con Google. Intenta de nuevo.',
       })
     },
   })

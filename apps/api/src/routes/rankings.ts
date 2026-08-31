@@ -144,6 +144,11 @@ export const rankingsRoutes = new Hono<AppEnv>()
       norm = sql`mesa_norm(${q})`
       const searchCond = or(
         sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+        // Same fuzzy name match as the Explore search (WORD_MATCH_MIN in
+        // routes/restaurants.ts) so "Olivia" finds "Casa Oliva" here too —
+        // otherwise the rank flow's find step would offer the Google copy of a
+        // place already in the catalog. Keep the two thresholds in sync.
+        sql`word_similarity(${norm}, ${restaurants.nameKey}) >= 0.55`,
         sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
         sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
       )

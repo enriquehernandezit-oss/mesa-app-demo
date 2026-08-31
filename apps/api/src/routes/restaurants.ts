@@ -15,6 +15,20 @@ const { rankings, vibeNotes, restaurants, follows, userBlocks, user, savedPlaces
 
 const { neighborhoods, lists, listItems } = schema
 
+// Fuzzy-name threshold for catalog search (pg_trgm word_similarity: the query
+// vs the closest WORD in the name, which is what tolerates a one-letter miss in
+// a multi-word name). Measured against the real catalog: 0.55 finds "Casa
+// Oliva" for "Olivia" (0.571) and "Pizzarelli" for "Pizza" (0.83) while adding
+// no unrelated rows. Raising it to 0.6 loses "Casa Oliva"; lowering it starts
+// pulling noise. Kept in sync with the same clause in /rankings/candidates.
+//
+// Not index-assisted (the GIN trigram index backs ILIKE and the % operator, not
+// word_similarity), so this is a scan — fine at catalog scale here because the
+// id-resolving phase is LIMIT 30 and the row count is thousands, not millions.
+// If the catalog ever gets big, switch to the `<%` operator with a session-level
+// pg_trgm.word_similarity_threshold.
+const WORD_MATCH_MIN = 0.55
+
 // Deterministic per-id coordinate jitter for sector-precision map pins, so
 // places sharing a neighborhood centroid fan out instead of stacking. FNV-1a
 // over the id → two independent offsets in ±0.0004° (~44m). Stable across
@@ -169,6 +183,16 @@ export const restaurantRoutes = new Hono<AppEnv>()
         ...liveConds,
         or(
           sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+          // Fuzzy name match, so a near-miss spelling still finds the place we
+          // already have — "Olivia" must find "Casa Oliva". Substring alone
+          // returned NOTHING there, which made Mesa's own catalog invisible and
+          // pushed the Google gap-filler to offer a place the member had
+          // already ranked. word_similarity compares the query against the
+          // closest WORD in the name (0.571 for this pair) rather than the whole
+          // string (0.286, hopeless); 0.55 was measured against the catalog as
+          // the point that catches real variants with no junk (see
+          // WORD_MATCH_MIN).
+          sql`word_similarity(${norm}, ${restaurants.nameKey}) >= ${WORD_MATCH_MIN}`,
           sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
           sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
           inArray(restaurants.id, dishMatch),
@@ -467,6 +491,15 @@ export const restaurantRoutes = new Hono<AppEnv>()
     const details = await placeDetails(placeId, sessionToken)
     if (!details) return c.json({ error: 'google_unavailable' }, 502)
     const fields = toMesaFields(details)
+
+    // Google says this place is permanently closed. Creating it would produce a
+    // ghost: closedAt excludes it from search and from the rank-flow candidate
+    // list, yet its profile still loads and it can still be ranked — so it lands
+    // at #1 in someone's list and then can't be found again. Refuse instead, and
+    // let the client say why. (Places already in the catalog that close later
+    // stay rankable via their profile — that's the schema's intent; the ghost is
+    // specific to creating one from a search that then hides it.)
+    if (fields.closedAt) return c.json({ error: 'place_closed' }, 409)
 
     const hoods = await db.query.neighborhoods.findMany({
       columns: { id: true, name: true, lat: true, lng: true },
