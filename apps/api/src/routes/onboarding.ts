@@ -16,8 +16,32 @@ const rankingsSchema = z.object({
 })
 
 const contactsSchema = z.object({
-  phoneNumbers: z.array(z.string()).max(2000),
+  phoneNumbers: z.array(z.string()).max(1000),
 })
+
+// Contact-match is an identity oracle: submit a phone number, learn whether it
+// belongs to a Mesa user and who. Legitimate use is matching your own address
+// book once at onboarding, so a per-user daily budget on how many numbers can
+// be probed bounds bulk phone→identity enumeration without hurting the real
+// flow. Best-effort in-memory sliding window (single Railway instance, resets
+// on deploy) — a rate limiter, not a security boundary; the real defense is
+// that matches are exact-only and the caller must already hold the numbers.
+const CONTACT_MATCH_WINDOW_MS = 24 * 60 * 60 * 1000
+const CONTACT_MATCH_DAILY_BUDGET = 2000
+const contactProbes = new Map<string, { at: number; n: number }[]>()
+function overContactBudget(userId: string, count: number, now: number): boolean {
+  const recent = (contactProbes.get(userId) ?? []).filter(
+    (p) => now - p.at < CONTACT_MATCH_WINDOW_MS,
+  )
+  const used = recent.reduce((sum, p) => sum + p.n, 0)
+  if (used + count > CONTACT_MATCH_DAILY_BUDGET) {
+    contactProbes.set(userId, recent)
+    return true
+  }
+  recent.push({ at: now, n: count })
+  contactProbes.set(userId, recent)
+  return false
+}
 
 export const onboardingRoutes = new Hono<AppEnv>()
   .use(requireAuth)
@@ -182,6 +206,9 @@ export const onboardingRoutes = new Hono<AppEnv>()
     }
     const numbers = [...new Set(parsed.data.phoneNumbers.map((n) => n.trim()))].filter(Boolean)
     if (numbers.length === 0) return c.json({ users: [] })
+    if (overContactBudget(current.id, numbers.length, Date.now())) {
+      return c.json({ error: 'rate_limited' }, 429)
+    }
 
     const rows = await db
       .select({
@@ -191,7 +218,14 @@ export const onboardingRoutes = new Hono<AppEnv>()
         image: schema.user.image,
       })
       .from(schema.user)
-      .where(and(inArray(schema.user.phoneNumber, numbers), ne(schema.user.id, current.id)))
+      // Banned accounts are never surfaced, even by an exact phone match.
+      .where(
+        and(
+          inArray(schema.user.phoneNumber, numbers),
+          ne(schema.user.id, current.id),
+          isNull(schema.user.bannedAt),
+        ),
+      )
       .limit(200)
 
     return c.json({ users: rows })

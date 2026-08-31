@@ -104,6 +104,17 @@ export const auth = betterAuth({
   trustedOrigins: (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','),
   database: drizzleAdapter(db, { provider: 'pg', schema }),
 
+  // Throttle the auth surface so sign-in / reset-request / sign-up flooding
+  // (and, once wired, OTP brute-force) is bounded — and so cheap unverified
+  // account creation can't be used to amplify calls against the paid Google
+  // proxy. Better Auth's built-in limiter; enabled in all environments here
+  // (its default only runs in production).
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 20,
+  },
+
   // Cookies keep Better Auth's default SameSite=Lax. Cross-site clients (the
   // deployed web app on a different subdomain, iOS Safari, the Capacitor native
   // shell) authenticate via the Bearer token below — a header the browser never
