@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useBlocker, useNavigate, useSearch } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalResults } from '../../components/ExternalResults'
 import {
   Body,
@@ -388,217 +388,45 @@ export function RankAPlace() {
 
   // B3 — the score reveal: where it landed, with its neighbours.
   if (position !== null && !revealed) {
-    // Best-first list of the other spots, to show the new spot's neighbours.
-    const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    const total = orderedByPos.length + 1
-    const score = scoreForPosition(position - 1, total)
-    const around: { pos: number; name: string; score: number; isNew: boolean }[] = []
-    for (const pos of [position - 1, position, position + 1]) {
-      if (pos < 1 || pos > total) continue
-      if (pos === position) {
-        around.push({ pos, name: picked.name, score, isNew: true })
-      } else {
-        const r = orderedByPos[pos < position ? pos - 1 : pos - 2]
-        if (r)
-          around.push({ pos, name: r.name, score: scoreForPosition(pos - 1, total), isNew: false })
-      }
-    }
     return (
-      <div className="screen">
-        {/* Back re-enters the comparison; "Listo" leaves for good. The ranking
-            already saved on reveal, so a member who only wanted the score has a
-            one-tap exit instead of having to open the note step or press back
-            (which would drop them back into comparing). */}
-        <div className="rank-note-head">
-          <button
-            type="button"
-            className="link-action"
-            onClick={() => {
-              // Re-arm the auto-commit: if they redo the comparisons and land on
-              // a different spot, the next reveal must re-save at that position.
-              committedForId.current = null
-              setPosition(null)
-            }}
-          >
-            ‹ Atrás
-          </button>
-          <button type="button" className="rank-skip" onClick={finishToRankings}>
-            Listo
-          </button>
-        </div>
-        <div className="rank-reveal">
-          <Eyebrow>Tu puntuación</Eyebrow>
-          <div className="rank-reveal__score">{displayScore(score)}</div>
-          <Title style={{ marginTop: 'var(--space-1)' }}>{picked.name}</Title>
-          <Characteristics
-            className="rank-reveal__chars"
-            priceTier={picked.priceTier}
-            cuisine={picked.cuisine}
-            neighborhood={picked.neighborhood}
-          />
-          <Chip size="sm" state="selected" style={{ marginTop: 'var(--space-3)' }}>
-            #{position} de {total} en tu lista
-          </Chip>
-        </div>
-        <div className="rank-neighbors">
-          {around.map((n) => (
-            <div key={n.pos} className={`rank-neighbor${n.isNew ? ' rank-neighbor--new' : ''}`}>
-              <span className="rank-neighbor__pos">{n.pos}</span>
-              <span className="rank-neighbor__name">{n.name}</span>
-              <span className="rank-neighbor__score">{displayScore(n.score)}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* The other half of the core loop: where friends put this same place.
-            Fetched off the restaurant profile once the score is on screen. */}
-        <div className="rank-reveal__friends">
-          <Eyebrow>Tus amigos</Eyebrow>
-          {friendsQuery.isPending ? (
-            <Caption>Buscando…</Caption>
-          ) : (friendsQuery.data?.friendsRankings.length ?? 0) > 0 ? (
-            <>
-              <Caption className="rank-reveal__friends-meta">
-                {friendsQuery.data?.friendsRankings.length === 1
-                  ? '1 amigo rankeó esto'
-                  : `${friendsQuery.data?.friendsRankings.length} amigos rankearon esto`}{' '}
-                · prom. {displayScore(friendsQuery.data?.friendAvg ?? 0)}
-              </Caption>
-              {friendsQuery.data?.friendsRankings.slice(0, 3).map((f) => (
-                <Link
-                  key={f.user.id}
-                  to="/u/$userId"
-                  params={{ userId: f.user.id }}
-                  className="rank-reveal__friend-row"
-                >
-                  <Avatar name={f.user.name || f.user.handle || 'm'} src={f.user.image} size={28} />
-                  <span className="rank-reveal__friend-name">{f.user.name || f.user.handle}</span>
-                  <span className="rank-reveal__friend-pos">#{f.position}</span>
-                  <span className="rank-reveal__friend-score">{displayScore(f.score)}</span>
-                </Link>
-              ))}
-            </>
-          ) : (
-            <SerifItalic className="rank-reveal__friends-empty">
-              Ninguno de tus amigos ha rankeado esto todavía — vas primero.
-            </SerifItalic>
-          )}
-        </div>
-
-        <div className="spacer" />
-        {commitInitial.isError && (
-          <div className="rank-reveal__save-error">
-            <Caption>No se pudo guardar este ranking.</Caption>
-            <button
-              type="button"
-              className="link-action"
-              onClick={() => position !== null && commitInitial.mutate(position)}
-            >
-              Reintentar
-            </button>
-          </div>
-        )}
-        <Body style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-          Tu respuesta movió a {picked.name}, no la puntuación del spot.
-        </Body>
-        <Button onClick={() => setRevealed(true)}>Agregar una nota</Button>
-      </div>
+      <RevealStep
+        picked={picked}
+        position={position}
+        existingForCompare={existingForCompare}
+        friendsPending={friendsQuery.isPending}
+        friendsRankings={friendsQuery.data?.friendsRankings ?? []}
+        friendAvg={friendsQuery.data?.friendAvg ?? 0}
+        commitError={commitInitial.isError}
+        onRetryCommit={() => commitInitial.mutate(position)}
+        onBack={() => {
+          // Re-arm the auto-commit: if they redo the comparisons and land on a
+          // different spot, the next reveal must re-save at that position.
+          committedForId.current = null
+          setPosition(null)
+        }}
+        onDone={finishToRankings}
+        onAddNote={() => setRevealed(true)}
+      />
     )
   }
 
   // B4 — note + occasion tags + a dish (reached once the score is revealed).
   if (position !== null) {
     return (
-      <div className="screen">
-        <div className="rank-note-head">
-          <button type="button" className="link-action" onClick={() => setRevealed(false)}>
-            ‹ Agregar nota
-          </button>
-          <button
-            type="button"
-            className="rank-skip"
-            disabled={save.isPending}
-            onClick={() => save.mutate(position)}
-          >
-            {/* The ranking itself already saved on reveal; this just finalizes
-                without a note/tags/dish, so "Listo" ("Done", not "Skip") is
-                accurate. */}
-            Listo
-          </button>
-        </div>
-
-        <div className="rank-summary">
-          <PlaceCover
-            seed={picked.id}
-            name={picked.name}
-            coverImageId={picked.coverImageId}
-            size={{ w: 120, h: 120 }}
-            className="rank-summary__thumb"
-          />
-          <div className="rank-summary__main">
-            <div className="rank-summary__name">{picked.name}</div>
-            <Characteristics
-              priceTier={picked.priceTier}
-              cuisine={picked.cuisine}
-              neighborhood={picked.neighborhood}
-            />
-          </div>
-          <div className="cmp-card__score">
-            {displayScore(scoreForPosition(position - 1, existingForCompare.length + 1))}
-          </div>
-        </div>
-
-        <textarea
-          className="note-editor"
-          style={{ marginTop: 'var(--space-4)', minHeight: 84 }}
-          maxLength={140}
-          placeholder="con velas, vino natural, pide el branzino…"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
-
-        <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
-          Ocasión
-        </Eyebrow>
-        <div className="tag-row">
-          {RANK_TAGS.map((t) => {
-            const on = tags.includes(t)
-            return (
-              <Chip
-                key={t}
-                size="sm"
-                state={on ? 'selected' : 'default'}
-                onClick={() =>
-                  setTags((cur) =>
-                    on ? cur.filter((x) => x !== t) : cur.length < 4 ? [...cur, t] : cur,
-                  )
-                }
-              >
-                {t}
-              </Chip>
-            )
-          })}
-        </div>
-
-        <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
-          Agregar un plato
-        </Eyebrow>
-        <button
-          type="button"
-          className={`rank-dish-tile${chainDish ? ' rank-dish-tile--on' : ''}`}
-          onClick={() => setChainDish((v) => !v)}
-        >
-          <span className="rank-dish-tile__plus">+</span>
-          <span className="rank-dish-tile__label">
-            {chainDish ? 'Foto después de publicar' : 'Agregar una foto'}
-          </span>
-        </button>
-
-        <div className="spacer" />
-        <Button disabled={save.isPending} onClick={() => save.mutate(position)}>
-          {save.isPending ? 'Guardando…' : 'Guardar nota'}
-        </Button>
-      </div>
+      <NoteStep
+        picked={picked}
+        position={position}
+        existingCount={existingForCompare.length}
+        note={note}
+        setNote={setNote}
+        tags={tags}
+        setTags={setTags}
+        chainDish={chainDish}
+        setChainDish={setChainDish}
+        saving={save.isPending}
+        onBack={() => setRevealed(false)}
+        onSave={() => save.mutate(position)}
+      />
     )
   }
 
@@ -654,6 +482,259 @@ export function RankAPlace() {
         isRerank={isRerank}
         onPlaced={setPosition}
       />
+    </div>
+  )
+}
+
+// B3 — the score reveal. Pure presentation of where the spot landed (its
+// neighbours + the friend signal); the parent owns the flow state and already
+// committed the ranking, so this only reads and reports back its three exits
+// (back to comparing, done, add-a-note).
+function RevealStep({
+  picked,
+  position,
+  existingForCompare,
+  friendsPending,
+  friendsRankings,
+  friendAvg,
+  commitError,
+  onRetryCommit,
+  onBack,
+  onDone,
+  onAddNote,
+}: {
+  picked: Item
+  position: number
+  existingForCompare: Item[]
+  friendsPending: boolean
+  friendsRankings: RestaurantProfileResponse['friendsRankings']
+  friendAvg: number
+  commitError: boolean
+  onRetryCommit: () => void
+  onBack: () => void
+  onDone: () => void
+  onAddNote: () => void
+}) {
+  // Best-first list of the other spots, to show the new spot's neighbours.
+  const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  const total = orderedByPos.length + 1
+  const score = scoreForPosition(position - 1, total)
+  const around: { pos: number; name: string; score: number; isNew: boolean }[] = []
+  for (const pos of [position - 1, position, position + 1]) {
+    if (pos < 1 || pos > total) continue
+    if (pos === position) {
+      around.push({ pos, name: picked.name, score, isNew: true })
+    } else {
+      const r = orderedByPos[pos < position ? pos - 1 : pos - 2]
+      if (r)
+        around.push({ pos, name: r.name, score: scoreForPosition(pos - 1, total), isNew: false })
+    }
+  }
+  return (
+    <div className="screen">
+      {/* Back re-enters the comparison; "Listo" leaves for good. The ranking
+          already saved on reveal, so a member who only wanted the score has a
+          one-tap exit instead of having to open the note step or press back
+          (which would drop them back into comparing). */}
+      <div className="rank-note-head">
+        <button type="button" className="link-action" onClick={onBack}>
+          ‹ Atrás
+        </button>
+        <button type="button" className="rank-skip" onClick={onDone}>
+          Listo
+        </button>
+      </div>
+      <div className="rank-reveal">
+        <Eyebrow>Tu puntuación</Eyebrow>
+        <div className="rank-reveal__score">{displayScore(score)}</div>
+        <Title style={{ marginTop: 'var(--space-1)' }}>{picked.name}</Title>
+        <Characteristics
+          className="rank-reveal__chars"
+          priceTier={picked.priceTier}
+          cuisine={picked.cuisine}
+          neighborhood={picked.neighborhood}
+        />
+        <Chip size="sm" state="selected" style={{ marginTop: 'var(--space-3)' }}>
+          #{position} de {total} en tu lista
+        </Chip>
+      </div>
+      <div className="rank-neighbors">
+        {around.map((n) => (
+          <div key={n.pos} className={`rank-neighbor${n.isNew ? ' rank-neighbor--new' : ''}`}>
+            <span className="rank-neighbor__pos">{n.pos}</span>
+            <span className="rank-neighbor__name">{n.name}</span>
+            <span className="rank-neighbor__score">{displayScore(n.score)}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* The other half of the core loop: where friends put this same place.
+          Fetched off the restaurant profile once the score is on screen. */}
+      <div className="rank-reveal__friends">
+        <Eyebrow>Tus amigos</Eyebrow>
+        {friendsPending ? (
+          <Caption>Buscando…</Caption>
+        ) : friendsRankings.length > 0 ? (
+          <>
+            <Caption className="rank-reveal__friends-meta">
+              {friendsRankings.length === 1
+                ? '1 amigo rankeó esto'
+                : `${friendsRankings.length} amigos rankearon esto`}{' '}
+              · prom. {displayScore(friendAvg)}
+            </Caption>
+            {friendsRankings.slice(0, 3).map((f) => (
+              <Link
+                key={f.user.id}
+                to="/u/$userId"
+                params={{ userId: f.user.id }}
+                className="rank-reveal__friend-row"
+              >
+                <Avatar name={f.user.name || f.user.handle || 'm'} src={f.user.image} size={28} />
+                <span className="rank-reveal__friend-name">{f.user.name || f.user.handle}</span>
+                <span className="rank-reveal__friend-pos">#{f.position}</span>
+                <span className="rank-reveal__friend-score">{displayScore(f.score)}</span>
+              </Link>
+            ))}
+          </>
+        ) : (
+          <SerifItalic className="rank-reveal__friends-empty">
+            Ninguno de tus amigos ha rankeado esto todavía — vas primero.
+          </SerifItalic>
+        )}
+      </div>
+
+      <div className="spacer" />
+      {commitError && (
+        <div className="rank-reveal__save-error">
+          <Caption>No se pudo guardar este ranking.</Caption>
+          <button type="button" className="link-action" onClick={onRetryCommit}>
+            Reintentar
+          </button>
+        </div>
+      )}
+      <Body style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+        Tu respuesta movió a {picked.name}, no la puntuación del spot.
+      </Body>
+      <Button onClick={onAddNote}>Agregar una nota</Button>
+    </div>
+  )
+}
+
+// B4 — note + occasion tags + a dish, reached once the score is revealed. The
+// ranking itself already saved on reveal; this step only finalizes the optional
+// note/tags and whether to chain into the dish composer.
+function NoteStep({
+  picked,
+  position,
+  existingCount,
+  note,
+  setNote,
+  tags,
+  setTags,
+  chainDish,
+  setChainDish,
+  saving,
+  onBack,
+  onSave,
+}: {
+  picked: Item
+  position: number
+  existingCount: number
+  note: string
+  setNote: Dispatch<SetStateAction<string>>
+  tags: string[]
+  setTags: Dispatch<SetStateAction<string[]>>
+  chainDish: boolean
+  setChainDish: Dispatch<SetStateAction<boolean>>
+  saving: boolean
+  onBack: () => void
+  onSave: () => void
+}) {
+  return (
+    <div className="screen">
+      <div className="rank-note-head">
+        <button type="button" className="link-action" onClick={onBack}>
+          ‹ Agregar nota
+        </button>
+        <button type="button" className="rank-skip" disabled={saving} onClick={onSave}>
+          {/* The ranking itself already saved on reveal; this just finalizes
+              without a note/tags/dish, so "Listo" ("Done", not "Skip") is
+              accurate. */}
+          Listo
+        </button>
+      </div>
+
+      <div className="rank-summary">
+        <PlaceCover
+          seed={picked.id}
+          name={picked.name}
+          coverImageId={picked.coverImageId}
+          size={{ w: 120, h: 120 }}
+          className="rank-summary__thumb"
+        />
+        <div className="rank-summary__main">
+          <div className="rank-summary__name">{picked.name}</div>
+          <Characteristics
+            priceTier={picked.priceTier}
+            cuisine={picked.cuisine}
+            neighborhood={picked.neighborhood}
+          />
+        </div>
+        <div className="cmp-card__score">
+          {displayScore(scoreForPosition(position - 1, existingCount + 1))}
+        </div>
+      </div>
+
+      <textarea
+        className="note-editor"
+        style={{ marginTop: 'var(--space-4)', minHeight: 84 }}
+        maxLength={140}
+        placeholder="con velas, vino natural, pide el branzino…"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+
+      <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
+        Ocasión
+      </Eyebrow>
+      <div className="tag-row">
+        {RANK_TAGS.map((t) => {
+          const on = tags.includes(t)
+          return (
+            <Chip
+              key={t}
+              size="sm"
+              state={on ? 'selected' : 'default'}
+              onClick={() =>
+                setTags((cur) =>
+                  on ? cur.filter((x) => x !== t) : cur.length < 4 ? [...cur, t] : cur,
+                )
+              }
+            >
+              {t}
+            </Chip>
+          )
+        })}
+      </div>
+
+      <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-4)' }}>
+        Agregar un plato
+      </Eyebrow>
+      <button
+        type="button"
+        className={`rank-dish-tile${chainDish ? ' rank-dish-tile--on' : ''}`}
+        onClick={() => setChainDish((v) => !v)}
+      >
+        <span className="rank-dish-tile__plus">+</span>
+        <span className="rank-dish-tile__label">
+          {chainDish ? 'Foto después de publicar' : 'Agregar una foto'}
+        </span>
+      </button>
+
+      <div className="spacer" />
+      <Button disabled={saving} onClick={onSave}>
+        {saving ? 'Guardando…' : 'Guardar nota'}
+      </Button>
     </div>
   )
 }
