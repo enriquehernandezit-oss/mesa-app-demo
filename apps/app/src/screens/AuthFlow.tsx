@@ -15,6 +15,12 @@ import '../styles/screens.css'
 // The visible agreement line is the signup-time EULA/terms consent (App Store
 // 1.2); acceptance is also recorded server-side when the profile is completed.
 
+// Phone sign-in is off until an SMS provider is wired (the server also disables
+// its routes). A visible button that cannot complete is worse than no button:
+// the endpoint used to answer "code sent" for a code nobody would ever receive.
+// Set VITE_PHONE_AUTH=1 alongside the server's SMS key to bring it back.
+const PHONE_AUTH = import.meta.env.VITE_PHONE_AUTH === '1'
+
 type Step = 'choose' | 'email' | 'phone' | 'verify'
 
 // The shape the auth client uses for errors, for the one case it can't produce
@@ -194,14 +200,16 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             >
               Usar correo y contraseña
             </Button>
-            <Button
-              variant="secondary"
-              className="mesa-btn--mono"
-              disabled={busy}
-              onClick={() => setStep('phone')}
-            >
-              Usar un número de teléfono
-            </Button>
+            {PHONE_AUTH && (
+              <Button
+                variant="secondary"
+                className="mesa-btn--mono"
+                disabled={busy}
+                onClick={() => setStep('phone')}
+              >
+                Usar un número de teléfono
+              </Button>
+            )}
             <Button
               variant="secondary"
               className="mesa-btn--mono"

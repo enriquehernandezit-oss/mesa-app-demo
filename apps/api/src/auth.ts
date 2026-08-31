@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { bearer, genericOAuth, phoneNumber } from 'better-auth/plugins'
+import { bearer, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
 import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
 
 // Better Auth wired to Postgres via the pooled Drizzle client from @mesa/db.
@@ -18,6 +18,24 @@ import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
 // — sanctioned OAuth, no scraping). Note: Instagram Basic Display is being
 // retired by Meta; when you create the Meta app, set the endpoints/scopes for
 // whichever Instagram Login flow Meta assigns you via the env vars below.
+
+// Dev-only conveniences — printing reset links and OTP codes to the console —
+// must require an EXPLICITLY development environment. This used to test
+// `NODE_ENV === 'production'` and treat everything else as development, so an
+// UNSET NODE_ENV (the default on Railway) silently printed password-reset links
+// and OTP codes into the production logs, where anyone with log access could
+// use them. Unknown environments now get the safe behaviour, not the chatty one.
+//
+// The boot guard below deliberately keeps the narrower `=== 'production'` test:
+// withholding a debug log costs nothing, but refusing to start is expensive
+// enough that it should only happen when the environment says so outright.
+const isDevEnv = ['development', 'dev', 'test'].includes(process.env.NODE_ENV ?? '')
+
+// SMS is not wired, so phone sign-in cannot complete. Rather than leave an
+// endpoint that answers "code sent" for a code nobody receives, the routes are
+// turned off until a provider key exists — the same env-gating as Apple and
+// Instagram, so setting the key turns them back on with no code change.
+const hasSms = Boolean(process.env.SMS_PROVIDER_API_KEY)
 
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET)
@@ -70,7 +88,7 @@ async function sendMail(to: string, subject: string, body: string) {
   if (to.endsWith('@phone.mesa.local')) return
   try {
     if (!RESEND_KEY) {
-      if (process.env.NODE_ENV === 'production') {
+      if (!isDevEnv) {
         console.error(
           `[email] NOT SENT to=${to} · ${subject} — EMAIL_PROVIDER_API_KEY unset in production`,
         )
@@ -286,7 +304,28 @@ If you didn't create a Mesa account, you can ignore this email.`,
       }
     : undefined,
 
+  // Phone sign-in is off until an SMS provider exists. disabledPaths keeps the
+  // plugin, its schema and the client wiring intact, so this is one env var away
+  // from working rather than a revert.
+  disabledPaths: hasSms
+    ? []
+    : [
+        '/phone-number/send-otp',
+        '/phone-number/verify',
+        '/phone-number/request-password-reset',
+        '/phone-number/reset-password',
+      ],
+
   plugins: [
+    // Refuses passwords found in known breach corpora, checked by k-anonymity —
+    // only a 5-character hash prefix leaves the server, never the password.
+    // Credential stuffing against reused passwords is the likeliest real attack
+    // on a small consumer app, and an 8-character minimum does nothing against
+    // it. Zero new dependencies.
+    haveIBeenPwned({
+      customPasswordCompromisedMessage:
+        'Esa contraseña apareció en una filtración conocida. Elige otra.',
+    }),
     // Bearer-token auth alongside cookies. On sign-in the server returns the
     // session token in a `set-auth-token` response header; the client stores it
     // and sends `Authorization: Bearer <token>` on every request. This is the
@@ -297,8 +336,9 @@ If you didn't create a Mesa account, you can ignore this email.`,
     phoneNumber({
       sendOTP: async ({ phoneNumber: to, code }) => {
         // Dev path: no SMS provider needed to exercise phone login locally.
-        // M2 swaps this for the real SMS sender.
-        if (process.env.NODE_ENV === 'production') {
+        // Never outside an explicitly development environment — an OTP in a
+        // deployment's logs is a credential sitting in plain text.
+        if (!isDevEnv) {
           throw new Error('SMS provider not configured (set SMS_PROVIDER_API_KEY)')
         }
         console.log(`[dev sms] OTP for ${to}: ${code}`)

@@ -29,6 +29,12 @@ describe('authErrorEs', () => {
     expect(authErrorEs({ message: english })).not.toContain(english)
   })
 
+  test('explains a breached password instead of a generic failure', () => {
+    expect(authErrorEs({ code: 'PASSWORD_COMPROMISED' }, 'No se pudo crear la cuenta.')).toContain(
+      'filtración',
+    )
+  })
+
   test('handles a null or undefined error', () => {
     expect(authErrorEs(null)).toBe('Algo salió mal. Intenta de nuevo.')
     expect(authErrorEs(undefined)).toBe('Algo salió mal. Intenta de nuevo.')

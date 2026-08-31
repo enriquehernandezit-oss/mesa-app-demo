@@ -19,6 +19,10 @@ const ES: Record<string, string> = {
   USER_EMAIL_NOT_FOUND: 'No encontramos esa cuenta.',
   PASSWORD_TOO_SHORT: 'La contraseña debe tener al menos 8 caracteres.',
   PASSWORD_TOO_LONG: 'Esa contraseña es demasiado larga.',
+  // haveIBeenPwned. The server sends this message too, but the map is what the
+  // client actually renders — without the code here it fell back to a generic
+  // "no se pudo crear la cuenta", which tells someone nothing about what to fix.
+  PASSWORD_COMPROMISED: 'Esa contraseña apareció en una filtración conocida. Elige otra.',
   EMAIL_NOT_VERIFIED: 'Confirma tu correo antes de entrar. Te enviamos un enlace.',
   CREDENTIAL_ACCOUNT_NOT_FOUND: 'Esa cuenta entra con Apple o Instagram, no con contraseña.',
 
