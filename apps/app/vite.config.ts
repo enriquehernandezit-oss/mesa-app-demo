@@ -64,10 +64,11 @@ function cspPlugin(apiUrl: string): Plugin {
           "worker-src 'self' blob:",
           "object-src 'none'",
           "base-uri 'none'",
-          // frame-ancestors is intentionally omitted: it's ignored in a <meta>
-          // CSP (browsers only honor it as a response header). Set it — or
-          // X-Frame-Options: DENY — as a header on the static server to block
-          // clickjacking; there's no meta equivalent.
+          // frame-ancestors is intentionally omitted here: it's ignored in a
+          // <meta> CSP (browsers only honor it as a response header). It ships
+          // instead — with HSTS, which likewise has no meta form — from
+          // apps/app/public/serve.json, which Vite copies into dist/ and the
+          // static server reads from the directory it serves.
         ].join('; ')
         return {
           html,

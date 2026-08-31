@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { secureHeaders } from 'hono/secure-headers'
 import { auth } from './auth'
 import type { AppEnv } from './context'
 import { sessionMiddleware } from './middleware/session'
@@ -15,10 +16,83 @@ import { onboardingRoutes } from './routes/onboarding'
 import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
-import { sharePagesRoutes } from './routes/share-pages'
+import { sharePagesRoutes, webOrigin } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
 
 const app = new Hono<AppEnv>()
+
+// Security response headers. First middleware, so it also covers the Better Auth
+// handler below and anything app.onError returns. Headers are applied on the way
+// OUT (after next()), so a middleware registered earlier wraps a later one and
+// its values win — which is what gives /p its own CSP below.
+//
+// Two surfaces with genuinely different needs, so two policies rather than one
+// loose compromise:
+//   - everything else is JSON, never a document -> lock it to nothing at all.
+//   - /p/* is real server-rendered HTML (share pages) -> it needs Google Fonts
+//     and Cloudinary covers, but it ships ZERO javascript, so script-src stays
+//     'none'. That is a tighter script policy than the SPA can have.
+//
+// frame-ancestors and HSTS are the reason this exists: the app's build-time CSP
+// is a <meta> tag, and browsers ignore both of those in meta — they only work as
+// response headers. Until now nothing set them anywhere, so there was no
+// clickjacking protection at all. The web app gets the same treatment via
+// apps/app/public/serve.json.
+// The web origin share-page covers are served from — same resolution the pages
+// themselves use, so the policy can never drift from the markup.
+const SHARE_IMG_ORIGIN = webOrigin()
+
+const COMMON_HEADERS = {
+  // One year. Deliberately NO `preload`: preload is effectively irreversible and
+  // would be submitted for a *.up.railway.app domain we don't own. Revisit once
+  // the real domain is live.
+  strictTransportSecurity: 'max-age=31536000; includeSubDomains',
+  xFrameOptions: 'DENY',
+  referrerPolicy: 'no-referrer',
+  // COEP would require every cross-origin subresource to opt in via CORP —
+  // Cloudinary covers on the share pages don't, and we gain nothing here.
+  crossOriginEmbedderPolicy: false,
+} as const
+
+app.use(
+  '/p/*',
+  secureHeaders({
+    ...COMMON_HEADERS,
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      scriptSrc: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ['https://fonts.gstatic.com'],
+      // Covers resolve three ways in absoluteCover(): a Cloudinary delivery
+      // URL, or — for every seeded row today — a local /restaurants/*.jpg
+      // served from the WEB origin, which is a different host than this API.
+      // Omitting that origin blocks the cover on every share page (the OG
+      // unfurl still works, since crawlers don't enforce CSP — so this would
+      // have failed silently for anyone who actually opened the link).
+      imgSrc: [
+        'https://res.cloudinary.com',
+        'data:',
+        ...(SHARE_IMG_ORIGIN ? [SHARE_IMG_ORIGIN] : []),
+      ],
+      baseUri: ["'none'"],
+      formAction: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  }),
+)
+
+app.use(
+  '*',
+  secureHeaders({
+    ...COMMON_HEADERS,
+    contentSecurityPolicy: {
+      defaultSrc: ["'none'"],
+      baseUri: ["'none'"],
+      formAction: ["'none'"],
+      frameAncestors: ["'none'"],
+    },
+  }),
+)
 
 // CORS for the Vite app / Capacitor webview. credentials:true lets the session
 // cookie ride along for same-origin/first-party web; exposeHeaders lets the

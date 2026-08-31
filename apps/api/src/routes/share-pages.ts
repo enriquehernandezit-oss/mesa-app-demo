@@ -30,7 +30,7 @@ function esc(s: string): string {
 // The web app's origin — where "get Mesa" and cover assets live. In dev this is
 // the Vite origin (APP_ORIGINS default); in prod, set PUBLIC_WEB_URL to the
 // deployed web build. Falls back gracefully so nothing breaks unconfigured.
-function webOrigin(): string | null {
+export function webOrigin(): string | null {
   return process.env.PUBLIC_WEB_URL ?? process.env.APP_ORIGINS?.split(',')[0] ?? null
 }
 
