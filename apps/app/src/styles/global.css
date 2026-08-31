@@ -179,6 +179,22 @@ select {
   }
 }
 
+/* Visually hidden, still announced. For labels on inputs that carry only a
+   placeholder — a placeholder disappears the moment someone types, so a screen
+   reader user loses the only description the field ever had. Not display:none
+   or visibility:hidden, both of which remove it from the accessibility tree. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* The inline text-button primitive (‹ Atrás, Cancelar, Reintentar, Reportar, …)
    used across screens — a borderless uppercase-eyebrow action with a 44px touch
    target. Lives here, not in a tab stylesheet, because it's app-wide (and the
