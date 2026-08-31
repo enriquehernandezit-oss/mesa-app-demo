@@ -8,10 +8,13 @@ import { requireAuth, requireModerator } from '../middleware/session'
 // UGC moderation (App Store 1.2). Every user can report content and block
 // abusive accounts; moderators can remove content and eject users. A block hides
 // content both ways; a removed note and a banned user disappear from all reads.
-const { reports, userBlocks, vibeNotes, follows, user } = schema
+const { reports, userBlocks, vibeNotes, dishes, follows, user } = schema
 
 const reportSchema = z.object({
-  targetType: z.enum(['vibe_note', 'user']),
+  // Dishes are first-class UGC (photo + name + caption), so they must be
+  // reportable like vibe notes and users (App Store 1.2). The enum already
+  // carries 'dish' (schema/enums.ts).
+  targetType: z.enum(['vibe_note', 'user', 'dish']),
   targetId: z.string().min(1),
   reason: z.string().trim().min(1).max(500),
 })
@@ -119,6 +122,26 @@ export const moderationRoutes = new Hono<AppEnv>()
             eq(reports.targetId, id),
             eq(reports.status, 'open'),
           ),
+        )
+    })
+    return c.json({ ok: true })
+  })
+
+  // Remove a dish post (soft-delete), mirroring the vibe-note path — sets
+  // removedAt so it vanishes from every dish read (feed + restaurant rail),
+  // keeps the row for audit, and marks matching open reports actioned.
+  .delete('/dishes/:id', requireModerator, async (c) => {
+    const id = c.req.param('id')
+    await db.transaction(async (tx) => {
+      await tx
+        .update(dishes)
+        .set({ removedAt: new Date() })
+        .where(and(eq(dishes.id, id), isNull(dishes.removedAt)))
+      await tx
+        .update(reports)
+        .set({ status: 'actioned' })
+        .where(
+          and(eq(reports.targetType, 'dish'), eq(reports.targetId, id), eq(reports.status, 'open')),
         )
     })
     return c.json({ ok: true })

@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { Body, EmptyState } from '../../components/ui'
+import { useState } from 'react'
+import { Body, Caption, Chip, EmptyState } from '../../components/ui'
 import { DirectionsIcon, PhoneIcon, WebIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '../../components/ui/patterns'
 import { api } from '../../lib/api'
@@ -10,7 +11,11 @@ import type { DishDetail as DishDetailData } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
 import '../restaurant/restaurant.css'
+import '../user/moderation.css'
 import './dish.css'
+
+// UGC report reasons (App Store 1.2) — same set as the user/note reports.
+const REASONS = ['Spam', 'Acoso', 'Inapropiado', 'Otro'] as const
 
 // Dish detail (Phase 6 mock C3) — a posted dish, standing on its own: the hero
 // photo, its caption, and the linked ranking (the place card carries the poster's
@@ -112,7 +117,53 @@ export function DishDetail() {
             Cómo llegar
           </UtilityPill>
         </div>
+
+        {/* A dish is UGC — someone else's photo/caption must be reportable
+            (App Store 1.2). Hidden on your own post. */}
+        {!dish.posterIsMe && <DishReport dishId={dishId} />}
       </div>
+    </div>
+  )
+}
+
+function DishReport({ dishId }: { dishId: string }) {
+  const [open, setOpen] = useState(false)
+  const report = useMutation({
+    mutationFn: (reason: string) =>
+      api.post('/moderation/reports', { targetType: 'dish', targetId: dishId, reason }),
+  })
+  if (report.isSuccess) {
+    return <div className="report-done">Reportado. Gracias — lo revisaremos.</div>
+  }
+  return (
+    <div className="ranking-actions">
+      {!open ? (
+        <button
+          type="button"
+          className="link-action link-action--danger"
+          onClick={() => setOpen(true)}
+        >
+          Reportar este plato
+        </button>
+      ) : (
+        <div className="report-panel">
+          <Caption>¿Por qué reportas este plato?</Caption>
+          <div className="report-reasons">
+            {REASONS.map((reason) => (
+              <Chip
+                key={reason}
+                state="default"
+                onClick={() => !report.isPending && report.mutate(reason)}
+              >
+                {reason}
+              </Chip>
+            ))}
+          </div>
+          <button type="button" className="link-action" onClick={() => setOpen(false)}>
+            Cancelar
+          </button>
+        </div>
+      )}
     </div>
   )
 }

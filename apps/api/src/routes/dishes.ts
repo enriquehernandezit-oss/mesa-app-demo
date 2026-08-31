@@ -23,9 +23,13 @@ const createSchema = z.object({
   image: z
     .string()
     .max(MAX_IMAGE_CHARS)
+    // A resized data-image URL (dev) or an https URL (prod / Cloudinary).
+    // Plain http and any other scheme are rejected so a stored value can't
+    // smuggle a tracking pixel or a javascript: href into others' feeds.
+    // Tighten to a bare Cloudinary public id once signed uploads are wired.
     .refine(
-      (s) => s.startsWith('data:image/') || s.startsWith('http'),
-      'image must be a data URL or URL',
+      (s) => s.startsWith('data:image/') || s.startsWith('https://'),
+      'image must be a data URL or https URL',
     ),
   grain: z.enum(['candlelit', 'daylight', 'none']).default('none'),
   visibility: z.enum(['friends', 'public']).default('friends'),
