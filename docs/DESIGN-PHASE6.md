@@ -1,25 +1,12 @@
-# Mesa — Phase 6 Restyle: Handoff for Claude Code
+# Mesa — Phase 6 Restyle: Handoff
 
-Save this into the repo as `docs/DESIGN-PHASE6.md`, then paste the prompt in §0.
-
----
-
-## 0. The prompt to paste into Claude Code
-
-> Read `docs/DESIGN-PHASE6.md` in full. It supersedes `docs/DESIGN.md` — the brand
-> has moved from the dark oxblood ground to a light warm-paper ground. Your first
-> commit replaces the token layer and `docs/DESIGN.md` itself so nothing in the repo
-> still points at the old palette.
->
-> This is a **restyle, not a rebuild**. Hard rule 2 applies: targeted edits over
-> rewrites. Do not touch routing, data fetching, TanStack Query keys, Drizzle
-> schema, auth, or any component's props/state. You are changing CSS variables,
-> class-level CSS, and — only where a new element is genuinely required — adding
-> markup. If a screen's logic works today it must still work identically after.
->
-> Work in the milestone order in §5. After each milestone: run the app, screenshot
-> the changed screens, commit with a `style:` prefix, and stop for review. Do not
-> run ahead.
+The Phase 6 restyle that moved the brand from the dark oxblood ground to the
+light warm-paper ground. Now a completed-and-conformed reference (see
+`docs/DESIGN-PHASE6-SCREENS.md` for the screen mocks). It was a **restyle, not a
+rebuild** — CSS variables, class-level CSS, and only-where-required markup; no
+routing, data-fetching, query-key, schema, or auth changes. `docs/DESIGN.md`
+remains the design source of truth; both the Afternoon and Candlelit themes
+resolve through the token layer.
 
 ---
 

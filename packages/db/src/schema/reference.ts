@@ -10,7 +10,7 @@ export const neighborhoods = pgTable('neighborhoods', {
   slug: text('slug').notNull().unique(), // piantini, naco, bella-vista, serralles, zona-colonial
   name: text('name').notNull(),
   // A centroid for the sector, not a single street address — computed from the
-  // seeded restaurants' own coordinates (see migration 0009's backfill), not
+  // seeded restaurants' own coordinates (see migration 0008's backfill), not
   // guessed. Used for (a) the RankAPlace "Cerca" fallback sort before a
   // geocode exists, (b) placing a member-added restaurant on SOMETHING better
   // than the city center, jittered by radiusM so they don't all stack on one

@@ -11,9 +11,10 @@ Three bodies of work landed, in this order:
 
 ### 1. Mobile UI audit — 7 commits, fully executed
 
-Source doc: [`docs/UI_AUDIT_FIXES.md`](UI_AUDIT_FIXES.md) — every checkbox is
-marked `[x]` with a browser-verified note of what changed and how it was
-measured. Nothing left to do here.
+The mobile-UI audit backlog (safe-area headers, theme-token contrast, 44px
+touch targets, gated hover + press feedback, motion split, discrete bugs, a11y)
+shipped in full across the 7 commits below. Its tracking doc `UI_AUDIT_FIXES.md`
+was retired once every item shipped — recover it from git history if needed.
 
 ```
 a48cb76  fix(mobile): safe-area screen header — 7 trapped screens reachable (P0)
@@ -210,7 +211,8 @@ the next band. Not required.
 - Cuisine values and legacy occasion-tag strings in seed data (English) — see
   "Known, deliberate gaps" above. Requires editing + re-running the seed, not
   an app-code change.
-- Anything in `docs/UI_AUDIT_FIXES.md` — that whole document is done.
+- The mobile-UI audit backlog (formerly `docs/UI_AUDIT_FIXES.md`, now retired) —
+  that whole body of work is done.
 
 ## How to resume
 

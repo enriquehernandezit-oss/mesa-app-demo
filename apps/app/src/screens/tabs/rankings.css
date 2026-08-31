@@ -235,30 +235,7 @@
   gap: var(--space-4);
   margin-top: var(--space-2);
 }
-.link-action {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: var(--font-ui);
-  font-size: var(--text-eyebrow);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-}
-/* Destructive actions read as destructive at rest — not only on hover, which
-   never fires on touch, where "Quitar" was otherwise identical to the benign
-   "Editar nota" beside it. */
-.link-action--danger {
-  color: var(--status-packed);
-}
-@media (hover: hover) and (pointer: fine) {
-  .link-action:hover {
-    color: var(--accent);
-  }
-}
+/* The .link-action primitive it uses lives in styles/global.css (app-wide). */
 
 .note-editor {
   margin-top: var(--space-2);
