@@ -7,6 +7,7 @@ import { useAuthLost } from './lib/authLost'
 import { AuthFlow } from './screens/AuthFlow'
 import { Onboarding } from './screens/Onboarding'
 import { ResetPassword } from './screens/auth/ResetPassword'
+import { VerifyEmail } from './screens/auth/VerifyEmail'
 import { LegalPage } from './screens/legal/LegalPage'
 
 // Legal pages must be reachable even signed-out (App Store 5.1), so they're
@@ -31,14 +32,18 @@ function legalDoc(): 'terms' | 'eula' | 'privacy' | null {
 export function App() {
   const doc = legalDoc()
   const isReset = window.location.pathname === '/reset-password'
+  const isVerify = window.location.pathname === '/verify-email'
   const { data: session, isPending: sessionLoading } = useSession()
   const authed = Boolean(session?.user)
   const { data: me, isPending: profileLoading, refetch: refetchMe } = useProfile(authed)
   const authLost = useAuthLost()
 
   if (doc) return <LegalPage doc={doc} />
-  // Password-reset link — signed-out, resolved by path before the auth gate.
+  // Links from email — resolved by path before the auth gate, because both are
+  // routinely opened on a different device from the one that signed up, where
+  // there is no session at all.
   if (isReset) return <ResetPassword />
+  if (isVerify) return <VerifyEmail />
   // An ejected account keeps a technically-valid session, so this can't be left
   // to the checks below: requireAuth 403s every route including /me, which used
   // to strand the user on the splash screen with no explanation. Decided here,

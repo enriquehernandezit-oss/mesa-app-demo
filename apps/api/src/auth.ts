@@ -34,10 +34,29 @@ const appOrigin = (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(','
 // loud rather than silently dropping a security-critical link. Placeholder phone
 // accounts (<digits>@phone.mesa.local) have no real inbox and are skipped.
 const RESEND_KEY = process.env.EMAIL_PROVIDER_API_KEY
-// The verified sender. Defaults to Resend's shared onboarding@resend.dev, which
-// only delivers to the Resend account owner's own address — fine for a first
-// test; set EMAIL_FROM to your verified domain address (e.g. "Mesa <mail@…>").
-const EMAIL_FROM = process.env.EMAIL_FROM ?? 'Mesa <onboarding@resend.dev>'
+// The verified sender. NO fallback on purpose. It used to default to Resend's
+// shared onboarding@resend.dev, which Resend accepts but delivers ONLY to the
+// Resend account owner — so in production every other member's password reset
+// was accepted, logged as sent, and silently went nowhere. A default that works
+// for exactly one inbox is worse than no default, because nothing looks broken.
+const EMAIL_FROM = process.env.EMAIL_FROM
+
+// Password reset is the only way back into an account, so in production a
+// missing mail configuration is a startup failure rather than a per-send log
+// line. Failing here means a bad deploy is rejected while the previous one
+// keeps serving; the alternative is an API that looks healthy and quietly
+// strands anyone who forgets their password. Dev is untouched: with no key the
+// links print to the console, which is how the flows stay exercisable locally.
+if (process.env.NODE_ENV === 'production') {
+  const missing = [!RESEND_KEY && 'EMAIL_PROVIDER_API_KEY', !EMAIL_FROM && 'EMAIL_FROM'].filter(
+    Boolean,
+  )
+  if (missing.length > 0) {
+    throw new Error(
+      `Refusing to start: ${missing.join(' and ')} must be set in production — without them password reset and email verification silently fail. EMAIL_FROM must be an address on a domain verified in Resend.`,
+    )
+  }
+}
 
 // Best-effort transactional email. It NEVER throws: a mail-provider outage or an
 // unset key must not 500 an auth flow. Verification-on-signup is not a gate
@@ -70,7 +89,12 @@ async function sendMail(to: string, subject: string, body: string) {
       console.error(
         `[email] send failed (${res.status}) to=${to} · ${subject}: ${detail.slice(0, 300)}`,
       )
+      return
     }
+    // Log the provider's id on success too, so "I never got the email" can be
+    // traced to a specific message in the Resend dashboard instead of guessed at.
+    const sent = (await res.json().catch(() => null)) as { id?: string } | null
+    console.log(`[email] sent to=${to} · ${subject} · id=${sent?.id ?? 'unknown'}`)
   } catch (err) {
     console.error(`[email] send threw to=${to} · ${subject}:`, err)
   }
@@ -213,6 +237,10 @@ This link expires in about an hour. If you didn't request it, you can safely ign
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
+    // Land on the app's own page rather than dumping the member on a bare
+    // redirect from the API with nothing saying it worked. It resolves before
+    // the auth gate, so it works on a device that has never signed in.
+    callbackURL: `${appOrigin}/verify-email`,
     sendVerificationEmail: async ({ user, url }) => {
       await sendMail(
         user.email,
