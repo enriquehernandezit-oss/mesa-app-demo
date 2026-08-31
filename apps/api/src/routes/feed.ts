@@ -2,22 +2,13 @@ import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, lt, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
+import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The discovery feed (M4) — the payoff of the core loop: what the people you
 // follow ranked, and their vibe notes, most recent first. One round trip; the
 // same block/ban visibility rules as the rest of the app. Cached client-side.
-const {
-  rankings,
-  vibeNotes,
-  restaurants,
-  neighborhoods,
-  follows,
-  userBlocks,
-  user,
-  cheers,
-  dishes,
-} = schema
+const { rankings, vibeNotes, restaurants, neighborhoods, user, cheers, dishes } = schema
 
 const PAGE = 20
 
@@ -33,19 +24,8 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
   }
 
   // People I follow, and blocks in either direction (defense-in-depth: a block
-  // already severs follows, but we still filter so nothing leaks).
-  const following = db
-    .select({ id: follows.followingId })
-    .from(follows)
-    .where(eq(follows.followerId, me.id))
-  const blockedByMe = db
-    .select({ id: userBlocks.blockedId })
-    .from(userBlocks)
-    .where(eq(userBlocks.blockerId, me.id))
-  const blockedMe = db
-    .select({ id: userBlocks.blockerId })
-    .from(userBlocks)
-    .where(eq(userBlocks.blockedId, me.id))
+  // already severs follows, but we still filter so nothing leaks) —
+  // followingIds/blockedByMe/blockedMe below (lib/visibility).
 
   // The latest visible dish per ranking — a dish is evidence attached to a
   // ranking, so it rides on the same feed row (no second feed type, no cursor
@@ -100,10 +80,10 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
     )
     .where(
       and(
-        inArray(rankings.userId, following),
+        inArray(rankings.userId, followingIds(me.id)),
         isNull(user.bannedAt),
-        notInArray(rankings.userId, blockedByMe),
-        notInArray(rankings.userId, blockedMe),
+        notInArray(rankings.userId, blockedByMe(me.id)),
+        notInArray(rankings.userId, blockedMe(me.id)),
         ...(before ? [lt(rankings.updatedAt, before)] : []),
       ),
     )
@@ -143,10 +123,7 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
 feedRoutes.get('/recs', async (c) => {
   const me = c.get('user')
   if (!me) return c.json({ error: 'unauthorized' }, 401)
-  const following = db
-    .select({ id: follows.followingId })
-    .from(follows)
-    .where(eq(follows.followerId, me.id))
+  const following = followingIds(me.id)
   const mine = db
     .select({ id: rankings.restaurantId })
     .from(rankings)

@@ -1,8 +1,9 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, notInArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
+import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Dish posts (Phase 6). A dish is a photo attached to one of your own rankings —
@@ -85,15 +86,6 @@ export const dishesRoutes = new Hono<AppEnv>()
     if (!me) return c.json({ error: 'unauthorized' }, 401)
     const id = c.req.param('id')
 
-    const following = db
-      .select({ id: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, me.id))
-    const blockedEither = db
-      .select({ id: userBlocks.blockedId })
-      .from(userBlocks)
-      .where(eq(userBlocks.blockerId, me.id))
-
     const rows = await db
       .select({
         id: dishes.id,
@@ -106,24 +98,28 @@ export const dishesRoutes = new Hono<AppEnv>()
       })
       .from(dishes)
       .innerJoin(user, eq(user.id, dishes.userId))
+      // Block filter is in the WHERE, not a JS post-filter: filtering after
+      // .limit(12) returned FEWER than 12 dishes whenever a blocked poster sat
+      // in the top 12, even when more visible dishes existed below. Both
+      // directions, matching the feed — a block is symmetric.
       .where(
         and(
           eq(dishes.restaurantId, id),
           isNull(dishes.removedAt),
           isNull(user.bannedAt),
+          notInArray(dishes.userId, blockedByMe(me.id)),
+          notInArray(dishes.userId, blockedMe(me.id)),
           or(
             eq(dishes.userId, me.id),
             eq(dishes.visibility, 'public'),
-            inArray(dishes.userId, following),
+            inArray(dishes.userId, followingIds(me.id)),
           ),
         ),
       )
       .orderBy(desc(dishes.createdAt))
       .limit(12)
 
-    // Drop dishes from anyone I've blocked (kept out of the SQL for clarity).
-    const blocked = new Set((await blockedEither).map((b) => b.id))
-    return c.json({ dishes: rows.filter((d) => !blocked.has(d.user.id)) })
+    return c.json({ dishes: rows })
   })
 
   // One dish + its linked ranking summary (Phase 6 dish detail, screen C3).
@@ -183,13 +179,20 @@ export const dishesRoutes = new Hono<AppEnv>()
         .limit(1)
       if (!f) return c.json({ error: 'not_found' }, 404)
     }
-    // Never surface a blocked poster's dish.
-    const [blocked] = await db
-      .select({ id: userBlocks.blockedId })
-      .from(userBlocks)
-      .where(and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, row.user.id)))
-      .limit(1)
-    if (blocked) return c.json({ error: 'not_found' }, 404)
+    // Never surface a dish when either of us has blocked the other (symmetric).
+    if (!posterIsMe) {
+      const [blocked] = await db
+        .select({ id: userBlocks.blockerId })
+        .from(userBlocks)
+        .where(
+          or(
+            and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, row.user.id)),
+            and(eq(userBlocks.blockerId, row.user.id), eq(userBlocks.blockedId, me.id)),
+          ),
+        )
+        .limit(1)
+      if (blocked) return c.json({ error: 'not_found' }, 404)
+    }
 
     const { visibility: _v, ...dish } = row
     return c.json({ dish: { ...dish, posterIsMe } })

@@ -3,12 +3,13 @@ import { and, desc, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm
 import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
+import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The activity feed behind the bell: cheers on my rankings, new followers, and
 // friends ranking spots I've saved. Three fixed queries merged and sorted —
 // count never depends on data size (no N+1).
-const { cheers, rankings, restaurants, follows, savedPlaces, user, userBlocks } = schema
+const { cheers, rankings, restaurants, follows, savedPlaces, user } = schema
 
 export interface ActivityItem {
   type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
@@ -29,16 +30,10 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
   // Anyone I've blocked, or who has blocked me — filtered out of every section
   // below (a block is symmetric). Without this a blocked user could still land
   // in your bell by cheering your ranking or following you — a block bypass.
-  // Same two-subquery shape the feed and profile reads use (feed.ts).
-  const blockedByMe = db
-    .select({ id: userBlocks.blockedId })
-    .from(userBlocks)
-    .where(eq(userBlocks.blockerId, me.id))
-  const blockedMe = db
-    .select({ id: userBlocks.blockerId })
-    .from(userBlocks)
-    .where(eq(userBlocks.blockedId, me.id))
-  const notBlocked = and(notInArray(user.id, blockedByMe), notInArray(user.id, blockedMe))
+  const notBlocked = and(
+    notInArray(user.id, blockedByMe(me.id)),
+    notInArray(user.id, blockedMe(me.id)),
+  )
 
   // 1) Who cheered my rankings.
   const cheered = await db
@@ -78,10 +73,7 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .limit(25)
 
   // 3) People I follow ranked a spot on my want-to-try list.
-  const following = db
-    .select({ id: follows.followingId })
-    .from(follows)
-    .where(eq(follows.followerId, me.id))
+  const following = followingIds(me.id)
   const mySaved = db
     .select({ id: savedPlaces.restaurantId })
     .from(savedPlaces)

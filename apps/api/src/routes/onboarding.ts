@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AppEnv } from '../context'
 import { scoreFor } from '../lib/score'
+import { blockedByMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Everything the cold-start onboarding needs. The product's #1 risk is an empty
@@ -153,14 +154,8 @@ export const onboardingRoutes = new Hono<AppEnv>()
     const current = c.get('user')
     if (!current) return c.json({ error: 'unauthorized' }, 401)
 
-    const alreadyFollowing = db
-      .select({ id: schema.follows.followingId })
-      .from(schema.follows)
-      .where(eq(schema.follows.followerId, current.id))
-    const blocked = db
-      .select({ id: schema.userBlocks.blockedId })
-      .from(schema.userBlocks)
-      .where(eq(schema.userBlocks.blockerId, current.id))
+    const alreadyFollowing = followingIds(current.id)
+    const blocked = blockedByMe(current.id)
 
     const rows = await db
       .select({

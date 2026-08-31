@@ -2,12 +2,13 @@ import { db, schema } from '@mesa/db'
 import { aliasedTable, and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
+import { followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Editorial curated lists (Phase 6). The carousel shows each list with YOUR
 // progress through it; the detail page shows its members with friend signal.
 // Editorial-only — no user-created lists in Phase 1.
-const { lists, listItems, restaurants, neighborhoods, rankings, follows } = schema
+const { lists, listItems, restaurants, neighborhoods, rankings } = schema
 
 export const listsRoutes = new Hono<AppEnv>()
   .use(requireAuth)
@@ -45,10 +46,7 @@ export const listsRoutes = new Hono<AppEnv>()
     const list = await db.query.lists.findFirst({ where: eq(lists.slug, c.req.param('slug')) })
     if (!list) return c.json({ error: 'not_found' }, 404)
 
-    const following = db
-      .select({ id: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, me.id))
+    const following = followingIds(me.id)
 
     // Second aliased join for "did I rank it" — the join above is already
     // filtered to people I follow, so it can't also answer that. Safe to

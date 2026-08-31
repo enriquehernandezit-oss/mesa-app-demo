@@ -5,13 +5,14 @@ import { z } from 'zod'
 import type { AppEnv } from '../context'
 import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
+import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
 // ranked it (with their scores + vibe notes), and your own state — saved or
 // already ranked. The MapBox map and Cloudinary cover image arrive in M5; this
 // ships the social substance. Each piece is one indexed read; none loop.
-const { rankings, vibeNotes, restaurants, follows, userBlocks, user, savedPlaces } = schema
+const { rankings, vibeNotes, restaurants, user, savedPlaces } = schema
 
 const { neighborhoods, lists, listItems } = schema
 
@@ -151,10 +152,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
     const sort = c.req.query('sort') === 'name' ? 'name' : 'score'
     const hasQuery = q.length >= 2
 
-    const following = db
-      .select({ id: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, me.id))
+    const following = followingIds(me.id)
 
     const liveConds = [isNull(restaurants.removedAt), isNull(restaurants.closedAt)]
     if (hood) liveConds.push(eq(neighborhoods.slug, hood))
@@ -286,10 +284,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
     }[] = []
     if (hasQuery) {
       const pattern = `%${q}%`
-      const blocked = db
-        .select({ id: userBlocks.blockedId })
-        .from(userBlocks)
-        .where(eq(userBlocks.blockerId, me.id))
+      const blocked = blockedByMe(me.id)
       members = await db
         .select({
           id: user.id,
@@ -377,10 +372,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
   .get('/map', async (c) => {
     const me = c.get('user')
     if (!me) return c.json({ error: 'unauthorized' }, 401)
-    const following = db
-      .select({ id: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, me.id))
+    const following = followingIds(me.id)
     // Bound the map to places worth plotting: ranked by anyone, saved by me, or
     // in an editorial list. Unbounded, one imported place near Las Américas
     // rescales project()'s bbox and squashes Piantini to a few pixels — and a
@@ -617,18 +609,7 @@ export const restaurantRoutes = new Hono<AppEnv>()
       )
     }
 
-    const following = db
-      .select({ id: follows.followingId })
-      .from(follows)
-      .where(eq(follows.followerId, me.id))
-    const blockedByMe = db
-      .select({ id: userBlocks.blockedId })
-      .from(userBlocks)
-      .where(eq(userBlocks.blockerId, me.id))
-    const blockedMe = db
-      .select({ id: userBlocks.blockerId })
-      .from(userBlocks)
-      .where(eq(userBlocks.blockedId, me.id))
+    const following = followingIds(me.id)
 
     // Friends who ranked this place, best score first.
     const friendsRankings = await db
@@ -653,8 +634,8 @@ export const restaurantRoutes = new Hono<AppEnv>()
           eq(rankings.restaurantId, id),
           inArray(rankings.userId, following),
           isNull(user.bannedAt),
-          notInArray(rankings.userId, blockedByMe),
-          notInArray(rankings.userId, blockedMe),
+          notInArray(rankings.userId, blockedByMe(me.id)),
+          notInArray(rankings.userId, blockedMe(me.id)),
         ),
       )
       .orderBy(desc(rankings.score))
@@ -752,8 +733,8 @@ export const restaurantRoutes = new Hono<AppEnv>()
           eq(savedPlaces.restaurantId, id),
           inArray(savedPlaces.userId, following),
           isNull(user.bannedAt),
-          notInArray(savedPlaces.userId, blockedByMe),
-          notInArray(savedPlaces.userId, blockedMe),
+          notInArray(savedPlaces.userId, blockedByMe(me.id)),
+          notInArray(savedPlaces.userId, blockedMe(me.id)),
         ),
       )
     const friendsWantToTry = {
