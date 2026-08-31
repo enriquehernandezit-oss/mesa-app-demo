@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
@@ -84,6 +84,28 @@ async function atDailyCap(userId: string): Promise<boolean> {
   )
   return addedToday >= 10
 }
+
+// The card both catalog-write paths return — POST / and POST /from-google, each
+// of which either adopts an existing row or inserts a new one, then answers with
+// exactly these five fields plus the neighborhood name. Defined once so the two
+// paths (and their adopt vs. create branches) can't drift: a field added to one
+// .returning() but not the other would make an adopted place look different from
+// a freshly created one. Two shapes because Drizzle's insert().returning() takes
+// column refs while query.findFirst({ columns }) takes boolean flags.
+const CARD_RETURNING = {
+  id: restaurants.id,
+  name: restaurants.name,
+  cuisine: restaurants.cuisine,
+  priceTier: restaurants.priceTier,
+  coverImageId: restaurants.coverImageId,
+}
+const CARD_COLUMNS = {
+  id: true,
+  name: true,
+  cuisine: true,
+  priceTier: true,
+  coverImageId: true,
+} as const
 
 // M9: how long a Google-sourced row's descriptive fields (address/phone/
 // website/hours) are trusted before a profile view triggers a re-fetch —
@@ -211,14 +233,11 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       ids = idRows.map((r) => r.id)
     } else {
       const rankedPool = db.selectDistinct({ id: rankings.restaurantId }).from(rankings)
+      // Only the id list is used downstream; the friend/all-Mesa averages that
+      // decide the order live in the ORDER BY below, so they don't need to be
+      // selected here (phase 2 recomputes the display aggregates fresh).
       const idRows = await db
-        .select({
-          id: restaurants.id,
-          friendAvg: sql<
-            number | null
-          >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})`,
-          mesaAvg: sql<number | null>`avg(${rankings.score})`,
-        })
+        .select({ id: restaurants.id })
         .from(restaurants)
         .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
         // The subquery's select key ("id") is a JS-side label only — Drizzle
@@ -282,7 +301,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       rankedCount: number
     }[] = []
     if (hasQuery) {
-      const pattern = `%${q}%`
+      // Accent-normalized both sides, matching the place search above, so
+      // "jose" finds "José" (raw ilike over the stored name would miss it).
+      const norm = sql`mesa_norm(${q})`
       const blocked = blockedByMe(me.id)
       members = await db
         .select({
@@ -297,7 +318,10 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .leftJoin(neighborhoods, eq(neighborhoods.id, user.neighborhoodId))
         .where(
           and(
-            or(ilike(user.name, pattern), ilike(user.handle, pattern)),
+            or(
+              sql`mesa_norm(${user.name}) ilike '%' || ${norm} || '%'`,
+              sql`mesa_norm(${user.handle}) ilike '%' || ${norm} || '%'`,
+            ),
             sql`${user.handle} is not null`,
             isNull(user.bannedAt),
             notInArray(user.id, blocked),
@@ -455,7 +479,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     const adopt = async (rid: string) => {
       const full = await db.query.restaurants.findFirst({
         where: eq(restaurants.id, rid),
-        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
+        columns: CARD_COLUMNS,
         with: { neighborhood: { columns: { name: true } } },
       })
       return full
@@ -551,13 +575,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         sourceRefreshedAt: new Date(),
         isDemo: false,
       })
-      .returning({
-        id: restaurants.id,
-        name: restaurants.name,
-        cuisine: restaurants.cuisine,
-        priceTier: restaurants.priceTier,
-        coverImageId: restaurants.coverImageId,
-      })
+      .returning(CARD_RETURNING)
     return c.json({ restaurant: { ...created, neighborhood: hood.name } }, 201)
   })
   .get('/:id', async (c) => {
@@ -792,7 +810,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     if (existing) {
       const full = await db.query.restaurants.findFirst({
         where: eq(restaurants.id, existing.id),
-        columns: { id: true, name: true, cuisine: true, priceTier: true, coverImageId: true },
+        columns: CARD_COLUMNS,
       })
       if (full) return c.json({ restaurant: { ...full, neighborhood: hood.name } }, 200)
     }
@@ -811,12 +829,6 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         priceTier: priceTier ?? null,
         isDemo: false,
       })
-      .returning({
-        id: restaurants.id,
-        name: restaurants.name,
-        cuisine: restaurants.cuisine,
-        priceTier: restaurants.priceTier,
-        coverImageId: restaurants.coverImageId,
-      })
+      .returning(CARD_RETURNING)
     return c.json({ restaurant: { ...created, neighborhood: hood.name } }, 201)
   })

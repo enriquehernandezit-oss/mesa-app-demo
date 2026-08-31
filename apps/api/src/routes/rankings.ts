@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
+import { type SQL, and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -130,7 +130,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       .from(rankings)
       .where(eq(rankings.userId, me.id))
 
-    const conds = [
+    const conds: (SQL | undefined)[] = [
       notInArray(restaurants.id, mine),
       isNull(restaurants.removedAt),
       isNull(restaurants.closedAt),
@@ -140,17 +140,18 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     let norm: ReturnType<typeof sql> | null = null
     if (hasQuery) {
       norm = sql`mesa_norm(${q})`
-      const searchCond = or(
-        sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
-        // Same fuzzy name match as the Explore search (WORD_MATCH_MIN in
-        // routes/restaurants.ts) so "Olivia" finds "Casa Oliva" here too —
-        // otherwise the rank flow's find step would offer the Google copy of a
-        // place already in the catalog. Keep the two thresholds in sync.
-        sql`word_similarity(${norm}, ${restaurants.nameKey}) >= 0.55`,
-        sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
-        sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
+      conds.push(
+        or(
+          sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+          // Same fuzzy name match as the Explore search (WORD_MATCH_MIN in
+          // routes/restaurants.ts) so "Olivia" finds "Casa Oliva" here too —
+          // otherwise the rank flow's find step would offer the Google copy of a
+          // place already in the catalog. Keep the two thresholds in sync.
+          sql`word_similarity(${norm}, ${restaurants.nameKey}) >= 0.55`,
+          sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
+          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
+        ),
       )
-      if (searchCond) conds.push(searchCond)
     }
 
     const rows = await db
