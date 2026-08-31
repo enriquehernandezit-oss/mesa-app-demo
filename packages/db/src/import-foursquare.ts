@@ -4,9 +4,9 @@ import { db, pool } from './client'
 import * as schema from './schema'
 
 // ADDITIVE, idempotent bulk importer for Foursquare OS Places restaurant rows
-// (see docs/LOCATION_CATALOG_PLAN.md M6). Same safety posture as
-// seed-add-restaurants.ts — never TRUNCATEs, safe to re-run — but it merges a
-// real external catalog, so the rules are stricter:
+// (see docs/LOCATION_CATALOG_PLAN.md M6). Additive and safe to re-run — it never
+// TRUNCATEs (unlike seed.ts) — but it merges a real external catalog, so the
+// rules are stricter:
 //
 //   • only ever writes rows it OWNS (source='foursquare'); a match against a
 //     seed/member row only attaches an fsq_place_id, never overwrites curated

@@ -251,8 +251,8 @@ can't resolve and DESIGN.md freezes Candlelit hex.
 `Dining and Drinking` minus a fast-food/food-court blocklist → NDJSON into
 `packages/db/data/` (gitignored).
 
-**Stage B:** `packages/db/src/import-foursquare.ts`, following the additive,
-idempotent precedent of `seed-add-restaurants.ts` — **never** `seed.ts`.
+**Stage B:** `packages/db/src/import-foursquare.ts`, following an additive,
+idempotent posture — never TRUNCATEs, unlike `seed.ts`.
 Loads the whole existing catalog into memory once and buckets it into a spatial
 grid, so matching is O(n) in TS with no per-row query (hard rule 3). Writes in
 500-row chunks with `ON CONFLICT (fsq_place_id) DO UPDATE ... WHERE source =
@@ -392,8 +392,8 @@ configured, so a profile never ends up mapless.
 
 **Reuse, don't rebuild:** `toast()` + `comingSoon()`, `useBack.ts` (the hook
 convention `useDebounced`/`useMyLocation` should follow), `EmptyState`,
-`UtilityPill`, `cloudinaryUrl`, the `.ph` veil/grain treatment, `seed-add-restaurants.ts`
-as the idempotent-script precedent, and `display.ts`'s `cuisineLabel` vocabulary
+`UtilityPill`, `cloudinaryUrl`, the `.ph` veil/grain treatment, and
+`display.ts`'s `cuisineLabel` vocabulary
 (unmapped Foursquare labels must fall back to `null`, or English category strings
 leak into the Spanish UI).
 

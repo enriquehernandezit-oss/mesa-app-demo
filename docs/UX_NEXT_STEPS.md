@@ -34,27 +34,12 @@ f4f7190  refactor(motion): split ease-out from spring; stagger feed; drop dead C
 cb9508c  feat(seed): additive +14 restaurants; guarantee demo ranks all 14
 ```
 
-`packages/db/src/seed-add-restaurants.ts` is a standalone, idempotent,
-**additive** script (does NOT truncate) — safe to re-run against any DB,
-including prod. Run it with:
-
-```bash
-DATABASE_URL="<railway public url>" bun run --filter @mesa/db seed:add
-```
-
-**⚠️ Open action — confirm this was run against PROD with the final script.**
-The user ran an *earlier* version of this script against prod (before the
-"demo ranks all 14" guarantee was added in `cb9508c`) and it reported "all 14
-restaurants already present — nothing to insert" — meaning it inserted the
-restaurants but did **not** yet guarantee the demo account ranks them. The
-script was then upgraded (commit `cb9508c`) to also guarantee the demo
-account ranks all 14, independent of whether the restaurants already existed.
-**There is no confirmation anywhere in this session that the upgraded script
-was ever run against prod.** Next session: run
-`DATABASE_URL="<prod>" bun run --filter @mesa/db seed:add` against prod and
-read the output line — it should say `restaurants: 0 inserted (14/14
-present) · N rankings added (demo: N/14 newly ranked) · N notes`. If `N` for
-rankings is 0 on a repeat run, that's confirmation it's already applied.
+**Resolved.** The +14 are folded into the main seed — `seed.ts` maps over
+`extraRestaurants` (all 14 keys present in `seed-extra.ts`), so any fresh seed
+produces the full 49. Prod already holds them, so the one-off additive script
+(`seed-add-restaurants.ts`) and its `seed:add` package script were retired.
+Re-adding the batch to an already-seeded DB without truncating is recoverable
+from git history if it's ever needed again.
 
 ### 3. UX critique + fixes — `/impeccable critique`, run twice
 
@@ -197,11 +182,10 @@ check` clean.
 
 ## Open items
 
-### 1. Confirm prod seed state — see the ⚠️ above
+### 1. ~~Confirm prod seed state~~ — resolved
 
-The one long-standing unresolved item from this whole session. Needs a human
-(or a future session with the real credential) to run `seed:add` against prod
-and actually read the output line, not just check that it exits 0.
+The +14 are confirmed present in prod and the additive one-off was retired
+(the batch now lives entirely in the main seed). See §2 above.
 
 ### 2. [P2] From the re-critique — now fixed, see §4 above
 
@@ -231,8 +215,5 @@ the next band. Not required.
 ## How to resume
 
 1. Read this file.
-2. Confirm the prod seed situation (open item above) — ask the user, or just
-   run `seed:add` against prod yourself if you're handed the credential, and
-   actually read the output line.
-3. Everything else from this session is done and committed. If the user has
+2. Everything from this session is done and committed. If the user has
    a new request, treat this file as background context, not a task list.
