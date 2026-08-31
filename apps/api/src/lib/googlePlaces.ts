@@ -261,7 +261,10 @@ export function toMesaFields(d: GooglePlaceDetails): MesaFieldsFromGoogle {
     address: d.shortFormattedAddress ?? d.formattedAddress ?? null,
     locality: addressComponent(d.addressComponents, 'locality'),
     phone: d.internationalPhoneNumber ?? d.nationalPhoneNumber ?? null,
-    website: d.websiteUri ?? null,
+    // Only store an http(s) website — Google returns real URLs, but this keeps
+    // a non-navigable scheme from ever landing in the column and being rendered
+    // as an href downstream (the client also allow-lists, defense in depth).
+    website: d.websiteUri && /^https?:\/\//i.test(d.websiteUri) ? d.websiteUri : null,
     priceTier: d.priceLevel ? (GOOGLE_PRICE_TO_TIER[d.priceLevel] ?? null) : null,
     cuisine: mapCuisine(d.primaryType, d.types),
     closesAt: modalClosesAt(d.regularOpeningHours?.periods),

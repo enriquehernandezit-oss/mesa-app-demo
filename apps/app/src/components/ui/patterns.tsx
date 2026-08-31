@@ -155,9 +155,15 @@ export function UtilityPill({
       {children}
     </>
   )
-  if (href) {
+  // Only navigable, non-scripting schemes. `href` can be a server value
+  // (restaurant.website comes from Google) — React does NOT block a
+  // `javascript:` href, so an allow-list here is the guard that keeps a stored
+  // scheme from executing in-origin. An unsafe/missing href falls through to the
+  // inert button so the pill still renders, just without navigation.
+  const safeHref = href && /^(https?:|tel:|mailto:)/i.test(href.trim()) ? href : undefined
+  if (safeHref) {
     return (
-      <a className={cls} href={href} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>
+      <a className={cls} href={safeHref} {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)}>
         {inner}
       </a>
     )

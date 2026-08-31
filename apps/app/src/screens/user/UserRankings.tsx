@@ -5,6 +5,7 @@ import { ScreenHeader } from '../../components/ScreenHeader'
 import { Body, Button, Caption, Chip, EmptyState, SectionHeader } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { Characteristics } from '../../components/ui/patterns'
+import { toast } from '../../components/ui/toast-store'
 import { ApiError, api } from '../../lib/api'
 import { comingSoon } from '../../lib/comingSoon'
 import { displayScore } from '../../lib/display'
@@ -28,6 +29,7 @@ export function UserRankings() {
   const queryClient = useQueryClient()
   const [menuOpen, setMenuOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [confirmingBlock, setConfirmingBlock] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const menuWrapRef = useRef<HTMLDivElement>(null)
 
@@ -59,6 +61,9 @@ export function UserRankings() {
     onSuccess: () => {
       queryClient.invalidateQueries()
       navigate({ to: '/discover' })
+    },
+    onError: () => {
+      toast({ variant: 'error', message: 'No se pudo bloquear. Intenta de nuevo.' })
     },
   })
   const follow = useMutation({
@@ -122,8 +127,10 @@ export function UserRankings() {
                   <button
                     type="button"
                     className="user-menu__danger"
-                    onClick={() => block.mutate()}
-                    disabled={block.isPending}
+                    onClick={() => {
+                      setConfirmingBlock(true)
+                      setMenuOpen(false)
+                    }}
                   >
                     Bloquear
                   </button>
@@ -171,6 +178,32 @@ export function UserRankings() {
               setMenuOpen(false)
             }}
           />
+        )}
+
+        {/* Blocking severs the social graph and hides both sides' content — a
+            real consequence for a one-tap menu item, so it confirms first
+            (matching account-deletion's confirm and ranking-removal's undo). */}
+        {confirmingBlock && (
+          <div className="report-panel">
+            <Caption>
+              ¿Bloquear a {firstName}? No verás su contenido y esta persona no verá el tuyo. Puedes
+              desbloquear luego en Ajustes.
+            </Caption>
+            <div className="report-reasons">
+              <Chip
+                state="default"
+                onClick={() => {
+                  setConfirmingBlock(false)
+                  block.mutate()
+                }}
+              >
+                Bloquear
+              </Chip>
+            </div>
+            <button type="button" className="link-action" onClick={() => setConfirmingBlock(false)}>
+              Cancelar
+            </button>
+          </div>
         )}
 
         {rankings.length === 0 ? (
