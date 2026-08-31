@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@mesa/db": "workspace:*",
-    "better-auth": "^1.1.14",
+    "better-auth": "1.6.25",
     "drizzle-orm": "^0.38.3",
-    "hono": "^4.6.14",
+    "hono": "4.13.0",
     "zod": "^4.4.3"
   }
 }
