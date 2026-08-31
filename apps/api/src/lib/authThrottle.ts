@@ -1,6 +1,7 @@
 import { db, schema } from '@mesa/db'
-import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { APIError, createAuthMiddleware, getIp } from 'better-auth/api'
 import { eq, sql } from 'drizzle-orm'
+import { type AuthEventType, recordAuthEvent } from './authEvents'
 
 // Per-account sign-in throttling.
 //
@@ -14,7 +15,7 @@ import { eq, sql } from 'drizzle-orm'
 // service — anyone who knows a member's email could keep them out permanently.
 // Backoff makes sustained guessing impractical while a real user who fumbles
 // their password a few times waits a minute, not forever.
-const { authThrottle } = schema
+const { authThrottle, user } = schema
 
 // Failures are forgiven after a day of quiet, so one bad evening doesn't leave
 // a lingering penalty on an account that is never attacked again.
@@ -83,8 +84,43 @@ export const authThrottleBefore = createAuthMiddleware(async (ctx) => {
   }
 })
 
-// Count a failure, or clear the record on a clean sign-in.
+// The auth paths worth a permanent record. Kept to the events that answer
+// "what happened to my account?" — see schema/auth.ts.
+const AUDITED: Record<string, AuthEventType> = {
+  '/sign-up/email': 'sign_up',
+  '/reset-password': 'password_reset',
+  '/change-password': 'password_changed',
+  '/revoke-other-sessions': 'sessions_revoked',
+  // No account_deleted here. Mesa deletes through its own DELETE /me, and every
+  // auth_event row is ON DELETE CASCADE from the user — so a deletion event
+  // would erase itself the moment it was written. That is the correct trade:
+  // App Store 5.1.1 wants a real erase, not a tombstone with the member's IP.
+}
+
+// Count a failure, or clear the record on a clean sign-in. Also the one place
+// that writes the audit trail, since it already runs after every auth call and
+// can see whether it succeeded.
 export const authThrottleAfter = createAuthMiddleware(async (ctx) => {
+  const failedCall = ctx.context.returned instanceof APIError
+  const ip = getIp(ctx.request ?? new Request('http://localhost'), ctx.context.options) ?? null
+  const userAgent = ctx.request?.headers.get('user-agent') ?? null
+  // A sign-in or sign-up puts the account on `newSession` (the session about to
+  // be set); operations that require you to already be signed in — changing a
+  // password, revoking sessions — put it on `session`. Reading only the latter
+  // recorded every sign-in against a null user, which is most of the value.
+  const actorId = ctx.context.newSession?.user.id ?? ctx.context.session?.user.id ?? null
+
+  // Everything except sign-in, which needs the success/failure split below.
+  const audited = AUDITED[ctx.path]
+  if (audited && !failedCall) {
+    recordAuthEvent({
+      type: audited,
+      userId: actorId,
+      ip,
+      userAgent,
+    })
+  }
+
   if (ctx.path !== SIGN_IN_PATH) return
   const email = emailFromBody(ctx.body)
   if (!email) return
@@ -92,7 +128,28 @@ export const authThrottleAfter = createAuthMiddleware(async (ctx) => {
 
   // A rejected sign-in leaves an APIError here; a successful one leaves the
   // session payload.
-  const failed = ctx.context.returned instanceof APIError
+  const failed = failedCall
+  // Recorded either way. A failed attempt is resolved back to the account it
+  // targeted — otherwise the row says only "someone failed a sign-in from this
+  // IP", which cannot answer the question this table exists for: "did somebody
+  // try to get into MY account?". One indexed lookup on a unique column, on a
+  // path that is already rate limited per IP and per account. Stays null when
+  // the address has no account, which is itself the useful signal.
+  const targetId = failed
+    ? ((
+        await db
+          .select({ id: user.id })
+          .from(user)
+          .where(eq(user.email, email.trim().toLowerCase()))
+          .limit(1)
+      )[0]?.id ?? null)
+    : actorId
+  recordAuthEvent({
+    type: failed ? 'sign_in_failed' : 'sign_in',
+    userId: targetId,
+    ip,
+    userAgent,
+  })
   if (!failed) {
     await db.delete(authThrottle).where(eq(authThrottle.key, key))
     return

@@ -57,5 +57,6 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, json?: unknown) => request<T>(path, { method: 'POST', json }),
   patch: <T>(path: string, json?: unknown) => request<T>(path, { method: 'PATCH', json }),
-  del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  // Optional body: account deletion carries proof of identity (a password).
+  del: <T>(path: string, json?: unknown) => request<T>(path, { method: 'DELETE', json }),
 }

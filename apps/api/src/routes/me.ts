@@ -30,6 +30,14 @@ const profileSchema = z.object({
   acceptEula: z.literal(true), // must be explicitly accepted (App Store 1.2)
 })
 
+// Matches Better Auth's session.freshAge default (1 day) — the same bar it
+// applies to its own sensitive operations.
+const FRESH_SESSION_MS = 24 * 60 * 60 * 1000
+
+// Password is optional in the body because accounts without one prove identity
+// with a fresh session instead.
+const deleteSchema = z.object({ password: z.string().min(1).max(128).optional() })
+
 const linkEmailSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(8).max(128),
@@ -255,8 +263,48 @@ export const meRoutes = new Hono<AuthedEnv>()
   // places, reports, and Better Auth's own sessions + accounts (every child FK
   // is ON DELETE CASCADE). This is a real erase, not a deactivate. The client
   // then clears its session and returns to the sign-in screen.
+  //
+  // Because it is irreversible and cannot be undone by support, it now demands
+  // proof that the person holding the phone is the account owner — a two-tap
+  // confirm in the UI is not that. Anyone with a borrowed unlocked phone could
+  // previously erase an account permanently.
+  //
+  // The proof matches how the account signs in: a password where one exists,
+  // and otherwise a session created recently enough that the OS/provider login
+  // is still fresh (Better Auth's freshAge, 1 day).
   .delete('/', async (c) => {
     const current = c.get('user')
+    const session = c.get('session')
+    const parsed = deleteSchema.safeParse(await c.req.json().catch(() => ({})))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+
+    const [credential] = await db
+      .select({ id: schema.account.id })
+      .from(schema.account)
+      .where(
+        and(eq(schema.account.userId, current.id), eq(schema.account.providerId, 'credential')),
+      )
+      .limit(1)
+
+    if (credential) {
+      const password = parsed.data.password
+      if (!password) return c.json({ error: 'password_required' }, 400)
+      try {
+        // Throws INVALID_PASSWORD on a mismatch. Reads the current session from
+        // the forwarded headers, so it can only ever check the caller's own.
+        await auth.api.verifyPassword({
+          body: { password },
+          headers: c.req.raw.headers,
+        })
+      } catch {
+        return c.json({ error: 'invalid_password' }, 403)
+      }
+    } else if (!session || Date.now() - session.createdAt.getTime() > FRESH_SESSION_MS) {
+      // Apple/Instagram/phone accounts have no password to check, so the bar is
+      // a recent sign-in instead. The client asks them to sign in again.
+      return c.json({ error: 'session_not_fresh' }, 403)
+    }
+
     await db.delete(schema.user).where(eq(schema.user.id, current.id))
     return c.json({ ok: true })
   })

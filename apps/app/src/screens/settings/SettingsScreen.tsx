@@ -46,6 +46,10 @@ export function SettingsScreen() {
   })
 
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [exporting, setExporting] = useState(false)
   const [verifySent, setVerifySent] = useState(false)
   const [verifying, setVerifying] = useState(false)
@@ -103,8 +107,11 @@ export function SettingsScreen() {
     window.location.href = '/'
   }
 
+  // Deletion is irreversible and support cannot undo it, so the server now
+  // demands proof of identity: the password where the account has one, and
+  // otherwise a recently-created session.
   const deleteAccount = useMutation({
-    mutationFn: () => api.del('/me'),
+    mutationFn: () => api.del('/me', { password: deletePassword || undefined }),
     onSuccess: async () => {
       await signOut().catch(() => {})
       queryClient.clear()
@@ -112,10 +119,62 @@ export function SettingsScreen() {
     },
     // Without this the button just re-enables and the account looks deleted-ish
     // — the worst possible ambiguity for an irreversible action.
-    onError: () =>
+    onError: (err) => {
+      const code = err instanceof ApiError ? err.code : ''
       toast({
         variant: 'error',
-        message: 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+        message:
+          code === 'invalid_password'
+            ? 'Esa contraseña no es correcta.'
+            : code === 'password_required'
+              ? 'Escribe tu contraseña para confirmar.'
+              : code === 'session_not_fresh'
+                ? 'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar la cuenta.'
+                : 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+      })
+    },
+  })
+
+  // Changing your password had no UI at all — the endpoint existed and nothing
+  // called it. revokeOtherSessions is on by default here: if you are changing
+  // it because you think someone else has it, leaving their session alive is
+  // the one outcome that defeats the point.
+  const changePassword = useMutation({
+    mutationFn: async () => {
+      const res = await authClient.changePassword({
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
+      })
+      if (res.error) throw res.error
+    },
+    onSuccess: () => {
+      setChangingPassword(false)
+      setCurrentPassword('')
+      setNewPassword('')
+      toast({ message: 'Contraseña actualizada. Cerramos las otras sesiones.' })
+    },
+    onError: (err) =>
+      toast({
+        variant: 'error',
+        message: authErrorEs(err as { code?: string; status?: number }, 'No se pudo cambiar.'),
+      }),
+  })
+
+  // "Sign out everywhere else" — the control people look for after a scare.
+  const revokeOthers = useMutation({
+    mutationFn: async () => {
+      const res = await authClient.revokeOtherSessions()
+      if (res.error) throw res.error
+    },
+    onSuccess: () => toast({ message: 'Cerramos la sesión en los demás dispositivos.' }),
+    onError: (err) =>
+      toast({
+        variant: 'error',
+        message: authErrorEs(
+          err as { code?: string; status?: number },
+          'No se pudo cerrar las otras sesiones.',
+        ),
       }),
   })
 
@@ -326,6 +385,85 @@ export function SettingsScreen() {
           >
             <span>Cerrar sesión</span>
           </button>
+
+          {/* Change password. Only for accounts that HAVE one — an Apple or
+              phone account has no password to change, and offering it would be
+              a control that can only fail. */}
+          {realEmail &&
+            (changingPassword ? (
+              <form
+                className="stack stack--tight"
+                style={{ padding: 'var(--space-3) 0' }}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (newPassword.length >= 8 && !changePassword.isPending) changePassword.mutate()
+                }}
+              >
+                <label className="sr-only" htmlFor="set-current-password">
+                  Contraseña actual
+                </label>
+                <input
+                  id="set-current-password"
+                  className="field"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Contraseña actual"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+                <label className="sr-only" htmlFor="set-new-password">
+                  Contraseña nueva
+                </label>
+                <input
+                  id="set-new-password"
+                  className="field"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Nueva contraseña (8+ caracteres)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <Button
+                  type="submit"
+                  aria-busy={changePassword.isPending}
+                  disabled={changePassword.isPending || newPassword.length < 8 || !currentPassword}
+                >
+                  {changePassword.isPending ? 'Guardando…' : 'Guardar contraseña'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    setChangingPassword(false)
+                    setCurrentPassword('')
+                    setNewPassword('')
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="settings-row settings-row--btn"
+                onClick={() => setChangingPassword(true)}
+              >
+                <span>Cambiar contraseña</span>
+              </button>
+            ))}
+
+          {/* The control people look for after a scare: end every OTHER session
+              without touching this one. */}
+          <button
+            type="button"
+            className="settings-row settings-row--btn"
+            disabled={revokeOthers.isPending}
+            onClick={() => revokeOthers.mutate()}
+          >
+            <span>
+              {revokeOthers.isPending ? 'Cerrando…' : 'Cerrar sesión en otros dispositivos'}
+            </span>
+          </button>
         </div>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
@@ -347,17 +485,43 @@ export function SettingsScreen() {
             </>
           ) : (
             <>
-              <Caption>¿Estás seguro? Esto borra todo y no se puede deshacer.</Caption>
+              <Caption>
+                {realEmail
+                  ? '¿Estás seguro? Escribe tu contraseña para confirmar. Esto borra todo y no se puede deshacer.'
+                  : '¿Estás seguro? Esto borra todo y no se puede deshacer.'}
+              </Caption>
               <div className="stack stack--tight">
+                {realEmail && (
+                  <>
+                    <label className="sr-only" htmlFor="delete-password">
+                      Contraseña
+                    </label>
+                    <input
+                      id="delete-password"
+                      className="field"
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="Tu contraseña"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                    />
+                  </>
+                )}
                 <button
                   type="button"
                   className="danger-btn danger-btn--solid"
                   onClick={() => deleteAccount.mutate()}
-                  disabled={deleteAccount.isPending}
+                  disabled={deleteAccount.isPending || (Boolean(realEmail) && !deletePassword)}
                 >
                   {deleteAccount.isPending ? 'Eliminando…' : 'Sí, eliminar todo'}
                 </button>
-                <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setConfirmingDelete(false)
+                    setDeletePassword('')
+                  }}
+                >
                   Cancelar
                 </Button>
               </div>

@@ -121,3 +121,26 @@ export const authThrottle = pgTable('auth_throttle', {
   failures: integer('failures').notNull(),
   lastFailureAt: timestamp('last_failure_at').notNull(),
 })
+
+// A minimal auth audit trail.
+//
+// It earns a table on one argument: when a member says "someone got into my
+// account", there is currently NOTHING to answer with — no sign-in history, no
+// addresses, no record of a password change. Railway's logs are neither
+// retained long enough nor queryable per user, and for a social app carrying
+// real identities in one small city, that question will eventually be asked.
+//
+// Deliberately narrow. No PII beyond what the session table already stores, and
+// never a password, token, or OTP code. userId is nullable so a failed sign-in
+// for an address that does not exist can still be recorded — which is exactly
+// the row you want when reconstructing an attack.
+export const authEvent = pgTable('auth_event', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').references(() => user.id, { onDelete: 'cascade' }),
+  // sign_in | sign_in_failed | sign_up | password_reset | password_changed |
+  // sessions_revoked
+  type: text('type').notNull(),
+  ip: text('ip'),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
