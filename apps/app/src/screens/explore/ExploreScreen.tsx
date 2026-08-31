@@ -1,6 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { ExternalResults } from '../../components/ExternalResults'
 import { QuickActions } from '../../components/QuickActions'
 import { ScreenHeader } from '../../components/ScreenHeader'
 import {
@@ -17,20 +18,11 @@ import { Avatar } from '../../components/ui/Avatar'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import { SortIcon } from '../../components/ui/icons'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
-import { toast } from '../../components/ui/toast-store'
-import { ApiError, api } from '../../lib/api'
-import { dedupeExternal } from '../../lib/dedupeExternal'
+import { api } from '../../lib/api'
 import { cuisineLabel } from '../../lib/display'
-import type {
-  ExploreMember,
-  ExploreResponse,
-  ExternalSuggestion,
-  Neighborhood,
-  NewRestaurant,
-} from '../../lib/types'
+import type { ExploreMember, ExploreResponse, Neighborhood } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
-import { useDebounced } from '../../lib/useDebounced'
-import { useGoogleSession } from '../../lib/useGoogleSession'
+import { useExternalPlaceSearch } from '../../lib/useExternalPlaceSearch'
 import '../tabs/tabs.css'
 import '../tabs/feed.css'
 import './explore.css'
@@ -44,9 +36,7 @@ const PRICES = [1, 2, 3, 4]
 
 export function ExploreScreen() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const goBack = useBack(() => navigate({ to: '/discover' }))
-  const googleSession = useGoogleSession()
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
   const [cuisine, setCuisine] = useState<string | null>(null)
@@ -94,58 +84,21 @@ export function ExploreScreen() {
   const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
   const showOpenChip = openNow || hoursCoverage >= 0.4
 
-  // Google gap-filler (M8, extended to Explore) — when Mesa's own catalog comes
-  // up short for a real query, offer online matches. Debounced so the paid
-  // request fires per pause; env-gated server-side (no key → [] → nothing
-  // shows). A pick routes into the rank flow to add + rank it — the only way a
-  // place enters Mesa's catalog.
-  const debouncedQ = useDebounced(q.trim(), 300)
-  const wantExternal = debouncedQ.length >= 3 && hits.length + members.length < 3
-  const external = useQuery({
-    queryKey: ['explore', 'search-external', debouncedQ],
-    queryFn: () =>
-      api.get<{ suggestions: ExternalSuggestion[] }>(
-        `/restaurants/search-external?q=${encodeURIComponent(debouncedQ)}&s=${googleSession.token}`,
-      ),
-    enabled: wantExternal,
-    staleTime: 300_000,
-  })
-  // Hide online matches for places the catalog already shows — a spot you
-  // added (or ranked) shouldn't reappear under "En Google" as if it were new.
-  // Compared against place hits only, never members (people ≠ places).
-  const suggestions = wantExternal
-    ? dedupeExternal(
-        external.data?.suggestions ?? [],
-        hits.map((h) => h.name),
-      )
-    : []
-
-  // Tapping a Google result creates a real, populated profile immediately
-  // (M9) and lands on it — Google search is how a place enters Mesa's
-  // catalog, not a form the member fills in by hand.
-  const fromGoogle = useMutation({
-    mutationFn: (placeId: string) =>
-      api.post<{ restaurant: NewRestaurant }>('/restaurants/from-google', {
-        placeId,
-        sessionToken: googleSession.token,
-      }),
-    onSuccess: ({ restaurant }) => {
-      googleSession.reset()
-      queryClient.invalidateQueries({ queryKey: ['explore'] })
-      navigate({ to: '/r/$restaurantId', params: { restaurantId: restaurant.id } })
-    },
-    onError: (err) => {
-      const status = err instanceof ApiError ? err.status : null
-      toast({
-        variant: 'error',
-        message:
-          status === 429
-            ? 'Llegaste al límite de lugares por hoy.'
-            : status === 409
-              ? 'Google dice que este lugar cerró permanentemente.'
-              : 'No se pudo conectar con Google. Intenta de nuevo.',
-      })
-    },
+  // Google gap-filler (M8, extended to Explore) — when Mesa's catalog comes up
+  // short (<3) for a real query, offer online matches; tapping one creates a
+  // full profile and lands on it (the only way a place enters Mesa). Dedupe is
+  // against place hits only, never members (people ≠ places). All of that logic
+  // is shared with the rank flow's find step — see useExternalPlaceSearch.
+  const {
+    suggestions,
+    create: createFromGoogle,
+    creatingId,
+  } = useExternalPlaceSearch({
+    query: q,
+    mesaResultCount: hits.length + members.length,
+    catalogNames: hits.map((h) => h.name),
+    onCreated: (restaurant) =>
+      navigate({ to: '/r/$restaurantId', params: { restaurantId: restaurant.id } }),
   })
 
   return (
@@ -287,36 +240,13 @@ export function ExploreScreen() {
           </>
         )}
 
-        {/* Online matches when Mesa's own catalog is thin. Tapping one creates
-            a full profile from that place's Google listing and lands on it
-            (M9) — the only way a place enters Mesa. "Powered by Google" is
-            required off-map (Google ToS); swap the text for the official logo
-            asset before a real launch. */}
-        {suggestions.length > 0 && (
-          <div className="explore-external">
-            <SectionHeader>En Google</SectionHeader>
-            {suggestions.map((s) => {
-              const pending = fromGoogle.isPending && fromGoogle.variables === s.providerPlaceId
-              return (
-                <button
-                  key={s.providerPlaceId}
-                  type="button"
-                  className="explore-external__row"
-                  disabled={fromGoogle.isPending}
-                  onClick={() => fromGoogle.mutate(s.providerPlaceId)}
-                >
-                  <div className="explore-external__name">{s.name}</div>
-                  {(pending || s.secondaryText) && (
-                    <div className="explore-external__meta">
-                      {pending ? 'Creando perfil…' : s.secondaryText}
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-            <div className="explore-external__attr">Powered by Google</div>
-          </div>
-        )}
+        <ExternalResults
+          block="explore-external"
+          heading={<SectionHeader>En Google</SectionHeader>}
+          suggestions={suggestions}
+          creatingId={creatingId}
+          onPick={createFromGoogle}
+        />
       </div>
     </div>
   )

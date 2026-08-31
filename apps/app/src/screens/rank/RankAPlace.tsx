@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useBlocker, useNavigate, useSearch } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ExternalResults } from '../../components/ExternalResults'
 import {
   Body,
   Button,
@@ -18,7 +19,6 @@ import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { ApiError, api } from '../../lib/api'
-import { dedupeExternal } from '../../lib/dedupeExternal'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { formatDistance, haversineM } from '../../lib/geo'
 import { tapSuccess } from '../../lib/haptics'
@@ -34,15 +34,13 @@ import {
 } from '../../lib/pairwise'
 import { markRankExplainerSeen, rankExplainerSeen } from '../../lib/rankExplainer'
 import type {
-  ExternalSuggestion,
   MeResponse,
   NewRestaurant,
   Ranking,
   RestaurantProfileResponse,
   SavedPlace,
 } from '../../lib/types'
-import { useDebounced } from '../../lib/useDebounced'
-import { useGoogleSession } from '../../lib/useGoogleSession'
+import { useExternalPlaceSearch } from '../../lib/useExternalPlaceSearch'
 import { useMyLocation } from '../../lib/useMyLocation'
 import '../onboarding/rank.css'
 import '../tabs/rankings.css'
@@ -74,7 +72,6 @@ export function RankAPlace() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const search = useSearch({ strict: false }) as { restaurant?: string }
-  const googleSession = useGoogleSession()
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -323,45 +320,24 @@ export function RankAPlace() {
     },
   })
 
-  // Tapping a Google suggestion creates a real, populated profile immediately
-  // (M9) and continues the rank flow with it — no sector-picking form, since
-  // Google Place Details already gives a real geocode. Shares the addPlace
-  // mutation's "just added" item-setting so the rest of this screen treats a
-  // Google-created place identically to a hand-added one.
-  const addFromGoogle = useMutation({
-    mutationFn: (placeId: string) =>
-      api.post<{ restaurant: NewRestaurant }>('/restaurants/from-google', {
-        placeId,
-        sessionToken: googleSession.token,
-      }),
-    onSuccess: ({ restaurant }) => {
-      const item: Item = {
-        id: restaurant.id,
-        name: restaurant.name,
-        cuisine: restaurant.cuisine,
-        coverImageId: restaurant.coverImageId,
-        neighborhood: restaurant.neighborhood,
-        priceTier: restaurant.priceTier,
-      }
-      setAddedPlace(item)
-      setPickedId(item.id)
-      googleSession.reset()
-      queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
-      queryClient.invalidateQueries({ queryKey: ['explore'] })
-    },
-    onError: (err) => {
-      const status = err instanceof ApiError ? err.status : null
-      toast({
-        variant: 'error',
-        message:
-          status === 429
-            ? 'Llegaste al límite de lugares por hoy.'
-            : status === 409
-              ? 'Google dice que este lugar cerró permanentemente.'
-              : 'No se pudo conectar con Google. Intenta de nuevo.',
-      })
-    },
-  })
+  // Tapping a Google suggestion in the find step creates a real, populated
+  // profile immediately (M9) and continues the rank flow with it — no
+  // sector-picking form, since Google Place Details already gives a real
+  // geocode. The search + create live in useExternalPlaceSearch (shared with
+  // Explore); this is only the screen-specific "what to do with the new place":
+  // treat it exactly like a hand-added one.
+  const onGoogleCreated = (restaurant: NewRestaurant) => {
+    setAddedPlace({
+      id: restaurant.id,
+      name: restaurant.name,
+      cuisine: restaurant.cuisine,
+      coverImageId: restaurant.coverImageId,
+      neighborhood: restaurant.neighborhood,
+      priceTier: restaurant.priceTier,
+    })
+    setPickedId(restaurant.id)
+    queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
+  }
 
   // The celebration stamp — "#3 · Mijas" punches in over the screen.
   if (placedStamp && picked && position !== null) {
@@ -404,8 +380,7 @@ export function RankAPlace() {
         myHood={myHood}
         onPick={setPickedId}
         addPlace={addPlace}
-        addFromGoogle={addFromGoogle}
-        googleSessionToken={googleSession.token}
+        onGoogleCreated={onGoogleCreated}
         onBack={() => navigate({ to: '/rankings' })}
       />
     )
@@ -856,8 +831,7 @@ function FindStep({
   myHood,
   onPick,
   addPlace,
-  addFromGoogle,
-  googleSessionToken,
+  onGoogleCreated,
   onBack,
 }: {
   candList: Item[]
@@ -880,8 +854,7 @@ function FindStep({
       { name: string; neighborhoodSlug: string }
     >
   >
-  addFromGoogle: ReturnType<typeof useMutation<{ restaurant: NewRestaurant }, Error, string>>
-  googleSessionToken: string
+  onGoogleCreated: (restaurant: NewRestaurant) => void
   onBack: () => void
 }) {
   const [adding, setAdding] = useState(false)
@@ -958,31 +931,20 @@ function FindStep({
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
-  // Google typeahead gap-filler (M8) — only when Mesa's own catalog comes up
-  // short (<3 hits) for a real query, so it never competes with Mesa data. The
-  // query is debounced so a paid request fires per pause, not per keystroke;
-  // the endpoint is env-gated server-side, so with no key this simply returns
-  // [] and nothing renders. Server also caps abuse; the client just shows what
-  // comes back.
-  const debouncedQuery = useDebounced(query.trim(), 300)
-  const wantExternal = debouncedQuery.length >= 3 && results.length + leadGroup.length < 3
-  const external = useQuery({
-    queryKey: ['restaurants', 'search-external', debouncedQuery],
-    queryFn: () =>
-      api.get<{ suggestions: ExternalSuggestion[] }>(
-        `/restaurants/search-external?q=${encodeURIComponent(debouncedQuery)}&s=${googleSessionToken}`,
-      ),
-    enabled: wantExternal,
-    staleTime: 300_000,
+  // Google gap-filler — same hook Explore uses (debounce, <3-Mesa gate, dedupe
+  // against what's on screen, create-on-tap). Deduped against both the results
+  // and the lead group so a spot you added/ranked isn't re-offered as new.
+  // Tapping continues the rank flow with the new place (onGoogleCreated).
+  const {
+    suggestions,
+    create: createFromGoogle,
+    creatingId,
+  } = useExternalPlaceSearch({
+    query,
+    mesaResultCount: results.length + leadGroup.length,
+    catalogNames: [...results.map((r) => r.name), ...leadGroup.map((r) => r.name)],
+    onCreated: onGoogleCreated,
   })
-  // Hide online matches for a spot the find list already shows (added and/or
-  // ranked), so it isn't re-offered under "En Google" as if it were new.
-  const suggestions = wantExternal
-    ? dedupeExternal(external.data?.suggestions ?? [], [
-        ...results.map((r) => r.name),
-        ...leadGroup.map((r) => r.name),
-      ])
-    : []
 
   const renderRow = (r: Item) => {
     const dist = distanceOf(r)
@@ -1077,39 +1039,21 @@ function FindStep({
           </>
         )}
 
-        {/* Google gap-filler — only when Mesa came up short. Tapping a
-            suggestion creates a real, populated profile immediately (M9) and
-            continues the rank flow with it — no form. "Powered by Google" is
-            required whenever these predictions show off-map (Google ToS);
-            swap this text for the official Google logo asset (light/dark)
-            before a real launch. */}
-        {!adding && suggestions.length > 0 && (
-          <div className="rank-external">
-            <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-3)' }}>
-              En Google
-            </Eyebrow>
-            {suggestions.map((s) => {
-              const pending =
-                addFromGoogle.isPending && addFromGoogle.variables === s.providerPlaceId
-              return (
-                <button
-                  key={s.providerPlaceId}
-                  type="button"
-                  className="rank-external__row"
-                  disabled={addFromGoogle.isPending}
-                  onClick={() => addFromGoogle.mutate(s.providerPlaceId)}
-                >
-                  <div className="rank-external__name">{s.name}</div>
-                  {(pending || s.secondaryText) && (
-                    <div className="rank-external__meta">
-                      {pending ? 'Creando perfil…' : s.secondaryText}
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-            <div className="rank-external__attr">Powered by Google</div>
-          </div>
+        {/* Google gap-filler — only when Mesa came up short (and not while the
+            manual add form is open). Tapping continues the rank flow with the
+            new place. */}
+        {!adding && (
+          <ExternalResults
+            block="rank-external"
+            heading={
+              <Eyebrow style={{ fontFamily: 'var(--font-mono)', marginTop: 'var(--space-3)' }}>
+                En Google
+              </Eyebrow>
+            }
+            suggestions={suggestions}
+            creatingId={creatingId}
+            onPick={createFromGoogle}
+          />
         )}
 
         {adding ? (
