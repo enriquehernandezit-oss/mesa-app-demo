@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, lt, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -12,9 +12,8 @@ const { rankings, vibeNotes, restaurants, neighborhoods, user, cheers, dishes } 
 
 const PAGE = 20
 
-export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
+export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
-  if (!me) return c.json({ error: 'unauthorized' }, 401)
 
   // Cursor pagination: ?before=<ISO date> pages older items, PAGE at a time.
   const beforeRaw = c.req.query('before')
@@ -122,7 +121,6 @@ export const feedRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c)
 // first. Sharpens as the graph grows; one grouped query.
 feedRoutes.get('/recs', async (c) => {
   const me = c.get('user')
-  if (!me) return c.json({ error: 'unauthorized' }, 401)
   const following = followingIds(me.id)
   const mine = db
     .select({ id: rankings.restaurantId })

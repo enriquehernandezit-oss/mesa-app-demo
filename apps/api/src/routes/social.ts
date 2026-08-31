@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // The social graph write side. Follow/unfollow is used first during onboarding
@@ -10,12 +10,11 @@ import { requireAuth } from '../middleware/session'
 
 const followSchema = z.object({ userId: z.string().min(1) })
 
-export const socialRoutes = new Hono<AppEnv>()
+export const socialRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   .post('/follow', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const parsed = followSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
@@ -34,7 +33,6 @@ export const socialRoutes = new Hono<AppEnv>()
 
   .delete('/follow/:userId', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     await db
       .delete(schema.follows)

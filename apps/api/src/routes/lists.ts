@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { aliasedTable, and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -10,14 +10,13 @@ import { requireAuth } from '../middleware/session'
 // Editorial-only — no user-created lists in Phase 1.
 const { lists, listItems, restaurants, neighborhoods, rankings } = schema
 
-export const listsRoutes = new Hono<AppEnv>()
+export const listsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // Carousel: every list with its size and how many of its spots I've ranked.
   // One grouped query — the "mine" count is a filtered join on my rankings.
   .get('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .select({
         id: lists.id,
@@ -42,7 +41,6 @@ export const listsRoutes = new Hono<AppEnv>()
   // One list + its members in order, each with the friend signal. One query.
   .get('/:slug', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const list = await db.query.lists.findFirst({ where: eq(lists.slug, c.req.param('slug')) })
     if (!list) return c.json({ error: 'not_found' }, 404)
 

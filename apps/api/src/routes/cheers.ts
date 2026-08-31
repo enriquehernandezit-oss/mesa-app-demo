@@ -1,19 +1,18 @@
 import { db, schema } from '@mesa/db'
 import { and, eq, or } from 'drizzle-orm'
 import { Hono } from 'hono'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // Cheers (🥂) — the one-tap reaction to a friend's ranking. Idempotent both
 // ways; the feed carries the counts.
 const { cheers, rankings, userBlocks } = schema
 
-export const cheersRoutes = new Hono<AppEnv>()
+export const cheersRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   .post('/:rankingId', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rankingId = c.req.param('rankingId')
     const exists = await db.query.rankings.findFirst({
       where: eq(rankings.id, rankingId),
@@ -39,7 +38,6 @@ export const cheersRoutes = new Hono<AppEnv>()
 
   .delete('/:rankingId', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     await db
       .delete(cheers)
       .where(and(eq(cheers.userId, me.id), eq(cheers.rankingId, c.req.param('rankingId'))))

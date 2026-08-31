@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, notInArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -37,14 +37,13 @@ const createSchema = z.object({
   alsoFavorite: z.boolean().optional(),
 })
 
-export const dishesRoutes = new Hono<AppEnv>()
+export const dishesRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // Post a dish. The linked ranking is derived from my ranking of this place —
   // if I haven't ranked it, I can't post a dish for it.
   .post('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     const { restaurantId, name, caption, image, grain, visibility, alsoFavorite } = parsed.data
@@ -83,7 +82,6 @@ export const dishesRoutes = new Hono<AppEnv>()
   // follow), newest first. One query with the block/visibility rules.
   .get('/restaurant/:id', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const id = c.req.param('id')
 
     const rows = await db
@@ -128,7 +126,6 @@ export const dishesRoutes = new Hono<AppEnv>()
   // the characteristics block + the poster's own score, attributed.
   .get('/:id', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const id = c.req.param('id')
     // A malformed id would otherwise reach Postgres as an invalid uuid cast
     // and surface as a 500 — reject it as not-found before it gets there.
@@ -201,7 +198,6 @@ export const dishesRoutes = new Hono<AppEnv>()
   // Soft-remove my own dish.
   .delete('/:id', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, c.req.param('id')), eq(dishes.userId, me.id)),
       columns: { id: true },

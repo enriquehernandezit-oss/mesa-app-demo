@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { auth } from '../auth'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // The authed user's own profile + onboarding gate. The app calls GET /me on
@@ -35,11 +35,10 @@ const linkEmailSchema = z.object({
   password: z.string().min(8).max(128),
 })
 
-export const meRoutes = new Hono<AppEnv>()
+export const meRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
   .get('/', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401) // narrows type
 
     const row = await db.query.user.findFirst({
       where: eq(schema.user.id, current.id),
@@ -78,7 +77,6 @@ export const meRoutes = new Hono<AppEnv>()
   // Runs last in the onboarding flow, so its success is what flips the gate.
   .patch('/profile', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const parsed = profileSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
@@ -126,7 +124,6 @@ export const meRoutes = new Hono<AppEnv>()
   // confirms it from the same Settings screen.
   .post('/link-email', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const parsed = linkEmailSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
@@ -171,7 +168,6 @@ export const meRoutes = new Hono<AppEnv>()
   // rankings read + two count queries — fixed round trips.
   .get('/stats', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const mine = await db
       .select({
@@ -239,7 +235,6 @@ export const meRoutes = new Hono<AppEnv>()
   // replaces this path at launch; the column already holds any URL). Size-capped.
   .patch('/avatar', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
     const body = (await c.req.json().catch(() => null)) as { image?: string } | null
     const image = body?.image
     if (
@@ -262,7 +257,6 @@ export const meRoutes = new Hono<AppEnv>()
   // then clears its session and returns to the sign-in screen.
   .delete('/', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
     await db.delete(schema.user).where(eq(schema.user.id, current.id))
     return c.json({ ok: true })
   })

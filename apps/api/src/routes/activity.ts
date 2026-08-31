@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -23,9 +23,8 @@ export interface ActivityItem {
   followsBack?: boolean // follow rows: do I already follow them back?
 }
 
-export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
+export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
-  if (!me) return c.json({ error: 'unauthorized' }, 401)
 
   // Anyone I've blocked, or who has blocked me — filtered out of every section
   // below (a block is symmetric). Without this a blocked user could still land

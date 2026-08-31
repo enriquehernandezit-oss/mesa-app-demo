@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // Want-to-try list — the "saved" tab beside Rankings. A place you haven't been
@@ -10,12 +10,11 @@ import { requireAuth } from '../middleware/session'
 const { savedPlaces, restaurants, neighborhoods } = schema
 const saveSchema = z.object({ restaurantId: z.string().uuid() })
 
-export const savedRoutes = new Hono<AppEnv>()
+export const savedRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   .get('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .select({
         restaurant: {
@@ -37,7 +36,6 @@ export const savedRoutes = new Hono<AppEnv>()
 
   .post('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = saveSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
     // Idempotent: saving twice is a no-op.
@@ -50,7 +48,6 @@ export const savedRoutes = new Hono<AppEnv>()
 
   .delete('/:restaurantId', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     await db
       .delete(savedPlaces)
       .where(

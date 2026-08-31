@@ -3,7 +3,7 @@ import { and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { scoreFor } from '../lib/score'
 import { requireAuth } from '../middleware/session'
 
@@ -66,14 +66,13 @@ async function rewrite(tx: Executor, userId: string, orderedIds: string[]): Prom
     })
 }
 
-export const rankingsRoutes = new Hono<AppEnv>()
+export const rankingsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // My ordered list: rank, score, restaurant + neighborhood, and my vibe note
   // (if any, and not removed). One round trip via joins.
   .get('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .select({
         id: rankings.id,
@@ -121,7 +120,6 @@ export const rankingsRoutes = new Hono<AppEnv>()
   // plain unfiltered fetch, searched client-side there).
   .get('/candidates', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
     const openNow = c.req.query('open') === '1'
     const reserveOnly = c.req.query('reserve') === '1'
@@ -187,7 +185,6 @@ export const rankingsRoutes = new Hono<AppEnv>()
   // the target is banned or either side has blocked the other.
   .get('/user/:userId', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const targetId = c.req.param('userId')
 
     const target = await db.query.user.findFirst({
@@ -282,7 +279,6 @@ export const rankingsRoutes = new Hono<AppEnv>()
   // optional vibe note. Rewrites positions/scores densely in one transaction.
   .post('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = placeSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
@@ -330,7 +326,6 @@ export const rankingsRoutes = new Hono<AppEnv>()
   // Set / replace / clear the vibe note on one of my rankings.
   .patch('/:id/note', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = noteSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
 
@@ -360,7 +355,6 @@ export const rankingsRoutes = new Hono<AppEnv>()
   // Remove a spot from my list, then re-densify the remaining positions/scores.
   .delete('/:id', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const ranking = await db.query.rankings.findFirst({
       where: and(eq(rankings.id, c.req.param('id')), eq(rankings.userId, me.id)),
       columns: { restaurantId: true },

@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { scoreFor } from '../lib/score'
 import { blockedByMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -44,7 +44,7 @@ function overContactBudget(userId: string, count: number, now: number): boolean 
   return false
 }
 
-export const onboardingRoutes = new Hono<AppEnv>()
+export const onboardingRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // The five target neighborhoods, for the profile picker.
@@ -106,7 +106,6 @@ export const onboardingRoutes = new Hono<AppEnv>()
   // it replaces positions/scores for the same places rather than erroring.
   .post('/rankings', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const parsed = rankingsSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
@@ -152,7 +151,6 @@ export const onboardingRoutes = new Hono<AppEnv>()
   // round trip. With the seed cluster loaded, this returns the demo friends.
   .get('/suggested-friends', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const alreadyFollowing = followingIds(current.id)
     const blocked = blockedByMe(current.id)
@@ -193,7 +191,6 @@ export const onboardingRoutes = new Hono<AppEnv>()
   // list. One round trip via inArray.
   .post('/contacts/match', async (c) => {
     const current = c.get('user')
-    if (!current) return c.json({ error: 'unauthorized' }, 401)
 
     const parsed = contactsSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {

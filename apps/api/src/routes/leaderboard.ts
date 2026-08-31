@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // Citywide leaderboard (Beli-style): who has ranked the most places, all-time or
@@ -9,9 +9,8 @@ import { requireAuth } from '../middleware/session'
 // brass numerals, no badges.
 const { rankings, user, neighborhoods } = schema
 
-export const leaderboardRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async (c) => {
+export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
-  if (!me) return c.json({ error: 'unauthorized' }, 401)
   const period = c.req.query('period') === 'month' ? 'month' : 'all'
 
   const rows = await db

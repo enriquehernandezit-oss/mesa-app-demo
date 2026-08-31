@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
@@ -120,7 +120,7 @@ async function refreshFromGoogle(restaurantId: string, googlePlaceId: string): P
   }
 }
 
-export const restaurantRoutes = new Hono<AppEnv>()
+export const restaurantRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
   // filtered by neighborhood slug + price tier. Two phases, not one grouped
@@ -143,7 +143,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // just people you follow; friends still sort first via friendAvg.
   .get('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
     const hood = (c.req.query('neighborhood') ?? '').trim()
     const cuisine = (c.req.query('cuisine') ?? '').trim()
@@ -316,8 +315,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // so it stays correct as the catalog grows with imported places. Ordered
   // alphabetically by the stored English value; the client shows cuisineLabel().
   .get('/cuisines', async (c) => {
-    const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .selectDistinct({ cuisine: restaurants.cuisine })
       .from(restaurants)
@@ -371,7 +368,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // ranked still come back (friendAvg null, friendCount 0). No loop.
   .get('/map', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const following = followingIds(me.id)
     // Bound the map to places worth plotting: ranked by anyone, saved by me, or
     // in an editorial list. Unbounded, one imported place near Las Américas
@@ -433,7 +429,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // empty list on any miss so it can never break the rank flow.
   .get('/search-external', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const q = (c.req.query('q') ?? '').trim()
     if (q.length < 3) return c.json({ suggestions: [] })
     if (extRateLimited(me.id, Date.now())) return c.json({ error: 'rate_limited' }, 429)
@@ -449,7 +444,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // new place, reused across every member who taps the same suggestion after.
   .post('/from-google', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = z
       .object({ placeId: z.string().trim().min(1).max(300), sessionToken: z.string().optional() })
       .safeParse(await c.req.json().catch(() => null))
@@ -568,7 +562,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   })
   .get('/:id', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const id = c.req.param('id')
 
     const restaurant = await db.query.restaurants.findFirst({
@@ -769,7 +762,6 @@ export const restaurantRoutes = new Hono<AppEnv>()
   // UGC, but not a real geocode.
   .post('/', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = z
       .object({
         name: z.string().trim().min(1).max(80),

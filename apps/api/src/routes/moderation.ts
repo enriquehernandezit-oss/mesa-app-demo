@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, desc, eq, isNull, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { AppEnv } from '../context'
+import type { AuthedEnv } from '../context'
 import { requireAuth, requireModerator } from '../middleware/session'
 
 // UGC moderation (App Store 1.2). Every user can report content and block
@@ -20,7 +20,7 @@ const reportSchema = z.object({
 })
 const blockSchema = z.object({ userId: z.string().min(1) })
 
-export const moderationRoutes = new Hono<AppEnv>()
+export const moderationRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // --- Any user ---
@@ -29,7 +29,6 @@ export const moderationRoutes = new Hono<AppEnv>()
   // target here (that's a moderator action).
   .post('/reports', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = reportSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
     await db.insert(reports).values({
@@ -44,7 +43,6 @@ export const moderationRoutes = new Hono<AppEnv>()
   // My blocked accounts (for a management screen).
   .get('/blocks', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const rows = await db
       .select({ id: user.id, name: user.name, handle: user.handle, image: user.image })
       .from(userBlocks)
@@ -59,7 +57,6 @@ export const moderationRoutes = new Hono<AppEnv>()
   // block, so nothing of theirs surfaces even if a follow lingered.
   .post('/blocks', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const parsed = blockSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
     const { userId } = parsed.data
@@ -84,7 +81,6 @@ export const moderationRoutes = new Hono<AppEnv>()
 
   .delete('/blocks/:userId', async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     await db
       .delete(userBlocks)
       .where(and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, c.req.param('userId'))))
@@ -151,7 +147,6 @@ export const moderationRoutes = new Hono<AppEnv>()
   // everywhere; their content is filtered from reads.
   .post('/users/:userId/eject', requireModerator, async (c) => {
     const me = c.get('user')
-    if (!me) return c.json({ error: 'unauthorized' }, 401)
     const targetId = c.req.param('userId')
     if (targetId === me.id) return c.json({ error: 'cannot_eject_self' }, 400)
     await db.transaction(async (tx) => {
