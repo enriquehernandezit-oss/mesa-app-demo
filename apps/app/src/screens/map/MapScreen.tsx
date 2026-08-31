@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { ScreenHeader } from '../../components/ScreenHeader'
-import { Body, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
+import { Body, Caption, EmptyState, ErrorState, Eyebrow, Title } from '../../components/ui'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import { api } from '../../lib/api'
 import { cuisineLabel, displayScore, priceLabel } from '../../lib/display'
@@ -101,7 +101,7 @@ export function MapScreen() {
     staleTime: 120_000,
   })
 
-  const { position: myPosition } = useMyLocation()
+  const { position: myPosition, status: locationStatus, request: requestLocation } = useMyLocation()
 
   const spots = q.data?.spots ?? []
   const { placed, vh, me } = useMemo(() => project(spots, myPosition), [spots, myPosition])
@@ -121,6 +121,22 @@ export function MapScreen() {
             <Body style={{ color: 'var(--accent)' }}>
               {rankedByFriends} spot{rankedByFriends === 1 ? '' : 's'} tus amigos han rankeado.
             </Body>
+          )}
+          {/* The map reads a position but never asked for one, so unless you had
+              already granted location somewhere else (the Cerca pill, the rank
+              flow) there was no way to put yourself on it. Still opt-in: the
+              prompt only appears on a tap, never on load. */}
+          {locationStatus === 'idle' && (
+            <button type="button" className="link-action" onClick={() => requestLocation()}>
+              Ubícame en el mapa
+            </button>
+          )}
+          {locationStatus === 'loading' && <Caption>Buscando tu ubicación…</Caption>}
+          {locationStatus === 'denied' && (
+            <Caption>
+              La ubicación está desactivada. Actívala para Mesa en los ajustes de tu navegador o
+              teléfono.
+            </Caption>
           )}
         </div>
 

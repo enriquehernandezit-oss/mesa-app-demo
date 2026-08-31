@@ -69,6 +69,15 @@ function cspPlugin(apiUrl: string): Plugin {
           // instead — with HSTS, which likewise has no meta form — from
           // apps/app/public/serve.json, which Vite copies into dist/ and the
           // static server reads from the directory it serves.
+          //
+          // NOTE for whoever edits serve.json next: Referrer-Policy there must
+          // keep sending the origin cross-origin (strict-origin-when-cross-origin).
+          // The MapBox token is URL-restricted, which is what stops it being
+          // reused after someone lifts it out of this bundle — and MapBox
+          // enforces that by reading the Referer. `no-referrer` sends none, so
+          // every tile request 403s and the map renders as pins on a blank
+          // canvas while the style and fonts still load, which makes it look
+          // like a MapBox outage rather than a header change.
         ].join('; ')
         return {
           html,
