@@ -54,7 +54,11 @@
   overflow: hidden;
 }
 .user-menu button {
-  display: block;
+  display: flex;
+  align-items: center;
+  /* 12px padding + a ~17px line landed at ~41px — under the 44px target the
+     rest of the app meets, on a menu whose items are Report and Block. */
+  min-height: 44px;
   width: 100%;
   text-align: left;
   padding: var(--space-3) var(--space-4);

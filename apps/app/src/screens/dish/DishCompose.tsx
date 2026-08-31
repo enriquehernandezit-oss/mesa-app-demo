@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Body, Button, Chip, Eyebrow, SectionHeader, Title, Toggle } from '../../components/ui'
 import { Characteristics, ScoreBadge } from '../../components/ui/patterns'
 import { ApiError, api } from '../../lib/api'
-import { GRAIN_LABEL_ES } from '../../lib/display'
+import { GRAIN_LABEL_ES, grainLabel } from '../../lib/display'
 import { filterForGrain, resizeToJpeg } from '../../lib/image'
 import type { RestaurantProfileResponse } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
@@ -152,7 +152,9 @@ export function DishCompose() {
           }
         >
           {!image && <span className="dish-photo__hint">＋ Agregar una foto</span>}
-          {image && <span className="ph-tag dish-photo__tag">film · {grain}</span>}
+          {/* grainLabel, not the raw enum — the feed shows "film · con velas",
+              so the compose preview must not read "film · candlelit". */}
+          {image && <span className="ph-tag dish-photo__tag">film · {grainLabel(grain)}</span>}
         </button>
 
         {image && (

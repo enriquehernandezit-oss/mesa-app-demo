@@ -5,16 +5,12 @@ import { ScreenHeader } from '../../components/ScreenHeader'
 import { Button, Caption, Eyebrow, Toggle } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { ThemePicker } from '../../components/ui/ThemePicker'
+import { toast } from '../../components/ui/toast-store'
 import { useProfile } from '../../hooks/useProfile'
 import { ApiError, api } from '../../lib/api'
 import { authClient, signOut } from '../../lib/auth-client'
 import { comingSoon } from '../../lib/comingSoon'
-import {
-  getFriendsOnlyScores,
-  getStealthMode,
-  setFriendsOnlyScores,
-  setStealthMode,
-} from '../../lib/prefs'
+import { getFriendsOnlyScores, setFriendsOnlyScores } from '../../lib/prefs'
 import type { BlockedUser, MeStats, Ranking } from '../../lib/types'
 import { useBack } from '../../lib/useBack'
 import '../tabs/tabs.css'
@@ -38,6 +34,8 @@ export function SettingsScreen() {
   const unblock = useMutation({
     mutationFn: (userId: string) => api.del(`/moderation/blocks/${userId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocks'] }),
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo desbloquear. Intenta de nuevo.' }),
   })
   const blocked = blocks.data?.blocked ?? []
 
@@ -50,10 +48,9 @@ export function SettingsScreen() {
   const [exporting, setExporting] = useState(false)
   const [verifySent, setVerifySent] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  // Client-only "Your list" prefs (mock H1). Friends-only is real (it hides the
-  // all-of-Mesa score); stealth persists but is inert.
+  // Client-only "Your list" pref (mock H1): friends-only genuinely hides the
+  // all-of-Mesa aggregate score. (Stealth is inert-by-design — see its row.)
   const [friendsOnly, setFriendsOnly] = useState(getFriendsOnlyScores)
-  const [stealth, setStealth] = useState(getStealthMode)
 
   // Real email only — phone-first accounts carry a placeholder inbox we never
   // surface or ask to verify.
@@ -65,6 +62,10 @@ export function SettingsScreen() {
     try {
       await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
       setVerifySent(true)
+    } catch {
+      // Silently swallowing this looked identical to success ("Reenviar" just
+      // re-enabled), so a member would sit waiting for mail that never sent.
+      toast({ variant: 'error', message: 'No se pudo enviar el correo. Intenta de nuevo.' })
     } finally {
       setVerifying(false)
     }
@@ -102,6 +103,13 @@ export function SettingsScreen() {
       queryClient.clear()
       window.location.href = '/'
     },
+    // Without this the button just re-enables and the account looks deleted-ish
+    // — the worst possible ambiguity for an irreversible action.
+    onError: () =>
+      toast({
+        variant: 'error',
+        message: 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+      }),
   })
 
   // Export — your ranked list as JSON, straight from the existing endpoint. No
@@ -161,17 +169,22 @@ export function SettingsScreen() {
               label="Puntuaciones solo de amigos"
             />
           </div>
-          <div className="settings-row">
+          {/* Inert-by-design (the app's dashed data-stale pattern, as used by
+              the reserve slots): stealth only ever wrote to localStorage — the
+              server does nothing with it, so a member flipping it was NOT
+              hidden from anyone. A privacy control that lies is worse than one
+              that says "pronto", so it announces itself until the backend
+              enforces it. */}
+          <button
+            type="button"
+            className="settings-row settings-row--btn"
+            data-stale
+            aria-disabled
+            onClick={() => comingSoon('El modo sigiloso llega pronto a Mesa.')}
+          >
             <span>Modo sigiloso</span>
-            <Toggle
-              checked={stealth}
-              onChange={(v) => {
-                setStealth(v)
-                setStealthMode(v)
-              }}
-              label="Modo sigiloso"
-            />
-          </div>
+            <span className="settings-row__soon">Pronto</span>
+          </button>
           <button
             type="button"
             className="settings-row settings-row--btn"

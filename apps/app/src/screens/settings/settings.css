@@ -91,6 +91,22 @@
   font-size: var(--text-label);
   flex: none;
 }
+/* Inert-by-design row ("Pronto"): the dashed edge is the same signal the
+   reserve slots use for a control that is real but not wired yet. */
+.settings-row[data-stale] {
+  border-bottom-style: dashed;
+}
+.settings-row__soon {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--line-strong);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .settings-row__email {
   min-width: 0;
   overflow: hidden;

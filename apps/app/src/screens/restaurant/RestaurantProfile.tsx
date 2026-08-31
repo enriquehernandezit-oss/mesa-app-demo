@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { PlaceMapSheet } from '../../components/PlaceMapSheet'
-import { Body, Button, EmptyState, Eyebrow, SectionHeader } from '../../components/ui'
+import { ScreenHeader } from '../../components/ScreenHeader'
+import { Body, Button, EmptyState, Eyebrow, SectionHeader, Skeleton } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import {
@@ -63,11 +64,27 @@ export function RestaurantProfile() {
     },
   })
 
+  // Both non-content states use ScreenHeader, not a bare link inside
+  // .resto-content: that container has no --safe-top, so on a notched phone in
+  // standalone/PWA mode the only way out sat under the status bar. The loading
+  // state had no exit at all — a slow or failing profile was a dead end.
   if (q.isPending) {
+    // Skeleton, not a "Cargando…" line: this screen's geometry is known, so
+    // holding the hero + identity block's shape avoids the content jumping into
+    // place on arrival (the same reason DiscoverTab has FeedSkeleton).
     return (
       <div className="resto-screen">
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <Skeleton height="34vh" width="100%" style={{ borderRadius: 0 }} />
         <div className="resto-content">
-          <Body>Cargando…</Body>
+          <Skeleton height={11} width={90} style={{ marginTop: 'var(--space-4)' }} />
+          <Skeleton height={30} width="72%" style={{ marginTop: 'var(--space-3)' }} />
+          <Skeleton height={12} width="52%" style={{ marginTop: 'var(--space-3)' }} />
+          <div className="resto-pills" style={{ marginTop: 'var(--space-5)' }}>
+            <Skeleton height={40} />
+            <Skeleton height={40} />
+            <Skeleton height={40} />
+          </div>
         </div>
       </div>
     )
@@ -75,10 +92,8 @@ export function RestaurantProfile() {
   if (q.isError || !q.data) {
     return (
       <div className="resto-screen">
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
         <div className="resto-content">
-          <button type="button" className="link-action" onClick={goBack}>
-            ‹ Atrás
-          </button>
           <EmptyState>Spot no encontrado.</EmptyState>
         </div>
       </div>
@@ -334,7 +349,7 @@ export function RestaurantProfile() {
             <button
               key={slot}
               type="button"
-              className={`resto-time${slot === 'more' ? ' resto-time--more' : ''}`}
+              className={`resto-time${slot === 'más' ? ' resto-time--more' : ''}`}
               data-stale
               aria-disabled
               onClick={() => comingSoon('Reservar una mesa llega pronto a Mesa.')}

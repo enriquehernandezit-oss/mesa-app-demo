@@ -25,6 +25,14 @@ export function priceLabel(tier: number | null | undefined): string | null {
 // an app change, and existing/prod rows don't need a migration to read right.
 // Unmapped values (a cuisine we haven't seen yet) pass through unchanged
 // rather than disappearing.
+//
+// That passthrough is safe because the INGESTION side is closed, not because
+// this map is exhaustive: both importers (googlePlaces.ts's
+// GOOGLE_TYPE_TO_MESA_CUISINE and import-foursquare.ts's FSQ_TO_MESA_CUISINE)
+// emit only keys that exist below and map anything unrecognized to null. So the
+// only values that can reach here unmapped are the seed's own loanwords
+// (Brasserie / Brunch / Tapas), which already read as Spanish. Keep that
+// invariant: if you add an importer value, add its key here in the same commit.
 const CUISINE_ES: Record<string, string> = {
   Contemporary: 'Contemporánea',
   Italian: 'Italiana',
@@ -81,11 +89,4 @@ export const GRAIN_LABEL_ES: Record<string, string> = {
 export function grainLabel(grain: string | null | undefined): string {
   if (!grain) return GRAIN_LABEL_ES.candlelit as string
   return GRAIN_LABEL_ES[grain] ?? grain
-}
-
-// Match % color: strong matches glow brass, weak ones stay dim.
-export function matchColor(pct: number): string {
-  if (pct >= 75) return 'var(--accent-strong)'
-  if (pct >= 50) return 'var(--accent)'
-  return 'var(--text-muted)'
 }

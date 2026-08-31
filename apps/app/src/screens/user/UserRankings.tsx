@@ -255,13 +255,21 @@ function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) 
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
     onSuccess: onDone,
+    // Without this a failed report closed nothing and said nothing, so the
+    // reporter couldn't tell it hadn't sent.
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
   })
   return (
     <div className="report-panel">
       <Caption>¿Por qué reportas a esta persona?</Caption>
       <div className="report-reasons">
         {REASONS.map((reason) => (
-          <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
+          <Chip
+            key={reason}
+            onClick={() => !report.isPending && report.mutate(reason)}
+            state="default"
+          >
             {reason}
           </Chip>
         ))}
@@ -281,6 +289,8 @@ function ReportControl({
   const report = useMutation({
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType, targetId, reason }),
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
   })
   if (report.isSuccess) {
     return <div className="report-done">Reportado. Gracias — lo revisaremos.</div>
@@ -300,7 +310,11 @@ function ReportControl({
           <Caption>¿Por qué reportas esta nota?</Caption>
           <div className="report-reasons">
             {REASONS.map((reason) => (
-              <Chip key={reason} onClick={() => report.mutate(reason)} state="default">
+              <Chip
+                key={reason}
+                onClick={() => !report.isPending && report.mutate(reason)}
+                state="default"
+              >
                 {reason}
               </Chip>
             ))}
