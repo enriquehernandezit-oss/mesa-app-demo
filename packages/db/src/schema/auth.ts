@@ -104,3 +104,20 @@ export const rateLimit = pgTable('rate_limit', {
   count: integer('count').notNull(),
   lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
 })
+
+// Per-account sign-in throttling (credential stuffing defence).
+//
+// Deliberately NOT stored in rate_limit: Better Auth prunes that table of
+// everything older than 60s whenever any window rolls over, which would erase
+// an escalating backoff almost immediately.
+//
+// Keyed on the submitted identifier, existing account or not — that symmetry is
+// what makes it safe to answer with an honest "too many attempts": a probe
+// learns nothing from the lock, because an unknown address locks exactly like a
+// real one. lockedUntil is derived from failures + lastFailureAt rather than
+// stored, so there is only one source of truth to keep consistent.
+export const authThrottle = pgTable('auth_throttle', {
+  key: text('key').primaryKey(),
+  failures: integer('failures').notNull(),
+  lastFailureAt: timestamp('last_failure_at').notNull(),
+})

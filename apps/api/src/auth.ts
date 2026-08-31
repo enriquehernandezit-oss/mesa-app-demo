@@ -2,6 +2,7 @@ import { db, schema } from '@mesa/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { bearer, genericOAuth, phoneNumber } from 'better-auth/plugins'
+import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
 
 // Better Auth wired to Postgres via the pooled Drizzle client from @mesa/db.
 //
@@ -204,6 +205,15 @@ ${url}
 If you didn't create a Mesa account, you can ignore this email.`,
       )
     },
+  },
+
+  // Per-account sign-in throttling. The IP limit above bounds one noisy source;
+  // this bounds guessing against one ACCOUNT, which is what credential stuffing
+  // actually does — it rotates IPs, so an IP bucket never sees it. See
+  // lib/authThrottle.
+  hooks: {
+    before: authThrottleBefore,
+    after: authThrottleAfter,
   },
 
   // Surface Mesa's server-managed profile/moderation columns on the session user

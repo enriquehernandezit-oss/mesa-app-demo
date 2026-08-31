@@ -14,7 +14,8 @@
     "db:migrate": "bun run --filter '@mesa/db' migrate",
     "db:seed": "bun run --filter '@mesa/db' seed",
     "api:dev": "bun run --filter '@mesa/api' dev",
-    "app:dev": "bun run --filter '@mesa/app' dev"
+    "app:dev": "bun run --filter '@mesa/app' dev",
+    "test": "bun run --filter '*' test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
