@@ -121,6 +121,52 @@ app.use('*', sessionMiddleware)
 
 app.get('/health', (c) => c.json({ ok: true, service: 'mesa-api' }))
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPORARY — DELETE THIS BLOCK. Probe for M2 (auth rate limiting).
+//
+// Better Auth keys its rate limits by IP alone, and derives that IP from
+// x-forwarded-for using one specific rule: if the header holds anything other
+// than exactly ONE address, it gives up and returns null — and every request
+// that resolves to null shares a single rate-limit bucket. We cannot tell from
+// here which way Railway's proxy behaves, and the two possibilities need
+// opposite fixes:
+//
+//   • proxy APPENDS to the header -> a caller who sends their own
+//     x-forwarded-for makes it two-valued -> null -> one shared bucket for
+//     everyone -> a handful of requests can lock sign-in for all users.
+//   • proxy REPLACES the header  -> a caller can forge any IP they like and
+//     the per-IP limit is trivially bypassed.
+//
+// Local testing cannot answer this: Better Auth short-circuits to a localhost
+// IP in development. Hence a probe against the real deployment.
+//
+// It reflects only the caller's OWN proxy headers back to them — no secrets, no
+// other user's data — and comes out in the very next commit.
+// ─────────────────────────────────────────────────────────────────────────────
+app.get('/__ip-probe', (c) => {
+  const header = (name: string) => c.req.header(name) ?? null
+  const xff = header('x-forwarded-for')
+
+  // Mirrors @better-auth/core/dist/utils/ip.mjs getIPFromHeader() for the
+  // no-trusted-proxies case: split on commas, and bail to null unless exactly
+  // one value survives. This is the value the rate limiter would key on.
+  const parts = (xff ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+  const derivedIp = parts.length === 1 ? parts[0] : null
+
+  return c.json({
+    'x-forwarded-for': xff,
+    'x-real-ip': header('x-real-ip'),
+    'x-envoy-external-address': header('x-envoy-external-address'),
+    'cf-connecting-ip': header('cf-connecting-ip'),
+    forwardedValueCount: parts.length,
+    betterAuthWouldKeyOn: derivedIp,
+    sharedBucket: derivedIp === null,
+  })
+})
+
 // Feature routes (typed, mounted under a clear prefix).
 app.route('/me', meRoutes)
 app.route('/onboarding', onboardingRoutes)
