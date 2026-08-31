@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { bigint, boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { neighborhoods } from './reference'
 
 // Identity is owned by Better Auth. These four tables match Better Auth's
@@ -81,4 +81,26 @@ export const verification = pgTable('verification', {
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+})
+
+// Better Auth's rate-limit counters. Persisted rather than kept in process
+// memory (the library's default) for two reasons: the API redeploys on every
+// push, and an in-memory limiter forgets every counter each time — so an
+// attacker just waits for a deploy, and the window never really holds. The
+// library prunes expired rows itself in the background, so this needs no
+// retention job.
+//
+// lastRequest is milliseconds since the epoch, stored as bigint but read as a
+// JS number: the library does arithmetic (`now - lastRequest`) on it directly.
+// 1.6.25 coerces a bigint back to Number when reading, but modelling it as a
+// number here means the limiter never depends on that coercion staying.
+export const rateLimit = pgTable('rate_limit', {
+  // The drizzle adapter requires an `id` on every Better Auth model and throws
+  // when it's missing — at REQUEST time, not boot, so the symptom is every
+  // auth call 500ing on a deployed build. `key` is the column actually looked
+  // up, so it carries the unique index.
+  id: text('id').primaryKey(),
+  key: text('key').notNull().unique(),
+  count: integer('count').notNull(),
+  lastRequest: bigint('last_request', { mode: 'number' }).notNull(),
 })

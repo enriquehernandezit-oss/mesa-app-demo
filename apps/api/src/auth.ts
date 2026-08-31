@@ -109,10 +109,48 @@ export const auth = betterAuth({
   // account creation can't be used to amplify calls against the paid Google
   // proxy. Better Auth's built-in limiter; enabled in all environments here
   // (its default only runs in production).
+  //
+  // storage:'database' because the default is process memory, and this API
+  // redeploys on every push — an in-memory limiter forgets every counter each
+  // time, so a window never really holds. It reuses the pooled Drizzle client
+  // (no Redis, no extra service) and prunes its own expired rows.
+  //
+  // The window/max here is only the fallback. Better Auth applies stricter
+  // built-in rules to /sign-in*, /sign-up*, /change-password* and /change-email*
+  // (3 per 10s) and to the reset/verification senders (3 per 60s). The rules
+  // below exist for the paths those defaults DON'T cover — notably the phone
+  // OTP endpoints, which would otherwise inherit this 20/minute fallback and
+  // let one caller trigger 20 paid SMS a minute.
   rateLimit: {
     enabled: true,
     window: 60,
     max: 20,
+    storage: 'database',
+    customRules: {
+      '/phone-number/send-otp': { window: 600, max: 5 },
+      '/phone-number/verify': { window: 600, max: 10 },
+    },
+  },
+
+  // Which header carries the real client IP. This is load-bearing: the limiter
+  // keys every counter on the IP alone, and Better Auth derives it by reading
+  // ONE header and discarding the value unless it holds exactly one address.
+  //
+  // Measured against the deployment (not assumed): Railway sets
+  // x-forwarded-for to "<client>, <edge>" — always TWO values, even on a
+  // completely ordinary request — so the derived IP was always null and every
+  // auth request in production shared a single bucket. Combined with the
+  // built-in 3-per-10s sign-in rule, that meant three sign-in attempts from
+  // anyone on earth locked sign-in for everyone (confirmed live: attempts 1-3
+  // returned 401, attempts 4-6 returned 429).
+  //
+  // x-real-ip carries the true client address and is overwritten by the proxy —
+  // a request forging it still arrived with the real value — so it is safe to
+  // trust here in a way a client-supplied header would not be.
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ['x-real-ip'],
+    },
   },
 
   // Cookies keep Better Auth's default SameSite=Lax. Cross-site clients (the
