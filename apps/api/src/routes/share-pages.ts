@@ -218,7 +218,13 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     const id = c.req.param('restaurantId')
 
     const r = await db.query.restaurants.findFirst({
-      where: eq(restaurants.id, id),
+      // Public, unauthenticated page — a moderation-removed or permanently
+      // closed listing must 404 here, not unfurl a rich preview onward.
+      where: and(
+        eq(restaurants.id, id),
+        isNull(restaurants.removedAt),
+        isNull(restaurants.closedAt),
+      ),
       columns: { id: true, name: true, cuisine: true, coverImageId: true, priceTier: true },
       with: { neighborhood: { columns: { name: true } } },
     })

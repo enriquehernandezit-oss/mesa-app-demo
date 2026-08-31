@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
@@ -8,7 +8,7 @@ import { requireAuth } from '../middleware/session'
 // The activity feed behind the bell: cheers on my rankings, new followers, and
 // friends ranking spots I've saved. Three fixed queries merged and sorted —
 // count never depends on data size (no N+1).
-const { cheers, rankings, restaurants, follows, savedPlaces, user } = schema
+const { cheers, rankings, restaurants, follows, savedPlaces, user, userBlocks } = schema
 
 export interface ActivityItem {
   type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
@@ -26,6 +26,20 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
   const me = c.get('user')
   if (!me) return c.json({ error: 'unauthorized' }, 401)
 
+  // Anyone I've blocked, or who has blocked me — filtered out of every section
+  // below (a block is symmetric). Without this a blocked user could still land
+  // in your bell by cheering your ranking or following you — a block bypass.
+  // Same two-subquery shape the feed and profile reads use (feed.ts).
+  const blockedByMe = db
+    .select({ id: userBlocks.blockedId })
+    .from(userBlocks)
+    .where(eq(userBlocks.blockerId, me.id))
+  const blockedMe = db
+    .select({ id: userBlocks.blockerId })
+    .from(userBlocks)
+    .where(eq(userBlocks.blockedId, me.id))
+  const notBlocked = and(notInArray(user.id, blockedByMe), notInArray(user.id, blockedMe))
+
   // 1) Who cheered my rankings.
   const cheered = await db
     .select({
@@ -41,7 +55,9 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .innerJoin(rankings, eq(rankings.id, cheers.rankingId))
     .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
     .innerJoin(user, eq(user.id, cheers.userId))
-    .where(and(eq(rankings.userId, me.id), ne(cheers.userId, me.id), isNull(user.bannedAt)))
+    .where(
+      and(eq(rankings.userId, me.id), ne(cheers.userId, me.id), isNull(user.bannedAt), notBlocked),
+    )
     .orderBy(desc(cheers.createdAt))
     .limit(25)
 
@@ -57,7 +73,7 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
     .from(follows)
     .innerJoin(user, eq(user.id, follows.followerId))
     .leftJoin(back, and(eq(back.followerId, me.id), eq(back.followingId, follows.followerId)))
-    .where(and(eq(follows.followingId, me.id), isNull(user.bannedAt)))
+    .where(and(eq(follows.followingId, me.id), isNull(user.bannedAt), notBlocked))
     .orderBy(desc(follows.createdAt))
     .limit(25)
 
@@ -88,6 +104,7 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
         inArray(rankings.userId, following),
         inArray(rankings.restaurantId, mySaved),
         isNull(user.bannedAt),
+        notBlocked,
       ),
     )
     .orderBy(desc(rankings.updatedAt))
@@ -116,7 +133,7 @@ export const activityRoutes = new Hono<AppEnv>().use(requireAuth).get('/', async
       myRank,
       and(eq(myRank.restaurantId, rankings.restaurantId), eq(myRank.userId, me.id)),
     )
-    .where(and(inArray(rankings.userId, following), isNull(user.bannedAt)))
+    .where(and(inArray(rankings.userId, following), isNull(user.bannedAt), notBlocked))
     .orderBy(desc(rankings.updatedAt))
     .limit(15)
 

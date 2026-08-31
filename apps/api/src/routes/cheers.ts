@@ -1,12 +1,12 @@
 import { db, schema } from '@mesa/db'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // Cheers (🥂) — the one-tap reaction to a friend's ranking. Idempotent both
 // ways; the feed carries the counts.
-const { cheers, rankings } = schema
+const { cheers, rankings, userBlocks } = schema
 
 export const cheersRoutes = new Hono<AppEnv>()
   .use(requireAuth)
@@ -17,9 +17,22 @@ export const cheersRoutes = new Hono<AppEnv>()
     const rankingId = c.req.param('rankingId')
     const exists = await db.query.rankings.findFirst({
       where: eq(rankings.id, rankingId),
-      columns: { id: true },
+      columns: { id: true, userId: true },
     })
     if (!exists) return c.json({ error: 'not_found' }, 404)
+    // A block is symmetric: if either of us blocked the other, I can't cheer
+    // their ranking (otherwise a blocked user reappears in the owner's bell —
+    // a block bypass the activity read now also filters).
+    if (exists.userId !== me.id) {
+      const blocked = await db.query.userBlocks.findFirst({
+        where: or(
+          and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, exists.userId)),
+          and(eq(userBlocks.blockerId, exists.userId), eq(userBlocks.blockedId, me.id)),
+        ),
+        columns: { blockerId: true },
+      })
+      if (blocked) return c.json({ error: 'not_found' }, 404)
+    }
     await db.insert(cheers).values({ userId: me.id, rankingId }).onConflictDoNothing()
     return c.json({ ok: true })
   })

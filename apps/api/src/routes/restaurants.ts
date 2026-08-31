@@ -328,7 +328,13 @@ export const restaurantRoutes = new Hono<AppEnv>()
       .innerJoin(rankings, eq(rankings.id, schema.cheers.rankingId))
       .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .where(sql`${schema.cheers.createdAt} > now() - interval '14 days'`)
+      .where(
+        and(
+          sql`${schema.cheers.createdAt} > now() - interval '14 days'`,
+          isNull(restaurants.removedAt),
+          isNull(restaurants.closedAt),
+        ),
+      )
       .groupBy(
         restaurants.id,
         restaurants.name,
@@ -541,7 +547,9 @@ export const restaurantRoutes = new Hono<AppEnv>()
     const id = c.req.param('id')
 
     const restaurant = await db.query.restaurants.findFirst({
-      where: eq(restaurants.id, id),
+      // A moderation-removed listing must 404 on its direct link too, not just
+      // vanish from lists — otherwise a removed row stays viewable by URL.
+      where: and(eq(restaurants.id, id), isNull(restaurants.removedAt)),
       columns: {
         id: true,
         name: true,
