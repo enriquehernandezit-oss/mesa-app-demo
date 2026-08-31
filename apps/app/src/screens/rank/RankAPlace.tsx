@@ -18,6 +18,7 @@ import { CompareCard } from '../../components/ui/CompareCard'
 import { PlaceCover } from '../../components/ui/PlaceCover'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
+import { useProfile } from '../../hooks/useProfile'
 import { ApiError, api } from '../../lib/api'
 import { displayScore, scoreForPosition } from '../../lib/display'
 import { formatDistance, haversineM } from '../../lib/geo'
@@ -33,13 +34,7 @@ import {
   tie,
 } from '../../lib/pairwise'
 import { markRankExplainerSeen, rankExplainerSeen } from '../../lib/rankExplainer'
-import type {
-  MeResponse,
-  NewRestaurant,
-  Ranking,
-  RestaurantProfileResponse,
-  SavedPlace,
-} from '../../lib/types'
+import type { NewRestaurant, Ranking, RestaurantProfileResponse, SavedPlace } from '../../lib/types'
 import { useExternalPlaceSearch } from '../../lib/useExternalPlaceSearch'
 import { useMyLocation } from '../../lib/useMyLocation'
 import '../onboarding/rank.css'
@@ -84,11 +79,7 @@ export function RankAPlace() {
     queryKey: ['saved'],
     queryFn: () => api.get<{ saved: SavedPlace[] }>('/saved'),
   })
-  const me = useQuery({
-    queryKey: ['me'],
-    queryFn: () => api.get<MeResponse>('/me'),
-    staleTime: 300_000,
-  })
+  const me = useProfile(true, 300_000)
   const myHood = me.data?.profile.neighborhood?.name ?? null
 
   const [pickedId, setPickedId] = useState<string | null>(search.restaurant ?? null)

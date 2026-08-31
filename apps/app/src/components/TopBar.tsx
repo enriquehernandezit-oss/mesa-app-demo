@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useRouterState } from '@tanstack/react-router'
-import { api, apiOrigin } from '../lib/api'
-import type { ActivityItem, MeResponse } from '../lib/types'
+import { useProfile } from '../hooks/useProfile'
+import { api } from '../lib/api'
+import { shareProfile } from '../lib/shareProfile'
+import type { ActivityItem } from '../lib/types'
 import { Wordmark } from './ui'
 import { SettingsIcon, ShareIcon } from './ui/icons'
 import './topbar.css'
@@ -27,17 +29,8 @@ export function TopBar() {
 
 // Own-profile top bar (mock E1): the member's name left, share + settings right.
 function ProfileTopBar() {
-  const me = useQuery({
-    queryKey: ['me'],
-    queryFn: () => api.get<MeResponse>('/me'),
-  })
+  const me = useProfile(true)
   const p = me.data?.profile
-  async function shareProfile() {
-    const link = p?.handle ? `${apiOrigin}/p/u/${p.handle}` : apiOrigin
-    if (navigator.share)
-      await navigator.share({ text: `Mi ranking en Mesa 🥂\n${link}` }).catch(() => {})
-    else await navigator.clipboard.writeText(link).catch(() => {})
-  }
   return (
     <header className="topbar">
       <span className="topbar__title">{p?.name || 'Tú'}</span>
@@ -46,7 +39,7 @@ function ProfileTopBar() {
           type="button"
           className="topbar__btn"
           aria-label="Compartir perfil"
-          onClick={shareProfile}
+          onClick={() => shareProfile(p?.handle)}
         >
           <ShareIcon size={19} />
         </button>

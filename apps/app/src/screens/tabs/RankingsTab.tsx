@@ -7,11 +7,12 @@ import { ShareIcon } from '../../components/ui/icons'
 import { Characteristics } from '../../components/ui/patterns'
 import { toast } from '../../components/ui/toast-store'
 import { useProfile } from '../../hooks/useProfile'
-import { api, apiOrigin } from '../../lib/api'
+import { api } from '../../lib/api'
 import { displayScore, tagLabel } from '../../lib/display'
 import { cloudinaryUrl } from '../../lib/media'
 import { removeRankingWithUndo } from '../../lib/rankingRemoval'
 import { renderListCard, shareCard } from '../../lib/shareCard'
+import { profileShareText } from '../../lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
@@ -64,8 +65,7 @@ export function RankingsTab() {
         })),
         coverUrl: first ? cloudinaryUrl(first.restaurant.coverImageId, { w: 1080, h: 780 }) : null,
       })
-      const link = me?.profile.handle ? `${apiOrigin}/p/u/${me.profile.handle}` : apiOrigin
-      await shareCard(blob, 'mesa-top.jpg', `Mi ranking en Mesa 🥂\n${link}`)
+      await shareCard(blob, 'mesa-top.jpg', profileShareText(me?.profile.handle))
     } finally {
       setSharing(false)
     }

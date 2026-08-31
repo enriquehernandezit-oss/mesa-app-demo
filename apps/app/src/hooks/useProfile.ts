@@ -4,11 +4,14 @@ import type { MeResponse } from '../lib/types'
 
 // The current user's profile + onboarding gate. Cached; refetched after
 // onboarding mutations invalidate ['me']. Only runs when `enabled` (i.e. once
-// Better Auth reports a session), so it never fires an unauthed 401.
-export function useProfile(enabled: boolean) {
+// Better Auth reports a session), so it never fires an unauthed 401. Pass
+// `staleTime` where a screen only needs the profile's stable bits (e.g. the
+// member's neighborhood) and would rather not refetch on every mount.
+export function useProfile(enabled: boolean, staleTime?: number) {
   return useQuery({
     queryKey: ['me'],
     queryFn: () => api.get<MeResponse>('/me'),
     enabled,
+    staleTime,
   })
 }

@@ -5,8 +5,9 @@ import { Button } from '../../components/ui'
 import { Avatar } from '../../components/ui/Avatar'
 import { BookmarkIcon, CheckIcon, CompassIcon } from '../../components/ui/icons'
 import { useProfile } from '../../hooks/useProfile'
-import { api, apiOrigin } from '../../lib/api'
+import { api } from '../../lib/api'
 import { resizeToJpeg } from '../../lib/image'
+import { shareProfile } from '../../lib/shareProfile'
 import type { MeStats, Neighborhood } from '../../lib/types'
 import './tabs.css'
 import './rankings.css'
@@ -39,13 +40,6 @@ export function ProfileTab() {
     if (file)
       setAvatar.mutate(await resizeToJpeg(file, { maxEdge: 192, square: true, quality: 0.8 }))
     e.target.value = ''
-  }
-
-  async function shareProfile() {
-    const link = p?.handle ? `${apiOrigin}/p/u/${p.handle}` : apiOrigin
-    if (navigator.share)
-      await navigator.share({ text: `Mi ranking en Mesa 🥂\n${link}` }).catch(() => {})
-    else await navigator.clipboard.writeText(link).catch(() => {})
   }
 
   if (editing) {
@@ -105,7 +99,7 @@ export function ProfileTab() {
         <Button variant="secondary" onClick={() => setEditing(true)}>
           Editar perfil
         </Button>
-        <Button variant="secondary" onClick={shareProfile}>
+        <Button variant="secondary" onClick={() => shareProfile(p?.handle)}>
           Compartir perfil
         </Button>
       </div>

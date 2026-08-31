@@ -249,6 +249,38 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
   )
 }
 
+// The report-reason panel, shared by the two report entry points (a whole user
+// from the ⋯ menu, a single vibe note inline). Same reason chips + cancel — only
+// the prompt and what the pick submits differ. The `pending` guard keeps a chip
+// from firing a second report while the first is in flight.
+function ReasonPicker({
+  prompt,
+  pending,
+  onPick,
+  onCancel,
+}: {
+  prompt: string
+  pending: boolean
+  onPick: (reason: string) => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="report-panel">
+      <Caption>{prompt}</Caption>
+      <div className="report-reasons">
+        {REASONS.map((reason) => (
+          <Chip key={reason} onClick={() => !pending && onPick(reason)} state="default">
+            {reason}
+          </Chip>
+        ))}
+      </div>
+      <button type="button" className="link-action" onClick={onCancel}>
+        Cancelar
+      </button>
+    </div>
+  )
+}
+
 // Report the whole user (from the ⋯ menu) — targetType 'user'.
 function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) {
   const report = useMutation({
@@ -261,23 +293,12 @@ function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) 
       toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
   })
   return (
-    <div className="report-panel">
-      <Caption>¿Por qué reportas a esta persona?</Caption>
-      <div className="report-reasons">
-        {REASONS.map((reason) => (
-          <Chip
-            key={reason}
-            onClick={() => !report.isPending && report.mutate(reason)}
-            state="default"
-          >
-            {reason}
-          </Chip>
-        ))}
-      </div>
-      <button type="button" className="link-action" onClick={onDone}>
-        Cancelar
-      </button>
-    </div>
+    <ReasonPicker
+      prompt="¿Por qué reportas a esta persona?"
+      pending={report.isPending}
+      onPick={report.mutate}
+      onCancel={onDone}
+    />
   )
 }
 
@@ -306,23 +327,12 @@ function ReportControl({
           Reportar
         </button>
       ) : (
-        <div className="report-panel">
-          <Caption>¿Por qué reportas esta nota?</Caption>
-          <div className="report-reasons">
-            {REASONS.map((reason) => (
-              <Chip
-                key={reason}
-                onClick={() => !report.isPending && report.mutate(reason)}
-                state="default"
-              >
-                {reason}
-              </Chip>
-            ))}
-          </div>
-          <button type="button" className="link-action" onClick={() => setOpen(false)}>
-            Cancelar
-          </button>
-        </div>
+        <ReasonPicker
+          prompt="¿Por qué reportas esta nota?"
+          pending={report.isPending}
+          onPick={report.mutate}
+          onCancel={() => setOpen(false)}
+        />
       )}
     </div>
   )
