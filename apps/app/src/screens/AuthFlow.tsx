@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '../components/ui'
 import { authClient, signOut } from '../lib/auth-client'
+import { authErrorEs } from '../lib/authErrors'
 import { clearAuthLost } from '../lib/authLost'
 import '../styles/screens.css'
 
@@ -16,6 +17,11 @@ import '../styles/screens.css'
 
 type Step = 'choose' | 'email' | 'phone' | 'verify'
 
+// The shape the auth client uses for errors, for the one case it can't produce
+// itself: the request never reached the server.
+type AuthClientError = { code?: string; message?: string; status?: number }
+const NETWORK_ERROR: AuthClientError = { message: 'network' }
+
 export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const queryClient = useQueryClient()
   const [step, setStep] = useState<Step>('choose')
@@ -27,11 +33,6 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [resetSent, setResetSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Invite code — display affordance from the mock (G1). Mesa has no invite
-  // backend, so any code soft-fails with a friendly, honest message.
-  const [inviteOpen, setInviteOpen] = useState(false)
-  const [inviteCode, setInviteCode] = useState('')
-  const [inviteMsg, setInviteMsg] = useState<string | null>(null)
 
   // Forgot password — emails a link to /reset-password carrying a one-time token.
   // The response is intentionally the same whether or not the address exists, so
@@ -39,8 +40,17 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   async function sendReset() {
     setError(null)
     setBusy(true)
-    await authClient.requestPasswordReset({ email: email.trim(), redirectTo: '/reset-password' })
+    // This had no error handling at all: the { error } return was discarded and
+    // a rejection left busy stuck true, freezing the screen with no message.
+    const res = await authClient
+      .requestPasswordReset({ email: email.trim(), redirectTo: '/reset-password' })
+      .catch(() => ({ error: NETWORK_ERROR }))
     setBusy(false)
+    // Rate limiting is the one failure worth naming; anything else keeps the
+    // same neutral answer, so this never reveals whether an address exists.
+    if (res.error && (res.error as AuthClientError).status === 429) {
+      return setError(authErrorEs(res.error))
+    }
     setResetSent(true)
   }
 
@@ -58,10 +68,12 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
     setBusy(false)
     if (res.error)
       return setError(
-        res.error.message ??
-          (emailMode === 'signup'
+        authErrorEs(
+          res.error,
+          emailMode === 'signup'
             ? 'No se pudo crear la cuenta.'
-            : 'El correo o la contraseña están mal.'),
+            : 'El correo o la contraseña no coinciden.',
+        ),
       )
     queryClient.invalidateQueries({ queryKey: ['session'] })
   }
@@ -69,18 +81,18 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   async function oauth(provider: 'apple' | 'instagram') {
     setError(null)
     setBusy(true)
-    try {
-      if (provider === 'apple') {
-        await authClient.signIn.social({ provider: 'apple', callbackURL: '/' })
-      } else {
-        await authClient.signIn.oauth2({ providerId: 'instagram', callbackURL: '/' })
-      }
-    } catch {
-      setError(
-        `El inicio de sesión con ${provider === 'apple' ? 'Apple' : 'Instagram'} no está disponible todavía en esta versión.`,
-      )
-    } finally {
-      setBusy(false)
+    // The client RESOLVES with { error } rather than throwing, so the try/catch
+    // this used to rely on could never fire and the return value was dropped —
+    // with no provider configured the button was a silent no-op. Read the
+    // result; keep a catch only for an actual network rejection.
+    const res = await (provider === 'apple'
+      ? authClient.signIn.social({ provider: 'apple', callbackURL: '/' })
+      : authClient.signIn.oauth2({ providerId: 'instagram', callbackURL: '/' })
+    ).catch(() => ({ error: NETWORK_ERROR }))
+    setBusy(false)
+    if (res && 'error' in res && res.error) {
+      const name = provider === 'apple' ? 'Apple' : 'Instagram'
+      setError(authErrorEs(res.error, `El inicio de sesión con ${name} aún no está disponible.`))
     }
   }
 
@@ -89,7 +101,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
     setBusy(true)
     const { error } = await authClient.phoneNumber.sendOtp({ phoneNumber: phone })
     setBusy(false)
-    if (error) return setError(error.message ?? 'No se pudo enviar el código.')
+    if (error) return setError(authErrorEs(error, 'No se pudo enviar el código.'))
     setStep('verify')
   }
 
@@ -101,7 +113,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       code,
     })
     setBusy(false)
-    if (error) return setError(error.message ?? 'Ese código no coincide.')
+    if (error) return setError(authErrorEs(error, 'Ese código no coincide.'))
     // Session cookie is set — refresh the cached session so App re-gates.
     queryClient.invalidateQueries({ queryKey: ['session'] })
   }
@@ -151,7 +163,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       <div className="stack stack--tight" style={{ alignItems: 'center', textAlign: 'center' }}>
         <Wordmark size={64} />
         <Eyebrow style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-strong)' }}>
-          Solo por invitación · Santo Domingo
+          Una revolución gastronómica social · Santo Domingo
         </Eyebrow>
         <SerifItalic
           style={{ fontSize: 'var(--text-title)', lineHeight: 1.15, marginTop: 'var(--space-2)' }}
@@ -199,7 +211,11 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               Continuar con Instagram
             </Button>
           </div>
-          {error && <div className="error-text">{error}</div>}
+          {error && (
+            <div className="error-text" role="alert">
+              {error}
+            </div>
+          )}
 
           <button
             type="button"
@@ -214,36 +230,6 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             ¿Ya estás en Mesa? Inicia sesión
           </button>
 
-          {/* Invite code — display affordance; soft-fails (no invite backend). */}
-          {inviteOpen ? (
-            <div className="invite-row">
-              <input
-                className="field"
-                placeholder="Código de invitación"
-                value={inviteCode}
-                onChange={(e) => {
-                  setInviteCode(e.target.value)
-                  setInviteMsg(null)
-                }}
-              />
-              <Button
-                variant="secondary"
-                className="mesa-btn--mono"
-                style={{ width: 'auto', padding: '0 var(--space-4)' }}
-                onClick={() =>
-                  setInviteMsg('Las invitaciones son personales — pídele una a un amigo en Mesa.')
-                }
-              >
-                Enviar
-              </Button>
-            </div>
-          ) : (
-            <button type="button" className="invite-link" onClick={() => setInviteOpen(true)}>
-              ¿Tienes un código de invitación? Ingrésalo
-            </button>
-          )}
-          {inviteMsg && <div className="invite-msg">{inviteMsg}</div>}
-
           <div className="legal-text">
             Al continuar aceptas los <a href="/terms">Términos</a> y el <a href="/eula">EULA</a> de
             Mesa, y reconoces nuestra <a href="/privacy">Política de Privacidad</a>.
@@ -252,9 +238,19 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       )}
 
       {step === 'email' && (
-        <div className="stack">
+        <form
+          className="stack"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!busy && email.includes('@') && password.length >= 8) emailAuth()
+          }}
+        >
           <Eyebrow>{emailMode === 'signup' ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</Eyebrow>
+          <label className="sr-only" htmlFor="auth-email">
+            Correo electrónico
+          </label>
           <input
+            id="auth-email"
             className="field"
             type="email"
             inputMode="email"
@@ -264,21 +260,38 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+          <label className="sr-only" htmlFor="auth-password">
+            Contraseña
+          </label>
           <input
+            id="auth-password"
             className="field"
             type="password"
             autoComplete={emailMode === 'signup' ? 'new-password' : 'current-password'}
             placeholder="Contraseña (8+ caracteres)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            aria-describedby={emailMode === 'signup' ? 'auth-password-hint' : undefined}
           />
+          {/* One honest line, not a strength meter: length is the only rule the
+              server actually enforces today (minPasswordLength: 8). */}
+          {emailMode === 'signup' && password.length > 0 && password.length < 8 && (
+            <Caption id="auth-password-hint" style={{ color: 'var(--status-packed)' }}>
+              Le faltan {8 - password.length} caracteres.
+            </Caption>
+          )}
           <Button
+            type="submit"
+            aria-busy={busy}
             disabled={busy || !email.includes('@') || password.length < 8}
-            onClick={emailAuth}
           >
             {busy ? '…' : emailMode === 'signup' ? 'Crear cuenta' : 'Iniciar sesión'}
           </Button>
-          {error && <div className="error-text">{error}</div>}
+          {error && (
+            <div className="error-text" role="alert">
+              {error}
+            </div>
+          )}
           {resetSent ? (
             <Caption style={{ textAlign: 'center', color: 'var(--text-2)' }}>
               Si ese correo está registrado, te llegará un enlace para restablecerla.
@@ -308,16 +321,26 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               ? '¿Ya tienes una cuenta? Inicia sesión'
               : '¿Nuevo aquí? Crea una cuenta'}
           </button>
-          <Button variant="ghost" onClick={() => setStep('choose')}>
+          <Button type="button" variant="ghost" onClick={() => setStep('choose')}>
             Atrás
           </Button>
-        </div>
+        </form>
       )}
 
       {step === 'phone' && (
-        <div className="stack">
+        <form
+          className="stack"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!busy && phone.trim().length >= 8) sendCode()
+          }}
+        >
           <Eyebrow>Tu número</Eyebrow>
+          <label className="sr-only" htmlFor="auth-phone">
+            Número de teléfono
+          </label>
           <input
+            id="auth-phone"
             className="field"
             type="tel"
             inputMode="tel"
@@ -326,21 +349,35 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
-          <Button disabled={busy || phone.trim().length < 8} onClick={sendCode}>
+          <Button type="submit" aria-busy={busy} disabled={busy || phone.trim().length < 8}>
             Enviar código
           </Button>
-          {error && <div className="error-text">{error}</div>}
-          <Button variant="ghost" onClick={() => setStep('choose')}>
+          {error && (
+            <div className="error-text" role="alert">
+              {error}
+            </div>
+          )}
+          <Button type="button" variant="ghost" onClick={() => setStep('choose')}>
             Atrás
           </Button>
-        </div>
+        </form>
       )}
 
       {step === 'verify' && (
-        <div className="stack">
+        <form
+          className="stack"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!busy && code.length === 6) verify()
+          }}
+        >
           <Eyebrow>Ingresa el código de 6 dígitos</Eyebrow>
           <Caption>Enviado a {phone}</Caption>
+          <label className="sr-only" htmlFor="auth-code">
+            Código de 6 dígitos
+          </label>
           <input
+            id="auth-code"
             className="field field--code"
             type="text"
             inputMode="numeric"
@@ -350,14 +387,18 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           />
-          <Button disabled={busy || code.length !== 6} onClick={verify}>
+          <Button type="submit" aria-busy={busy} disabled={busy || code.length !== 6}>
             Verificar
           </Button>
-          {error && <div className="error-text">{error}</div>}
-          <Button variant="ghost" onClick={() => setStep('phone')}>
+          {error && (
+            <div className="error-text" role="alert">
+              {error}
+            </div>
+          )}
+          <Button type="button" variant="ghost" onClick={() => setStep('phone')}>
             Usar otro número
           </Button>
-        </div>
+        </form>
       )}
 
       {step === 'choose' && (

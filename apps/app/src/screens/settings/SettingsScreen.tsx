@@ -9,6 +9,7 @@ import { toast } from '../../components/ui/toast-store'
 import { useProfile } from '../../hooks/useProfile'
 import { ApiError, api } from '../../lib/api'
 import { authClient, signOut } from '../../lib/auth-client'
+import { authErrorEs } from '../../lib/authErrors'
 import { comingSoon } from '../../lib/comingSoon'
 import { getFriendsOnlyScores, setFriendsOnlyScores } from '../../lib/prefs'
 import type { BlockedUser, MeStats, Ranking } from '../../lib/types'
@@ -59,16 +60,22 @@ export function SettingsScreen() {
   async function resendVerification() {
     if (!realEmail || verifying) return
     setVerifying(true)
-    try {
-      await authClient.sendVerificationEmail({ email: realEmail, callbackURL: '/' })
-      setVerifySent(true)
-    } catch {
-      // Silently swallowing this looked identical to success ("Reenviar" just
-      // re-enabled), so a member would sit waiting for mail that never sent.
-      toast({ variant: 'error', message: 'No se pudo enviar el correo. Intenta de nuevo.' })
-    } finally {
-      setVerifying(false)
+    // The client RESOLVES with { error } rather than throwing, so the catch
+    // below only ever caught a network rejection — a rejected send still ran
+    // setVerifySent(true) and the UI claimed "Enlace enviado" for mail that was
+    // never sent, which is exactly what the old comment said it prevented.
+    const res = await authClient
+      .sendVerificationEmail({ email: realEmail, callbackURL: '/verify-email' })
+      .catch(() => ({ error: { message: 'network' } }))
+    setVerifying(false)
+    if (res && 'error' in res && res.error) {
+      toast({
+        variant: 'error',
+        message: authErrorEs(res.error, 'No se pudo enviar el correo. Intenta de nuevo.'),
+      })
+      return
     }
+    setVerifySent(true)
   }
 
   // Phone/OAuth-first accounts (no real email) can add email + password sign-in.

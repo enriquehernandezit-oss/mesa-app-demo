@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "cap:add:ios": "cap add ios",
     "cap:add:android": "cap add android",
-    "cap:sync": "vite build && cap sync"
+    "cap:sync": "vite build && cap sync",
+    "test": "bun test"
   },
   "dependencies": {
     "@capacitor-community/contacts": "^8.0.0",
