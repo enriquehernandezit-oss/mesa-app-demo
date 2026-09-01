@@ -145,3 +145,25 @@ export const CompassIcon = (p: IconProps) => (
     <Path d="M15.5 8.5 13.3 13.3 8.5 15.5l2.2-4.8 4.8-2.2Z" />
   </Icon>
 )
+
+// Tab-bar + FAB glyphs (ported from app/router.tsx's inline paths).
+export const DiscoverIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9 4.4v15.2M12 3.1v17.8M15 4.4v15.2" />
+  </Icon>
+)
+export const RankingsIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M8 6h13M8 12h13M8 18h13M4 6h.01M4 12h.01M4 18h.01" />
+  </Icon>
+)
+export const PersonIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" />
+  </Icon>
+)
+export const PlusIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 5v14M5 12h14" />
+  </Icon>
+)

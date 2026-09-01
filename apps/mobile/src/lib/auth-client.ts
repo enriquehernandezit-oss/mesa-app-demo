@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { clearToken, getToken, setToken } from './auth-token'
+import { queryClient } from './query'
 
 // Better Auth client, pointed at the Hono API. Mirrors the server's providers
 // (apps/api/src/auth.ts): email+password (built in), phone OTP, Apple (social),
@@ -32,8 +33,11 @@ export const authClient = createAuthClient({
 export const signOut = () =>
   authClient.signOut().finally(() => {
     // Drop the local token regardless of the network result, so the app can't
-    // reauthenticate with a stale token after sign-out.
+    // reauthenticate with a stale token after sign-out — then clear the cache so
+    // the ['session'] query re-resolves to null and the route guards send the
+    // user back to sign-in (no hard reload exists on native).
     clearToken()
+    queryClient.clear()
   })
 
 // Session state via a cached TanStack Query rather than Better Auth's reactive
