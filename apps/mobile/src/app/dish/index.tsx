@@ -3,8 +3,11 @@ import { Body } from '@/components/ui'
 import { useRouter } from 'expo-router'
 import { View } from 'react-native'
 
-// N4 stub — the "add a dish" composer (reads ?restaurant) is ported next in this
-// milestone. Kept as a real route so the "+ Agregar un plato" action resolves.
+// Stub — the "add a dish" composer (reads ?restaurant) is fundamentally a
+// photo-capture flow (expo-image-picker + resize/upload), so it lands with the
+// native image work in N6, alongside the avatar picker. Kept as a real route now
+// so the rank flow's dish-chain and RestaurantProfile's "+ Agregar un plato"
+// resolve instead of dead-ending.
 export default function DishComposeScreen() {
   const router = useRouter()
   return (

@@ -104,22 +104,26 @@ function badgeText(a: ScoreAttribution): string | null {
 export function ScoreBadge({
   score,
   attribution,
+  size = 'md',
   caption,
   sub,
 }: {
   score: number
   attribution: ScoreAttribution
+  size?: 'sm' | 'md'
   caption?: string
   sub?: string
 }) {
   const badge = badgeText(attribution)
   const mesa = attribution.kind === 'mesa'
+  const ring = size === 'sm' ? 'h-12 w-12' : 'h-16 w-16'
+  const num = size === 'sm' ? 'text-serif-sm' : 'text-serif-md'
   return (
     <View className="items-center gap-1">
       <View
-        className={`h-16 w-16 items-center justify-center rounded-pill border ${mesa ? 'border-line' : 'border-accent'}`}
+        className={`${ring} items-center justify-center rounded-pill border ${mesa ? 'border-line' : 'border-accent'}`}
       >
-        <Text className={`font-serif text-serif-md ${mesa ? 'text-text-2' : 'text-accent'}`}>
+        <Text className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-accent'}`}>
           {displayScore(score)}
         </Text>
       </View>
