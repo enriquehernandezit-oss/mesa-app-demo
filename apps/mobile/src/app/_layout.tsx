@@ -1,4 +1,5 @@
 import '../global.css'
+import { Toaster } from '@/components/ui/Toast'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import {
   CormorantGaramond_400Regular_Italic,
@@ -15,14 +16,12 @@ import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
-  // The exact faces the tailwind fontFamily map references (weights aren't
-  // synthesized in RN, so each is loaded explicitly — mirrors the web's
-  // font-synthesis:none rule).
   const [loaded] = useFonts({
     CormorantGaramond_500Medium,
     CormorantGaramond_600SemiBold,
@@ -40,12 +39,15 @@ export default function RootLayout() {
   if (!loaded) return null
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <Stack
-          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
-        />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <Stack
+            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
+          />
+          <Toaster />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

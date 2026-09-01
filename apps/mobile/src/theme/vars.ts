@@ -35,6 +35,10 @@ const afternoon = {
   '--on-photo-accent': '#e2c179',
   '--btn-primary-bg': '#2a1512',
   '--btn-primary-fg': '#fdf7ec',
+  '--avatar-hue-1': '#b5773c',
+  '--avatar-hue-2': '#c8703f',
+  '--avatar-hue-3': '#a98a63',
+  '--avatar-ink': '#2a1512',
 } as const
 
 const candlelit = {
@@ -62,11 +66,31 @@ const candlelit = {
   '--on-photo-accent': '#e2c179',
   '--btn-primary-bg': '#c09050',
   '--btn-primary-fg': '#210104',
+  '--avatar-hue-1': '#b5773c',
+  '--avatar-hue-2': '#c8703f',
+  '--avatar-hue-3': '#a98a63',
+  '--avatar-ink': '#fdf7ec',
 } as const
 
 export const themeVars: Record<ThemeName, ReturnType<typeof vars>> = {
   afternoon: vars(afternoon),
   candlelit: vars(candlelit),
+}
+
+// Raw hex/rgba by theme, for the few places that need a color as a VALUE rather
+// than a class — react-native-svg strokes, imperative APIs — where NativeWind's
+// className can't reach. Keyed without the leading '--'. See useColor.
+export type ColorToken = keyof typeof afternoon extends `--${infer K}` ? K : never
+
+const strip = (m: Record<string, string>) =>
+  Object.fromEntries(Object.entries(m).map(([k, v]) => [k.slice(2), v])) as Record<
+    ColorToken,
+    string
+  >
+
+export const themeColors: Record<ThemeName, Record<ColorToken, string>> = {
+  afternoon: strip(afternoon),
+  candlelit: strip(candlelit),
 }
 
 // The literal grounds, for surfaces that must paint before the provider mounts

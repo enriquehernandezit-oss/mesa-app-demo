@@ -1,61 +1,113 @@
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  Chip,
+  ChipRail,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  SectionHeader,
+  SerifItalic,
+  Skeleton,
+  Title,
+  Toggle,
+  Wordmark,
+} from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
+import {
+  BookmarkIcon,
+  CompassIcon,
+  HeartIcon,
+  SettingsIcon,
+  ShareIcon,
+} from '@/components/ui/icons'
+import { toast } from '@/components/ui/toast-store'
 import { useTheme } from '@/theme/ThemeProvider'
 import { StatusBar } from 'expo-status-bar'
-import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { useState } from 'react'
+import { ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
-
-// N0 smoke screen: proves the theme layer resolves (both themes, tappable
-// toggle), the fonts load, and the app can reach the deployed API. The data
-// layer (TanStack Query) and the real App gate arrive in N2 — this uses a plain
-// fetch on purpose to keep N0 to scaffold + theme.
-type Health = { status: 'loading' | 'ok' | 'error'; service?: string }
-
+// N1 gallery: exercises every ported primitive in both themes. Replaced by the
+// real App gate in N2. Not a shipping screen — a verification surface.
 export default function Index() {
   const { resolved, choice, setChoice } = useTheme()
-  const [health, setHealth] = useState<Health>({ status: 'loading' })
-
-  useEffect(() => {
-    let cancelled = false
-    fetch(`${API}/health`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(
-        (d: { service: string }) => !cancelled && setHealth({ status: 'ok', service: d.service }),
-      )
-      .catch(() => !cancelled && setHealth({ status: 'error' }))
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const [on, setOn] = useState(true)
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
       <StatusBar style={resolved === 'candlelit' ? 'light' : 'dark'} />
-      <View className="flex-1 items-center justify-center gap-5 px-5">
-        <Text className="font-serif-semibold text-display text-text">mesa</Text>
-        <Text className="font-mono text-eyebrow uppercase tracking-eyebrow text-accent-strong">
-          Una revolución gastronómica social
-        </Text>
-
-        <View className="mt-6 items-center gap-2">
-          <Text className="font-ui text-label text-text-muted">API</Text>
-          <Text className="font-ui-medium text-body text-text">
-            {health.status === 'loading'
-              ? 'conectando…'
-              : health.status === 'error'
-                ? 'sin conexión'
-                : `${health.service} · ok`}
-          </Text>
+      <ScrollView contentContainerClassName="gap-4 px-5 py-6">
+        <View className="items-center gap-1">
+          <Wordmark size={56} />
+          <Eyebrow className="font-mono">Una revolución gastronómica social</Eyebrow>
         </View>
 
-        <Pressable
-          className="mt-6 rounded-pill bg-accent-fill px-6 py-3 active:opacity-80"
+        <SectionHeader>Tipografía</SectionHeader>
+        <Title>Título en serif</Title>
+        <SerifItalic className="text-serif-md">Nota en serif itálica</SerifItalic>
+        <Body>Cuerpo en Plus Jakarta Sans, el texto de lectura.</Body>
+        <Caption>Caption / metadata en tono apagado</Caption>
+
+        <SectionHeader action={<Caption>3 variantes</Caption>}>Botones</SectionHeader>
+        <Button onPress={() => toast({ message: 'Guardado ✓' })}>Botón primario</Button>
+        <Button variant="secondary">Secundario</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button mono variant="secondary">
+          Etiqueta mono
+        </Button>
+
+        <SectionHeader>Chips</SectionHeader>
+        <ChipRail>
+          <Chip>Default</Chip>
+          <Chip state="active">Activo</Chip>
+          <Chip state="selected">Seleccionado</Chip>
+          <Chip size="sm">sm</Chip>
+          <Chip size="sm" state="selected">
+            sm on
+          </Chip>
+        </ChipRail>
+
+        <SectionHeader>Card + skeleton</SectionHeader>
+        <Card>
+          <Title className="text-serif-md">Una tarjeta</Title>
+          <Body>Sobre la superficie, con hairline cálido.</Body>
+        </Card>
+        <Skeleton height={16} />
+        <Skeleton height={16} width="60%" />
+
+        <SectionHeader>Avatares + iconos</SectionHeader>
+        <View className="flex-row items-center gap-3">
+          <Avatar name="Ana" size={44} />
+          <Avatar name="Diego" size={44} />
+          <Avatar name="María" size={44} />
+          <SettingsIcon size={22} color="text" />
+          <ShareIcon size={22} color="text" />
+          <BookmarkIcon size={22} color="accent" />
+          <HeartIcon size={22} color="status-packed" />
+          <CompassIcon size={22} color="accent-strong" />
+        </View>
+
+        <SectionHeader>Estados</SectionHeader>
+        <ErrorState onRetry={() => toast({ variant: 'error', message: 'Reintentando…' })}>
+          No se pudo cargar.
+        </ErrorState>
+        <EmptyState body="Rankea un lugar para empezar.">Aún no hay nada aquí.</EmptyState>
+
+        <SectionHeader>Toggle + tema</SectionHeader>
+        <View className="flex-row items-center justify-between">
+          <Body>Solo amigos</Body>
+          <Toggle checked={on} onChange={setOn} label="Solo amigos" />
+        </View>
+        <Button
+          variant="secondary"
           onPress={() => setChoice(choice === 'candlelit' ? 'afternoon' : 'candlelit')}
         >
-          <Text className="font-ui-semibold text-label text-on-accent">Tema: {resolved}</Text>
-        </Pressable>
-      </View>
+          Tema: {resolved}
+        </Button>
+      </ScrollView>
     </SafeAreaView>
   )
 }
