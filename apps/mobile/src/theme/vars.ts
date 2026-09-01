@@ -39,6 +39,7 @@ const afternoon = {
   '--avatar-hue-2': '#c8703f',
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#2a1512',
+  '--overlay-scrim': 'rgba(15, 1, 2, 0.4)',
 } as const
 
 const candlelit = {
@@ -70,6 +71,7 @@ const candlelit = {
   '--avatar-hue-2': '#c8703f',
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#fdf7ec',
+  '--overlay-scrim': 'rgba(8, 0, 1, 0.55)',
 } as const
 
 export const themeVars: Record<ThemeName, ReturnType<typeof vars>> = {

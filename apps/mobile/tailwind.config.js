@@ -27,6 +27,7 @@ module.exports = {
         bg: 'var(--bg)',
         'bg-sunk': 'var(--bg-sunk)',
         surface: 'var(--surface)',
+        'overlay-scrim': 'var(--overlay-scrim)',
         'surface-raised': 'var(--surface-raised)',
         text: 'var(--text)',
         'text-2': 'var(--text-2)',
