@@ -1,18 +1,97 @@
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body } from '@/components/ui'
-import { useRouter } from 'expo-router'
-import { View } from 'react-native'
+import { Body, Caption, EmptyState, Eyebrow, Title } from '@/components/ui'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { ApiError, api } from '@/lib/api'
+import type { ListDetailResponse } from '@/lib/types'
+import { useQuery } from '@tanstack/react-query'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
-// N5 stub — curated lists land with Discovery. Kept as a real route now so the
-// list pills on a place resolve instead of dead-ending.
+// A curated list's detail — its members in editorial order, each with the
+// friend signal. Reached from the Discover carousel or a restaurant's list
+// pills. Ported from apps/app/src/screens/list/ListScreen.tsx.
 export default function ListScreen() {
+  const { slug } = useLocalSearchParams<{ slug: string }>()
   const router = useRouter()
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
+  const q = useQuery({
+    queryKey: ['list', slug],
+    queryFn: () => api.get<ListDetailResponse>(`/lists/${slug}`),
+    retry: false,
+  })
+
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={() => router.back()} backLabel="Atrás" />
-      <View className="flex-1 items-center justify-center px-5">
-        <Body className="text-center">Lista — próximamente.</Body>
-      </View>
+      <ScreenHeader onBack={goBack} backLabel="Atrás" />
+      {q.isPending ? (
+        <Body className="px-5">Cargando…</Body>
+      ) : q.isError || !q.data ? (
+        <EmptyState>
+          {q.error instanceof ApiError && q.error.status === 404
+            ? 'Lista no encontrada.'
+            : 'No se pudo cargar la lista.'}
+        </EmptyState>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
+          <View className="h-56">
+            <PlaceCover
+              seed={slug}
+              name={q.data.list.title}
+              coverImageId={q.data.list.coverImageId}
+              size={{ w: 1000, h: 560 }}
+              className="h-full w-full"
+            />
+            <View
+              className="absolute right-4 rounded-pill bg-surface px-2 py-1"
+              style={{ bottom: 10 }}
+            >
+              <Caption className="font-mono text-[10px]">film · con velas</Caption>
+            </View>
+          </View>
+          <View className="px-5">
+            <Eyebrow className="mt-4">Destacada · {q.data.items.length} spots</Eyebrow>
+            <Title>{q.data.list.title}</Title>
+            {q.data.list.subtitle ? <Body className="mt-1">{q.data.list.subtitle}</Body> : null}
+
+            <View className="mt-4">
+              {q.data.items.map((r) => (
+                <Link key={r.id} href={`/r/${r.id}`} asChild>
+                  <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+                    <Text className="w-5 font-mono text-[11px] text-text-muted">{r.position}</Text>
+                    <PlaceCover
+                      seed={r.id}
+                      name={r.name}
+                      coverImageId={r.coverImageId}
+                      size={{ w: 200, h: 200 }}
+                      className="h-12 w-12"
+                    />
+                    <View className="flex-1">
+                      <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                        {r.name}
+                      </Text>
+                      <Characteristics
+                        priceTier={r.priceTier}
+                        cuisine={r.cuisine}
+                        neighborhood={r.neighborhood}
+                      />
+                    </View>
+                    {r.myScore != null ? (
+                      <ScoreBadge size="sm" score={r.myScore} attribution={{ kind: 'you' }} />
+                    ) : r.friendCount > 0 && r.friendAvg != null ? (
+                      <ScoreBadge
+                        size="sm"
+                        score={r.friendAvg}
+                        attribution={{ kind: 'friends', count: r.friendCount }}
+                      />
+                    ) : null}
+                  </Pressable>
+                </Link>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      )}
     </View>
   )
 }
