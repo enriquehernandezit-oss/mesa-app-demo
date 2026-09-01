@@ -13,5 +13,17 @@ module.exports = () => {
       ? ['@rnmapbox/maps', { RNMapboxMapsDownloadToken: process.env.RNMAPBOX_DOWNLOAD_TOKEN ?? '' }]
       : p,
   )
+
+  // Universal links so the password-reset / verify-email emails open the app
+  // instead of a browser. The domain is where APP_ORIGINS points and where the
+  // apple-app-site-association file is hosted (the API can serve it beside /p/*);
+  // set APP_LINK_DOMAIN (e.g. mesa.app) at build — the mesa:// scheme still works
+  // regardless. Founder step: register the domain's associated-domains entitlement.
+  if (process.env.APP_LINK_DOMAIN) {
+    config.ios = {
+      ...config.ios,
+      associatedDomains: [`applinks:${process.env.APP_LINK_DOMAIN}`],
+    }
+  }
   return config
 }
