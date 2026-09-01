@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.mesa.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.mesa.app",
@@ -47,7 +48,8 @@
           "cameraPermission": "Mesa usa la cámara solo para tomar la foto de un plato."
         }
       ],
-      "@rnmapbox/maps"
+      "@rnmapbox/maps",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
