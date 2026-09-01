@@ -1,5 +1,7 @@
 import '../global.css'
 import { Toaster } from '@/components/ui/Toast'
+import { initToken } from '@/lib/auth-token'
+import { queryClient } from '@/lib/query'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import {
   CormorantGaramond_400Regular_Italic,
@@ -12,10 +14,11 @@ import {
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
 } from '@expo-google-fonts/plus-jakarta-sans'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { useFonts } from 'expo-font'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -32,21 +35,35 @@ export default function RootLayout() {
     JetBrainsMono_400Regular,
   })
 
+  // The session token lives in the Keychain (async); fill its sync cache before
+  // the first render so the gate doesn't flash sign-in at an already-signed-in
+  // member.
+  const [tokenReady, setTokenReady] = useState(false)
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync()
-  }, [loaded])
+    initToken().finally(() => setTokenReady(true))
+  }, [])
 
-  if (!loaded) return null
+  const ready = loaded && tokenReady
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync()
+  }, [ready])
+
+  if (!ready) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <Stack
-            screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }}
-          />
-          <Toaster />
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: 'transparent' },
+              }}
+            />
+            <Toaster />
+          </ThemeProvider>
+        </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )
