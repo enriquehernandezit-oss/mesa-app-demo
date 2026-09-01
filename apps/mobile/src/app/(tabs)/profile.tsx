@@ -1,17 +1,289 @@
 import { TopBar } from '@/components/TopBar'
-import { Body, SectionHeader } from '@/components/ui'
-import { ScrollView, View } from 'react-native'
+import { Button, Caption, Chip, Eyebrow } from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
+import { BookmarkIcon, CheckIcon, CompassIcon } from '@/components/ui/icons'
+import { useProfile } from '@/hooks/useProfile'
+import { api } from '@/lib/api'
+import { resizeToJpeg } from '@/lib/image'
+import { shareProfile } from '@/lib/shareProfile'
+import type { MeStats, Neighborhood } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import * as ImagePicker from 'expo-image-picker'
+import { useRouter } from 'expo-router'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-// N3 stub — the real Perfil screen arrives in a later phase.
-export default function PerfilScreen() {
+// The user's own profile (Phase 6 mock E1): centered identity + avatar picker, a
+// stats trio, edit/share, routes into the lists, and the two stat cards. The top
+// bar (name + share + settings) is TopBar's profile variant. Ported from
+// apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
+// expo-image-picker + resizeToJpeg (square).
+export default function ProfileTab() {
+  const queryClient = useQueryClient()
+  const router = useRouter()
+  const { data } = useProfile(true)
+  const p = data?.profile
+  const [editing, setEditing] = useState(false)
+
+  const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
+
+  const setAvatar = useMutation({
+    mutationFn: (image: string) => api.patch('/me/avatar', { image }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+    },
+  })
+  async function pickAvatar() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!perm.granted) return
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
+    const asset = res.canceled ? null : res.assets[0]
+    if (asset) {
+      setAvatar.mutate(
+        await resizeToJpeg(asset.uri, asset.width, asset.height, {
+          maxEdge: 192,
+          square: true,
+          quality: 0.8,
+        }),
+      )
+    }
+  }
+
+  if (editing) {
+    return <EditProfile onClose={() => setEditing(false)} />
+  }
+
+  const memberSince =
+    p?.createdAt &&
+    new Date(p.createdAt).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })
+  const barrio = p?.neighborhood?.name
+
   return (
     <View className="flex-1 bg-bg">
-      <TopBar variant="profile" title="Perfil" />
-      <ScrollView contentContainerClassName="px-5 pb-8">
-        <SectionHeader>Perfil</SectionHeader>
-        <Body>Pantalla "Perfil" — contenido en una fase próxima.</Body>
-        <View className="h-4" />
+      <TopBar variant="profile" title={p?.name || 'Tú'} shareHandle={p?.handle} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+        <View className="items-center pt-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Cambiar foto"
+            onPress={pickAvatar}
+            className="items-center active:opacity-80"
+          >
+            <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={88} />
+            <Caption className="mt-1 font-mono text-[10px] text-accent-strong">
+              {setAvatar.isPending ? '…' : '+ foto'}
+            </Caption>
+          </Pressable>
+          {p?.handle ? (
+            <Text className="mt-2 font-mono text-label text-text-2">@{p.handle}</Text>
+          ) : null}
+          <Caption className="mt-1">
+            {[memberSince && `Miembro desde ${memberSince}`, barrio].filter(Boolean).join(' · ')}
+          </Caption>
+        </View>
+
+        {stats.data && (
+          <View className="mt-5 flex-row justify-around">
+            <Stat n={String(stats.data.followers)} l="Seguidores" />
+            <Stat n={String(stats.data.following)} l="Siguiendo" />
+            <Stat
+              n={stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
+              l="Rank en RD"
+            />
+          </View>
+        )}
+
+        <View className="mt-5 flex-row gap-3">
+          <Button variant="secondary" className="flex-1" onPress={() => setEditing(true)}>
+            Editar perfil
+          </Button>
+          <Button variant="secondary" className="flex-1" onPress={() => shareProfile(p?.handle)}>
+            Compartir perfil
+          </Button>
+        </View>
+
+        <View className="mt-6">
+          <NavRow
+            icon={<CheckIcon size={15} />}
+            label="Rankeados"
+            meta={`${stats.data?.places ?? 0} ›`}
+            onPress={() => router.push('/rankings')}
+          />
+          <NavRow
+            icon={<BookmarkIcon size={15} />}
+            label="Quiero probar"
+            meta="›"
+            onPress={() => router.push('/rankings?tab=saved')}
+          />
+          <NavRow
+            icon={<CompassIcon size={15} />}
+            label="Recomendados para ti"
+            meta="›"
+            onPress={() => router.push('/explore')}
+          />
+        </View>
+
+        {stats.data && (
+          <View className="mt-6 flex-row gap-3">
+            <StatCard
+              label="Rank en RD"
+              value={stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
+            />
+            <StatCard
+              label="Racha actual"
+              value={
+                stats.data.streakWeeks > 0
+                  ? `${stats.data.streakWeeks} semana${stats.data.streakWeeks > 1 ? 's' : ''}`
+                  : 'Aún ninguna'
+              }
+            />
+          </View>
+        )}
       </ScrollView>
+    </View>
+  )
+}
+
+function Stat({ n, l }: { n: string; l: string }) {
+  return (
+    <View className="items-center">
+      <Text className="font-serif text-serif-lg text-text">{n}</Text>
+      <Caption>{l}</Caption>
+    </View>
+  )
+}
+
+function NavRow({
+  icon,
+  label,
+  meta,
+  onPress,
+}: { icon: ReactNode; label: string; meta: string; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="flex-row items-center justify-between border-line border-b py-4 active:opacity-70"
+    >
+      <View className="flex-row items-center gap-2">
+        {icon}
+        <Text className="font-ui text-body text-text">{label}</Text>
+      </View>
+      <Caption className="font-mono">{meta}</Caption>
+    </Pressable>
+  )
+}
+
+function StatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-1 rounded border border-line bg-surface p-4">
+      <Caption className="font-mono text-[10px]">{label}</Caption>
+      <Text className="mt-1 font-serif text-serif-lg text-accent">{value}</Text>
+    </View>
+  )
+}
+
+// Minimal edit sheet — name, @handle, sector, bio → PATCH /me/profile.
+function EditProfile({ onClose }: { onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const placeholder = useColor('text-muted')
+  const { data } = useProfile(true)
+  const p = data?.profile
+  const [name, setName] = useState(p?.name ?? '')
+  const [handle, setHandle] = useState(p?.handle ?? '')
+  const [bio, setBio] = useState(p?.bio ?? '')
+  const [slug, setSlug] = useState('')
+  const neighborhoods = useQuery({
+    queryKey: ['neighborhoods'],
+    queryFn: () => api.get<{ neighborhoods: Neighborhood[] }>('/onboarding/neighborhoods'),
+    staleTime: Number.POSITIVE_INFINITY,
+  })
+  const currentSlug =
+    slug ||
+    neighborhoods.data?.neighborhoods.find((n) => n.name === p?.neighborhood?.name)?.slug ||
+    ''
+
+  const save = useMutation({
+    mutationFn: () =>
+      api.patch('/me/profile', {
+        name: name.trim(),
+        handle: handle.trim().replace(/^@/, '') || undefined,
+        neighborhoodSlug: currentSlug,
+        bio: bio.trim() || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      onClose()
+    },
+  })
+  const canSave = name.trim().length > 0 && currentSlug.length > 0 && !save.isPending
+
+  return (
+    <View className="flex-1 bg-bg">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-14">
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClose}
+          className="min-h-[44px] justify-center active:opacity-60"
+        >
+          <Text className="font-ui-medium text-label text-text-muted">‹ Editar perfil</Text>
+        </Pressable>
+
+        <Field label="Nombre" value={name} onChangeText={setName} maxLength={60} ph={placeholder} />
+        <Field
+          label="@usuario"
+          value={handle}
+          onChangeText={setHandle}
+          placeholder="tuusuario"
+          maxLength={30}
+          ph={placeholder}
+        />
+        <Eyebrow className="mt-4 mb-2 font-mono">Sector</Eyebrow>
+        <View className="flex-row flex-wrap gap-2">
+          {neighborhoods.data?.neighborhoods.map((n) => (
+            <Chip
+              key={n.slug}
+              size="sm"
+              state={currentSlug === n.slug ? 'selected' : 'default'}
+              onPress={() => setSlug(n.slug)}
+            >
+              {n.name}
+            </Chip>
+          ))}
+        </View>
+        <Field label="Bio" value={bio} onChangeText={setBio} maxLength={120} ph={placeholder} />
+
+        {save.error && (
+          <Caption className="mt-3 text-status-packed">
+            No se pudo guardar — prueba con otro usuario.
+          </Caption>
+        )}
+        <View className="mt-6">
+          <Button variant="primary" disabled={!canSave} onPress={() => save.mutate()}>
+            {save.isPending ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </View>
+      </ScrollView>
+    </View>
+  )
+}
+
+function Field({
+  label,
+  ph,
+  ...props
+}: React.ComponentProps<typeof TextInput> & { label: string; ph: string }) {
+  return (
+    <View className="mt-4">
+      <Caption className="mb-1 font-mono text-[10px]">{label}</Caption>
+      <TextInput
+        placeholderTextColor={ph}
+        className="min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
+        {...props}
+      />
     </View>
   )
 }

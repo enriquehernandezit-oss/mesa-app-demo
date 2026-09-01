@@ -23,7 +23,7 @@ import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
@@ -32,7 +32,10 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 // RankingsTab.tsx. The share-my-list card renders via the native view-shot host
 // (shareListCard → ShareCardHost).
 export default function RankingsTab() {
-  const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>('mine')
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
+  const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
+    tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
+  )
   const [tagFilter, setTagFilter] = useState<string | null>(null)
   const me = useProfile(true, 300_000)
 
