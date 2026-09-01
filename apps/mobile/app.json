@@ -39,6 +39,13 @@
         {
           "locationWhenInUsePermission": "Mesa usa tu ubicación solo cuando tocas “Cerca”, para ordenar los spots por cercanía."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mesa accede a tus fotos solo para adjuntar la foto de un plato que elijas.",
+          "cameraPermission": "Mesa usa la cámara solo para tomar la foto de un plato."
+        }
       ]
     ],
     "experiments": {
