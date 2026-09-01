@@ -10,12 +10,16 @@ import {
   Title,
 } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { ShareIcon } from '@/components/ui/icons'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { displayScore, tagLabel } from '@/lib/display'
+import { cloudinaryUrl } from '@/lib/media'
 import { removeRankingWithUndo } from '@/lib/rankingRemoval'
+import { shareListCard } from '@/lib/shareCardStore'
+import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -25,10 +29,12 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // The ranked passport (M3) — mine (ordered, serif numerals, brass scores, notes),
 // want-to-try (saved), and by-sector. Ported from apps/app/src/screens/tabs/
-// RankingsTab.tsx. The share-my-list card defers to N6 (native view-shot).
+// RankingsTab.tsx. The share-my-list card renders via the native view-shot host
+// (shareListCard → ShareCardHost).
 export default function RankingsTab() {
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>('mine')
   const [tagFilter, setTagFilter] = useState<string | null>(null)
+  const me = useProfile(true, 300_000)
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -41,17 +47,45 @@ export default function RankingsTab() {
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
 
-  const myTags = [...new Set((mine.data?.rankings ?? []).flatMap((r) => r.tags ?? []))]
-  const visible = (mine.data?.rankings ?? []).filter(
-    (r) => !tagFilter || (r.tags ?? []).includes(tagFilter),
-  )
+  const ranked = mine.data?.rankings ?? []
+  const myTags = [...new Set(ranked.flatMap((r) => r.tags ?? []))]
+  const visible = ranked.filter((r) => !tagFilter || (r.tags ?? []).includes(tagFilter))
+
+  // The share-my-list story card (the growth loop): the top 5, over the top
+  // spot's photo, captioned with the public profile link.
+  const profile = me.data?.profile
+  const firstName = (profile?.name ?? '').split(' ')[0] || 'Mi'
+  const shareList = () =>
+    shareListCard({
+      eyebrow: `${firstName} · top ${Math.min(ranked.length, 5)}`,
+      subtitle: [profile?.neighborhood?.name, 'Santo Domingo'].filter(Boolean).join(' · '),
+      items: ranked
+        .slice(0, 5)
+        .map((r) => ({ position: r.position, name: r.restaurant.name, score: r.score })),
+      coverUrl: cloudinaryUrl(ranked[0]?.restaurant.coverImageId, { w: 1080, h: 780 }),
+      text: profileShareText(profile?.handle),
+    })
 
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
       <ScrollView contentContainerClassName="px-5 pb-24">
-        <Eyebrow>Tu lista</Eyebrow>
-        <Title className="mb-3">Rankings</Title>
+        <View className="flex-row items-start justify-between">
+          <View>
+            <Eyebrow>Tu lista</Eyebrow>
+            <Title className="mb-3">Rankings</Title>
+          </View>
+          {ranked.length > 0 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Compartir mi lista"
+              onPress={shareList}
+              className="h-10 w-10 items-center justify-center rounded-pill border border-line active:opacity-70"
+            >
+              <ShareIcon size={18} />
+            </Pressable>
+          )}
+        </View>
 
         {stats.data && (
           <View className="mb-4 flex-row gap-6">

@@ -18,12 +18,15 @@ import {
   DirectionsIcon,
   ListIcon,
   PhoneIcon,
+  ShareIcon,
   WebIcon,
 } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
-import { ApiError, api } from '@/lib/api'
+import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
+import { cloudinaryUrl } from '@/lib/media'
+import { shareSpotCard } from '@/lib/shareCardStore'
 import type { Dish, RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -135,6 +138,20 @@ export default function RestaurantProfile() {
   // aggregate always shows.
   const showMesa = true
 
+  const shareMeta = [cuisineLabel(restaurant.cuisine), restaurant.neighborhood?.name]
+    .filter(Boolean)
+    .join(' · ')
+  const shareSpot = () =>
+    shareSpotCard({
+      name: restaurant.name,
+      meta: shareMeta,
+      position: myRanking?.position ?? null,
+      score: myRanking?.score ?? friendsRankings[0]?.score ?? null,
+      note: friendsRankings.find((f) => f.note)?.note ?? null,
+      coverUrl: cloudinaryUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
+      text: `${restaurant.name} en Mesa 🥂\n${apiOrigin}/p/spot/${restaurant.id}`,
+    })
+
   const heroOpacity = scrollY.interpolate({
     inputRange: [heroH - 40, heroH],
     outputRange: [0, 1],
@@ -173,8 +190,17 @@ export default function RestaurantProfile() {
           >
             <BackIcon size={20} />
           </Pressable>
+          <Pressable
+            accessibilityLabel="Compartir"
+            accessibilityRole="button"
+            onPress={shareSpot}
+            style={{ top: insets.top + 8 }}
+            className="absolute right-4 h-10 w-10 items-center justify-center rounded-pill bg-surface active:opacity-80"
+          >
+            <ShareIcon size={18} />
+          </Pressable>
           <View
-            className="absolute right-4 rounded-pill bg-surface px-2 py-1"
+            className="absolute left-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}
           >
             <Caption className="font-mono text-[10px]">film · con velas</Caption>

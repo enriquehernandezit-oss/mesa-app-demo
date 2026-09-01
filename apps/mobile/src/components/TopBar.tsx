@@ -2,6 +2,7 @@ import { Wordmark } from '@/components/ui'
 import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
 import { useActivitySeen } from '@/lib/activitySeen'
 import { api } from '@/lib/api'
+import { shareProfile } from '@/lib/shareProfile'
 import type { ActivityItem } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
@@ -53,7 +54,8 @@ function ActivityBell() {
 export function TopBar({
   variant = 'discover',
   title,
-}: { variant?: 'discover' | 'profile'; title?: string }) {
+  shareHandle,
+}: { variant?: 'discover' | 'profile'; title?: string; shareHandle?: string | null }) {
   const insets = useSafeAreaInsets()
   return (
     <View
@@ -68,9 +70,11 @@ export function TopBar({
       <View className="flex-row gap-2">
         {variant === 'profile' ? (
           <>
-            <Btn>
-              <ShareIcon size={19} color="text" />
-            </Btn>
+            <Pressable accessibilityRole="button" onPress={() => shareProfile(shareHandle)}>
+              <Btn>
+                <ShareIcon size={19} color="text" />
+              </Btn>
+            </Pressable>
             <Link href="/settings" asChild>
               <Pressable>
                 <Btn>

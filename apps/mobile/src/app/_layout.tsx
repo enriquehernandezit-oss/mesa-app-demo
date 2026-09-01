@@ -1,4 +1,5 @@
 import '../global.css'
+import { ShareCardHost } from '@/components/ShareCardHost'
 import { Toaster } from '@/components/ui/Toast'
 import { initToken } from '@/lib/auth-token'
 import { queryClient } from '@/lib/query'
@@ -62,6 +63,7 @@ export default function RootLayout() {
               }}
             />
             <Toaster />
+            <ShareCardHost />
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
