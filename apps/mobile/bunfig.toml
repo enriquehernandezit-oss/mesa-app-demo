@@ -1,0 +1,6 @@
+# apps/mobile is a STANDALONE Expo app, deliberately outside the Bun workspace
+# (it doesn't import @mesa/db). Expo's Metro + Babel walk node_modules for
+# transitive plugins, which Bun's default isolated linker doesn't expose — so
+# this app installs with a flat/hoisted node_modules, the layout Expo expects.
+[install]
+linker = "hoisted"

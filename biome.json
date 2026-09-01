@@ -1,9 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "ignoreUnknown": true,
-    "ignore": ["packages/db/drizzle/**"]
+    "ignore": ["packages/db/drizzle/**", "apps/mobile/assets/**"]
   },
   "formatter": {
     "enabled": true,

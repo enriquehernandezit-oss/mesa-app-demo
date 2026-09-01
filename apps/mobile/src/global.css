@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Afternoon (paper) — the default theme, ported verbatim from
+   apps/app/src/styles/tokens.css. Candlelit is applied at runtime by
+   ThemeProvider via NativeWind vars() (src/theme/vars.ts is the source of truth
+   for both themes); these :root values are the base NativeWind resolves against
+   before the provider mounts and for the initial paint. */
+:root {
+  --bg: #f5efe4;
+  --bg-sunk: #e7dccb;
+  --surface: #fffdf8;
+  --surface-raised: #fffdf8;
+  --text: #2a1512;
+  --text-2: #4a3b32;
+  --text-muted: #746253;
+  --text-faint: #b0a08e;
+  --accent: #8a5f24;
+  --accent-strong: #8a5a2a;
+  --accent-fill: #8a5f24;
+  --on-accent: #fdf7ec;
+  --tab-inactive: #786a5b;
+  --line: rgba(120, 80, 60, 0.12);
+  --line-strong: rgba(120, 80, 60, 0.16);
+  --status-packed: #b0512e;
+  --status-good: #9a6a28;
+  --status-building: #97794f;
+  --status-slow: #8a7b6c;
+  --on-photo: #ebe4d6;
+  --on-photo-2: #dcccbb;
+  --on-photo-accent: #e2c179;
+  --btn-primary-bg: #2a1512;
+  --btn-primary-fg: #fdf7ec;
+}
