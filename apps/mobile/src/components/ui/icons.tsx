@@ -167,3 +167,15 @@ export const PlusIcon = (p: IconProps) => (
     <Path d="M12 5v14M5 12h14" />
   </Icon>
 )
+
+// Leaderboard (trophy) + activity (bell) — ported from the web TopBar's inline SVGs.
+export const TrophyIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4ZM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" />
+  </Icon>
+)
+export const BellIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10.3 21a2 2 0 0 0 3.4 0" />
+  </Icon>
+)

@@ -1,5 +1,5 @@
 import { Wordmark } from '@/components/ui'
-import { PersonIcon, SettingsIcon, ShareIcon } from '@/components/ui/icons'
+import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
 import { Link } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { Text } from 'react-native'
@@ -51,14 +51,14 @@ export function TopBar({
             <Link href="/leaderboard" asChild>
               <Pressable>
                 <Btn>
-                  <PersonIcon size={19} color="text" />
+                  <TrophyIcon size={19} color="text" />
                 </Btn>
               </Pressable>
             </Link>
             <Link href="/activity" asChild>
               <Pressable>
                 <Btn>
-                  <PersonIcon size={19} color="text" />
+                  <BellIcon size={19} color="text" />
                 </Btn>
               </Pressable>
             </Link>
