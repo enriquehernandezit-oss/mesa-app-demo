@@ -1,7 +1,8 @@
 import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
-import { View } from 'react-native'
+import type { ReactNode } from 'react'
+import { Linking, Pressable, Text, View } from 'react-native'
 
 // The "$$$ | Parrilla · Piantini" metadata block under a place's name, ported
 // from apps/app/src/components/ui/patterns.tsx. Occasion tags on top, price |
@@ -48,6 +49,85 @@ export function Characteristics({
           {social.label ? <Caption className="ml-1">{social.label}</Caption> : null}
         </View>
       )}
+    </View>
+  )
+}
+
+import { displayScore } from '@/lib/display'
+
+// Outlined utility pill with a leading glyph — Website / Call / Directions / list
+// membership. With `href` it opens via Linking behind an https/tel allow-list
+// (a website value can be a server-provided Google field); else it runs onPress.
+type ScoreAttribution =
+  | { kind: 'you' }
+  | { kind: 'user'; label: string }
+  | { kind: 'friends'; count: number }
+  | { kind: 'mesa'; count: number }
+
+export function UtilityPill({
+  icon,
+  children,
+  href,
+  onPress,
+}: {
+  icon?: ReactNode
+  children: ReactNode
+  href?: string
+  onPress?: () => void
+}) {
+  const open = () => {
+    if (onPress) return onPress()
+    if (href && /^(https?:|tel:|mailto:)/.test(href)) Linking.openURL(href).catch(() => {})
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={open}
+      className="min-h-[40px] flex-1 flex-row items-center justify-center gap-2 rounded-pill border border-line bg-surface px-3 active:opacity-80"
+    >
+      {icon}
+      <Text className="font-mono text-[11px] text-text">{children}</Text>
+    </Pressable>
+  )
+}
+
+function badgeText(a: ScoreAttribution): string | null {
+  if (a.kind === 'you') return 'Tú'
+  if (a.kind === 'user') return a.label
+  if (a.kind === 'friends') return `${a.count} ${a.count === 1 ? 'amigo' : 'amigos'}`
+  return null
+}
+
+// Attributed score — a brass-ringed circle with the number, an attribution badge,
+// and optional caption/sub. Every score is attributed; the place never gets its
+// own bare rating. 'mesa' reads as a quiet unbadged number.
+export function ScoreBadge({
+  score,
+  attribution,
+  caption,
+  sub,
+}: {
+  score: number
+  attribution: ScoreAttribution
+  caption?: string
+  sub?: string
+}) {
+  const badge = badgeText(attribution)
+  const mesa = attribution.kind === 'mesa'
+  return (
+    <View className="items-center gap-1">
+      <View
+        className={`h-16 w-16 items-center justify-center rounded-pill border ${mesa ? 'border-line' : 'border-accent'}`}
+      >
+        <Text className={`font-serif text-serif-md ${mesa ? 'text-text-2' : 'text-accent'}`}>
+          {displayScore(score)}
+        </Text>
+      </View>
+      {badge ? (
+        <Caption className="font-mono text-[10px] text-accent-strong">{badge}</Caption>
+      ) : null}
+      {caption ? <Caption>{caption}</Caption> : null}
+      {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}
     </View>
   )
 }
