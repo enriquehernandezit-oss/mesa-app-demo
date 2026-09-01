@@ -16,6 +16,7 @@
     "@expo-google-fonts/jetbrains-mono": "^0.4.1",
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.1",
     "@react-navigation/bottom-tabs": "^7.18.18",
+    "@rnmapbox/maps": "^10.3.5",
     "@tanstack/react-query": "^5.102.8",
     "babel-preset-expo": "~57.0.0",
     "better-auth": "1.6.25",

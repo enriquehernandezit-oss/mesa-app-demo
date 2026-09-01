@@ -13,7 +13,7 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { SortIcon } from '@/components/ui/icons'
+import { PinIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
@@ -94,8 +94,23 @@ export default function ExploreScreen() {
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-8">
-        <Eyebrow>Explorar</Eyebrow>
-        <Title className="mb-3">Encuentra un spot</Title>
+        <View className="flex-row items-start justify-between">
+          <View>
+            <Eyebrow>Explorar</Eyebrow>
+            <Title className="mb-3">Encuentra un spot</Title>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ver el mapa"
+            onPress={() => router.push('/map')}
+            className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+          >
+            <PinIcon size={15} />
+            <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+              Mapa
+            </Text>
+          </Pressable>
+        </View>
         <TextInput
           className="min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
           placeholderTextColor={placeholder}

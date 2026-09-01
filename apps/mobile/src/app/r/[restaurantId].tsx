@@ -18,6 +18,7 @@ import {
   DirectionsIcon,
   ListIcon,
   PhoneIcon,
+  PinIcon,
   ShareIcon,
   WebIcon,
 } from '@/components/ui/icons'
@@ -25,11 +26,13 @@ import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patter
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
-import { cloudinaryUrl } from '@/lib/media'
+import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type { Dish, RestaurantProfileResponse } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
@@ -51,6 +54,7 @@ export default function RestaurantProfile() {
   const queryClient = useQueryClient()
   const { height: winH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  const theme = useResolvedTheme()
   const heroH = Math.round(winH * 0.34)
 
   // Scroll-driven condensed header (mock D2): a sticky "‹ Lumbre 8.8" bar that
@@ -138,6 +142,30 @@ export default function RestaurantProfile() {
   // aggregate always shows.
   const showMesa = true
 
+  // The place's static map (needs a MapBox token). A Google-created place with no
+  // photo but an exact geocode gets a tinted map as its hero instead of the
+  // generated mark (M9) — the picture "of" a photoless place is where it is. The
+  // lower locator is then redundant (one map per profile), so it's hidden.
+  const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng, { w: 700, h: 260, theme })
+  const heroMapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng, { w: 1000, h: 750, theme })
+  const mapCover =
+    Boolean(heroMapUrl) &&
+    !restaurant.coverImageId &&
+    restaurant.geoPrecision === 'exact' &&
+    restaurant.google
+  const openPlaceMap = () =>
+    router.push({
+      pathname: '/place-map',
+      params: {
+        id: restaurant.id,
+        name: restaurant.name,
+        lat: String(restaurant.lat),
+        lng: String(restaurant.lng),
+        address: restaurant.address ?? '',
+        neighborhood: restaurant.neighborhood?.name ?? '',
+      },
+    })
+
   const shareMeta = [cuisineLabel(restaurant.cuisine), restaurant.neighborhood?.name]
     .filter(Boolean)
     .join(' · ')
@@ -172,15 +200,32 @@ export default function RestaurantProfile() {
         })}
         contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}
       >
-        {/* Film-photo hero — clean image, a floating back control below it. */}
+        {/* Film-photo hero — clean image, a floating back control below it. A
+            photoless Google place with an exact geocode gets a tinted map hero
+            (mapCover, M9), tappable into the full map. */}
         <View style={{ height: heroH }}>
-          <PlaceCover
-            seed={restaurant.id}
-            name={restaurant.name}
-            coverImageId={restaurant.coverImageId}
-            size={{ w: 1000, h: 750 }}
-            className="h-full w-full"
-          />
+          {mapCover && heroMapUrl ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+              onPress={openPlaceMap}
+              className="h-full w-full"
+            >
+              <Image
+                source={{ uri: heroMapUrl }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+            </Pressable>
+          ) : (
+            <PlaceCover
+              seed={restaurant.id}
+              name={restaurant.name}
+              coverImageId={restaurant.coverImageId}
+              size={{ w: 1000, h: 750 }}
+              className="h-full w-full"
+            />
+          )}
           <Pressable
             accessibilityLabel="Atrás"
             accessibilityRole="button"
@@ -203,7 +248,11 @@ export default function RestaurantProfile() {
             className="absolute left-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}
           >
-            <Caption className="font-mono text-[10px]">film · con velas</Caption>
+            {/* MapBox burns its attribution into the static image's corner, which
+                cover-crop then hides — so it's stated here when the hero is a map. */}
+            <Caption className="font-mono text-[10px]">
+              {mapCover ? '© Mapbox © OpenStreetMap' : 'film · con velas'}
+            </Caption>
           </View>
         </View>
 
@@ -323,6 +372,28 @@ export default function RestaurantProfile() {
           <PopularDishes restaurantId={restaurantId} canAdd={Boolean(myRanking)} />
 
           <TheirScores rankings={friendsRankings} />
+
+          {/* Locator map — a static MapBox tile that opens the full pannable map
+              (place-map). Hidden when the hero itself is the map (one map per
+              profile), and when no token is configured (no SVG fallback on native). */}
+          {!mapCover && mapUrl && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+              onPress={openPlaceMap}
+              className="mt-4 h-40 overflow-hidden rounded active:opacity-90"
+            >
+              <Image
+                source={{ uri: mapUrl }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+              <View className="absolute right-3 bottom-3 flex-row items-center gap-1 rounded-pill bg-surface px-2 py-1">
+                <PinIcon size={12} />
+                <Caption className="font-mono text-[10px]">Ver en el mapa</Caption>
+              </View>
+            </Pressable>
+          )}
 
           {/* Required Google attribution whenever this profile's data came from
               Google (M9) — the official logo asset swaps in before a real launch. */}
