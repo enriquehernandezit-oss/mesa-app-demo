@@ -1,5 +1,6 @@
 import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
+import { tapLight } from '@/lib/haptics'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Pressable, Text } from 'react-native'
@@ -49,6 +50,7 @@ export function CheersButton({
         withTiming(1.3, { duration: 150 }),
         withTiming(1, { duration: 150 }),
       )
+      tapLight()
     }
     toggle.mutate(next)
   }

@@ -33,7 +33,13 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Mesa usa tu ubicación solo cuando tocas “Cerca”, para ordenar los spots por cercanía."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

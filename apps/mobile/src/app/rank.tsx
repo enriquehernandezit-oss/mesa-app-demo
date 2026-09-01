@@ -1,3 +1,4 @@
+import { ExternalResults } from '@/components/ExternalResults'
 import {
   Body,
   Button,
@@ -14,8 +15,11 @@ import { CompareCard } from '@/components/ui/CompareCard'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
+import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
 import { displayScore, scoreForPosition } from '@/lib/display'
+import { formatDistance, haversineM } from '@/lib/geo'
+import { tapSuccess } from '@/lib/haptics'
 import {
   type PairwiseState,
   type Sentiment,
@@ -28,6 +32,8 @@ import {
 } from '@/lib/pairwise'
 import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
 import type { NewRestaurant, Ranking, RestaurantProfileResponse, SavedPlace } from '@/lib/types'
+import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
+import { useMyLocation } from '@/lib/useMyLocation'
 import { useColor } from '@/theme/useColor'
 import {
   type UseMutationResult,
@@ -45,11 +51,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // + "Más o menos igual", reveal the score, then add a note / occasion tags / a
 // dish. Ported from apps/app/src/screens/rank/RankAPlace.tsx.
 //
-// Trimmed for the native launch: the "Cerca" (location) filter + distance lands
-// with expo-location in N6; the Google external-search gap-filler lands with
-// Explore's external search in N5; the success haptic lands with expo-haptics in
-// N6. The manual "add a place" form stays (pure API), as does the whole core
-// find → compare → reveal → note loop.
+// The "Cerca" (location) filter + distance is wired via expo-location, the
+// success haptic via expo-haptics, and the Google external-search gap-filler via
+// useExternalPlaceSearch (all N6 / shared with Explore). The manual "add a place"
+// form is pure API, as is the whole find → compare → reveal → note loop.
 
 type Item = {
   id: string
@@ -96,6 +101,9 @@ export default function RankAPlace() {
   const [pickQuery, setPickQuery] = useState('')
   const [openNow, setOpenNow] = useState(false)
   const [reserveOnly, setReserveOnly] = useState(false)
+  const [nearby, setNearby] = useState(false)
+  const me = useProfile(true, 300_000)
+  const myHood = me.data?.profile.neighborhood?.name ?? null
 
   // Query-driven, mirroring Explore: the server searches (mesa_norm + trigram)
   // and bounds the result. No debounce — every keystroke past 2 chars refetches.
@@ -191,7 +199,7 @@ export default function RankAPlace() {
 
   const finishToRankings = () => {
     setPlacedStamp(true)
-    // The success haptic (tapSuccess) lands with expo-haptics in N6.
+    tapSuccess()
     setTimeout(() => router.replace('/rankings'), 1300)
   }
 
@@ -282,6 +290,22 @@ export default function RankAPlace() {
     },
   })
 
+  // Tapping a Google suggestion in the find step creates a real, populated
+  // profile immediately (M9) and continues the rank flow with it — treated
+  // exactly like a hand-added place.
+  const onGoogleCreated = (restaurant: NewRestaurant) => {
+    setAddedPlace({
+      id: restaurant.id,
+      name: restaurant.name,
+      cuisine: restaurant.cuisine,
+      coverImageId: restaurant.coverImageId,
+      neighborhood: restaurant.neighborhood,
+      priceTier: restaurant.priceTier,
+    })
+    setPickedId(restaurant.id)
+    queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
+  }
+
   // The celebration stamp — "#3 · Mijas" punches in over the screen.
   if (placedStamp && picked && position !== null) {
     return (
@@ -316,8 +340,12 @@ export default function RankAPlace() {
         setOpenNow={setOpenNow}
         reserveOnly={reserveOnly}
         setReserveOnly={setReserveOnly}
+        nearby={nearby}
+        setNearby={setNearby}
+        myHood={myHood}
         onPick={setPickedId}
         addPlace={addPlace}
+        onGoogleCreated={onGoogleCreated}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/rankings'))}
       />
     )
@@ -864,8 +892,12 @@ function FindStep({
   setOpenNow,
   reserveOnly,
   setReserveOnly,
+  nearby,
+  setNearby,
+  myHood,
   onPick,
   addPlace,
+  onGoogleCreated,
   onBack,
 }: {
   candList: Item[]
@@ -877,13 +909,18 @@ function FindStep({
   setOpenNow: Dispatch<SetStateAction<boolean>>
   reserveOnly: boolean
   setReserveOnly: Dispatch<SetStateAction<boolean>>
+  nearby: boolean
+  setNearby: Dispatch<SetStateAction<boolean>>
+  myHood: string | null
   onPick: (id: string) => void
   addPlace: AddPlaceMutation
+  onGoogleCreated: (restaurant: NewRestaurant) => void
   onBack: () => void
 }) {
   const insets = useSafeAreaInsets()
   const placeholder = useColor('text-muted')
   const [adding, setAdding] = useState(false)
+  const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
   // Hide "Abierto ahora" once the candidate list is catalog-heavy: it filters on
   // closesAt, which is null for every imported row, so it would wipe almost
@@ -905,7 +942,30 @@ function FindStep({
     )
   })
   let filtered: Item[] = [...candList, ...existingFiltered]
-  if (!q) {
+  const distanceOf = (r: Item) =>
+    myPosition && r.lat != null && r.lng != null
+      ? haversineM(myPosition, { lat: r.lat, lng: r.lng })
+      : null
+  if (nearby && myPosition) {
+    // Real distance, once we have one. Rows with no coordinates sort to the end
+    // rather than being dropped — still real candidates, just unknown distance.
+    filtered = [...filtered].sort((a, b) => {
+      const da = distanceOf(a)
+      const db = distanceOf(b)
+      if (da == null && db == null) return a.name.localeCompare(b.name)
+      if (da == null) return 1
+      if (db == null) return -1
+      return da - db
+    })
+  } else if (nearby && myHood) {
+    // No position yet (denied, or still in flight) — degrade to the self-declared
+    // sector match rather than blocking the sort.
+    filtered = [...filtered].sort((a, b) => {
+      const am = a.neighborhood === myHood ? 0 : 1
+      const bm = b.neighborhood === myHood ? 0 : 1
+      return am - bm || a.name.localeCompare(b.name)
+    })
+  } else if (!q) {
     // No active search — alphabetical browse, mirroring the server's default.
     filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name))
   }
@@ -919,40 +979,58 @@ function FindStep({
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
-  const renderRow = (r: Item) => (
-    <Pressable
-      key={r.id}
-      accessibilityRole="button"
-      onPress={() => onPick(r.id)}
-      className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
-    >
-      <PlaceCover
-        seed={r.id}
-        name={r.name}
-        coverImageId={r.coverImageId}
-        size={{ w: 160, h: 160 }}
-        className="h-14 w-14"
-      />
-      <View className="flex-1">
-        <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-          {r.name}
-        </Text>
-        <Characteristics
-          priceTier={r.priceTier}
-          cuisine={r.cuisine}
-          neighborhood={r.neighborhood}
-          hours={r.closesAt ? `hasta ${r.closesAt}` : null}
+  // Google gap-filler — only when Mesa came up short. Deduped against results +
+  // lead group so a spot you already have isn't re-offered; tapping continues
+  // the rank flow with the new place. Shared with Explore (useExternalPlaceSearch).
+  const {
+    suggestions,
+    create: createFromGoogle,
+    creatingId,
+  } = useExternalPlaceSearch({
+    query,
+    mesaResultCount: results.length + leadGroup.length,
+    catalogNames: [...results.map((r) => r.name), ...leadGroup.map((r) => r.name)],
+    onCreated: onGoogleCreated,
+  })
+
+  const renderRow = (r: Item) => {
+    const dist = distanceOf(r)
+    return (
+      <Pressable
+        key={r.id}
+        accessibilityRole="button"
+        onPress={() => onPick(r.id)}
+        className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+      >
+        <PlaceCover
+          seed={r.id}
+          name={r.name}
+          coverImageId={r.coverImageId}
+          size={{ w: 160, h: 160 }}
+          className="h-14 w-14"
         />
-      </View>
-      {r.score != null ? (
-        <Text className="font-serif text-serif-lg text-accent">{displayScore(r.score)}</Text>
-      ) : (
-        <Text className="font-mono text-[10px] text-text-faint uppercase tracking-eyebrow">
-          sin rankear
-        </Text>
-      )}
-    </Pressable>
-  )
+        <View className="flex-1">
+          <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+            {r.name}
+          </Text>
+          <Characteristics
+            priceTier={r.priceTier}
+            cuisine={r.cuisine}
+            neighborhood={r.neighborhood}
+            hours={r.closesAt ? `hasta ${r.closesAt}` : null}
+            distance={dist != null ? formatDistance(dist) : null}
+          />
+        </View>
+        {r.score != null ? (
+          <Text className="font-serif text-serif-lg text-accent">{displayScore(r.score)}</Text>
+        ) : (
+          <Text className="font-mono text-[10px] text-text-faint uppercase tracking-eyebrow">
+            sin rankear
+          </Text>
+        )}
+      </Pressable>
+    )
+  }
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top + 12 }}>
@@ -967,6 +1045,16 @@ function FindStep({
           onChangeText={setQuery}
         />
         <ChipRail className="mt-3">
+          <Chip
+            size="sm"
+            state={nearby ? 'selected' : 'default'}
+            onPress={() => {
+              setNearby((v) => !v)
+              requestLocation()
+            }}
+          >
+            Cerca
+          </Chip>
           {showOpenChip && (
             <Chip
               size="sm"
@@ -1002,6 +1090,15 @@ function FindStep({
             )}
             {results.map(renderRow)}
           </>
+        )}
+
+        {!adding && (
+          <ExternalResults
+            heading={<Eyebrow className="mt-3 font-mono">En Google</Eyebrow>}
+            suggestions={suggestions}
+            creatingId={creatingId}
+            onPick={createFromGoogle}
+          />
         )}
 
         {adding ? (
