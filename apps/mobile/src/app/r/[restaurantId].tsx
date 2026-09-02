@@ -27,6 +27,7 @@ import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
+import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type { Dish, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
@@ -44,10 +45,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // bottom. Ported from apps/app/src/screens/restaurant/RestaurantProfile.tsx.
 //
 // Trimmed for the native launch: the inert Reserve strip is cut (Mesa has no
-// booking supply). The whole map surface — the map hero, the locator map, and
-// the interactive place sheet — lands with maps in N7; until then "Cómo llegar"
-// is the directions entry (a real Apple Maps handoff via lib/directions). The
-// share-card button lands with native view-shot in N6.
+// booking supply). Everything else is wired — the map hero + locator open the
+// pannable place-map (N7), "Cómo llegar" hands off to the maps app, and the
+// hero's share button renders the story card via view-shot (N6).
 export default function RestaurantProfile() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>()
   const router = useRouter()
@@ -55,6 +55,7 @@ export default function RestaurantProfile() {
   const { height: winH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const theme = useResolvedTheme()
+  const friendsOnly = useFriendsOnlyScores()
   const heroH = Math.round(winH * 0.34)
 
   // Scroll-driven condensed header (mock D2): a sticky "‹ Lumbre 8.8" bar that
@@ -137,10 +138,9 @@ export default function RestaurantProfile() {
     saved,
   } = q.data
 
-  // "Friends-only scores" (Settings H1) hides the all-of-Mesa aggregate. That
-  // pref screen lands with Settings in N9; until it can be toggled, Mesa's
-  // aggregate always shows.
-  const showMesa = true
+  // "Friends-only scores" (Settings H1) hides the all-of-Mesa aggregate, so you
+  // only see your circle. Client-side because it's purely a display filter.
+  const showMesa = !friendsOnly
 
   // The place's static map (needs a MapBox token). A Google-created place with no
   // photo but an exact geocode gets a tinted map as its hero instead of the

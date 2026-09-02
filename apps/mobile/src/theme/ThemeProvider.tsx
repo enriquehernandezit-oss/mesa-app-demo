@@ -1,3 +1,4 @@
+import * as SecureStore from 'expo-secure-store'
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Appearance, View } from 'react-native'
 import { GROUND, type ThemeName, themeVars } from './vars'
@@ -6,8 +7,9 @@ import { GROUND, type ThemeName, themeVars } from './vars'
 // Auto, which follows the OS AND the clock — Mesa is a going-out app, so Auto
 // reads as evening energy once it actually is evening, not only when the OS is
 // in dark mode. The web version persisted the choice in localStorage for a
-// synchronous first paint; on native there's no FOUC to avoid, so persistence
-// of the choice moves to the ThemePicker (N9). Default is Auto.
+// synchronous first paint; on native there's no FOUC to avoid, so the choice is
+// read back asynchronously from SecureStore after mount (N9) and written on every
+// change. Default is Auto until that read resolves.
 
 export type ThemeChoice = 'auto' | 'afternoon' | 'candlelit'
 
@@ -46,8 +48,33 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
+const CHOICE_KEY = 'mesa.theme_choice'
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [choice, setChoice] = useState<ThemeChoice>('auto')
+  const [choice, setChoiceState] = useState<ThemeChoice>('auto')
+
+  // Rehydrate the saved choice once on mount. Until it lands the app renders
+  // Auto, which is the same thing a first-time member sees — no flash of the
+  // wrong theme, because Auto already resolves to something sensible.
+  useEffect(() => {
+    SecureStore.getItemAsync(CHOICE_KEY)
+      .then((v) => {
+        if (v === 'auto' || v === 'afternoon' || v === 'candlelit') setChoiceState(v)
+      })
+      .catch(() => {
+        // No stored choice — stay on Auto.
+      })
+  }, [])
+
+  // Fire-and-forget persistence: the in-memory choice is what renders, and a
+  // failed write must never break the tap that made it.
+  const setChoice = useMemo(
+    () => (c: ThemeChoice) => {
+      setChoiceState(c)
+      void SecureStore.setItemAsync(CHOICE_KEY, c).catch(() => {})
+    },
+    [],
+  )
   const [resolved, setResolved] = useState<ThemeName>(() => resolve('auto'))
 
   // Re-resolve whenever the choice changes, the OS scheme flips, the app returns
@@ -79,7 +106,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ThemeContextValue>(
     () => ({ choice, resolved, setChoice }),
-    [choice, resolved],
+    [choice, resolved, setChoice],
   )
 
   return (
