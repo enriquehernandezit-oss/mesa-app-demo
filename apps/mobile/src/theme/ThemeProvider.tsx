@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store'
+import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Appearance, View } from 'react-native'
 import { GROUND, type ThemeName, themeVars } from './vars'
@@ -6,10 +7,14 @@ import { GROUND, type ThemeName, themeVars } from './vars'
 // Theme resolution, ported from apps/app/src/styles/theme.ts. Two themes plus
 // Auto, which follows the OS AND the clock — Mesa is a going-out app, so Auto
 // reads as evening energy once it actually is evening, not only when the OS is
-// in dark mode. The web version persisted the choice in localStorage for a
-// synchronous first paint; on native there's no FOUC to avoid, so the choice is
-// read back asynchronously from SecureStore after mount (N9) and written on every
-// change. Default is Auto until that read resolves.
+// in dark mode.
+//
+// The saved choice is read from SecureStore BEFORE the first frame: initThemeChoice()
+// resolves in the root layout's splash gate (same shape as initToken()), and the
+// provider seeds from that cache synchronously. Reading it after mount instead —
+// which is what this did — meant anyone with an explicit choice got a frame of the
+// wrong theme on every cold start: pick Afternoon and open the app at 9pm and Auto
+// painted Candlelit first, then snapped. A first-time member still starts on Auto.
 
 export type ThemeChoice = 'auto' | 'afternoon' | 'candlelit'
 
@@ -50,21 +55,38 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const CHOICE_KEY = 'mesa.theme_choice'
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [choice, setChoiceState] = useState<ThemeChoice>('auto')
+function isChoice(v: string | null): v is ThemeChoice {
+  return v === 'auto' || v === 'afternoon' || v === 'candlelit'
+}
 
-  // Rehydrate the saved choice once on mount. Until it lands the app renders
-  // Auto, which is the same thing a first-time member sees — no flash of the
-  // wrong theme, because Auto already resolves to something sensible.
-  useEffect(() => {
-    SecureStore.getItemAsync(CHOICE_KEY)
-      .then((v) => {
-        if (v === 'auto' || v === 'afternoon' || v === 'candlelit') setChoiceState(v)
-      })
-      .catch(() => {
-        // No stored choice — stay on Auto.
-      })
-  }, [])
+let cachedChoice: ThemeChoice = 'auto'
+
+// Awaited by the root layout before it lets the first frame through. Bounded, for
+// the same reason initToken() is: a stuck native bridge must cost one wrong-theme
+// frame, never a permanently blank app.
+export async function initThemeChoice(): Promise<void> {
+  try {
+    const read = SecureStore.getItemAsync(CHOICE_KEY)
+    const timeout = new Promise<null>((r) => setTimeout(() => r(null), 3000))
+    const v = await Promise.race([read, timeout])
+    if (isChoice(v)) cachedChoice = v
+  } catch {
+    // Keep Auto.
+  }
+}
+
+// The resolved theme for imperative, non-React callers — system surfaces that are
+// created outside the tree (action sheets, alerts) still have to match the theme
+// Mesa is actually painting, which can be Candlelit while the OS is light.
+let currentResolved: ThemeName = resolve('auto')
+export function getResolvedTheme(): ThemeName {
+  return currentResolved
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Seeded from the cache initThemeChoice() filled during the splash gate, so the
+  // first frame is already the right theme.
+  const [choice, setChoiceState] = useState<ThemeChoice>(cachedChoice)
 
   // Fire-and-forget persistence: the in-memory choice is what renders, and a
   // failed write must never break the tap that made it.
@@ -75,24 +97,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
-  const [resolved, setResolved] = useState<ThemeName>(() => resolve('auto'))
+  const [resolved, setResolved] = useState<ThemeName>(() => resolve(cachedChoice))
 
   // Re-resolve whenever the choice changes, the OS scheme flips, the app returns
   // to the foreground, or the clock crosses 6am/6pm — but only the last two
   // matter while Auto is active, matching the web's "track system + clock only
   // while Auto" behavior.
   useEffect(() => {
-    setResolved(resolve(choice))
+    const next = resolve(choice)
+    currentResolved = next
+    setResolved(next)
     if (choice !== 'auto') return
 
-    const osSub = Appearance.addChangeListener(() => setResolved(resolve('auto')))
+    const reresolve = () => {
+      const n = resolve('auto')
+      currentResolved = n
+      setResolved(n)
+    }
+    const osSub = Appearance.addChangeListener(reresolve)
     const appSub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') setResolved(resolve('auto'))
+      if (s === 'active') reresolve()
     })
     let timer: ReturnType<typeof setTimeout>
     const arm = () => {
       timer = setTimeout(() => {
-        setResolved(resolve('auto'))
+        reresolve()
         arm()
       }, msToNextBoundary())
     }
@@ -111,6 +140,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
+      {/* The bar follows MESA's theme, not the OS's: `style="auto"` would read the
+          system scheme and get it wrong every evening, since Auto turns Candlelit
+          at 6pm on a light-mode phone. */}
+      <StatusBar style={resolved === 'candlelit' ? 'light' : 'dark'} animated />
       <View style={[themeVars[resolved], { flex: 1, backgroundColor: GROUND[resolved] }]}>
         {children}
       </View>

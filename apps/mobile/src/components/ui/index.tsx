@@ -1,3 +1,4 @@
+import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, useEffect } from 'react'
 import {
   Pressable,
@@ -87,7 +88,7 @@ export const Button = ({
     style={
       variant === 'primary'
         ? {
-            shadowColor: '#6b4715',
+            shadowColor: BRASS_SHADOW,
             shadowOpacity: 0.35,
             shadowRadius: 18,
             shadowOffset: { width: 0, height: 4 },

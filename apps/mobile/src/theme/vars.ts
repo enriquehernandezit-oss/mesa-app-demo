@@ -90,6 +90,12 @@ const strip = (m: Record<string, string>) =>
     string
   >
 
+// The warm shadow under Mesa's primary ink actions (the Button, the rank FAB).
+// Theme-invariant by design — it reads as the same lamp-lit drop in both themes —
+// which is why it's a constant rather than a per-theme token. Raw hex is legal
+// here and only here (docs/DESIGN.md).
+export const BRASS_SHADOW = '#6b4715'
+
 export const themeColors: Record<ThemeName, Record<ColorToken, string>> = {
   afternoon: strip(afternoon),
   candlelit: strip(candlelit),

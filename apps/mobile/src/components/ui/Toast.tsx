@@ -1,3 +1,5 @@
+import { tapError } from '@/lib/haptics'
+import { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -31,6 +33,11 @@ export function Toaster() {
 
 function ToastItem({ toast }: { toast: Toast }) {
   const error = toast.variant === 'error'
+  // Every failed mutation in the app surfaces as an error toast, so buzzing here
+  // gives the whole app failure feedback from one place. Once per toast, on mount.
+  useEffect(() => {
+    if (error) tapError()
+  }, [error])
   return (
     <Animated.View
       entering={FadeInDown.duration(200)}

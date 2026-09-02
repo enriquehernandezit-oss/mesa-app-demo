@@ -3,7 +3,7 @@ import { ShareCardHost } from '@/components/ShareCardHost'
 import { Toaster } from '@/components/ui/Toast'
 import { initToken } from '@/lib/auth-token'
 import { queryClient } from '@/lib/query'
-import { ThemeProvider, useResolvedTheme } from '@/theme/ThemeProvider'
+import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 import {
   CormorantGaramond_400Regular_Italic,
@@ -37,15 +37,16 @@ export default function RootLayout() {
     JetBrainsMono_400Regular,
   })
 
-  // The session token lives in the Keychain (async); fill its sync cache before
-  // the first render so the gate doesn't flash sign-in at an already-signed-in
-  // member.
-  const [tokenReady, setTokenReady] = useState(false)
+  // Two Keychain reads have to land before the first frame, or the first frame is
+  // a lie: the session token (else the gate flashes sign-in at a signed-in member)
+  // and the theme choice (else an explicit Afternoon/Candlelit choice flashes the
+  // Auto-resolved theme first). Both are bounded internally.
+  const [preloaded, setPreloaded] = useState(false)
   useEffect(() => {
-    initToken().finally(() => setTokenReady(true))
+    Promise.all([initToken(), initThemeChoice()]).finally(() => setPreloaded(true))
   }, [])
 
-  const ready = loaded && tokenReady
+  const ready = loaded && preloaded
   useEffect(() => {
     if (ready) SplashScreen.hideAsync()
   }, [ready])

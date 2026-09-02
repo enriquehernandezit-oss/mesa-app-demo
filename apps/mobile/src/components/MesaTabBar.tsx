@@ -6,6 +6,7 @@ import {
   RankingsIcon,
 } from '@/components/ui/icons'
 import { useColor } from '@/theme/useColor'
+import { BRASS_SHADOW } from '@/theme/vars'
 import { type Tabs, useRouter } from 'expo-router'
 
 // The exact props expo-router's Tabs passes to a custom tabBar (it re-exports its
@@ -96,7 +97,7 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
           style={{
             marginTop: -8,
             backgroundColor: fabBg,
-            shadowColor: '#6b4715',
+            shadowColor: BRASS_SHADOW,
             shadowOpacity: 0.35,
             shadowRadius: 14,
             shadowOffset: { width: 0, height: 3 },

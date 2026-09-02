@@ -22,6 +22,7 @@ import { removeRankingWithUndo } from '@/lib/rankingRemoval'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
@@ -33,6 +34,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 // RankingsTab.tsx. The share-my-list card renders via the native view-shot host
 // (shareListCard → ShareCardHost).
 export default function RankingsTab() {
+  const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
@@ -74,6 +76,7 @@ export default function RankingsTab() {
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
       <ScrollView
+        indicatorStyle={indicator}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
       >

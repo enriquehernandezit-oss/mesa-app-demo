@@ -1,6 +1,7 @@
 import { PlusIcon } from '@/components/ui/icons'
 import { tapLight } from '@/lib/haptics'
 import { useColor } from '@/theme/useColor'
+import { BRASS_SHADOW } from '@/theme/vars'
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect'
 import { useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
@@ -64,7 +65,7 @@ export function RankFab() {
             height: SIZE,
             borderRadius: SIZE / 2,
             backgroundColor: ink,
-            shadowColor: ink,
+            shadowColor: BRASS_SHADOW,
             shadowOpacity: 0.3,
             shadowRadius: 10,
             shadowOffset: { width: 0, height: 4 },

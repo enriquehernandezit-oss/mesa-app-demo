@@ -2,6 +2,7 @@ import { Body, Button, Caption, Chip, Eyebrow, SectionHeader, Title, Toggle } fr
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
 import { GRAIN_LABEL_ES } from '@/lib/display'
+import { tapSuccess } from '@/lib/haptics'
 import { resizeToJpeg } from '@/lib/image'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
@@ -66,6 +67,7 @@ export default function DishCompose() {
     },
     onSuccess: () => {
       posted.current = true
+      tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })

@@ -19,6 +19,8 @@ import { api } from '@/lib/api'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { useColor } from '@/theme/useColor'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useRouter } from 'expo-router'
@@ -37,6 +39,8 @@ interface FeedPage {
 }
 
 export default function DiscoverTab() {
+  const accent = useColor('accent')
+  const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
     queryFn: ({ pageParam }) =>
@@ -63,7 +67,11 @@ export default function DiscoverTab() {
         <ScrollView
           contentContainerClassName="pb-8"
           refreshControl={
-            <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} />
+            <RefreshControl
+              refreshing={feed.isRefetching}
+              onRefresh={() => feed.refetch()}
+              tintColor={accent}
+            />
           }
         >
           <FeedHeader />
@@ -84,8 +92,16 @@ export default function DiscoverTab() {
           contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} />
+            <RefreshControl
+              refreshing={feed.isRefetching}
+              onRefresh={() => feed.refetch()}
+              tintColor={accent}
+            />
           }
+          // Without this a 2-item feed can't be pulled — there's nothing to
+          // overscroll — so a new member has no way to refresh.
+          alwaysBounceVertical
+          indicatorStyle={indicator}
           onEndReachedThreshold={0.5}
           onEndReached={() => {
             if (feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
