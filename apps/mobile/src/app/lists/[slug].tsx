@@ -1,11 +1,10 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Caption, EmptyState, Eyebrow, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
 import type { ListDetailResponse } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { Link, Stack, useLocalSearchParams } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // A curated list's detail — its members in editorial order, each with the
@@ -13,8 +12,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // pills. Ported from apps/app/src/screens/list/ListScreen.tsx.
 export default function ListScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
-  const router = useRouter()
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
   const q = useQuery({
     queryKey: ['list', slug],
     queryFn: () => api.get<ListDetailResponse>(`/lists/${slug}`),
@@ -23,7 +20,9 @@ export default function ListScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel="Atrás" />
+      {/* Inline title, not large: this screen opens on a hero image, and a
+          large title stacked above it just pushes the photo off the fold. */}
+      <Stack.Screen options={{ title: q.data?.list.title ?? '', headerLargeTitle: false }} />
       {q.isPending ? (
         <Body className="px-5">Cargando…</Body>
       ) : q.isError || !q.data ? (
@@ -51,7 +50,6 @@ export default function ListScreen() {
           </View>
           <View className="px-5">
             <Eyebrow className="mt-4">Destacada · {q.data.items.length} spots</Eyebrow>
-            <Title>{q.data.list.title}</Title>
             {q.data.list.subtitle ? <Body className="mt-1">{q.data.list.subtitle}</Body> : null}
 
             <View className="mt-4">

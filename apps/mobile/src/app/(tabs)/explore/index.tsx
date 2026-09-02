@@ -1,6 +1,5 @@
 import { ExternalResults } from '@/components/ExternalResults'
 import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
-import { TopBar } from '@/components/TopBar'
 import {
   Body,
   Caption,
@@ -8,9 +7,7 @@ import {
   ChipRail,
   EmptyState,
   ErrorState,
-  Eyebrow,
   SectionHeader,
-  Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -20,11 +17,12 @@ import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import type { ExploreHit, ExploreMember, ExploreResponse, Neighborhood } from '@/lib/types'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
-import { useColor } from '@/theme/useColor'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
+import { Link, Stack, useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
@@ -35,7 +33,8 @@ const PRICES = [1, 2, 3, 4]
 
 export default function ExploreScreen() {
   const router = useRouter()
-  const placeholder = useColor('text-muted')
+  const theme = useResolvedTheme()
+  const c = themeColors[theme]
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
   const [cuisine, setCuisine] = useState<string | null>(null)
@@ -93,37 +92,43 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <TopBar variant="discover" />
+      {/* Search lives in the navigation bar, not the page: UIKit owns the field,
+          its focus/cancel behavior, and the keyboard. The map entry is the bar's
+          right action. */}
+      <Stack.Screen
+        options={{
+          headerSearchBarOptions: {
+            placeholder: 'Busca un spot, plato o miembro',
+            cancelButtonText: 'Cancelar',
+            hideWhenScrolling: false,
+            autoCapitalize: 'none',
+            tintColor: c.accent,
+            textColor: c.text,
+            hintTextColor: c['text-muted'],
+            headerIconColor: c['text-muted'],
+            onChangeText: (e) => setQ(e.nativeEvent.text),
+          },
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ver el mapa"
+              onPress={() => router.push('/map')}
+              className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+            >
+              <PinIcon size={15} />
+              <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+                Mapa
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+        contentInsetAdjustmentBehavior="automatic"
       >
-        <View className="flex-row items-start justify-between">
-          <View>
-            <Eyebrow>Explorar</Eyebrow>
-            <Title className="mb-3">Encuentra un spot</Title>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ver el mapa"
-            onPress={() => router.push('/map')}
-            className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
-          >
-            <PinIcon size={15} />
-            <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
-              Mapa
-            </Text>
-          </Pressable>
-        </View>
-        <TextInput
-          className="min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-          placeholderTextColor={placeholder}
-          placeholder="Busca un spot, plato o miembro"
-          value={q}
-          onChangeText={setQ}
-        />
-
         {/* Attribute filters (sort / open / price). */}
         <ChipRail className="mt-3">
           <Chip

@@ -1,11 +1,10 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Caption, Chip, Eyebrow, Title } from '@/components/ui'
+import { Body, Caption, Chip, Eyebrow } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import type { LeaderboardRow } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
+import { Link } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
@@ -13,7 +12,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // design: brass serif numerals, no badges. Ported from apps/app/src/screens/
 // leaderboard/LeaderboardScreen.tsx.
 export default function LeaderboardScreen() {
-  const router = useRouter()
   const [period, setPeriod] = useState<'all' | 'month'>('month')
   const q = useQuery({
     queryKey: ['leaderboard', period],
@@ -23,14 +21,15 @@ export default function LeaderboardScreen() {
       ),
   })
   const rows = q.data?.leaderboard ?? []
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel="Atrás" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
-        <Eyebrow>Santo Domingo</Eyebrow>
-        <Title className="mb-4">Clasificación</Title>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-10"
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <Eyebrow className="mb-4">Santo Domingo</Eyebrow>
 
         <View className="mb-4 flex-row gap-2">
           <Chip

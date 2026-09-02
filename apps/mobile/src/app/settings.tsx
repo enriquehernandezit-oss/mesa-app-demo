@@ -1,4 +1,3 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
 import { Button, Caption, Eyebrow, Toggle } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { ThemePicker } from '@/components/ui/ThemePicker'
@@ -170,8 +169,11 @@ export default function SettingsScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={() => router.back()} backLabel="Ajustes" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-12">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-12"
+        contentInsetAdjustmentBehavior="automatic"
+      >
         {/* Tappable profile card → the profile tab. */}
         <Pressable
           accessibilityRole="button"

@@ -1,6 +1,5 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, EmptyState, Eyebrow, Title, Wordmark } from '@/components/ui'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { ScrollView, View } from 'react-native'
 
 // In-app legal pages. Apple requires the Privacy Policy and Terms to be reachable
@@ -51,20 +50,21 @@ const DOCS: Record<Doc, { title: string; body: string[] }> = {
 
 export default function LegalPage() {
   const { doc } = useLocalSearchParams<{ doc: string }>()
-  const router = useRouter()
   const entry = DOCS[doc as Doc]
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'))
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel="Volver a Mesa" />
+      <Stack.Screen options={{ title: entry?.title ?? 'Legal' }} />
       {!entry ? (
         <EmptyState>Documento no encontrado.</EmptyState>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-12">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="px-5 pb-12"
+          contentInsetAdjustmentBehavior="automatic"
+        >
           <Wordmark size={32} />
-          <Eyebrow className="mt-4">Legal</Eyebrow>
-          <Title className="mb-5">{entry.title}</Title>
+          <Eyebrow className="mt-4 mb-5">Legal</Eyebrow>
           <View className="gap-4">
             {entry.body.map((paragraph) => (
               <Body key={paragraph.slice(0, 24)}>{paragraph}</Body>

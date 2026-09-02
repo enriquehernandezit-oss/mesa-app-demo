@@ -3,7 +3,8 @@ import { ShareCardHost } from '@/components/ShareCardHost'
 import { Toaster } from '@/components/ui/Toast'
 import { initToken } from '@/lib/auth-token'
 import { queryClient } from '@/lib/query'
-import { ThemeProvider } from '@/theme/ThemeProvider'
+import { ThemeProvider, useResolvedTheme } from '@/theme/ThemeProvider'
+import { themeColors } from '@/theme/vars'
 import {
   CormorantGaramond_400Regular_Italic,
   CormorantGaramond_500Medium,
@@ -56,17 +57,66 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: 'transparent' },
-              }}
-            />
+            <MesaStack />
             <Toaster />
             <ShareCardHost />
           </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  )
+}
+
+// The navigation stack, themed. Two kinds of screen live here:
+//
+//   Immersive (default) — the feed, a place, a member, the maps, the compose
+//   flows, auth/onboarding: `headerShown: false`, their own floating controls
+//   over full-bleed content. This is how system apps handle content-first
+//   screens too (an App Store product page hides its bar).
+//
+//   Utility — settings, activity, leaderboard, a list, legal: a REAL
+//   UINavigationBar with a large title, so they get the collapse-on-scroll
+//   behavior, the blur scroll edge, the system back button and its swipe for
+//   free. Mesa's serif rides in via headerTitleStyle/headerLargeTitleStyle —
+//   the font is the identity, the bar is the system's.
+//
+// Both bar and title colors follow the RESOLVED theme, which can be Candlelit
+// while the OS is light (Auto flips at 6pm), so they're computed here rather
+// than left to the system's light/dark guess.
+function MesaStack() {
+  const theme = useResolvedTheme()
+  const c = themeColors[theme]
+  const utility = {
+    headerShown: true,
+    headerLargeTitle: true,
+    headerTintColor: c.accent,
+    headerStyle: { backgroundColor: c.bg },
+    headerLargeStyle: { backgroundColor: c.bg },
+    headerBlurEffect:
+      theme === 'candlelit'
+        ? ('systemChromeMaterialDark' as const)
+        : ('systemChromeMaterialLight' as const),
+    headerShadowVisible: false,
+    headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+    headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+    headerBackTitle: 'Atrás',
+  }
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: 'transparent' },
+        // Back-swipe from anywhere on the screen, not just the left edge.
+        fullScreenGestureEnabled: true,
+      }}
+    >
+      <Stack.Screen name="settings" options={{ ...utility, title: 'Ajustes' }} />
+      <Stack.Screen name="activity" options={{ ...utility, title: 'Actividad' }} />
+      <Stack.Screen name="leaderboard" options={{ ...utility, title: 'Clasificación' }} />
+      {/* Titles for these two are set by the screens themselves once the data
+          (a list's name, a legal doc's name) is known. */}
+      <Stack.Screen name="lists/[slug]" options={utility} />
+      <Stack.Screen name="legal/[doc]" options={utility} />
+    </Stack>
   )
 }

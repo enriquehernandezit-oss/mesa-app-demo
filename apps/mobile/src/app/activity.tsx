@@ -1,4 +1,3 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Caption, Chip, ChipRail, EmptyState, ErrorState, Eyebrow } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -8,7 +7,7 @@ import { displayScore } from '@/lib/display'
 import { timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
+import { Link, Stack } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
@@ -39,7 +38,6 @@ const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
 ]
 
 export default function ActivityScreen() {
-  const router = useRouter()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('all')
   const q = useQuery({
@@ -51,8 +49,6 @@ export default function ActivityScreen() {
     markActivitySeen()
     queryClient.invalidateQueries({ queryKey: ['activity'] })
   }
-
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
   const items = q.data?.activity ?? []
   const shown = items.filter((a) => {
@@ -67,22 +63,25 @@ export default function ActivityScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader
-        onBack={goBack}
-        backLabel="Actividad"
-        right={
-          <Pressable
-            accessibilityRole="button"
-            onPress={markRead}
-            className="min-h-[44px] justify-center active:opacity-60"
-          >
-            <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-              Marcar leído
-            </Text>
-          </Pressable>
-        }
+      {/* The bar is the system's (see MesaStack); only its action is ours. */}
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable
+              accessibilityRole="button"
+              onPress={markRead}
+              className="min-h-[44px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui-medium text-label text-accent-strong">Marcar leído</Text>
+            </Pressable>
+          ),
+        }}
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-10"
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <ChipRail className="mb-4">
           {FILTERS.map((f) => (
             <Chip
