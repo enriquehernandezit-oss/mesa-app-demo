@@ -111,6 +111,13 @@ function MesaStack() {
         fullScreenGestureEnabled: true,
       }}
     >
+      {/* The compose flows present as sheets — the iOS pattern for "make
+          something" opened from a floating action. Drag-to-dismiss runs through
+          the same beforeRemove guards the back gesture does, so a half-finished
+          ranking still steps backward instead of being thrown away. */}
+      <Stack.Screen name="rank" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
+
       <Stack.Screen name="settings" options={{ ...utility, title: 'Ajustes' }} />
       <Stack.Screen name="activity" options={{ ...utility, title: 'Actividad' }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: 'Clasificación' }} />

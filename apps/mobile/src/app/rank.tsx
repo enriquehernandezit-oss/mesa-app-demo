@@ -442,7 +442,7 @@ export default function RankAPlace() {
 function StepScreen({ children }: { children: React.ReactNode }) {
   const insets = useSafeAreaInsets()
   return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
+    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       {children}
     </View>
   )
@@ -520,7 +520,7 @@ function RevealStep({
     }
   }
   return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
+    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
         <BackBar label="‹ Atrás" onBack={onBack} />
         <Pressable
@@ -659,7 +659,7 @@ function NoteStep({
   const insets = useSafeAreaInsets()
   const placeholder = useColor('text-muted')
   return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
+    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
         <BackBar label="‹ Agregar nota" onBack={onBack} />
         <Pressable
@@ -1033,7 +1033,7 @@ function FindStep({
   }
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: insets.top + 12 }}>
+    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="px-5">
         <BackBar label="✕ Rankear un spot" onBack={onBack} />
         <Title className="mt-4">Encuentra el spot</Title>

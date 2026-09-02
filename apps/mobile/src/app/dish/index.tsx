@@ -123,7 +123,7 @@ export default function DishCompose() {
   // Gate: a dish must attach to a ranking.
   if (q.isSuccess && !hasRanked) {
     return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
+      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
         <BackBar label="‹ Atrás" onPress={goBack} />
         <Eyebrow className="mt-3">Publicar un plato</Eyebrow>
         <Title>{restaurant?.name ?? 'Un plato'}</Title>
@@ -146,7 +146,7 @@ export default function DishCompose() {
   // C1 — choose the shot + treatment.
   if (step === 'photo') {
     return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
+      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
         <BackBar label="✕ Cancelar" onPress={goBack} />
 
         <Pressable
@@ -198,7 +198,7 @@ export default function DishCompose() {
   // C2 — name, caption, linked ranking, and the two toggles.
   const canPost = name.trim().length > 0 && !post.isPending
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: insets.top + 12 }}>
+    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="px-5">
         <BackBar label="‹ Nuevo plato" onPress={() => setStep('photo')} />
       </View>

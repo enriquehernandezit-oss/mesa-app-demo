@@ -26,8 +26,12 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import type { ReactNode } from 'react'
+import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import ReanimatedSwipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable'
 
 // The ranked passport (M3) — mine (ordered, serif numerals, brass scores, notes),
 // want-to-try (saved), and by-sector. Ported from apps/app/src/screens/tabs/
@@ -186,6 +190,40 @@ function Stat({ n, l }: { n: string; l: string }) {
   )
 }
 
+// A row that reveals a single "Quitar" action on a left swipe — the iOS gesture
+// for removing something from a list. It's additive: the inline text actions
+// stay, because they also carry note-editing and are the discoverable path.
+// Removal itself is unchanged (the existing undo-toast machinery owns the
+// optimistic remove + restore); the swipe is a second trigger for it.
+function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
+  const ref = useRef<SwipeableMethods>(null)
+  return (
+    <ReanimatedSwipeable
+      ref={ref}
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      renderRightActions={() => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quitar"
+          onPress={() => {
+            // Close first: the row is removed optimistically, and a half-open
+            // swipeable left behind reads as a stuck row.
+            ref.current?.close()
+            onRemove()
+          }}
+          className="w-[88px] items-center justify-center bg-status-packed active:opacity-80"
+        >
+          <Text className="font-ui-medium text-label text-on-accent">Quitar</Text>
+        </Pressable>
+      )}
+    >
+      {children}
+    </ReanimatedSwipeable>
+  )
+}
+
 function RankingRow({ ranking }: { ranking: Ranking }) {
   const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
@@ -207,81 +245,83 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
   })
 
   return (
-    <View className="flex-row gap-3 border-b border-line py-3">
-      <Text className="font-serif text-serif-lg text-accent" style={{ width: 28 }}>
-        {ranking.position}
-      </Text>
-      <Link href={`/r/${ranking.restaurant.id}`}>
-        <PlaceCover
-          seed={ranking.restaurant.id}
-          name={ranking.restaurant.name}
-          coverImageId={ranking.restaurant.coverImageId}
-          size={{ w: 160, h: 160 }}
-          className="h-14 w-14"
-        />
-      </Link>
-      <View className="flex-1">
+    <SwipeToRemove onRemove={() => removeRankingWithUndo(ranking)}>
+      <View className="flex-row gap-3 border-b border-line py-3">
+        <Text className="font-serif text-serif-lg text-accent" style={{ width: 28 }}>
+          {ranking.position}
+        </Text>
         <Link href={`/r/${ranking.restaurant.id}`}>
-          <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
+          <PlaceCover
+            seed={ranking.restaurant.id}
+            name={ranking.restaurant.name}
+            coverImageId={ranking.restaurant.coverImageId}
+            size={{ w: 160, h: 160 }}
+            className="h-14 w-14"
+          />
         </Link>
-        <Characteristics
-          priceTier={ranking.restaurant.priceTier}
-          cuisine={ranking.restaurant.cuisine}
-          neighborhood={ranking.neighborhood}
-        />
-        {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
-          <View className="mt-1 flex-row flex-wrap items-center gap-2">
-            {ranking.favoriteDish && (
-              <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
-            )}
-            {(ranking.tags ?? []).map((t) => (
-              <Caption key={t} className="font-mono text-[10px]">
-                {tagLabel(t)}
-              </Caption>
-            ))}
-          </View>
-        )}
-        {editing ? (
-          <View className="mt-2 gap-2">
-            <TextInput
-              className="min-h-[64px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
-              placeholderTextColor={placeholder}
-              placeholder="Una línea sobre por qué…"
-              maxLength={140}
-              multiline
-              value={draft}
-              onChangeText={setDraft}
-            />
-            <View className="flex-row gap-4">
-              <ActionText disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>
-                Guardar
-              </ActionText>
-              <ActionText
-                onPress={() => {
-                  setDraft(ranking.note ?? '')
-                  setEditing(false)
-                }}
-              >
-                Cancelar
-              </ActionText>
+        <View className="flex-1">
+          <Link href={`/r/${ranking.restaurant.id}`}>
+            <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
+          </Link>
+          <Characteristics
+            priceTier={ranking.restaurant.priceTier}
+            cuisine={ranking.restaurant.cuisine}
+            neighborhood={ranking.neighborhood}
+          />
+          {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
+            <View className="mt-1 flex-row flex-wrap items-center gap-2">
+              {ranking.favoriteDish && (
+                <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+              )}
+              {(ranking.tags ?? []).map((t) => (
+                <Caption key={t} className="font-mono text-[10px]">
+                  {tagLabel(t)}
+                </Caption>
+              ))}
             </View>
-          </View>
-        ) : (
-          <>
-            {ranking.note ? <SerifNote>{ranking.note}</SerifNote> : null}
-            <View className="mt-2 flex-row gap-4">
-              <ActionText onPress={() => setEditing(true)}>
-                {ranking.note ? 'Editar nota' : 'Agregar nota'}
-              </ActionText>
-              <ActionText danger onPress={() => removeRankingWithUndo(ranking)}>
-                Quitar
-              </ActionText>
+          )}
+          {editing ? (
+            <View className="mt-2 gap-2">
+              <TextInput
+                className="min-h-[64px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
+                placeholderTextColor={placeholder}
+                placeholder="Una línea sobre por qué…"
+                maxLength={140}
+                multiline
+                value={draft}
+                onChangeText={setDraft}
+              />
+              <View className="flex-row gap-4">
+                <ActionText disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>
+                  Guardar
+                </ActionText>
+                <ActionText
+                  onPress={() => {
+                    setDraft(ranking.note ?? '')
+                    setEditing(false)
+                  }}
+                >
+                  Cancelar
+                </ActionText>
+              </View>
             </View>
-          </>
-        )}
+          ) : (
+            <>
+              {ranking.note ? <SerifNote>{ranking.note}</SerifNote> : null}
+              <View className="mt-2 flex-row gap-4">
+                <ActionText onPress={() => setEditing(true)}>
+                  {ranking.note ? 'Editar nota' : 'Agregar nota'}
+                </ActionText>
+                <ActionText danger onPress={() => removeRankingWithUndo(ranking)}>
+                  Quitar
+                </ActionText>
+              </View>
+            </>
+          )}
+        </View>
+        <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
       </View>
-      <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
-    </View>
+    </SwipeToRemove>
   )
 }
 
@@ -359,27 +399,29 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
       }),
   })
   return (
-    <View className="flex-row items-center justify-between border-b border-line py-3">
-      <View className="flex-1 pr-3">
-        <Text className="font-serif text-serif-md text-text">{saved.restaurant.name}</Text>
-        <Characteristics
-          priceTier={saved.restaurant.priceTier}
-          cuisine={saved.restaurant.cuisine}
-          neighborhood={saved.neighborhood}
-        />
+    <SwipeToRemove onRemove={() => remove.mutate()}>
+      <View className="flex-row items-center justify-between border-b border-line py-3">
+        <View className="flex-1 pr-3">
+          <Text className="font-serif text-serif-md text-text">{saved.restaurant.name}</Text>
+          <Characteristics
+            priceTier={saved.restaurant.priceTier}
+            cuisine={saved.restaurant.cuisine}
+            neighborhood={saved.neighborhood}
+          />
+        </View>
+        <View className="flex-none flex-row items-center gap-3">
+          <Button
+            variant="secondary"
+            className="w-auto min-h-[40px] px-4"
+            onPress={() => router.push(`/rank?restaurant=${saved.restaurant.id}`)}
+          >
+            Rankear
+          </Button>
+          <ActionText danger disabled={remove.isPending} onPress={() => remove.mutate()}>
+            {remove.isPending ? 'Quitando…' : 'Quitar'}
+          </ActionText>
+        </View>
       </View>
-      <View className="flex-none flex-row items-center gap-3">
-        <Button
-          variant="secondary"
-          className="w-auto min-h-[40px] px-4"
-          onPress={() => router.push(`/rank?restaurant=${saved.restaurant.id}`)}
-        >
-          Rankear
-        </Button>
-        <ActionText danger disabled={remove.isPending} onPress={() => remove.mutate()}>
-          {remove.isPending ? 'Quitando…' : 'Quitar'}
-        </ActionText>
-      </View>
-    </View>
+    </SwipeToRemove>
   )
 }
