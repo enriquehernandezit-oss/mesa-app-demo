@@ -1,9 +1,11 @@
+import { ReasonPicker, ReportControl } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, Chip, EmptyState, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
+import { comingSoon } from '@/lib/comingSoon'
 import { displayScore } from '@/lib/display'
 import type { Ranking, UserRankingsResponse } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -12,22 +14,18 @@ import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Another person's ranked passport (mock E2) — and the surface where UGC
-// moderation is exercised (App Store 1.2): report a vibe note or the user, block
-// them. Blocking severs the graph and hides their content; the API 404s a
+// moderation is exercised (App Store 1.2): report a vibe note or the member,
+// block them. Blocking severs the graph and hides their content; the API 404s a
 // blocked user, so this view empties out. Ported from apps/app/src/screens/user/
-// UserRankings.tsx. The inert "Mensaje" button is cut (Messages is out of the
-// native launch subset).
-const REASONS = ['Spam', 'Acoso', 'Inapropiado', 'Otro'] as const
-
+// UserRankings.tsx; the ⋯ dropdown (which needed outside-tap/Escape handling on
+// web) becomes an inline actions row — no popover to dismiss.
 export default function UserRankings() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [confirmingBlock, setConfirmingBlock] = useState(false)
   const [expanded, setExpanded] = useState(false)
-
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
   const q = useQuery({
@@ -53,10 +51,19 @@ export default function UserRankings() {
     },
   })
 
+  const reportUser = useMutation({
+    mutationFn: (reason: string) =>
+      api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
+    onSuccess: () => setReporting(false),
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+  })
+
   if (q.isPending) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg">
-        <Body>Cargando…</Body>
+      <View className="flex-1 bg-bg">
+        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <Body className="px-5">Cargando…</Body>
       </View>
     )
   }
@@ -79,66 +86,83 @@ export default function UserRankings() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader
-        onBack={goBack}
-        backLabel={user.name || user.handle || 'Atrás'}
-        right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Más opciones"
-            onPress={() => setMenuOpen((v) => !v)}
-            className="min-h-[44px] min-w-[44px] items-center justify-center active:opacity-60"
-          >
-            <Text className="font-serif text-title text-text">⋯</Text>
-          </Pressable>
-        }
-      />
-
+      <ScreenHeader onBack={goBack} backLabel={user.name || user.handle || 'Atrás'} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
-        <View className="items-center gap-1 pb-4">
+        <View className="items-center gap-1">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
-          {user.handle ? <Caption className="mt-1">@{user.handle}</Caption> : null}
+          {user.handle ? (
+            <Text className="mt-2 font-mono text-label text-text-2">@{user.handle}</Text>
+          ) : null}
           <Caption>{[`${rankings.length} rankeados`, barrio].filter(Boolean).join(' · ')}</Caption>
           {matchPercent != null && (
-            <View className="mt-1 rounded-pill border border-accent px-3 py-1">
-              <Caption className="font-mono text-[10px] text-accent-strong">
-                +{matchPercent}% de gustos en común
-              </Caption>
-            </View>
+            <Chip size="sm" state="selected" className="mt-2">
+              +{matchPercent}% de gustos en común
+            </Chip>
           )}
-          <View className="mt-3">
+
+          <View className="mt-4 flex-row items-center gap-3">
             <Button
-              variant={isFollowing ? 'secondary' : 'primary'}
-              className="w-auto min-h-[44px] px-6"
-              onPress={() => follow.mutate(!isFollowing)}
+              variant="primary"
+              className="w-auto px-6"
               disabled={follow.isPending}
+              onPress={() => follow.mutate(!isFollowing)}
             >
               {isFollowing ? 'Siguiendo' : 'Seguir'}
             </Button>
+            {/* Inert-by-design: Mesa has no messaging backend yet. */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => comingSoon('Los mensajes llegan pronto a Mesa.')}
+              className="min-h-[44px] justify-center rounded-pill border border-line border-dashed px-5 active:opacity-70"
+            >
+              <Text className="font-mono text-[11px] text-text-muted">Mensaje</Text>
+            </Pressable>
+          </View>
+
+          {/* Report / block — the moderation entry points (App Store 1.2). */}
+          <View className="mt-3 flex-row gap-5">
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setReporting((v) => !v)}
+              className="min-h-[36px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
+                Reportar
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setConfirmingBlock(true)}
+              className="min-h-[36px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
+                Bloquear
+              </Text>
+            </Pressable>
           </View>
         </View>
 
         {reporting && (
-          <ReportUser
-            userId={userId}
-            onDone={() => {
-              setReporting(false)
-              setMenuOpen(false)
-            }}
+          <ReasonPicker
+            prompt="¿Por qué reportas a esta persona?"
+            pending={reportUser.isPending}
+            onPick={reportUser.mutate}
+            onCancel={() => setReporting(false)}
           />
         )}
 
-        {/* Blocking severs the social graph and hides both sides' content — a
-            real consequence for a one-tap menu item, so it confirms first. */}
+        {/* Blocking severs the social graph and hides both sides' content — a real
+            consequence for a one-tap control, so it confirms first (matching
+            account-deletion's confirm and ranking-removal's undo). */}
         {confirmingBlock && (
-          <View className="mb-4 gap-3 rounded border border-line bg-surface p-4">
+          <View className="mt-3 gap-2 rounded border border-line bg-surface p-3">
             <Caption>
               ¿Bloquear a {firstName}? No verás su contenido y esta persona no verá el tuyo. Puedes
               desbloquear luego en Ajustes.
             </Caption>
-            <View className="flex-row">
+            <View className="flex-row gap-2">
               <Chip
-                state="default"
+                size="sm"
                 onPress={() => {
                   setConfirmingBlock(false)
                   block.mutate()
@@ -150,7 +174,7 @@ export default function UserRankings() {
             <Pressable
               accessibilityRole="button"
               onPress={() => setConfirmingBlock(false)}
-              className="min-h-[44px] self-start justify-center active:opacity-60"
+              className="min-h-[36px] justify-center active:opacity-60"
             >
               <Text className="font-ui-medium text-label text-text-muted">Cancelar</Text>
             </Pressable>
@@ -181,40 +205,6 @@ export default function UserRankings() {
           </>
         )}
       </ScrollView>
-
-      {/* The ⋯ menu, as a dismiss-on-outside-tap overlay (RN has no document-level
-          pointerdown listener like the web). */}
-      {menuOpen && (
-        <Pressable
-          onPress={() => setMenuOpen(false)}
-          className="absolute inset-0"
-          accessibilityLabel="Cerrar menú"
-        >
-          <View className="absolute right-4 top-14 w-40 overflow-hidden rounded border border-line bg-surface-raised">
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setMenuOpen(false)
-                setReporting(true)
-              }}
-              className="min-h-[44px] justify-center px-4 active:opacity-70"
-            >
-              <Text className="font-ui text-body text-text">Reportar</Text>
-            </Pressable>
-            <View className="h-px bg-line" />
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setConfirmingBlock(true)
-                setMenuOpen(false)
-              }}
-              className="min-h-[44px] justify-center px-4 active:opacity-70"
-            >
-              <Text className="font-ui text-body text-status-packed">Bloquear</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      )}
     </View>
   )
 }
@@ -238,98 +228,6 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
         ) : null}
       </View>
       <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
-    </View>
-  )
-}
-
-// The report-reason panel, shared by the two report entry points (a whole user
-// from the ⋯ menu, a single vibe note inline). The `pending` guard keeps a chip
-// from firing a second report while the first is in flight.
-function ReasonPicker({
-  prompt,
-  pending,
-  onPick,
-  onCancel,
-}: {
-  prompt: string
-  pending: boolean
-  onPick: (reason: string) => void
-  onCancel: () => void
-}) {
-  return (
-    <View className="mb-4 gap-3 rounded border border-line bg-surface p-4">
-      <Caption>{prompt}</Caption>
-      <View className="flex-row flex-wrap gap-2">
-        {REASONS.map((reason) => (
-          <Chip key={reason} state="default" onPress={() => !pending && onPick(reason)}>
-            {reason}
-          </Chip>
-        ))}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onCancel}
-        className="min-h-[44px] self-start justify-center active:opacity-60"
-      >
-        <Text className="font-ui-medium text-label text-text-muted">Cancelar</Text>
-      </Pressable>
-    </View>
-  )
-}
-
-// Report the whole user (from the ⋯ menu) — targetType 'user'.
-function ReportUser({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const report = useMutation({
-    mutationFn: (reason: string) =>
-      api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
-    onSuccess: onDone,
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
-  })
-  return (
-    <ReasonPicker
-      prompt="¿Por qué reportas a esta persona?"
-      pending={report.isPending}
-      onPick={report.mutate}
-      onCancel={onDone}
-    />
-  )
-}
-
-function ReportControl({
-  targetType,
-  targetId,
-}: { targetType: 'vibe_note' | 'user'; targetId: string }) {
-  const [open, setOpen] = useState(false)
-  const report = useMutation({
-    mutationFn: (reason: string) =>
-      api.post('/moderation/reports', { targetType, targetId, reason }),
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
-  })
-  if (report.isSuccess) {
-    return <Caption className="mt-2">Reportado. Gracias — lo revisaremos.</Caption>
-  }
-  return (
-    <View className="mt-2">
-      {!open ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setOpen(true)}
-          className="min-h-[44px] self-start justify-center active:opacity-60"
-        >
-          <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
-            Reportar
-          </Text>
-        </Pressable>
-      ) : (
-        <ReasonPicker
-          prompt="¿Por qué reportas esta nota?"
-          pending={report.isPending}
-          onPick={report.mutate}
-          onCancel={() => setOpen(false)}
-        />
-      )}
     </View>
   )
 }
