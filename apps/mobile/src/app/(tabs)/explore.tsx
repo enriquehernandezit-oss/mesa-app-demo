@@ -1,4 +1,5 @@
 import { ExternalResults } from '@/components/ExternalResults'
+import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import {
   Body,
@@ -93,7 +94,11 @@ export default function ExploreScreen() {
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-8">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+      >
         <View className="flex-row items-start justify-between">
           <View>
             <Eyebrow>Explorar</Eyebrow>

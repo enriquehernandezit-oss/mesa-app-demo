@@ -1,3 +1,4 @@
+import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, Eyebrow } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -64,7 +65,11 @@ export default function ProfileTab() {
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="profile" title={p?.name || 'Tú'} shareHandle={p?.handle} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+      >
         <View className="items-center pt-2">
           <Pressable
             accessibilityRole="button"

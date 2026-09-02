@@ -1,3 +1,4 @@
+import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import {
   Button,
@@ -72,7 +73,10 @@ export default function RankingsTab() {
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
-      <ScrollView contentContainerClassName="px-5 pb-24">
+      <ScrollView
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+      >
         <View className="flex-row items-start justify-between">
           <View>
             <Eyebrow>Tu lista</Eyebrow>

@@ -1,4 +1,5 @@
 import { CheersButton } from '@/components/CheersButton'
+import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import {
   Body,
@@ -79,7 +80,8 @@ export default function DiscoverTab() {
               <ListsRail />
             </>
           }
-          contentContainerClassName="px-5 pb-8"
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={feed.isRefetching} onRefresh={() => feed.refetch()} />

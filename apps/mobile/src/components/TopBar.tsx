@@ -1,10 +1,7 @@
 import { Wordmark } from '@/components/ui'
 import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
-import { useActivitySeen } from '@/lib/activitySeen'
-import { api } from '@/lib/api'
+import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { shareProfile } from '@/lib/shareProfile'
-import type { ActivityItem } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { Text } from 'react-native'
@@ -26,13 +23,7 @@ function Btn({ children }: { children: React.ReactNode }) {
 // (advanced by the Activity screen's "Marcar leído"). The ['activity'] query is
 // shared with the Activity screen, so opening it and marking read updates both.
 function ActivityBell() {
-  const activity = useQuery({
-    queryKey: ['activity'],
-    queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),
-    staleTime: 60_000,
-  })
-  const watermark = useActivitySeen()
-  const unseen = (activity.data?.activity ?? []).filter((a) => a.at > watermark).length
+  const unseen = useUnseenActivity()
   return (
     <Link href="/activity" asChild>
       <Pressable>
