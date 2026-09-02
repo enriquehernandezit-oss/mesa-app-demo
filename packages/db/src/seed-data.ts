@@ -299,7 +299,8 @@ export const friends: FriendSeed[] = [
 // Seeded dish posts (Phase 6). Each attaches to a ranking a curated friend
 // actually holds (handle must appear with `key` in that friend's `ranked` list
 // above) so the NOT-NULL rankingId constraint is satisfied. `photo` is one of the
-// shared food JPEGs in apps/app/public/restaurants/. Dish names/captions are the
+// shared food JPEGs in apps/api/public/restaurants/ (the API serves them; see
+// its /restaurants/* static route). Dish names/captions are the
 // one place we write in English — the dish post is the new hero content and the
 // design mocks it in English; the vibe notes stay Spanish.
 export type DishSeed = {

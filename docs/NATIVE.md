@@ -1,54 +1,75 @@
-# Mesa — Native (Capacitor) setup
+# Mesa — Native (Expo) setup
 
-The app is a Vite/React SPA wrapped with Capacitor. Through M2–M4 it is verified
-in the browser (`bun run --filter @mesa/app dev`). The native iOS/Android
-projects are generated later, once the platform toolchains are installed — they
-are **not** committed (see `.gitignore`).
+The app is an **Expo / React Native** project at `apps/mobile`, iOS-first. It
+replaced the Vite/Capacitor client; there is no web app any more (the only web
+surface is the API's server-rendered `/p/*` share pages).
 
-## Generating the native projects
+## Why `apps/mobile` is not a workspace member
 
-Prerequisites:
-
-- **iOS:** Xcode.app (full install, not just Command Line Tools) + CocoaPods.
-- **Android:** Android Studio + SDK.
-
-Then, from `apps/app`:
+It is deliberately **standalone** — excluded from the root `workspaces` array,
+with its own `bunfig.toml` setting `linker = "hoisted"`. Metro and Babel cannot
+resolve transitively-required plugins (e.g. `babel-preset-expo` →
+`@babel/plugin-transform-react-jsx`) under Bun's default isolated store, so the
+app needs a flat `node_modules`. Install from inside the directory:
 
 ```bash
-bun run cap:add:ios       # generates apps/app/ios/
-bun run cap:add:android   # generates apps/app/android/
-bun run cap:sync          # vite build + copy web assets into the shells
+cd apps/mobile && bun install
 ```
 
-Open the iOS project in Xcode with `bunx cap open ios`.
+Because it can't import workspace packages, it keeps its own copy of the API
+response types in `src/lib/types.ts` — keep that in sync when the Drizzle schema
+changes.
 
-## Info.plist purpose strings (App Store 5.1)
+## Running it
 
-Every sensitive API needs a human-sentence purpose string, and the permission is
-requested **just-in-time** (never at launch — the code already does this). After
-`cap add ios`, add these to `apps/app/ios/App/App/Info.plist`:
+```bash
+cd apps/mobile
+bun run start          # Metro; open in a dev client
+bun run ios            # build + run on the iOS simulator (needs Xcode + CocoaPods)
+```
 
-| Key | Value |
-|-----|-------|
-| `NSContactsUsageDescription` | Mesa matches your contacts to people you already know here, so your feed starts with friends. Your contacts are never posted or shared. |
-| `NSCameraUsageDescription` | Take a photo to add to a place you're ranking or to your profile. |
-| `NSPhotoLibraryUsageDescription` | Choose a photo from your library for a place you're ranking or your profile. |
-| `NSLocationWhenInUseUsageDescription` | Mesa uses your location to show nearby spots and place map pins. (MapBox, added in M5.) |
+Expo Go is **not** enough: `@rnmapbox/maps` and `expo-apple-authentication` are
+native modules, so a **dev client** (or an EAS build) is required.
 
-Camera/photo/location strings are staged now so they're ready when M5 wires
-Cloudinary uploads and the MapBox map; contacts is live in M2 onboarding.
+Verification that works without a Mac toolchain — used throughout the migration:
 
-## Sign in with Apple (App Store 4.8)
+```bash
+bunx tsc --noEmit                      # strict types
+bunx expo export --platform ios        # proves the Metro bundle builds
+cd ../.. && bun run lint               # biome, repo-wide
+```
 
-Because Instagram login is offered, Sign in with Apple must appear alongside it
-(the auth screen already does, at equal prominence). Enable the **Sign in with
-Apple** capability on the App ID in the Apple Developer portal, and set the
-server env vars (`APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`,
-`APPLE_APP_BUNDLE_ID`) — see `apps/api/.env.example`.
+## Configuration
 
-## CI note (M5)
+`app.json` holds the static config; **`app.config.js`** layers on the two things
+that must come from the environment:
 
-Ionic Appflow is winding down (no new signups since Feb 2025; access ends Dec
-2027) and Microsoft App Center shut down in March 2025. For TestFlight builds use
-a **GitHub Actions macOS runner** or **Codemagic** instead — this supersedes the
-"Ionic Appflow" mention in `BUILD_PLAN.md`/`CLAUDE.md`.
+- `RNMAPBOX_DOWNLOAD_TOKEN` — the MapBox **SDK download token** (`sk.…`), read by
+  the `@rnmapbox/maps` config plugin at prebuild so CocoaPods can fetch the native
+  SDK. Build-time only; never shipped in the bundle.
+- `APP_LINK_DOMAIN` — the universal-link domain, which becomes
+  `ios.associatedDomains: ["applinks:<domain>"]` so password-reset and
+  verify-email links open the app instead of a browser.
+
+Runtime config is `EXPO_PUBLIC_*` in `.env` (see `.env.example`): the API URL, the
+**public** MapBox token (`pk.…`), and the Cloudinary cloud name.
+
+## Permission strings (App Store 5.1)
+
+All requested **just-in-time**, never at launch, with purpose strings set through
+the config plugins in `app.json`:
+
+| Capability | Plugin | Asked when |
+| --- | --- | --- |
+| Location | `expo-location` | tapping "Cerca" / "Ubícame en el mapa" |
+| Photos | `expo-image-picker` | attaching a dish photo or avatar |
+| Camera | `expo-image-picker` | taking a dish photo |
+| Contacts | `expo-contacts` | tapping "Buscar amigos en tus contactos" |
+
+## iOS delivery
+
+**EAS Build → TestFlight → App Store.** Needs the Apple Developer account (with
+the Sign in with Apple capability enabled on `com.mesa.app`) and both MapBox
+tokens above. The associated-domains entitlement must also be registered for
+`APP_LINK_DOMAIN`, and that domain must serve an `apple-app-site-association`
+file — the API can serve it alongside `/p/*`.

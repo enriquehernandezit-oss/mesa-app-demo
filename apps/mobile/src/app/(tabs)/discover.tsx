@@ -15,6 +15,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
+import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -282,7 +283,7 @@ function FeedCard({ item }: { item: FeedItem }) {
           <Pressable className="active:opacity-90">
             <View className="h-52">
               <Image
-                source={{ uri: item.dishImage }}
+                source={{ uri: cloudinaryUrl(item.dishImage, { w: 800, h: 600 }) ?? undefined }}
                 style={{ width: '100%', height: '100%' }}
                 contentFit="cover"
                 transition={120}

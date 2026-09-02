@@ -1,3 +1,4 @@
+import { apiOrigin } from '@/lib/api'
 // Cloudinary + MapBox helpers. Both are env-gated: with no key configured they
 // return null and the UI shows a graceful branded fallback, so the app runs
 // fully in the browser during development (same pattern as the auth providers).
@@ -5,19 +6,21 @@
 const CLOUD = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME as string | undefined
 const MAPBOX = process.env.EXPO_PUBLIC_MAPBOX_TOKEN as string | undefined
 
-// A cover image URL. Local/absolute paths (the seed's /restaurants/*.jpg, or a
-// full https URL) are served as-is; a bare Cloudinary public id is expanded into
-// a delivery URL with auto format/quality + a fill crop when a cloud is set.
+// A cover image URL. Full URLs and data URLs pass through; a root-relative seed
+// path is resolved against the API origin; a bare Cloudinary public id is
+// expanded into a delivery URL with auto format/quality + a fill crop.
 export function cloudinaryUrl(
   publicId: string | null | undefined,
   opts: { w?: number; h?: number } = {},
 ): string | null {
   if (!publicId) return null
-  // Full URLs, local seed paths, and inline data URLs (dish posts in dev) pass
-  // through untouched; only a bare Cloudinary public id gets expanded.
-  if (publicId.startsWith('/') || publicId.startsWith('http') || publicId.startsWith('data:')) {
-    return publicId
-  }
+  // Full URLs and inline data URLs (a just-picked dish photo) pass through.
+  if (publicId.startsWith('http') || publicId.startsWith('data:')) return publicId
+  // Root-relative seed paths ("/restaurants/branzino.jpg") used to resolve
+  // against the web app's origin. Native has no origin, so they'd be unloadable
+  // URIs — the API serves these files now (see apps/api/src/index.ts), so
+  // resolve them against it.
+  if (publicId.startsWith('/')) return `${apiOrigin}${publicId}`
   if (!CLOUD) return null
   const { w = 800, h = 460 } = opts
   return `https://res.cloudinary.com/${CLOUD}/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/${publicId}`

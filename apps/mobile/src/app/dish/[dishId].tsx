@@ -5,6 +5,7 @@ import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patter
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { grainLabel } from '@/lib/display'
+import { cloudinaryUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
@@ -67,7 +68,7 @@ export default function DishDetail() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
         <View className="h-80">
           <Image
-            source={{ uri: dish.imageId }}
+            source={{ uri: cloudinaryUrl(dish.imageId, { w: 1000, h: 1000 }) ?? undefined }}
             style={{ width: '100%', height: '100%' }}
             contentFit="cover"
             transition={120}

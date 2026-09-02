@@ -1,8 +1,9 @@
 # Deploying Mesa to Railway
 
-This is the **backend** deploy: the Hono API + a Postgres database. The frontend
-(`apps/app`) is **not** deployed here in Phase 1 — it ships inside the native app
-via Capacitor, and (optionally) as a free-hosted web build on a static host.
+This is the **backend** deploy: the Hono API + a Postgres database. It is now the
+project's only deployed service — the app is Expo/React Native and ships through
+EAS → TestFlight (see `docs/NATIVE.md`), not from Railway. The API also serves the
+public `/p/*` share pages and the seeded catalog art at `/restaurants/*`.
 
 You need a Railway account. No Apple Developer account, no $99 — this is pure
 backend and costs only Railway usage (a few dollars/month, often covered by
@@ -53,7 +54,7 @@ On the **mesa-api** service → **Variables**, add:
 | `NODE_ENV` | `production` |
 | `BETTER_AUTH_SECRET` | a long random string — run `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | the API's public URL (see Step 4 — you'll set this after you have the domain) |
-| `APP_ORIGINS` | the origin(s) that call the API, comma-separated (the deployed web app's URL and/or `capacitor://localhost`) |
+| `APP_ORIGINS` | the origin(s) that call the API, comma-separated. With no web app this is mainly the marketing/landing origin; the native app sends no Origin header |
 
 **`APP_ORIGINS` is a production trust boundary — put ONLY real deployed origins
 here.** It feeds both the CORS allowlist and Better Auth's `trustedOrigins`, so
@@ -78,16 +79,18 @@ and simply keeps those features off:
 1. API service → **Settings** → **Networking** → **Generate Domain**.
    You'll get something like `https://mesa-api-production.up.railway.app`.
 2. Set `BETTER_AUTH_URL` to that exact URL and redeploy.
-3. Set `APP_ORIGINS` to wherever the frontend runs — the deployed web app's URL
-   and/or `capacitor://localhost` for the native shell. Real origins only (see
-   the trust-boundary note in Step 3).
+3. Set `APP_ORIGINS` to any real browser origin that calls the API (the
+   marketing/landing site). The native app doesn't need an entry — it isn't a
+   browser and sends no Origin header. Real origins only (see the trust-boundary
+   note in Step 3). Also set `PUBLIC_API_URL` to the API's own URL, so share-page
+   cover images resolve.
 
 ### How auth crosses origins (why cookies aren't enough)
 
-The web app and the API are on different origins (different Railway subdomains,
-and in the native app the shell runs from `capacitor://localhost`). Browsers —
-iOS Safari especially — refuse to store the API's session **cookie** on a
-cross-site response, so cookie-only auth hangs on sign-in. Mesa therefore
+The app and the API are on different origins, and a native app has no cookie jar
+tied to the API's domain at all. Browsers — iOS Safari especially — also refuse to
+store the API's session **cookie** on a cross-site response, so cookie-only auth
+hangs on sign-in. Mesa therefore
 authenticates cross-origin with a **Bearer token**: on sign-in the API returns
 the session token in a `set-auth-token` header (exposed via CORS), the app
 stores it and sends `Authorization: Bearer <token>` on every request. The
@@ -163,26 +166,17 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
 
 ---
 
-## The web frontend service (`@mesa/app`)
+## The retired web frontend service
 
-The Vite web build is deployed as a **second Railway service** in the same
-project, served as static files. It shares the monorepo, so it needs its own
-config to avoid inheriting the API's `railway.json`:
+Mesa used to deploy a second Railway service for the Vite web build. **That app
+is gone** (the client is now Expo/React Native). If the project still has that
+service, delete it — nothing references it, and leaving it running serves a stale
+build of a dead app.
 
-- **Root Directory:** repo root (`/`) — NOT `apps/app`. `bun install` must run
-  from the root so the `@mesa/db` workspace resolves (same reason as the API).
-- **Config file:** point Config-as-code at **`/apps/app/railway.json`** (in the
-  service's Settings → Config-as-code). That file sets the build
-  (`bun install && bun run --filter '@mesa/app' build`) and start
-  (`bunx serve -s apps/app/dist -l $PORT`) commands and, crucially, has **no**
-  `preDeployCommand` — the DB migration belongs only to the API.
-- **`VITE_API_URL`:** the API's public URL. Vite **inlines this at build time**,
-  so changing it requires a rebuild, not just a restart — and a stale value
-  (e.g. `http://localhost:*`) ships a build that calls a URL that doesn't exist.
-
-Symptom if this is misconfigured: visiting the app URL returns the API's
-`{"error":"not_found"}` JSON instead of HTML — that means the service is running
-the API's start command, i.e. it's still on the shared root `railway.json`.
+One consequence worth knowing: seeded catalog covers are stored as root-relative
+paths (`/restaurants/x.jpg`) that used to resolve against the web origin. The API
+serves those files itself now, and `PUBLIC_API_URL` is what share-page cover
+images resolve against — set it, or share pages render without a cover.
 
 ---
 
@@ -222,8 +216,6 @@ simply skips them: `APPLE_*`, `INSTAGRAM_*` (social login), `CLOUDINARY_*`
 
 ## What is NOT on Railway (Phase 1)
 
-- **Native iOS/Android build** — that's Xcode + (eventually) the Apple Developer
-  account, tracked in `docs/SUBMISSION.md`. Deferred until you're ready to put
-  it on other people's phones. (The web `@mesa/app` service above is separate
-  from the native build; the native app bundles the same Vite output via
-  Capacitor and talks to the same API over Bearer-token auth.)
+- **The iOS build** — that's EAS Build + the Apple Developer account, tracked in
+  `docs/SUBMISSION.md` and `docs/NATIVE.md`. The app talks to this same API over
+  Bearer-token auth.

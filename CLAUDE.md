@@ -27,14 +27,17 @@ feature is not load-bearing for that loop, it is not Phase 1.
   Instagram OAuth. Instagram is optional (a display @handle, set in onboarding),
   never required for membership. (Email+password was added post-Phase-6 by founder
   decision, alongside the original phone/OAuth methods.)
-- **App:** React + Vite (SPA) wrapped with **Capacitor** for iOS/Android; the
-  same Vite build is also the web app. TanStack Query (data/cache) + TanStack
-  Router. Native access (contacts, share, push, camera, secure storage) via
-  Capacitor plugins.
+- **App:** **Expo / React Native** (`apps/mobile`), iOS-first. **NativeWind** for
+  styling, **Expo Router** for navigation, TanStack Query (data/cache). Native
+  access (contacts, location, camera, haptics, secure storage, maps) via Expo
+  modules + `@rnmapbox/maps`. There is no web app — the only web surface is the
+  API's server-rendered `/p/*` share pages.
 - **Images:** Cloudinary · **Maps/geo:** MapBox
 - **Hosting:** Railway (API + Postgres)
-- **iOS delivery:** Vite build → Capacitor → Xcode (fastlane or Ionic Appflow
-  for CI) → TestFlight → App Store. (No EAS — that's Expo-only.)
+- **iOS delivery:** **EAS Build** → TestFlight → App Store. Needs the Apple
+  Developer account plus two MapBox tokens: the public runtime one
+  (`EXPO_PUBLIC_MAPBOX_TOKEN`) and the build-time SDK download token
+  (`RNMAPBOX_DOWNLOAD_TOKEN`, injected via `apps/mobile/app.config.js`).
 - **Language:** TypeScript everywhere, `strict` on, no `any`
 
 **App Store compliance is a build constraint, not a submission step.** Read
@@ -47,8 +50,10 @@ Sign in with Apple alongside Instagram (required by 4.8), UGC moderation
 ```
 mesa-app-demo/
 ├─ apps/
-│  ├─ api/            # Hono API (Bun)
-│  └─ app/            # React + Vite SPA, wrapped with Capacitor (iOS/Android + web)
+│  ├─ api/            # Hono API (Bun) — also serves /p/* share pages + catalog art
+│  └─ mobile/         # Expo / React Native app (iOS-first). STANDALONE: not a
+│                     # workspace member, so Metro gets a flat node_modules
+│                     # (see its bunfig.toml linker="hoisted").
 ├─ packages/
 │  └─ db/             # Drizzle schema + client — SHARED by api and app types
 ├─ docs/              # BUILD_PLAN.md, DESIGN.md
@@ -57,8 +62,10 @@ mesa-app-demo/
 ```
 
 The monorepo exists for **one reason**: the Drizzle schema and its inferred
-types live in `packages/db` and are imported by both the API and (for types
-only) the app. That is the "typed end to end" guarantee. Keep the
+types live in `packages/db` and are imported by the API. That is the "typed end
+to end" guarantee. `apps/mobile` keeps its own copy of the API response types
+(`src/lib/types.ts`) because Metro cannot resolve workspace packages under Bun's
+isolated linker — keep it in sync when the schema changes. Keep the
 workspace setup minimal — do not add tooling that isn't earning its place.
 
 ## Hard rules (these are non-negotiable — they come from the founder)
@@ -94,9 +101,12 @@ starting the next. Do not run ahead into later milestones unprompted.
 Do not invent a look. Read `docs/DESIGN.md` — it is the source of truth. Mesa
 ships **two first-class themes**, Afternoon (light paper, default) and Candlelit
 (dark oxblood), plus Auto. Both resolve through the **semantic token layer** in
-`apps/app/src/styles/tokens.css` (`--bg`, `--text`, `--accent`, …). Never
-reference a raw brand color (`--ink`, `--cream`, `--brass`) or a hex/`rgba()`
-outside `tokens.css` and the four sites `docs/DESIGN.md` names under "Where color
-is allowed to live." The real wordmark is at
+`apps/mobile/src/theme/vars.ts` (the two `--bg`/`--text`/`--accent` maps), mapped
+to Tailwind names in `apps/mobile/tailwind.config.js` and consumed as classes
+(`bg-bg`, `text-accent`). Never reference a raw brand color or a hex/`rgba()`
+outside `vars.ts` and the sites `docs/DESIGN.md` names under "Where color is
+allowed to live" — in the native app those are the share card
+(`components/ShareCard.tsx`, frozen Candlelit because it leaves the app) and the
+ThemePicker swatches (literal previews of each theme). The real wordmark is at
 `assets/brand/mesa-wordmark-burgundy.png`; aesthetic references are in
 `assets/moodboard/`.

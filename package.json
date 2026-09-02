@@ -2,7 +2,7 @@
   "name": "mesa",
   "private": true,
   "type": "module",
-  "workspaces": ["apps/api", "apps/app", "packages/*"],
+  "workspaces": ["apps/api", "packages/*"],
   "engines": {
     "node": "22"
   },
@@ -14,7 +14,6 @@
     "db:migrate": "bun run --filter '@mesa/db' migrate",
     "db:seed": "bun run --filter '@mesa/db' seed",
     "api:dev": "bun run --filter '@mesa/api' dev",
-    "app:dev": "bun run --filter '@mesa/app' dev",
     "test": "bun run --filter '*' test"
   },
   "devDependencies": {

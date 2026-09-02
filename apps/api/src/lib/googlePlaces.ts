@@ -153,7 +153,7 @@ export async function placeDetails(
 }
 
 // Google primaryType/types → Mesa's English cuisine vocabulary
-// (apps/app/src/lib/display.ts's CUISINE_ES keys — the same target
+// (apps/mobile/src/lib/display.ts's CUISINE_ES keys — the same target
 // packages/db/src/import-foursquare.ts's FSQ_TO_MESA_CUISINE maps into).
 // Unmapped → null, never the raw type string — cuisineLabel() passes unknowns
 // through verbatim, which would leak English Google type slugs into the

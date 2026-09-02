@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { serveStatic } from 'hono/bun'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { auth } from './auth'
@@ -16,7 +17,7 @@ import { onboardingRoutes } from './routes/onboarding'
 import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
-import { sharePagesRoutes, webOrigin } from './routes/share-pages'
+import { sharePagesRoutes } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
 
 const app = new Hono<AppEnv>()
@@ -33,15 +34,10 @@ const app = new Hono<AppEnv>()
 //     and Cloudinary covers, but it ships ZERO javascript, so script-src stays
 //     'none'. That is a tighter script policy than the SPA can have.
 //
-// frame-ancestors and HSTS are the reason this exists: the app's build-time CSP
-// is a <meta> tag, and browsers ignore both of those in meta — they only work as
-// response headers. Until now nothing set them anywhere, so there was no
-// clickjacking protection at all. The web app gets the same treatment via
-// apps/app/public/serve.json.
-// The web origin share-page covers are served from — same resolution the pages
-// themselves use, so the policy can never drift from the markup.
-const SHARE_IMG_ORIGIN = webOrigin()
-
+// frame-ancestors and HSTS are the reason this exists: they only work as
+// response headers, never as a <meta> CSP, so without these there'd be no
+// clickjacking protection on the surfaces this server owns (/p/* share pages
+// and the static catalog art).
 const COMMON_HEADERS = {
   // One year. Deliberately NO `preload`: preload is effectively irreversible and
   // would be submitted for a *.up.railway.app domain we don't own. Revisit once
@@ -63,17 +59,13 @@ app.use(
       scriptSrc: ["'none'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ['https://fonts.gstatic.com'],
-      // Covers resolve three ways in absoluteCover(): a Cloudinary delivery
-      // URL, or — for every seeded row today — a local /restaurants/*.jpg
-      // served from the WEB origin, which is a different host than this API.
-      // Omitting that origin blocks the cover on every share page (the OG
-      // unfurl still works, since crawlers don't enforce CSP — so this would
-      // have failed silently for anyone who actually opened the link).
-      imgSrc: [
-        'https://res.cloudinary.com',
-        'data:',
-        ...(SHARE_IMG_ORIGIN ? [SHARE_IMG_ORIGIN] : []),
-      ],
+      // Covers resolve two ways in absoluteCover(): a Cloudinary delivery URL,
+      // or — for every seeded row today — a local /restaurants/*.jpg, which
+      // this server now serves itself, hence 'self'. (These used to come from
+      // the separate web origin; that app is retired.) Crawlers don't enforce
+      // CSP, so getting this wrong fails silently for humans who open the link
+      // while the OG unfurl still looks fine — worth being exact about.
+      imgSrc: ["'self'", 'https://res.cloudinary.com', 'data:'],
       baseUri: ["'none'"],
       formAction: ["'none'"],
       frameAncestors: ["'none'"],
@@ -115,6 +107,15 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // OG meta, hit by link crawlers and logged-out visitors. Mounted before the
 // session middleware so they need no cookie and never touch auth.
 app.route('/p', sharePagesRoutes)
+
+// Seeded catalog/dish photos. These used to be served by the web app out of its
+// public/ dir, so the seed stores root-relative paths ("/restaurants/x.jpg").
+// The native app has no web origin to resolve those against, so the API — the
+// one surface that survives the web cutover — serves them and the client
+// resolves the path against the API origin (apps/mobile/src/lib/media.ts).
+// Public, mounted before the session middleware: they're catalog art, not
+// member data.
+app.use('/restaurants/*', serveStatic({ root: './apps/api/public' }))
 
 // Resolve the current user for every other route.
 app.use('*', sessionMiddleware)

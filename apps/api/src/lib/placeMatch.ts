@@ -9,7 +9,7 @@ export type PlaceCandidate = {
   lng: number
 }
 
-// Haversine in raw SQL (meters) — mirrors apps/app/src/lib/geo.ts's client
+// Haversine in raw SQL (meters) — mirrors apps/mobile/src/lib/geo.ts's client
 // version, since this needs to run inside a WHERE clause, not on fetched rows.
 function distanceSql(lat: number, lng: number) {
   return sql`(

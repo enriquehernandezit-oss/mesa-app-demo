@@ -27,23 +27,30 @@ function esc(s: string): string {
     .replace(/'/g, '&#39;')
 }
 
-// The web app's origin — where "get Mesa" and cover assets live. In dev this is
-// the Vite origin (APP_ORIGINS default); in prod, set PUBLIC_WEB_URL to the
-// deployed web build. Falls back gracefully so nothing breaks unconfigured.
+// Where "get Mesa" sends someone who taps a share link on the web. With the web
+// app retired this is the marketing/App Store landing page — set PUBLIC_WEB_URL
+// to it. Falls back gracefully so nothing breaks unconfigured.
 export function webOrigin(): string | null {
   return process.env.PUBLIC_WEB_URL ?? process.env.APP_ORIGINS?.split(',')[0] ?? null
 }
 
+// This server's own public origin — where the seeded catalog art is served from
+// (see the /restaurants/* static route in index.ts). Cover images used to resolve
+// against the web app; it's gone, and these files live here now.
+function selfOrigin(): string | null {
+  return process.env.PUBLIC_API_URL ?? null
+}
+
 // Absolute, crawler-reachable cover URL. Same precedence as the client's
 // media.ts: full URLs pass through; a local /restaurants/*.jpg path is resolved
-// against the web origin; a bare id becomes a Cloudinary delivery URL when a
-// cloud is configured. Null → the page renders without an image.
+// against THIS server (which serves those files); a bare id becomes a Cloudinary
+// delivery URL when a cloud is configured. Null → the page renders imageless.
 function absoluteCover(coverImageId: string | null): string | null {
   if (!coverImageId) return null
   if (coverImageId.startsWith('http')) return coverImageId
   if (coverImageId.startsWith('/')) {
-    const web = webOrigin()
-    return web ? `${web}${coverImageId}` : null
+    const self = selfOrigin()
+    return self ? `${self}${coverImageId}` : null
   }
   const cloud = process.env.CLOUDINARY_CLOUD_NAME
   return cloud

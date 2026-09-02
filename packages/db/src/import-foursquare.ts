@@ -58,8 +58,8 @@ type ExistingRow = {
 
 type NeighborhoodRow = { id: string; lat: number; lng: number }
 
-// --- geo (meters). Haversine, mirroring apps/app/src/lib/geo.ts — this package
-// can't import from apps/app, so the formula lives here too. ---
+// --- geo (meters). Haversine, mirroring apps/mobile/src/lib/geo.ts — this
+// package can't import from an app, so the formula lives here too. ---
 function haversineM(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const R = 6371000
   const dLat = ((bLat - aLat) * Math.PI) / 180
@@ -129,7 +129,7 @@ function neighborKeys(lat: number, lng: number): string[] {
 }
 
 // --- cuisine: Foursquare leaf label → Mesa's English cuisine vocabulary
-// (apps/app/src/lib/display.ts's CUISINE_ES keys). Unmapped → null, never the
+// (apps/mobile/src/lib/display.ts's CUISINE_ES keys). Unmapped → null, never the
 // raw label — cuisineLabel() passes unknowns through verbatim, which would leak
 // English into the Spanish UI. This table is curated from the real --dry-run
 // distinct-leaf list; extend it (and CUISINE_ES) once that list is known. ---
