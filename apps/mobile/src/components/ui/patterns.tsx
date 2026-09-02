@@ -1,6 +1,9 @@
 import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { GROUND, themeColors } from '@/theme/vars'
+import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 import { Linking, Pressable, Text, View } from 'react-native'
 
@@ -75,9 +78,23 @@ export function UtilityPill({
   href?: string
   onPress?: () => void
 }) {
+  const theme = useResolvedTheme()
   const open = () => {
     if (onPress) return onPress()
-    if (href && /^(https?:|tel:|mailto:)/.test(href)) Linking.openURL(href).catch(() => {})
+    if (!href) return
+    // A web link opens IN the app (SFSafariViewController) instead of ejecting
+    // to Safari — the member reads a menu and comes back with Done, they don't
+    // app-switch. Themed so it doesn't flash white over Candlelit. tel:/mailto:
+    // still hand off to the system, which is what they're for.
+    if (/^https?:/.test(href)) {
+      WebBrowser.openBrowserAsync(href, {
+        controlsColor: themeColors[theme].accent,
+        toolbarColor: GROUND[theme],
+        dismissButtonStyle: 'done',
+      }).catch(() => {})
+      return
+    }
+    if (/^(tel:|mailto:)/.test(href)) Linking.openURL(href).catch(() => {})
   }
   return (
     <Pressable

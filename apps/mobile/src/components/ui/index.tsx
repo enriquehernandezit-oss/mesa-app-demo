@@ -1,9 +1,11 @@
+import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, useEffect } from 'react'
 import {
   Pressable,
   type PressableProps,
   ScrollView,
+  Switch,
   Text,
   type TextProps,
   View,
@@ -237,24 +239,21 @@ export const Toggle = ({
   checked,
   onChange,
   label,
-}: { checked: boolean; onChange?: (next: boolean) => void; label?: string }) => (
-  <Pressable
-    accessibilityRole="switch"
-    accessibilityState={{ checked }}
-    accessibilityLabel={label}
-    onPress={() => onChange?.(!checked)}
-    className={`h-[28px] w-[48px] justify-center rounded-pill px-[3px] ${checked ? 'bg-accent-fill' : 'bg-line-strong'}`}
-  >
-    <View
-      className="h-[22px] w-[22px] rounded-pill bg-surface"
-      style={{
-        alignSelf: checked ? 'flex-end' : 'flex-start',
-        shadowColor: '#000',
-        shadowOpacity: 0.28,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 2,
-      }}
+}: { checked: boolean; onChange?: (next: boolean) => void; label?: string }) => {
+  // The real UISwitch: it animates, it can be dragged as well as tapped, and it
+  // inherits every accessibility behavior iOS gives the control. The hand-rolled
+  // pill it replaced only snapped between two positions. Prop API is unchanged,
+  // so call sites didn't move. The thumb stays white — iOS keeps it white in
+  // both appearances, and tinting it reads as a broken switch.
+  const track = useColor('accent-fill')
+  const off = useColor('line-strong')
+  return (
+    <Switch
+      value={checked}
+      onValueChange={onChange}
+      accessibilityLabel={label}
+      trackColor={{ false: off, true: track }}
+      ios_backgroundColor={off}
     />
-  </Pressable>
-)
+  )
+}

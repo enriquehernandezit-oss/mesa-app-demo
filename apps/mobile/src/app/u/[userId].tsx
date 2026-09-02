@@ -1,9 +1,10 @@
-import { ReasonPicker, ReportControl } from '@/components/ReportControl'
+import { ReportControl, pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, Chip, EmptyState, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
+import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { comingSoon } from '@/lib/comingSoon'
 import { displayScore } from '@/lib/display'
@@ -23,8 +24,6 @@ export default function UserRankings() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [reporting, setReporting] = useState(false)
-  const [confirmingBlock, setConfirmingBlock] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
@@ -54,7 +53,6 @@ export default function UserRankings() {
   const reportUser = useMutation({
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
-    onSuccess: () => setReporting(false),
     onError: () =>
       toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
   })
@@ -123,7 +121,11 @@ export default function UserRankings() {
           <View className="mt-3 flex-row gap-5">
             <Pressable
               accessibilityRole="button"
-              onPress={() => setReporting((v) => !v)}
+              disabled={reportUser.isPending}
+              onPress={async () => {
+                const reason = await pickReportReason('user')
+                if (reason) reportUser.mutate(reason)
+              }}
               className="min-h-[36px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
@@ -132,7 +134,15 @@ export default function UserRankings() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              onPress={() => setConfirmingBlock(true)}
+              onPress={async () => {
+                const picked = await showActionSheet({
+                  title: `¿Bloquear a ${firstName}?`,
+                  message:
+                    'No verás su contenido y esta persona no verá el tuyo. Puedes desbloquear luego en Ajustes.',
+                  options: [{ label: 'Bloquear', destructive: true }],
+                })
+                if (picked === 0) block.mutate()
+              }}
               className="min-h-[36px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
@@ -141,45 +151,6 @@ export default function UserRankings() {
             </Pressable>
           </View>
         </View>
-
-        {reporting && (
-          <ReasonPicker
-            prompt="¿Por qué reportas a esta persona?"
-            pending={reportUser.isPending}
-            onPick={reportUser.mutate}
-            onCancel={() => setReporting(false)}
-          />
-        )}
-
-        {/* Blocking severs the social graph and hides both sides' content — a real
-            consequence for a one-tap control, so it confirms first (matching
-            account-deletion's confirm and ranking-removal's undo). */}
-        {confirmingBlock && (
-          <View className="mt-3 gap-2 rounded border border-line bg-surface p-3">
-            <Caption>
-              ¿Bloquear a {firstName}? No verás su contenido y esta persona no verá el tuyo. Puedes
-              desbloquear luego en Ajustes.
-            </Caption>
-            <View className="flex-row gap-2">
-              <Chip
-                size="sm"
-                onPress={() => {
-                  setConfirmingBlock(false)
-                  block.mutate()
-                }}
-              >
-                Bloquear
-              </Chip>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setConfirmingBlock(false)}
-              className="min-h-[36px] justify-center active:opacity-60"
-            >
-              <Text className="font-ui-medium text-label text-text-muted">Cancelar</Text>
-            </Pressable>
-          </View>
-        )}
 
         {rankings.length === 0 ? (
           <EmptyState>Todavía no hay rankings.</EmptyState>

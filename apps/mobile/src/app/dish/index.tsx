@@ -1,5 +1,6 @@
 import { Body, Button, Caption, Chip, Eyebrow, SectionHeader, Title, Toggle } from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { GRAIN_LABEL_ES } from '@/lib/display'
 import { tapSuccess } from '@/lib/haptics'
@@ -86,6 +87,17 @@ export default function DishCompose() {
     return sub
   }, [navigation, step])
 
+  // One tap target, one system chooser — the screen used to have two separate
+  // entry points (a "Cámara" header button and the box for the library), which
+  // is a menu pretending not to be one.
+  async function choosePhoto() {
+    const picked = await showActionSheet({
+      options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
+    })
+    if (picked === null) return
+    await pickFrom(picked === 0 ? 'camera' : 'library')
+  }
+
   async function pickFrom(source: 'camera' | 'library') {
     const perm =
       source === 'camera'
@@ -135,22 +147,11 @@ export default function DishCompose() {
   if (step === 'photo') {
     return (
       <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
-        <View className="flex-row items-center justify-between">
-          <BackBar label="✕ Cancelar" onPress={goBack} />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => pickFrom('camera')}
-            className="min-h-[44px] justify-center active:opacity-60"
-          >
-            <Text className="font-ui text-eyebrow text-accent-strong uppercase tracking-eyebrow">
-              Cámara
-            </Text>
-          </Pressable>
-        </View>
+        <BackBar label="✕ Cancelar" onPress={goBack} />
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => pickFrom('library')}
+          onPress={choosePhoto}
           className="mt-3 aspect-square w-full items-center justify-center overflow-hidden rounded border border-line border-dashed bg-bg-sunk active:opacity-90"
         >
           {image ? (
