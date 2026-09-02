@@ -128,6 +128,8 @@ export default function ExploreScreen() {
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
         contentInsetAdjustmentBehavior="automatic"
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Attribute filters (sort / open / price). */}
         <ChipRail className="mt-3">

@@ -111,7 +111,12 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         : null
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-10">
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerClassName="px-5 pt-6 pb-10"
+      automaticallyAdjustKeyboardInsets
+      keyboardShouldPersistTaps="handled"
+    >
       <Title>¿Quién eres en la mesa?</Title>
       <Body className="mt-1">Así te encuentran y reconocen tus amigos en Mesa.</Body>
 
@@ -121,6 +126,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         placeholderTextColor={placeholder}
         placeholder="Tu nombre"
         autoComplete="name"
+        textContentType="name"
         value={name}
         onChangeText={setName}
       />

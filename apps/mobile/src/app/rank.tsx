@@ -12,6 +12,7 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
+import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
@@ -533,7 +534,12 @@ function RevealStep({
           </Text>
         </Pressable>
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="pb-6"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="items-center">
           <Eyebrow>Tu puntuación</Eyebrow>
           <Text className="font-serif text-display text-accent">{displayScore(score)}</Text>
@@ -673,7 +679,12 @@ function NoteStep({
           </Text>
         </Pressable>
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="pb-6"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="flex-row items-center gap-3 border-line border-b pb-4">
           <PlaceCover
             seed={picked.id}
@@ -701,9 +712,12 @@ function NoteStep({
           placeholder="con velas, vino natural, pide el branzino…"
           maxLength={140}
           multiline
+          inputAccessoryViewID="rank-note"
           value={note}
           onChangeText={setNote}
         />
+
+        <KeyboardDone id="rank-note" />
 
         <Eyebrow className="mt-4 font-mono">Ocasión</Eyebrow>
         <View className="mt-2 flex-row flex-wrap gap-2">
@@ -1043,6 +1057,9 @@ function FindStep({
           placeholder="Busca un spot donde hayas estado…"
           value={query}
           onChangeText={setQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          autoCorrect={false}
         />
         <ChipRail className="mt-3">
           <Chip
@@ -1074,7 +1091,12 @@ function FindStep({
         </ChipRail>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-4 pb-10">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pt-4 pb-10"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         {leadGroup.length === 0 && results.length === 0 && !q ? (
           <Body>Ya rankeaste todo en Mesa.</Body>
         ) : leadGroup.length === 0 && results.length === 0 ? (

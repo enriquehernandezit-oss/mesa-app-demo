@@ -1,9 +1,9 @@
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
 import { authClient } from '@/lib/auth-client'
-import { useColor } from '@/theme/useColor'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
-import { TextInput, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 // Reached from the password-reset email (a universal link →
@@ -13,12 +13,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 export default function ResetPassword() {
   const { token } = useLocalSearchParams<{ token?: string }>()
   const router = useRouter()
-  const placeholder = useColor('text-muted')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const confirmRef = useRef<TextInput>(null)
 
   const goSignIn = () => router.replace('/sign-in')
 
@@ -34,7 +34,10 @@ export default function ResetPassword() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-1 justify-center gap-5 px-5">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1 justify-center gap-5 px-5"
+      >
         <View className="items-center gap-2">
           <Wordmark size={56} />
           <Eyebrow>Restablecer contraseña</Eyebrow>
@@ -61,21 +64,28 @@ export default function ResetPassword() {
           </View>
         ) : (
           <View className="gap-3">
-            <TextInput
-              className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-              placeholderTextColor={placeholder}
+            <Field
               placeholder="Nueva contraseña (8+ caracteres)"
               secureTextEntry
               autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => confirmRef.current?.focus()}
               value={password}
               onChangeText={setPassword}
             />
-            <TextInput
-              className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-              placeholderTextColor={placeholder}
+            <Field
+              ref={confirmRef}
               placeholder="Confirma la nueva contraseña"
               secureTextEntry
               autoComplete="new-password"
+              textContentType="newPassword"
+              returnKeyType="go"
+              enablesReturnKeyAutomatically
+              onSubmitEditing={() => {
+                if (!busy && password.length >= 8 && password === confirm) submit()
+              }}
               value={confirm}
               onChangeText={setConfirm}
             />
@@ -92,7 +102,7 @@ export default function ResetPassword() {
             {error && <Caption className="text-status-packed">{error}</Caption>}
           </View>
         )}
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

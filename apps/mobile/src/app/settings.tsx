@@ -173,6 +173,8 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5 pb-12"
         contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
       >
         {/* Tappable profile card → the profile tab. */}
         <Pressable
@@ -312,6 +314,7 @@ export default function SettingsScreen() {
                   placeholderTextColor={placeholder}
                   placeholder="Contraseña actual"
                   secureTextEntry
+                  textContentType="password"
                   autoComplete="current-password"
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
@@ -321,6 +324,7 @@ export default function SettingsScreen() {
                   placeholderTextColor={placeholder}
                   placeholder="Nueva contraseña (8+ caracteres)"
                   secureTextEntry
+                  textContentType="newPassword"
                   autoComplete="new-password"
                   value={newPassword}
                   onChangeText={setNewPassword}
@@ -389,6 +393,7 @@ export default function SettingsScreen() {
                   placeholderTextColor={placeholder}
                   placeholder="Tu contraseña"
                   secureTextEntry
+                  textContentType="password"
                   autoComplete="current-password"
                   value={deletePassword}
                   onChangeText={setDeletePassword}

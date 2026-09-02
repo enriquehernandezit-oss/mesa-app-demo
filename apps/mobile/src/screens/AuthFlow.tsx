@@ -1,13 +1,13 @@
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorEs } from '@/lib/authErrors'
 import { clearAuthLost } from '@/lib/authLost'
 import { queryClient } from '@/lib/query'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
-import { useColor } from '@/theme/useColor'
 import * as AppleAuthentication from 'expo-apple-authentication'
-import { useEffect, useState } from 'react'
-import { Platform, TextInput, View } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 // Sign-in — email + password (the launch method) plus Sign in with Apple (App
@@ -17,17 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 type AuthClientError = { code?: string; message?: string; status?: number }
 const NETWORK_ERROR: AuthClientError = { message: 'network' }
 
-function Field(props: React.ComponentProps<typeof TextInput>) {
-  const placeholder = useColor('text-muted')
-  return (
-    <TextInput
-      placeholderTextColor={placeholder}
-      className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-      {...props}
-    />
-  )
-}
-
 export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,6 +25,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [appleAvailable, setAppleAvailable] = useState(false)
+  const passwordRef = useRef<TextInput>(null)
   const theme = useResolvedTheme()
 
   // Sign in with Apple is iOS-only (and simulator-dependent). Probe once; the
@@ -149,7 +139,12 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-1 justify-center gap-5 px-5">
+      {/* This form is centered and doesn't scroll, so the keyboard would sit on
+          top of the password field on a smaller phone. */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1 justify-center gap-5 px-5"
+      >
         <View className="items-center gap-2">
           <Wordmark size={64} />
           <Eyebrow className="font-mono text-accent-strong">
@@ -165,21 +160,36 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
 
         <View className="gap-3">
           <Eyebrow>{mode === 'signup' ? 'Crea tu cuenta' : 'Bienvenido de nuevo'}</Eyebrow>
+          {/* textContentType is what actually turns on iCloud Keychain: username
+              + newPassword is the pair iOS looks for to offer a strong password
+              on sign-up and to save the credential afterwards. */}
           <Field
             value={email}
             onChangeText={setEmail}
             placeholder="tu@correo.com"
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
             autoComplete="email"
+            textContentType="username"
             inputMode="email"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => passwordRef.current?.focus()}
           />
           <Field
+            ref={passwordRef}
             value={password}
             onChangeText={setPassword}
             placeholder="Contraseña (8+ caracteres)"
             secureTextEntry
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+            textContentType={mode === 'signup' ? 'newPassword' : 'password'}
+            returnKeyType="go"
+            enablesReturnKeyAutomatically
+            onSubmitEditing={() => {
+              if (canSubmit && !busy) emailAuth()
+            }}
           />
           {mode === 'signup' && password.length > 0 && password.length < 8 && (
             <Caption className="text-status-packed">
@@ -241,7 +251,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             </>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

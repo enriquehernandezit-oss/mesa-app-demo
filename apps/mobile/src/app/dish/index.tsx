@@ -53,6 +53,7 @@ export default function DishCompose() {
   const [wantToTry, setWantToTry] = useState(false)
   const [friendsOnly, setFriendsOnly] = useState(true)
   const posted = useRef(false)
+  const captionRef = useRef<TextInput>(null)
 
   const post = useMutation({
     mutationFn: async () => {
@@ -202,7 +203,12 @@ export default function DishCompose() {
       <View className="px-5">
         <BackBar label="‹ Nuevo plato" onPress={() => setStep('photo')} />
       </View>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-8">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-8"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="mt-3 flex-row gap-3">
           {image ? (
             <View className="h-20 w-20 overflow-hidden rounded">
@@ -221,15 +227,20 @@ export default function DishCompose() {
               maxLength={60}
               value={name}
               onChangeText={setName}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => captionRef.current?.focus()}
             />
             <Caption className="mt-1 font-mono text-[10px]">Nombre del plato</Caption>
             <TextInput
               className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
               placeholderTextColor={placeholder}
+              ref={captionRef}
               placeholder="Se deshace con el tenedor."
               maxLength={140}
               value={caption}
               onChangeText={setCaption}
+              returnKeyType="done"
             />
           </View>
         </View>

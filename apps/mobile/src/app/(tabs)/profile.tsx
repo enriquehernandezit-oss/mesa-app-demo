@@ -228,7 +228,12 @@ function EditProfile({ onClose }: { onClose: () => void }) {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-14">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-10 pt-14"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
         <Pressable
           accessibilityRole="button"
           onPress={onClose}
@@ -237,7 +242,15 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           <Text className="font-ui-medium text-label text-text-muted">‹ Editar perfil</Text>
         </Pressable>
 
-        <Field label="Nombre" value={name} onChangeText={setName} maxLength={60} ph={placeholder} />
+        <Field
+          label="Nombre"
+          value={name}
+          onChangeText={setName}
+          maxLength={60}
+          ph={placeholder}
+          textContentType="name"
+          autoComplete="name"
+        />
         <Field
           label="@usuario"
           value={handle}
@@ -245,6 +258,9 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           placeholder="tuusuario"
           maxLength={30}
           ph={placeholder}
+          // iOS capitalizes and autocorrects this by default — it's a handle.
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         <Eyebrow className="mt-4 mb-2 font-mono">Sector</Eyebrow>
         <View className="flex-row flex-wrap gap-2">

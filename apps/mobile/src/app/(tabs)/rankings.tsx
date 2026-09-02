@@ -10,6 +10,7 @@ import {
   Skeleton,
   Title,
 } from '@/components/ui'
+import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ShareIcon } from '@/components/ui/icons'
 import { Characteristics } from '@/components/ui/patterns'
@@ -83,6 +84,8 @@ export default function RankingsTab() {
         indicatorStyle={indicator}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
       >
         <View className="flex-row items-start justify-between">
           <View>
@@ -288,6 +291,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                 placeholder="Una línea sobre por qué…"
                 maxLength={140}
                 multiline
+                inputAccessoryViewID="ranking-note"
                 value={draft}
                 onChangeText={setDraft}
               />
