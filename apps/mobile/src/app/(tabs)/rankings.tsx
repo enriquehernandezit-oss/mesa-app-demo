@@ -33,6 +33,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
+import Animated, { LinearTransition } from 'react-native-reanimated'
 
 // The ranked passport (M3) — mine (ordered, serif numerals, brass scores, notes),
 // want-to-try (saved), and by-sector. Ported from apps/app/src/screens/tabs/
@@ -201,6 +202,10 @@ function Stat({ n, l }: { n: string; l: string }) {
 function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
   const ref = useRef<SwipeableMethods>(null)
   return (
+    // layout= makes a removal slide the neighbours up rather than teleporting
+    // them — it matters right after a swipe, and again when undo puts the row back.
+    // layout= makes a removal slide its neighbours up instead of teleporting
+    // them — which matters most right after a swipe, and again on undo.
     <ReanimatedSwipeable
       ref={ref}
       friction={2}
@@ -222,7 +227,7 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
         </Pressable>
       )}
     >
-      {children}
+      <Animated.View layout={LinearTransition.springify().damping(18)}>{children}</Animated.View>
     </ReanimatedSwipeable>
   )
 }

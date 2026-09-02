@@ -25,6 +25,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { Image } from 'expo-image'
 import { Link, useRouter } from 'expo-router'
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 
 // The discovery feed (Phase 6 mocks A1–A3): a featured-lists carousel, then the
 // feed column. Ranking cards are compact paper cards; dish posts carry a photo.
@@ -81,7 +82,7 @@ export default function DiscoverTab() {
         <FlatList
           data={items}
           keyExtractor={(item) => item.rankingId}
-          renderItem={({ item }) => <FeedCard item={item} />}
+          renderItem={({ item, index }) => <FeedCard item={item} index={index} />}
           ListHeaderComponent={
             <>
               <FeedHeader />
@@ -264,7 +265,7 @@ function FeedSkeleton() {
 // compact card with the characteristics block and an inline badged score circle
 // (attributed to the friend — never the place's own rating). The film-grain
 // treatment on dish photos lands with the image work in N6.
-function FeedCard({ item }: { item: FeedItem }) {
+function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
   const chars = (
     <Characteristics
@@ -296,7 +297,10 @@ function FeedCard({ item }: { item: FeedItem }) {
   if (item.dishImage) {
     const href = item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
     return (
-      <View className="mb-3 overflow-hidden rounded border border-line bg-surface">
+      <Animated.View
+        entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
+        className="mb-3 overflow-hidden rounded border border-line bg-surface"
+      >
         <Link href={href} asChild>
           <Pressable className="active:opacity-90">
             <View className="h-52">
@@ -327,12 +331,15 @@ function FeedCard({ item }: { item: FeedItem }) {
             cheered={item.cheeredByMe ?? false}
           />
         </View>
-      </View>
+      </Animated.View>
     )
   }
 
   return (
-    <View className="mb-3 rounded border border-line bg-surface p-4">
+    <Animated.View
+      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
+      className="mb-3 rounded border border-line bg-surface p-4"
+    >
       <View className="flex-row items-center justify-between">
         {who('rankeó un spot', 28)}
         <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
@@ -344,13 +351,15 @@ function FeedCard({ item }: { item: FeedItem }) {
         </Pressable>
       </Link>
       {item.note ? (
-        <Text className="mt-2 font-serif-italic text-serif-sm text-text-2">“{item.note}”</Text>
+        <Text selectable className="mt-2 font-serif-italic text-serif-sm text-text-2">
+          “{item.note}”
+        </Text>
       ) : null}
       <CheersButton
         rankingId={item.rankingId}
         count={item.cheersCount ?? 0}
         cheered={item.cheeredByMe ?? false}
       />
-    </View>
+    </Animated.View>
   )
 }

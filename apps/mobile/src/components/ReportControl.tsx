@@ -61,7 +61,7 @@ export function ReportControl({
         const reason = await pickReportReason(targetType)
         if (reason) report.mutate(reason)
       }}
-      className="mt-2 min-h-[36px] justify-center active:opacity-60"
+      className="mt-2 min-h-[44px] justify-center active:opacity-60"
     >
       <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
         {label}

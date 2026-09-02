@@ -1,5 +1,6 @@
 import { ReportControl } from '@/components/ReportControl'
 import { Body, Caption, EmptyState, ErrorState } from '@/components/ui'
+import { GlassCircle } from '@/components/ui/GlassCircle'
 import { BackIcon, DirectionsIcon, PhoneIcon, WebIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
@@ -73,15 +74,11 @@ export default function DishDetail() {
             contentFit="cover"
             transition={120}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Atrás"
-            onPress={goBack}
-            style={{ top: insets.top + 8 }}
-            className="absolute left-4 h-10 w-10 items-center justify-center rounded-pill bg-surface active:opacity-80"
-          >
-            <BackIcon size={20} />
-          </Pressable>
+          <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
+            <GlassCircle accessibilityLabel="Atrás" onPress={goBack}>
+              <BackIcon size={20} />
+            </GlassCircle>
+          </View>
           <View
             className="absolute right-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}

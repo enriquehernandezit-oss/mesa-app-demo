@@ -45,6 +45,7 @@ import {
 import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Rank-a-place (Phase 6 mocks B1–B4): find the spot (merged ranked + unranked
@@ -76,6 +77,8 @@ type AddPlaceMutation = UseMutationResult<
   Error,
   { name: string; neighborhoodSlug: string }
 >
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 // The five occasion tags from the mocks (B4). Title-case, matching the seed vocab.
 const RANK_TAGS = ['Cena romántica', 'Ocasión especial', 'Cena en grupo', 'Al aire libre', 'Solo']
@@ -311,11 +314,18 @@ export default function RankAPlace() {
   if (placedStamp && picked && position !== null) {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-bg px-5">
-        <View className="h-28 w-28 items-center justify-center rounded-pill border-2 border-accent">
+        {/* The stamp punches in — it already fires tapSuccess, and a celebration
+            that appears instantly reads as a screen change, not an event. */}
+        <Animated.View
+          entering={ZoomIn.springify().damping(12)}
+          className="h-28 w-28 items-center justify-center rounded-pill border-2 border-accent"
+        >
           <Text className="font-serif text-display text-accent">#{position}</Text>
-        </View>
-        <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
-        <Caption>añadido a tu pasaporte</Caption>
+        </Animated.View>
+        <Animated.View entering={FadeInDown.delay(150)} className="items-center gap-3">
+          <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
+          <Caption>añadido a tu pasaporte</Caption>
+        </Animated.View>
       </View>
     )
   }
@@ -868,28 +878,31 @@ function PlaceStep({
 // Never blocks: tapping the scrim or the CTA both dismiss.
 function RankCoachmark({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <Pressable
+    <AnimatedPressable
+      entering={FadeIn.duration(180)}
       onPress={onDismiss}
       className="absolute inset-0 items-center justify-center bg-overlay-scrim px-6"
     >
-      <Card raised onStartShouldSetResponder={() => true} className="w-full gap-2">
-        <Eyebrow>Cómo funciona</Eyebrow>
-        <Title>Sin estrellas. Solo comparas.</Title>
-        <View className="my-1 flex-row gap-2">
-          <Chip size="sm" state="selected">
-            Este
-          </Chip>
-          <Chip size="sm">O este</Chip>
-        </View>
-        <Body>
-          Te mostramos dos spots a la vez. Eliges el que estuvo mejor, unas cuantas veces, y con eso
-          encontramos el orden exacto de tu lista — la puntuación sale de ahí.
-        </Body>
-        <Button variant="primary" onPress={onDismiss}>
-          Entendido
-        </Button>
-      </Card>
-    </Pressable>
+      <Animated.View entering={FadeInDown.springify().damping(16)} className="w-full">
+        <Card raised onStartShouldSetResponder={() => true} className="gap-2">
+          <Eyebrow>Cómo funciona</Eyebrow>
+          <Title>Sin estrellas. Solo comparas.</Title>
+          <View className="my-1 flex-row gap-2">
+            <Chip size="sm" state="selected">
+              Este
+            </Chip>
+            <Chip size="sm">O este</Chip>
+          </View>
+          <Body>
+            Te mostramos dos spots a la vez. Eliges el que estuvo mejor, unas cuantas veces, y con
+            eso encontramos el orden exacto de tu lista — la puntuación sale de ahí.
+          </Body>
+          <Button variant="primary" onPress={onDismiss}>
+            Entendido
+          </Button>
+        </Card>
+      </Animated.View>
+    </AnimatedPressable>
   )
 }
 

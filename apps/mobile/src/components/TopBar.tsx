@@ -26,7 +26,10 @@ function ActivityBell() {
   const unseen = useUnseenActivity()
   return (
     <Link href="/activity" asChild>
-      <Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={unseen > 0 ? `Actividad, ${unseen} sin ver` : 'Actividad'}
+      >
         <Btn>
           <BellIcon size={19} color="text" />
           {unseen > 0 && (
@@ -61,13 +64,17 @@ export function TopBar({
       <View className="flex-row gap-2">
         {variant === 'profile' ? (
           <>
-            <Pressable accessibilityRole="button" onPress={() => shareProfile(shareHandle)}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Compartir perfil"
+              onPress={() => shareProfile(shareHandle)}
+            >
               <Btn>
                 <ShareIcon size={19} color="text" />
               </Btn>
             </Pressable>
             <Link href="/settings" asChild>
-              <Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Ajustes">
                 <Btn>
                   <SettingsIcon size={19} color="text" />
                 </Btn>
@@ -77,7 +84,7 @@ export function TopBar({
         ) : (
           <>
             <Link href="/leaderboard" asChild>
-              <Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="Clasificación">
                 <Btn>
                   <TrophyIcon size={19} color="text" />
                 </Btn>

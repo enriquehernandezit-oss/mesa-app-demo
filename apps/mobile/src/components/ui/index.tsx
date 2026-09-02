@@ -25,24 +25,50 @@ import Animated, {
 // `Display` (dead on web) and `ActionRail` (its Reserve/Order are in the cut
 // set) are intentionally not ported.
 
-/* --- Type --- */
+/* --- Type ---
+ * Every Text in Mesa routes through these, which is where Dynamic Type is
+ * handled: iOS scales text with the member's chosen size, and Mesa's rows have
+ * fixed heights (44pt targets, pills, score circles) that clip at the
+ * accessibility sizes. So the scaling is CAPPED, never disabled — large text
+ * still gets larger, it just can't break the layout. Display numerals cap lower
+ * because they're already huge.
+ */
+const MAX_SCALE = 1.35
+
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
-  <Text className={`font-serif text-title leading-[28px] text-text ${className ?? ''}`} {...p} />
+  <Text
+    maxFontSizeMultiplier={MAX_SCALE}
+    className={`font-serif text-title leading-[28px] text-text ${className ?? ''}`}
+    {...p}
+  />
 )
 export const Body = ({ className, ...p }: TextProps & { className?: string }) => (
-  <Text className={`font-ui text-body text-text-2 ${className ?? ''}`} {...p} />
+  <Text
+    maxFontSizeMultiplier={MAX_SCALE}
+    className={`font-ui text-body text-text-2 ${className ?? ''}`}
+    {...p}
+  />
 )
 export const Caption = ({ className, ...p }: TextProps & { className?: string }) => (
-  <Text className={`font-ui text-label text-text-muted ${className ?? ''}`} {...p} />
+  <Text
+    maxFontSizeMultiplier={MAX_SCALE}
+    className={`font-ui text-label text-text-muted ${className ?? ''}`}
+    {...p}
+  />
 )
 export const Eyebrow = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
+    maxFontSizeMultiplier={MAX_SCALE}
     className={`font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent ${className ?? ''}`}
     {...p}
   />
 )
 export const SerifItalic = ({ className, ...p }: TextProps & { className?: string }) => (
-  <Text className={`font-serif-italic text-text-2 ${className ?? ''}`} {...p} />
+  <Text
+    maxFontSizeMultiplier={MAX_SCALE}
+    className={`font-serif-italic text-text-2 ${className ?? ''}`}
+    {...p}
+  />
 )
 
 /* Wordmark — lowercase serif "mesa"; size is caller-controlled. */
@@ -139,9 +165,13 @@ export const Chip = ({
 }: ChipProps) => {
   const sm = size === 'sm'
   const filled = state === 'selected' || (sm && state === 'active')
+  // Small controls shrink under the finger on iOS; a full-width Button dims
+  // instead (a big primary action that shrinks reads as a gimmick), which is why
+  // this lives here and not on Button.
+  const press = 'active:scale-[0.97]'
   const box = sm
-    ? `min-h-[36px] rounded-pill border px-3 py-2 ${filled ? 'bg-accent-fill border-accent' : 'bg-surface border-line-strong'}`
-    : `min-h-[44px] min-w-[44px] rounded-pill border px-3 py-2 ${state === 'selected' ? 'bg-accent-fill border-accent' : state === 'active' ? 'border-accent bg-transparent' : 'border-line bg-transparent'}`
+    ? `min-h-[36px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : 'bg-surface border-line-strong'}`
+    : `min-h-[44px] min-w-[44px] rounded-pill border px-3 py-2 ${press} ${state === 'selected' ? 'bg-accent-fill border-accent' : state === 'active' ? 'border-accent bg-transparent' : 'border-line bg-transparent'}`
   const fg = filled
     ? 'text-on-accent'
     : state === 'active'

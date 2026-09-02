@@ -11,6 +11,7 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { GlassCircle } from '@/components/ui/GlassCircle'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import {
   BackIcon,
@@ -226,24 +227,16 @@ export default function RestaurantProfile() {
               className="h-full w-full"
             />
           )}
-          <Pressable
-            accessibilityLabel="Atrás"
-            accessibilityRole="button"
-            onPress={goBack}
-            style={{ top: insets.top + 8 }}
-            className="absolute left-4 h-10 w-10 items-center justify-center rounded-pill bg-surface active:opacity-80"
-          >
-            <BackIcon size={20} />
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Compartir"
-            accessibilityRole="button"
-            onPress={shareSpot}
-            style={{ top: insets.top + 8 }}
-            className="absolute right-4 h-10 w-10 items-center justify-center rounded-pill bg-surface active:opacity-80"
-          >
-            <ShareIcon size={18} />
-          </Pressable>
+          <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
+            <GlassCircle accessibilityLabel="Atrás" onPress={goBack}>
+              <BackIcon size={20} />
+            </GlassCircle>
+          </View>
+          <View style={{ position: 'absolute', top: insets.top + 8, right: 16 }}>
+            <GlassCircle accessibilityLabel="Compartir" onPress={shareSpot}>
+              <ShareIcon size={18} />
+            </GlassCircle>
+          </View>
           <View
             className="absolute left-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}

@@ -192,7 +192,9 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
           neighborhood={ranking.neighborhood}
         />
         {ranking.note ? (
-          <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">“{ranking.note}”</Text>
+          <Text selectable className="mt-1 font-serif-italic text-serif-sm text-text-2">
+            “{ranking.note}”
+          </Text>
         ) : null}
         {ranking.note && ranking.noteId ? (
           <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
