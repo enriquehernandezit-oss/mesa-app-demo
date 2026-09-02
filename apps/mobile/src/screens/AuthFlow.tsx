@@ -3,14 +3,17 @@ import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorEs } from '@/lib/authErrors'
 import { clearAuthLost } from '@/lib/authLost'
 import { queryClient } from '@/lib/query'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { useState } from 'react'
-import { TextInput, View } from 'react-native'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import { useEffect, useState } from 'react'
+import { Platform, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-// Sign-in — email + password (the launch method). Apple/Instagram/phone and the
-// full a11y + verify-email page arrive in N8; this is the working core plus the
-// suspended-account screen. Ported from apps/app/src/screens/AuthFlow.tsx.
+// Sign-in — email + password (the launch method) plus Sign in with Apple (App
+// Store 4.8, since Mesa also offers Instagram). Instagram-handle linking lives in
+// onboarding, and the full verify-email page is a follow-up. Ported from
+// apps/app/src/screens/AuthFlow.tsx.
 type AuthClientError = { code?: string; message?: string; status?: number }
 const NETWORK_ERROR: AuthClientError = { message: 'network' }
 
@@ -32,6 +35,50 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [resetSent, setResetSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [appleAvailable, setAppleAvailable] = useState(false)
+  const theme = useResolvedTheme()
+
+  // Sign in with Apple is iOS-only (and simulator-dependent). Probe once; the
+  // button only renders when the device actually supports it.
+  useEffect(() => {
+    AppleAuthentication.isAvailableAsync()
+      .then(setAppleAvailable)
+      .catch(() => setAppleAvailable(false))
+  }, [])
+
+  async function appleAuth() {
+    setError(null)
+    try {
+      const cred = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      })
+      if (!cred.identityToken) {
+        setError('No se pudo iniciar con Apple.')
+        return
+      }
+      // Native id-token sign-in: the server verifies the token against the app's
+      // bundle id (auth.ts `appBundleIdentifier`) — no web redirect, no deep link.
+      setBusy(true)
+      const res = await authClient.signIn
+        .social({ provider: 'apple', idToken: { token: cred.identityToken } })
+        .catch(() => ({ error: NETWORK_ERROR }))
+      setBusy(false)
+      if ('error' in res && res.error) {
+        setError(authErrorEs(res.error, 'No se pudo iniciar con Apple.'))
+        return
+      }
+      queryClient.invalidateQueries({ queryKey: ['session'] })
+    } catch (e) {
+      // The user dismissing the Apple sheet is a cancel, not an error.
+      setBusy(false)
+      if ((e as { code?: string }).code !== 'ERR_REQUEST_CANCELED') {
+        setError('No se pudo iniciar con Apple.')
+      }
+    }
+  }
 
   async function emailAuth() {
     setError(null)
@@ -172,6 +219,27 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               ? '¿Ya tienes una cuenta? Inicia sesión'
               : '¿Nuevo aquí? Crea una cuenta'}
           </Button>
+
+          {Platform.OS === 'ios' && appleAvailable && (
+            <>
+              <View className="my-1 flex-row items-center gap-3">
+                <View className="h-px flex-1 bg-line" />
+                <Caption className="font-mono text-[10px]">o</Caption>
+                <View className="h-px flex-1 bg-line" />
+              </View>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={
+                  theme === 'candlelit'
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={14}
+                style={{ height: 52, width: '100%' }}
+                onPress={appleAuth}
+              />
+            </>
+          )}
         </View>
       </View>
     </SafeAreaView>
