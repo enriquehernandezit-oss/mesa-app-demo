@@ -1,10 +1,12 @@
 import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
-import { Button, Caption, Chip, Eyebrow } from '@/components/ui'
+import { Button, Caption, Chip, Eyebrow, SerifItalic } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { BookmarkIcon, CheckIcon, CompassIcon } from '@/components/ui/icons'
+import { Stat } from '@/components/ui/patterns'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
+import { cuisineLabel } from '@/lib/display'
 import { resizeToJpeg } from '@/lib/image'
 import { shareProfile } from '@/lib/shareProfile'
 import type { MeStats, Neighborhood } from '@/lib/types'
@@ -62,6 +64,22 @@ export default function ProfileTab() {
     new Date(p.createdAt).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })
   const barrio = p?.neighborhood?.name
 
+  // One editorial line from the taste stats the API already computes — a read on
+  // how you eat, not another number. Elliptical "comida <cuisine>", so the
+  // feminine cuisine label reads naturally, and all three null shapes hold.
+  const topCuisine = stats.data?.topCuisine
+    ? cuisineLabel(stats.data.topCuisine)?.toLowerCase()
+    : null
+  const topHood = stats.data?.topNeighborhood
+  const tasteLine =
+    topCuisine && topHood
+      ? `Comes sobre todo ${topCuisine}, casi siempre en ${topHood}.`
+      : topCuisine
+        ? `Comes sobre todo ${topCuisine}.`
+        : topHood
+          ? `Rankeas casi siempre en ${topHood}.`
+          : null
+
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="profile" title={p?.name || 'Tú'} shareHandle={p?.handle} />
@@ -88,6 +106,11 @@ export default function ProfileTab() {
           <Caption className="mt-1">
             {[memberSince && `Miembro desde ${memberSince}`, barrio].filter(Boolean).join(' · ')}
           </Caption>
+          {tasteLine ? (
+            <SerifItalic className="mt-2 px-6 text-center text-serif-sm text-text-2">
+              {tasteLine}
+            </SerifItalic>
+          ) : null}
         </View>
 
         {stats.data && (
@@ -148,15 +171,6 @@ export default function ProfileTab() {
           </View>
         )}
       </ScrollView>
-    </View>
-  )
-}
-
-function Stat({ n, l }: { n: string; l: string }) {
-  return (
-    <View className="items-center">
-      <Text className="font-serif text-serif-lg text-text">{n}</Text>
-      <Caption>{l}</Caption>
     </View>
   )
 }

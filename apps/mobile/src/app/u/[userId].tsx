@@ -2,7 +2,7 @@ import { ReportControl, pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, Chip, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { Characteristics } from '@/components/ui/patterns'
+import { Characteristics, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
@@ -82,7 +82,8 @@ export default function UserRankings() {
     )
   }
 
-  const { user, rankings, isFollowing, matchPercent } = q.data
+  const { user, rankings, isFollowing, matchPercent, sharedCount, followerCount, followingCount } =
+    q.data
   const firstName = (user.name || user.handle || '').split(' ')[0] || 'esta persona'
   const barrio = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
@@ -96,12 +97,26 @@ export default function UserRankings() {
           {user.handle ? (
             <Text className="mt-2 font-mono text-label text-text-2">@{user.handle}</Text>
           ) : null}
-          <Caption>{[`${rankings.length} rankeados`, barrio].filter(Boolean).join(' · ')}</Caption>
+          {barrio ? <Caption>{barrio}</Caption> : null}
           {matchPercent != null && (
-            <Chip size="sm" state="selected" className="mt-2">
-              +{matchPercent}% de gustos en común
-            </Chip>
+            <View className="mt-2 items-center gap-1">
+              <Chip size="sm" state="selected">
+                +{matchPercent}% de gustos en común
+              </Chip>
+              {/* The denominator behind the percentage — a match with no shared
+                  count is the least trustworthy way to show a number. */}
+              <Caption className="font-mono text-[10px]">
+                sobre {sharedCount} spots en común
+              </Caption>
+            </View>
           )}
+
+          {/* Same trio as your own profile — the passport is the same object. */}
+          <View className="mt-4 flex-row justify-around self-stretch">
+            <Stat n={String(followerCount)} l="Seguidores" />
+            <Stat n={String(followingCount)} l="Siguiendo" />
+            <Stat n={String(rankings.length)} l="Rankeados" />
+          </View>
 
           <View className="mt-4 flex-row items-center gap-3">
             <Button

@@ -325,6 +325,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
             {item.dishName || item.restaurant.name}
           </Text>
           {chars}
+          <Caption className="mt-1 font-mono text-[10px]">#{item.position} en su lista</Caption>
           <CheersButton
             rankingId={item.rankingId}
             count={item.cheersCount ?? 0}
@@ -342,7 +343,16 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
     >
       <View className="flex-row items-center justify-between">
         {who('rankeó un spot', 28)}
-        <ScoreBadge score={item.score} attribution={{ kind: 'user', label: firstName }} size="md" />
+        <View className="items-end gap-1">
+          <ScoreBadge
+            score={item.score}
+            attribution={{ kind: 'user', label: firstName }}
+            size="md"
+          />
+          {/* Mesa's thesis in one line: not just the score, but WHERE it sits in
+              their own list. Stays attributed to the friend, never the place. */}
+          <Caption className="font-mono text-[10px]">#{item.position} en su lista</Caption>
+        </View>
       </View>
       <Link href={`/r/${item.restaurant.id}`} asChild>
         <Pressable className="mt-3 active:opacity-80">

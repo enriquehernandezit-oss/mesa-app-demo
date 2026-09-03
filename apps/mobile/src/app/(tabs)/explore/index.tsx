@@ -247,7 +247,9 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
           <Characteristics
             priceTier={r.priceTier}
             cuisine={r.cuisine}
-            neighborhood={r.neighborhood}
+            // Imported rows often carry an address but no mapped sector — fall
+            // back so the row still says where the place is.
+            neighborhood={r.neighborhood ?? r.address ?? null}
             hours={r.closesAt ? `hasta ${r.closesAt}` : null}
           />
         </View>

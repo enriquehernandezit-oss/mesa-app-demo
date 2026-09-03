@@ -7,6 +7,18 @@ import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 import { Linking, Pressable, Text, View } from 'react-native'
 
+// A single stat in a passport/profile trio: big serif number over a muted
+// label. Shared by the user's own profile and another member's passport — the
+// two are the same object and should read that way.
+export function Stat({ n, l }: { n: string; l: string }) {
+  return (
+    <View className="items-center">
+      <Text className="font-serif text-serif-lg text-text">{n}</Text>
+      <Caption>{l}</Caption>
+    </View>
+  )
+}
+
 // The "$$$ | Parrilla · Piantini" metadata block under a place's name, ported
 // from apps/app/src/components/ui/patterns.tsx. Occasion tags on top, price |
 // cuisine, then neighborhood · distance · hours, then optional friend avatars.
