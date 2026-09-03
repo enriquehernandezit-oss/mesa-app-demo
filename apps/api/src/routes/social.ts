@@ -45,3 +45,22 @@ export const socialRoutes = new Hono<AuthedEnv>()
 
     return c.json({ ok: true })
   })
+
+  // Resolve a public @handle to a user id. Shared profile links address people by
+  // handle (`/p/u/@ana`), but every in-app profile route is keyed by id — so the
+  // app hits this once when a shared link opens, then navigates to /u/<id>.
+  // Exact match only: this is link resolution, not search (that lives in the
+  // explore endpoint and is deliberately fuzzy).
+  .get('/by-handle/:handle', async (c) => {
+    const handle = c.req.param('handle').replace(/^@/, '').toLowerCase()
+    if (!handle) return c.json({ error: 'not_found' }, 404)
+
+    const target = await db.query.user.findFirst({
+      where: eq(schema.user.handle, handle),
+      columns: { id: true, bannedAt: true },
+    })
+    // A banned account's link resolves to nothing rather than a dead profile.
+    if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
+
+    return c.json({ userId: target.id })
+  })

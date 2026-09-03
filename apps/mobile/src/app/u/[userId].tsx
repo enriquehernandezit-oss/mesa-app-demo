@@ -1,6 +1,6 @@
 import { ReportControl, pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, Chip, EmptyState, SectionHeader } from '@/components/ui'
+import { Body, Button, Caption, Chip, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
@@ -61,7 +61,12 @@ export default function UserRankings() {
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel="Atrás" />
-        <Body className="px-5">Cargando…</Body>
+        <View className="items-center gap-3 pt-2">
+          <Skeleton height={88} width={88} />
+          <Skeleton height={14} width={120} />
+          <Skeleton height={11} width={180} />
+        </View>
+        <RowsSkeleton rows={3} />
       </View>
     )
   }
@@ -126,7 +131,7 @@ export default function UserRankings() {
                 const reason = await pickReportReason('user')
                 if (reason) reportUser.mutate(reason)
               }}
-              className="min-h-[36px] justify-center active:opacity-60"
+              className="min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
                 Reportar
@@ -143,7 +148,7 @@ export default function UserRankings() {
                 })
                 if (picked === 0) block.mutate()
               }}
-              className="min-h-[36px] justify-center active:opacity-60"
+              className="min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
                 Bloquear
@@ -201,6 +206,26 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
         ) : null}
       </View>
       <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
+    </View>
+  )
+}
+
+// A list of avatar-and-two-lines rows, holding the shape the real rows will take
+// so nothing jumps when the data lands. Same reasoning as the restaurant
+// profile's loader: this screen's geometry is known ahead of time, so a spinner
+// (or a "Cargando…" line) throws that information away and reflows on arrival.
+function RowsSkeleton({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) {
+  return (
+    <View className="gap-3 px-5 pt-2">
+      {Array.from({ length: rows }, (_, i) => i).map((i) => (
+        <View key={i} className="flex-row items-center gap-3 py-2">
+          <Skeleton height={thumb} width={thumb} />
+          <View className="flex-1 gap-2">
+            <Skeleton height={13} width="62%" />
+            <Skeleton height={10} width="38%" />
+          </View>
+        </View>
+      ))}
     </View>
   )
 }

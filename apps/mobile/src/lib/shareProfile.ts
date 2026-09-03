@@ -8,13 +8,21 @@ export function profileShareLink(handle: string | null | undefined): string {
   return handle ? `${apiOrigin}/p/u/${handle}` : apiOrigin
 }
 
+// The caption that rides with a shared list. Kept URL-free: when a share carries
+// a `url` of its own, repeating it in the message shows the link twice.
+export const PROFILE_SHARE_CAPTION = 'Mi ranking en Mesa 🥂'
+
 export function profileShareText(handle: string | null | undefined): string {
-  return `Mi ranking en Mesa 🥂\n${profileShareLink(handle)}`
+  return `${PROFILE_SHARE_CAPTION}\n${profileShareLink(handle)}`
 }
 
-// The own-profile top bar's share button — the native share sheet with the
-// caption. (The Rankings tab shares an image instead, via the share card, but
-// reuses this caption.)
+// The own-profile top bar's share button. The link is passed as `url`, not
+// buried in the message: that's what lets iMessage (and anything else that
+// unfurls) render the /p/ page's OG card instead of a line of plain text — and
+// the card is the whole point of the share page existing.
 export async function shareProfile(handle: string | null | undefined): Promise<void> {
-  await Share.share({ message: profileShareText(handle) }).catch(() => {})
+  await Share.share({
+    message: PROFILE_SHARE_CAPTION,
+    url: profileShareLink(handle),
+  }).catch(() => {})
 }
