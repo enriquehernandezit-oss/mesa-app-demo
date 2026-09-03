@@ -221,6 +221,8 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         neighborhood: neighborhoods.name,
         noteId: vibeNotes.id,
         note: vibeNotes.body,
+        tags: rankings.tags,
+        favoriteDish: rankings.favoriteDish,
       })
       .from(rankings)
       .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))

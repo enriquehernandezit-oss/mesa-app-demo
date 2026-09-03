@@ -13,13 +13,14 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
+import { Field } from '@/components/ui/Field'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
-import { displayScore, scoreForPosition } from '@/lib/display'
+import { OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSuccess } from '@/lib/haptics'
 import {
@@ -81,9 +82,6 @@ type AddPlaceMutation = UseMutationResult<
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-// The five occasion tags from the mocks (B4). Title-case, matching the seed vocab.
-const RANK_TAGS = ['Cena romántica', 'Ocasión especial', 'Cena en grupo', 'Al aire libre', 'Solo']
-
 export default function RankAPlace() {
   const router = useRouter()
   const navigation = useNavigation()
@@ -128,6 +126,7 @@ export default function RankAPlace() {
   const [revealed, setRevealed] = useState(false)
   const [note, setNote] = useState('')
   const [tags, setTags] = useState<string[]>([])
+  const [dish, setDish] = useState('')
   const [chainDish, setChainDish] = useState(false)
   const [placedStamp, setPlacedStamp] = useState(false)
 
@@ -215,6 +214,7 @@ export default function RankAPlace() {
         position: pos,
         vibeNote: note.trim() || undefined,
         tags: tags.length ? tags : undefined,
+        favoriteDish: dish.trim() || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
@@ -396,6 +396,8 @@ export default function RankAPlace() {
         setNote={setNote}
         tags={tags}
         setTags={setTags}
+        dish={dish}
+        setDish={setDish}
         chainDish={chainDish}
         setChainDish={setChainDish}
         saving={save.isPending}
@@ -654,6 +656,8 @@ function NoteStep({
   setNote,
   tags,
   setTags,
+  dish,
+  setDish,
   chainDish,
   setChainDish,
   saving,
@@ -667,6 +671,8 @@ function NoteStep({
   setNote: Dispatch<SetStateAction<string>>
   tags: string[]
   setTags: Dispatch<SetStateAction<string[]>>
+  dish: string
+  setDish: Dispatch<SetStateAction<string>>
   chainDish: boolean
   setChainDish: Dispatch<SetStateAction<boolean>>
   saving: boolean
@@ -732,7 +738,7 @@ function NoteStep({
 
         <Eyebrow className="mt-4 font-mono">Ocasión</Eyebrow>
         <View className="mt-2 flex-row flex-wrap gap-2">
-          {RANK_TAGS.map((t) => {
+          {OCCASION_TAGS.map((t) => {
             const on = tags.includes(t)
             return (
               <Chip
@@ -751,7 +757,17 @@ function NoteStep({
           })}
         </View>
 
-        <Eyebrow className="mt-4 font-mono">Agregar un plato</Eyebrow>
+        <Eyebrow className="mt-4 font-mono">Qué pedir</Eyebrow>
+        <Field
+          className="mt-2"
+          placeholder="branzino, vino natural…"
+          maxLength={60}
+          returnKeyType="done"
+          value={dish}
+          onChangeText={setDish}
+        />
+
+        <Eyebrow className="mt-4 font-mono">Foto del plato</Eyebrow>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: chainDish }}

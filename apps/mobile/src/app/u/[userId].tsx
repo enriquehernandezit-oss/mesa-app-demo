@@ -7,7 +7,7 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { comingSoon } from '@/lib/comingSoon'
-import { displayScore } from '@/lib/display'
+import { displayScore, tagLabel } from '@/lib/display'
 import type { Ranking, UserRankingsResponse } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -196,6 +196,18 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
           cuisine={ranking.restaurant.cuisine}
           neighborhood={ranking.neighborhood}
         />
+        {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && (
+          <View className="mt-1 flex-row flex-wrap items-center gap-2">
+            {ranking.favoriteDish && (
+              <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+            )}
+            {(ranking.tags ?? []).map((t) => (
+              <Caption key={t} className="font-mono text-[10px]">
+                {tagLabel(t)}
+              </Caption>
+            ))}
+          </View>
+        )}
         {ranking.note ? (
           <Text selectable className="mt-1 font-serif-italic text-serif-sm text-text-2">
             “{ranking.note}”

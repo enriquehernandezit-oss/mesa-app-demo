@@ -79,6 +79,23 @@ export function tagLabel(tag: string): string {
   return TAG_ES[tag] ?? tag
 }
 
+// The occasion picker in the rank flow's note step (B4). Spanish, matching the
+// seed vocabulary exactly (packages/db/src/seed-extra.ts's TAGS) — this is a
+// controlled vocabulary kept in lockstep by hand across the two copies, not by
+// an API enum, so a restaurant's aggregated tags never mix a client build that
+// lags a seed change. If you add a value here, add it to seed-extra.ts's TAGS
+// too (and vice versa).
+export const OCCASION_TAGS = [
+  'Cena romántica',
+  'Ocasión especial',
+  'Cena en grupo',
+  'Al aire libre',
+  'Solo',
+  'Alta cocina',
+  'Informal',
+  'Trasnoche',
+]
+
 // Dish-photo grain treatment — shown as a mono "film · <grain>" tag and as a
 // picker chip label (DishCompose).
 export const GRAIN_LABEL_ES: Record<string, string> = {
