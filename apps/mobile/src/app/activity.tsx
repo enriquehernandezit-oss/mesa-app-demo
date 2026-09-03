@@ -1,4 +1,4 @@
-import { Body, Caption, Chip, ChipRail, EmptyState, ErrorState, Eyebrow } from '@/components/ui'
+import { Caption, Chip, ChipRail, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { markActivitySeen } from '@/lib/activitySeen'
@@ -96,7 +96,7 @@ export default function ActivityScreen() {
         </ChipRail>
 
         {q.isPending ? (
-          <Body>Cargando…</Body>
+          <RowsSkeleton />
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la actividad.</ErrorState>
         ) : sections.length === 0 ? (
@@ -184,6 +184,26 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           </Link>
         )
       )}
+    </View>
+  )
+}
+
+// A list of avatar-and-two-lines rows, holding the shape the real rows will take
+// so nothing jumps when the data lands. Same reasoning as the restaurant
+// profile's loader: this screen's geometry is known ahead of time, so a spinner
+// (or a "Cargando…" line) throws that information away and reflows on arrival.
+function RowsSkeleton({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) {
+  return (
+    <View className="gap-3 px-5 pt-2">
+      {Array.from({ length: rows }, (_, i) => i).map((i) => (
+        <View key={i} className="flex-row items-center gap-3 py-2">
+          <Skeleton height={thumb} width={thumb} />
+          <View className="flex-1 gap-2">
+            <Skeleton height={13} width="62%" />
+            <Skeleton height={10} width="38%" />
+          </View>
+        </View>
+      ))}
     </View>
   )
 }

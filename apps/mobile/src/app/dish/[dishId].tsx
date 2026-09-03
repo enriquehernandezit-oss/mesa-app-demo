@@ -1,5 +1,5 @@
 import { ReportControl } from '@/components/ReportControl'
-import { Body, Caption, EmptyState, ErrorState } from '@/components/ui'
+import { Body, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { GlassCircle } from '@/components/ui/GlassCircle'
 import { BackIcon, DirectionsIcon, PhoneIcon, WebIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
@@ -34,8 +34,13 @@ export default function DishDetail() {
 
   if (q.isPending) {
     return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: insets.top + 12 }}>
-        <Body>Cargando…</Body>
+      <View className="flex-1 bg-bg">
+        <Skeleton height={320} />
+        <View className="gap-3 px-5 pt-4">
+          <Skeleton height={22} width="55%" />
+          <Skeleton height={12} width="75%" />
+          <Skeleton height={64} className="mt-2" />
+        </View>
       </View>
     )
   }

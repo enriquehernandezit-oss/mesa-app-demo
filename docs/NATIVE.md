@@ -28,8 +28,27 @@ bun run start          # Metro; open in a dev client
 bun run ios            # build + run on the iOS simulator (needs Xcode + CocoaPods)
 ```
 
-Expo Go is **not** enough: `@rnmapbox/maps` and `expo-apple-authentication` are
-native modules, so a **dev client** (or an EAS build) is required.
+Expo Go is **not** enough: `@rnmapbox/maps`, `expo-apple-authentication` and
+`expo-glass-effect` are native modules, so a **dev client** (or an EAS build) is
+required.
+
+## iOS-native surfaces (the A-series pass)
+
+Mesa draws one line: **content is Mesa, chrome is iOS** (see CLAUDE.md's Design
+section). In practice that means these are real system components, not styled
+`View`s, and only prove out on a device:
+
+| Surface | Built on |
+| --- | --- |
+| Tab bar | `expo-router/unstable-native-tabs` + a floating `expo-glass-effect` action button. **Unstable API** — `(tabs)/_layout.tsx` keeps the previous custom bar behind a `NATIVE_TABS` flag; flip it to `false` if a device report is bad. |
+| Navigation bars | native-stack `headerLargeTitle` + `headerBlurEffect`, with Mesa's serif via `headerTitleStyle`. Utility screens only; content screens stay immersive. |
+| Search (Explore) | `headerSearchBarOptions` — which is why Explore has its own nested Stack. |
+| Sheets, alerts, confirms | `ActionSheetIOS` through `lib/actionSheet.ts`. Every call is told the **resolved** theme explicitly. |
+| Compose flows | `presentation: 'modal'` on `/rank` and `/dish`; drag-to-dismiss runs the same `beforeRemove` guards as the back gesture. |
+| Forms | `textContentType` pairs turn on iCloud Keychain; `components/ui/Field.tsx` centralizes the theme-aware keyboard. |
+
+Anything glass calls `isLiquidGlassAvailable()` and falls back to an opaque
+surface, so pre-iOS-26 devices lose the material, never the control.
 
 Verification that works without a Mac toolchain — used throughout the migration:
 

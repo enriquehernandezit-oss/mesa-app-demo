@@ -8,6 +8,7 @@ import {
   ChipRail,
   Eyebrow,
   SerifItalic,
+  Skeleton,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -333,7 +334,7 @@ export default function RankAPlace() {
   if (candidates.isPending || mine.isPending) {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <Body>Cargando…</Body>
+        <RowsSkeleton rows={5} thumb={56} />
       </View>
     )
   }
@@ -1211,6 +1212,26 @@ function AddPlaceForm({
           {addPlace.isPending ? 'Agregando…' : 'Agregar y rankear'}
         </Button>
       </View>
+    </View>
+  )
+}
+
+// A list of avatar-and-two-lines rows, holding the shape the real rows will take
+// so nothing jumps when the data lands. Same reasoning as the restaurant
+// profile's loader: this screen's geometry is known ahead of time, so a spinner
+// (or a "Cargando…" line) throws that information away and reflows on arrival.
+function RowsSkeleton({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) {
+  return (
+    <View className="gap-3 px-5 pt-2">
+      {Array.from({ length: rows }, (_, i) => i).map((i) => (
+        <View key={i} className="flex-row items-center gap-3 py-2">
+          <Skeleton height={thumb} width={thumb} />
+          <View className="flex-1 gap-2">
+            <Skeleton height={13} width="62%" />
+            <Skeleton height={10} width="38%" />
+          </View>
+        </View>
+      ))}
     </View>
   )
 }

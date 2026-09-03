@@ -1,4 +1,4 @@
-import { Body, Caption, EmptyState, Eyebrow, Title } from '@/components/ui'
+import { Body, Caption, EmptyState, Eyebrow, Skeleton, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
@@ -24,7 +24,13 @@ export default function ListScreen() {
           large title stacked above it just pushes the photo off the fold. */}
       <Stack.Screen options={{ title: q.data?.list.title ?? '', headerLargeTitle: false }} />
       {q.isPending ? (
-        <Body className="px-5">Cargando…</Body>
+        <View>
+          <Skeleton height={224} />
+          <View className="gap-3 px-5 pt-4">
+            <Skeleton height={11} width={110} />
+            <Skeleton height={12} width="60%" />
+          </View>
+        </View>
       ) : q.isError || !q.data ? (
         <EmptyState>
           {q.error instanceof ApiError && q.error.status === 404
