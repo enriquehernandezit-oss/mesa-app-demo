@@ -50,7 +50,7 @@ export function Characteristics({
   return (
     <View className="mt-1 gap-[2px]">
       {occasionTags && occasionTags.length > 0 && (
-        <Caption className="font-mono text-[10px] text-accent-strong">
+        <Caption className="font-mono text-micro text-accent-strong">
           {occasionTags.map(tagLabel).join(' · ')}
         </Caption>
       )}
@@ -115,7 +115,7 @@ export function UtilityPill({
       className="min-h-[40px] flex-1 flex-row items-center justify-center gap-2 rounded-pill border border-line bg-surface px-3 active:opacity-80"
     >
       {icon}
-      <Text className="font-mono text-[11px] text-text">{children}</Text>
+      <Text className="font-mono text-eyebrow text-text">{children}</Text>
     </Pressable>
   )
 }
@@ -157,7 +157,7 @@ export function ScoreBadge({
         </Text>
       </View>
       {badge ? (
-        <Caption className="font-mono text-[10px] text-accent-strong">{badge}</Caption>
+        <Caption className="font-mono text-micro text-accent-strong">{badge}</Caption>
       ) : null}
       {caption ? <Caption>{caption}</Caption> : null}
       {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}

@@ -152,11 +152,11 @@ function ActivityRow({ a }: { a: ActivityItem }) {
             </>
           )}
         </Text>
-        <Caption className="font-mono text-[10px]">{timeAgo(a.at)}</Caption>
+        <Caption className="font-mono text-micro">{timeAgo(a.at)}</Caption>
       </View>
       {a.type === 'follow' ? (
         followed ? (
-          <Caption className="font-mono text-[10px]">Siguiendo</Caption>
+          <Caption className="font-mono text-micro">Siguiendo</Caption>
         ) : (
           <Pressable
             accessibilityRole="button"
@@ -166,7 +166,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
             }}
             className="min-h-[36px] justify-center rounded-pill border border-accent px-4 active:opacity-70"
           >
-            <Text className="font-mono text-[11px] text-accent-strong">Seguir</Text>
+            <Text className="font-mono text-eyebrow text-accent-strong">Seguir</Text>
           </Pressable>
         )
       ) : (

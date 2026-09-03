@@ -217,7 +217,7 @@ function ListsRail() {
               <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
                 {l.title}
               </Text>
-              <Caption className="font-mono text-[10px]">
+              <Caption className="font-mono text-micro">
                 {l.mine} de {l.total} rankeados
               </Caption>
             </Pressable>
@@ -288,7 +288,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           <Text className="font-ui text-body text-text">
             <Text className="font-ui-semibold">{firstName}</Text> {verb}
           </Text>
-          <Caption className="font-mono text-[10px]">{timeAgo(item.rankedAt)}</Caption>
+          <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
         </View>
       </Pressable>
     </Link>
@@ -314,7 +314,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
                 className="absolute right-3 rounded-pill bg-surface px-2 py-1"
                 style={{ bottom: 10 }}
               >
-                <Caption className="font-mono text-[10px]">film</Caption>
+                <Caption className="font-mono text-micro">film</Caption>
               </View>
             </View>
           </Pressable>
@@ -325,7 +325,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
             {item.dishName || item.restaurant.name}
           </Text>
           {chars}
-          <Caption className="mt-1 font-mono text-[10px]">#{item.position} en su lista</Caption>
+          <Caption className="mt-1 font-mono text-micro">#{item.position} en su lista</Caption>
           <CheersButton
             rankingId={item.rankingId}
             count={item.cheersCount ?? 0}
@@ -351,7 +351,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           />
           {/* Mesa's thesis in one line: not just the score, but WHERE it sits in
               their own list. Stays attributed to the friend, never the place. */}
-          <Caption className="font-mono text-[10px]">#{item.position} en su lista</Caption>
+          <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
         </View>
       </View>
       <Link href={`/r/${item.restaurant.id}`} asChild>

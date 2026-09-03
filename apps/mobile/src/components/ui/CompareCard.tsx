@@ -53,7 +53,7 @@ export function CompareCard({
             neighborhood={item.neighborhood}
           />
           {subline ? (
-            <Caption className="mt-1 font-mono text-[10px] text-text-muted">{subline}</Caption>
+            <Caption className="mt-1 font-mono text-micro text-text-muted">{subline}</Caption>
           ) : null}
         </View>
         {score != null ? (

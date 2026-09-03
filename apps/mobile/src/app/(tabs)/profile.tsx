@@ -96,7 +96,7 @@ export default function ProfileTab() {
             className="items-center active:opacity-80"
           >
             <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={88} />
-            <Caption className="mt-1 font-mono text-[10px] text-accent-strong">
+            <Caption className="mt-1 font-mono text-micro text-accent-strong">
               {setAvatar.isPending ? '…' : '+ foto'}
             </Caption>
           </Pressable>
@@ -199,7 +199,7 @@ function NavRow({
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded border border-line bg-surface p-4">
-      <Caption className="font-mono text-[10px]">{label}</Caption>
+      <Caption className="font-mono text-micro">{label}</Caption>
       <Text className="mt-1 font-serif text-serif-lg text-accent">{value}</Text>
     </View>
   )
@@ -313,7 +313,7 @@ function Field({
 }: React.ComponentProps<typeof TextInput> & { label: string; ph: string }) {
   return (
     <View className="mt-4">
-      <Caption className="mb-1 font-mono text-[10px]">{label}</Caption>
+      <Caption className="mb-1 font-mono text-micro">{label}</Caption>
       <TextInput
         placeholderTextColor={ph}
         className="min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"

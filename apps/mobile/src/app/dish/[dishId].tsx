@@ -88,7 +88,7 @@ export default function DishDetail() {
             className="absolute right-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}
           >
-            <Caption className="font-mono text-[10px]">film · {grainLabel(dish.grain)}</Caption>
+            <Caption className="font-mono text-micro">film · {grainLabel(dish.grain)}</Caption>
           </View>
         </View>
 

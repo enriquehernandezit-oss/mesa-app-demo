@@ -58,7 +58,7 @@ export default function Onboarding() {
             style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
           />
         </View>
-        <Caption className="mt-2 font-mono text-[10px]">
+        <Caption className="mt-2 font-mono text-micro">
           Paso {stepIndex + 1} de {STEPS.length} · arma tu lista inicial
         </Caption>
       </View>
@@ -329,7 +329,7 @@ function ComparePhase({
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-5 pb-10">
-      <Text className="font-mono text-[11px] text-text-muted">
+      <Text className="font-mono text-eyebrow text-text-muted">
         {placed + 1} de {total}
       </Text>
       <Title className="mt-1 text-center">¿Cuál estuvo mejor?</Title>
@@ -341,7 +341,7 @@ function ComparePhase({
           onPress={() => setState((s) => tie(s))}
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
-          <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+          <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
             Más o menos igual
           </Text>
         </Pressable>
@@ -466,7 +466,7 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
                   className={`min-h-[36px] justify-center rounded-pill border px-4 ${on ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
                 >
                   <Text
-                    className={`font-mono text-[11px] ${on ? 'text-accent-strong' : 'text-text-muted'}`}
+                    className={`font-mono text-eyebrow ${on ? 'text-accent-strong' : 'text-text-muted'}`}
                   >
                     {on ? 'Siguiendo' : 'Seguir'}
                   </Text>

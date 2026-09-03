@@ -1,4 +1,5 @@
 import { tapError } from '@/lib/haptics'
+import { BRASS_SHADOW } from '@/theme/vars'
 import { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
@@ -45,7 +46,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       accessibilityLiveRegion="polite"
       className={`flex-row items-center gap-3 rounded border px-4 py-3 ${error ? 'border-status-packed bg-surface' : 'border-line bg-surface-raised'}`}
       style={{
-        shadowColor: '#000',
+        shadowColor: BRASS_SHADOW,
         shadowOpacity: 0.2,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },

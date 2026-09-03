@@ -282,7 +282,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                 <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
               )}
               {(ranking.tags ?? []).map((t) => (
-                <Caption key={t} className="font-mono text-[10px]">
+                <Caption key={t} className="font-mono text-micro">
                   {tagLabel(t)}
                 </Caption>
               ))}

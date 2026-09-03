@@ -117,7 +117,7 @@ export default function ExploreScreen() {
               className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
             >
               <PinIcon size={15} />
-              <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+              <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
                 Mapa
               </Text>
             </Pressable>
@@ -232,7 +232,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
   return (
     <Link href={`/r/${r.id}`} asChild>
       <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-        <Text className="w-5 font-mono text-[11px] text-text-muted">{index + 1}</Text>
+        <Text className="w-5 font-mono text-eyebrow text-text-muted">{index + 1}</Text>
         <PlaceCover
           seed={r.id}
           name={r.name}
@@ -260,7 +260,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
             attribution={{ kind: 'friends', count: r.friendCount }}
           />
         ) : r.isNew ? (
-          <Text className="font-mono text-[10px] text-accent-strong uppercase tracking-eyebrow">
+          <Text className="font-mono text-micro text-accent-strong uppercase tracking-eyebrow">
             Sé el primero
           </Text>
         ) : null}

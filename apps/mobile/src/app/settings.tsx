@@ -217,7 +217,7 @@ export default function SettingsScreen() {
               A privacy control that lies is worse than one that says "pronto". */}
           <RowButton onPress={() => comingSoon('El modo sigiloso llega pronto a Mesa.')}>
             <Text className="flex-1 font-ui text-body text-text-muted">Modo sigiloso</Text>
-            <Caption className="font-mono text-[10px]">Pronto</Caption>
+            <Caption className="font-mono text-micro">Pronto</Caption>
           </RowButton>
           <RowButton onPress={exportRankings} disabled={exporting} last>
             <Text className="flex-1 font-ui text-body text-text">Exportar mis rankings</Text>
@@ -260,7 +260,7 @@ export default function SettingsScreen() {
           </RowButton>
           <RowButton onPress={() => comingSoon('Las invitaciones llegan pronto a Mesa.')}>
             <Text className="flex-1 font-ui text-body text-text-muted">Invitaciones</Text>
-            <Caption className="font-mono text-[10px]">4 restantes</Caption>
+            <Caption className="font-mono text-micro">4 restantes</Caption>
           </RowButton>
           {realEmail && (
             <Row>

@@ -51,7 +51,7 @@ export default function ListScreen() {
               className="absolute right-4 rounded-pill bg-surface px-2 py-1"
               style={{ bottom: 10 }}
             >
-              <Caption className="font-mono text-[10px]">film · con velas</Caption>
+              <Caption className="font-mono text-micro">film · con velas</Caption>
             </View>
           </View>
           <View className="px-5">
@@ -62,7 +62,7 @@ export default function ListScreen() {
               {q.data.items.map((r) => (
                 <Link key={r.id} href={`/r/${r.id}`} asChild>
                   <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-                    <Text className="w-5 font-mono text-[11px] text-text-muted">{r.position}</Text>
+                    <Text className="w-5 font-mono text-eyebrow text-text-muted">{r.position}</Text>
                     <PlaceCover
                       seed={r.id}
                       name={r.name}

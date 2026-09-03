@@ -606,7 +606,7 @@ function RevealStep({
                     <Text className="flex-1 font-ui-medium text-body text-text" numberOfLines={1}>
                       {f.user.name || f.user.handle}
                     </Text>
-                    <Text className="font-mono text-[11px] text-text-muted">#{f.position}</Text>
+                    <Text className="font-mono text-eyebrow text-text-muted">#{f.position}</Text>
                     <Text className="font-serif text-serif-md text-accent">
                       {displayScore(f.score)}
                     </Text>
@@ -839,12 +839,12 @@ function PlaceStep({
 
   return (
     <View className="mt-4 gap-4">
-      <Text className="font-mono text-[11px] text-text-muted">
+      <Text className="font-mono text-eyebrow text-text-muted">
         {step} de {total}
       </Text>
       <View className="items-center gap-1">
         <Title>¿Cuál estuvo mejor?</Title>
-        <Text className="text-center font-mono text-[11px] text-text-muted">
+        <Text className="text-center font-mono text-eyebrow text-text-muted">
           Tu respuesta mueve a {item.name}, no la puntuación del spot.
         </Text>
       </View>
@@ -865,7 +865,7 @@ function PlaceStep({
           }}
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
-          <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+          <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
             Más o menos igual
           </Text>
         </Pressable>
@@ -1068,7 +1068,7 @@ function FindStep({
         {r.score != null ? (
           <Text className="font-serif text-serif-lg text-accent">{displayScore(r.score)}</Text>
         ) : (
-          <Text className="font-mono text-[10px] text-text-faint uppercase tracking-eyebrow">
+          <Text className="font-mono text-micro text-text-faint uppercase tracking-eyebrow">
             sin rankear
           </Text>
         )}
@@ -1200,7 +1200,7 @@ function AddPlaceForm({
         onChangeText={setName}
         maxLength={80}
       />
-      <Text className="font-mono text-[11px] text-text-muted uppercase tracking-eyebrow">
+      <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
         Sector
       </Text>
       <View className="flex-row flex-wrap gap-2">

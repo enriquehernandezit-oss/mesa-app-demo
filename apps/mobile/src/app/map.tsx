@@ -122,7 +122,7 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
           className="min-h-[36px] flex-row items-center gap-1 active:opacity-70"
         >
           <DirectionsIcon size={14} />
-          <Text className="font-mono text-[11px] text-text-muted">Cómo llegar</Text>
+          <Text className="font-mono text-eyebrow text-text-muted">Cómo llegar</Text>
         </Pressable>
         <Link href={`/r/${spot.id}`} asChild>
           <Pressable accessibilityRole="button" onPress={onClose} className="active:opacity-70">

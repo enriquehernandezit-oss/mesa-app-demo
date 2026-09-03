@@ -66,6 +66,9 @@ module.exports = {
         body: 16,
         label: 13,
         eyebrow: 11,
+        // The smallest step, for mono metadata captions (timestamps, counts,
+        // the "film" pill). Absorbs the text-[10px]/text-[9px] one-offs.
+        micro: 10,
         'serif-sm': 18,
         'serif-md': 22,
         'serif-lg': 30,
@@ -75,8 +78,14 @@ module.exports = {
         sm: 10,
         pill: 999,
       },
+      lineHeight: {
+        // The serif title's measured leading (paired with text-title = 25).
+        title: 28,
+      },
       letterSpacing: {
         eyebrow: '1.76px',
+        // Tight tracking for the mono micro-caps label.
+        micro: '0.8px',
       },
     },
   },

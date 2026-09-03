@@ -13,14 +13,20 @@ export type ThemeName = 'afternoon' | 'candlelit'
 const afternoon = {
   '--bg': '#f5efe4',
   '--bg-sunk': '#e7dccb',
-  '--surface': '#fffdf8',
+  // A real 4-step depth ladder in light, mirroring what dark already has:
+  // bg-sunk < bg < surface < surface-raised. `surface` sits just above `bg`;
+  // `surface-raised` stays the near-white extreme DESIGN.md names, so "raised"
+  // is only reachable by moving `surface` down off it.
+  '--surface': '#faf4e9',
   '--surface-raised': '#fffdf8',
   '--text': '#2a1512',
   '--text-2': '#4a3b32',
   '--text-muted': '#746253',
   '--text-faint': '#b0a08e',
   '--accent': '#8a5f24',
-  '--accent-strong': '#8a5a2a',
+  // In a light theme "strong" must be DARKER than accent (more contrast, ~8:1),
+  // the inverse of dark themes where strong is brighter.
+  '--accent-strong': '#6f4718',
   '--accent-fill': '#8a5f24',
   '--on-accent': '#fdf7ec',
   '--tab-inactive': '#786a5b',

@@ -65,7 +65,7 @@ export function CheersButton({
       <Animated.View style={style}>
         {on ? <HeartFilledIcon size={16} /> : <HeartIcon size={16} color="text-muted" />}
       </Animated.View>
-      {n > 0 ? <Text className="font-mono text-[11px] text-text-muted">{n}</Text> : null}
+      {n > 0 ? <Text className="font-mono text-eyebrow text-text-muted">{n}</Text> : null}
     </Pressable>
   )
 }

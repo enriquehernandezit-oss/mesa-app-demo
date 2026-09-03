@@ -38,7 +38,7 @@ const MAX_SCALE = 1.35
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif text-title leading-[28px] text-text ${className ?? ''}`}
+    className={`font-serif text-title leading-title text-text ${className ?? ''}`}
     {...p}
   />
 )
@@ -179,7 +179,7 @@ export const Chip = ({
       : sm
         ? 'text-text'
         : 'text-text-2'
-  const font = sm ? 'font-mono text-[10px]' : 'font-ui-medium text-label'
+  const font = sm ? 'font-mono text-micro' : 'font-ui-medium text-label'
   return (
     <Pressable
       accessibilityRole="button"
@@ -257,7 +257,7 @@ export const SectionHeader = ({
   action,
 }: { children: ReactNode; action?: ReactNode }) => (
   <View className="mb-3 mt-5 flex-row items-baseline justify-between gap-3">
-    <Text className="font-mono text-[10px] uppercase tracking-[0.8px] text-accent-strong">
+    <Text className="font-mono text-micro uppercase tracking-micro text-accent-strong">
       {children}
     </Text>
     {action}

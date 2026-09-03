@@ -105,9 +105,7 @@ export default function UserRankings() {
               </Chip>
               {/* The denominator behind the percentage — a match with no shared
                   count is the least trustworthy way to show a number. */}
-              <Caption className="font-mono text-[10px]">
-                sobre {sharedCount} spots en común
-              </Caption>
+              <Caption className="font-mono text-micro">sobre {sharedCount} spots en común</Caption>
             </View>
           )}
 
@@ -133,7 +131,7 @@ export default function UserRankings() {
               onPress={() => comingSoon('Los mensajes llegan pronto a Mesa.')}
               className="min-h-[44px] justify-center rounded-pill border border-line border-dashed px-5 active:opacity-70"
             >
-              <Text className="font-mono text-[11px] text-text-muted">Mensaje</Text>
+              <Text className="font-mono text-eyebrow text-text-muted">Mensaje</Text>
             </Pressable>
           </View>
 
@@ -217,7 +215,7 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
               <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
             )}
             {(ranking.tags ?? []).map((t) => (
-              <Caption key={t} className="font-mono text-[10px]">
+              <Caption key={t} className="font-mono text-micro">
                 {tagLabel(t)}
               </Caption>
             ))}

@@ -243,7 +243,7 @@ export default function RestaurantProfile() {
           >
             {/* MapBox burns its attribution into the static image's corner, which
                 cover-crop then hides — so it's stated here when the hero is a map. */}
-            <Caption className="font-mono text-[10px]">
+            <Caption className="font-mono text-micro">
               {mapCover ? '© Mapbox © OpenStreetMap' : 'film · con velas'}
             </Caption>
           </View>
@@ -383,7 +383,7 @@ export default function RestaurantProfile() {
               />
               <View className="absolute right-3 bottom-3 flex-row items-center gap-1 rounded-pill bg-surface px-2 py-1">
                 <PinIcon size={12} />
-                <Caption className="font-mono text-[10px]">Ver en el mapa</Caption>
+                <Caption className="font-mono text-micro">Ver en el mapa</Caption>
               </View>
             </Pressable>
           )}

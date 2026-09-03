@@ -46,7 +46,7 @@ function TabItem({
     >
       <Ico size={22} color={focused ? 'accent' : 'tab-inactive'} />
       <Text
-        className={`font-ui-semibold text-[10px] ${focused ? 'text-accent' : 'text-tab-inactive'}`}
+        className={`font-ui-semibold text-micro ${focused ? 'text-accent' : 'text-tab-inactive'}`}
       >
         {LABELS[routeName]}
       </Text>
