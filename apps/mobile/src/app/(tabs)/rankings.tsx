@@ -12,14 +12,27 @@ import {
 } from '@/components/ui'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { ShareIcon } from '@/components/ui/icons'
+import { ShareIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
-import { displayScore, tagLabel } from '@/lib/display'
+import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { cloudinaryUrl } from '@/lib/media'
 import { removeRankingWithUndo } from '@/lib/rankingRemoval'
+import {
+  NO_FILTERS,
+  type RankingFilters,
+  SORT_OPTIONS,
+  type SortKey,
+  activeFilterCount,
+  applyFilters,
+  deriveFilterOptions,
+  filterChipLabel,
+  sortLabel,
+  sortRankings,
+} from '@/lib/rankingSort'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
@@ -27,9 +40,8 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import type { ReactNode } from 'react'
-import { useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { type ReactNode, useMemo, useRef, useState } from 'react'
+import { FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -40,12 +52,15 @@ import Animated, { LinearTransition } from 'react-native-reanimated'
 // RankingsTab.tsx. The share-my-list card renders via the native view-shot host
 // (shareListCard → ShareCardHost).
 export default function RankingsTab() {
+  const router = useRouter()
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
   )
-  const [tagFilter, setTagFilter] = useState<string | null>(null)
+  const [sort, setSort] = useState<SortKey>('position')
+  const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
+  const [filterOpen, setFilterOpen] = useState(false)
   const me = useProfile(true, 300_000)
 
   const mine = useQuery({
@@ -60,8 +75,24 @@ export default function RankingsTab() {
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
 
   const ranked = mine.data?.rankings ?? []
-  const myTags = [...new Set(ranked.flatMap((r) => r.tags ?? []))]
-  const visible = ranked.filter((r) => !tagFilter || (r.tags ?? []).includes(tagFilter))
+  // Sort/filter run over the whole in-memory list (see lib/rankingSort.ts and
+  // the comment on GET /rankings). shareList and BarriosView still read `ranked`
+  // raw — the top-5 card and the sector aggregate are about the real list, not
+  // the current view.
+  const filterOptions = useMemo(() => deriveFilterOptions(ranked), [ranked])
+  const activeCount = activeFilterCount(filters)
+  const processed = useMemo(
+    () => sortRankings(applyFilters(ranked, filters), sort),
+    [ranked, filters, sort],
+  )
+
+  const openSort = async () => {
+    const idx = await showActionSheet({
+      title: 'Ordenar por',
+      options: SORT_OPTIONS.map((o) => ({ label: o.label })),
+    })
+    if (idx != null) setSort(SORT_OPTIONS[idx].key)
+  }
 
   // The share-my-list story card (the growth loop): the top 5, over the top
   // spot's photo, captioned with the public profile link.
@@ -78,109 +109,273 @@ export default function RankingsTab() {
       text: profileShareText(profile?.handle),
     })
 
+  // Shared across all three tabs — the title, the stats trio, the tab switcher.
+  const topMatter = (
+    <>
+      <View className="flex-row items-start justify-between">
+        <View>
+          <Eyebrow>Tu lista</Eyebrow>
+          <Title className="mb-3">Rankings</Title>
+        </View>
+        {ranked.length > 0 && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Compartir mi lista"
+            onPress={shareList}
+            className="h-10 w-10 items-center justify-center rounded-pill border border-line active:opacity-70"
+          >
+            <ShareIcon size={18} />
+          </Pressable>
+        )}
+      </View>
+
+      {stats.data && (
+        <View className="mb-4 flex-row gap-6">
+          <Stat n={String(stats.data.places)} l="lugares" />
+          <Stat
+            n={stats.data.avgScore != null ? displayScore(stats.data.avgScore) : '—'}
+            l="prom."
+          />
+          <Stat n={stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem.` : '—'} l="racha" />
+        </View>
+      )}
+
+      <View className="mb-4 flex-row gap-2">
+        <Chip state={tab === 'mine' ? 'selected' : 'default'} onPress={() => setTab('mine')}>
+          Mía
+        </Chip>
+        <Chip state={tab === 'saved' ? 'selected' : 'default'} onPress={() => setTab('saved')}>
+          Quiero probar
+        </Chip>
+        <Chip state={tab === 'barrios' ? 'selected' : 'default'} onPress={() => setTab('barrios')}>
+          Sectores
+        </Chip>
+      </View>
+    </>
+  )
+
+  // Sort + filter — the "mine" tab only, and only once there's a list to act on.
+  const mineControls = ranked.length > 0 && (
+    <View className="mb-4 gap-2">
+      <View className="flex-row flex-wrap items-center gap-2">
+        <Chip size="sm" icon={<SortIcon size={12} />} onPress={openSort}>
+          {sortLabel(sort)}
+        </Chip>
+        <Chip
+          size="sm"
+          state={filterOpen ? 'active' : activeCount > 0 ? 'selected' : 'default'}
+          onPress={() => setFilterOpen((v) => !v)}
+        >
+          {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
+        </Chip>
+        {filters.sector && (
+          <Chip
+            size="sm"
+            state="selected"
+            onPress={() => setFilters((f) => ({ ...f, sector: null }))}
+          >
+            {filterChipLabel('sector', filters.sector)} ✕
+          </Chip>
+        )}
+        {filters.occasion && (
+          <Chip
+            size="sm"
+            state="selected"
+            onPress={() => setFilters((f) => ({ ...f, occasion: null }))}
+          >
+            {filterChipLabel('occasion', filters.occasion)} ✕
+          </Chip>
+        )}
+        {filters.price != null && (
+          <Chip
+            size="sm"
+            state="selected"
+            onPress={() => setFilters((f) => ({ ...f, price: null }))}
+          >
+            {filterChipLabel('price', filters.price)} ✕
+          </Chip>
+        )}
+        {filters.cuisine && (
+          <Chip
+            size="sm"
+            state="selected"
+            onPress={() => setFilters((f) => ({ ...f, cuisine: null }))}
+          >
+            {filterChipLabel('cuisine', filters.cuisine)} ✕
+          </Chip>
+        )}
+        {activeCount > 0 && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setFilters(NO_FILTERS)}
+            className="min-h-[36px] justify-center px-1 active:opacity-60"
+          >
+            <Caption className="font-mono text-accent-strong">Limpiar</Caption>
+          </Pressable>
+        )}
+      </View>
+
+      {filterOpen && (
+        <View className="gap-3 rounded border border-line bg-surface p-3">
+          <FilterGroup
+            label="Sector"
+            values={filterOptions.sectors}
+            selected={filters.sector}
+            render={(v) => String(v)}
+            onToggle={(v) =>
+              setFilters((f) => ({ ...f, sector: f.sector === v ? null : String(v) }))
+            }
+          />
+          <FilterGroup
+            label="Ocasión"
+            values={filterOptions.occasions}
+            selected={filters.occasion}
+            render={(v) => tagLabel(String(v))}
+            onToggle={(v) =>
+              setFilters((f) => ({ ...f, occasion: f.occasion === v ? null : String(v) }))
+            }
+          />
+          <FilterGroup
+            label="Precio"
+            values={filterOptions.prices}
+            selected={filters.price}
+            render={(v) => priceLabel(Number(v)) ?? String(v)}
+            onToggle={(v) => setFilters((f) => ({ ...f, price: f.price === v ? null : Number(v) }))}
+          />
+          <FilterGroup
+            label="Cocina"
+            values={filterOptions.cuisines}
+            selected={filters.cuisine}
+            render={(v) => cuisineLabel(String(v)) ?? String(v)}
+            onToggle={(v) =>
+              setFilters((f) => ({ ...f, cuisine: f.cuisine === v ? null : String(v) }))
+            }
+          />
+        </View>
+      )}
+    </View>
+  )
+
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
-      <ScrollView
-        indicatorStyle={indicator}
-        contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
-        automaticallyAdjustKeyboardInsets
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-row items-start justify-between">
-          <View>
-            <Eyebrow>Tu lista</Eyebrow>
-            <Title className="mb-3">Rankings</Title>
-          </View>
-          {ranked.length > 0 && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Compartir mi lista"
-              onPress={shareList}
-              className="h-10 w-10 items-center justify-center rounded-pill border border-line active:opacity-70"
-            >
-              <ShareIcon size={18} />
-            </Pressable>
-          )}
-        </View>
-
-        {stats.data && (
-          <View className="mb-4 flex-row gap-6">
-            <Stat n={String(stats.data.places)} l="lugares" />
-            <Stat
-              n={stats.data.avgScore != null ? displayScore(stats.data.avgScore) : '—'}
-              l="prom."
-            />
-            <Stat
-              n={stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem.` : '—'}
-              l="racha"
-            />
-          </View>
-        )}
-
-        <View className="mb-4 flex-row gap-2">
-          <Chip state={tab === 'mine' ? 'selected' : 'default'} onPress={() => setTab('mine')}>
-            Mía
-          </Chip>
-          <Chip state={tab === 'saved' ? 'selected' : 'default'} onPress={() => setTab('saved')}>
-            Quiero probar
-          </Chip>
-          <Chip
-            state={tab === 'barrios' ? 'selected' : 'default'}
-            onPress={() => setTab('barrios')}
-          >
-            Sectores
-          </Chip>
-        </View>
-
-        {tab === 'mine' && myTags.length > 0 && (
-          <View className="mb-4 flex-row flex-wrap gap-2">
-            {myTags.map((t) => (
-              <Chip
-                key={t}
-                size="sm"
-                state={tagFilter === t ? 'selected' : 'default'}
-                onPress={() => setTagFilter(tagFilter === t ? null : t)}
+      {/* The "mine" tab is the one genuinely unbounded list, and every row mounts
+          a gesture handler — so it's the one that earns a FlatList. saved and
+          barrios stay ScrollViews (bounded / an aggregate). */}
+      {tab === 'mine' ? (
+        <FlatList
+          data={processed}
+          keyExtractor={(r) => r.id}
+          renderItem={({ item }) => <RankingRow ranking={item} />}
+          ListHeaderComponent={
+            <>
+              {topMatter}
+              {mineControls}
+            </>
+          }
+          ListEmptyComponent={
+            mine.isPending ? (
+              <View className="gap-3">
+                <Skeleton height={72} />
+                <Skeleton height={72} />
+                <Skeleton height={72} />
+              </View>
+            ) : mine.isError ? (
+              <ErrorState onRetry={() => mine.refetch()}>
+                No se pudieron cargar tus rankings.
+              </ErrorState>
+            ) : activeCount > 0 ? (
+              <EmptyState
+                body="Ningún ranking coincide con estos filtros."
+                action={
+                  <Button size="sm" variant="secondary" onPress={() => setFilters(NO_FILTERS)}>
+                    Limpiar filtros
+                  </Button>
+                }
               >
-                {tagLabel(t)}
-              </Chip>
-            ))}
-          </View>
-        )}
-
-        {tab === 'mine' &&
-          (mine.isPending ? (
-            <View className="gap-3">
-              <Skeleton height={72} />
-              <Skeleton height={72} />
-              <Skeleton height={72} />
-            </View>
-          ) : mine.isError ? (
-            <ErrorState onRetry={() => mine.refetch()}>
-              No se pudieron cargar tus rankings.
-            </ErrorState>
-          ) : visible.length > 0 ? (
-            visible.map((r) => <RankingRow key={r.id} ranking={r} />)
-          ) : (
-            <EmptyState body="Rankea un spot y ocupa su puesto en tu pasaporte.">
-              Tu lista está vacía.
-            </EmptyState>
-          ))}
-
-        {tab === 'barrios' && <BarriosView rankings={mine.data?.rankings ?? []} />}
-
-        {tab === 'saved' &&
-          (saved.isPending ? (
+                Nada coincide.
+              </EmptyState>
+            ) : (
+              <EmptyState
+                body="Rankea un spot y ocupa su puesto en tu pasaporte."
+                action={
+                  <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
+                    Rankear un spot
+                  </Button>
+                }
+              >
+                Tu lista está vacía.
+              </EmptyState>
+            )
+          }
+          indicatorStyle={indicator}
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        />
+      ) : (
+        <ScrollView
+          indicatorStyle={indicator}
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+        >
+          {topMatter}
+          {tab === 'barrios' ? (
+            <BarriosView rankings={ranked} />
+          ) : saved.isPending ? (
             <Skeleton height={64} />
           ) : saved.data && saved.data.saved.length > 0 ? (
             saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
           ) : (
-            <EmptyState body="Los lugares que quieras probar se juntarán aquí.">
+            <EmptyState
+              body="Los lugares que quieras probar se juntarán aquí."
+              action={
+                <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
+                  Explorar spots
+                </Button>
+              }
+            >
               Nada guardado todavía.
             </EmptyState>
-          ))}
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
+    </View>
+  )
+}
+
+// One dimension of the filter panel — a mono label over a wrapping row of chips.
+function FilterGroup({
+  label,
+  values,
+  selected,
+  render,
+  onToggle,
+}: {
+  label: string
+  values: (string | number)[]
+  selected: string | number | null
+  render: (v: string | number) => string
+  onToggle: (v: string | number) => void
+}) {
+  if (values.length === 0) return null
+  return (
+    <View>
+      <Eyebrow className="mb-2 font-mono">{label}</Eyebrow>
+      <View className="flex-row flex-wrap gap-2">
+        {values.map((v) => (
+          <Chip
+            key={String(v)}
+            size="sm"
+            state={selected === v ? 'selected' : 'default'}
+            onPress={() => onToggle(v)}
+          >
+            {render(v)}
+          </Chip>
+        ))}
+      </View>
     </View>
   )
 }
@@ -361,6 +556,7 @@ function ActionText({
 }
 
 function BarriosView({ rankings }: { rankings: Ranking[] }) {
+  const router = useRouter()
   const byHood = new Map<string, { count: number; sum: number }>()
   for (const r of rankings) {
     const hood = r.neighborhood ?? 'Santo Domingo'
@@ -371,7 +567,18 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
     .map(([name, v]) => ({ name, count: v.count, avg: v.sum / v.count }))
     .sort((a, b) => b.count - a.count)
   const max = hoods[0]?.count ?? 1
-  if (hoods.length === 0) return <EmptyState>Rankea algunos lugares primero.</EmptyState>
+  if (hoods.length === 0)
+    return (
+      <EmptyState
+        action={
+          <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
+            Rankear un spot
+          </Button>
+        }
+      >
+        Rankea algunos lugares primero.
+      </EmptyState>
+    )
   return (
     <View className="gap-4">
       {hoods.map((h) => (

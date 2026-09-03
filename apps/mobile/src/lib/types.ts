@@ -56,6 +56,9 @@ export interface Ranking {
   id: string
   position: number
   score: number
+  // Present on GET /rankings (own list) for the "Recientes" sort; omitted on
+  // another member's passport, which is why it's optional.
+  createdAt?: string
   tags?: string[] | null
   favoriteDish?: string | null
   restaurant: RankedRestaurant

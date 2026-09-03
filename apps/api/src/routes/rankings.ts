@@ -71,6 +71,13 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
   // My ordered list: rank, score, restaurant + neighborhood, and my vibe note
   // (if any, and not removed). One round trip via joins.
+  // Returns the whole list, unpaginated and unfiltered — deliberately. Sorting
+  // and filtering the "mine" tab happens on the client (see lib/rankingSort.ts):
+  // this is one person's own list (bounded by places they've physically been),
+  // the pairwise rank flow needs the complete ordered array in memory anyway,
+  // and shareList / BarriosView both read the whole thing. The trigger to move
+  // any of this server-side is PAGINATION, not filtering — don't parameterize
+  // this the way /rankings/candidates (which queries the whole catalog) is.
   .get('/', async (c) => {
     const me = c.get('user')
     const rows = await db
@@ -78,6 +85,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         id: rankings.id,
         position: rankings.position,
         score: rankings.score,
+        createdAt: rankings.createdAt,
         tags: rankings.tags,
         favoriteDish: rankings.favoriteDish,
         restaurant: {
