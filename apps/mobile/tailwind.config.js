@@ -80,7 +80,9 @@ module.exports = {
       },
       lineHeight: {
         // The serif title's measured leading (paired with text-title = 25).
-        title: 28,
+        // Explicit px unit: RN lineHeight is absolute points, and a unitless
+        // value would read as a font-size multiplier, not 28pt.
+        title: '28px',
       },
       letterSpacing: {
         eyebrow: '1.76px',
