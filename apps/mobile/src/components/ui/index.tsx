@@ -2,6 +2,7 @@ import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, useEffect } from 'react'
 import {
+  ActivityIndicator,
   Pressable,
   type PressableProps,
   ScrollView,
@@ -84,9 +85,13 @@ export const Wordmark = ({ size = 40, className }: { size?: number; className?: 
 
 /* --- Button --- */
 type ButtonProps = Omit<PressableProps, 'children'> & {
-  variant?: 'primary' | 'secondary' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
+  size?: 'md' | 'sm'
   mono?: boolean
   icon?: ReactNode
+  // Swaps the icon slot for a spinner and disables the button; the label stays,
+  // so call sites keep their own "Guardando…"/"Eliminando…" copy.
+  loading?: boolean
   children: ReactNode
   className?: string
 }
@@ -94,46 +99,60 @@ const BTN_BG: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-btn-primary-bg',
   secondary: 'bg-transparent border border-line',
   ghost: 'bg-transparent',
+  destructive: 'bg-status-packed',
 }
 const BTN_FG: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'text-btn-primary-fg',
   secondary: 'text-text',
   ghost: 'text-text-2',
+  destructive: 'text-on-accent',
 }
 export const Button = ({
   variant = 'primary',
+  size = 'md',
   mono,
   icon,
+  loading,
   children,
   className,
   disabled,
   ...p
-}: ButtonProps) => (
-  <Pressable
-    accessibilityRole="button"
-    disabled={disabled}
-    className={`w-full min-h-[52px] flex-row items-center justify-center gap-2 rounded px-5 active:opacity-90 ${BTN_BG[variant]} ${variant === 'ghost' ? 'min-h-[44px]' : ''} ${disabled ? 'opacity-45' : ''} ${className ?? ''}`}
-    style={
-      variant === 'primary'
-        ? {
-            shadowColor: BRASS_SHADOW,
-            shadowOpacity: 0.35,
-            shadowRadius: 18,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 6,
-          }
-        : undefined
-    }
-    {...p}
-  >
-    {icon}
-    <Text
-      className={`${mono ? 'font-mono text-eyebrow tracking-eyebrow' : 'font-ui-semibold text-label'} ${BTN_FG[variant]}`}
+}: ButtonProps) => {
+  const sm = size === 'sm'
+  const off = disabled || loading
+  // ActivityIndicator needs a resolved color, not a class — pull it from the
+  // token layer so it tracks the theme (and stays hex-free per the design law).
+  const onNeutral = useColor('accent')
+  const onFilled = useColor('on-accent')
+  const spinnerColor = variant === 'secondary' || variant === 'ghost' ? onNeutral : onFilled
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(off), busy: Boolean(loading) }}
+      disabled={off}
+      className={`${sm ? 'w-auto min-h-[40px] px-4' : 'w-full min-h-[52px] px-5'} flex-row items-center justify-center gap-2 rounded active:opacity-90 ${BTN_BG[variant]} ${variant === 'ghost' ? 'min-h-[44px]' : ''} ${off ? 'opacity-45' : ''} ${className ?? ''}`}
+      style={
+        variant === 'primary'
+          ? {
+              shadowColor: BRASS_SHADOW,
+              shadowOpacity: 0.35,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 6,
+            }
+          : undefined
+      }
+      {...p}
     >
-      {children}
-    </Text>
-  </Pressable>
-)
+      {loading ? <ActivityIndicator size="small" color={spinnerColor} /> : icon}
+      <Text
+        className={`${mono ? 'font-mono text-eyebrow tracking-eyebrow' : 'font-ui-semibold text-label'} ${BTN_FG[variant]}`}
+      >
+        {children}
+      </Text>
+    </Pressable>
+  )
+}
 
 /* --- Card --- */
 export const Card = ({
@@ -224,10 +243,34 @@ export const Skeleton = ({
 }
 
 /* --- EmptyState / ErrorState --- */
-export const EmptyState = ({ children, body }: { children: ReactNode; body?: ReactNode }) => (
+export const EmptyState = ({
+  children,
+  body,
+  action,
+}: { children: ReactNode; body?: ReactNode; action?: ReactNode }) => (
   <View className="mt-6 items-center gap-2 px-5">
     <SerifItalic className="text-serif-sm text-center">{children}</SerifItalic>
     {body && <Body className="text-center">{body}</Body>}
+    {action && <View className="mt-3">{action}</View>}
+  </View>
+)
+
+/* --- RowsSkeleton --- avatar-and-two-lines rows, holding the shape the real
+   rows will take so nothing jumps when the data lands. Same reasoning as the
+   restaurant profile's loader: a screen whose row geometry is known ahead of
+   time shouldn't throw that away for a spinner and reflow on arrival. Shared by
+   activity, leaderboard and the passport. */
+export const RowsSkeleton = ({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) => (
+  <View className="gap-3 px-5 pt-2">
+    {Array.from({ length: rows }, (_, i) => i).map((i) => (
+      <View key={i} className="flex-row items-center gap-3 py-2">
+        <Skeleton height={thumb} width={thumb} />
+        <View className="flex-1 gap-2">
+          <Skeleton height={13} width="62%" />
+          <Skeleton height={10} width="38%" />
+        </View>
+      </View>
+    ))}
   </View>
 )
 

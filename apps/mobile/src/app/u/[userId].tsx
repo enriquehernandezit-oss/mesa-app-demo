@@ -1,6 +1,15 @@
 import { ReportControl, pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, Chip, EmptyState, SectionHeader, Skeleton } from '@/components/ui'
+import {
+  Body,
+  Button,
+  Caption,
+  Chip,
+  EmptyState,
+  RowsSkeleton,
+  SectionHeader,
+  Skeleton,
+} from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
@@ -231,26 +240,6 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
         ) : null}
       </View>
       <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
-    </View>
-  )
-}
-
-// A list of avatar-and-two-lines rows, holding the shape the real rows will take
-// so nothing jumps when the data lands. Same reasoning as the restaurant
-// profile's loader: this screen's geometry is known ahead of time, so a spinner
-// (or a "Cargando…" line) throws that information away and reflows on arrival.
-function RowsSkeleton({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) {
-  return (
-    <View className="gap-3 px-5 pt-2">
-      {Array.from({ length: rows }, (_, i) => i).map((i) => (
-        <View key={i} className="flex-row items-center gap-3 py-2">
-          <Skeleton height={thumb} width={thumb} />
-          <View className="flex-1 gap-2">
-            <Skeleton height={13} width="62%" />
-            <Skeleton height={10} width="38%" />
-          </View>
-        </View>
-      ))}
     </View>
   )
 }

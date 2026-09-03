@@ -2,7 +2,8 @@ import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, Eyebrow, SerifItalic } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { BookmarkIcon, CheckIcon, CompassIcon } from '@/components/ui/icons'
+import { Field } from '@/components/ui/Field'
+import { BookmarkIcon, CheckIcon, ChevronIcon, CompassIcon } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -10,13 +11,12 @@ import { cuisineLabel } from '@/lib/display'
 import { resizeToJpeg } from '@/lib/image'
 import { shareProfile } from '@/lib/shareProfile'
 import type { MeStats, Neighborhood } from '@/lib/types'
-import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The user's own profile (Phase 6 mock E1): centered identity + avatar picker, a
 // stats trio, edit/share, routes into the lists, and the two stat cards. The top
@@ -137,19 +137,17 @@ export default function ProfileTab() {
           <NavRow
             icon={<CheckIcon size={15} />}
             label="Rankeados"
-            meta={`${stats.data?.places ?? 0} ›`}
+            meta={String(stats.data?.places ?? 0)}
             onPress={() => router.push('/rankings')}
           />
           <NavRow
             icon={<BookmarkIcon size={15} />}
             label="Quiero probar"
-            meta="›"
             onPress={() => router.push('/rankings?tab=saved')}
           />
           <NavRow
             icon={<CompassIcon size={15} />}
             label="Recomendados para ti"
-            meta="›"
             onPress={() => router.push('/explore')}
           />
         </View>
@@ -180,7 +178,7 @@ function NavRow({
   label,
   meta,
   onPress,
-}: { icon: ReactNode; label: string; meta: string; onPress: () => void }) {
+}: { icon: ReactNode; label: string; meta?: string; onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -191,7 +189,10 @@ function NavRow({
         {icon}
         <Text className="font-ui text-body text-text">{label}</Text>
       </View>
-      <Caption className="font-mono">{meta}</Caption>
+      <View className="flex-row items-center gap-1.5">
+        {meta ? <Caption className="font-mono">{meta}</Caption> : null}
+        <ChevronIcon size={16} color="text-faint" />
+      </View>
     </Pressable>
   )
 }
@@ -208,7 +209,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
 // Minimal edit sheet — name, @handle, sector, bio → PATCH /me/profile.
 function EditProfile({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
-  const placeholder = useColor('text-muted')
   const { data } = useProfile(true)
   const p = data?.profile
   const [name, setName] = useState(p?.name ?? '')
@@ -256,69 +256,55 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           <Text className="font-ui-medium text-label text-text-muted">‹ Editar perfil</Text>
         </Pressable>
 
-        <Field
-          label="Nombre"
-          value={name}
-          onChangeText={setName}
-          maxLength={60}
-          ph={placeholder}
-          textContentType="name"
-          autoComplete="name"
-        />
-        <Field
-          label="@usuario"
-          value={handle}
-          onChangeText={setHandle}
-          placeholder="tuusuario"
-          maxLength={30}
-          ph={placeholder}
-          // iOS capitalizes and autocorrects this by default — it's a handle.
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Eyebrow className="mt-4 mb-2 font-mono">Sector</Eyebrow>
-        <View className="flex-row flex-wrap gap-2">
-          {neighborhoods.data?.neighborhoods.map((n) => (
-            <Chip
-              key={n.slug}
-              size="sm"
-              state={currentSlug === n.slug ? 'selected' : 'default'}
-              onPress={() => setSlug(n.slug)}
-            >
-              {n.name}
-            </Chip>
-          ))}
+        <View className="mt-2 gap-4">
+          <Field
+            label="Nombre"
+            value={name}
+            onChangeText={setName}
+            maxLength={60}
+            textContentType="name"
+            autoComplete="name"
+          />
+          <Field
+            label="@usuario"
+            value={handle}
+            onChangeText={setHandle}
+            placeholder="tuusuario"
+            maxLength={30}
+            // iOS capitalizes and autocorrects this by default — it's a handle.
+            autoCapitalize="none"
+            autoCorrect={false}
+            error={save.error ? 'Prueba con otro usuario.' : undefined}
+          />
+          <View>
+            <Eyebrow className="mb-2 font-mono">Sector</Eyebrow>
+            <View className="flex-row flex-wrap gap-2">
+              {neighborhoods.data?.neighborhoods.map((n) => (
+                <Chip
+                  key={n.slug}
+                  size="sm"
+                  state={currentSlug === n.slug ? 'selected' : 'default'}
+                  onPress={() => setSlug(n.slug)}
+                >
+                  {n.name}
+                </Chip>
+              ))}
+            </View>
+          </View>
+          <Field label="Bio" value={bio} onChangeText={setBio} maxLength={120} />
         </View>
-        <Field label="Bio" value={bio} onChangeText={setBio} maxLength={120} ph={placeholder} />
 
-        {save.error && (
-          <Caption className="mt-3 text-status-packed">
-            No se pudo guardar — prueba con otro usuario.
-          </Caption>
-        )}
         <View className="mt-6">
-          <Button variant="primary" disabled={!canSave} onPress={() => save.mutate()}>
+          <Button
+            variant="primary"
+            loading={save.isPending}
+            disabled={!canSave}
+            onPress={() => save.mutate()}
+          >
             {save.isPending ? 'Guardando…' : 'Guardar'}
           </Button>
         </View>
       </ScrollView>
-    </View>
-  )
-}
-
-function Field({
-  label,
-  ph,
-  ...props
-}: React.ComponentProps<typeof TextInput> & { label: string; ph: string }) {
-  return (
-    <View className="mt-4">
-      <Caption className="mb-1 font-mono text-micro">{label}</Caption>
-      <TextInput
-        placeholderTextColor={ph}
-        className="min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-        {...props}
-      />
     </View>
   )
 }

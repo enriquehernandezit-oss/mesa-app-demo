@@ -50,6 +50,10 @@ export function Avatar({
         width: size,
         height: size,
         borderRadius: size / 2,
+        // Same 1px brass ring as the photo path — without it the two states
+        // have different outer geometry wherever they sit side by side.
+        borderWidth: 1,
+        borderColor: ring,
         alignItems: 'center',
         justifyContent: 'center',
       }}

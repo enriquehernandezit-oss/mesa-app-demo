@@ -1,6 +1,7 @@
 import { Button, Caption, Eyebrow, Toggle } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { ThemePicker } from '@/components/ui/ThemePicker'
+import { ChevronIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
@@ -193,7 +194,7 @@ export default function SettingsScreen() {
                 .join(' · ')}
             </Caption>
           </View>
-          <Caption className="font-mono">›</Caption>
+          <ChevronIcon size={16} color="text-faint" />
         </Pressable>
 
         <Eyebrow className="mt-6 mb-2">Apariencia</Eyebrow>
@@ -221,7 +222,11 @@ export default function SettingsScreen() {
           </RowButton>
           <RowButton onPress={exportRankings} disabled={exporting} last>
             <Text className="flex-1 font-ui text-body text-text">Exportar mis rankings</Text>
-            <Caption className="font-mono">{exporting ? '…' : '›'}</Caption>
+            {exporting ? (
+              <Caption className="font-mono text-micro">…</Caption>
+            ) : (
+              <ChevronIcon size={16} color="text-faint" />
+            )}
           </RowButton>
         </View>
 
@@ -256,7 +261,7 @@ export default function SettingsScreen() {
           {/* Notifications + invites are inert-by-design (no backend yet). */}
           <RowButton onPress={() => comingSoon('Las notificaciones llegan pronto a Mesa.')}>
             <Text className="flex-1 font-ui text-body text-text-muted">Notificaciones</Text>
-            <Caption className="font-mono">›</Caption>
+            <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={() => comingSoon('Las invitaciones llegan pronto a Mesa.')}>
             <Text className="flex-1 font-ui text-body text-text-muted">Invitaciones</Text>
@@ -287,15 +292,15 @@ export default function SettingsScreen() {
           )}
           <RowButton onPress={() => router.push('/legal/privacy')}>
             <Text className="flex-1 font-ui text-body text-text">Política de Privacidad</Text>
-            <Caption className="font-mono">›</Caption>
+            <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={() => router.push('/legal/terms')}>
             <Text className="flex-1 font-ui text-body text-text">Términos</Text>
-            <Caption className="font-mono">›</Caption>
+            <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={() => router.push('/legal/eula')}>
             <Text className="flex-1 font-ui text-body text-text">EULA</Text>
-            <Caption className="font-mono">›</Caption>
+            <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={handleSignOut}>
             <Text className="flex-1 font-ui-medium text-body text-accent-strong">
@@ -331,7 +336,8 @@ export default function SettingsScreen() {
                 />
                 <Button
                   variant="primary"
-                  disabled={changePassword.isPending || newPassword.length < 8 || !currentPassword}
+                  loading={changePassword.isPending}
+                  disabled={newPassword.length < 8 || !currentPassword}
                   onPress={() => changePassword.mutate()}
                 >
                   {changePassword.isPending ? 'Guardando…' : 'Guardar contraseña'}
@@ -399,16 +405,14 @@ export default function SettingsScreen() {
                   onChangeText={setDeletePassword}
                 />
               )}
-              <Pressable
-                accessibilityRole="button"
-                disabled={deleteAccount.isPending || (Boolean(realEmail) && !deletePassword)}
+              <Button
+                variant="destructive"
+                loading={deleteAccount.isPending}
+                disabled={Boolean(realEmail) && !deletePassword}
                 onPress={() => deleteAccount.mutate()}
-                className="min-h-[44px] items-center justify-center rounded bg-status-packed active:opacity-70"
               >
-                <Text className="font-ui-semibold text-label text-on-accent">
-                  {deleteAccount.isPending ? 'Eliminando…' : 'Sí, eliminar todo'}
-                </Text>
-              </Pressable>
+                {deleteAccount.isPending ? 'Eliminando…' : 'Sí, eliminar todo'}
+              </Button>
               <Button
                 variant="ghost"
                 onPress={() => {

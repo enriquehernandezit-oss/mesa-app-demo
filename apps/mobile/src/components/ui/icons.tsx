@@ -1,7 +1,7 @@
 import { useColor } from '@/theme/useColor'
 import type { ColorToken } from '@/theme/vars'
 import type { ReactNode } from 'react'
-import { Circle, Path, Rect, Svg } from 'react-native-svg'
+import { Circle, Path, Svg } from 'react-native-svg'
 
 // One icon language for the whole app, ported from apps/app/src/components/ui/
 // icons.tsx. Same geometry: 24 viewBox, 1.6 stroke, round caps/joins. On the web
@@ -60,13 +60,6 @@ export const WebIcon = (p: IconProps) => (
     <Path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5Z" />
   </Icon>
 )
-export const ReserveIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <Rect x="3.5" y="5" width="17" height="15" rx="2" />
-    <Path d="M3.5 9.5h17M8 3v3.5M16 3v3.5M12 13.5l2.2 2.2" />
-    <Circle cx="12" cy="13.5" r="3.2" />
-  </Icon>
-)
 export const PhoneIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M5.5 4h3l1.5 4.5-2 1.5a12 12 0 0 0 6 6l1.5-2 4.5 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 3.5 6.2 2 2 0 0 1 5.5 4Z" />
@@ -88,14 +81,12 @@ export const ListIcon = (p: IconProps) => (
     <Path d="M4 6.5h16M4 12h16M4 17.5h10" />
   </Icon>
 )
-export const OrderIcon = (p: IconProps) => (
+// The single-chevron affordance for "row leads somewhere" (NavRows, list items).
+// One glyph so the hardcoded "›" characters scattered across the app stop being
+// a second, unstyled icon language.
+export const ChevronIcon = (p: IconProps) => (
   <Icon {...p}>
-    <Path d="M5 8.5 6.5 4h11L19 8.5M5 8.5h14M5 8.5 6 19a1.6 1.6 0 0 0 1.6 1.5h8.8A1.6 1.6 0 0 0 18 19l1-10.5" />
-  </Icon>
-)
-export const PencilIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <Path d="M15.5 4.5 19.5 8.5 8 20H4v-4Z" />
+    <Path d="M9 5l7 7-7 7" />
   </Icon>
 )
 export const SortIcon = (p: IconProps) => (
