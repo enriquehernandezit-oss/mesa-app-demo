@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { scoreFor } from '../lib/score'
-import { blockedByMe, followingIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Everything the cold-start onboarding needs. The product's #1 risk is an empty
@@ -153,7 +153,10 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
     const current = c.get('user')
 
     const alreadyFollowing = followingIds(current.id)
+    // Both directions — see lib/visibility: a read path that filters one way
+    // leaks half the block, and this one would suggest following the person.
     const blocked = blockedByMe(current.id)
+    const blockedMeIds = blockedMe(current.id)
 
     const rows = await db
       .select({
@@ -176,6 +179,9 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
           sql`${schema.user.handle} is not null`,
           notInArray(schema.user.id, alreadyFollowing),
           notInArray(schema.user.id, blocked),
+          notInArray(schema.user.id, blockedMeIds),
+          // Never suggest a suspended account as someone to follow.
+          isNull(schema.user.bannedAt),
         ),
       )
       .groupBy(schema.user.id, schema.neighborhoods.name)

@@ -247,6 +247,9 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     // The note from whoever ranks it highest (lowest position) — the most
     // credible one-line "why".
+    // Joined to the author so a SUSPENDED member's note can't be quoted here.
+    // This page is public and crawler-visible, so it's the one surface where a
+    // missed moderation filter is published rather than merely shown in-app.
     const [note] = await db
       .select({ body: vibeNotes.body })
       .from(vibeNotes)
@@ -257,7 +260,10 @@ export const sharePagesRoutes = new Hono<AppEnv>()
           eq(rankings.restaurantId, vibeNotes.restaurantId),
         ),
       )
-      .where(and(eq(vibeNotes.restaurantId, id), isNull(vibeNotes.removedAt)))
+      .innerJoin(user, eq(user.id, vibeNotes.userId))
+      .where(
+        and(eq(vibeNotes.restaurantId, id), isNull(vibeNotes.removedAt), isNull(user.bannedAt)),
+      )
       .orderBy(asc(rankings.position))
       .limit(1)
 

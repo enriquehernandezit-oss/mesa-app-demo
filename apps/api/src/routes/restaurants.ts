@@ -304,7 +304,10 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       // Accent-normalized both sides, matching the place search above, so
       // "jose" finds "José" (raw ilike over the stored name would miss it).
       const norm = sql`mesa_norm(${q})`
+      // Both directions: filtering only the people I blocked would still let
+      // someone who blocked ME show up here, and be followed from here.
       const blocked = blockedByMe(me.id)
+      const blockedMeIds = blockedMe(me.id)
       members = await db
         .select({
           id: user.id,
@@ -325,6 +328,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
             sql`${user.handle} is not null`,
             isNull(user.bannedAt),
             notInArray(user.id, blocked),
+            notInArray(user.id, blockedMeIds),
             sql`${user.id} <> ${me.id}`,
           ),
         )
