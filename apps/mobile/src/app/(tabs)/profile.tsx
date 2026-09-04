@@ -145,9 +145,12 @@ export default function ProfileTab() {
             label="Quiero probar"
             onPress={() => router.push('/rankings?tab=saved')}
           />
+          {/* Was "Recomendados para ti", which promised a personalized list this
+              row never opened — it goes to Explore, whose default browse state
+              is exactly that query. The label now says where it goes. */}
           <NavRow
             icon={<CompassIcon size={15} />}
-            label="Recomendados para ti"
+            label="Explorar spots"
             onPress={() => router.push('/explore')}
           />
         </View>

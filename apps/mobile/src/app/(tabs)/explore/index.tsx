@@ -13,10 +13,16 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { PinIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
-import type { ExploreHit, ExploreMember, ExploreResponse, Neighborhood } from '@/lib/types'
+import type {
+  ExploreHit,
+  ExploreMember,
+  ExploreResponse,
+  Neighborhood,
+  RailSpot,
+} from '@/lib/types'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
@@ -72,6 +78,9 @@ export default function ExploreScreen() {
 
   const hits = results.data?.restaurants ?? []
   const members = results.data?.members ?? []
+  // The default browse state: no query, no filters. Anything else is a search,
+  // and the trending rail steps out of the way.
+  const browsing = q.trim().length < 2 && !hood && !cuisine && price == null && !openNow
 
   // "Abierto ahora" filters on closesAt (null for imported rows) — hide the chip
   // when few current hits have hours; keep it while active. (M7)
@@ -193,6 +202,11 @@ export default function ExploreScreen() {
         )}
 
         <View className="mt-4">
+          {/* Trending rides above the results, but only in the default browse
+              state — once you've typed or filtered, the results ARE the answer
+              and a heat rail is noise. */}
+          {!browsing ? null : <TrendingRail />}
+
           {members.length > 0 && (
             <>
               <SectionHeader>Miembros</SectionHeader>
@@ -270,6 +284,43 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
 }
 
 // A member result row — links to their passport.
+// What Santo Domingo is cheering this fortnight — a genuinely different signal
+// from Explore's friend-score default, which is why it earns a rail here rather
+// than a third rail on Discover (where the feed IS the product).
+//
+// The card carries ONLY the cheer count. Never a score, never a ScoreBadge: a
+// bare number beside a place reads as the place's own rating, and in Mesa every
+// score is attributed to a person. Cheers are activity, not a verdict.
+function TrendingRail() {
+  const q = useQuery({
+    queryKey: ['trending'],
+    queryFn: () => api.get<{ restaurants: RailSpot[] }>('/restaurants/trending'),
+    staleTime: 300_000,
+  })
+  const spots = q.data?.restaurants ?? []
+  // Under four qualifying spots the rail reads as broken rather than sparse —
+  // a cold graph should show nothing at all.
+  if (spots.length < 4) return null
+  return (
+    <SpotRail title="Sonando esta semana">
+      {spots.map((s) => (
+        <SpotCard
+          key={s.id}
+          href={`/r/${s.id}`}
+          seed={s.id}
+          name={s.name}
+          coverImageId={s.coverImageId}
+          caption={
+            <Caption className="font-mono text-micro" numberOfLines={1}>
+              {s.cheerCount} {s.cheerCount === 1 ? 'cheer' : 'cheers'} esta semana
+            </Caption>
+          }
+        />
+      ))}
+    </SpotRail>
+  )
+}
+
 function MemberRow({ m }: { m: ExploreMember }) {
   return (
     <Link href={`/u/${m.id}`} asChild>

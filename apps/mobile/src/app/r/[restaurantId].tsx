@@ -23,7 +23,13 @@ import {
   ShareIcon,
   WebIcon,
 } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
+import {
+  Characteristics,
+  ScoreBadge,
+  SpotCard,
+  SpotRail,
+  UtilityPill,
+} from '@/components/ui/patterns'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
@@ -396,34 +402,22 @@ export default function RestaurantProfile() {
 
           {/* Similar spots rail. */}
           {similar.length > 0 && (
-            <>
-              <SectionHeader>Spots parecidos</SectionHeader>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerClassName="gap-3 pt-2 pr-5"
-              >
-                {similar.map((s) => (
-                  <Link key={s.id} href={`/r/${s.id}`} asChild>
-                    <Pressable className="w-36 active:opacity-80">
-                      <PlaceCover
-                        seed={s.id}
-                        name={s.name}
-                        coverImageId={s.coverImageId}
-                        size={{ w: 320, h: 400 }}
-                        className="h-44 w-36"
-                      />
-                      <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
-                        {s.name}
-                      </Text>
-                      <Caption numberOfLines={1}>
-                        {[cuisineLabel(s.cuisine), s.neighborhood].filter(Boolean).join(' · ')}
-                      </Caption>
-                    </Pressable>
-                  </Link>
-                ))}
-              </ScrollView>
-            </>
+            <SpotRail title="Spots parecidos">
+              {similar.map((s) => (
+                <SpotCard
+                  key={s.id}
+                  href={`/r/${s.id}`}
+                  seed={s.id}
+                  name={s.name}
+                  coverImageId={s.coverImageId}
+                  caption={
+                    <Caption numberOfLines={1}>
+                      {[cuisineLabel(s.cuisine), s.neighborhood].filter(Boolean).join(' · ')}
+                    </Caption>
+                  }
+                />
+              ))}
+            </SpotRail>
           )}
         </View>
       </ScrollView>

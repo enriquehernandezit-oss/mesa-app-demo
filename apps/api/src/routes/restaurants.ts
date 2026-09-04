@@ -359,6 +359,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   // Trending: most-cheered places of the last two weeks — the Discover rail.
   // One grouped query (cheers → rankings → restaurants).
   .get('/trending', async (c) => {
+    const me = c.get('user')
     const rows = await db
       .select({
         id: restaurants.id,
@@ -371,12 +372,20 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       .from(schema.cheers)
       .innerJoin(rankings, eq(rankings.id, schema.cheers.rankingId))
       .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+      // The cheerer, so a suspended or blocked account can't move the count.
+      .innerJoin(user, eq(user.id, schema.cheers.userId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .where(
         and(
           sql`${schema.cheers.createdAt} > now() - interval '14 days'`,
           isNull(restaurants.removedAt),
           isNull(restaurants.closedAt),
+          // Same visibility rules as every other social read (see lib/
+          // visibility.ts): ejected accounts don't count, and blocks are
+          // symmetric — filtering one direction leaks half the block.
+          isNull(user.bannedAt),
+          notInArray(user.id, blockedByMe(me.id)),
+          notInArray(user.id, blockedMe(me.id)),
         ),
       )
       .groupBy(

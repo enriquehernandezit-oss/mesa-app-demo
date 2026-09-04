@@ -1,11 +1,69 @@
-import { Caption } from '@/components/ui'
+import { Caption, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { GROUND, themeColors } from '@/theme/vars'
+import { Link } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
-import { Linking, Pressable, Text, View } from 'react-native'
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+
+// A horizontal rail of cover cards under a section header — the same container
+// three times over (featured lists, similar spots, trending). Only the card
+// geometry differs, which is what `variant` on SpotCard carries.
+export function SpotRail({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View>
+      <SectionHeader>{title}</SectionHeader>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-3 pt-2 pr-5"
+      >
+        {children}
+      </ScrollView>
+    </View>
+  )
+}
+
+// One card in a SpotRail. 'wide' is the editorial-list shape (short, letterbox);
+// 'tall' is the place shape. `caption` is a node so a rail can put mono metadata
+// (trending's cheer count) where another puts plain text.
+export function SpotCard({
+  href,
+  seed,
+  name,
+  coverImageId,
+  caption,
+  variant = 'tall',
+}: {
+  href: string
+  seed: string
+  name: string
+  coverImageId: string | null
+  caption?: ReactNode
+  variant?: 'wide' | 'tall'
+}) {
+  const wide = variant === 'wide'
+  return (
+    <Link href={href} asChild>
+      <Pressable className={wide ? 'w-40 active:opacity-80' : 'w-36 active:opacity-80'}>
+        <PlaceCover
+          seed={seed}
+          name={name}
+          coverImageId={coverImageId}
+          size={wide ? { w: 320, h: 300 } : { w: 320, h: 400 }}
+          className={wide ? 'h-24 w-40' : 'h-44 w-36'}
+        />
+        <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
+          {name}
+        </Text>
+        {caption}
+      </Pressable>
+    </Link>
+  )
+}
 
 // A single stat in a passport/profile trio: big serif number over a muted
 // label. Shared by the user's own profile and another member's passport — the

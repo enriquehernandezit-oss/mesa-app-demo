@@ -117,38 +117,6 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
   })
 })
 
-// "For you" — places I haven't ranked, scored by my friends' average, best
-// first. Sharpens as the graph grows; one grouped query.
-feedRoutes.get('/recs', async (c) => {
-  const me = c.get('user')
-  const following = followingIds(me.id)
-  const mine = db
-    .select({ id: rankings.restaurantId })
-    .from(rankings)
-    .where(eq(rankings.userId, me.id))
-
-  const rows = await db
-    .select({
-      id: restaurants.id,
-      name: restaurants.name,
-      cuisine: restaurants.cuisine,
-      coverImageId: restaurants.coverImageId,
-      neighborhood: neighborhoods.name,
-      friendAvg: sql<number>`avg(${rankings.score})`,
-      friendCount: sql<number>`count(*)::int`,
-    })
-    .from(rankings)
-    .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
-    .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-    .where(and(inArray(rankings.userId, following), notInArray(restaurants.id, mine)))
-    .groupBy(
-      restaurants.id,
-      restaurants.name,
-      restaurants.cuisine,
-      restaurants.coverImageId,
-      neighborhoods.name,
-    )
-    .orderBy(sql`avg(${rankings.score}) desc`)
-    .limit(8)
-  return c.json({ recs: rows })
-})
+// GET /feed/recs ("For you") was removed: it had no callers. Explore's no-query
+// browse state already runs that exact query — friends' average over places you
+// haven't ranked — on a dedicated tab, which is where people look for it.

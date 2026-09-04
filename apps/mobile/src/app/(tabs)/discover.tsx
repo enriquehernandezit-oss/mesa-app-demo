@@ -7,14 +7,12 @@ import {
   Caption,
   ErrorState,
   Eyebrow,
-  SectionHeader,
   SerifItalic,
   Skeleton,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
@@ -198,32 +196,23 @@ function ListsRail() {
   if (lists.length === 0) return null
   return (
     <View className="mb-2">
-      <SectionHeader>Listas destacadas</SectionHeader>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-3 pt-2 pr-5"
-      >
+      <SpotRail title="Listas destacadas">
         {lists.map((l) => (
-          <Link key={l.slug} href={`/lists/${l.slug}`} asChild>
-            <Pressable className="w-40 active:opacity-80">
-              <PlaceCover
-                seed={l.slug}
-                name={l.title}
-                coverImageId={l.coverImageId}
-                size={{ w: 320, h: 300 }}
-                className="h-24 w-40"
-              />
-              <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
-                {l.title}
-              </Text>
+          <SpotCard
+            key={l.slug}
+            variant="wide"
+            href={`/lists/${l.slug}`}
+            seed={l.slug}
+            name={l.title}
+            coverImageId={l.coverImageId}
+            caption={
               <Caption className="font-mono text-micro">
                 {l.mine} de {l.total} rankeados
               </Caption>
-            </Pressable>
-          </Link>
+            }
+          />
         ))}
-      </ScrollView>
+      </SpotRail>
     </View>
   )
 }
