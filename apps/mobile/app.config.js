@@ -14,6 +14,21 @@ module.exports = () => {
       : p,
   )
 
+  // Sentry's config plugin uploads source maps at build time, which needs
+  // SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN. Added only when the org and
+  // project are present, so a build without Sentry credentials still succeeds —
+  // JS errors are still captured either way (see src/lib/errors.ts); the plugin
+  // is what turns a minified native stack trace into a readable one.
+  if (process.env.SENTRY_ORG && process.env.SENTRY_PROJECT) {
+    config.plugins = [
+      ...(config.plugins ?? []),
+      [
+        '@sentry/react-native/expo',
+        { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+      ],
+    ]
+  }
+
   // Universal links so the password-reset / verify-email emails open the app
   // instead of a browser. The domain is where APP_ORIGINS points and where the
   // apple-app-site-association file is hosted (the API can serve it beside /p/*);

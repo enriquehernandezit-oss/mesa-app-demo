@@ -3,6 +3,7 @@ import { CompareCard } from '@/components/ui/CompareCard'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
 import { useProfile } from '@/hooks/useProfile'
+import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
@@ -42,6 +43,7 @@ export default function Onboarding() {
   if (me?.onboardingComplete) return <Redirect href="/discover" />
 
   function finish() {
+    track('onboarding_completed')
     // Now the gate re-reads: profile + ranking + eula are all set → tab shell.
     queryClient.invalidateQueries({ queryKey: ['me'] })
     router.replace('/discover')

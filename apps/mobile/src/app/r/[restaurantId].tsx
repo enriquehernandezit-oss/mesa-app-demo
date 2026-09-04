@@ -30,6 +30,7 @@ import {
   SpotRail,
   UtilityPill,
 } from '@/components/ui/patterns'
+import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
@@ -83,7 +84,8 @@ export default function RestaurantProfile() {
   const toggleSave = useMutation({
     mutationFn: (save: boolean) =>
       save ? api.post('/saved', { restaurantId }) : api.del(`/saved/${restaurantId}`),
-    onSuccess: () => {
+    onSuccess: (_d, save) => {
+      track(save ? 'place_saved' : 'place_unsaved')
       queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
     },

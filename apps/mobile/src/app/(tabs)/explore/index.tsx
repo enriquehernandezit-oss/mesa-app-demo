@@ -14,6 +14,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { PinIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import type {
@@ -66,7 +67,11 @@ export default function ExploreScreen() {
     queryKey: ['explore', q.trim(), hood, cuisine, price, openNow, sort],
     queryFn: () => {
       const params = new URLSearchParams()
-      if (q.trim().length >= 2) params.set('q', q.trim())
+      if (q.trim().length >= 2) {
+        params.set('q', q.trim())
+        // Length of the term only — never the term itself (it can be a person's name).
+        track('search_performed', { length: q.trim().length })
+      }
       if (hood) params.set('neighborhood', hood)
       if (cuisine) params.set('cuisine', cuisine)
       if (price) params.set('price', String(price))
@@ -294,7 +299,10 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
 function TrendingRail() {
   const q = useQuery({
     queryKey: ['trending'],
-    queryFn: () => api.get<{ restaurants: RailSpot[] }>('/restaurants/trending'),
+    queryFn: () => {
+      track('trending_opened')
+      return api.get<{ restaurants: RailSpot[] }>('/restaurants/trending')
+    },
     staleTime: 300_000,
   })
   const spots = q.data?.restaurants ?? []

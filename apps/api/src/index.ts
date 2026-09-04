@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/bun'
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
 import { cors } from 'hono/cors'
@@ -19,6 +20,22 @@ import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
 import { sharePagesRoutes } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
+
+// Crash reporting. Env-gated and soft: unlike email (which refuses to boot
+// without its key, because password reset silently failing is a correctness
+// bug), a missing DSN just means no reports — the API serves fine either way.
+// Init before the app so anything thrown during setup is caught too.
+const SENTRY_DSN = process.env.SENTRY_DSN
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? 'development',
+    // Off deliberately: this is a single small instance, and traces would cost
+    // far more than they'd tell us. Errors are the signal worth paying for.
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+  })
+}
 
 const app = new Hono<AppEnv>()
 
@@ -141,6 +158,11 @@ app.route('/activity', activityRoutes)
 app.notFound((c) => c.json({ error: 'not_found' }, 404))
 app.onError((err, c) => {
   console.error(err)
+  // The route and method are the whole diagnosis most of the time; the URL can
+  // carry ids but never credentials (auth goes through Better Auth's own paths).
+  Sentry.captureException(err, {
+    tags: { method: c.req.method, path: new URL(c.req.url).pathname },
+  })
   return c.json({ error: 'internal_error' }, 500)
 })
 

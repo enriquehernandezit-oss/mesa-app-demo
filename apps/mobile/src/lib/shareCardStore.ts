@@ -1,3 +1,4 @@
+import { track } from '@/lib/analytics'
 import { useSyncExternalStore } from 'react'
 
 // The viral loop's imperative bridge — same external-store shape as toast-store.
@@ -34,6 +35,7 @@ function emit() {
 }
 
 function open(req: SpotCardReq | ListCardReq): Promise<void> {
+  track('share_card_created', { kind: req.kind })
   // Coalesce: a second request while one is live replaces it (the host captures
   // whatever is current). Callers await one share at a time in practice.
   return new Promise<void>((resolve) => {

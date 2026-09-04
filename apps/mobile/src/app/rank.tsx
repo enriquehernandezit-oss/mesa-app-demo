@@ -19,8 +19,10 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
+import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSuccess } from '@/lib/haptics'
 import {
@@ -179,6 +181,7 @@ export default function RankAPlace() {
   const commitInitial = useMutation({
     mutationFn: (pos: number) => api.post('/rankings', { restaurantId: pickedId, position: pos }),
     onSuccess: () => {
+      track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
@@ -218,6 +221,12 @@ export default function RankAPlace() {
         favoriteDish: dish.trim() || undefined,
       }),
     onSuccess: () => {
+      track('rank_saved', {
+        hasNote: note.trim().length > 0,
+        tags: tags.length,
+        hasDish: dish.trim().length > 0,
+        chainedPhoto: chainDish,
+      })
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
@@ -228,7 +237,8 @@ export default function RankAPlace() {
         finishToRankings()
       }
     },
-    onError: (_err, pos) => {
+    onError: (err, pos) => {
+      captureError(err, 'rank.save')
       toast({
         variant: 'error',
         message: 'No se pudo guardar tu nota',
@@ -264,6 +274,11 @@ export default function RankAPlace() {
       } else if (!deepLinked) {
         setPickedId(null)
       } else {
+        // Leaving mid-flow with a sentiment picked but nothing saved: the
+        // drop-off we most need to see.
+        track('rank_abandoned', {
+          stage: revealed ? 'revealed' : position !== null ? 'placed' : 'sentiment',
+        })
         navigation.dispatch(e.data.action) // arrived straight in — let back leave
       }
     })
@@ -426,13 +441,31 @@ export default function RankAPlace() {
           <Title>¿Cómo estuvo?</Title>
         </View>
         <View className="mt-6 gap-3">
-          <SentimentButton tone="loved" onPress={() => setSentiment('loved')}>
+          <SentimentButton
+            tone="loved"
+            onPress={() => {
+              track('rank_started', { sentiment: 'loved', rerank: isRerank })
+              setSentiment('loved')
+            }}
+          >
             Me encantó
           </SentimentButton>
-          <SentimentButton tone="fine" onPress={() => setSentiment('fine')}>
+          <SentimentButton
+            tone="fine"
+            onPress={() => {
+              track('rank_started', { sentiment: 'fine', rerank: isRerank })
+              setSentiment('fine')
+            }}
+          >
             Estuvo bien
           </SentimentButton>
-          <SentimentButton tone="low" onPress={() => setSentiment('disliked')}>
+          <SentimentButton
+            tone="low"
+            onPress={() => {
+              track('rank_started', { sentiment: 'disliked', rerank: isRerank })
+              setSentiment('disliked')
+            }}
+          >
             No me convenció
           </SentimentButton>
         </View>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
@@ -142,6 +143,7 @@ function EmptyFeed() {
   const follow = useMutation({
     mutationFn: (userId: string) => api.post('/social/follow', { userId }),
     onSuccess: () => {
+      track('follow_added', { from: 'empty_feed' })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['people'] })
     },

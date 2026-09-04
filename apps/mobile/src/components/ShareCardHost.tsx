@@ -1,4 +1,6 @@
 import { ShareCard } from '@/components/ShareCard'
+import { track } from '@/lib/analytics'
+import { captureError } from '@/lib/errors'
 import { finishShareCard, useShareCardRequest } from '@/lib/shareCardStore'
 import { useEffect, useRef } from 'react'
 import { Share, View } from 'react-native'
@@ -35,10 +37,13 @@ export function ShareCardHost() {
         height: 1920,
         result: 'tmpfile',
       })
+      track('share_opened', { kind: req.kind })
       await Share.share({ url: uri, message: req.text })
-    } catch {
+    } catch (err) {
       // Capture or share failed / was cancelled — nothing to surface; the caller
-      // only awaited "the sheet was offered".
+      // only awaited "the sheet was offered". Still reported: a card that never
+      // renders silently breaks the growth loop, and nobody would tell us.
+      captureError(err, 'share.capture')
     } finally {
       finishShareCard()
     }

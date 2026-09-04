@@ -1,6 +1,7 @@
 import { Body, Button, Caption, Chip, Eyebrow, SectionHeader, Title, Toggle } from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { showActionSheet } from '@/lib/actionSheet'
+import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { GRAIN_LABEL_ES } from '@/lib/display'
 import { tapSuccess } from '@/lib/haptics'
@@ -68,6 +69,7 @@ export default function DishCompose() {
       if (wantToTry) await api.post('/saved', { restaurantId }).catch(() => {})
     },
     onSuccess: () => {
+      track('dish_posted', { grain, friendsOnly, wantToTry })
       posted.current = true
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })

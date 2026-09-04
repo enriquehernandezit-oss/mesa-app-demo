@@ -1,5 +1,6 @@
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
+import { track } from '@/lib/analytics'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorEs } from '@/lib/authErrors'
 import { clearAuthLost } from '@/lib/authLost'
@@ -60,6 +61,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
         setError(authErrorEs(res.error, 'No se pudo iniciar con Apple.'))
         return
       }
+      track('signed_in', { method: 'apple' })
       queryClient.invalidateQueries({ queryKey: ['session'] })
     } catch (e) {
       // The user dismissing the Apple sheet is a cancel, not an error.
@@ -90,6 +92,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       )
       return
     }
+    track(mode === 'signup' ? 'signed_up' : 'signed_in', { method: 'email' })
     queryClient.invalidateQueries({ queryKey: ['session'] })
   }
 

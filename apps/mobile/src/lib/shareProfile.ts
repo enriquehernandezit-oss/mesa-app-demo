@@ -1,3 +1,4 @@
+import { track } from '@/lib/analytics'
 import { Share } from 'react-native'
 import { apiOrigin } from './api'
 
@@ -21,6 +22,7 @@ export function profileShareText(handle: string | null | undefined): string {
 // unfurls) render the /p/ page's OG card instead of a line of plain text — and
 // the card is the whole point of the share page existing.
 export async function shareProfile(handle: string | null | undefined): Promise<void> {
+  track('share_opened', { kind: 'profile' })
   await Share.share({
     message: PROFILE_SHARE_CAPTION,
     url: profileShareLink(handle),

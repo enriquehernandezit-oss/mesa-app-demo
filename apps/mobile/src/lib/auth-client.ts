@@ -1,3 +1,4 @@
+import { track } from '@/lib/analytics'
 import { useQuery } from '@tanstack/react-query'
 import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
@@ -32,6 +33,7 @@ export const authClient = createAuthClient({
 
 export const signOut = () =>
   authClient.signOut().finally(() => {
+    track('signed_out')
     // Drop the local token regardless of the network result, so the app can't
     // reauthenticate with a stale token after sign-out — then clear the cache so
     // the ['session'] query re-resolves to null and the route guards send the

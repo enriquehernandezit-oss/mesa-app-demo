@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mesa/db": "workspace:*",
+    "@sentry/bun": "^10.73.0",
     "better-auth": "1.6.25",
     "drizzle-orm": "^0.38.3",
     "hono": "4.13.0",

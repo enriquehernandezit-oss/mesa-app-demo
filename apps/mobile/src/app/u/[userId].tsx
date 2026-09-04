@@ -15,6 +15,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
+import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { comingSoon } from '@/lib/comingSoon'
 import { displayScore, tagLabel } from '@/lib/display'
@@ -55,7 +56,8 @@ export default function UserRankings() {
   const follow = useMutation({
     mutationFn: (next: boolean) =>
       next ? api.post('/social/follow', { userId }) : api.del(`/social/follow/${userId}`),
-    onSuccess: () => {
+    onSuccess: (_d, next) => {
+      if (next) track('follow_added', { from: 'passport' })
       queryClient.invalidateQueries({ queryKey: ['user-rankings', userId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
     },

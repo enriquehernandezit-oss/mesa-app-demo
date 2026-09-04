@@ -11,6 +11,7 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { markActivitySeen } from '@/lib/activitySeen'
+import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import { timeAgo } from '@/lib/time'
@@ -140,7 +141,10 @@ function ActivityRow({ a }: { a: ActivityItem }) {
   const [followed, setFollowed] = useState(Boolean(a.followsBack))
   const follow = useMutation({
     mutationFn: () => api.post('/social/follow', { userId: a.user.id }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feed'] }),
+    onSuccess: () => {
+      track('follow_added', { from: 'activity' })
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+    },
   })
 
   const place = a.restaurant ? (

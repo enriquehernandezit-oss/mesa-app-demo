@@ -1,4 +1,5 @@
 import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
+import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { useMutation } from '@tanstack/react-query'
@@ -43,6 +44,7 @@ export function CheersButton({
 
   function onTap() {
     const next = !on
+    if (next) track('cheers_given')
     setOn(next)
     setN((cur) => cur + (next ? 1 : -1))
     if (next) {

@@ -1,7 +1,13 @@
 import '../global.css'
+// Imported for its side effect and kept first: Sentry initializes at module
+// scope, and it has to be in place before anything else can throw.
+import '@/lib/errors'
 import { ShareCardHost } from '@/components/ShareCardHost'
 import { Toaster } from '@/components/ui/Toast'
+import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
+import { useSession } from '@/lib/auth-client'
 import { initToken } from '@/lib/auth-token'
+import { setErrorUser } from '@/lib/errors'
 import { queryClient } from '@/lib/query'
 import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
@@ -18,13 +24,44 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useFonts } from 'expo-font'
-import { Stack } from 'expo-router'
+import { Stack, usePathname } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 SplashScreen.preventAutoHideAsync()
+
+// Ties events and crash reports to an account, and records screen views.
+//
+// It renders nothing, and it lives INSIDE QueryClientProvider on purpose:
+// useSession() is a TanStack query, so this cannot be hoisted into RootLayout.
+//
+// Only the user id is ever sent — never a name, handle or email (see the no-PII
+// contract in lib/analytics.ts). On sign-out the id is cleared and PostHog's
+// distinct id is reset, so the next person on this device is a different person.
+function AnalyticsIdentity() {
+  const { data } = useSession()
+  const userId = data?.user?.id ?? null
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (userId) {
+      identifyUser(userId)
+      setErrorUser(userId)
+    } else {
+      resetAnalytics()
+      setErrorUser(null)
+    }
+  }, [userId])
+
+  useEffect(() => {
+    // Route paths are the screen names — they carry ids (/r/:id) but no PII.
+    if (pathname) trackScreen(pathname)
+  }, [pathname])
+
+  return null
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -43,6 +80,9 @@ export default function RootLayout() {
   // Auto-resolved theme first). Both are bounded internally.
   const [preloaded, setPreloaded] = useState(false)
   useEffect(() => {
+    // Warming the analytics client here means the first real event doesn't also
+    // pay for init. No-ops without a key.
+    initAnalytics()
     Promise.all([initToken(), initThemeChoice()]).finally(() => setPreloaded(true))
   }, [])
 
@@ -58,6 +98,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
+            <AnalyticsIdentity />
             <MesaStack />
             <Toaster />
             <ShareCardHost />
