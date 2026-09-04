@@ -6,6 +6,7 @@ import {
   Caption,
   Chip,
   EmptyState,
+  ErrorState,
   RowsSkeleton,
   SectionHeader,
   Skeleton,
@@ -80,13 +81,19 @@ export default function UserRankings() {
     )
   }
   if (q.isError || !q.data) {
+    // 404 covers deleted, suspended and blocked accounts alike — all dead ends,
+    // and deliberately indistinguishable so this screen can't be used to probe
+    // whether someone blocked you. A network failure is a different thing and
+    // gets a retry.
     const gone = q.error instanceof ApiError && q.error.status === 404
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel="Atrás" />
-        <EmptyState>
-          {gone ? 'Este perfil no está disponible.' : 'No se pudo cargar este perfil.'}
-        </EmptyState>
+        {gone ? (
+          <EmptyState>Este perfil no está disponible.</EmptyState>
+        ) : (
+          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar este perfil.</ErrorState>
+        )}
       </View>
     )
   }

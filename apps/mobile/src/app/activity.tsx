@@ -5,8 +5,8 @@ import {
   ChipRail,
   EmptyState,
   ErrorState,
-  Eyebrow,
   RowsSkeleton,
+  SectionHeader,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -123,7 +123,7 @@ export default function ActivityScreen() {
         ) : (
           sections.map((s) => (
             <View key={s.key}>
-              <Eyebrow className="mb-2 mt-5 font-mono text-text-muted">{s.label}</Eyebrow>
+              <SectionHeader>{s.label}</SectionHeader>
               {s.items.map((a) => (
                 <ActivityRow key={`${a.type}-${a.user.id}-${a.at}`} a={a} />
               ))}

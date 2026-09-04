@@ -113,14 +113,15 @@ export default function ProfileTab() {
           ) : null}
         </View>
 
+        {/* The same trio as another member's passport — the two are the same
+            object and should read that way. "Rank en RD" used to sit here AND in
+            the stat card below, the same number twice on one screen; it belongs
+            with the other achievement number, so it lives in the card only. */}
         {stats.data && (
           <View className="mt-5 flex-row justify-around">
             <Stat n={String(stats.data.followers)} l="Seguidores" />
             <Stat n={String(stats.data.following)} l="Siguiendo" />
-            <Stat
-              n={stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
-              l="Rank en RD"
-            />
+            <Stat n={String(stats.data.places)} l="Rankeados" />
           </View>
         )}
 
@@ -134,10 +135,10 @@ export default function ProfileTab() {
         </View>
 
         <View className="mt-6">
+          {/* No count here — the trio above already carries it. */}
           <NavRow
             icon={<CheckIcon size={15} />}
             label="Rankeados"
-            meta={String(stats.data?.places ?? 0)}
             onPress={() => router.push('/rankings')}
           />
           <NavRow

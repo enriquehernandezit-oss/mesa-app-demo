@@ -1,4 +1,4 @@
-import { Body, Caption, EmptyState, Eyebrow, Skeleton, Title } from '@/components/ui'
+import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
@@ -32,11 +32,14 @@ export default function ListScreen() {
           </View>
         </View>
       ) : q.isError || !q.data ? (
-        <EmptyState>
-          {q.error instanceof ApiError && q.error.status === 404
-            ? 'Lista no encontrada.'
-            : 'No se pudo cargar la lista.'}
-        </EmptyState>
+        // A missing list is a dead end; a failed fetch is worth retrying. One
+        // branch for both meant a dropped connection stranded you on a real list
+        // with no way forward. (A retry button on a deleted list would lie.)
+        q.error instanceof ApiError && q.error.status === 404 ? (
+          <EmptyState>Lista no encontrada.</EmptyState>
+        ) : (
+          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la lista.</ErrorState>
+        )
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
           <View className="h-56">
