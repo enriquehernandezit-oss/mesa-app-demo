@@ -38,6 +38,7 @@ import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, useMemo, useRef, useState } from 'react'
@@ -383,7 +384,9 @@ function FilterGroup({
 function Stat({ n, l }: { n: string; l: string }) {
   return (
     <View>
-      <Text className="font-serif text-serif-lg text-text">{n}</Text>
+      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-text">
+        {n}
+      </Text>
       <Caption>{l}</Caption>
     </View>
   )
@@ -523,7 +526,9 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             </>
           )}
         </View>
-        <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
+        <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
+          {displayScore(ranking.score)}
+        </Text>
       </View>
     </SwipeToRemove>
   )

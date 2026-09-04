@@ -38,6 +38,7 @@ import type { NewRestaurant, Ranking, RestaurantProfileResponse, SavedPlace } fr
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useMyLocation } from '@/lib/useMyLocation'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import {
   type UseMutationResult,
   useMutation,
@@ -321,7 +322,9 @@ export default function RankAPlace() {
           entering={ZoomIn.springify().damping(12)}
           className="h-28 w-28 items-center justify-center rounded-pill border-2 border-accent"
         >
-          <Text className="font-serif text-display text-accent">#{position}</Text>
+          <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
+            #{position}
+          </Text>
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(150)} className="items-center gap-3">
           <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
@@ -555,7 +558,9 @@ function RevealStep({
       >
         <View className="items-center">
           <Eyebrow>Tu puntuación</Eyebrow>
-          <Text className="font-serif text-display text-accent">{displayScore(score)}</Text>
+          <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
+            {displayScore(score)}
+          </Text>
           <Title className="mt-1">{picked.name}</Title>
           <Characteristics
             priceTier={picked.priceTier}
@@ -573,11 +578,15 @@ function RevealStep({
               key={n.pos}
               className={`flex-row items-center gap-3 rounded px-3 py-2 ${n.isNew ? 'bg-accent-fill' : ''}`}
             >
-              <Text className="w-6 font-serif text-serif-md text-text-muted">{n.pos}</Text>
+              <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-md text-text-muted">
+                {n.pos}
+              </Text>
               <Text className="flex-1 font-serif text-serif-md text-text" numberOfLines={1}>
                 {n.name}
               </Text>
-              <Text className="font-serif text-serif-md text-accent">{displayScore(n.score)}</Text>
+              <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
+                {displayScore(n.score)}
+              </Text>
             </View>
           ))}
         </View>
@@ -1066,7 +1075,9 @@ function FindStep({
           />
         </View>
         {r.score != null ? (
-          <Text className="font-serif text-serif-lg text-accent">{displayScore(r.score)}</Text>
+          <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
+            {displayScore(r.score)}
+          </Text>
         ) : (
           <Text className="font-mono text-micro text-text-faint uppercase tracking-eyebrow">
             sin rankear

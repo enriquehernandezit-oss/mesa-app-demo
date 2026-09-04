@@ -11,6 +11,7 @@ import { cuisineLabel } from '@/lib/display'
 import { resizeToJpeg } from '@/lib/image'
 import { shareProfile } from '@/lib/shareProfile'
 import type { MeStats, Neighborhood } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
@@ -205,7 +206,9 @@ function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded border border-line bg-surface p-4">
       <Caption className="font-mono text-micro">{label}</Caption>
-      <Text className="mt-1 font-serif text-serif-lg text-accent">{value}</Text>
+      <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-lg text-accent">
+        {value}
+      </Text>
     </View>
   )
 }

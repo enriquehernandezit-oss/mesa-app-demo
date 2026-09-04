@@ -39,6 +39,7 @@ import { shareSpotCard } from '@/lib/shareCardStore'
 import type { Dish, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
@@ -440,7 +441,9 @@ export default function RestaurantProfile() {
           {restaurant.name}
         </Text>
         {allMesa.avg != null && showMesa && (
-          <Text className="font-serif text-serif-md text-accent">{displayScore(allMesa.avg)}</Text>
+          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
+            {displayScore(allMesa.avg)}
+          </Text>
         )}
       </Animated.View>
 
@@ -486,7 +489,9 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
                 <Text className="font-serif-italic text-serif-sm text-text-2">“{fr.note}”</Text>
               ) : null}
             </View>
-            <Text className="font-serif text-serif-lg text-accent">{displayScore(fr.score)}</Text>
+            <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
+              {displayScore(fr.score)}
+            </Text>
           </Pressable>
         </Link>
       ))}

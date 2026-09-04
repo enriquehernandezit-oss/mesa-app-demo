@@ -19,6 +19,7 @@ import { ApiError, api } from '@/lib/api'
 import { comingSoon } from '@/lib/comingSoon'
 import { displayScore, tagLabel } from '@/lib/display'
 import type { Ranking, UserRankingsResponse } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -217,7 +218,9 @@ export default function UserRankings() {
 function TheirRow({ ranking }: { ranking: Ranking }) {
   return (
     <View className="flex-row gap-3 border-line border-b py-3">
-      <Text className="w-7 font-serif text-serif-lg text-accent">{ranking.position}</Text>
+      <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
+        {ranking.position}
+      </Text>
       <View className="flex-1">
         <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
         <Characteristics
@@ -246,7 +249,9 @@ function TheirRow({ ranking }: { ranking: Ranking }) {
           <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
         ) : null}
       </View>
-      <Text className="font-serif text-serif-lg text-accent">{displayScore(ranking.score)}</Text>
+      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
+        {displayScore(ranking.score)}
+      </Text>
     </View>
   )
 }

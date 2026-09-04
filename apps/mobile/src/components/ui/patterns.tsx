@@ -3,7 +3,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
-import { GROUND, themeColors } from '@/theme/vars'
+import { DATA_FIGURES, GROUND, themeColors } from '@/theme/vars'
 import { Link } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
@@ -71,7 +71,9 @@ export function SpotCard({
 export function Stat({ n, l }: { n: string; l: string }) {
   return (
     <View className="items-center">
-      <Text className="font-serif text-serif-lg text-text">{n}</Text>
+      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-text">
+        {n}
+      </Text>
       <Caption>{l}</Caption>
     </View>
   )
@@ -210,7 +212,10 @@ export function ScoreBadge({
       <View
         className={`${ring} items-center justify-center rounded-pill border ${mesa ? 'border-line' : 'border-accent'}`}
       >
-        <Text className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-accent'}`}>
+        <Text
+          style={DATA_FIGURES}
+          className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-accent'}`}
+        >
           {displayScore(score)}
         </Text>
       </View>

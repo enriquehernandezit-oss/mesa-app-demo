@@ -1,4 +1,5 @@
 import { vars } from 'nativewind'
+import type { TextStyle } from 'react-native'
 
 // The two Mesa themes as NativeWind variable maps, ported from
 // apps/app/src/styles/tokens.css. ThemeProvider applies one of these to a root
@@ -101,6 +102,22 @@ const strip = (m: Record<string, string>) =>
 // which is why it's a constant rather than a per-theme token. Raw hex is legal
 // here and only here (docs/DESIGN.md).
 export const BRASS_SHADOW = '#6b4715'
+
+// Cormorant ships OLDSTYLE figures by default: the digits sit at different
+// heights and 3/4/5/7/9 hang well below the baseline (measured: cap height 625,
+// but `nine` bottoms out at -275 while `one` sits flat at 0). That is correct
+// and handsome inside a sentence — "Miembro desde agosto de 2026" — and wrong
+// everywhere a number is DATA: a score wobbles inside its brass ring, and a
+// column of positions never lines up.
+//
+// So numerals that are data get both features:
+//   lining-nums  — one shared height, all on the baseline
+//   tabular-nums — one shared width, so stacked scores and positions align
+//
+// Applied per-site with a style prop because NativeWind can't express
+// fontVariant. Prose keeps the default oldstyle figures — don't spread this
+// onto body copy.
+export const DATA_FIGURES: TextStyle = { fontVariant: ['lining-nums', 'tabular-nums'] }
 
 export const themeColors: Record<ThemeName, Record<ColorToken, string>> = {
   afternoon: strip(afternoon),

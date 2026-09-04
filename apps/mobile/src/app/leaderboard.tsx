@@ -3,6 +3,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import type { LeaderboardRow } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
 import { useState } from 'react'
@@ -53,7 +54,9 @@ export default function LeaderboardScreen() {
           rows.map((r, i) => (
             <Link key={r.id} href={`/u/${r.id}`} asChild>
               <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-                <Text className="w-6 font-serif text-serif-lg text-accent">{i + 1}</Text>
+                <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-lg text-accent">
+                  {i + 1}
+                </Text>
                 <Avatar name={r.name || r.handle || 'm'} src={r.image} size={38} />
                 <View className="flex-1">
                   <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
@@ -64,7 +67,9 @@ export default function LeaderboardScreen() {
                   </Caption>
                 </View>
                 <View className="items-end">
-                  <Text className="font-serif text-serif-md text-text">{r.count}</Text>
+                  <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
+                    {r.count}
+                  </Text>
                   <Caption>spots · prom. {displayScore(r.avgScore)}</Caption>
                 </View>
               </Pressable>

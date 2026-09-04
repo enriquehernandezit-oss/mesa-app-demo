@@ -1,4 +1,5 @@
 import type { ShareCardReq } from '@/lib/shareCardStore'
+import { DATA_FIGURES } from '@/theme/vars'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useEffect } from 'react'
@@ -103,7 +104,9 @@ function SpotBody({ req }: { req: Extract<ShareCardReq, { kind: 'spot' }> }) {
       }}
     >
       {req.position ? (
-        <Text style={{ fontFamily: SERIF_SB, fontSize: 150, color: BRASS }}>#{req.position}</Text>
+        <Text style={{ fontFamily: SERIF_SB, fontSize: 150, color: BRASS, ...DATA_FIGURES }}>
+          #{req.position}
+        </Text>
       ) : null}
       <Text
         style={{ fontFamily: SERIF_M, fontSize: 96, color: CREAM, textAlign: 'center' }}
@@ -117,7 +120,15 @@ function SpotBody({ req }: { req: Extract<ShareCardReq, { kind: 'spot' }> }) {
         {req.meta.toUpperCase()}
       </Text>
       {req.score != null ? (
-        <Text style={{ fontFamily: SERIF_M, fontSize: 84, color: BRASS_2, marginTop: 24 }}>
+        <Text
+          style={{
+            fontFamily: SERIF_M,
+            fontSize: 84,
+            color: BRASS_2,
+            marginTop: 24,
+            ...DATA_FIGURES,
+          }}
+        >
           {(req.score / 10).toFixed(1)}
         </Text>
       ) : null}
@@ -185,7 +196,15 @@ function ListBody({
             borderBottomColor: 'rgba(235,228,214,0.12)',
           }}
         >
-          <Text style={{ fontFamily: SERIF_SB, fontSize: 76, color: BRASS, width: 110 }}>
+          <Text
+            style={{
+              fontFamily: SERIF_SB,
+              fontSize: 76,
+              color: BRASS,
+              width: 110,
+              ...DATA_FIGURES,
+            }}
+          >
             {item.position}
           </Text>
           <Text
@@ -194,7 +213,7 @@ function ListBody({
           >
             {item.name}
           </Text>
-          <Text style={{ fontFamily: SERIF_M, fontSize: 56, color: BRASS_2 }}>
+          <Text style={{ fontFamily: SERIF_M, fontSize: 56, color: BRASS_2, ...DATA_FIGURES }}>
             {(item.score / 10).toFixed(1)}
           </Text>
         </View>
