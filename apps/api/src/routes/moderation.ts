@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
@@ -90,6 +90,10 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // --- Moderator only (remove content / eject users) ---
 
   // Open reports queue.
+  // The moderation queue. Returns open reports WITH the reported content
+  // attached — a bare targetId is undecidable: nobody can judge "vibe_note
+  // 3f2a… / spam" without seeing the sentence. Batched by type (four queries
+  // total, whatever the report count) rather than looked up per row.
   .get('/reports', requireModerator, async (c) => {
     const rows = await db
       .select()
@@ -97,7 +101,94 @@ export const moderationRoutes = new Hono<AuthedEnv>()
       .where(eq(reports.status, 'open'))
       .orderBy(desc(reports.createdAt))
       .limit(100)
-    return c.json({ reports: rows })
+    if (rows.length === 0) return c.json({ reports: [] })
+
+    const idsOf = (t: (typeof rows)[number]['targetType']) =>
+      rows.filter((r) => r.targetType === t).map((r) => r.targetId)
+    const noteIds = idsOf('vibe_note')
+    const dishIds = idsOf('dish')
+    const userIds = idsOf('user')
+
+    const [notes, dishRows, users] = await Promise.all([
+      noteIds.length
+        ? db
+            .select({ id: vibeNotes.id, body: vibeNotes.body, removedAt: vibeNotes.removedAt })
+            .from(vibeNotes)
+            .where(inArray(vibeNotes.id, noteIds))
+        : [],
+      dishIds.length
+        ? db
+            .select({
+              id: dishes.id,
+              name: dishes.name,
+              caption: dishes.caption,
+              imageId: dishes.imageId,
+              removedAt: dishes.removedAt,
+            })
+            .from(dishes)
+            .where(inArray(dishes.id, dishIds))
+        : [],
+      userIds.length
+        ? db
+            .select({
+              id: user.id,
+              name: user.name,
+              handle: user.handle,
+              bannedAt: user.bannedAt,
+            })
+            .from(user)
+            .where(inArray(user.id, userIds))
+        : [],
+    ])
+
+    const noteById = new Map(notes.map((n) => [n.id, n]))
+    const dishById = new Map(dishRows.map((d) => [d.id, d]))
+    const userById = new Map(users.map((u) => [u.id, u]))
+
+    // `target` is null when the row is already gone (deleted account, hard
+    // delete) — the queue still shows the report so it can be dismissed.
+    // `alreadyHandled` lets the UI grey out a report whose content another
+    // moderator (or the author) already removed.
+    const enriched = rows.map((r) => {
+      if (r.targetType === 'vibe_note') {
+        const n = noteById.get(r.targetId)
+        return {
+          ...r,
+          target: n ? { kind: 'vibe_note' as const, body: n.body } : null,
+          alreadyHandled: n ? n.removedAt !== null : true,
+        }
+      }
+      if (r.targetType === 'dish') {
+        const d = dishById.get(r.targetId)
+        return {
+          ...r,
+          target: d
+            ? { kind: 'dish' as const, name: d.name, caption: d.caption, imageId: d.imageId }
+            : null,
+          alreadyHandled: d ? d.removedAt !== null : true,
+        }
+      }
+      const u = userById.get(r.targetId)
+      return {
+        ...r,
+        target: u ? { kind: 'user' as const, name: u.name, handle: u.handle } : null,
+        alreadyHandled: u ? u.bannedAt !== null : true,
+      }
+    })
+    return c.json({ reports: enriched })
+  })
+
+  // Close a report without acting on it — the "reviewed, nothing wrong here"
+  // path. Without it the queue only ever grows: every other moderator action
+  // marks reports 'actioned', but an unfounded report would stay open forever.
+  .post('/reports/:id/dismiss', requireModerator, async (c) => {
+    const updated = await db
+      .update(reports)
+      .set({ status: 'dismissed' })
+      .where(and(eq(reports.id, c.req.param('id')), eq(reports.status, 'open')))
+      .returning({ id: reports.id })
+    if (updated.length === 0) return c.json({ error: 'not_found' }, 404)
+    return c.json({ ok: true })
   })
 
   // Remove a vibe note (soft-delete). It vanishes from every read; the row is

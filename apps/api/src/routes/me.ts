@@ -61,6 +61,9 @@ export const meRoutes = new Hono<AuthedEnv>()
         neighborhoodId: true,
         eulaAcceptedAt: true,
         createdAt: true, // "Member since {month} {year}" on the profile (Phase 6)
+        // Gates the in-app moderation queue. Flipped directly in the DB —
+        // there is no way to grant it from the product, on purpose.
+        isModerator: true,
       },
       with: {
         neighborhood: { columns: { slug: true, name: true } },

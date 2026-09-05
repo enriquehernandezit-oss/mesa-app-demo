@@ -290,6 +290,14 @@ export default function SettingsScreen() {
               )}
             </Row>
           )}
+          {/* Only moderators see this row, and the screen re-checks anyway —
+              the flag is set directly in the DB, never granted in-product. */}
+          {p?.isModerator ? (
+            <RowButton onPress={() => router.push('/moderation')}>
+              <Text className="flex-1 font-ui text-body text-text">Moderación</Text>
+              <ChevronIcon size={16} color="text-faint" />
+            </RowButton>
+          ) : null}
           <RowButton onPress={() => router.push('/legal/privacy')}>
             <Text className="flex-1 font-ui text-body text-text">Política de Privacidad</Text>
             <ChevronIcon size={16} color="text-faint" />
