@@ -10,6 +10,7 @@ import { useAuthLost } from '@/lib/authLost'
 import { contactsAvailable, importContactPhones } from '@/lib/contacts'
 import { cuisineLabel } from '@/lib/display'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
+import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -44,6 +45,12 @@ export default function Onboarding() {
 
   function finish() {
     track('onboarding_completed')
+    // Attribute this signup to whoever's link opened the app, if any.
+    // Fire-and-forget: an unknown or already-used code is not an error the
+    // member should ever see, and nothing here gates the app.
+    void takePendingInvite().then((code) => {
+      if (code) api.post('/invites/redeem', { code }).catch(() => {})
+    })
     // Now the gate re-reads: profile + ranking + eula are all set → tab shell.
     queryClient.invalidateQueries({ queryKey: ['me'] })
     router.replace('/discover')

@@ -12,7 +12,7 @@ import type { AppEnv } from '../context'
 // Mounted at /p BEFORE the session middleware: no auth, no cookie, safe for
 // crawlers. Everything rendered from user data is HTML-escaped.
 
-const { rankings, vibeNotes, restaurants, user } = schema
+const { rankings, vibeNotes, restaurants, user, invites } = schema
 
 // Scores are stored 0–100, always shown 0–10 (never stars). Mirrors the app's
 // lib/display.ts so the public page reads identically to the in-app passport.
@@ -151,6 +151,83 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
   // A user's public passport — their top spots, the identity flex that makes a
   // friend tap "who's this?" and land in the funnel. Two fixed queries, no loop.
+  // An invite link. Personalised with who sent it and what they rank highest —
+  // an invite that says "someone invited you" converts far worse than one that
+  // says "Camila's top 3 in Piantini". The code is carried into the app by
+  // +native-intent so attribution survives the tap when Mesa is installed.
+  //
+  // Never gates anything: this page is a nicer front door, not a key.
+  .get('/i/:code', async (c) => {
+    const canonical = c.req.url
+    c.header('Cache-Control', 'public, max-age=300')
+    const code = c.req.param('code').toUpperCase()
+
+    const invite = await db.query.invites.findFirst({
+      where: eq(invites.code, code),
+      columns: { userId: true },
+    })
+    if (!invite) return c.html(notFound(canonical), 404)
+
+    const inviter = await db.query.user.findFirst({
+      where: eq(user.id, invite.userId),
+      columns: { name: true, handle: true, bannedAt: true },
+      with: { neighborhood: { columns: { name: true } } },
+    })
+    if (!inviter || inviter.bannedAt) return c.html(notFound(canonical), 404)
+
+    const rows = await db
+      .select({
+        position: rankings.position,
+        score: rankings.score,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      })
+      .from(rankings)
+      .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+      .where(eq(rankings.userId, invite.userId))
+      .orderBy(asc(rankings.position))
+      .limit(3)
+
+    const who = inviter.name || (inviter.handle ? `@${inviter.handle}` : 'Alguien')
+    const hood = inviter.neighborhood?.name ?? 'Santo Domingo'
+    const title = `${who} te invita a Mesa`
+    const description =
+      rows.length > 0
+        ? `${rows.map((r) => r.name).join(' · ')} — donde come ${who} en ${hood}.`
+        : `Donde come ${who} en ${hood}.`
+
+    const body = `
+      ${
+        rows[0] && absoluteCover(rows[0].coverImageId)
+          ? `<img class="cover" src="${esc(absoluteCover(rows[0].coverImageId) as string)}" alt="" />`
+          : ''
+      }
+      <p class="eyebrow">Invitación · ${esc(hood)}</p>
+      <h1>${esc(who)} te invita a Mesa</h1>
+      ${
+        rows.length > 0
+          ? `<ol class="list">${rows
+              .map(
+                (r) =>
+                  `<li><span class="pos">${r.position}</span><span class="nm">${esc(
+                    r.name,
+                  )}</span><span class="sc">${d10(r.score)}</span></li>`,
+              )
+              .join('')}</ol>`
+          : ''
+      }`
+
+    return c.html(
+      layout({
+        title,
+        description,
+        image: absoluteCover(rows[0]?.coverImageId ?? null),
+        canonical,
+        body,
+      }),
+    )
+  })
+
   .get('/u/:handle', async (c) => {
     const canonical = c.req.url
     c.header('Cache-Control', 'public, max-age=300')

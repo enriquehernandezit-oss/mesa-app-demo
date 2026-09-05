@@ -8,7 +8,9 @@ import { ApiError, api } from '@/lib/api'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorEs } from '@/lib/authErrors'
 import { comingSoon } from '@/lib/comingSoon'
+import { captureError } from '@/lib/errors'
 import { setFriendsOnlyScores, useFriendsOnlyScores } from '@/lib/prefs'
+import { shareInviteLink } from '@/lib/shareProfile'
 import type { BlockedUser, MeStats, Ranking } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -50,6 +52,31 @@ export default function SettingsScreen() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [inviting, setInviting] = useState(false)
+
+  // How many people actually joined through your link. Only shown once it's
+  // non-zero — "0 se unieron" is a scoreboard nobody asked for.
+  const inviteStats = useQuery({
+    queryKey: ['invite-stats'],
+    queryFn: () => api.get<{ joined: number }>('/invites/me/stats'),
+  })
+
+  // The invite link, fetched on demand (the code is created server-side on
+  // first ask, so an account that never shares never gets a row).
+  async function shareInvite() {
+    if (inviting) return
+    setInviting(true)
+    try {
+      const { code } = await api.get<{ code: string }>('/invites/me')
+      await shareInviteLink(code)
+      inviteStats.refetch()
+    } catch (err) {
+      captureError(err, 'invite.share')
+      toast({ variant: 'error', message: 'No se pudo crear tu invitación.' })
+    } finally {
+      setInviting(false)
+    }
+  }
   const [verifySent, setVerifySent] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const friendsOnly = useFriendsOnlyScores()
@@ -263,9 +290,19 @@ export default function SettingsScreen() {
             <Text className="flex-1 font-ui text-body text-text-muted">Notificaciones</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
-          <RowButton onPress={() => comingSoon('Las invitaciones llegan pronto a Mesa.')}>
-            <Text className="flex-1 font-ui text-body text-text-muted">Invitaciones</Text>
-            <Caption className="font-mono text-micro">4 restantes</Caption>
+          {/* Was a `comingSoon` toast next to a fake "4 restantes" counter —
+              invented scarcity for a feature that didn't exist. Invites are
+              real now, unlimited, and gate nothing; the only number shown is
+              how many people actually joined. */}
+          <RowButton onPress={shareInvite} disabled={inviting}>
+            <Text className="flex-1 font-ui text-body text-text">Invitar amigos</Text>
+            {inviteStats.data && inviteStats.data.joined > 0 ? (
+              <Caption className="font-mono text-micro">
+                {inviteStats.data.joined} {inviteStats.data.joined === 1 ? 'se unió' : 'se unieron'}
+              </Caption>
+            ) : (
+              <ChevronIcon size={16} color="text-faint" />
+            )}
           </RowButton>
           {realEmail && (
             <Row>

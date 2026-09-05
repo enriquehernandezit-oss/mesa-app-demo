@@ -1,5 +1,5 @@
 import { track } from '@/lib/analytics'
-import { Share } from 'react-native'
+import { Linking, Share } from 'react-native'
 import { apiOrigin } from './api'
 
 // The public profile link — the growth loop's return path. Falls back to the
@@ -27,4 +27,33 @@ export async function shareProfile(handle: string | null | undefined): Promise<v
     message: PROFILE_SHARE_CAPTION,
     url: profileShareLink(handle),
   }).catch(() => {})
+}
+
+export function inviteShareLink(code: string): string {
+  return `${apiOrigin}/p/i/${code}`
+}
+
+// Sharing an invite. WhatsApp goes first because that is where Santo Domingo
+// actually plans dinner — the reservation layer here is a DM, not OpenTable —
+// so the loop should land in the group chat rather than asking someone to pick
+// a channel. The system sheet stays the fallback for everyone else, and for a
+// phone with no WhatsApp installed.
+export async function shareInviteLink(code: string): Promise<void> {
+  track('share_opened', { kind: 'invite' })
+  const link = inviteShareLink(code)
+  const text = `Te invito a Mesa 🥂 — donde comemos y salimos en Santo Domingo.\n${link}`
+
+  const wa = `whatsapp://send?text=${encodeURIComponent(text)}`
+  const canWhatsApp = await Linking.canOpenURL(wa).catch(() => false)
+  if (canWhatsApp) {
+    // openURL can still reject (WhatsApp mid-update, permissions) — fall through
+    // to the sheet rather than leaving the tap doing nothing.
+    const opened = await Linking.openURL(wa).then(
+      () => true,
+      () => false,
+    )
+    if (opened) return
+  }
+
+  await Share.share({ message: text }).catch(() => {})
 }
