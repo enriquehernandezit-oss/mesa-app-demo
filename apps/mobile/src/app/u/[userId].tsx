@@ -17,7 +17,6 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { comingSoon } from '@/lib/comingSoon'
 import { displayScore, tagLabel } from '@/lib/display'
 import type { Ranking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -144,14 +143,6 @@ export default function UserRankings() {
             >
               {isFollowing ? 'Siguiendo' : 'Seguir'}
             </Button>
-            {/* Inert-by-design: Mesa has no messaging backend yet. */}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => comingSoon('Los mensajes llegan pronto a Mesa.')}
-              className="min-h-[44px] justify-center rounded-pill border border-line border-dashed px-5 active:opacity-70"
-            >
-              <Text className="font-mono text-eyebrow text-text-muted">Mensaje</Text>
-            </Pressable>
           </View>
 
           {/* Report / block — the moderation entry points (App Store 1.2). */}

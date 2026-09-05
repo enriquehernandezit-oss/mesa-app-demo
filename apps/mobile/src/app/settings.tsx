@@ -240,13 +240,12 @@ export default function SettingsScreen() {
               label="Puntuaciones solo de amigos"
             />
           </Row>
-          {/* Inert-by-design: stealth was only ever a local flag — the server does
-              nothing with it, so a member flipping it was NOT hidden from anyone.
-              A privacy control that lies is worse than one that says "pronto". */}
-          <RowButton onPress={() => comingSoon('El modo sigiloso llega pronto a Mesa.')}>
-            <Text className="flex-1 font-ui text-body text-text-muted">Modo sigiloso</Text>
-            <Caption className="font-mono text-micro">Pronto</Caption>
-          </RowButton>
+          {/* "Modo sigiloso" removed rather than left as "Pronto". It first
+              shipped as a local flag that hid nothing from anyone, then became a
+              promise with no date — and what "private" should even mean here
+              (hidden from the feed? the leaderboard? non-followers?) is an
+              undecided product question. Blocking already delivers the concrete
+              case. A control returns when it works, not before. */}
           <RowButton onPress={exportRankings} disabled={exporting} last>
             <Text className="flex-1 font-ui text-body text-text">Exportar mis rankings</Text>
             {exporting ? (

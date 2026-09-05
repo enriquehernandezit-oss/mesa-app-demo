@@ -7,9 +7,10 @@ import { useSyncExternalStore } from 'react'
 // apps/app/src/lib/prefs.ts (localStorage) to SecureStore + a useSyncExternalStore
 // module store, so a screen reading it re-renders the moment Settings flips it.
 //
-// Stealth mode is deliberately NOT here: hiding your activity from others is a
-// SERVER concern, so a local flag could never deliver it. Settings shows it as
-// "Pronto" until the backend enforces it.
+// Stealth mode is deliberately NOT here, and no longer in Settings either:
+// hiding your activity from others is a SERVER concern that a local flag can
+// never deliver, and it was removed rather than left as a dated promise. If it
+// returns it arrives enforced server-side, in lib/visibility.ts.
 const KEY = 'mesa.friends_only_scores'
 
 let friendsOnly = false
