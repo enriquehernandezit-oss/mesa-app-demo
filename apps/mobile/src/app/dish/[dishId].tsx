@@ -3,12 +3,15 @@ import { Body, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui
 import { GlassCircle } from '@/components/ui/GlassCircle'
 import { BackIcon, DirectionsIcon, PhoneIcon, WebIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
+import { toast } from '@/components/ui/toast-store'
+import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { grainLabel } from '@/lib/display'
+import { captureError } from '@/lib/errors'
 import { cloudinaryUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -26,11 +29,40 @@ export default function DishDetail() {
   const insets = useSafeAreaInsets()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
+  const queryClient = useQueryClient()
+
   const q = useQuery({
     queryKey: ['dish', dishId],
     queryFn: () => api.get<{ dish: DishDetailData }>(`/dishes/${dishId}`),
     retry: false,
   })
+
+  // Soft-delete server-side (removedAt), so the row survives for moderation
+  // while disappearing everywhere a member can see it.
+  const remove = useMutation({
+    mutationFn: () => api.del(`/dishes/${dishId}`),
+    onSuccess: () => {
+      // The photo rides in the feed and on the restaurant profile too.
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['dish', dishId] })
+      queryClient.invalidateQueries({ queryKey: ['restaurant'] })
+      toast({ message: 'Plato eliminado' })
+      goBack()
+    },
+    onError: (err) => {
+      captureError(err, 'dish.delete')
+      toast({ variant: 'error', message: 'No se pudo eliminar. Intenta de nuevo.' })
+    },
+  })
+
+  const confirmRemove = async () => {
+    const picked = await showActionSheet({
+      title: '¿Eliminar este plato?',
+      message: 'La foto y su nota desaparecen de tu perfil y del feed. No se puede deshacer.',
+      options: [{ label: 'Eliminar', destructive: true }],
+    })
+    if (picked === 0) remove.mutate()
+  }
 
   if (q.isPending) {
     return (
@@ -139,9 +171,22 @@ export default function DishDetail() {
             </UtilityPill>
           </View>
 
-          {/* A dish is UGC — someone else's photo/caption must be reportable
-              (App Store 1.2). Hidden on your own post. */}
-          {!dish.posterIsMe && (
+          {/* A dish is UGC, so it needs both halves of App Store 1.2: someone
+              else's post must be reportable, and your OWN post must be
+              removable. The delete endpoint has existed since M6 with no way to
+              reach it — a member could publish a photo and never take it down. */}
+          {dish.posterIsMe ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={remove.isPending}
+              onPress={confirmRemove}
+              className="mt-5 min-h-[44px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
+                {remove.isPending ? 'Eliminando…' : 'Eliminar este plato'}
+              </Text>
+            </Pressable>
+          ) : (
             <ReportControl targetType="dish" targetId={dishId} label="Reportar este plato" />
           )}
         </View>
