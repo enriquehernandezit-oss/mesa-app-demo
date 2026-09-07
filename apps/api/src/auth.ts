@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { bearer, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
 import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
+import { resetPasswordUrl, verifyEmailUrl } from './lib/publicPage'
 
 // Better Auth wired to Postgres via the pooled Drizzle client from @mesa/db.
 //
@@ -39,10 +40,6 @@ const hasSms = Boolean(process.env.SMS_PROVIDER_API_KEY)
 
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET)
-
-// The app origin — where reset-password links land (a frontend page that
-// collects the new password). First of APP_ORIGINS, same list CORS/trust use.
-const appOrigin = (process.env.APP_ORIGINS ?? 'http://localhost:5173').split(',')[0]
 
 // Transactional email (password reset + verification), sent through Resend — a
 // plain HTTPS POST, no new dependency (same ethos as the hand-rolled Cloudinary
@@ -230,11 +227,12 @@ export const auth = betterAuth({
     // attacker's session alive. Resetting a password must end every other
     // session.
     revokeSessionsOnPasswordReset: true,
-    // Forgot-password: the emailed link points at the app's /reset-password page
-    // carrying the one-time token; that page collects the new password and calls
-    // resetPassword({ newPassword, token }).
+    // Forgot-password: the emailed link points at THIS server's own
+    // /p/reset-password page carrying the one-time token; that page collects the
+    // new password and posts back (routes/auth-pages.ts). It used to point at
+    // the Vite web app, which is retired — a link there is now a dead end.
     sendResetPassword: async ({ user, token }) => {
-      const url = `${appOrigin}/reset-password?token=${token}`
+      const url = resetPasswordUrl(token)
       await sendMail(
         user.email,
         'Reset your Mesa password',
@@ -255,10 +253,10 @@ This link expires in about an hour. If you didn't request it, you can safely ign
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    // Land on the app's own page rather than dumping the member on a bare
-    // redirect from the API with nothing saying it worked. It resolves before
-    // the auth gate, so it works on a device that has never signed in.
-    callbackURL: `${appOrigin}/verify-email`,
+    // Land on a page that says it worked rather than dumping the member on a
+    // bare redirect from the API. Served by this same server under /p, ahead of
+    // the session middleware, so it works on a device that has never signed in.
+    callbackURL: verifyEmailUrl(),
     sendVerificationEmail: async ({ user, url }) => {
       await sendMail(
         user.email,

@@ -7,6 +7,7 @@ import { auth } from './auth'
 import type { AppEnv } from './context'
 import { sessionMiddleware } from './middleware/session'
 import { activityRoutes } from './routes/activity'
+import { authPagesRoutes } from './routes/auth-pages'
 import { cheersRoutes } from './routes/cheers'
 import { dishesRoutes } from './routes/dishes'
 import { feedRoutes } from './routes/feed'
@@ -85,7 +86,11 @@ app.use(
       // while the OG unfurl still looks fine — worth being exact about.
       imgSrc: ["'self'", 'https://res.cloudinary.com', 'data:'],
       baseUri: ["'none'"],
-      formAction: ["'none'"],
+      // 'self', not 'none': /p/reset-password is a real <form> that posts back
+      // to this server. Scoped to /p/* — the catch-all block below keeps
+      // form-action 'none' everywhere else. scriptSrc stays 'none'; the reset
+      // flow is deliberately JS-free so it works with a locked-down CSP.
+      formAction: ["'self'"],
       frameAncestors: ["'none'"],
     },
   }),
@@ -124,6 +129,10 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // PUBLIC share pages (the growth loop's return path) — server-rendered HTML with
 // OG meta, hit by link crawlers and logged-out visitors. Mounted before the
 // session middleware so they need no cookie and never touch auth.
+// Auth pages (password reset, email verification) — the two links Better Auth
+// emails. Same /p prefix and the same pre-session position; mounted first so
+// their literal paths are matched before the share pages' /:param routes.
+app.route('/p', authPagesRoutes)
 app.route('/p', sharePagesRoutes)
 
 // Seeded catalog/dish photos. These used to be served by the web app out of its
