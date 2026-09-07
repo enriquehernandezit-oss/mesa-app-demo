@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "bundleIdentifier": "com.mesa.app",
+      "bundleIdentifier": "com.mesasocial.app",
       "supportsTablet": false,
       "usesAppleSignIn": true,
       "infoPlist": {
@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.mesa.app",
+      "package": "com.mesasocial.app",
       "adaptiveIcon": {
         "backgroundColor": "#f3efe6",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

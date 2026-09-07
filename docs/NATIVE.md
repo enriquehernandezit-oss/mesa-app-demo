@@ -88,7 +88,7 @@ the config plugins in `app.json`:
 ## iOS delivery
 
 **EAS Build → TestFlight → App Store.** Needs the Apple Developer account (with
-the Sign in with Apple capability enabled on `com.mesa.app`) and both MapBox
+the Sign in with Apple capability enabled on `com.mesasocial.app`) and both MapBox
 tokens above. The associated-domains entitlement must also be registered for
 `APP_LINK_DOMAIN`, and that domain must serve an `apple-app-site-association`
 file — the API can serve it alongside `/p/*`.
