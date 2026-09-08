@@ -198,7 +198,12 @@ export default function RestaurantProfile() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScrollView
+      {/* Animated.ScrollView, not ScrollView: Animated.event with
+          useNativeDriver:true returns an AnimatedEvent OBJECT, not a function,
+          and only an Animated.* component knows how to bind it natively. On a
+          plain ScrollView RN calls props.onScroll(...) directly and throws
+          "Object is not a function" on every scroll frame. */}
+      <Animated.ScrollView
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -423,7 +428,7 @@ export default function RestaurantProfile() {
             </SpotRail>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Sticky condensed header — fades in once the hero scrolls away (mock D2). */}
       <Animated.View
