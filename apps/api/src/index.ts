@@ -142,7 +142,13 @@ app.route('/p', sharePagesRoutes)
 // resolves the path against the API origin (apps/mobile/src/lib/media.ts).
 // Public, mounted before the session middleware: they're catalog art, not
 // member data.
-app.use('/restaurants/*', serveStatic({ root: './apps/api/public' }))
+// `root` is resolved against the PROCESS CWD, not this file — so a bare
+// './apps/api/public' only worked when the server happened to be started from
+// the repo root. Railway starts it from apps/api, where that path doesn't
+// exist: every request fell through to the session middleware and 401'd, so
+// every cover image in the app was silently blank. Anchored to this module
+// instead, it resolves the same from any cwd.
+app.use('/restaurants/*', serveStatic({ root: `${import.meta.dir}/../public` }))
 
 // Resolve the current user for every other route.
 app.use('*', sessionMiddleware)
