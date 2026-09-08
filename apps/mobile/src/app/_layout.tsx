@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/Toast'
 import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
 import { useSession } from '@/lib/auth-client'
 import { initToken } from '@/lib/auth-token'
-import { setErrorUser } from '@/lib/errors'
+import { captureError, setErrorUser } from '@/lib/errors'
 import { queryClient } from '@/lib/query'
 import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
@@ -30,7 +30,9 @@ import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-SplashScreen.preventAutoHideAsync()
+// .catch: a failed call here must never block the splash gate below — worst
+// case the splash is dismissed by the OS on its own timeout instead of by us.
+SplashScreen.preventAutoHideAsync().catch(() => {})
 
 // Ties events and crash reports to an account, and records screen views.
 //
@@ -64,7 +66,12 @@ function AnalyticsIdentity() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  // useFonts discards nothing here on purpose: `fontError` used to be dropped,
+  // which meant a single failed font load left `loaded` false forever and the
+  // whole app sat on the splash screen with no recovery path. A font that
+  // fails to load is a degraded look (system fallback), not a reason to hang —
+  // so fontError counts as "ready" too, and gets reported once.
+  const [loaded, fontError] = useFonts({
     CormorantGaramond_500Medium,
     CormorantGaramond_600SemiBold,
     CormorantGaramond_400Regular_Italic,
@@ -73,6 +80,9 @@ export default function RootLayout() {
     PlusJakartaSans_600SemiBold,
     JetBrainsMono_400Regular,
   })
+  useEffect(() => {
+    if (fontError) captureError(fontError, 'fonts.load')
+  }, [fontError])
 
   // Two Keychain reads have to land before the first frame, or the first frame is
   // a lie: the session token (else the gate flashes sign-in at a signed-in member)
@@ -86,9 +96,9 @@ export default function RootLayout() {
     Promise.all([initToken(), initThemeChoice()]).finally(() => setPreloaded(true))
   }, [])
 
-  const ready = loaded && preloaded
+  const ready = (loaded || Boolean(fontError)) && preloaded
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync()
+    if (ready) SplashScreen.hideAsync().catch(() => {})
   }, [ready])
 
   if (!ready) return null

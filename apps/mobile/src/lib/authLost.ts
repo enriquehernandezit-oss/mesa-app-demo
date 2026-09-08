@@ -11,7 +11,7 @@
 // from a plain fetch path with no provider, no context, and — importantly — no
 // import of the query client or the router, which would be a cycle.
 import { useSyncExternalStore } from 'react'
-import { clearToken } from './auth-token'
+import { clearToken, getToken } from './auth-token'
 import { queryClient } from './query'
 
 export type AuthLostReason = 'unauthorized' | 'account_suspended'
@@ -24,9 +24,12 @@ export function reportAuthLost(next: AuthLostReason): void {
   // burst of identical failures. Only act on the first.
   if (reason === next) return
   reason = next
-  // Drop the bearer token immediately — it is known-bad, and leaving it means
-  // the next request re-authenticates with a credential the server rejects.
-  clearToken()
+  // Drop the bearer token — but only when a token actually earned this 401. A
+  // request that went out with NO Authorization header (auth-token.ts's cold
+  // start read still in flight) also 401s, and that proves nothing about the
+  // token sitting in the Keychain; clearing it there would delete a perfectly
+  // good session out from under a member who did nothing wrong.
+  if (getToken()) clearToken()
   // Deferred: this can be reached from inside a query's error path, and
   // clearing the cache mid-render would tear down the tree that is rendering.
   queueMicrotask(() => queryClient.clear())
