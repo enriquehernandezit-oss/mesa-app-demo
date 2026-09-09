@@ -841,13 +841,23 @@ function NoteStep({
 
         <Eyebrow className="mt-4 font-mono">Foto del plato</Eyebrow>
         {dishImage ? (
-          <View className="mt-2 flex-row items-center gap-3">
-            <Image
-              source={{ uri: dishImage }}
-              style={{ width: 56, height: 56, borderRadius: 8 }}
-              contentFit="cover"
-            />
-            <View className="flex-1 flex-row flex-wrap gap-2">
+          <>
+            <View className="mt-2 h-40 w-full overflow-hidden rounded border border-line">
+              <Image
+                source={{ uri: dishImage }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Quitar foto"
+                onPress={() => setDishImage(null)}
+                className="absolute top-2 right-2 h-8 w-8 items-center justify-center rounded-pill bg-surface active:opacity-70"
+              >
+                <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+              </Pressable>
+            </View>
+            <View className="mt-2 flex-row flex-wrap gap-2">
               {GRAINS.map((g) => (
                 <Chip
                   key={g.value}
@@ -859,15 +869,14 @@ function NoteStep({
                 </Chip>
               ))}
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Quitar foto"
-              onPress={() => setDishImage(null)}
-              className="min-h-[44px] min-w-[44px] items-center justify-center active:opacity-60"
-            >
-              <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
-            </Pressable>
-          </View>
+            {/* This is the only place that confirms it: a photo turns "Qué
+                pedir" above into this dish's public name, and the note into its
+                caption — not two more fields to fill in. */}
+            <Caption className="mt-2 text-text-faint">
+              Se publica como “{dish.trim() || picked.name}”
+              {note.trim() ? ` — “${note.trim()}”` : ''}
+            </Caption>
+          </>
         ) : (
           <Pressable
             accessibilityRole="button"
