@@ -8,21 +8,27 @@ module.exports = {
   content: ['./src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
   theme: {
-    // Override the spacing scale to Mesa's 8-step ramp (--space-1..8), so
-    // `p-4` == 16px == --space-4, matching the web app's rhythm exactly.
-    spacing: {
-      0: 0,
-      px: 1,
-      1: 4,
-      2: 8,
-      3: 12,
-      4: 16,
-      5: 24,
-      6: 32,
-      7: 48,
-      8: 64,
-    },
     extend: {
+      // Mesa's 8-step ramp (--space-1..8), so `p-4` == 16px == --space-4,
+      // matching the web app's rhythm exactly. `extend`, not a top-level
+      // `spacing` override: a top-level override REPLACES Tailwind's entire
+      // default spacing scale, silently breaking every w-*/h-*/p-*/m-*/gap-*
+      // class outside these 9 keys (h-24, w-40, h-44, w-36, … — the sizes
+      // this app's cards, avatars and rails actually use). `extend` only
+      // overrides these specific keys and leaves the rest of the default
+      // scale — the one those other classes resolve against — intact.
+      spacing: {
+        0: 0,
+        px: 1,
+        1: 4,
+        2: 8,
+        3: 12,
+        4: 16,
+        5: 24,
+        6: 32,
+        7: 48,
+        8: 64,
+      },
       colors: {
         bg: 'var(--bg)',
         'bg-sunk': 'var(--bg-sunk)',
