@@ -138,6 +138,10 @@ type ScoreAttribution =
   | { kind: 'user'; label: string }
   | { kind: 'friends'; count: number }
   | { kind: 'mesa'; count: number }
+  // Whose score it is has already been said elsewhere on screen (e.g. the
+  // feed card's own "X rankeó un spot" line right above) — no second caption
+  // repeating the name under the ring.
+  | { kind: 'stated' }
 
 export function UtilityPill({
   icon,
@@ -184,6 +188,7 @@ function badgeText(a: ScoreAttribution): string | null {
   if (a.kind === 'you') return 'Tú'
   if (a.kind === 'user') return a.label
   if (a.kind === 'friends') return `${a.count} ${a.count === 1 ? 'amigo' : 'amigos'}`
+  if (a.kind === 'stated') return null
   return null
 }
 

@@ -335,11 +335,10 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       <View className="flex-row items-center justify-between">
         {who('rankeó un spot', 28)}
         <View className="items-end gap-1">
-          <ScoreBadge
-            score={item.score}
-            attribution={{ kind: 'user', label: firstName }}
-            size="md"
-          />
+          {/* 'stated', not 'user': the header line right above already says
+              "{firstName} rankeó un spot" — a second name caption under the
+              ring would just repeat it and cost a whole extra line. */}
+          <ScoreBadge score={item.score} attribution={{ kind: 'stated' }} size="md" />
           {/* Mesa's thesis in one line: not just the score, but WHERE it sits in
               their own list. Stays attributed to the friend, never the place. */}
           <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
