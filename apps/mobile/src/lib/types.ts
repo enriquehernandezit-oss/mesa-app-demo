@@ -304,6 +304,9 @@ export interface FeedItem {
   rankingId: string
   position: number
   score: number
+  // When this ranking was first CREATED, not last edited — the feed pages on
+  // (createdAt, id) (see apps/api/src/routes/feed.ts), so a re-rank doesn't
+  // resurface an old row or shift its place in the timeline.
   rankedAt: string
   user: { id: string; name: string; handle: string | null; image: string | null }
   restaurant: RankedRestaurant

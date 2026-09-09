@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, lt, notInArray, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
@@ -12,13 +12,33 @@ const { rankings, vibeNotes, restaurants, neighborhoods, user, cheers, dishes } 
 
 const PAGE = 20
 
+// Feed rows are keyed to a ranking's CREATION, not its last edit: rewrite() in
+// rankings.ts upserts a member's whole list on every re-rank, so paging on
+// updatedAt made one new rank republish their entire history to the top of
+// followers' feeds, and identical timestamps across that whole-list write
+// broke `lt()` paging outright (duplicate and skipped rows across pages).
+// createdAt never moves once a ranking exists, so (createdAt, id) is a stable
+// total order — the id half breaks ties between rows created in the same
+// instant, which a plain date cursor can't page past correctly.
+function parseCursor(raw: string | undefined): { at: Date; id: string | null } | null {
+  if (!raw) return null
+  const i = raw.lastIndexOf('_')
+  // A UUID never contains '_', so splitting on the last one is unambiguous.
+  // No id half (an older client's bare-date cursor) is tolerated: still page
+  // on date alone rather than reject it.
+  const datePart = i === -1 ? raw : raw.slice(0, i)
+  const idPart = i === -1 ? null : raw.slice(i + 1)
+  const at = new Date(datePart)
+  if (Number.isNaN(at.getTime())) return null
+  return { at, id: idPart || null }
+}
+
 export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
 
-  // Cursor pagination: ?before=<ISO date> pages older items, PAGE at a time.
   const beforeRaw = c.req.query('before')
-  const before = beforeRaw ? new Date(beforeRaw) : null
-  if (before && Number.isNaN(before.getTime())) {
+  const before = beforeRaw ? parseCursor(beforeRaw) : null
+  if (beforeRaw && !before) {
     return c.json({ error: 'invalid_cursor' }, 400)
   }
 
@@ -47,7 +67,10 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
       rankingId: rankings.id,
       position: rankings.position,
       score: rankings.score,
-      rankedAt: rankings.updatedAt,
+      // The moment this ranking was FIRST created — see parseCursor's comment
+      // above for why this reads createdAt, not updatedAt. On a feed card this
+      // is "first ranked", not "last edited"; a re-rank doesn't resurface it.
+      rankedAt: rankings.createdAt,
       user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
       restaurant: {
         id: restaurants.id,
@@ -83,10 +106,25 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
         isNull(user.bannedAt),
         notInArray(rankings.userId, blockedByMe(me.id)),
         notInArray(rankings.userId, blockedMe(me.id)),
-        ...(before ? [lt(rankings.updatedAt, before)] : []),
+        // Tuple comparison on (createdAt, id): strictly older rows, plus rows
+        // created at the exact same instant but with a smaller id — the tie
+        // a plain date comparison can't break, which a whole-list rewrite (see
+        // rankings.ts) makes a real case, not a hypothetical one. A bare-date
+        // cursor (before.id null, from an older client) falls back to the
+        // date-only comparison it always did.
+        ...(before
+          ? [
+              before.id
+                ? or(
+                    lt(rankings.createdAt, before.at),
+                    and(eq(rankings.createdAt, before.at), lt(rankings.id, before.id)),
+                  )
+                : lt(rankings.createdAt, before.at),
+            ]
+          : []),
       ),
     )
-    .orderBy(desc(rankings.updatedAt))
+    .orderBy(desc(rankings.createdAt), desc(rankings.id))
     .limit(PAGE)
 
   // Cheers counts for this page in ONE grouped query (fixed 2 round trips per
@@ -106,7 +144,8 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
   const byRanking = new Map(counts.map((r) => [r.rankingId, r]))
 
   const last = items[items.length - 1]
-  const nextCursor = items.length === PAGE && last ? last.rankedAt.toISOString() : null
+  const nextCursor =
+    items.length === PAGE && last ? `${last.rankedAt.toISOString()}_${last.rankingId}` : null
   return c.json({
     feed: items.map((i) => ({
       ...i,

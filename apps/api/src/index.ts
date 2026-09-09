@@ -148,7 +148,11 @@ app.route('/p', sharePagesRoutes)
 // exist: every request fell through to the session middleware and 401'd, so
 // every cover image in the app was silently blank. Anchored to this module
 // instead, it resolves the same from any cwd.
-app.use('/restaurants/*', serveStatic({ root: `${import.meta.dir}/../public` }))
+// GET only (was app.use, matching every method): a POST to /restaurants or
+// /restaurants/from-google used to run through this filesystem lookup first —
+// harmless since serveStatic next()s on a miss, but there's no reason a write
+// route should pass through a static-file handler at all.
+app.get('/restaurants/*', serveStatic({ root: `${import.meta.dir}/../public` }))
 
 // Resolve the current user for every other route.
 app.use('*', sessionMiddleware)

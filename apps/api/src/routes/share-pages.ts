@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../context'
-import { esc, layout, notFound } from '../lib/publicPage'
+import { esc, layout, notFound, publicOrigin } from '../lib/publicPage'
 
 // PUBLIC share pages — the growth loop's return path. When a user shares their
 // ranking, the share text carries a link here. These pages are server-rendered
@@ -22,24 +22,18 @@ const { rankings, vibeNotes, restaurants, user, invites } = schema
 // lib/display.ts so the public page reads identically to the in-app passport.
 const d10 = (score: number) => (score / 10).toFixed(1)
 
-// This server's own public origin — where the seeded catalog art is served from
-// (see the /restaurants/* static route in index.ts). Cover images used to resolve
-// against the web app; it's gone, and these files live here now.
-function selfOrigin(): string | null {
-  return process.env.PUBLIC_API_URL ?? null
-}
-
 // Absolute, crawler-reachable cover URL. Same precedence as the client's
 // media.ts: full URLs pass through; a local /restaurants/*.jpg path is resolved
-// against THIS server (which serves those files); a bare id becomes a Cloudinary
-// delivery URL when a cloud is configured. Null → the page renders imageless.
+// against THIS server's own public origin (which serves those files) — via
+// lib/publicPage's publicOrigin(), the same PUBLIC_API_URL → BETTER_AUTH_URL →
+// APP_ORIGINS[0] fallback chain the emailed auth links already use, so a cover
+// doesn't go missing just because only one of those two vars is set. A bare id
+// becomes a Cloudinary delivery URL when a cloud is configured. Null → the
+// page renders imageless.
 function absoluteCover(coverImageId: string | null): string | null {
   if (!coverImageId) return null
   if (coverImageId.startsWith('http')) return coverImageId
-  if (coverImageId.startsWith('/')) {
-    const self = selfOrigin()
-    return self ? `${self}${coverImageId}` : null
-  }
+  if (coverImageId.startsWith('/')) return `${publicOrigin()}${coverImageId}`
   const cloud = process.env.CLOUDINARY_CLOUD_NAME
   return cloud
     ? `https://res.cloudinary.com/${cloud}/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/${coverImageId}`

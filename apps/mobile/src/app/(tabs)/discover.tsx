@@ -40,6 +40,11 @@ interface FeedPage {
   nextCursor: string | null
 }
 
+function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
+  const seen = new Set<string>()
+  return items.filter((i) => (seen.has(i.rankingId) ? false : seen.add(i.rankingId)))
+}
+
 export default function DiscoverTab() {
   const accent = useColor('accent')
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
@@ -50,7 +55,11 @@ export default function DiscoverTab() {
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
-  const items = feed.data?.pages.flatMap((p) => p.feed) ?? []
+  // Defensive: with a sound (createdAt, id) cursor server-side this shouldn't
+  // duplicate across pages, but a ranking never appears twice in one person's
+  // feed anyway (one row per ranking) — deduping by id is a cheap guarantee
+  // either way, not a workaround for a specific known gap.
+  const items = uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? [])
 
   return (
     <View className="flex-1 bg-bg">

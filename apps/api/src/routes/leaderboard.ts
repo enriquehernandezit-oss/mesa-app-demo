@@ -21,7 +21,7 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
       image: user.image,
       neighborhood: neighborhoods.name,
       count: sql<number>`count(${rankings.id})::int`,
-      avgScore: sql<number>`avg(${rankings.score})`,
+      avgScore: sql<number>`avg(${rankings.score})::float`,
     })
     .from(user)
     .innerJoin(rankings, eq(rankings.userId, user.id))

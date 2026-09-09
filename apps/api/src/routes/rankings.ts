@@ -62,7 +62,17 @@ async function rewrite(tx: Executor, userId: string, orderedIds: string[]): Prom
     )
     .onConflictDoUpdate({
       target: [rankings.userId, rankings.restaurantId],
-      set: { position: sql`excluded.position`, score: sql`excluded.score`, updatedAt: new Date() },
+      set: {
+        position: sql`excluded.position`,
+        score: sql`excluded.score`,
+        // Only rows that actually moved get a fresh updatedAt — a full-list
+        // rewrite used to stamp every row on every rank, including places
+        // whose position didn't change, which is what let the feed (paged on
+        // this column) treat "ranked one new place" as "republish the whole
+        // list". The feed itself now pages on createdAt instead (see
+        // routes/feed.ts), but this column should mean what it says regardless.
+        updatedAt: sql`case when ${rankings.position} is distinct from excluded.position or ${rankings.score} is distinct from excluded.score then now() else ${rankings.updatedAt} end`,
+      },
     })
 }
 
@@ -261,7 +271,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     const [match] = await db
       .select({
         shared: sql<number>`count(*)::int`,
-        avgDiff: sql<number>`avg(abs(${mine.score} - ${rankings.score}))`,
+        avgDiff: sql<number>`avg(abs(${mine.score} - ${rankings.score}))::float`,
       })
       .from(mine)
       .innerJoin(
