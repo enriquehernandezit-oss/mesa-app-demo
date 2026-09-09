@@ -330,22 +330,24 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   return (
     <Animated.View
       entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-      className="mb-3 rounded border border-line bg-surface p-4"
+      className="mb-3 rounded border border-line bg-surface p-3"
     >
       <View className="flex-row items-center justify-between">
         {who('rankeó un spot', 28)}
         <View className="items-end gap-1">
           {/* 'stated', not 'user': the header line right above already says
               "{firstName} rankeó un spot" — a second name caption under the
-              ring would just repeat it and cost a whole extra line. */}
-          <ScoreBadge score={item.score} attribution={{ kind: 'stated' }} size="md" />
+              ring would just repeat it and cost a whole extra line. size="sm"
+              (not "md"): this ring sits beside a 28px avatar row, not alone —
+              full size only earns its place where nothing else sets scale. */}
+          <ScoreBadge score={item.score} attribution={{ kind: 'stated' }} size="sm" />
           {/* Mesa's thesis in one line: not just the score, but WHERE it sits in
               their own list. Stays attributed to the friend, never the place. */}
           <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
         </View>
       </View>
       <Link href={`/r/${item.restaurant.id}`} asChild>
-        <Pressable className="mt-3 active:opacity-80">
+        <Pressable className="mt-2 active:opacity-80">
           <Text className="font-serif text-serif-md text-text">{item.restaurant.name}</Text>
           {chars}
         </Pressable>
