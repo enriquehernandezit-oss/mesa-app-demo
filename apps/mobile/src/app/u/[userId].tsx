@@ -47,7 +47,24 @@ export default function UserRankings() {
   const block = useMutation({
     mutationFn: () => api.post('/moderation/blocks', { userId }),
     onSuccess: () => {
-      queryClient.invalidateQueries()
+      // Scoped, not the bare invalidateQueries() this used to be — that wiped
+      // EVERYTHING, ['session'] included, forcing a full auth round-trip and
+      // whole-app refetch over one block. Every surface a block actually
+      // changes, named instead.
+      for (const key of [
+        'feed',
+        'people',
+        'activity',
+        'user-rankings',
+        'explore',
+        'leaderboard',
+        'trending',
+        'restaurant',
+        'list',
+        'lists',
+      ]) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
       router.replace('/discover')
     },
     onError: () => toast({ variant: 'error', message: 'No se pudo bloquear. Intenta de nuevo.' }),

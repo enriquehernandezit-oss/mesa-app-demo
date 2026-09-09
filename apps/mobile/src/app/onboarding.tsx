@@ -379,8 +379,12 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
   const [matched, setMatched] = useState<SuggestedUser[] | null>(null)
   const [contactMsg, setContactMsg] = useState<string | null>(null)
 
+  // ['people'], not a separate key: discover.tsx's EmptyFeed hits the exact
+  // same /onboarding/suggested-friends endpoint under that key — following
+  // someone there only invalidated ['people'], leaving this screen's copy of
+  // the same list stale (still offering someone you just followed).
   const suggested = useQuery({
-    queryKey: ['onboarding', 'suggested-friends'],
+    queryKey: ['people'],
     queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
   })
 

@@ -144,6 +144,11 @@ function ActivityRow({ a }: { a: ActivityItem }) {
     onSuccess: () => {
       track('follow_added', { from: 'activity' })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
+      // This row's own followsBack flag would otherwise stay stale until the
+      // next full activity fetch, and the suggested-friends rail (['people'])
+      // keeps offering someone just followed from here.
+      queryClient.invalidateQueries({ queryKey: ['activity'] })
+      queryClient.invalidateQueries({ queryKey: ['people'] })
     },
   })
 

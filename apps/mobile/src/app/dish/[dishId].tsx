@@ -42,10 +42,15 @@ export default function DishDetail() {
   const remove = useMutation({
     mutationFn: () => api.del(`/dishes/${dishId}`),
     onSuccess: () => {
-      // The photo rides in the feed and on the restaurant profile too.
+      // The photo rides in the feed and on the restaurant profile too — and on
+      // that restaurant's own dish rail (['dishes', id]), which neither ['dish']
+      // (this one post) nor ['restaurant'] (the profile fields) is a prefix of,
+      // so it needs its own line or the deleted photo lingers there.
+      const restaurantId = q.data?.dish.restaurant.id
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['dish', dishId] })
       queryClient.invalidateQueries({ queryKey: ['restaurant'] })
+      if (restaurantId) queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       toast({ message: 'Plato eliminado' })
       goBack()
     },

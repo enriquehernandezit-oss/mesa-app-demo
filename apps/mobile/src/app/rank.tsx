@@ -26,6 +26,7 @@ import { GRAINS, type Grain, OCCASION_TAGS, displayScore, scoreForPosition } fro
 import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSuccess } from '@/lib/haptics'
+import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
 import {
   type PairwiseState,
   type Sentiment,
@@ -189,10 +190,7 @@ export default function RankAPlace() {
     mutationFn: (pos: number) => api.post('/rankings', { restaurantId: pickedId, position: pos }),
     onSuccess: () => {
       track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
-      queryClient.invalidateQueries({ queryKey: ['rankings'] })
-      queryClient.invalidateQueries({ queryKey: ['saved'] })
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
+      invalidateAfterRanking(pickedId)
     },
   })
   const committedForId = useRef<string | null>(null)
@@ -254,10 +252,7 @@ export default function RankAPlace() {
         hasDish: dish.trim().length > 0,
         hasPhoto: Boolean(dishImage),
       })
-      queryClient.invalidateQueries({ queryKey: ['rankings'] })
-      queryClient.invalidateQueries({ queryKey: ['saved'] })
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
+      invalidateAfterRanking(pickedId)
       if (dishImage) queryClient.invalidateQueries({ queryKey: ['dishes', pickedId] })
       finishToRankings()
     },

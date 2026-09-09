@@ -5,6 +5,7 @@
 import { toast } from '../components/ui/toast-store'
 import { api } from './api'
 import { scoreForPosition } from './display'
+import { invalidateAfterRanking } from './invalidateAfterRanking'
 import { queryClient } from './query'
 import type { Ranking } from './types'
 
@@ -27,12 +28,11 @@ function renumber(rs: Ranking[]): Ranking[] {
   }))
 }
 
-function invalidateAfterRemoval(restaurantId: string) {
-  queryClient.invalidateQueries({ queryKey: ['rankings'] })
-  queryClient.invalidateQueries({ queryKey: ['feed'] })
-  queryClient.invalidateQueries({ queryKey: ['me-stats'] })
-  queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
-}
+// A superset of what this needs (invalidateAfterRanking also covers ['saved'],
+// ['explore'], ['map'], ['lists'], ['leaderboard'], ['trending'],
+// ['user-rankings']) — a removal changes the same surfaces an addition does,
+// so sharing one list here is a correctness fix, not just deduplication.
+const invalidateAfterRemoval = invalidateAfterRanking
 
 export function removeRankingWithUndo(ranking: Ranking): void {
   if (pending.has(ranking.id)) return

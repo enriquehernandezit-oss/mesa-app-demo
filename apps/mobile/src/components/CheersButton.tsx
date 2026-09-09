@@ -2,8 +2,8 @@ import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
-import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Pressable, Text } from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -28,6 +28,7 @@ export function CheersButton({
   const [on, setOn] = useState(cheered)
   const [n, setN] = useState(count)
   const scale = useSharedValue(1)
+  const queryClient = useQueryClient()
 
   const toggle = useMutation({
     mutationFn: (next: boolean) =>
@@ -38,7 +39,30 @@ export function CheersButton({
       setOn(!next)
       setN((cur) => cur + (next ? -1 : 1))
     },
+    onSuccess: () => {
+      // Trending is driven by cheer counts and nothing else invalidates it;
+      // feed rows carry their own cheersCount that a refetch (pull-to-refresh,
+      // remount) would otherwise serve stale.
+      queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['trending'] })
+    },
   })
+
+  // `useState(cheered)`/`useState(count)` only seed from props on the FIRST
+  // render — a row that stays mounted through a pull-to-refresh (new
+  // cheersCount/cheeredByMe arriving from the server) would otherwise keep
+  // showing whatever this button last set, forever, even after the real
+  // value changes. Deliberately keyed on [cheered, count] alone, not
+  // toggle.isPending: our own tap's optimistic state already matches what
+  // the server will report, so by the time a refetch actually lands these
+  // props they just reconfirm it — but if isPending gated this effect too,
+  // it would re-fire the instant OUR OWN mutation settles, syncing from the
+  // still-stale pre-refetch props and visibly reverting the heart for a
+  // moment before the real data arrives a beat later.
+  useEffect(() => {
+    setOn(cheered)
+    setN(count)
+  }, [cheered, count])
 
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
 

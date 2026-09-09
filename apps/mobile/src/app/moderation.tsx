@@ -50,8 +50,14 @@ export default function ModerationQueue() {
     },
     onSuccess: (_d, { action }) => {
       queryClient.invalidateQueries({ queryKey: ['moderation-reports'] })
-      // Removing content changes what everyone else sees.
+      // Removing content changes what everyone else sees — the feed carries
+      // it directly, and a removed dish/vibe-note also has to clear off the
+      // restaurant's own dish rail and profile, none of which ['feed'] is a
+      // prefix of.
       queryClient.invalidateQueries({ queryKey: ['feed'] })
+      queryClient.invalidateQueries({ queryKey: ['dishes'] })
+      queryClient.invalidateQueries({ queryKey: ['dish'] })
+      queryClient.invalidateQueries({ queryKey: ['restaurant'] })
       toast({ message: action === 'dismiss' ? 'Reporte descartado' : 'Contenido retirado' })
     },
     onError: (err) => {
