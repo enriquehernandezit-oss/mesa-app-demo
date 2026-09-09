@@ -51,7 +51,6 @@ export default function DishCompose() {
   const [grain, setGrain] = useState<Grain>('candlelit')
   const [name, setName] = useState('')
   const [caption, setCaption] = useState('')
-  const [wantToTry, setWantToTry] = useState(false)
   const [friendsOnly, setFriendsOnly] = useState(true)
   const posted = useRef(false)
   const captionRef = useRef<TextInput>(null)
@@ -66,10 +65,9 @@ export default function DishCompose() {
         grain,
         visibility: friendsOnly ? 'friends' : 'public',
       })
-      if (wantToTry) await api.post('/saved', { restaurantId }).catch(() => {})
     },
     onSuccess: () => {
-      track('dish_posted', { grain, friendsOnly, wantToTry })
+      track('dish_posted', { grain, friendsOnly })
       posted.current = true
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
@@ -265,16 +263,6 @@ export default function DishCompose() {
         )}
 
         <View className="mt-4 flex-row items-center justify-between border-line border-b py-3">
-          <Text className="flex-1 font-ui text-body text-text">
-            También agregar a Quiero probar
-          </Text>
-          <Toggle
-            checked={wantToTry}
-            onChange={setWantToTry}
-            label="También agregar a Quiero probar"
-          />
-        </View>
-        <View className="flex-row items-center justify-between border-line border-b py-3">
           <Text className="flex-1 font-ui text-body text-text">Compartir solo con amigos</Text>
           <Toggle
             checked={friendsOnly}
