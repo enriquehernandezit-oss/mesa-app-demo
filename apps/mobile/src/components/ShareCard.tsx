@@ -2,7 +2,7 @@ import type { ShareCardReq } from '@/lib/shareCardStore'
 import { DATA_FIGURES } from '@/theme/vars'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
 // The 1080×1920 story card (IG Stories size) that leaves the app — the artifact
@@ -30,10 +30,20 @@ const SANS_SB = 'PlusJakartaSans_600SemiBold'
 export function ShareCard({ req, onReady }: { req: ShareCardReq; onReady: () => void }) {
   const cover = req.coverUrl
   const coverH = req.kind === 'spot' ? 1150 : 780
+  // The cover's onLoad fires once the image is DECODED, not once it's actually
+  // committed to the native view the capture reads from — a capture taken in
+  // the same tick can miss it. Two rAFs (one for this frame's commit, one for
+  // the next paint) is the cheapest way to wait past that without a fixed
+  // delay; used on every onReady path, including the no-cover one below, so
+  // capture timing is identical whether or not there's an image to wait for.
+  const settleThenReady = useCallback(
+    () => requestAnimationFrame(() => requestAnimationFrame(onReady)),
+    [onReady],
+  )
   // No cover → nothing to wait for; signal ready on mount so the host captures.
   useEffect(() => {
-    if (!cover) onReady()
-  }, [cover, onReady])
+    if (!cover) settleThenReady()
+  }, [cover, settleThenReady])
 
   return (
     <View style={{ width: W, height: H, backgroundColor: INK }}>
@@ -43,8 +53,8 @@ export function ShareCard({ req, onReady }: { req: ShareCardReq; onReady: () => 
             source={{ uri: cover }}
             style={StyleSheet.absoluteFill}
             contentFit="cover"
-            onLoad={onReady}
-            onError={onReady}
+            onLoad={settleThenReady}
+            onError={settleThenReady}
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, { backgroundColor: COVER_FALLBACK }]} />

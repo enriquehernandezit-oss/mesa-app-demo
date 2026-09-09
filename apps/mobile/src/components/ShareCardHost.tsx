@@ -36,6 +36,12 @@ export function ShareCardHost() {
         width: 1080,
         height: 1920,
         result: 'tmpfile',
+        // The default iOS strategy (drawViewHierarchyInRect) is documented,
+        // by view-shot's own source, as unreliable for a view this size
+        // positioned off-canvas — it can report success with a blank image.
+        // renderInContext (what this flips on) doesn't have that failure
+        // mode. No-op on Android.
+        useRenderInContext: true,
       })
       track('share_opened', { kind: req.kind })
       await Share.share({ url: uri, message: req.text })
@@ -51,7 +57,11 @@ export function ShareCardHost() {
 
   if (!req) return null
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: -10000, top: 0 }}>
+    // On-screen, not off-canvas (was left: -10000): a view positioned outside
+    // the visible bounds is exactly the case view-shot's own docs warn can
+    // capture blank. opacity: 0 + pointerEvents="none" keeps it invisible and
+    // untouchable without moving it out of the render tree's real geometry.
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0, opacity: 0 }}>
       <ViewShot ref={shotRef} style={{ width: 1080, height: 1920 }}>
         <ShareCard req={req} onReady={() => void run()} />
       </ViewShot>
