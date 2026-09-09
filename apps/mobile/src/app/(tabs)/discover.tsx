@@ -351,13 +351,12 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
       className="mb-3 rounded border border-line bg-surface p-3"
     >
-      <View className="flex-row items-start justify-between">
-        {/* Avatar and the score column are each their own small tap target;
-            the person's name and the restaurant name are separate onPress
-            spans inside ONE Text — RN's supported way to linkify part of a
-            sentence. No Pressable nested inside another Pressable (that's a
-            gesture-conflict bug — the outer one wins and the inner tap target
-            silently stops working). */}
+      <View className="flex-row items-center">
+        {/* Avatar is its own small tap target; the person's name and the
+            restaurant name are separate onPress spans inside ONE Text — RN's
+            supported way to linkify part of a sentence. No Pressable nested
+            inside another Pressable (that's a gesture-conflict bug — the
+            outer one wins and the inner tap target silently stops working). */}
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(`/u/${item.user.id}`)}
@@ -393,19 +392,6 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           </Text>
           <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
         </View>
-        {/* No ring: a bare attributed number costs a line's worth of height,
-            not a 48px circle's worth. 'stated' — the sentence above already
-            says whose score this is. */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(`/r/${item.restaurant.id}`)}
-          className="items-end active:opacity-70"
-        >
-          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
-            {displayScore(item.score)}
-          </Text>
-          <Caption className="font-mono text-micro">#{item.position}</Caption>
-        </Pressable>
       </View>
       {oneLineMeta ? (
         <Caption className="mt-1 text-text-2" numberOfLines={1}>
@@ -421,11 +407,26 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           “{item.note}”
         </Text>
       ) : null}
-      <CheersButton
-        rankingId={item.rankingId}
-        count={item.cheersCount ?? 0}
-        cheered={item.cheeredByMe ?? false}
-      />
+      {/* Footer: cheers on the left (its own established position across the
+          app), the score + list position together in the bottom-right corner
+          — the card's final tally, read last. */}
+      <View className="mt-1 flex-row items-center justify-between">
+        <CheersButton
+          rankingId={item.rankingId}
+          count={item.cheersCount ?? 0}
+          cheered={item.cheeredByMe ?? false}
+        />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/r/${item.restaurant.id}`)}
+          className="flex-row items-baseline gap-1 active:opacity-70"
+        >
+          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
+            {displayScore(item.score)}
+          </Text>
+          <Caption className="font-mono text-micro">#{item.position}</Caption>
+        </Pressable>
+      </View>
     </Animated.View>
   )
 }
