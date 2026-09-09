@@ -12,9 +12,15 @@ import { queryClient } from './query'
 //
 // EXPO_PUBLIC_API_URL is the API's absolute public URL; Better Auth mounts at
 // `/api/auth/*`, appended here. No window.location/relative resolution — this is
-// native, the URL is always absolute.
-const origin = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '')
-const baseURL = `${origin}/api/auth`
+// native, the URL is always absolute. Exported (trailing slash stripped) so
+// lib/api.ts builds its own requests against the exact same origin — an
+// EXPO_PUBLIC_API_URL with a trailing slash used to break every data call
+// (`//me`) while auth kept working, since only this file normalized it.
+export const apiBaseOrigin = (process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000').replace(
+  /\/$/,
+  '',
+)
+const baseURL = `${apiBaseOrigin}/api/auth`
 
 export const authClient = createAuthClient({
   baseURL,

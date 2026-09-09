@@ -5,9 +5,11 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
 import { BookmarkIcon, CheckIcon, ChevronIcon, CompassIcon } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
+import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
+import { captureError } from '@/lib/errors'
 import { resizeToJpeg } from '@/lib/image'
 import { shareProfile } from '@/lib/shareProfile'
 import type { MeStats, Neighborhood } from '@/lib/types'
@@ -41,18 +43,23 @@ export default function ProfileTab() {
     },
   })
   async function pickAvatar() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) return
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
-    const asset = res.canceled ? null : res.assets[0]
-    if (asset) {
-      setAvatar.mutate(
-        await resizeToJpeg(asset.uri, asset.width, asset.height, {
-          maxEdge: 192,
-          square: true,
-          quality: 0.8,
-        }),
-      )
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!perm.granted) return
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
+      const asset = res.canceled ? null : res.assets[0]
+      if (asset) {
+        setAvatar.mutate(
+          await resizeToJpeg(asset.uri, asset.width, asset.height, {
+            maxEdge: 192,
+            square: true,
+            quality: 0.8,
+          }),
+        )
+      }
+    } catch (err) {
+      captureError(err, 'image.pick')
+      toast({ variant: 'error', message: 'No se pudo procesar la foto. Intenta de nuevo.' })
     }
   }
 
