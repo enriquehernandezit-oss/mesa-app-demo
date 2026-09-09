@@ -11,11 +11,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // + activity bell (with an unseen badge). Profile variant: the member's name +
 // share + settings. Ported from apps/app/src/components/TopBar.tsx; share wires
 // up in N6.
+// Sizing only — press feedback lives on the wrapping Pressable. A plain View
+// carrying an `active:` variant gets silently upgraded by NativeWind into its
+// OWN Pressable (react-native-css-interop upgrades any View with a
+// hover/active/focus variant), which used to sit *inside* the real one and
+// absorb every tap before the real Pressable's onPress ever fired — every
+// button below was dead. Keep `active:` off this View.
 function Btn({ children }: { children: React.ReactNode }) {
   return (
-    <View className="h-[44px] w-[44px] items-center justify-center rounded-pill active:opacity-70">
-      {children}
-    </View>
+    <View className="h-[44px] w-[44px] items-center justify-center rounded-pill">{children}</View>
   )
 }
 
@@ -29,6 +33,7 @@ function ActivityBell() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={unseen > 0 ? `Actividad, ${unseen} sin ver` : 'Actividad'}
+        className="active:opacity-70"
       >
         <Btn>
           <BellIcon size={19} color="text" />
@@ -68,13 +73,18 @@ export function TopBar({
               accessibilityRole="button"
               accessibilityLabel="Compartir perfil"
               onPress={() => shareProfile(shareHandle)}
+              className="active:opacity-70"
             >
               <Btn>
                 <ShareIcon size={19} color="text" />
               </Btn>
             </Pressable>
             <Link href="/settings" asChild>
-              <Pressable accessibilityRole="button" accessibilityLabel="Ajustes">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Ajustes"
+                className="active:opacity-70"
+              >
                 <Btn>
                   <SettingsIcon size={19} color="text" />
                 </Btn>
@@ -84,7 +94,11 @@ export function TopBar({
         ) : (
           <>
             <Link href="/leaderboard" asChild>
-              <Pressable accessibilityRole="button" accessibilityLabel="Clasificación">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Clasificación"
+                className="active:opacity-70"
+              >
                 <Btn>
                   <TrophyIcon size={19} color="text" />
                 </Btn>

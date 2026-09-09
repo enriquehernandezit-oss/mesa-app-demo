@@ -8,7 +8,18 @@ import * as ImagePicker from 'expo-image-picker'
 // photo step in the rank flow (app/rank.tsx) so this permission/resize/error
 // handling lives in exactly one place. Returns null on cancel, denial, or any
 // thrown error — callers don't need their own try/catch.
+//
+// Module-level (not per-component) in-flight guard: this launches the native
+// picker from inside the ActionSheetIOS callback, and expo-image-picker has
+// no re-entrancy guard of its own — it just overwrites its pending promise on
+// a second launch*Async call, so UIKit refuses the duplicate present and the
+// FIRST call's promise never resolves, leaving the sheet with no dismissal
+// path. A second call while one is already in flight returns null instead.
+let picking = false
+
 export async function pickDishPhoto(): Promise<string | null> {
+  if (picking) return null
+  picking = true
   try {
     const picked = await showActionSheet({
       options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
@@ -33,5 +44,7 @@ export async function pickDishPhoto(): Promise<string | null> {
   } catch (err) {
     captureError(err, 'image.pick')
     return null
+  } finally {
+    picking = false
   }
 }

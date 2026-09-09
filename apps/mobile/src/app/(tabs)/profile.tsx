@@ -32,6 +32,14 @@ export default function ProfileTab() {
   const { data } = useProfile(true)
   const p = data?.profile
   const [editing, setEditing] = useState(false)
+  // Guards the WHOLE pipeline (permission → presentation → resize → upload),
+  // not just setAvatar.isPending (which only covers the network PATCH).
+  // Without it, a second tap while the picker is still opening fires
+  // launchImageLibraryAsync twice; expo-image-picker has no native
+  // re-entrancy guard of its own (it just overwrites its pending promise), so
+  // the second `present:` silently fails and the first call's promise never
+  // resolves — the library sheet is left on screen with no way to dismiss it.
+  const [pickingAvatar, setPickingAvatar] = useState(false)
 
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
 
@@ -41,8 +49,14 @@ export default function ProfileTab() {
       queryClient.invalidateQueries({ queryKey: ['me'] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
     },
+    onError: (err) => {
+      captureError(err, 'me.avatar')
+      toast({ variant: 'error', message: 'No se pudo actualizar la foto. Intenta de nuevo.' })
+    },
   })
   async function pickAvatar() {
+    if (pickingAvatar) return
+    setPickingAvatar(true)
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (!perm.granted) return
@@ -60,6 +74,8 @@ export default function ProfileTab() {
     } catch (err) {
       captureError(err, 'image.pick')
       toast({ variant: 'error', message: 'No se pudo procesar la foto. Intenta de nuevo.' })
+    } finally {
+      setPickingAvatar(false)
     }
   }
 
