@@ -11,6 +11,8 @@ import { requireAuth } from '../middleware/session'
 // count never depends on data size (no N+1).
 const { cheers, rankings, restaurants, follows, savedPlaces, user } = schema
 
+// NOTE: duplicated by hand in apps/mobile/src/lib/types.ts (that app can't
+// import this — see that file's own note on why). Keep the two in sync.
 export interface ActivityItem {
   type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
   at: string

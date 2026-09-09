@@ -24,7 +24,7 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { Link, useRouter } from 'expo-router'
+import { type Href, Link, useRouter } from 'expo-router'
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
@@ -314,7 +314,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   )
 
   if (item.dishImage) {
-    const href = item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
+    const href: Href = item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
     return (
       <Animated.View
         entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}

@@ -41,7 +41,14 @@ export const listsRoutes = new Hono<AuthedEnv>()
   // One list + its members in order, each with the friend signal. One query.
   .get('/:slug', async (c) => {
     const me = c.get('user')
-    const list = await db.query.lists.findFirst({ where: eq(lists.slug, c.req.param('slug')) })
+    // Explicit columns: no `columns` here used to ship sortOrder and createdAt
+    // straight to the client — internal-ordering fields the [slug] screen
+    // never reads. id is kept (unused by the client) because the member-items
+    // query below joins on it.
+    const list = await db.query.lists.findFirst({
+      where: eq(lists.slug, c.req.param('slug')),
+      columns: { id: true, title: true, subtitle: true, coverImageId: true },
+    })
     if (!list) return c.json({ error: 'not_found' }, 404)
 
     const following = followingIds(me.id)

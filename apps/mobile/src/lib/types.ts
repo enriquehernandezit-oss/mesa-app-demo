@@ -74,6 +74,20 @@ export interface RankedRestaurant {
   lng?: number
 }
 
+// The restaurant slice that comes back on someone ELSE's ranking row
+// (GET /rankings/user/:userId, rankings.ts:228-238) and on a saved place
+// (GET /saved, saved.ts:19-25) — both select only these 4 columns, unlike
+// GET /rankings' own list, which genuinely does select the rest of
+// RankedRestaurant. Kept as its own type instead of widening those two
+// selects to match RankedRestaurant, or narrowing RankedRestaurant itself
+// and breaking the own-list screens that read its other fields.
+export interface RestaurantRef {
+  id: string
+  name: string
+  cuisine: string | null
+  priceTier?: number | null
+}
+
 // A row in a ranked list (mine or someone else's).
 export interface Ranking {
   id: string
@@ -271,9 +285,25 @@ export interface ActivityItem {
 }
 
 export interface SavedPlace {
-  restaurant: RankedRestaurant
+  restaurant: RestaurantRef
   neighborhood: string | null
   savedAt: string
+}
+
+// The ranking row shape on someone ELSE's passport — narrower than Ranking
+// (no createdAt, restaurant is a RestaurantRef) because rankings.ts's
+// /user/:userId select genuinely sends less than the owner's own /rankings
+// does. See RestaurantRef's comment for why this isn't just Ranking reused.
+export interface TheirRanking {
+  id: string
+  position: number
+  score: number
+  restaurant: RestaurantRef
+  neighborhood: string | null
+  note: string | null
+  noteId: string | null
+  tags: string[] | null
+  favoriteDish: string | null
 }
 
 export interface UserRankingsResponse {
@@ -284,7 +314,7 @@ export interface UserRankingsResponse {
     image: string | null
     neighborhood: { name: string } | null
   }
-  rankings: Ranking[]
+  rankings: TheirRanking[]
   isFollowing: boolean
   followerCount: number
   followingCount: number

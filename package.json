@@ -7,7 +7,7 @@
     "node": "22"
   },
   "scripts": {
-    "typecheck": "bun run --filter '*' typecheck",
+    "typecheck": "bun run --filter '*' typecheck && cd apps/mobile && bunx tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write .",
     "db:generate": "bun run --filter '@mesa/db' generate",

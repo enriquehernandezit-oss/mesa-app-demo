@@ -4,7 +4,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { DATA_FIGURES, GROUND, themeColors } from '@/theme/vars'
-import { Link } from 'expo-router'
+import { type Href, Link } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
@@ -38,7 +38,7 @@ export function SpotCard({
   caption,
   variant = 'tall',
 }: {
-  href: string
+  href: Href
   seed: string
   name: string
   coverImageId: string | null

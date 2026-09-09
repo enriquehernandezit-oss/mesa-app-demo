@@ -18,7 +18,7 @@ import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { displayScore, tagLabel } from '@/lib/display'
-import type { Ranking, UserRankingsResponse } from '@/lib/types'
+import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -225,7 +225,7 @@ export default function UserRankings() {
   )
 }
 
-function TheirRow({ ranking }: { ranking: Ranking }) {
+function TheirRow({ ranking }: { ranking: TheirRanking }) {
   return (
     <View className="flex-row gap-3 border-line border-b py-3">
       <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
