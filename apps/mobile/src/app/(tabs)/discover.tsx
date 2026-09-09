@@ -12,14 +12,16 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { Characteristics, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
+import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useRouter } from 'expo-router'
@@ -257,6 +259,7 @@ function FeedSkeleton() {
 // (attributed to the friend — never the place's own rating). The film-grain
 // treatment on dish photos lands with the image work in N6.
 function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
+  const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
   const chars = (
     <Characteristics
@@ -266,6 +269,22 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       hours={item.restaurant.closesAt ? `hasta ${item.restaurant.closesAt}` : null}
     />
   )
+  // One line, for the plain (no-photo) card below — price|cuisine and
+  // neighborhood/hours collapsed into a single row instead of Characteristics'
+  // usual two, and truncated rather than ever wrapping to a third.
+  const priceCuisine = [
+    priceLabel(item.restaurant.priceTier),
+    cuisineLabel(item.restaurant.cuisine),
+  ]
+    .filter(Boolean)
+    .join(' | ')
+  const place = [
+    item.neighborhood,
+    item.restaurant.closesAt ? `hasta ${item.restaurant.closesAt}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const oneLineMeta = [priceCuisine, place].filter(Boolean).join(' · ')
 
   const who = (verb: string, avatarSize: number) => (
     <Link href={`/u/${item.user.id}`} asChild>
@@ -332,28 +351,73 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
       className="mb-3 rounded border border-line bg-surface p-3"
     >
-      <View className="flex-row items-center justify-between">
-        {who('rankeó un spot', 28)}
-        <View className="items-end gap-1">
-          {/* 'stated', not 'user': the header line right above already says
-              "{firstName} rankeó un spot" — a second name caption under the
-              ring would just repeat it and cost a whole extra line. size="sm"
-              (not "md"): this ring sits beside a 28px avatar row, not alone —
-              full size only earns its place where nothing else sets scale. */}
-          <ScoreBadge score={item.score} attribution={{ kind: 'stated' }} size="sm" />
-          {/* Mesa's thesis in one line: not just the score, but WHERE it sits in
-              their own list. Stays attributed to the friend, never the place. */}
-          <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
-        </View>
-      </View>
-      <Link href={`/r/${item.restaurant.id}`} asChild>
-        <Pressable className="mt-2 active:opacity-80">
-          <Text className="font-serif text-serif-md text-text">{item.restaurant.name}</Text>
-          {chars}
+      <View className="flex-row items-start justify-between">
+        {/* Avatar and the score column are each their own small tap target;
+            the person's name and the restaurant name are separate onPress
+            spans inside ONE Text — RN's supported way to linkify part of a
+            sentence. No Pressable nested inside another Pressable (that's a
+            gesture-conflict bug — the outer one wins and the inner tap target
+            silently stops working). */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/u/${item.user.id}`)}
+          className="active:opacity-70"
+        >
+          <Avatar
+            name={item.user.name || item.user.handle || 'm'}
+            src={item.user.image}
+            size={28}
+          />
         </Pressable>
-      </Link>
+        <View className="ml-2 flex-1">
+          {/* The restaurant name rides in the sentence itself, not its own
+              heading line — an activity-feed line, not a headline plus a
+              caption plus a caption. Saved the single biggest chunk of this
+              card's old height. */}
+          <Text className="font-ui text-body text-text">
+            <Text
+              className="font-ui-semibold"
+              onPress={() => router.push(`/u/${item.user.id}`)}
+              suppressHighlighting
+            >
+              {firstName}
+            </Text>{' '}
+            rankeó{' '}
+            <Text
+              className="font-serif text-serif-sm text-text"
+              onPress={() => router.push(`/r/${item.restaurant.id}`)}
+              suppressHighlighting
+            >
+              {item.restaurant.name}
+            </Text>
+          </Text>
+          <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
+        </View>
+        {/* No ring: a bare attributed number costs a line's worth of height,
+            not a 48px circle's worth. 'stated' — the sentence above already
+            says whose score this is. */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/r/${item.restaurant.id}`)}
+          className="items-end active:opacity-70"
+        >
+          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
+            {displayScore(item.score)}
+          </Text>
+          <Caption className="font-mono text-micro">#{item.position}</Caption>
+        </Pressable>
+      </View>
+      {oneLineMeta ? (
+        <Caption className="mt-1 text-text-2" numberOfLines={1}>
+          {oneLineMeta}
+        </Caption>
+      ) : null}
       {item.note ? (
-        <Text selectable className="mt-2 font-serif-italic text-serif-sm text-text-2">
+        <Text
+          selectable
+          numberOfLines={2}
+          className="mt-1 font-serif-italic text-serif-sm text-text-2"
+        >
           “{item.note}”
         </Text>
       ) : null}

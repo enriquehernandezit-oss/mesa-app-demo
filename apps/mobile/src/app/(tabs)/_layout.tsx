@@ -41,13 +41,11 @@ function NativeShell() {
     <View className="flex-1 bg-bg">
       <NativeTabs
         tintColor={c.accent}
-        // Let the system paint its own material rather than forcing a solid
-        // color: that's what gives the glass/scroll-edge behavior. The blur
-        // variant follows Mesa's resolved theme, which can be dark while the OS
-        // is light (Auto flips Candlelit at 6pm) — hence the explicit choice.
-        blurEffect={
-          theme === 'candlelit' ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'
-        }
+        // A solid bar, not the system's translucent material: the glass/blur
+        // read as "invisible" against Mesa's content, especially Candlelit's
+        // dark ground. Same c.bg the utility header bars already use, so the
+        // tab bar and a pushed screen's nav bar are the same solid chrome.
+        backgroundColor={c.bg}
         minimizeBehavior="onScrollDown"
         badgeBackgroundColor={c['status-packed']}
         badgeTextColor={c['on-accent']}
