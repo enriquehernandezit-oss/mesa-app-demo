@@ -1,27 +1,18 @@
 import { Body, Button, Caption, Chip, Eyebrow, SectionHeader, Title, Toggle } from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
-import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { GRAIN_LABEL_ES } from '@/lib/display'
+import { pickDishPhoto } from '@/lib/dishPhoto'
+import { GRAINS, GRAIN_LABEL_ES, type Grain } from '@/lib/display'
 import { tapSuccess } from '@/lib/haptics'
-import { resizeToJpeg } from '@/lib/image'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import * as ImagePicker from 'expo-image-picker'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-type Grain = 'candlelit' | 'daylight' | 'none'
-const GRAINS: { value: Grain; label: string }[] = [
-  { value: 'candlelit', label: GRAIN_LABEL_ES.candlelit as string },
-  { value: 'daylight', label: GRAIN_LABEL_ES.daylight as string },
-  { value: 'none', label: GRAIN_LABEL_ES.none as string },
-]
 
 // Post a dish (Phase 6 mocks C1–C2) — a photo attached to a place you've ranked.
 // Two steps: C1 choose the shot + treatment, C2 name/caption/toggles + link. The
@@ -90,31 +81,12 @@ export default function DishCompose() {
 
   // One tap target, one system chooser — the screen used to have two separate
   // entry points (a "Cámara" header button and the box for the library), which
-  // is a menu pretending not to be one.
+  // is a menu pretending not to be one. The pick→permission→resize pipeline
+  // itself lives in lib/dishPhoto.ts, shared with the rank flow's inline photo
+  // step (app/rank.tsx) — one place for that error-prone chain, not two.
   async function choosePhoto() {
-    const picked = await showActionSheet({
-      options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
-    })
-    if (picked === null) return
-    await pickFrom(picked === 0 ? 'camera' : 'library')
-  }
-
-  async function pickFrom(source: 'camera' | 'library') {
-    const perm =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) return
-    const res =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
-    const asset = res.canceled ? null : res.assets[0]
-    if (asset) {
-      setImage(
-        await resizeToJpeg(asset.uri, asset.width, asset.height, { maxEdge: 1280, quality: 0.72 }),
-      )
-    }
+    const uri = await pickDishPhoto()
+    if (uri) setImage(uri)
   }
 
   const restaurant = q.data?.restaurant

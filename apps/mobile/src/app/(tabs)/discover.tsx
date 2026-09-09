@@ -294,7 +294,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       >
         <Link href={href} asChild>
           <Pressable className="active:opacity-90">
-            <View className="h-52">
+            <View className="h-44">
               <Image
                 source={{ uri: cloudinaryUrl(item.dishImage, { w: 800, h: 600 }) ?? undefined }}
                 style={{ width: '100%', height: '100%' }}

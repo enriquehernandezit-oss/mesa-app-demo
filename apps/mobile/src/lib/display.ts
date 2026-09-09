@@ -97,7 +97,7 @@ export const OCCASION_TAGS = [
 ]
 
 // Dish-photo grain treatment — shown as a mono "film · <grain>" tag and as a
-// picker chip label (DishCompose).
+// picker chip label (DishCompose, and the inline photo step in the rank flow).
 export const GRAIN_LABEL_ES: Record<string, string> = {
   candlelit: 'Con velas',
   daylight: 'Luz de día',
@@ -107,3 +107,10 @@ export function grainLabel(grain: string | null | undefined): string {
   if (!grain) return GRAIN_LABEL_ES.candlelit as string
   return GRAIN_LABEL_ES[grain] ?? grain
 }
+
+export type Grain = 'candlelit' | 'daylight' | 'none'
+export const GRAINS: { value: Grain; label: string }[] = [
+  { value: 'candlelit', label: GRAIN_LABEL_ES.candlelit as string },
+  { value: 'daylight', label: GRAIN_LABEL_ES.daylight as string },
+  { value: 'none', label: GRAIN_LABEL_ES.none as string },
+]

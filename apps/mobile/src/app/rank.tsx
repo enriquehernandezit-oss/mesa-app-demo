@@ -21,7 +21,8 @@ import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
+import { pickDishPhoto } from '@/lib/dishPhoto'
+import { GRAINS, type Grain, OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSuccess } from '@/lib/haptics'
@@ -47,6 +48,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
@@ -130,7 +132,12 @@ export default function RankAPlace() {
   const [note, setNote] = useState('')
   const [tags, setTags] = useState<string[]>([])
   const [dish, setDish] = useState('')
-  const [chainDish, setChainDish] = useState(false)
+  // Merged into this screen (was a separate composer chained after saving):
+  // the photo, if any, is attached and posted as a dish in the same "Guardar
+  // nota" tap. dishGrain only matters once a photo exists; 'candlelit' matches
+  // the standalone composer's own default treatment.
+  const [dishImage, setDishImage] = useState<string | null>(null)
+  const [dishGrain, setDishGrain] = useState<Grain>('candlelit')
   const [placedStamp, setPlacedStamp] = useState(false)
 
   // My already-ranked places → Items carrying their score (merged rows + re-rank).
@@ -212,30 +219,47 @@ export default function RankAPlace() {
   }
 
   const save = useMutation({
-    mutationFn: (pos: number) =>
-      api.post('/rankings', {
+    // One tap does both writes when a photo is attached: the note (as always)
+    // and the dish post, in the same request cycle — no separate composer
+    // screen, no second round of "what did you eat" (the dish's `name` is this
+    // screen's own "Qué pedir" field; alsoFavorite tells the API to backfill
+    // the ranking's favoriteDish from it, so it's entered exactly once). The
+    // initial commitInitial POST already exists by the time this fires (it
+    // runs the moment the score reveals), so /dishes' "rank it first" check is
+    // always satisfied.
+    mutationFn: async (pos: number) => {
+      await api.post('/rankings', {
         restaurantId: pickedId,
         position: pos,
         vibeNote: note.trim() || undefined,
         tags: tags.length ? tags : undefined,
-        favoriteDish: dish.trim() || undefined,
-      }),
+        favoriteDish: dishImage ? undefined : dish.trim() || undefined,
+      })
+      if (dishImage) {
+        await api.post('/dishes', {
+          restaurantId: pickedId,
+          name: dish.trim() || picked?.name || 'Plato',
+          caption: note.trim() || undefined,
+          image: dishImage,
+          grain: dishGrain,
+          visibility: 'friends',
+          alsoFavorite: true,
+        })
+      }
+    },
     onSuccess: () => {
       track('rank_saved', {
         hasNote: note.trim().length > 0,
         tags: tags.length,
         hasDish: dish.trim().length > 0,
-        chainedPhoto: chainDish,
+        hasPhoto: Boolean(dishImage),
       })
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['restaurant', pickedId] })
-      if (chainDish && pickedId) {
-        router.replace(`/dish?restaurant=${pickedId}`)
-      } else {
-        finishToRankings()
-      }
+      if (dishImage) queryClient.invalidateQueries({ queryKey: ['dishes', pickedId] })
+      finishToRankings()
     },
     onError: (err, pos) => {
       captureError(err, 'rank.save')
@@ -416,8 +440,10 @@ export default function RankAPlace() {
         setTags={setTags}
         dish={dish}
         setDish={setDish}
-        chainDish={chainDish}
-        setChainDish={setChainDish}
+        dishImage={dishImage}
+        setDishImage={setDishImage}
+        dishGrain={dishGrain}
+        setDishGrain={setDishGrain}
         saving={save.isPending}
         onBack={() => setRevealed(false)}
         onSave={() => save.mutate(position)}
@@ -700,8 +726,10 @@ function NoteStep({
   setTags,
   dish,
   setDish,
-  chainDish,
-  setChainDish,
+  dishImage,
+  setDishImage,
+  dishGrain,
+  setDishGrain,
   saving,
   onBack,
   onSave,
@@ -715,8 +743,10 @@ function NoteStep({
   setTags: Dispatch<SetStateAction<string[]>>
   dish: string
   setDish: Dispatch<SetStateAction<string>>
-  chainDish: boolean
-  setChainDish: Dispatch<SetStateAction<boolean>>
+  dishImage: string | null
+  setDishImage: Dispatch<SetStateAction<string | null>>
+  dishGrain: Grain
+  setDishGrain: Dispatch<SetStateAction<Grain>>
   saving: boolean
   onBack: () => void
   onSave: () => void
@@ -810,17 +840,47 @@ function NoteStep({
         />
 
         <Eyebrow className="mt-4 font-mono">Foto del plato</Eyebrow>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: chainDish }}
-          onPress={() => setChainDish((v) => !v)}
-          className={`mt-2 min-h-[56px] flex-row items-center gap-3 rounded border px-4 ${chainDish ? 'border-accent bg-accent-fill' : 'border-line border-dashed'} active:opacity-80`}
-        >
-          <Text className="font-serif text-serif-lg text-accent">+</Text>
-          <Text className="font-ui text-body text-text">
-            {chainDish ? 'Foto después de publicar' : 'Agregar una foto'}
-          </Text>
-        </Pressable>
+        {dishImage ? (
+          <View className="mt-2 flex-row items-center gap-3">
+            <Image
+              source={{ uri: dishImage }}
+              style={{ width: 56, height: 56, borderRadius: 8 }}
+              contentFit="cover"
+            />
+            <View className="flex-1 flex-row flex-wrap gap-2">
+              {GRAINS.map((g) => (
+                <Chip
+                  key={g.value}
+                  size="sm"
+                  state={dishGrain === g.value ? 'selected' : 'default'}
+                  onPress={() => setDishGrain(g.value)}
+                >
+                  {g.label}
+                </Chip>
+              ))}
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Quitar foto"
+              onPress={() => setDishImage(null)}
+              className="min-h-[44px] min-w-[44px] items-center justify-center active:opacity-60"
+            >
+              <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={async () => {
+              const uri = await pickDishPhoto()
+              if (uri) setDishImage(uri)
+            }}
+            className="mt-2 min-h-[56px] flex-row items-center gap-3 rounded border border-line border-dashed px-4 active:opacity-80"
+          >
+            <Text className="font-serif text-serif-lg text-accent">+</Text>
+            <Text className="font-ui text-body text-text">Agregar una foto</Text>
+          </Pressable>
+        )}
 
         <View className="mt-6">
           <Button variant="primary" disabled={saving} onPress={onSave}>
