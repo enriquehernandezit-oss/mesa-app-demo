@@ -9,6 +9,7 @@ import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
 import { contactsAvailable, importContactPhones } from '@/lib/contacts'
 import { cuisineLabel } from '@/lib/display'
+import { captureError } from '@/lib/errors'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
@@ -422,6 +423,10 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
           ? `${users.length} contactos están en Mesa.`
           : 'Todavía no hay contactos en Mesa.',
       )
+    },
+    onError: (err) => {
+      captureError(err, 'onboarding.contactMatch')
+      setContactMsg('No se pudo buscar en tus contactos. Intenta de nuevo.')
     },
   })
 

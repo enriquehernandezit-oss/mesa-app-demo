@@ -61,6 +61,15 @@ export default function MapScreen() {
             La ubicación está desactivada. Actívala para Mesa en los ajustes del teléfono.
           </Caption>
         )}
+        {locationStatus === 'error' && (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => requestLocation()}
+            className="min-h-[40px] justify-center active:opacity-60"
+          >
+            <Caption>No pudimos ubicarte. Toca para intentar de nuevo.</Caption>
+          </Pressable>
+        )}
       </View>
 
       <View className="flex-1">

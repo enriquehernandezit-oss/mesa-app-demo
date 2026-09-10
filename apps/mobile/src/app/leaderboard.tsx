@@ -1,4 +1,4 @@
-import { Body, Caption, Chip, Eyebrow, RowsSkeleton } from '@/components/ui'
+import { Body, Caption, Chip, ErrorState, Eyebrow, RowsSkeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
@@ -50,6 +50,8 @@ export default function LeaderboardScreen() {
 
         {q.isPending ? (
           <RowsSkeleton rows={6} thumb={38} />
+        ) : q.isError ? (
+          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la clasificación.</ErrorState>
         ) : (
           rows.map((r, i) => (
             <Link key={r.id} href={`/u/${r.id}`} asChild>

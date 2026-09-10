@@ -169,6 +169,14 @@ function MesaStack() {
       <Stack.Screen name="rank" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
 
+      {/* These three scroll horizontal rails/swipe-rows that reach the screen
+          edge (similar-spots rail, ranking-row swipe-to-remove, list-detail
+          rows). The global edge-anywhere back-swipe above would fight a
+          horizontal drag that starts near the edge, so it's off here and these
+          fall back to the standard left-edge-only swipe. */}
+      <Stack.Screen name="r/[restaurantId]" options={{ fullScreenGestureEnabled: false }} />
+      <Stack.Screen name="u/[userId]" options={{ fullScreenGestureEnabled: false }} />
+
       <Stack.Screen name="settings" options={{ ...utility, title: 'Ajustes' }} />
       <Stack.Screen name="activity" options={{ ...utility, title: 'Actividad' }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: 'Clasificación' }} />
@@ -176,7 +184,7 @@ function MesaStack() {
       <Stack.Screen name="moderation" options={{ ...utility, title: 'Moderación' }} />
       {/* Titles for these two are set by the screens themselves once the data
           (a list's name, a legal doc's name) is known. */}
-      <Stack.Screen name="lists/[slug]" options={utility} />
+      <Stack.Screen name="lists/[slug]" options={{ ...utility, fullScreenGestureEnabled: false }} />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

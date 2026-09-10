@@ -327,6 +327,10 @@ export default function RankingsTab() {
             <BarriosView rankings={ranked} />
           ) : saved.isPending ? (
             <Skeleton height={64} />
+          ) : saved.isError ? (
+            <ErrorState onRetry={() => saved.refetch()}>
+              No se pudo cargar tu lista de "Quiero probar".
+            </ErrorState>
           ) : saved.data && saved.data.saved.length > 0 ? (
             saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
           ) : (

@@ -24,12 +24,13 @@ import type {
   Neighborhood,
   RailSpot,
 } from '@/lib/types'
+import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
@@ -61,17 +62,24 @@ export default function ExploreScreen() {
     staleTime: Number.POSITIVE_INFINITY,
   })
 
+  // Holds off the Mesa search request itself until typing pauses — a request
+  // per keystroke used to hit the API (and re-fire the analytics event below)
+  // on every character.
+  const debouncedQ = useDebounced(q.trim(), 300)
+
+  // Length of the term only, once per settled query — never the term itself
+  // (it can be a person's name), and never once per keystroke/refetch.
+  useEffect(() => {
+    if (debouncedQ.length >= 2) track('search_performed', { length: debouncedQ.length })
+  }, [debouncedQ])
+
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
   const results = useQuery({
-    queryKey: ['explore', q.trim(), hood, cuisine, price, openNow, sort],
+    queryKey: ['explore', debouncedQ, hood, cuisine, price, openNow, sort],
     queryFn: () => {
       const params = new URLSearchParams()
-      if (q.trim().length >= 2) {
-        params.set('q', q.trim())
-        // Length of the term only — never the term itself (it can be a person's name).
-        track('search_performed', { length: q.trim().length })
-      }
+      if (debouncedQ.length >= 2) params.set('q', debouncedQ)
       if (hood) params.set('neighborhood', hood)
       if (cuisine) params.set('cuisine', cuisine)
       if (price) params.set('price', String(price))
@@ -85,7 +93,7 @@ export default function ExploreScreen() {
   const members = results.data?.members ?? []
   // The default browse state: no query, no filters. Anything else is a search,
   // and the trending rail steps out of the way.
-  const browsing = q.trim().length < 2 && !hood && !cuisine && price == null && !openNow
+  const browsing = debouncedQ.length < 2 && !hood && !cuisine && price == null && !openNow
 
   // "Abierto ahora" filters on closesAt (null for imported rows) — hide the chip
   // when few current hits have hours; keep it while active. (M7)

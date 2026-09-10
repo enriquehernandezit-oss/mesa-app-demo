@@ -35,12 +35,18 @@ export function MesaMap({
   const theme = useResolvedTheme()
   const styleURL = theme === 'candlelit' ? Mapbox.StyleURL.Dark : Mapbox.StyleURL.Light
 
-  // Fit-to-bounds view: the box around every plotted point (spots + you).
+  // Fit-to-bounds view: the box around every plotted point (spots + you). A
+  // box needs two DISTINCT points — one point (or several stacked on the same
+  // coordinate) collapses ne/sw to the same corner, which Mapbox resolves to
+  // an arbitrary/world-level zoom rather than "zoomed in on the one spot".
   const pts = [...spots.map((s) => ({ lat: s.lat, lng: s.lng })), ...(me ? [me] : [])]
   const lats = pts.map((p) => p.lat)
   const lngs = pts.map((p) => p.lng)
+  const spread =
+    pts.length >= 2 &&
+    (Math.max(...lats) !== Math.min(...lats) || Math.max(...lngs) !== Math.min(...lngs))
   const bounds =
-    !center && pts.length > 0
+    !center && spread
       ? {
           ne: [Math.max(...lngs), Math.max(...lats)] as [number, number],
           sw: [Math.min(...lngs), Math.min(...lats)] as [number, number],
@@ -50,13 +56,18 @@ export function MesaMap({
           paddingBottom: 48,
         }
       : undefined
+  const singlePoint = !center && !spread && pts.length > 0 ? pts[0] : null
 
   return (
     <MapView style={style} styleURL={styleURL} scaleBarEnabled={false}>
       <Camera
         {...(center
           ? { centerCoordinate: [center.lng, center.lat], zoomLevel: center.zoom }
-          : { bounds })}
+          : bounds
+            ? { bounds }
+            : singlePoint
+              ? { centerCoordinate: [singlePoint.lng, singlePoint.lat], zoomLevel: 14 }
+              : {})}
         animationDuration={0}
       />
       {spots.map((s) => {

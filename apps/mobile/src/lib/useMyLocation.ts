@@ -8,7 +8,10 @@ import * as Location from 'expo-location'
 import { useSyncExternalStore } from 'react'
 import { type LatLng, getPosition } from './geo'
 
-type Status = 'idle' | 'loading' | 'granted' | 'denied'
+// 'denied' is a permission decision — the fix is in the phone's Settings.
+// 'error' is everything else (a timed-out or failed fix) — the fix is "try
+// again", which is a different message and a different affordance.
+type Status = 'idle' | 'loading' | 'granted' | 'denied' | 'error'
 type Snapshot = { position: LatLng | null; status: Status }
 
 let snapshot: Snapshot = { position: null, status: 'idle' }
@@ -36,8 +39,10 @@ Location.getForegroundPermissionsAsync()
     // Not available — stay 'idle'.
   })
 
-// Requests the device's real position. Only ever from a tap. A denial or timeout
-// resolves to null; every caller treats that as "just don't sort by distance".
+// Requests the device's real position. Only ever from a tap. Resolves to null
+// on denial OR failure — every caller that just wants to sort by distance
+// treats those the same — but the store's own `status` keeps them apart, so a
+// screen that wants to say something useful (map.tsx) still can.
 export function requestMyLocation(): Promise<LatLng | null> {
   if (snapshot.position) return Promise.resolve(snapshot.position)
   if (snapshot.status === 'denied') return Promise.resolve(null)
@@ -48,8 +53,10 @@ export function requestMyLocation(): Promise<LatLng | null> {
       setSnapshot({ position: pos, status: 'granted' })
       return pos
     })
-    .catch(() => {
-      setSnapshot({ status: 'denied' })
+    .catch((err) => {
+      setSnapshot({
+        status: err instanceof Error && err.message === 'location-denied' ? 'denied' : 'error',
+      })
       return null
     })
     .finally(() => {

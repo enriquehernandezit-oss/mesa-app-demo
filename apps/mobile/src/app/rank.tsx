@@ -210,10 +210,22 @@ export default function RankAPlace() {
     staleTime: 30_000,
   })
 
+  // Held so a swipe-back (or the modal's own beforeRemove-driven dismiss)
+  // during the 1.3s stamp can cancel the pending navigate — firing
+  // router.replace on a screen that already unmounted is exactly what
+  // produces the "screen 'rank' was removed natively but didn't get removed
+  // from JS state" warning.
+  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => {
+      if (finishTimer.current) clearTimeout(finishTimer.current)
+    }
+  }, [])
+
   const finishToRankings = () => {
     setPlacedStamp(true)
     tapSuccess()
-    setTimeout(() => router.replace('/rankings'), 1300)
+    finishTimer.current = setTimeout(() => router.replace('/rankings'), 1300)
   }
 
   const save = useMutation({

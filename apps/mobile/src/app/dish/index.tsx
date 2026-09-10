@@ -1,9 +1,21 @@
-import { Body, Button, Caption, Chip, Eyebrow, SectionHeader, Title, Toggle } from '@/components/ui'
+import {
+  Body,
+  Button,
+  Caption,
+  Chip,
+  ErrorState,
+  Eyebrow,
+  SectionHeader,
+  Title,
+  Toggle,
+} from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { GRAINS, GRAIN_LABEL_ES, type Grain } from '@/lib/display'
+import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
@@ -66,6 +78,14 @@ export default function DishCompose() {
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       goBack()
     },
+    onError: (err) => {
+      captureError(err, 'dish.post')
+      toast({
+        variant: 'error',
+        message: 'No se pudo publicar el plato.',
+        action: { label: 'Intentar de nuevo', onClick: () => post.mutate() },
+      })
+    },
   })
 
   // Hardware back / edge-swipe at step 2 unwinds to the photo step instead of
@@ -92,6 +112,18 @@ export default function DishCompose() {
   const restaurant = q.data?.restaurant
   const myRanking = q.data?.myRanking ?? null
   const hasRanked = Boolean(myRanking)
+
+  // `retry: false` on the query above means a failed fetch used to leave this
+  // screen silently rendering with an undefined restaurant — no message, no
+  // way to try again.
+  if (q.isError) {
+    return (
+      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+        <BackBar label="‹ Atrás" onPress={goBack} />
+        <ErrorState onRetry={() => q.refetch()}>No se pudo cargar este spot.</ErrorState>
+      </View>
+    )
+  }
 
   // Gate: a dish must attach to a ranking.
   if (q.isSuccess && !hasRanked) {

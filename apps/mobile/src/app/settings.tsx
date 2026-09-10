@@ -1,4 +1,4 @@
-import { Button, Caption, Eyebrow, Toggle } from '@/components/ui'
+import { Button, Caption, ErrorState, Eyebrow, Toggle } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { ThemePicker } from '@/components/ui/ThemePicker'
 import { ChevronIcon } from '@/components/ui/icons'
@@ -216,7 +216,13 @@ export default function SettingsScreen() {
               {p?.name || 'Tú'}
             </Text>
             <Caption numberOfLines={1}>
-              {[p?.handle ? `@${p.handle}` : null, `${stats.data?.places ?? 0} rankeados`]
+              {[
+                p?.handle ? `@${p.handle}` : null,
+                // Omitted (not "0 rankeados") on a failed fetch — a real zero
+                // and a fetch error are different facts and shouldn't look
+                // the same.
+                stats.isError ? null : `${stats.data?.places ?? 0} rankeados`,
+              ]
                 .filter(Boolean)
                 .join(' · ')}
             </Caption>
@@ -256,30 +262,42 @@ export default function SettingsScreen() {
           </RowButton>
         </View>
 
-        {/* Blocked accounts (App Store 1.2). */}
-        {blocked.length > 0 && (
-          <>
-            <Eyebrow className="mt-6 mb-2">Cuentas bloqueadas</Eyebrow>
-            <View className="rounded border border-line bg-surface px-4">
-              {blocked.map((u, i) => (
-                <Row key={u.id} last={i === blocked.length - 1}>
-                  <Text className="flex-1 font-ui text-body text-text">
-                    {u.name || (u.handle ? `@${u.handle}` : 'Alguien')}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={unblock.isPending}
-                    onPress={() => unblock.mutate(u.id)}
-                    className="min-h-[36px] justify-center active:opacity-60"
-                  >
-                    <Text className="font-ui-medium text-label text-accent-strong">
-                      Desbloquear
+        {/* Blocked accounts (App Store 1.2). Was gated on `blocked.length > 0`
+            alone, which also matches "the fetch failed" — a member who had
+            blocked accounts saw the whole section silently vanish instead of
+            an error. */}
+        {blocks.isError ? (
+          <View className="mt-6">
+            <Eyebrow className="mb-2">Cuentas bloqueadas</Eyebrow>
+            <ErrorState onRetry={() => blocks.refetch()}>
+              No se pudieron cargar tus cuentas bloqueadas.
+            </ErrorState>
+          </View>
+        ) : (
+          blocked.length > 0 && (
+            <>
+              <Eyebrow className="mt-6 mb-2">Cuentas bloqueadas</Eyebrow>
+              <View className="rounded border border-line bg-surface px-4">
+                {blocked.map((u, i) => (
+                  <Row key={u.id} last={i === blocked.length - 1}>
+                    <Text className="flex-1 font-ui text-body text-text">
+                      {u.name || (u.handle ? `@${u.handle}` : 'Alguien')}
                     </Text>
-                  </Pressable>
-                </Row>
-              ))}
-            </View>
-          </>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={unblock.isPending}
+                      onPress={() => unblock.mutate(u.id)}
+                      className="min-h-[36px] justify-center active:opacity-60"
+                    >
+                      <Text className="font-ui-medium text-label text-accent-strong">
+                        Desbloquear
+                      </Text>
+                    </Pressable>
+                  </Row>
+                ))}
+              </View>
+            </>
+          )
         )}
 
         <Eyebrow className="mt-6 mb-2">Cuenta</Eyebrow>
