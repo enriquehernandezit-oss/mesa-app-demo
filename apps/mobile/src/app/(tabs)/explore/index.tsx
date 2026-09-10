@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
-import { cuisineLabel } from '@/lib/display'
+import { OCCASION_TAGS, cuisineLabel } from '@/lib/display'
 import type {
   ExploreHit,
   ExploreMember,
@@ -52,6 +52,14 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // Rankings already has (rankings.tsx's mineControls) — one place for this
 // pattern instead of two different ones.
 const PRICES = [1, 2, 3, 4]
+// Score bands (A1) — a small cacheable set instead of a free slider, cut
+// against the real catalog distribution (p75 ≈ 8.8): "9+" is a deliberately
+// small elite set, "8+" roughly the top quartile. Stored scale (0–100), same
+// units as rankings.score.
+const SCORE_BANDS: { value: number; label: string }[] = [
+  { value: 80, label: '8+' },
+  { value: 90, label: '9+' },
+]
 type SortKey = 'score' | 'name'
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'score', label: 'Puntuación' },
@@ -67,6 +75,8 @@ export default function ExploreScreen() {
   const [cuisine, setCuisine] = useState<string | null>(null)
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
+  const [occasion, setOccasion] = useState<string | null>(null)
+  const [minScore, setMinScore] = useState<number | null>(null)
   const [sort, setSort] = useState<SortKey>('score')
   const [filterOpen, setFilterOpen] = useState(false)
 
@@ -89,12 +99,15 @@ export default function ExploreScreen() {
     })
     if (idx != null) setSort(SORT_OPTIONS[idx].key)
   }
-  const activeCount = [hood, cuisine, price].filter((v) => v != null).length + (openNow ? 1 : 0)
+  const activeCount =
+    [hood, cuisine, price, occasion, minScore].filter((v) => v != null).length + (openNow ? 1 : 0)
   const clearFilters = () => {
     setHood(null)
     setCuisine(null)
     setPrice(null)
     setOpenNow(false)
+    setOccasion(null)
+    setMinScore(null)
   }
 
   // Holds off the Mesa search request itself until typing pauses — a request
@@ -111,7 +124,7 @@ export default function ExploreScreen() {
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
   const results = useQuery({
-    queryKey: ['explore', debouncedQ, hood, cuisine, price, openNow, sort],
+    queryKey: ['explore', debouncedQ, hood, cuisine, price, openNow, occasion, minScore, sort],
     queryFn: () => {
       const params = new URLSearchParams()
       if (debouncedQ.length >= 2) params.set('q', debouncedQ)
@@ -119,6 +132,8 @@ export default function ExploreScreen() {
       if (cuisine) params.set('cuisine', cuisine)
       if (price) params.set('price', String(price))
       if (openNow) params.set('open', '1')
+      if (occasion) params.set('occasion', occasion)
+      if (minScore) params.set('minScore', String(minScore))
       params.set('sort', sort)
       return api.get<ExploreResponse>(`/restaurants?${params}`)
     },
@@ -128,7 +143,14 @@ export default function ExploreScreen() {
   const members = results.data?.members ?? []
   // The default browse state: no query, no filters. Anything else is a search,
   // and the trending rail steps out of the way.
-  const browsing = debouncedQ.length < 2 && !hood && !cuisine && price == null && !openNow
+  const browsing =
+    debouncedQ.length < 2 &&
+    !hood &&
+    !cuisine &&
+    price == null &&
+    !openNow &&
+    !occasion &&
+    minScore == null
 
   // "Abierto ahora" filters on closesAt (null for imported rows) — hide the chip
   // when few current hits have hours; keep it while active. (M7)
@@ -227,6 +249,16 @@ export default function ExploreScreen() {
                 Abierto ahora ✕
               </Chip>
             )}
+            {occasion && (
+              <Chip size="sm" state="selected" onPress={() => setOccasion(null)}>
+                {occasion} ✕
+              </Chip>
+            )}
+            {minScore != null && (
+              <Chip size="sm" state="selected" onPress={() => setMinScore(null)}>
+                {SCORE_BANDS.find((b) => b.value === minScore)?.label ?? minScore} ✕
+              </Chip>
+            )}
             {activeCount > 0 && (
               <Pressable
                 accessibilityRole="button"
@@ -271,6 +303,20 @@ export default function ExploreScreen() {
                 selected={price}
                 render={(v) => '$'.repeat(Number(v))}
                 onToggle={(v) => setPrice(price === v ? null : Number(v))}
+              />
+              <FilterGroup
+                label="Ocasión"
+                values={OCCASION_TAGS}
+                selected={occasion}
+                render={(v) => String(v)}
+                onToggle={(v) => setOccasion(occasion === v ? null : String(v))}
+              />
+              <FilterGroup
+                label="Puntuación"
+                values={SCORE_BANDS.map((b) => b.value)}
+                selected={minScore}
+                render={(v) => SCORE_BANDS.find((b) => b.value === v)?.label ?? String(v)}
+                onToggle={(v) => setMinScore(minScore === v ? null : Number(v))}
               />
             </View>
           )}
@@ -339,7 +385,6 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
             // Imported rows often carry an address but no mapped sector — fall
             // back so the row still says where the place is.
             neighborhood={r.neighborhood ?? r.address ?? null}
-            hours={r.closesAt ? `hasta ${r.closesAt}` : null}
           />
         </View>
         {r.friendCount > 0 && r.friendAvg != null ? (

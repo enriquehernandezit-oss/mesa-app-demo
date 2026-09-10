@@ -170,6 +170,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     const cuisine = (c.req.query('cuisine') ?? '').trim()
     const price = Number(c.req.query('price')) || null
     const openNow = c.req.query('open') === '1'
+    const occasion = (c.req.query('occasion') ?? '').trim()
+    const minScore = Number(c.req.query('minScore')) || null
     const sort = c.req.query('sort') === 'name' ? 'name' : 'score'
     const hasQuery = q.length >= 2
 
@@ -183,6 +185,28 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     if (cuisine) liveConds.push(eq(restaurants.cuisine, cuisine))
     // "Open now" is a demo filter over the display close-time (not real hours).
     if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
+    // Occasion (A1) — at least one ranking of this place carries the tag.
+    // Same qualifying-id-subquery shape as dishMatch/rankedPool below.
+    if (occasion) {
+      const occasionMatch = db
+        .selectDistinct({ id: rankings.restaurantId })
+        .from(rankings)
+        .where(sql`${occasion} = any(${rankings.tags})`)
+      liveConds.push(inArray(restaurants.id, occasionMatch))
+    }
+    // Score band (A1) — friend average at or above the threshold, gated on
+    // `following` the same way phase 2's friendAvg column is. A restaurant no
+    // followed friend has ranked never qualifies; that's the intended
+    // "what would MY circle rate this" reading, not an all-Mesa average.
+    if (minScore) {
+      const scoreQualified = db
+        .select({ id: rankings.restaurantId })
+        .from(rankings)
+        .where(inArray(rankings.userId, following))
+        .groupBy(rankings.restaurantId)
+        .having(sql`avg(${rankings.score}) >= ${minScore}`)
+      liveConds.push(inArray(restaurants.id, scoreQualified))
+    }
 
     let ids: string[]
     if (hasQuery) {
@@ -615,6 +639,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         geoPrecision: true,
         googlePlaceId: true,
         sourceRefreshedAt: true,
+        source: true,
       },
       with: { neighborhood: { columns: { slug: true, name: true } } },
     })
@@ -770,10 +795,16 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       neighborhoodId: _nid,
       googlePlaceId,
       sourceRefreshedAt: _sra,
+      source,
       ...restaurantOut
     } = restaurant
+    // "Powered by Google" is only honest for a row a MEMBER actually created
+    // from a Google result (POST /from-google, source: 'member') — a seed or
+    // Foursquare-sourced row can carry a googlePlaceId too (the match path in
+    // POST /from-google stamps one onto a curated row it recognizes), and
+    // that row's name/cover/cuisine are Mesa's own, not Google's.
     return c.json({
-      restaurant: { ...restaurantOut, google: googlePlaceId != null },
+      restaurant: { ...restaurantOut, google: googlePlaceId != null && source === 'member' },
       friendsRankings,
       friendAvg,
       occasionTags,
