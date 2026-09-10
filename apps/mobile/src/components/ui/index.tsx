@@ -1,3 +1,4 @@
+import { ChevronIcon } from '@/components/ui/icons'
 import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, useEffect } from 'react'
@@ -171,6 +172,12 @@ type ChipProps = Omit<PressableProps, 'children'> & {
   state?: 'default' | 'active' | 'selected'
   size?: 'sm' | 'md'
   icon?: ReactNode
+  // Trailing caret for a chip that OPENS something (a dropdown/sheet) rather
+  // than just toggling — visually distinct from `icon`, which is a leading
+  // glyph naming the dimension (SortIcon, etc). Points down: this app's one
+  // ChevronIcon is drawn pointing right (the settings-row ">" affordance);
+  // rotated 90° it reads as the standard "opens below" caret.
+  chevron?: boolean
   children: ReactNode
   className?: string
 }
@@ -178,22 +185,30 @@ export const Chip = ({
   state = 'default',
   size = 'md',
   icon,
+  chevron,
   children,
   className,
   ...p
 }: ChipProps) => {
   const sm = size === 'sm'
-  const filled = state === 'selected' || (sm && state === 'active')
+  const filled = state === 'selected'
+  // `active` used to collapse into the same filled look as `selected` at
+  // size="sm" only (`filled = state === 'selected' || (sm && state ===
+  // 'active')`) — so a sm trigger that's simply OPEN (Rankings' "Filtros"
+  // chip while its panel is showing) was visually identical to one that has
+  // filters APPLIED. `active` now gets the same outline treatment at both
+  // sizes: it's "in progress," not "committed," and shouldn't look like it.
+  const outlineActive = state === 'active'
   // Small controls shrink under the finger on iOS; a full-width Button dims
   // instead (a big primary action that shrinks reads as a gimmick), which is why
   // this lives here and not on Button.
   const press = 'active:scale-[0.97]'
   const box = sm
-    ? `min-h-[36px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : 'bg-surface border-line-strong'}`
-    : `min-h-[44px] min-w-[44px] rounded-pill border px-3 py-2 ${press} ${state === 'selected' ? 'bg-accent-fill border-accent' : state === 'active' ? 'border-accent bg-transparent' : 'border-line bg-transparent'}`
+    ? `min-h-[36px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : outlineActive ? 'border-accent bg-transparent' : 'bg-surface border-line-strong'}`
+    : `min-h-[44px] min-w-[44px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : outlineActive ? 'border-accent bg-transparent' : 'border-line bg-transparent'}`
   const fg = filled
     ? 'text-on-accent'
-    : state === 'active'
+    : outlineActive
       ? 'text-accent'
       : sm
         ? 'text-text'
@@ -208,6 +223,14 @@ export const Chip = ({
     >
       {icon}
       <Text className={`${font} ${fg}`}>{children}</Text>
+      {chevron ? (
+        <View style={{ transform: [{ rotate: '90deg' }] }}>
+          <ChevronIcon
+            size={12}
+            color={filled ? 'on-accent' : outlineActive ? 'accent' : sm ? 'text' : 'text-2'}
+          />
+        </View>
+      ) : null}
     </Pressable>
   )
 }

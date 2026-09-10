@@ -1,4 +1,4 @@
-import { Caption, SectionHeader } from '@/components/ui'
+import { Caption, Chip, Eyebrow, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
@@ -248,6 +248,45 @@ export function ScoreBadge({
       ) : null}
       {caption ? <Caption>{caption}</Caption> : null}
       {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}
+    </View>
+  )
+}
+
+// One labeled group of sm Chips in a filter panel — a dimension's name over
+// its options, the selected one filled. Shared by Rankings' "Filtros" panel
+// and Explore's (D3), which used to each hand-roll their own filter surface
+// in a different idiom; this is the one shape both now render through.
+// `values`/`selected` are generic over string|number so a dimension like
+// price (numeric) and cuisine (string) both fit without two components.
+export function FilterGroup({
+  label,
+  values,
+  selected,
+  render,
+  onToggle,
+}: {
+  label: string
+  values: (string | number)[]
+  selected: string | number | null
+  render: (v: string | number) => string
+  onToggle: (v: string | number) => void
+}) {
+  if (values.length === 0) return null
+  return (
+    <View>
+      <Eyebrow className="mb-2 font-mono">{label}</Eyebrow>
+      <View className="flex-row flex-wrap gap-2">
+        {values.map((v) => (
+          <Chip
+            key={String(v)}
+            size="sm"
+            state={selected === v ? 'selected' : 'default'}
+            onPress={() => onToggle(v)}
+          >
+            {render(v)}
+          </Chip>
+        ))}
+      </View>
     </View>
   )
 }

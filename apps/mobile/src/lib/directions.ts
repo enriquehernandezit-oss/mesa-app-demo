@@ -1,4 +1,4 @@
-import { showActionSheet } from '@/lib/actionSheet'
+import { showSheet } from '@/components/ui/Sheet'
 import * as SecureStore from 'expo-secure-store'
 import { Linking } from 'react-native'
 
@@ -51,7 +51,7 @@ export async function openDirections(lat: number, lng: number, label?: string): 
   const last = await lastUsed()
   const apps = last ? [last, ...ORDER.filter((a) => a !== last)] : ORDER
 
-  const picked = await showActionSheet({
+  const picked = await showSheet({
     title: 'Cómo llegar',
     message: label,
     options: apps.map((a) => ({ label: LABEL[a] })),

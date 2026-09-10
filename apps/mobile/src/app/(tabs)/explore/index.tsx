@@ -4,7 +4,6 @@ import {
   Body,
   Caption,
   Chip,
-  ChipRail,
   EmptyState,
   ErrorState,
   RowsSkeleton,
@@ -12,8 +11,15 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { showSheet } from '@/components/ui/Sheet'
 import { PinIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import {
+  Characteristics,
+  FilterGroup,
+  ScoreBadge,
+  SpotCard,
+  SpotRail,
+} from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
@@ -35,10 +41,22 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
-// dish-matched places. Filter rails: attributes (score / open now / price),
-// sector, cuisine. Ported from apps/app/src/screens/explore/ExploreScreen.tsx.
-// The QuickActions rail is dropped (same as the feed — inert / map-gated).
+// dish-matched places. Ported from apps/app/src/screens/explore/
+// ExploreScreen.tsx. The QuickActions rail is dropped (same as the feed —
+// inert / map-gated).
+//
+// Filters (D3): used to be three stacked, unlabelled ChipRails — 13+ chips at
+// identical visual weight, mixing sort/open-now/price/sector/cuisine with no
+// group headers, which is what read as a "dead band" running the width of the
+// screen. Now the same trigger + inline-panel + removable-chips idiom
+// Rankings already has (rankings.tsx's mineControls) — one place for this
+// pattern instead of two different ones.
 const PRICES = [1, 2, 3, 4]
+type SortKey = 'score' | 'name'
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'score', label: 'Puntuación' },
+  { key: 'name', label: 'Nombre' },
+]
 
 export default function ExploreScreen() {
   const router = useRouter()
@@ -49,7 +67,8 @@ export default function ExploreScreen() {
   const [cuisine, setCuisine] = useState<string | null>(null)
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
-  const [sort, setSort] = useState<'name' | 'score'>('score')
+  const [sort, setSort] = useState<SortKey>('score')
+  const [filterOpen, setFilterOpen] = useState(false)
 
   const neighborhoods = useQuery({
     queryKey: ['neighborhoods'],
@@ -61,6 +80,22 @@ export default function ExploreScreen() {
     queryFn: () => api.get<{ cuisines: string[] }>('/restaurants/cuisines'),
     staleTime: Number.POSITIVE_INFINITY,
   })
+
+  const openSort = async () => {
+    const idx = await showSheet({
+      title: 'Ordenar por',
+      options: SORT_OPTIONS.map((o) => ({ label: o.label })),
+      selectedIndex: SORT_OPTIONS.findIndex((o) => o.key === sort),
+    })
+    if (idx != null) setSort(SORT_OPTIONS[idx].key)
+  }
+  const activeCount = [hood, cuisine, price].filter((v) => v != null).length + (openNow ? 1 : 0)
+  const clearFilters = () => {
+    setHood(null)
+    setCuisine(null)
+    setPrice(null)
+    setOpenNow(false)
+  }
 
   // Holds off the Mesa search request itself until typing pauses — a request
   // per keystroke used to hit the API (and re-fire the analytics event below)
@@ -154,65 +189,92 @@ export default function ExploreScreen() {
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Attribute filters (sort / open / price). */}
-        <ChipRail className="mt-3">
-          <Chip
-            size="sm"
-            icon={<SortIcon size={12} />}
-            state={sort === 'score' ? 'selected' : 'default'}
-            onPress={() => setSort(sort === 'score' ? 'name' : 'score')}
-          >
-            Puntuación
-          </Chip>
-          {showOpenChip && (
+        {/* Sort + filter trigger row, and — while open — the grouped panel
+            below it. Mirrors Rankings' mineControls: one "Filtros" trigger
+            opens one panel, instead of three stacked rails mixing five
+            dimensions (sort, open-now, price, sector, cuisine) at identical
+            visual weight with no group headers. */}
+        <View className="mt-3 mb-2 gap-2">
+          <View className="flex-row flex-wrap items-center gap-2">
+            <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
+              {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Ordenar'}
+            </Chip>
             <Chip
               size="sm"
-              state={openNow ? 'selected' : 'default'}
-              onPress={() => setOpenNow((v) => !v)}
+              state={filterOpen ? 'active' : activeCount > 0 ? 'selected' : 'default'}
+              chevron
+              onPress={() => setFilterOpen((v) => !v)}
             >
-              Abierto ahora
+              {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
             </Chip>
-          )}
-          {PRICES.map((pt) => (
-            <Chip
-              key={pt}
-              size="sm"
-              state={price === pt ? 'selected' : 'default'}
-              onPress={() => setPrice(price === pt ? null : pt)}
-            >
-              {'$'.repeat(pt)}
-            </Chip>
-          ))}
-        </ChipRail>
-
-        {/* Sector on its own line — the highest-value filter for a barrio-driven city. */}
-        <ChipRail className="mt-2">
-          {neighborhoods.data?.neighborhoods.map((n) => (
-            <Chip
-              key={n.slug}
-              size="sm"
-              state={hood === n.slug ? 'selected' : 'default'}
-              onPress={() => setHood(hood === n.slug ? null : n.slug)}
-            >
-              {n.name}
-            </Chip>
-          ))}
-        </ChipRail>
-
-        {(cuisines.data?.cuisines.length ?? 0) > 0 && (
-          <ChipRail className="mt-2">
-            {cuisines.data?.cuisines.map((cz) => (
-              <Chip
-                key={cz}
-                size="sm"
-                state={cuisine === cz ? 'selected' : 'default'}
-                onPress={() => setCuisine(cuisine === cz ? null : cz)}
-              >
-                {cuisineLabel(cz)}
+            {hood && (
+              <Chip size="sm" state="selected" onPress={() => setHood(null)}>
+                {neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood} ✕
               </Chip>
-            ))}
-          </ChipRail>
-        )}
+            )}
+            {cuisine && (
+              <Chip size="sm" state="selected" onPress={() => setCuisine(null)}>
+                {cuisineLabel(cuisine) ?? cuisine} ✕
+              </Chip>
+            )}
+            {price != null && (
+              <Chip size="sm" state="selected" onPress={() => setPrice(null)}>
+                {'$'.repeat(price)} ✕
+              </Chip>
+            )}
+            {openNow && (
+              <Chip size="sm" state="selected" onPress={() => setOpenNow(false)}>
+                Abierto ahora ✕
+              </Chip>
+            )}
+            {activeCount > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={clearFilters}
+                className="min-h-[36px] justify-center px-1 active:opacity-60"
+              >
+                <Caption className="font-mono text-accent-strong">Limpiar</Caption>
+              </Pressable>
+            )}
+          </View>
+
+          {filterOpen && (
+            <View className="gap-3 rounded border border-line bg-surface p-3">
+              {showOpenChip && (
+                <Chip
+                  size="sm"
+                  state={openNow ? 'selected' : 'default'}
+                  onPress={() => setOpenNow((v) => !v)}
+                >
+                  Abierto ahora
+                </Chip>
+              )}
+              <FilterGroup
+                label="Sector"
+                values={neighborhoods.data?.neighborhoods.map((n) => n.slug) ?? []}
+                selected={hood}
+                render={(v) =>
+                  neighborhoods.data?.neighborhoods.find((n) => n.slug === v)?.name ?? String(v)
+                }
+                onToggle={(v) => setHood(hood === v ? null : String(v))}
+              />
+              <FilterGroup
+                label="Cocina"
+                values={cuisines.data?.cuisines ?? []}
+                selected={cuisine}
+                render={(v) => cuisineLabel(String(v)) ?? String(v)}
+                onToggle={(v) => setCuisine(cuisine === v ? null : String(v))}
+              />
+              <FilterGroup
+                label="Precio"
+                values={PRICES}
+                selected={price}
+                render={(v) => '$'.repeat(Number(v))}
+                onToggle={(v) => setPrice(price === v ? null : Number(v))}
+              />
+            </View>
+          )}
+        </View>
 
         <View className="mt-4">
           {/* Trending rides above the results, but only in the default browse

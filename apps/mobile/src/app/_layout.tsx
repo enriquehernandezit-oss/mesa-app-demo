@@ -3,6 +3,7 @@ import '../global.css'
 // scope, and it has to be in place before anything else can throw.
 import '@/lib/errors'
 import { ShareCardHost } from '@/components/ShareCardHost'
+import { SheetHost } from '@/components/ui/Sheet'
 import { Toaster } from '@/components/ui/Toast'
 import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
 import { useSession } from '@/lib/auth-client'
@@ -111,6 +112,7 @@ export default function RootLayout() {
             <AnalyticsIdentity />
             <MesaStack />
             <Toaster />
+            <SheetHost />
             <ShareCardHost />
           </ThemeProvider>
         </QueryClientProvider>

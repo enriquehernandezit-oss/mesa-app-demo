@@ -12,11 +12,11 @@ import {
 } from '@/components/ui'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { showSheet } from '@/components/ui/Sheet'
 import { ShareIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { Characteristics, FilterGroup, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
-import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { cloudinaryUrl } from '@/lib/media'
@@ -88,9 +88,10 @@ export default function RankingsTab() {
   )
 
   const openSort = async () => {
-    const idx = await showActionSheet({
+    const idx = await showSheet({
       title: 'Ordenar por',
       options: SORT_OPTIONS.map((o) => ({ label: o.label })),
+      selectedIndex: SORT_OPTIONS.findIndex((o) => o.key === sort),
     })
     if (idx != null) setSort(SORT_OPTIONS[idx].key)
   }
@@ -159,12 +160,13 @@ export default function RankingsTab() {
   const mineControls = ranked.length > 0 && (
     <View className="mb-4 gap-2">
       <View className="flex-row flex-wrap items-center gap-2">
-        <Chip size="sm" icon={<SortIcon size={12} />} onPress={openSort}>
+        <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
           {sortLabel(sort)}
         </Chip>
         <Chip
           size="sm"
           state={filterOpen ? 'active' : activeCount > 0 ? 'selected' : 'default'}
+          chevron
           onPress={() => setFilterOpen((v) => !v)}
         >
           {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
@@ -347,40 +349,6 @@ export default function RankingsTab() {
           )}
         </ScrollView>
       )}
-    </View>
-  )
-}
-
-// One dimension of the filter panel — a mono label over a wrapping row of chips.
-function FilterGroup({
-  label,
-  values,
-  selected,
-  render,
-  onToggle,
-}: {
-  label: string
-  values: (string | number)[]
-  selected: string | number | null
-  render: (v: string | number) => string
-  onToggle: (v: string | number) => void
-}) {
-  if (values.length === 0) return null
-  return (
-    <View>
-      <Eyebrow className="mb-2 font-mono">{label}</Eyebrow>
-      <View className="flex-row flex-wrap gap-2">
-        {values.map((v) => (
-          <Chip
-            key={String(v)}
-            size="sm"
-            state={selected === v ? 'selected' : 'default'}
-            onPress={() => onToggle(v)}
-          >
-            {render(v)}
-          </Chip>
-        ))}
-      </View>
     </View>
   )
 }
