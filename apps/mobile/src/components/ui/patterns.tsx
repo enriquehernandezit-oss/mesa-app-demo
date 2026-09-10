@@ -12,6 +12,15 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 // A horizontal rail of cover cards under a section header — the same container
 // three times over (featured lists, similar spots, trending). Only the card
 // geometry differs, which is what `variant` on SpotCard carries.
+//
+// Full-bleed: the screens this sits in already pad their own contentContainer
+// with px-5, which used to double up here and cap the rail's SCROLLABLE
+// VIEWPORT at screen−40pt — not just its resting position. That left a ~20pt
+// dead strip inside each screen edge (untappable, and where card titles were
+// clipping before their numberOfLines ellipsis ever got a chance to fire,
+// since the card wasn't overflowing, the viewport was). `-mx-5` cancels the
+// parent's padding so the viewport reaches the true screen edge; `px-5` on
+// the content keeps the resting (unscrolled) position visually identical.
 export function SpotRail({ title, children }: { title: string; children: ReactNode }) {
   return (
     <View>
@@ -19,7 +28,8 @@ export function SpotRail({ title, children }: { title: string; children: ReactNo
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-3 pt-2 pr-5"
+        className="-mx-5"
+        contentContainerClassName="gap-3 px-5 pt-2"
       >
         {children}
       </ScrollView>

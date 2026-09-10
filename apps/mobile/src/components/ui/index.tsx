@@ -212,12 +212,20 @@ export const Chip = ({
   )
 }
 
-/* Horizontal scrolling row of chips. */
+/* Horizontal scrolling row of chips. Full-bleed: every caller already sits
+   inside a px-5-padded screen, which used to double up here and cap the
+   rail's SCROLLABLE VIEWPORT at screen−40pt (not just its resting position) —
+   the actual cause of the "dead strip at both screen edges" on Explore, where
+   three of these stack. `-mx-5` cancels the parent's padding so the viewport
+   reaches the true edge; `px-5` on the content keeps the resting position
+   unchanged. `className` (caller's own spacing, e.g. "mt-3") stays on the
+   outer element so it still governs this rail's position in the page flow. */
 export const ChipRail = ({ children, className }: { children: ReactNode; className?: string }) => (
   <ScrollView
     horizontal
     showsHorizontalScrollIndicator={false}
-    contentContainerClassName={`gap-2 ${className ?? ''}`}
+    className={`-mx-5 ${className ?? ''}`}
+    contentContainerClassName="gap-2 px-5"
   >
     {children}
   </ScrollView>

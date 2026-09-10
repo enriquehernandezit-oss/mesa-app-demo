@@ -126,10 +126,14 @@ export default function DiscoverTab() {
 }
 
 // The tab-header — eyebrow + title + a search field that links to Explore.
+// No horizontal padding of its own: the parent FlatList's contentContainer
+// already applies px-5, and this used to add a SECOND px-5 on top of it —
+// the header sat ~24pt further right than "Listas destacadas" and the
+// carousel just below it, with no shared left edge on the page.
 function FeedHeader() {
   const router = useRouter()
   return (
-    <View className="px-5 pt-2 pb-1">
+    <View className="pt-2 pb-1">
       <Eyebrow>Descubre</Eyebrow>
       <Title className="mb-3">Donde comen tus amigos</Title>
       <Pressable
@@ -218,7 +222,7 @@ function ListsRail() {
             name={l.title}
             coverImageId={l.coverImageId}
             caption={
-              <Caption className="font-mono text-micro">
+              <Caption className="font-mono text-micro" numberOfLines={1}>
                 {l.mine} de {l.total} rankeados
               </Caption>
             }

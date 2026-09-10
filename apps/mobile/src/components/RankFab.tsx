@@ -21,8 +21,11 @@ const BOTTOM_GAP = 72
 
 // How much room a scrolling tab screen must leave at the end of its content so
 // the last row can clear the floating FAB. The native tab bar already insets
-// itself; this is only the button's own footprint.
-export const RANK_FAB_CLEARANCE = SIZE + BOTTOM_GAP - 40
+// itself; this is only the button's own footprint — SIZE + BOTTOM_GAP is that
+// footprint in full. (Previously shorted by 40pt, which is exactly why the
+// last row on a short page — Profile's stat tiles, observed live — sat
+// partly under the FAB instead of clearing it.)
+export const RANK_FAB_CLEARANCE = SIZE + BOTTOM_GAP
 
 export function RankFab() {
   const router = useRouter()
