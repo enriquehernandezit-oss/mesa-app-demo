@@ -1,8 +1,6 @@
 import { Caption } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { Characteristics } from '@/components/ui/patterns'
-import { displayScore } from '@/lib/display'
-import { DATA_FIGURES } from '@/theme/vars'
+import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { Pressable, Text, View } from 'react-native'
 
 // The photo-topped comparison card shared by the rank flow's "¿Cuál estuvo
@@ -58,11 +56,7 @@ export function CompareCard({
           ) : null}
         </View>
         {score != null ? (
-          <View className="h-11 w-11 items-center justify-center rounded-pill border border-accent">
-            <Text style={DATA_FIGURES} className="font-serif text-serif-sm text-accent">
-              {displayScore(score)}
-            </Text>
-          </View>
+          <ScoreBadge size="sm" score={score} attribution={{ kind: 'stated' }} />
         ) : null}
       </View>
     </Pressable>

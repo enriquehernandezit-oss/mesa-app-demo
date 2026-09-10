@@ -3,9 +3,10 @@ import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { DirectionsIcon } from '@/components/ui/icons'
+import { ScoreBadge } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
-import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
+import { cuisineLabel, priceLabel } from '@/lib/display'
 import type { MapSpot } from '@/lib/types'
 import { useMyLocation } from '@/lib/useMyLocation'
 import { useQuery } from '@tanstack/react-query'
@@ -111,14 +112,13 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
           {spot.name}
         </Text>
         <Caption numberOfLines={1}>{meta}</Caption>
-        {spot.friendCount > 0 ? (
-          <View className="mt-1 flex-row items-baseline gap-2">
-            <Text className="font-serif text-serif-md text-accent">
-              {displayScore(spot.friendAvg ?? 0)}
-            </Text>
-            <Caption>
-              {spot.friendCount} amig{spot.friendCount === 1 ? 'o' : 'os'} · promedio
-            </Caption>
+        {spot.friendCount > 0 && spot.friendAvg != null ? (
+          <View className="mt-1 items-start">
+            <ScoreBadge
+              size="sm"
+              score={spot.friendAvg}
+              attribution={{ kind: 'friends', count: spot.friendCount }}
+            />
           </View>
         ) : (
           <Caption className="mt-1">Nadie que sigues lo ha rankeado aún.</Caption>

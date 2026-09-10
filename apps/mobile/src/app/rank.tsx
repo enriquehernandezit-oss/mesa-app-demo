@@ -16,7 +16,7 @@ import { CompareCard } from '@/components/ui/CompareCard'
 import { Field } from '@/components/ui/Field'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { Characteristics } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
@@ -650,9 +650,7 @@ function RevealStep({
               <Text className="flex-1 font-serif text-serif-md text-text" numberOfLines={1}>
                 {n.name}
               </Text>
-              <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
-                {displayScore(n.score)}
-              </Text>
+              <ScoreBadge size="sm" score={n.score} attribution={{ kind: 'stated' }} />
             </View>
           ))}
         </View>
@@ -668,7 +666,10 @@ function RevealStep({
                 {friendsRankings.length === 1
                   ? '1 amigo rankeó esto'
                   : `${friendsRankings.length} amigos rankearon esto`}{' '}
-                · prom. {displayScore(friendAvg)}
+                · prom.{' '}
+                <Text style={DATA_FIGURES} className="text-accent">
+                  {displayScore(friendAvg)}
+                </Text>
               </Caption>
               {friendsRankings.slice(0, 3).map((f) => (
                 <Link key={f.user.id} href={`/u/${f.user.id}`} asChild>
@@ -682,9 +683,7 @@ function RevealStep({
                       {f.user.name || f.user.handle}
                     </Text>
                     <Text className="font-mono text-eyebrow text-text-muted">#{f.position}</Text>
-                    <Text className="font-serif text-serif-md text-accent">
-                      {displayScore(f.score)}
-                    </Text>
+                    <ScoreBadge size="sm" score={f.score} attribution={{ kind: 'stated' }} />
                   </Pressable>
                 </Link>
               ))}
@@ -797,9 +796,10 @@ function NoteStep({
               neighborhood={picked.neighborhood}
             />
           </View>
-          <Text className="font-serif text-serif-lg text-accent">
-            {displayScore(scoreForPosition(position - 1, existingCount + 1))}
-          </Text>
+          <ScoreBadge
+            score={scoreForPosition(position - 1, existingCount + 1)}
+            attribution={{ kind: 'you' }}
+          />
         </View>
 
         <TextInput
@@ -1184,9 +1184,7 @@ function FindStep({
           />
         </View>
         {r.score != null ? (
-          <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
-            {displayScore(r.score)}
-          </Text>
+          <ScoreBadge size="sm" score={r.score} attribution={{ kind: 'you' }} />
         ) : (
           <Text className="font-mono text-micro text-text-faint uppercase tracking-eyebrow">
             sin rankear

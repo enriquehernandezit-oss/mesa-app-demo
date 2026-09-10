@@ -69,10 +69,18 @@ export default function LeaderboardScreen() {
                   </Caption>
                 </View>
                 <View className="items-end">
-                  <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
+                  {/* A COUNT, not a score — font-mono (Mesa's metadata voice),
+                      not the brass serif a rating gets, so it can't be read
+                      as one. */}
+                  <Text style={DATA_FIGURES} className="font-mono text-label text-text">
                     {r.count}
                   </Text>
-                  <Caption>spots · prom. {displayScore(r.avgScore)}</Caption>
+                  <Caption>
+                    spots · prom.{' '}
+                    <Text style={DATA_FIGURES} className="text-accent">
+                      {displayScore(r.avgScore)}
+                    </Text>
+                  </Caption>
                 </View>
               </Pressable>
             </Link>

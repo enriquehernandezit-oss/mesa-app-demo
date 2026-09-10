@@ -16,6 +16,7 @@ import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import { timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Stack, useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -171,7 +172,10 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           {a.type === 'saved_ranked' && <>rankeó {place} — está en tu lista</>}
           {a.type === 'friend_ranked' && a.score != null && (
             <>
-              rankeó {place} con {displayScore(a.score)}
+              rankeó {place} con{' '}
+              <Text style={DATA_FIGURES} className="text-accent">
+                {displayScore(a.score)}
+              </Text>
               {a.yourScore != null && Math.abs(a.score - a.yourScore) >= 10 && (
                 <> — {a.score > a.yourScore ? 'le gustó más que a ti' : 'a ti te gustó más'}</>
               )}

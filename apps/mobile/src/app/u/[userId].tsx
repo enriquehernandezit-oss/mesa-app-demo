@@ -12,12 +12,12 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { Characteristics, Stat } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { displayScore, tagLabel } from '@/lib/display'
+import { tagLabel } from '@/lib/display'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -259,9 +259,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
           <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
         ) : null}
       </View>
-      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
-        {displayScore(ranking.score)}
-      </Text>
+      <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
     </View>
   )
 }

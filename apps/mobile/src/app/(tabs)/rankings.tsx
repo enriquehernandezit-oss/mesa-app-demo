@@ -13,7 +13,7 @@ import {
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ShareIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -530,9 +530,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             </>
           )}
         </View>
-        <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
-          {displayScore(ranking.score)}
-        </Text>
+        <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
       </View>
     </SwipeToRemove>
   )
@@ -595,7 +593,10 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
           <View className="flex-row items-baseline justify-between">
             <Text className="font-serif text-serif-md text-text">{h.name}</Text>
             <Caption>
-              {h.count} · prom. {displayScore(h.avg)}
+              {h.count} · prom.{' '}
+              <Text style={DATA_FIGURES} className="text-accent">
+                {displayScore(h.avg)}
+              </Text>
             </Caption>
           </View>
           <View className="mt-1 h-1 rounded-pill bg-bg-sunk">

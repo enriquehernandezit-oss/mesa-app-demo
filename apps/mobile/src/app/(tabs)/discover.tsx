@@ -12,16 +12,15 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { Characteristics, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
-import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
+import { cuisineLabel, priceLabel } from '@/lib/display'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { DATA_FIGURES } from '@/theme/vars'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, Link, useRouter } from 'expo-router'
@@ -417,8 +416,10 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
         </Text>
       ) : null}
       {/* Footer: cheers on the left (its own established position across the
-          app), the score + list position together in the bottom-right corner
-          — the card's final tally, read last. */}
+          app), the score badge in the bottom-right corner — the card's final
+          tally, read last. Dropped the "#N" that used to ride beside it: bare
+          digits plus a small #1 is exactly what reads as a page number
+          instead of a rating; the badge alone is the point. */}
       <View className="mt-1 flex-row items-center justify-between">
         <CheersButton
           rankingId={item.rankingId}
@@ -428,12 +429,9 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(`/r/${item.restaurant.id}`)}
-          className="flex-row items-baseline gap-1 active:opacity-70"
+          className="active:opacity-70"
         >
-          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
-            {displayScore(item.score)}
-          </Text>
-          <Caption className="font-mono text-micro">#{item.position}</Caption>
+          <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
         </Pressable>
       </View>
     </Animated.View>

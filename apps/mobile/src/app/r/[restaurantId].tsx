@@ -33,14 +33,13 @@ import {
 import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
-import { cuisineLabel, displayScore, priceLabel } from '@/lib/display'
+import { cuisineLabel, priceLabel } from '@/lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type { Dish, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
@@ -283,11 +282,13 @@ export default function RestaurantProfile() {
               </Pressable>
             </View>
             {allMesa.avg != null && showMesa && (
-              <View className="mt-1 flex-row items-baseline gap-2">
-                <Text className="font-serif text-serif-lg text-accent">
-                  {displayScore(allMesa.avg)}
-                </Text>
-                <Caption>{allMesa.count} rankeados</Caption>
+              <View className="mt-1 items-start">
+                <ScoreBadge
+                  size="sm"
+                  score={allMesa.avg}
+                  attribution={{ kind: 'mesa', count: allMesa.count }}
+                  sub={`${allMesa.count} rankeados`}
+                />
               </View>
             )}
             {restaurant.address ? (
@@ -448,9 +449,11 @@ export default function RestaurantProfile() {
           {restaurant.name}
         </Text>
         {allMesa.avg != null && showMesa && (
-          <Text style={DATA_FIGURES} className="font-serif text-serif-md text-accent">
-            {displayScore(allMesa.avg)}
-          </Text>
+          <ScoreBadge
+            size="sm"
+            score={allMesa.avg}
+            attribution={{ kind: 'mesa', count: allMesa.count }}
+          />
         )}
       </Animated.View>
 
@@ -496,9 +499,7 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
                 <Text className="font-serif-italic text-serif-sm text-text-2">“{fr.note}”</Text>
               ) : null}
             </View>
-            <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
-              {displayScore(fr.score)}
-            </Text>
+            <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />
           </Pressable>
         </Link>
       ))}

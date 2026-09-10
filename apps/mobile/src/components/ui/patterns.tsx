@@ -192,9 +192,16 @@ function badgeText(a: ScoreAttribution): string | null {
   return null
 }
 
-// Attributed score — a brass-ringed circle with the number, an attribution badge,
-// and optional caption/sub. Every score is attributed; the place never gets its
-// own bare rating. 'mesa' reads as a quiet unbadged number.
+// Attributed score — a filled brass badge with the number, an attribution
+// caption, and optional caption/sub. Every score is attributed; the place
+// never gets its own bare rating. The ONE score treatment in the app: every
+// call site renders through this (no bare `displayScore()` numerals, no
+// hand-rolled rings) so a number always reads as a rating, never as a page
+// number or a count. 'mesa' takes a quiet OUTLINE, not a second fill — the
+// token `accent-fill` is literally the same hex as `accent` in both themes
+// (confirmed on device: two "filled" variants were indistinguishable), so an
+// unattributed aggregate has to recede by going unfilled, not by a fill color
+// that doesn't exist.
 export function ScoreBadge({
   score,
   attribution,
@@ -210,16 +217,18 @@ export function ScoreBadge({
 }) {
   const badge = badgeText(attribution)
   const mesa = attribution.kind === 'mesa'
-  const ring = size === 'sm' ? 'h-12 w-12' : 'h-16 w-16'
+  // min-w (not a fixed w) so the badge hugs a 2-digit "10.0" without
+  // clipping while still lining up a column of 1-digit-and-a-decimal scores.
+  const box = size === 'sm' ? 'min-w-[40px] px-2 py-1' : 'min-w-[52px] px-3 py-1.5'
   const num = size === 'sm' ? 'text-serif-sm' : 'text-serif-md'
   return (
     <View className="items-center gap-1">
       <View
-        className={`${ring} items-center justify-center rounded-pill border ${mesa ? 'border-line' : 'border-accent'}`}
+        className={`${box} items-center justify-center rounded-sm ${mesa ? 'border border-line bg-surface' : 'bg-accent'}`}
       >
         <Text
           style={DATA_FIGURES}
-          className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-accent'}`}
+          className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-on-accent'}`}
         >
           {displayScore(score)}
         </Text>
