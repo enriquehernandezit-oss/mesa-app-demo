@@ -1,18 +1,18 @@
 // Dynamic config layered over app.json: everything static stays in app.json; the
 // one build-time secret — the @rnmapbox/maps SDK download token — is injected from
 // the environment so it never lives in a committed file. The founder/EAS sets
-// RNMAPBOX_DOWNLOAD_TOKEN (a sk.… secret token) at build time; it's read only by
-// the config plugin during prebuild (CocoaPods needs it to fetch the Mapbox SDK)
-// and is NOT the public runtime token (EXPO_PUBLIC_MAPBOX_TOKEN, a pk.… token).
+// RNMAPBOX_MAPS_DOWNLOAD_TOKEN (a sk.… secret token) at build time; CocoaPods reads
+// it directly from ENV during pod install (rnmapbox-maps.podspec) — it is NOT the
+// public runtime token (EXPO_PUBLIC_MAPBOX_TOKEN, a pk.… token). No plugin option
+// needed: the older `RNMapboxMapsDownloadToken` plugin option is deprecated as of
+// the current @rnmapbox/maps version (console warning in withMapbox.js) in favor of
+// this env var, read straight from ENV by the podspec — passing the deprecated
+// option here was silently producing an empty/stale value and causing CocoaPods'
+// Mapbox download to fail with a 401.
 const appJson = require('./app.json')
 
 module.exports = () => {
   const config = { ...appJson.expo }
-  config.plugins = (config.plugins ?? []).map((p) =>
-    p === '@rnmapbox/maps'
-      ? ['@rnmapbox/maps', { RNMapboxMapsDownloadToken: process.env.RNMAPBOX_DOWNLOAD_TOKEN ?? '' }]
-      : p,
-  )
 
   // Sentry's config plugin uploads source maps at build time, which needs
   // SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN. Added only when the org and
