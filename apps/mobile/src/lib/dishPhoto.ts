@@ -1,7 +1,6 @@
 import { showActionSheet } from '@/lib/actionSheet'
 import { captureError } from '@/lib/errors'
-import { resizeToJpeg } from '@/lib/image'
-import * as ImagePicker from 'expo-image-picker'
+import { openImagePicker, resizeToJpeg } from '@/lib/image'
 
 // The camera-or-library → permission → resize pipeline for a dish photo.
 // Shared by the standalone dish composer (app/dish/index.tsx) and the inline
@@ -35,18 +34,9 @@ export async function pickDishPhoto(): Promise<string | null> {
     })
     if (picked === null) return null
     const source = picked === 0 ? 'camera' : 'library'
-    const perm =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!perm.granted) return null
-    const res =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 1 })
-        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
-    const asset = res.canceled ? null : res.assets[0]
-    if (!asset) return null
-    return await resizeToJpeg(asset.uri, asset.width, asset.height, {
+    const result = await openImagePicker(source)
+    if (result.status !== 'picked') return null
+    return await resizeToJpeg(result.asset.uri, result.asset.width, result.asset.height, {
       maxEdge: 1280,
       quality: 0.72,
     })

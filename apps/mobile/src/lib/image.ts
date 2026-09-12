@@ -1,4 +1,5 @@
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator'
+import * as ImagePicker from 'expo-image-picker'
 
 // Resize a picked image to a JPEG data URL. Shared by the avatar picker (square)
 // and dish posts (fit to max edge). Keeps uploads small for DR mobile networks;
@@ -41,4 +42,32 @@ export async function resizeToJpeg(
     base64: true,
   })
   return `data:image/jpeg;base64,${res.base64}`
+}
+
+export type PickedImage =
+  | { status: 'picked'; asset: ImagePicker.ImagePickerAsset }
+  | { status: 'cancelled' }
+  | { status: 'denied' }
+
+// Request the matching permission, then launch camera or library. Shared by
+// the dish-photo flow (lib/dishPhoto.ts) and the avatar picker
+// ((tabs)/profile.tsx) — 'denied' is modeled separately from 'cancelled' so a
+// caller can tell "nothing happened because you said no" from "you backed
+// out" and point the user at Settings for the former.
+export async function openImagePicker(
+  source: 'camera' | 'library',
+  opts?: { square?: boolean },
+): Promise<PickedImage> {
+  const perm =
+    source === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync()
+  if (!perm.granted) return { status: 'denied' }
+  const launchOpts = { mediaTypes: ['images' as const], quality: 1, allowsEditing: opts?.square }
+  const res =
+    source === 'camera'
+      ? await ImagePicker.launchCameraAsync(launchOpts)
+      : await ImagePicker.launchImageLibraryAsync(launchOpts)
+  if (res.canceled) return { status: 'cancelled' }
+  return { status: 'picked', asset: res.assets[0] }
 }

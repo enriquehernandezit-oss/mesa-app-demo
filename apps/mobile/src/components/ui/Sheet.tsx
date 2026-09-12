@@ -15,11 +15,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // people read as "this is irreversible," and skinning it in Mesa's paper
 // would make it read as LESS serious, not more on-brand.
 //
-// NOT used for the camera-vs-library chooser (lib/dishPhoto.ts) — its two
+// NOT used for the camera-vs-library chooser in lib/dishPhoto.ts — its two
 // callers (the dish composer, the rank flow's photo step) are both presented
 // with `presentation: 'modal'`, and this component (a root-mounted overlay)
 // cannot render above an already-presented native modal; see the note inside
-// SheetHost below for what was tried and why it stays native there.
+// SheetHost below for what was tried and why it stays native there. The
+// avatar picker's camera-vs-library chooser ((tabs)/profile.tsx) DOES use
+// this component — Profile is a plain tab screen, not a modal, so the
+// nesting problem doesn't apply there.
 //
 // Architecture mirrors toast-store.ts/Toast.tsx: a module-level store holds
 // at most one live request; <SheetHost/> (mounted once, root layout) renders

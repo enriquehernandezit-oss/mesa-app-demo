@@ -49,8 +49,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Mesa accede a tus fotos solo para adjuntar la foto de un plato que elijas.",
-          "cameraPermission": "Mesa usa la cámara solo para tomar la foto de un plato."
+          "photosPermission": "Mesa accede a tus fotos solo para usar la que elijas como foto de perfil o foto de un plato.",
+          "cameraPermission": "Mesa usa la cámara solo para tomar tu foto de perfil o la foto de un plato."
         }
       ],
       "@rnmapbox/maps",

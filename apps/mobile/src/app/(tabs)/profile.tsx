@@ -3,46 +3,35 @@ import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, Eyebrow, SerifItalic } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
-import { BookmarkIcon, CheckIcon, ChevronIcon, CompassIcon } from '@/components/ui/icons'
+import { showSheet } from '@/components/ui/Sheet'
+import { BookmarkIcon, CheckIcon, ChevronIcon, CompassIcon, PlusIcon } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
-import { resizeToJpeg } from '@/lib/image'
-import { shareProfile } from '@/lib/shareProfile'
+import { openImagePicker, resizeToJpeg } from '@/lib/image'
 import type { MeStats, Neighborhood } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import * as ImagePicker from 'expo-image-picker'
 import { useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
-// The user's own profile (Phase 6 mock E1): centered identity + avatar picker, a
-// stats trio, edit/share, routes into the lists, and the two stat cards. The top
-// bar (name + share + settings) is TopBar's profile variant. Ported from
-// apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
-// expo-image-picker + resizeToJpeg (square).
-export default function ProfileTab() {
+// Shared avatar-change pipeline: sheet (camera/library) → permission → launch
+// → square-crop resize → upload. One implementation for both the main Profile
+// screen and Editar perfil, so the two photo controls (previously: main-screen
+// tap opened Editar perfil, which then jumped straight to the library with no
+// camera option) behave identically. `busy` guards the WHOLE pipeline, not
+// just the upload mutation — see dishPhoto.ts's `picking` module guard for the
+// same re-entrancy reasoning (expo-image-picker has no native guard of its
+// own; a second launch while one is presenting just overwrites the pending
+// promise and orphans the first).
+function useAvatarPicker() {
   const queryClient = useQueryClient()
-  const router = useRouter()
-  const { data } = useProfile(true)
-  const p = data?.profile
-  const [editing, setEditing] = useState(false)
-  // Guards the WHOLE pipeline (permission → presentation → resize → upload),
-  // not just setAvatar.isPending (which only covers the network PATCH).
-  // Without it, a second tap while the picker is still opening fires
-  // launchImageLibraryAsync twice; expo-image-picker has no native
-  // re-entrancy guard of its own (it just overwrites its pending promise), so
-  // the second `present:` silently fails and the first call's promise never
-  // resolves — the library sheet is left on screen with no way to dismiss it.
-  const [pickingAvatar, setPickingAvatar] = useState(false)
-
-  const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
-
+  const [busy, setBusy] = useState(false)
   const setAvatar = useMutation({
     mutationFn: (image: string) => api.patch('/me/avatar', { image }),
     onSuccess: () => {
@@ -54,30 +43,84 @@ export default function ProfileTab() {
       toast({ variant: 'error', message: 'No se pudo actualizar la foto. Intenta de nuevo.' })
     },
   })
-  async function pickAvatar() {
-    if (pickingAvatar) return
-    setPickingAvatar(true)
+
+  async function change() {
+    if (busy) return
+    setBusy(true)
     try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync()
-      if (!perm.granted) return
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 })
-      const asset = res.canceled ? null : res.assets[0]
-      if (asset) {
-        setAvatar.mutate(
-          await resizeToJpeg(asset.uri, asset.width, asset.height, {
-            maxEdge: 192,
-            square: true,
-            quality: 0.8,
-          }),
-        )
+      const picked = await showSheet({
+        title: 'Foto de perfil',
+        options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
+      })
+      if (picked === null) return
+      const source = picked === 0 ? 'camera' : 'library'
+      const result = await openImagePicker(source, { square: true })
+      if (result.status === 'denied') {
+        toast({
+          variant: 'error',
+          message: 'Mesa no tiene acceso a la cámara/fotos.',
+          action: { label: 'Ajustes', onClick: () => Linking.openSettings() },
+        })
+        return
       }
+      if (result.status !== 'picked') return
+      const { asset } = result
+      setAvatar.mutate(
+        await resizeToJpeg(asset.uri, asset.width, asset.height, {
+          maxEdge: 192,
+          square: true,
+          quality: 0.8,
+        }),
+      )
     } catch (err) {
       captureError(err, 'image.pick')
       toast({ variant: 'error', message: 'No se pudo procesar la foto. Intenta de nuevo.' })
     } finally {
-      setPickingAvatar(false)
+      setBusy(false)
     }
   }
+
+  return { change, busy: busy || setAvatar.isPending }
+}
+
+function AvatarEditButton({
+  name,
+  src,
+  onPress,
+  busy,
+}: { name: string; src?: string | null; onPress: () => void; busy: boolean }) {
+  return (
+    <View className="items-center">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Cambiar foto de perfil"
+        onPress={onPress}
+        disabled={busy}
+        className="active:opacity-80"
+      >
+        <Avatar name={name} src={src} size={88} />
+        <View className="absolute right-0.5 bottom-0.5 h-[22px] w-[22px] items-center justify-center rounded-pill border-2 border-bg bg-accent-fill">
+          <PlusIcon size={12} color="on-accent" />
+        </View>
+      </Pressable>
+      {busy && <Caption className="mt-1 font-mono text-micro">…</Caption>}
+    </View>
+  )
+}
+
+// The user's own profile (Phase 6 mock E1): centered identity + avatar picker, a
+// stats trio, edit/share, routes into the lists, and the two stat cards. The top
+// bar (name + share + settings) is TopBar's profile variant. Ported from
+// apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
+// expo-image-picker + resizeToJpeg (square).
+export default function ProfileTab() {
+  const router = useRouter()
+  const { data } = useProfile(true)
+  const p = data?.profile
+  const [editing, setEditing] = useState(false)
+  const avatarPicker = useAvatarPicker()
+
+  const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
 
   if (editing) {
     return <EditProfile onClose={() => setEditing(false)} />
@@ -113,17 +156,16 @@ export default function ProfileTab() {
         contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
       >
         <View className="items-center pt-2">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Cambiar foto"
-            onPress={pickAvatar}
-            className="items-center active:opacity-80"
-          >
-            <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={88} />
-            <Caption className="mt-1 font-mono text-micro text-accent-strong">
-              {setAvatar.isPending ? '…' : '+ foto'}
-            </Caption>
-          </Pressable>
+          {/* Tapping the avatar opens the camera/library chooser directly —
+              "Editar perfil" below opens the full screen for everything else
+              (name, handle, sector, bio), which shows the same photo control
+              at its top. */}
+          <AvatarEditButton
+            name={p?.name || p?.handle || 'm'}
+            src={p?.image}
+            onPress={avatarPicker.change}
+            busy={avatarPicker.busy}
+          />
           {p?.handle ? (
             <Text className="mt-2 font-mono text-label text-text-2">@{p.handle}</Text>
           ) : null}
@@ -149,12 +191,11 @@ export default function ProfileTab() {
           </View>
         )}
 
-        <View className="mt-5 flex-row gap-3">
-          <Button variant="secondary" className="flex-1" onPress={() => setEditing(true)}>
+        {/* Share lives in TopBar only now — it used to also duplicate here,
+            same handler, two entry points for one action. */}
+        <View className="mt-5">
+          <Button variant="secondary" onPress={() => setEditing(true)}>
             Editar perfil
-          </Button>
-          <Button variant="secondary" className="flex-1" onPress={() => shareProfile(p?.handle)}>
-            Compartir perfil
           </Button>
         </View>
 
@@ -229,14 +270,17 @@ function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-1 rounded border border-line bg-surface p-4">
       <Caption className="font-mono text-micro">{label}</Caption>
-      <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-lg text-accent">
+      <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-md text-accent">
         {value}
       </Text>
     </View>
   )
 }
 
-// Minimal edit sheet — name, @handle, sector, bio → PATCH /me/profile.
+// The one place that owns the whole profile — name, @handle, sector, bio AND
+// the photo, which used to be a separate direct-avatar-tap flow on the main
+// screen instead of living here. PATCH /me/profile for the fields, PATCH
+// /me/avatar for the photo — two endpoints, one screen.
 function EditProfile({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const { data } = useProfile(true)
@@ -269,6 +313,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     },
   })
   const canSave = name.trim().length > 0 && currentSlug.length > 0 && !save.isPending
+  const avatarPicker = useAvatarPicker()
 
   return (
     <View className="flex-1 bg-bg">
@@ -286,7 +331,16 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           <Text className="font-ui-medium text-label text-text-muted">‹ Editar perfil</Text>
         </Pressable>
 
-        <View className="mt-2 gap-4">
+        <View className="mt-2 items-center">
+          <AvatarEditButton
+            name={p?.name || p?.handle || 'm'}
+            src={p?.image}
+            onPress={avatarPicker.change}
+            busy={avatarPicker.busy}
+          />
+        </View>
+
+        <View className="mt-6 gap-4">
           <Field
             label="Nombre"
             value={name}
@@ -296,7 +350,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             autoComplete="name"
           />
           <Field
-            label="@usuario"
+            label="Instagram · opcional"
             value={handle}
             onChangeText={setHandle}
             placeholder="tuusuario"

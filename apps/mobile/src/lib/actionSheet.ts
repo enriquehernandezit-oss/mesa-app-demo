@@ -11,10 +11,13 @@ import { ActionSheetIOS, Alert, Platform } from 'react-native'
 //   irreversible," and Mesa's paper would read as LESS serious, not more
 //   on-brand, for exactly the moment that should feel most serious.
 //
-//   The camera-vs-library chooser (lib/dishPhoto.ts) — not a design choice,
-//   a constraint: both its callers present as `presentation: 'modal'`, and
-//   Sheet (a root-mounted JS overlay) does not render above an already-
-//   presented native modal. See dishPhoto.ts's comment for what was tried.
+//   The dish-photo camera-vs-library chooser (lib/dishPhoto.ts) — not a
+//   design choice, a constraint: both its callers present as
+//   `presentation: 'modal'`, and Sheet (a root-mounted JS overlay) does not
+//   render above an already-presented native modal. See dishPhoto.ts's
+//   comment for what was tried. The avatar picker's camera-vs-library
+//   chooser ((tabs)/profile.tsx) uses Sheet instead — Profile isn't a modal
+//   screen, so the constraint doesn't apply there.
 //
 // Being a real system surface here still gets two things right:
 //
