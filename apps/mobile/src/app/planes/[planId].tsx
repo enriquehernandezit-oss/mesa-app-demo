@@ -93,6 +93,7 @@ export default function PlanDetailScreen() {
   if (q.isPending) {
     return (
       <View className="flex-1 bg-bg">
+        <Stack.Screen options={{ title: 'Mesa' }} />
         <RowsSkeleton rows={3} thumb={64} />
       </View>
     )
@@ -101,6 +102,7 @@ export default function PlanDetailScreen() {
     const forbidden = q.error instanceof ApiError && q.error.status === 403
     return (
       <View className="flex-1 bg-bg">
+        <Stack.Screen options={{ title: 'Mesa' }} />
         {forbidden ? (
           <EmptyState>Esta mesa es solo por invitación.</EmptyState>
         ) : q.error instanceof ApiError && q.error.status === 404 ? (
@@ -122,7 +124,9 @@ export default function PlanDetailScreen() {
   const openConfirmSheet = async () => {
     const idx = await showSheet({
       title: 'Confirmar spot',
-      options: plan.options.map((o) => ({ label: `${o.name} · ${o.votes ?? 0} votos` })),
+      options: plan.options.map((o) => ({
+        label: `${o.name} · ${o.votes ?? 0} ${o.votes === 1 ? 'voto' : 'votos'}`,
+      })),
       selectedIndex: plan.options.findIndex((o) => o.id === plan.chosenRestaurantId),
     })
     if (idx != null) confirm.mutate(plan.options[idx].id)
