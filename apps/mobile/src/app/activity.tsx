@@ -10,16 +10,16 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { useFollow } from '@/hooks/useFollow'
 import { markActivitySeen } from '@/lib/activitySeen'
-import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import { timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, Stack, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useFocusEffect, useRouter } from 'expo-router'
+import { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The screen behind the bell (mock F2): cheers, new followers, friends ranking
@@ -57,10 +57,21 @@ export default function ActivityScreen() {
     queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),
   })
 
-  const markRead = () => {
-    markActivitySeen()
-    queryClient.invalidateQueries({ queryKey: ['activity'] })
-  }
+  // Advances the watermark on the way OUT, not in — the header comment on
+  // `lib/activitySeen.ts` already claimed opening this screen does this, but
+  // the code only ever did it on an explicit "Marcar leído" tap that most
+  // people never found. Firing on focus LOSS (not focus gain) means the badge
+  // count stays stable for the whole time someone is actually looking at the
+  // list, instead of zeroing the instant the screen mounts and then getting
+  // stale if something new lands while they're still reading.
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        markActivitySeen()
+        queryClient.invalidateQueries({ queryKey: ['activity'] })
+      }
+    }, [queryClient]),
+  )
 
   const items = q.data?.activity ?? []
   const shown = items.filter((a) => {
@@ -75,20 +86,9 @@ export default function ActivityScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      {/* The bar is the system's (see MesaStack); only its action is ours. */}
-      <Stack.Screen
-        options={{
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              onPress={markRead}
-              className="min-h-[44px] justify-center active:opacity-60"
-            >
-              <Text className="font-ui-medium text-label text-accent-strong">Marcar leído</Text>
-            </Pressable>
-          ),
-        }}
-      />
+      {/* The bar is entirely the system's now (see MesaStack's registration) —
+          "Marcar leído" was its one custom action, retired now that leaving
+          the screen advances the watermark on its own. */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5 pb-10"
@@ -138,20 +138,7 @@ export default function ActivityScreen() {
 }
 
 function ActivityRow({ a }: { a: ActivityItem }) {
-  const queryClient = useQueryClient()
-  const [followed, setFollowed] = useState(Boolean(a.followsBack))
-  const follow = useMutation({
-    mutationFn: () => api.post('/social/follow', { userId: a.user.id }),
-    onSuccess: () => {
-      track('follow_added', { from: 'activity' })
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      // This row's own followsBack flag would otherwise stay stale until the
-      // next full activity fetch, and the suggested-friends rail (['people'])
-      // keeps offering someone just followed from here.
-      queryClient.invalidateQueries({ queryKey: ['activity'] })
-      queryClient.invalidateQueries({ queryKey: ['people'] })
-    },
-  })
+  const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
 
   const place = a.restaurant ? (
     <Text className="font-ui-medium text-text">{a.restaurant.name}</Text>
@@ -185,20 +172,19 @@ function ActivityRow({ a }: { a: ActivityItem }) {
         <Caption className="font-mono text-micro">{timeAgo(a.at)}</Caption>
       </View>
       {a.type === 'follow' ? (
-        followed ? (
-          <Caption className="font-mono text-micro">Siguiendo</Caption>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setFollowed(true)
-              follow.mutate()
-            }}
-            className="min-h-[36px] justify-center rounded-pill border border-accent px-4 active:opacity-70"
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: following, disabled: pending }}
+          disabled={pending}
+          onPress={toggle}
+          className={`min-h-[36px] justify-center rounded-pill border px-4 active:opacity-70 ${following ? 'border-line' : 'border-accent'}`}
+        >
+          <Text
+            className={`font-mono text-eyebrow ${following ? 'text-text-muted' : 'text-accent-strong'}`}
           >
-            <Text className="font-mono text-eyebrow text-accent-strong">Seguir</Text>
-          </Pressable>
-        )
+            {following ? 'Siguiendo' : 'Seguir'}
+          </Text>
+        </Pressable>
       ) : (
         a.restaurant && (
           <Link href={`/r/${a.restaurant.id}`} asChild>

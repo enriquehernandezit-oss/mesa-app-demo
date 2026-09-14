@@ -163,9 +163,12 @@ layer; no raw colour exists outside it.
 
 The governing line is **content is Mesa, chrome is iOS**:
 - *Content* — cards, rows, the type ramp, the stroke-icon language — is Mesa's.
-- *Chrome* — the tab bar (a real `UITabBar` with SF Symbols, Liquid Glass, and minimize-on-scroll),
-  large-title nav bars with blur scroll edges, action sheets, `Switch`, in-app Safari — is the
-  system's, and is always told Mesa's *resolved* theme explicitly.
+- *Chrome* — large-title nav bars with blur scroll edges, action sheets, `Switch`, in-app Safari
+  — is the system's, and is always told Mesa's *resolved* theme explicitly. The tab bar is the one
+  deliberate exception: a real `UITabBar` (SF Symbols, Liquid Glass, minimize-on-scroll) was tried
+  first, but it has no way to render one tab's icon larger than its siblings and its scroll-edge
+  transparency stayed visible against real content — so the shipped bar (`components/MesaTabBar.tsx`)
+  is Mesa-drawn, tokened chrome instead of the native component, sized and opaque on purpose.
 
 Typography: Cormorant Garamond (serif), Plus Jakarta Sans (UI), JetBrains Mono (metadata). Data
 numerals use lining + tabular figures so scores sit on the baseline and columns align; prose keeps

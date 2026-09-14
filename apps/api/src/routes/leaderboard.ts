@@ -1,7 +1,8 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, isNull, sql } from 'drizzle-orm'
+import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AuthedEnv } from '../context'
+import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Citywide leaderboard (Beli-style): who has ranked the most places, all-time or
@@ -31,6 +32,12 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
         isNull(user.bannedAt),
         sql`${user.handle} is not null`,
         period === 'month' ? sql`${rankings.createdAt} > now() - interval '30 days'` : sql`true`,
+        // Block visibility is symmetric everywhere else in the API — this was
+        // the one read path that filtered neither direction, so a blocked
+        // user still showed up here for the person who blocked them (and
+        // vice versa).
+        notInArray(user.id, blockedByMe(me.id)),
+        notInArray(user.id, blockedMe(me.id)),
       ),
     )
     .groupBy(user.id, user.name, user.handle, user.image, neighborhoods.name)

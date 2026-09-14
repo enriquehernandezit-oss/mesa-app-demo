@@ -6,6 +6,7 @@ import {
   Card,
   Chip,
   ChipRail,
+  ErrorState,
   Eyebrow,
   RowsSkeleton,
   SerifItalic,
@@ -25,8 +26,9 @@ import { pickDishPhoto } from '@/lib/dishPhoto'
 import { GRAINS, type Grain, OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
-import { tapSuccess } from '@/lib/haptics'
+import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
+import { cloudinaryUrl } from '@/lib/media'
 import {
   type PairwiseState,
   type Sentiment,
@@ -38,6 +40,8 @@ import {
   tie,
 } from '@/lib/pairwise'
 import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
+import { shareListCard } from '@/lib/shareCardStore'
+import { profileShareText } from '@/lib/shareProfile'
 import type { NewRestaurant, Ranking, RestaurantProfileResponse, SavedPlace } from '@/lib/types'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useMyLocation } from '@/lib/useMyLocation'
@@ -86,6 +90,43 @@ type AddPlaceMutation = UseMutationResult<
   { name: string; neighborhoodSlug: string }
 >
 
+type RankStage = 'sentiment' | 'placed' | 'revealed'
+const STAGE_ORDER: Record<RankStage, number> = { sentiment: 1, placed: 2, revealed: 3 }
+
+type Top5Item = { position: number; name: string; score: number; coverImageId?: string | null }
+
+// The updated top 5, computed purely from local flow state (never from the
+// `mine` query) — a background refetch from `invalidateAfterRanking` may not
+// have landed by the time the celebration stamp shows, and this is the exact
+// moment the "Compartir mi top 5" button appears. Mirrors RevealStep's `around`
+// loop, generalized from ±1 neighbor to the whole ordered list.
+function buildTop5(existingForCompare: Item[], picked: Item, position: number): Top5Item[] {
+  const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  const total = orderedByPos.length + 1
+  const full: Top5Item[] = []
+  for (let pos = 1; pos <= total; pos++) {
+    if (pos === position) {
+      full.push({
+        position: pos,
+        name: picked.name,
+        score: scoreForPosition(pos - 1, total),
+        coverImageId: picked.coverImageId,
+      })
+    } else {
+      const r = orderedByPos[pos < position ? pos - 1 : pos - 2]
+      if (r) {
+        full.push({
+          position: pos,
+          name: r.name,
+          score: scoreForPosition(pos - 1, total),
+          coverImageId: r.coverImageId,
+        })
+      }
+    }
+  }
+  return full.slice(0, 5)
+}
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 export default function RankAPlace() {
@@ -109,7 +150,6 @@ export default function RankAPlace() {
   const [addedPlace, setAddedPlace] = useState<Item | null>(null)
   const [pickQuery, setPickQuery] = useState('')
   const [openNow, setOpenNow] = useState(false)
-  const [reserveOnly, setReserveOnly] = useState(false)
   const [nearby, setNearby] = useState(false)
   const me = useProfile(true, 300_000)
   const myHood = me.data?.profile.neighborhood?.name ?? null
@@ -117,12 +157,11 @@ export default function RankAPlace() {
   // Query-driven, mirroring Explore: the server searches (mesa_norm + trigram)
   // and bounds the result. No debounce — every keystroke past 2 chars refetches.
   const candidates = useQuery({
-    queryKey: ['rankings', 'candidates', pickQuery.trim(), openNow, reserveOnly],
+    queryKey: ['rankings', 'candidates', pickQuery.trim(), openNow],
     queryFn: () => {
       const p = new URLSearchParams()
       if (pickQuery.trim().length >= 2) p.set('q', pickQuery.trim())
       if (openNow) p.set('open', '1')
-      if (reserveOnly) p.set('reserve', '1')
       return api.get<{ restaurants: Item[] }>(`/rankings/candidates?${p}`)
     },
   })
@@ -211,10 +250,11 @@ export default function RankAPlace() {
   })
 
   // Held so a swipe-back (or the modal's own beforeRemove-driven dismiss)
-  // during the 1.3s stamp can cancel the pending navigate — firing
-  // router.replace on a screen that already unmounted is exactly what
-  // produces the "screen 'rank' was removed natively but didn't get removed
-  // from JS state" warning.
+  // during the 1.3s stamp can cancel the pending state change — acting on a
+  // screen that already unmounted is exactly what produces the "screen 'rank'
+  // was removed natively but didn't get removed from JS state" warning. It used
+  // to gate a `router.replace('/rankings')`; now it gates revealing the two
+  // finish actions below instead — same guard, later timer target.
   const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     return () => {
@@ -222,10 +262,11 @@ export default function RankAPlace() {
     }
   }, [])
 
+  const [showFinishActions, setShowFinishActions] = useState(false)
   const finishToRankings = () => {
     setPlacedStamp(true)
     tapSuccess()
-    finishTimer.current = setTimeout(() => router.replace('/rankings'), 1300)
+    finishTimer.current = setTimeout(() => setShowFinishActions(true), 1300)
   }
 
   const save = useMutation({
@@ -305,16 +346,47 @@ export default function RankAPlace() {
       } else if (!deepLinked) {
         setPickedId(null)
       } else {
-        // Leaving mid-flow with a sentiment picked but nothing saved: the
-        // drop-off we most need to see.
-        track('rank_abandoned', {
-          stage: revealed ? 'revealed' : position !== null ? 'placed' : 'sentiment',
-        })
         navigation.dispatch(e.data.action) // arrived straight in — let back leave
       }
     })
     return sub
   }, [navigation, inFlow, revealed, position, sentiment, deepLinked])
+
+  // The furthest stage reached, ratcheted forward only — never downgraded by
+  // the beforeRemove staircase above unwinding a state back to null. Read only
+  // from the unmount effect below.
+  const stageRef = useRef<RankStage | null>(null)
+  useEffect(() => {
+    const current: RankStage | null = revealed
+      ? 'revealed'
+      : position !== null
+        ? 'placed'
+        : sentiment
+          ? 'sentiment'
+          : null
+    if (current && (!stageRef.current || STAGE_ORDER[current] > STAGE_ORDER[stageRef.current])) {
+      stageRef.current = current
+    }
+  }, [sentiment, position, revealed])
+  const placedStampRef = useRef(placedStamp)
+  placedStampRef.current = placedStamp
+
+  // Fires once, on the screen's REAL exit — any path (back gesture, swipe,
+  // switching tabs mid-flow), not just the in-app back control the
+  // beforeRemove staircase above sees. The previous implementation only
+  // tracked one narrow deep-link sub-case, and even then always reported
+  // stage: 'sentiment' regardless of how far the flow had actually gotten
+  // (by the time that branch could fire, revealed/position had already been
+  // unwound back to falsy by the very staircase reporting on them). Skipped
+  // when the flow actually finished (placedStamp true): that's a completion,
+  // not a drop-off — the "drop-off we most need to see" this metric exists for.
+  useEffect(() => {
+    return () => {
+      if (stageRef.current && !placedStampRef.current) {
+        track('rank_abandoned', { stage: stageRef.current })
+      }
+    }
+  }, [])
 
   const addPlace = useMutation({
     mutationFn: (body: { name: string; neighborhoodSlug: string }) =>
@@ -358,8 +430,24 @@ export default function RankAPlace() {
     queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
   }
 
-  // The celebration stamp — "#3 · Mijas" punches in over the screen.
+  // The celebration stamp — "#3 · Mijas" punches in over the screen. Once
+  // finishTimer's 1.3s pause is up, two actions fade in: this is the highest-
+  // intent moment in the whole app, and it used to have no share affordance at
+  // all before silently auto-navigating away.
   if (placedStamp && picked && position !== null) {
+    const firstName = (me.data?.profile.name ?? '').split(' ')[0] || 'Mi'
+    const shareTop5 = () => {
+      const items = buildTop5(existingForCompare, picked, position)
+      shareListCard({
+        eyebrow: `${firstName} · top ${Math.min(items.length, 5)}`,
+        subtitle: [me.data?.profile.neighborhood?.name, 'Santo Domingo']
+          .filter(Boolean)
+          .join(' · '),
+        items: items.map((it) => ({ position: it.position, name: it.name, score: it.score })),
+        coverUrl: cloudinaryUrl(items[0]?.coverImageId, { w: 1080, h: 780 }),
+        text: profileShareText(me.data?.profile.handle),
+      })
+    }
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-bg px-5">
         {/* The stamp punches in — it already fires tapSuccess, and a celebration
@@ -376,6 +464,19 @@ export default function RankAPlace() {
           <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
           <Caption>añadido a tu pasaporte</Caption>
         </Animated.View>
+        {/* "Listo" is the only action that leaves — sharing doesn't navigate
+            away on its own, so tapping it and coming back still shows this
+            screen (and the share sheet can be reopened). */}
+        {showFinishActions && (
+          <Animated.View entering={FadeIn} className="mt-4 w-full gap-3">
+            <Button variant="primary" onPress={shareTop5}>
+              Compartir mi top 5
+            </Button>
+            <Button variant="ghost" onPress={() => router.replace('/rankings')}>
+              Listo
+            </Button>
+          </Animated.View>
+        )}
       </View>
     )
   }
@@ -384,6 +485,20 @@ export default function RankAPlace() {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
         <RowsSkeleton rows={5} thumb={56} />
+      </View>
+    )
+  }
+  if (candidates.isError || mine.isError) {
+    return (
+      <View className="flex-1 items-center justify-center bg-bg px-5">
+        <ErrorState
+          onRetry={() => {
+            candidates.refetch()
+            mine.refetch()
+          }}
+        >
+          No se pudo cargar tu lista.
+        </ErrorState>
       </View>
     )
   }
@@ -399,8 +514,6 @@ export default function RankAPlace() {
         setQuery={setPickQuery}
         openNow={openNow}
         setOpenNow={setOpenNow}
-        reserveOnly={reserveOnly}
-        setReserveOnly={setReserveOnly}
         nearby={nearby}
         setNearby={setNearby}
         myHood={myHood}
@@ -477,6 +590,7 @@ export default function RankAPlace() {
           <SentimentButton
             tone="loved"
             onPress={() => {
+              tapSelect()
               track('rank_started', { sentiment: 'loved', rerank: isRerank })
               setSentiment('loved')
             }}
@@ -486,6 +600,7 @@ export default function RankAPlace() {
           <SentimentButton
             tone="fine"
             onPress={() => {
+              tapSelect()
               track('rank_started', { sentiment: 'fine', rerank: isRerank })
               setSentiment('fine')
             }}
@@ -495,6 +610,7 @@ export default function RankAPlace() {
           <SentimentButton
             tone="low"
             onPress={() => {
+              tapSelect()
               track('rank_started', { sentiment: 'disliked', rerank: isRerank })
               setSentiment('disliked')
             }}
@@ -971,6 +1087,7 @@ function PlaceStep({
           item={comparison.current}
           subline={isRerank ? 'ya en tu lista' : 'nuevo en tu lista'}
           onPress={() => {
+            tapSelect()
             setAnswered((a) => a + 1)
             setState((s) => choose(s, true))
           }}
@@ -978,6 +1095,7 @@ function PlaceStep({
         <Pressable
           accessibilityRole="button"
           onPress={() => {
+            tapSelect()
             setAnswered((a) => a + 1)
             setState((s) => tie(s))
           }}
@@ -992,6 +1110,7 @@ function PlaceStep({
           subline={`#${pivotPos} en tu lista`}
           score={comparison.pivot.score ?? null}
           onPress={() => {
+            tapSelect()
             setAnswered((a) => a + 1)
             setState((s) => choose(s, false))
           }}
@@ -1052,8 +1171,6 @@ function FindStep({
   setQuery,
   openNow,
   setOpenNow,
-  reserveOnly,
-  setReserveOnly,
   nearby,
   setNearby,
   myHood,
@@ -1069,8 +1186,6 @@ function FindStep({
   setQuery: (v: string) => void
   openNow: boolean
   setOpenNow: Dispatch<SetStateAction<boolean>>
-  reserveOnly: boolean
-  setReserveOnly: Dispatch<SetStateAction<boolean>>
   nearby: boolean
   setNearby: Dispatch<SetStateAction<boolean>>
   myHood: string | null
@@ -1091,11 +1206,10 @@ function FindStep({
     ? candList.filter((r) => r.closesAt).length / candList.length
     : 1
   const showOpenChip = openNow || hoursCoverage >= 0.4
-  // candList already comes server-pre-filtered by q/openNow/reserveOnly; only
-  // `existing` (my own list, always fetched in full) needs client filtering.
+  // candList already comes server-pre-filtered by q/openNow; only `existing`
+  // (my own list, always fetched in full) needs client filtering.
   const existingFiltered = existing.filter((r) => {
     if (openNow && !r.closesAt) return false
-    if (reserveOnly && !r.phone) return false
     if (!q) return true
     return (
       r.name.toLowerCase().includes(q) ||
@@ -1228,13 +1342,6 @@ function FindStep({
               Abierto ahora
             </Chip>
           )}
-          <Chip
-            size="sm"
-            state={reserveOnly ? 'selected' : 'default'}
-            onPress={() => setReserveOnly((v) => !v)}
-          >
-            Reservar
-          </Chip>
         </ChipRail>
       </View>
 

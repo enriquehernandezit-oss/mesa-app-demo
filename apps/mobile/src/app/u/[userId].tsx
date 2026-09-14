@@ -14,8 +14,8 @@ import {
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
+import { useFollow } from '@/hooks/useFollow'
 import { showActionSheet } from '@/lib/actionSheet'
-import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { tagLabel } from '@/lib/display'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
@@ -69,15 +69,13 @@ export default function UserRankings() {
     },
     onError: () => toast({ variant: 'error', message: 'No se pudo bloquear. Intenta de nuevo.' }),
   })
-  const follow = useMutation({
-    mutationFn: (next: boolean) =>
-      next ? api.post('/social/follow', { userId }) : api.del(`/social/follow/${userId}`),
-    onSuccess: (_d, next) => {
-      if (next) track('follow_added', { from: 'passport' })
-      queryClient.invalidateQueries({ queryKey: ['user-rankings', userId] })
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-    },
-  })
+  // `initial` starts false before `q.data` resolves and re-syncs the instant
+  // it does — see useFollow's own comment on why that's race-free.
+  const {
+    following: isFollowing,
+    toggle: toggleFollow,
+    pending: followPending,
+  } = useFollow(userId, Boolean(q.data?.isFollowing), 'passport')
 
   const reportUser = useMutation({
     mutationFn: (reason: string) =>
@@ -117,8 +115,9 @@ export default function UserRankings() {
     )
   }
 
-  const { user, rankings, isFollowing, matchPercent, sharedCount, followerCount, followingCount } =
-    q.data
+  // isFollowing comes from useFollow above, not q.data directly — it stays in
+  // sync with the server value but flips optimistically on tap.
+  const { user, rankings, matchPercent, sharedCount, followerCount, followingCount } = q.data
   const firstName = (user.name || user.handle || '').split(' ')[0] || 'esta persona'
   const barrio = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
@@ -155,8 +154,8 @@ export default function UserRankings() {
             <Button
               variant="primary"
               className="w-auto px-6"
-              disabled={follow.isPending}
-              onPress={() => follow.mutate(!isFollowing)}
+              disabled={followPending}
+              onPress={toggleFollow}
             >
               {isFollowing ? 'Siguiendo' : 'Seguir'}
             </Button>

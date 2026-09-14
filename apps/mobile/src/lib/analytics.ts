@@ -36,6 +36,7 @@ export type MesaEvent =
   | 'dish_posted'
   // social
   | 'follow_added'
+  | 'follow_removed'
   | 'cheers_given'
   // discovery
   | 'search_performed'

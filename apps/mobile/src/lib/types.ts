@@ -257,6 +257,7 @@ export interface MeStats {
   places: number
   followers: number
   following: number
+  saved: number
   streakWeeks: number
   rankInDr: number | null
   avgScore: number | null
@@ -342,6 +343,7 @@ export interface FeedItem {
   restaurant: RankedRestaurant
   neighborhood: string | null
   note: string | null
+  noteId?: string | null
   cheersCount?: number
   cheeredByMe?: boolean
   dishId?: string | null
@@ -355,6 +357,7 @@ export interface FriendRanking {
   score: number
   position: number
   note: string | null
+  noteId: string | null
 }
 
 export interface RestaurantProfileResponse {

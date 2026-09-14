@@ -1,3 +1,4 @@
+import { pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
   Body,
@@ -30,6 +31,7 @@ import {
   SpotRail,
   UtilityPill,
 } from '@/components/ui/patterns'
+import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
@@ -37,7 +39,7 @@ import { cuisineLabel, priceLabel } from '@/lib/display'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
-import type { Dish, RestaurantProfileResponse } from '@/lib/types'
+import type { Dish, FriendRanking, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -88,6 +90,15 @@ export default function RestaurantProfile() {
       queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
     },
+    // Not optimistic — the button reflects `q.data.saved`, which only moves
+    // once the invalidated query refetches — so a failure needs no rollback,
+    // just a message: today it silently re-enables the button with nothing
+    // else telling the tap didn't land.
+    onError: (_err, save) =>
+      toast({
+        variant: 'error',
+        message: save ? 'No se pudo guardar.' : 'No se pudo quitar de tu lista.',
+      }),
   })
 
   if (q.isPending) {
@@ -487,20 +498,7 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
     <>
       <SectionHeader>Sus puntuaciones</SectionHeader>
       {shown.map((fr) => (
-        <Link key={fr.user.id} href={`/u/${fr.user.id}`} asChild>
-          <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-            <Avatar name={fr.user.name || fr.user.handle || 'm'} src={fr.user.image} size={34} />
-            <View className="flex-1">
-              <Text className="font-ui-medium text-body text-text">
-                {fr.user.name || fr.user.handle}
-              </Text>
-              {fr.note ? (
-                <Text className="font-serif-italic text-serif-sm text-text-2">“{fr.note}”</Text>
-              ) : null}
-            </View>
-            <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />
-          </Pressable>
-        </Link>
+        <FriendScoreRow key={fr.user.id} fr={fr} />
       ))}
       {rankings.length > 3 && (
         <Pressable
@@ -517,6 +515,50 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
   )
 }
 
+// One friend's score row. Long-press opens the same report sheet ReportControl
+// uses — App Store 1.2 requires report to be reachable everywhere UGC renders,
+// and this note previously had no report path at all outside a member's own
+// passport. Not a visible "Reportar" link: this list is dense (up to a
+// screen's worth of rows), so the action rides the same gesture as a comment
+// row on most social apps rather than adding a permanent extra line to each.
+function FriendScoreRow({ fr }: { fr: FriendRanking }) {
+  const report = useMutation({
+    mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
+      api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
+    onSuccess: () => toast({ message: 'Reportado. Gracias — lo revisaremos.' }),
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+  })
+  const noteId = fr.noteId
+  const onLongPress =
+    fr.note && noteId
+      ? async () => {
+          const reason = await pickReportReason('vibe_note')
+          if (reason) report.mutate({ reason, noteId })
+        }
+      : undefined
+
+  return (
+    <Link href={`/u/${fr.user.id}`} asChild>
+      <Pressable
+        onLongPress={onLongPress}
+        className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+      >
+        <Avatar name={fr.user.name || fr.user.handle || 'm'} src={fr.user.image} size={34} />
+        <View className="flex-1">
+          <Text className="font-ui-medium text-body text-text">
+            {fr.user.name || fr.user.handle}
+          </Text>
+          {fr.note ? (
+            <Text className="font-serif-italic text-serif-sm text-text-2">“{fr.note}”</Text>
+          ) : null}
+        </View>
+        <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />
+      </Pressable>
+    </Link>
+  )
+}
+
 // Popular dishes — a photo rail of dishes friends posted here, with an entry to
 // post your own (only if you've ranked the place).
 function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd: boolean }) {
@@ -526,7 +568,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
     queryFn: () => api.get<{ dishes: Dish[] }>(`/dishes/restaurant/${restaurantId}`),
   })
   const dishes = q.data?.dishes ?? []
-  if (dishes.length === 0 && !canAdd) return null
+  if (dishes.length === 0 && !canAdd && !q.isError) return null
 
   return (
     <>
@@ -547,7 +589,9 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
       >
         Platos populares
       </SectionHeader>
-      {dishes.length === 0 ? (
+      {q.isError ? (
+        <Caption className="mt-1">No se pudieron cargar los platos.</Caption>
+      ) : dishes.length === 0 ? (
         <Body className="mt-1">Todavía no hay platos — sé el primero.</Body>
       ) : (
         <ScrollView

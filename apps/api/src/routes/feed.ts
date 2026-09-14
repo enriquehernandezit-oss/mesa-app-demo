@@ -82,6 +82,9 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
       },
       neighborhood: neighborhoods.name,
       note: vibeNotes.body,
+      // For the mobile app's report action on a card's note (App Store 1.2) —
+      // null when there's no note to report.
+      noteId: vibeNotes.id,
       dishId: latestDish.id,
       dishImage: latestDish.imageId,
       dishName: latestDish.name,

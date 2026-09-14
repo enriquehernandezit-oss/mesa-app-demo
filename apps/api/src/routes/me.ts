@@ -200,6 +200,10 @@ export const meRoutes = new Hono<AuthedEnv>()
       schema.follows,
       eq(schema.follows.followerId, current.id),
     )
+    // Want-to-try count — backs the Rankings header's third stat, which used
+    // to show "prom." (your own average score, the least actionable of the
+    // three numbers there) and now shows this instead.
+    const saved = await db.$count(schema.savedPlaces, eq(schema.savedPlaces.userId, current.id))
 
     // Current streak: consecutive ISO weeks (ending this week) with ≥1 ranking.
     const WEEK = 7 * 24 * 60 * 60 * 1000
@@ -235,6 +239,7 @@ export const meRoutes = new Hono<AuthedEnv>()
       places: mine.length,
       followers,
       following: followingCount,
+      saved,
       streakWeeks: streak,
       rankInDr,
       avgScore: mine.length ? mine.reduce((s, r) => s + r.score, 0) / mine.length : null,

@@ -5,6 +5,7 @@
 import { toast } from '../components/ui/toast-store'
 import { api } from './api'
 import { scoreForPosition } from './display'
+import { tapLight } from './haptics'
 import { invalidateAfterRanking } from './invalidateAfterRanking'
 import { queryClient } from './query'
 import type { Ranking } from './types'
@@ -41,6 +42,7 @@ export function removeRankingWithUndo(ranking: Ranking): void {
   const originalIndex = cur.rankings.findIndex((r) => r.id === ranking.id)
   if (originalIndex === -1) return
   pending.add(ranking.id)
+  tapLight()
 
   queryClient.setQueryData<Cache>(KEY, {
     rankings: renumber(cur.rankings.filter((r) => r.id !== ranking.id)),

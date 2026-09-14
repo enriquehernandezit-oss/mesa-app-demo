@@ -69,6 +69,7 @@ export default function ResetPassword() {
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
+              passwordRules="minlength: 8;"
               returnKeyType="next"
               submitBehavior="submit"
               onSubmitEditing={() => confirmRef.current?.focus()}
@@ -81,6 +82,7 @@ export default function ResetPassword() {
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
+              passwordRules="minlength: 8;"
               returnKeyType="go"
               enablesReturnKeyAutomatically
               onSubmitEditing={() => {

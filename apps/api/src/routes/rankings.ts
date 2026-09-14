@@ -132,15 +132,18 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
   // Query-driven with a limit, mirroring GET /restaurants: fetching the
   // WHOLE unranked catalog (once thousands of rows, post-Foursquare-import)
   // on every open of the rank flow, then filtering with String.includes in
-  // the client, doesn't scale — RankAPlace.tsx now sends q/open/reserve as
-  // real params instead. Re-ranking an already-ranked place is a separate
-  // path (GET /rankings, always small — one user's own list — so it stays a
-  // plain unfiltered fetch, searched client-side there).
+  // the client, doesn't scale — RankAPlace.tsx now sends q/open as real
+  // params instead. Re-ranking an already-ranked place is a separate path
+  // (GET /rankings, always small — one user's own list — so it stays a plain
+  // unfiltered fetch, searched client-side there).
+  //
+  // `reserve` was dropped: it filtered on `restaurants.phone is not null` for
+  // a "Reservar" chip that led nowhere — Mesa has no reservation handoff (see
+  // docs/BUILD_PLAN.md's note on the cut Milestone 5 feature).
   .get('/candidates', async (c) => {
     const me = c.get('user')
     const q = (c.req.query('q') ?? '').trim()
     const openNow = c.req.query('open') === '1'
-    const reserveOnly = c.req.query('reserve') === '1'
     const hasQuery = q.length >= 2
 
     const mine = db
@@ -154,7 +157,6 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       isNull(restaurants.closedAt),
     ]
     if (openNow) conds.push(sql`${restaurants.closesAt} is not null`)
-    if (reserveOnly) conds.push(sql`${restaurants.phone} is not null`)
     let norm: ReturnType<typeof sql> | null = null
     if (hasQuery) {
       norm = sql`mesa_norm(${q})`

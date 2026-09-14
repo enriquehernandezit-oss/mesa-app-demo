@@ -1,5 +1,5 @@
 import { TopBar } from '@/components/TopBar'
-import { Button, Caption, Chip, Eyebrow, SerifItalic } from '@/components/ui'
+import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
 import { showSheet } from '@/components/ui/Sheet'
@@ -114,7 +114,7 @@ function AvatarEditButton({
 // expo-image-picker + resizeToJpeg (square).
 export default function ProfileTab() {
   const router = useRouter()
-  const { data } = useProfile(true)
+  const { data, isPending, isError, refetch } = useProfile(true)
   const p = data?.profile
   const [editing, setEditing] = useState(false)
   const avatarPicker = useAvatarPicker()
@@ -123,6 +123,32 @@ export default function ProfileTab() {
 
   if (editing) {
     return <EditProfile onClose={() => setEditing(false)} />
+  }
+
+  // A failed `/me` used to fall through to the render below with `p`
+  // undefined — every field blanks or falls back to "Tú", indistinguishable
+  // from a genuinely new, empty account. Skeleton while loading (this
+  // screen's geometry is known ahead of time, same reasoning as the passport
+  // screens); a real error state instead of a silently broken-looking profile.
+  if (isPending) {
+    return (
+      <View className="flex-1 bg-bg">
+        <TopBar variant="profile" title="Tú" />
+        <View className="items-center gap-3 pt-8">
+          <Skeleton height={88} width={88} />
+          <Skeleton height={14} width={140} />
+          <Skeleton height={11} width={180} />
+        </View>
+      </View>
+    )
+  }
+  if (isError) {
+    return (
+      <View className="flex-1 bg-bg">
+        <TopBar variant="profile" title="Tú" />
+        <ErrorState onRetry={() => refetch()}>No se pudo cargar tu perfil.</ErrorState>
+      </View>
+    )
   }
 
   const memberSince =
@@ -181,12 +207,15 @@ export default function ProfileTab() {
         {/* The same trio as another member's passport — the two are the same
             object and should read that way. "Rank en RD" used to sit here AND in
             the stat card below, the same number twice on one screen; it belongs
-            with the other achievement number, so it lives in the card only. */}
-        {stats.data && (
+            with the other achievement number, so it lives in the card only.
+            Rendered with — placeholders while `stats` is still loading (instead
+            of only once it lands) so the trio reserves its space rather than
+            the whole header shifting down; hidden only on a genuine error. */}
+        {!stats.isError && (
           <View className="mt-5 flex-row justify-around">
-            <Stat n={String(stats.data.followers)} l="Seguidores" />
-            <Stat n={String(stats.data.following)} l="Siguiendo" />
-            <Stat n={String(stats.data.places)} l="Rankeados" />
+            <Stat n={stats.data ? String(stats.data.followers) : '—'} l="Seguidores" />
+            <Stat n={stats.data ? String(stats.data.following) : '—'} l="Siguiendo" />
+            <Stat n={stats.data ? String(stats.data.places) : '—'} l="Rankeados" />
           </View>
         )}
 
@@ -220,18 +249,22 @@ export default function ProfileTab() {
           />
         </View>
 
-        {stats.data && (
+        {!stats.isError && (
           <View className="mt-6 flex-row gap-3">
             <StatCard
               label="Rank en RD"
-              value={stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
+              value={
+                stats.data ? (stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—') : '—'
+              }
             />
             <StatCard
               label="Racha actual"
               value={
-                stats.data.streakWeeks > 0
-                  ? `${stats.data.streakWeeks} semana${stats.data.streakWeeks > 1 ? 's' : ''}`
-                  : 'Aún ninguna'
+                stats.data
+                  ? stats.data.streakWeeks > 0
+                    ? `${stats.data.streakWeeks} semana${stats.data.streakWeeks > 1 ? 's' : ''}`
+                    : 'Aún ninguna'
+                  : '—'
               }
             />
           </View>

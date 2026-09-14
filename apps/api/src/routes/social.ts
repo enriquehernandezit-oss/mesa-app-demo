@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
@@ -18,14 +18,35 @@ export const socialRoutes = new Hono<AuthedEnv>()
 
     const parsed = followSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
-    if (parsed.data.userId === current.id) {
+    const targetId = parsed.data.userId
+    if (targetId === current.id) {
       return c.json({ error: 'cannot_follow_self' }, 400)
     }
+
+    // A block deletes any existing follow edge (see /moderation/blocks), but
+    // nothing previously stopped re-following a blocker (or someone you'd
+    // blocked) right back through this endpoint. Same "not_found" a banned
+    // or nonexistent target gets — this never confirms to the caller whether
+    // a block exists, just that following isn't possible.
+    const target = await db.query.user.findFirst({
+      where: eq(schema.user.id, targetId),
+      columns: { bannedAt: true },
+    })
+    if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
+
+    const blocked = await db.query.userBlocks.findFirst({
+      where: or(
+        and(eq(schema.userBlocks.blockerId, current.id), eq(schema.userBlocks.blockedId, targetId)),
+        and(eq(schema.userBlocks.blockerId, targetId), eq(schema.userBlocks.blockedId, current.id)),
+      ),
+      columns: { blockerId: true },
+    })
+    if (blocked) return c.json({ error: 'not_found' }, 404)
 
     // Idempotent: following someone you already follow is a no-op, not an error.
     await db
       .insert(schema.follows)
-      .values({ followerId: current.id, followingId: parsed.data.userId })
+      .values({ followerId: current.id, followingId: targetId })
       .onConflictDoNothing()
 
     return c.json({ ok: true })

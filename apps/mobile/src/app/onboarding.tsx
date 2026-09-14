@@ -1,7 +1,8 @@
-import { Body, Button, Caption, Chip, Eyebrow, Title } from '@/components/ui'
+import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
+import { useFollow } from '@/hooks/useFollow'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
@@ -10,13 +11,19 @@ import { useAuthLost } from '@/lib/authLost'
 import { contactsAvailable, importContactPhones } from '@/lib/contacts'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
+import { tapSuccess } from '@/lib/haptics'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  type UseMutationResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { Redirect, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -46,6 +53,7 @@ export default function Onboarding() {
 
   function finish() {
     track('onboarding_completed')
+    tapSuccess()
     // Attribute this signup to whoever's link opened the app, if any.
     // Fire-and-forget: an unknown or already-used code is not an error the
     // member should ever see, and nothing here gates the app.
@@ -89,7 +97,11 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const [neighborhoodSlug, setNeighborhood] = useState('')
   const [accepted, setAccepted] = useState(false)
 
-  const { data } = useQuery({
+  const {
+    data,
+    isError: neighborhoodsError,
+    refetch: refetchNeighborhoods,
+  } = useQuery({
     queryKey: ['neighborhoods'],
     queryFn: () => api.get<{ neighborhoods: Neighborhood[] }>('/onboarding/neighborhoods'),
     staleTime: Number.POSITIVE_INFINITY,
@@ -109,7 +121,10 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         neighborhoodSlug,
         acceptEula: true,
       }),
-    onSuccess: onNext,
+    onSuccess: () => {
+      tapSuccess()
+      onNext()
+    },
   })
 
   const canSubmit = name.trim().length > 0 && handleValid && neighborhoodSlug !== '' && accepted
@@ -141,7 +156,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         onChangeText={setName}
       />
 
-      <Eyebrow className="mt-5 mb-2">Instagram · opcional</Eyebrow>
+      <Eyebrow className="mt-5 mb-2">@usuario · opcional</Eyebrow>
       <TextInput
         className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
         placeholderTextColor={placeholder}
@@ -151,6 +166,10 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         value={handle}
         onChangeText={(v) => setHandle(v.replace(/[^a-zA-Z0-9_.@]/g, ''))}
       />
+      {/* This is what people tap "Compartir perfil" against later — skipping
+          it silently breaks that share link, so the helper line says so up
+          front instead of leaving it read as a pure Instagram field. */}
+      <Caption className="mt-1">Sirve para compartir tu perfil. Puede ser tu Instagram.</Caption>
       {handle.length > 0 && !handleValid && (
         <Caption className="mt-1 text-status-packed">
           2–30 caracteres: letras, números, _ o .
@@ -158,18 +177,24 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       )}
 
       <Eyebrow className="mt-5 mb-2">Sector</Eyebrow>
-      <View className="flex-row flex-wrap gap-2">
-        {data?.neighborhoods.map((n) => (
-          <Chip
-            key={n.slug}
-            size="sm"
-            state={neighborhoodSlug === n.slug ? 'selected' : 'default'}
-            onPress={() => setNeighborhood(n.slug)}
-          >
-            {n.name}
-          </Chip>
-        ))}
-      </View>
+      {neighborhoodsError ? (
+        <ErrorState onRetry={() => refetchNeighborhoods()}>
+          No se pudieron cargar los sectores.
+        </ErrorState>
+      ) : (
+        <View className="flex-row flex-wrap gap-2">
+          {data?.neighborhoods.map((n) => (
+            <Chip
+              key={n.slug}
+              size="sm"
+              state={neighborhoodSlug === n.slug ? 'selected' : 'default'}
+              onPress={() => setNeighborhood(n.slug)}
+            >
+              {n.name}
+            </Chip>
+          ))}
+        </View>
+      )}
 
       <Pressable
         accessibilityRole="checkbox"
@@ -210,7 +235,7 @@ const MIN_TO_RANK = 3
 const MAX_TO_RANK = 8
 
 function RankStep({ onNext }: { onNext: () => void }) {
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['onboarding', 'candidates'],
     queryFn: () => api.get<{ restaurants: Restaurant[] }>('/onboarding/candidates'),
   })
@@ -230,6 +255,13 @@ function RankStep({ onNext }: { onNext: () => void }) {
   })
 
   if (isPending) return <Body className="px-5 pt-8">Cargando spots…</Body>
+  if (isError) {
+    return (
+      <View className="flex-1 items-center justify-center px-5">
+        <ErrorState onRetry={() => refetch()}>No se pudieron cargar los spots.</ErrorState>
+      </View>
+    )
+  }
 
   if (phase === 'select') {
     const toggle = (id: string) =>
@@ -303,28 +335,49 @@ function RankStep({ onNext }: { onNext: () => void }) {
   return (
     <ComparePhase
       restaurants={selectedIds.map((id) => byId.get(id)).filter(Boolean) as Restaurant[]}
-      saving={save.isPending}
-      onComplete={(ordered) => save.mutate(ordered.map((r) => r.id))}
+      save={save}
     />
   )
 }
 
 function ComparePhase({
   restaurants,
-  saving,
-  onComplete,
+  save,
 }: {
   restaurants: Restaurant[]
-  saving: boolean
-  onComplete: (ordered: Restaurant[]) => void
+  save: UseMutationResult<unknown, unknown, string[]>
 }) {
   const [state, setState] = useState(() => initPairwise(restaurants))
   const comparison = nextComparison(state)
   const { placed, total } = progress(state)
+  const finished = comparison === null && isDone(state)
+  const submit = () => save.mutate(state.ordered.map((r) => r.id))
 
-  // No comparison left: the list is fully ordered. Persist it once.
+  // Persist the finished order exactly once. Calling `save.mutate` directly in
+  // the render body (the previous shape) re-fired on every render once `save`
+  // settled back to `!isPending` — including after a FAILED save, which turned
+  // one network hiccup into a silent, infinite retry loop with no error ever
+  // reaching the screen. `isIdle` only guards the automatic first attempt; the
+  // retry button below calls `save.mutate` directly regardless of status.
+  // `submit` closes over `state` and is recreated every render; including it
+  // as a dependency would defeat the isIdle guard below by re-running every
+  // render instead of once when the order actually finishes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  useEffect(() => {
+    if (finished && save.isIdle) submit()
+  }, [finished, save.isIdle])
+
+  // Unconditional on `comparison === null` (not just `finished`) so TS keeps
+  // narrowing `comparison` to non-null below — `finished` alone can't do that,
+  // since it's a boolean, not a type guard on `comparison` itself.
   if (comparison === null) {
-    if (isDone(state) && !saving) onComplete(state.ordered)
+    if (save.isError) {
+      return (
+        <View className="flex-1 items-center justify-center px-5">
+          <ErrorState onRetry={submit}>No se pudieron guardar tus rankings.</ErrorState>
+        </View>
+      )
+    }
     return <Body className="px-5 pt-10 text-center">Guardando tus rankings…</Body>
   }
 
@@ -376,7 +429,13 @@ function ComparePhase({
 // 5.1). Following is optimistic — both API calls are idempotent.
 function FriendsStep({ onFinish }: { onFinish: () => void }) {
   const queryClient = useQueryClient()
-  const [following, setFollowing] = useState<Set<string>>(new Set())
+  // Membership only, not a source of truth for the toggle itself — each row
+  // owns its own `useFollow` now (optimistic + rollback + a real error
+  // message), and reports back here purely so the finish button can count how
+  // many are followed. The previous fire-and-forget `.catch(() => {})` meant a
+  // failed follow during onboarding — the very first graph-building action in
+  // the app — looked identical to a successful one.
+  const [followed, setFollowed] = useState<Set<string>>(new Set())
   const [matched, setMatched] = useState<SuggestedUser[] | null>(null)
   const [contactMsg, setContactMsg] = useState<string | null>(null)
 
@@ -389,16 +448,11 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
     queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
   })
 
-  function toggleFollow(userId: string) {
-    setFollowing((cur) => {
+  function reportFollowed(userId: string, isFollowing: boolean) {
+    setFollowed((cur) => {
       const next = new Set(cur)
-      if (next.has(userId)) {
-        next.delete(userId)
-        void api.del(`/social/follow/${userId}`).catch(() => {})
-      } else {
-        next.add(userId)
-        void api.post('/social/follow', { userId }).catch(() => {})
-      }
+      if (isFollowing) next.add(userId)
+      else next.delete(userId)
       return next
     })
   }
@@ -465,41 +519,57 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
 
         <View className="mt-4">
           {suggested.isPending && <Body>Buscando gente…</Body>}
-          {list.map((u) => {
-            const on = following.has(u.id)
-            return (
-              <View key={u.id} className="flex-row items-center gap-3 border-line border-b py-3">
-                <View className="min-w-0 flex-1">
-                  <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-                    {u.name || u.handle}
-                  </Text>
-                  <Caption numberOfLines={1}>
-                    {[u.handle ? `@${u.handle}` : null, u.neighborhood].filter(Boolean).join(' · ')}
-                  </Caption>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => toggleFollow(u.id)}
-                  className={`min-h-[36px] justify-center rounded-pill border px-4 ${on ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
-                >
-                  <Text
-                    className={`font-mono text-eyebrow ${on ? 'text-accent-strong' : 'text-text-muted'}`}
-                  >
-                    {on ? 'Siguiendo' : 'Seguir'}
-                  </Text>
-                </Pressable>
-              </View>
-            )
-          })}
+          {list.map((u) => (
+            <FriendRow key={u.id} user={u} onFollowChange={(v) => reportFollowed(u.id, v)} />
+          ))}
         </View>
       </ScrollView>
 
       <View className="px-5 pb-4">
         <Button variant="primary" onPress={done}>
-          {following.size > 0 ? `Listo — siguiendo a ${following.size}` : 'Omitir por ahora'}
+          {followed.size > 0 ? `Listo — siguiendo a ${followed.size}` : 'Omitir por ahora'}
         </Button>
       </View>
+    </View>
+  )
+}
+
+function FriendRow({
+  user,
+  onFollowChange,
+}: { user: SuggestedUser; onFollowChange: (following: boolean) => void }) {
+  const { following, toggle } = useFollow(user.id, false, 'onboarding')
+
+  // `onFollowChange` is a fresh closure every render (it closes over
+  // `user.id` from the parent's `.map()`); only `following` should re-trigger
+  // this.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  useEffect(() => {
+    onFollowChange(following)
+  }, [following])
+
+  return (
+    <View className="flex-row items-center gap-3 border-line border-b py-3">
+      <View className="min-w-0 flex-1">
+        <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+          {user.name || user.handle}
+        </Text>
+        <Caption numberOfLines={1}>
+          {[user.handle ? `@${user.handle}` : null, user.neighborhood].filter(Boolean).join(' · ')}
+        </Caption>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: following }}
+        onPress={toggle}
+        className={`min-h-[36px] justify-center rounded-pill border px-4 ${following ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
+      >
+        <Text
+          className={`font-mono text-eyebrow ${following ? 'text-accent-strong' : 'text-text-muted'}`}
+        >
+          {following ? 'Siguiendo' : 'Seguir'}
+        </Text>
+      </Pressable>
     </View>
   )
 }

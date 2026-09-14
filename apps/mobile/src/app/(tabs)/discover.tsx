@@ -1,4 +1,5 @@
 import { CheersButton } from '@/components/CheersButton'
+import { pickReportReason } from '@/components/ReportControl'
 import { TopBar } from '@/components/TopBar'
 import {
   Body,
@@ -12,7 +13,8 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
-import { track } from '@/lib/analytics'
+import { toast } from '@/components/ui/toast-store'
+import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
 import { cuisineLabel, priceLabel } from '@/lib/display'
 import { cloudinaryUrl } from '@/lib/media'
@@ -20,7 +22,7 @@ import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, Link, useRouter } from 'expo-router'
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
@@ -68,7 +70,16 @@ export default function DiscoverTab() {
           <FeedSkeleton />
         </ScrollView>
       ) : feed.isError ? (
-        <ScrollView contentContainerClassName="pb-8">
+        <ScrollView
+          contentContainerClassName="pb-8"
+          refreshControl={
+            <RefreshControl
+              refreshing={feed.isRefetching}
+              onRefresh={() => feed.refetch()}
+              tintColor={accent}
+            />
+          }
+        >
           <FeedHeader />
           <ErrorState onRetry={() => feed.refetch()}>No se pudo cargar el feed.</ErrorState>
         </ScrollView>
@@ -148,18 +159,9 @@ function FeedHeader() {
 
 // Empty feed — the invite card + a few people to follow so the feed fills.
 function EmptyFeed() {
-  const queryClient = useQueryClient()
   const suggested = useQuery({
     queryKey: ['people'],
     queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
-  })
-  const follow = useMutation({
-    mutationFn: (userId: string) => api.post('/social/follow', { userId }),
-    onSuccess: () => {
-      track('follow_added', { from: 'empty_feed' })
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['people'] })
-    },
   })
   const users = suggested.data?.users ?? []
   return (
@@ -172,30 +174,37 @@ function EmptyFeed() {
       </View>
       {users.length > 0 && <Eyebrow className="mb-3 mt-5">Empieza con estos</Eyebrow>}
       {users.map((u) => (
-        <View key={u.id} className="flex-row items-center gap-3 border-line border-b py-3">
-          <Link href={`/u/${u.id}`} asChild>
-            <Pressable className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80">
-              <Avatar name={u.name || u.handle || 'm'} src={u.image} size={40} />
-              <View className="min-w-0 flex-1">
-                <Text className="font-ui-medium text-body text-text" numberOfLines={1}>
-                  {u.name || u.handle}
-                </Text>
-                <Caption numberOfLines={1}>
-                  {[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
-                </Caption>
-              </View>
-            </Pressable>
-          </Link>
-          <Button
-            variant="secondary"
-            className="w-auto min-h-[40px] px-4"
-            onPress={() => follow.mutate(u.id)}
-            disabled={follow.isPending}
-          >
-            Seguir
-          </Button>
-        </View>
+        <SuggestedRow key={u.id} user={u} />
       ))}
+    </View>
+  )
+}
+
+function SuggestedRow({ user: u }: { user: SuggestedUser }) {
+  const { following, toggle, pending } = useFollow(u.id, false, 'empty_feed')
+  return (
+    <View className="flex-row items-center gap-3 border-line border-b py-3">
+      <Link href={`/u/${u.id}`} asChild>
+        <Pressable className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80">
+          <Avatar name={u.name || u.handle || 'm'} src={u.image} size={40} />
+          <View className="min-w-0 flex-1">
+            <Text className="font-ui-medium text-body text-text" numberOfLines={1}>
+              {u.name || u.handle}
+            </Text>
+            <Caption numberOfLines={1}>
+              {[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
+            </Caption>
+          </View>
+        </Pressable>
+      </Link>
+      <Button
+        variant="secondary"
+        className="w-auto min-h-[40px] px-4"
+        onPress={toggle}
+        disabled={pending}
+      >
+        {following ? 'Siguiendo' : 'Seguir'}
+      </Button>
     </View>
   )
 }
@@ -272,6 +281,24 @@ function FeedSkeleton() {
 function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
+  // Long-press on the note itself reports it (App Store 1.2) — the card is one
+  // big tap target to the restaurant, so this rides a different gesture rather
+  // than adding a permanent "Reportar" line to every card in the feed.
+  const reportNote = useMutation({
+    mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
+      api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
+    onSuccess: () => toast({ message: 'Reportado. Gracias — lo revisaremos.' }),
+    onError: () =>
+      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+  })
+  const noteId = item.noteId
+  const onLongPressNote =
+    item.note && noteId
+      ? async () => {
+          const reason = await pickReportReason('vibe_note')
+          if (reason) reportNote.mutate({ reason, noteId })
+        }
+      : undefined
   const chars = (
     <Characteristics
       priceTier={item.restaurant.priceTier}
@@ -410,6 +437,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           <Text
             selectable
             numberOfLines={2}
+            onLongPress={onLongPressNote}
             className="mt-1 font-serif-italic text-serif-sm text-text-2"
           >
             “{item.note}”

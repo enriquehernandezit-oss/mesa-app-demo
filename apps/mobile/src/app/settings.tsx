@@ -4,6 +4,7 @@ import { ThemePicker } from '@/components/ui/ThemePicker'
 import { ChevronIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorEs } from '@/lib/authErrors'
@@ -103,6 +104,7 @@ export default function SettingsScreen() {
   }
 
   async function handleSignOut() {
+    track('signed_out')
     await signOut()
     queryClient.clear()
     router.replace('/')
@@ -392,6 +394,7 @@ export default function SettingsScreen() {
                   placeholder="Nueva contraseña (8+ caracteres)"
                   secureTextEntry
                   textContentType="newPassword"
+                  passwordRules="minlength: 8;"
                   autoComplete="new-password"
                   value={newPassword}
                   onChangeText={setNewPassword}

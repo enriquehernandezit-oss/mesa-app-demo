@@ -667,6 +667,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         score: rankings.score,
         position: rankings.position,
         note: vibeNotes.body,
+        // For the mobile app's report action on a friend's note (App Store
+        // 1.2) — null when there's no note to report.
+        noteId: vibeNotes.id,
       })
       .from(rankings)
       .innerJoin(user, eq(user.id, rankings.userId))

@@ -1,6 +1,7 @@
 import { ExternalResults } from '@/components/ExternalResults'
 import {
   Body,
+  Button,
   Caption,
   Chip,
   EmptyState,
@@ -32,11 +33,12 @@ import type {
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { useColor } from '@/theme/useColor'
 import { themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
@@ -69,6 +71,7 @@ export default function ExploreScreen() {
   const router = useRouter()
   const theme = useResolvedTheme()
   const c = themeColors[theme]
+  const accent = useColor('accent')
   const [q, setQ] = useState('')
   const [hood, setHood] = useState<string | null>(null)
   const [cuisine, setCuisine] = useState<string | null>(null)
@@ -209,6 +212,13 @@ export default function ExploreScreen() {
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={results.isRefetching}
+            onRefresh={() => results.refetch()}
+            tintColor={accent}
+          />
+        }
       >
         {/* Sort + filter trigger row, and — while open — the grouped panel
             below it. Mirrors Rankings' mineControls: one "Filtros" trigger
@@ -341,7 +351,17 @@ export default function ExploreScreen() {
           ) : results.isError ? (
             <ErrorState onRetry={() => results.refetch()}>No se pudo buscar.</ErrorState>
           ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
-            <EmptyState>Nada coincide.</EmptyState>
+            <EmptyState
+              action={
+                activeCount > 0 ? (
+                  <Button size="sm" variant="secondary" onPress={clearFilters}>
+                    Limpiar filtros
+                  </Button>
+                ) : undefined
+              }
+            >
+              Nada coincide.
+            </EmptyState>
           ) : (
             <>
               {members.length > 0 && hits.length > 0 && <SectionHeader>Spots</SectionHeader>}

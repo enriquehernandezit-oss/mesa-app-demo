@@ -93,6 +93,11 @@ Build the whole shared spine before any screen exists.
   link / call to the restaurant with prefilled day, time, party size. Do NOT
   build a booking backend — DR restaurants have no supply behind it yet (that's
   Phase 3). This is honest scope, not a shortcut.
+  **Status: cut from the native launch, not built.** A "Reservar" filter chip
+  and a `reserve` API param existed in the rank flow with no handoff action
+  behind either — both were removed rather than left half-wired. See
+  `docs/FEATURES.md` §11 ("Deliberately not built" — no booking backend, phone
+  number hands off to your phone in spirit only, nothing implemented today).
 - Cloudinary image pipeline for restaurant/profile photos; MapBox map on the
   restaurant profile.
 - **In-app account deletion** in profile settings (App Store 5.1.1 — required).
@@ -152,8 +157,9 @@ accidental complexity at zero users.
 ## Definition of done for Phase 1
 A user can: sign in, be onboarded with a starting ranking + friends, rank places
 via pairwise comparison with vibe notes, follow people, open a feed that is full
-of friends' rankings, view a restaurant, save it, and request a table via
-handoff — all in the fixed Mesa brand, shipped to TestFlight, with pooling +
-no-N+1 + caching in place from the first commit, and App Store guidelines
-satisfied (Sign in with Apple, UGC report/block/remove, in-app account deletion,
-privacy strings + labels) — see `docs/APPSTORE.md`.
+of friends' rankings, view a restaurant, and save it — all in the fixed Mesa
+brand, shipped to TestFlight, with pooling + no-N+1 + caching in place from the
+first commit, and App Store guidelines satisfied (Sign in with Apple, UGC
+report/block/remove, in-app account deletion, privacy strings + labels) — see
+`docs/APPSTORE.md`. The reserve-via-handoff item above is cut, not shipped —
+see that milestone's status note.

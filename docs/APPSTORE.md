@@ -1,10 +1,12 @@
 # Mesa — App Store Compliance
 
-Mesa ships to iOS as a **Vite/React app wrapped with Capacitor**. That is
-allowed, but Capacitor apps get extra scrutiny under guideline 4.2, and a social
-app with user content and social login triggers several hard requirements. Treat
-this as a build constraint, not a submission-day checklist — the starred items
-are architectural and are built during Phase 1, not bolted on at the end.
+Mesa ships to iOS as an **Expo / React Native app** (`apps/mobile`) — see
+`docs/FEATURES.md` for what's built as of the native rewrite; this file predates
+that rewrite and still frames some sections against the retired Vite/Capacitor
+client (noted inline below where it matters). A social app with user content and
+social login triggers several hard requirements regardless of the client stack.
+Treat this as a build constraint, not a submission-day checklist — the starred
+items are architectural and are built during Phase 1, not bolted on at the end.
 
 ## ★ Architectural — build these into Phase 1
 

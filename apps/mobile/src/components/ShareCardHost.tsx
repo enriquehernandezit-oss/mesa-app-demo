@@ -1,4 +1,5 @@
 import { ShareCard } from '@/components/ShareCard'
+import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { captureError } from '@/lib/errors'
 import { finishShareCard, useShareCardRequest } from '@/lib/shareCardStore'
@@ -20,6 +21,11 @@ export function ShareCardHost() {
   useEffect(() => {
     done.current = false
     if (!req) return
+    // The capture (and, on the 3s fallback path, the wait for it) is the only
+    // part of this whole flow the tap itself doesn't give feedback for — up to
+    // 3s of nothing on screen reads as a dead button. This is the one place to
+    // say something: `run()` below fires exactly once per request either way.
+    toast({ message: 'Preparando tu tarjeta…' })
     // Fallback: capture even if the cover's onLoad never fires (slow/broken URL).
     const t = setTimeout(() => void run(), 3000)
     return () => clearTimeout(t)
@@ -46,10 +52,12 @@ export function ShareCardHost() {
       track('share_opened', { kind: req.kind })
       await Share.share({ url: uri, message: req.text })
     } catch (err) {
-      // Capture or share failed / was cancelled — nothing to surface; the caller
-      // only awaited "the sheet was offered". Still reported: a card that never
-      // renders silently breaks the growth loop, and nobody would tell us.
+      // Capture or share failed. Still reported (a card that never renders
+      // silently breaks the growth loop, and nobody would tell us) — and now
+      // told to the person who tapped it too: a "Preparando…" toast that never
+      // resolves into anything is worse than no toast at all.
       captureError(err, 'share.capture')
+      toast({ variant: 'error', message: 'No se pudo preparar la tarjeta. Intenta de nuevo.' })
     } finally {
       finishShareCard()
     }

@@ -11,9 +11,12 @@ import { useEffect, useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-// Sign-in — email + password (the launch method) plus Sign in with Apple (App
-// Store 4.8, since Mesa also offers Instagram). Instagram-handle linking lives in
-// onboarding, and the full verify-email page is a follow-up. Ported from
+// Sign-in — email + password (the launch method) plus Sign in with Apple, shown
+// with equal prominence per App Store 4.8. There is no Instagram sign-in button
+// here: Instagram is wired server-side (Better Auth) but never surfaced as a
+// login method in this app — the @usuario field in onboarding is a display
+// handle only, which can be, but doesn't have to be, someone's Instagram
+// username. The full verify-email page is a follow-up. Ported from
 // apps/app/src/screens/AuthFlow.tsx.
 type AuthClientError = { code?: string; message?: string; status?: number }
 const NETWORK_ERROR: AuthClientError = { message: 'network' }
@@ -188,6 +191,11 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             secureTextEntry
             autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             textContentType={mode === 'signup' ? 'newPassword' : 'password'}
+            // Without this, iOS's suggested-strong-password generator follows
+            // its own default rule and can hand back something shorter than
+            // the server's 8-char minimum — a password iOS itself just
+            // generated then gets rejected by the account it was for.
+            passwordRules={mode === 'signup' ? 'minlength: 8;' : undefined}
             returnKeyType="go"
             enablesReturnKeyAutomatically
             onSubmitEditing={() => {

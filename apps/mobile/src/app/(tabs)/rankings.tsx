@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
+import { tapLight } from '@/lib/haptics'
 import { cloudinaryUrl } from '@/lib/media'
 import { removeRankingWithUndo } from '@/lib/rankingRemoval'
 import {
@@ -41,7 +42,15 @@ import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -62,6 +71,7 @@ export default function RankingsTab() {
   const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
   const [filterOpen, setFilterOpen] = useState(false)
   const me = useProfile(true, 300_000)
+  const accent = useColor('accent')
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -130,15 +140,19 @@ export default function RankingsTab() {
         )}
       </View>
 
-      {stats.data && (
+      {!stats.isError && (
+        // Rendered while loading too (with — placeholders) rather than only
+        // once stats.data lands, so the trio reserves its space instead of the
+        // whole header jumping down the instant the request settles. Only
+        // hidden on a genuine error, where there's nothing honest to show.
+        // "prom." (your own average score — the least actionable of the three
+        // numbers here) is now "Quiero probar", the saved-places count, which
+        // is a real destination (the tab right next to this one).
         <View className="mb-4 flex-row gap-6">
-          <Stat n={String(stats.data.places)} l="lugares" />
+          <Stat n={stats.data ? String(stats.data.places) : '—'} l="lugares" />
+          <Stat n={stats.data ? String(stats.data.saved) : '—'} l="quiero probar" />
           <Stat
-            n={stats.data.avgScore != null ? displayScore(stats.data.avgScore) : '—'}
-            l="prom."
-          />
-          <Stat
-            n={stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—'}
+            n={stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—'}
             l="sem. de racha"
           />
         </View>
@@ -272,6 +286,13 @@ export default function RankingsTab() {
           data={processed}
           keyExtractor={(r) => r.id}
           renderItem={({ item }) => <RankingRow ranking={item} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={mine.isRefetching}
+              onRefresh={() => mine.refetch()}
+              tintColor={accent}
+            />
+          }
           ListHeaderComponent={
             <>
               {topMatter}
@@ -414,6 +435,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
   const saveNote = useMutation({
     mutationFn: () => api.patch(`/rankings/${ranking.id}/note`, { body: draft.trim() }),
     onSuccess: () => {
+      tapLight()
       setEditing(false)
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
     },

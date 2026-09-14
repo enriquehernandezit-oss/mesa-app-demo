@@ -1,5 +1,6 @@
 import { Wordmark } from '@/components/ui'
 import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
+import { toast } from '@/components/ui/toast-store'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { shareProfile } from '@/lib/shareProfile'
 import { Link } from 'expo-router'
@@ -72,13 +73,29 @@ export function TopBar({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Compartir perfil"
-              onPress={() => shareProfile(shareHandle)}
+              onPress={() => {
+                // Without a handle, `profileShareLink` falls back to the bare
+                // API origin — a "share your profile" that silently shares a
+                // link to nothing. This variant only ever renders on the
+                // Profile tab, so "Editar perfil" is already on screen below.
+                if (!shareHandle) {
+                  toast({ message: 'Ponte un @usuario para compartir tu perfil.' })
+                  return
+                }
+                shareProfile(shareHandle)
+              }}
               className="active:opacity-70"
             >
               <Btn>
                 <ShareIcon size={19} color="text" />
               </Btn>
             </Pressable>
+            {/* The tab bar's unseen-activity badge lands on the Profile tab
+                (MesaTabBar.tsx), but until now this variant had no bell at
+                all — tapping the badge opened a screen with no way to reach
+                Activity. Same bell, same unseen count, as the discover
+                variant below. */}
+            <ActivityBell />
             <Link href="/settings" asChild>
               <Pressable
                 accessibilityRole="button"
