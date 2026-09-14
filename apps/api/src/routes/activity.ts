@@ -6,15 +6,25 @@ import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
-// The activity feed behind the bell: cheers on my rankings, new followers, and
-// friends ranking spots I've saved. Three fixed queries merged and sorted —
-// count never depends on data size (no N+1).
-const { cheers, rankings, restaurants, follows, savedPlaces, user } = schema
+// The activity feed behind the bell: cheers on my rankings, new followers,
+// friends ranking spots I've saved, and (M3) plan invites and replies. Fixed
+// queries merged and sorted — count never depends on data size (no N+1).
+const {
+  cheers,
+  rankings,
+  restaurants,
+  follows,
+  savedPlaces,
+  user,
+  plans,
+  planOptions,
+  planInvites,
+} = schema
 
 // NOTE: duplicated by hand in apps/mobile/src/lib/types.ts (that app can't
 // import this — see that file's own note on why). Keep the two in sync.
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
+  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked' | 'plan_invite' | 'plan_reply'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
   restaurant?: { id: string; name: string; coverImageId: string | null } | null
@@ -23,6 +33,9 @@ export interface ActivityItem {
   score?: number | null
   yourScore?: number | null
   followsBack?: boolean // follow rows: do I already follow them back?
+  planId?: string // plan_invite / plan_reply
+  startsAt?: string // plan_invite — when the plan is
+  reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
 }
 
 export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
@@ -130,6 +143,74 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
     .orderBy(desc(rankings.updatedAt))
     .limit(15)
 
+  // A plan's "restaurant" for activity purposes: the confirmed spot, or the
+  // first candidate while still voting. Shared shape for both queries below.
+  const firstOpt = alias(planOptions, 'first_opt')
+  const planRestaurant = sql`coalesce(${plans.chosenRestaurantId}, ${firstOpt.restaurantId})`
+
+  // 5) Plans I've been invited to (host = whoever invited me). Cancelled
+  // plans don't show up here — see the "cancelled plans" comment on GET / for
+  // why that's the deliberate choice, not an oversight.
+  const planInvited = await db
+    .select({
+      at: planInvites.createdAt,
+      user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
+      planId: plans.id,
+      startsAt: plans.startsAt,
+    })
+    .from(planInvites)
+    .innerJoin(plans, eq(plans.id, planInvites.planId))
+    .innerJoin(user, eq(user.id, plans.hostId))
+    .leftJoin(firstOpt, and(eq(firstOpt.planId, plans.id), eq(firstOpt.position, 0)))
+    .leftJoin(restaurants, eq(restaurants.id, planRestaurant))
+    .where(
+      and(
+        eq(planInvites.userId, me.id),
+        ne(plans.status, 'cancelled'),
+        isNull(user.bannedAt),
+        notBlocked,
+      ),
+    )
+    .orderBy(desc(planInvites.createdAt))
+    .limit(15)
+
+  // 6) Replies to plans I HOST — only the positive ones ("going"/"maybe") are
+  // worth a bell entry; a decline isn't news the host needs pushed at them.
+  const planReplied = await db
+    .select({
+      at: planInvites.repliedAt,
+      user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
+      planId: plans.id,
+      reply: planInvites.reply,
+    })
+    .from(planInvites)
+    .innerJoin(plans, eq(plans.id, planInvites.planId))
+    .innerJoin(user, eq(user.id, planInvites.userId))
+    .leftJoin(firstOpt, and(eq(firstOpt.planId, plans.id), eq(firstOpt.position, 0)))
+    .leftJoin(restaurants, eq(restaurants.id, planRestaurant))
+    .where(
+      and(
+        eq(plans.hostId, me.id),
+        inArray(planInvites.reply, ['going', 'maybe']),
+        sql`${planInvites.repliedAt} is not null`,
+        ne(plans.status, 'cancelled'),
+        isNull(user.bannedAt),
+        notBlocked,
+      ),
+    )
+    .orderBy(desc(planInvites.repliedAt))
+    .limit(15)
+
   const items: ActivityItem[] = [
     ...cheered.map((x) => ({
       type: 'cheers' as const,
@@ -158,6 +239,32 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
       score: x.score,
       yourScore: x.yourScore,
     })),
+    ...planInvited.map((x) => ({
+      type: 'plan_invite' as const,
+      at: x.at.toISOString(),
+      user: x.user,
+      restaurant: x.restaurant,
+      planId: x.planId,
+      startsAt: x.startsAt.toISOString(),
+    })),
+    // repliedAt is nullable at the type level (the column allows it before a
+    // reply lands) and reply is the full 4-value enum — the WHERE clause above
+    // already narrows both, but flatMap re-checks them here so TS narrows the
+    // type too instead of trusting the query blind.
+    ...planReplied.flatMap((x) =>
+      x.at && (x.reply === 'going' || x.reply === 'maybe')
+        ? [
+            {
+              type: 'plan_reply' as const,
+              at: x.at.toISOString(),
+              user: x.user,
+              restaurant: x.restaurant,
+              planId: x.planId,
+              reply: x.reply,
+            },
+          ]
+        : [],
+    ),
   ]
     .sort((a, b) => (a.at < b.at ? 1 : -1))
     .slice(0, 40)

@@ -17,6 +17,7 @@ import { listsRoutes } from './routes/lists'
 import { meRoutes } from './routes/me'
 import { moderationRoutes } from './routes/moderation'
 import { onboardingRoutes } from './routes/onboarding'
+import { plansRoutes } from './routes/plans'
 import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
@@ -174,6 +175,7 @@ app.route('/lists', listsRoutes)
 app.route('/dishes', dishesRoutes)
 app.route('/activity', activityRoutes)
 app.route('/invites', inviteRoutes)
+app.route('/plans', plansRoutes)
 
 // Uniform JSON error + 404 handling.
 app.notFound((c) => c.json({ error: 'not_found' }, 404))

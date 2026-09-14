@@ -16,7 +16,20 @@ import { esc, layout, notFound, publicOrigin } from '../lib/publicPage'
 // The branded shell itself (layout/esc/notFound) lives in lib/publicPage.ts —
 // the auth pages served under the same prefix share it.
 
-const { rankings, vibeNotes, restaurants, user, invites } = schema
+const { rankings, vibeNotes, restaurants, user, invites, plans } = schema
+
+// Santo Domingo has no DST, so a fixed offset TZ is safe to hardcode — every
+// plan date on this page (and everywhere else plans render) is pinned to it
+// rather than the reader's own device, since "8:00 pm" in a WhatsApp share
+// should mean Santo Domingo time regardless of who's reading it.
+const planDateFormatter = new Intl.DateTimeFormat('es-DO', {
+  timeZone: 'America/Santo_Domingo',
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  hour: 'numeric',
+  minute: '2-digit',
+})
 
 // Scores are stored 0–100, always shown 0–10 (never stars). Mirrors the app's
 // lib/display.ts so the public page reads identically to the in-app passport.
@@ -260,6 +273,55 @@ export const sharePagesRoutes = new Hono<AppEnv>()
       <h1>${esc(r.name)}</h1>
       <div class="stat">${esc(statLine)}</div>
       ${note ? `<blockquote>“${esc(note.body)}”</blockquote>` : ''}`
+
+    return c.html(layout({ title, description, image: cover, canonical, body }))
+  })
+
+  // A group dinner's public preview — what a WhatsApp share unfurls into. The
+  // uuid alone is the access control (unguessable), same trust model as the
+  // in-app link. Deliberately narrower than the in-app screens: who's coming
+  // is nobody's business but the host's and the invitees', so the guest list
+  // never appears here — only the host, the spot(s), and when.
+  .get('/plan/:planId', async (c) => {
+    const canonical = c.req.url
+    // Shorter than the other pages' 300s: a plan's headline fact (which spot
+    // won, if it was a vote) can change the instant the host confirms it.
+    c.header('Cache-Control', 'public, max-age=60')
+    const planId = c.req.param('planId')
+
+    const plan = await db.query.plans.findFirst({
+      where: eq(plans.id, planId),
+      columns: { status: true, startsAt: true, chosenRestaurantId: true },
+      with: {
+        host: { columns: { name: true, handle: true, bannedAt: true } },
+        options: {
+          orderBy: (t, { asc: ascOrder }) => ascOrder(t.position),
+          with: { restaurant: { columns: { id: true, name: true, coverImageId: true } } },
+        },
+      },
+    })
+    if (!plan || plan.status === 'cancelled' || plan.host.bannedAt) {
+      return c.html(notFound(canonical), 404)
+    }
+
+    const who = plan.host.name || (plan.host.handle ? `@${plan.host.handle}` : 'Alguien')
+    const chosen = plan.options.find((o) => o.restaurant.id === plan.chosenRestaurantId)?.restaurant
+    const spotNames = plan.options.map((o) => o.restaurant.name)
+    const dateLabel = planDateFormatter.format(plan.startsAt)
+    const cover = absoluteCover(
+      chosen?.coverImageId ?? plan.options[0]?.restaurant.coverImageId ?? null,
+    )
+
+    const title = `${who} armó una mesa`
+    const description = chosen
+      ? `${chosen.name} · ${dateLabel}`
+      : `Votación: ${spotNames.join(' · ')} · ${dateLabel}`
+
+    const body = `
+      ${cover ? `<img class="cover" src="${esc(cover)}" alt="" />` : ''}
+      <p class="eyebrow">Mesa · ${esc(dateLabel)}</p>
+      <h1>${esc(chosen ? chosen.name : `Votación: ${spotNames.join(' · ')}`)}</h1>
+      <div class="stat">Organiza ${esc(who)}</div>`
 
     return c.html(layout({ title, description, image: cover, canonical, body }))
   })
