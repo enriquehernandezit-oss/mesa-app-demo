@@ -11,9 +11,18 @@ import { Circle, Path, Svg } from 'react-native-svg'
 type IconProps = {
   size?: number
   color?: ColorToken
+  // Per-instance override of the shared 1.6 default. Additive: every existing
+  // call site is untouched unless it opts in (the tab bar does, for icons
+  // that need to hold their own next to a filled shape — see MesaTabBar.tsx).
+  strokeWidth?: number
 }
 
-function Icon({ size = 16, color = 'text', children }: IconProps & { children: ReactNode }) {
+function Icon({
+  size = 16,
+  color = 'text',
+  strokeWidth = 1.6,
+  children,
+}: IconProps & { children: ReactNode }) {
   const stroke = useColor(color)
   return (
     <Svg
@@ -22,7 +31,7 @@ function Icon({ size = 16, color = 'text', children }: IconProps & { children: R
       viewBox="0 0 24 24"
       fill="none"
       stroke={stroke}
-      strokeWidth={1.6}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -138,9 +147,13 @@ export const CompassIcon = (p: IconProps) => (
 )
 
 // Tab-bar + FAB glyphs (ported from app/router.tsx's inline paths).
+// Fork (3 tines merging into a stem) + knife (blade profile), swapped in for
+// the striped-circle original: "where your friends eat" reads as a utensils
+// glyph, not an abstract mark, and matches the fork.knife SF Symbol the
+// dormant native tab bar (NativeShell) already used for this same tab.
 export const DiscoverIcon = (p: IconProps) => (
   <Icon {...p}>
-    <Path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9 4.4v15.2M12 3.1v17.8M15 4.4v15.2" />
+    <Path d="M7 3v4M9 3v18M11 3v4M16 3a2.5 2.5 0 0 0-2.5 2.5v3a1 1 0 0 0 1 1H16M16 3v18" />
   </Icon>
 )
 export const RankingsIcon = (p: IconProps) => (

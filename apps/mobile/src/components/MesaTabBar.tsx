@@ -6,9 +6,8 @@ import {
   RankingsIcon,
 } from '@/components/ui/icons'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
-import { tapLight } from '@/lib/haptics'
+import { tapLight, tapSelect } from '@/lib/haptics'
 import { useColor } from '@/theme/useColor'
-import { BRASS_SHADOW } from '@/theme/vars'
 import { type Tabs, useRouter } from 'expo-router'
 
 // The exact props expo-router's Tabs passes to a custom tabBar (it re-exports its
@@ -18,19 +17,26 @@ import { useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-// Custom bottom bar: four tabs with a center "+" (rank a place) that breaks
-// the bar's top edge, ported from app/router.tsx's 5-slot layout. Tonight is
-// cut, so the tabs are Discover · Explore · (+) · Rankings · Profile.
+// Custom bottom bar: four tabs plus an inline "+" pill (rank a place), ported
+// from app/router.tsx's 5-slot layout. Tonight is cut, so the tabs are
+// Discover · Explore · (+) · Rankings · Profile.
 //
 // This is the SHIPPED bar (NATIVE_TABS = false in (tabs)/_layout.tsx), not a
 // fallback: the native UITabBar (expo-router's NativeTabs) was tried first for
-// the center "+", but has no exposed way to render one item's icon at a
-// larger point size than its siblings (confirmed against react-native-screens'
-// full native prop list — only icon *color* is overridable, not size), and its
+// the "+", but has no exposed way to render one item's icon at a larger point
+// size than its siblings (confirmed against react-native-screens' full native
+// prop list — only icon *color* is overridable, not size), and its
 // "scroll edge" transparency needs an explicit opt-out that still left the bar
-// reading as translucent on real hardware. Instagram/TikTok's own raised
-// center button is a plain overlay for exactly this reason — see
-// docs/NATIVE.md's tab bar row.
+// reading as translucent on real hardware — see docs/NATIVE.md's tab bar row.
+//
+// The "+" itself is a flat inline pill, not a raised circle: a first pass
+// raised it above the bar with a brass glow, styled after Instagram's classic
+// overlay button, but next to the icons it read "mishapen," not like a
+// current professional app. Threads, X and TikTok all sit their center action
+// *in* the row — filled instead of outlined is what marks it as different,
+// not elevation. Matching that meant boldening the other four icons too
+// (strokeWidth 2 here only, vs the app-wide 1.6 default) so they hold their
+// own next to a solid filled shape.
 const ICONS: Record<string, typeof DiscoverIcon> = {
   discover: DiscoverIcon,
   explore: CompassIcon,
@@ -44,8 +50,9 @@ const LABELS: Record<string, string> = {
   profile: 'Perfil',
 }
 
-const FAB_SIZE = 56
-const FAB_RAISE = 18
+const TAB_ICON_STROKE = 2
+const PILL_WIDTH = 52
+const PILL_HEIGHT = 34
 
 function TabItem({
   routeName,
@@ -62,7 +69,7 @@ function TabItem({
       className="flex-1 items-center justify-center gap-[3px]"
     >
       <View>
-        <Ico size={22} color={focused ? 'accent' : 'tab-inactive'} />
+        <Ico size={22} color={focused ? 'accent' : 'tab-inactive'} strokeWidth={TAB_ICON_STROKE} />
         {badge ? (
           <View className="-top-1.5 -right-2.5 absolute min-w-[16px] items-center justify-center rounded-pill bg-status-packed px-1">
             <Text className="font-ui-semibold text-[10px] text-on-accent leading-[14px]">
@@ -116,7 +123,10 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
             target: order[idx].key,
             canPreventDefault: true,
           })
-          if (!focused && !e.defaultPrevented) navigation.navigate(order[idx].name)
+          if (!focused && !e.defaultPrevented) {
+            tapSelect()
+            navigation.navigate(order[idx].name)
+          }
         }}
       />
     )
@@ -129,25 +139,15 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
     >
       {item('discover')}
       {item('explore')}
-      <View className="flex-none items-center justify-center px-2">
+      <View className="flex-1 items-center justify-center">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Rankear un spot"
           onPress={openRank}
           className="items-center justify-center rounded-pill active:scale-95"
-          style={{
-            width: FAB_SIZE,
-            height: FAB_SIZE,
-            marginTop: -FAB_RAISE,
-            backgroundColor: fabBg,
-            shadowColor: BRASS_SHADOW,
-            shadowOpacity: 0.35,
-            shadowRadius: 14,
-            shadowOffset: { width: 0, height: 3 },
-            elevation: 6,
-          }}
+          style={{ width: PILL_WIDTH, height: PILL_HEIGHT, backgroundColor: fabBg }}
         >
-          <PlusIcon size={26} color="btn-primary-fg" />
+          <PlusIcon size={20} color="btn-primary-fg" />
         </Pressable>
       </View>
       {item('rankings')}
