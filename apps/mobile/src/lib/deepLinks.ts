@@ -69,6 +69,9 @@ export function toAppPath(url: string): DeepLinkResult | null {
   const spot = path.match(/^\/p\/spot\/([\w-]+)/)
   if (spot?.[1]) return { path: `/r/${spot[1]}` }
 
+  const plan = path.match(/^\/p\/plan\/([\w-]+)/)
+  if (plan?.[1]) return { path: `/planes/${plan[1]}` }
+
   // Shared profiles address people by @handle; every in-app profile route is
   // keyed by id, so this hands off to a resolver route.
   const member = path.match(/^\/p\/u\/@?([\w.-]+)/)

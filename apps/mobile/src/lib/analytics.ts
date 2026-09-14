@@ -44,6 +44,13 @@ export type MesaEvent =
   // growth
   | 'share_opened'
   | 'share_card_created'
+  // planes (M3)
+  | 'plan_created'
+  | 'plan_replied'
+  | 'plan_voted'
+  | 'plan_confirmed'
+  | 'plan_shared'
+  | 'plan_cancelled'
 
 // No `undefined` — PostHog serializes to JSON, and an absent property is the
 // honest way to say "not applicable" rather than sending a hole.

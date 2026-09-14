@@ -1,7 +1,7 @@
 import { useColor } from '@/theme/useColor'
 import type { ColorToken } from '@/theme/vars'
 import type { ReactNode } from 'react'
-import { Circle, Path, Svg } from 'react-native-svg'
+import { Circle, Path, Rect, Svg } from 'react-native-svg'
 
 // One icon language for the whole app, ported from apps/app/src/components/ui/
 // icons.tsx. Same geometry: 24 viewBox, 1.6 stroke, round caps/joins. On the web
@@ -181,5 +181,19 @@ export const TrophyIcon = (p: IconProps) => (
 export const BellIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M10.3 21a2 2 0 0 0 3.4 0" />
+  </Icon>
+)
+
+// Planes (M3): a plan's date and its invitee list. Rect needs its own element
+// (not a Path) for a true rounded rectangle.
+export const CalendarIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="4" y="5.5" width="16" height="14" rx="2" />
+    <Path d="M4 10.5h16M8 3.5v4M16 3.5v4" />
+  </Icon>
+)
+export const PeopleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M16 21a6 6 0 0 0-12 0M10 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM21 20a5 5 0 0 0-4-4.9M15.5 5.3a4 4 0 0 1 0 7.4" />
   </Icon>
 )

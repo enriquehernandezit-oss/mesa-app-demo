@@ -286,13 +286,16 @@ export interface LeaderboardRow {
 }
 
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked'
+  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked' | 'plan_invite' | 'plan_reply'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
   restaurant?: { id: string; name: string; coverImageId: string | null } | null
   score?: number | null // friend_ranked: their score (0–100)
   yourScore?: number | null // friend_ranked: mine, for "— above your 8.8"
   followsBack?: boolean // follow rows: do I already follow them back?
+  planId?: string // plan_invite / plan_reply
+  startsAt?: string // plan_invite — when the plan is
+  reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
 }
 
 export interface SavedPlace {
@@ -399,4 +402,49 @@ export interface RestaurantProfileResponse {
   friendsWantToTry: { count: number; people: { name: string; image: string | null }[] }
   myRanking: { position: number; score: number } | null
   saved: boolean
+}
+
+// Planes (M3) — group dinners. Mirrors apps/api/src/routes/plans.ts's response
+// shapes; that file has no equivalent client this app can import (same reason
+// as ActivityItem above), so this is the hand-kept copy.
+export type PlanStatus = 'open' | 'confirmed' | 'cancelled'
+export type PlanReply = 'pending' | 'going' | 'maybe' | 'declined'
+
+export interface PlanOption {
+  id: string
+  name: string
+  coverImageId: string | null
+  neighborhood: string | null
+  cuisine: string | null
+  priceTier: number | null
+  position: number
+  votes?: number // present on GET /plans/:id only, not the list
+}
+
+export interface Plan {
+  id: string
+  status: PlanStatus
+  startsAt: string
+  note: string | null
+  chosenRestaurantId: string | null
+  host: { id: string; name: string; handle: string | null; image: string | null }
+  isHost: boolean
+  myReply: PlanReply | null // null when I'm the host (no invite row)
+  myVote: string | null
+  options: PlanOption[]
+  counts: { going: number; maybe: number; pending: number }
+}
+
+export interface PlanMember {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  reply: PlanReply
+  voteRestaurantId: string | null
+  repliedAt: string | null
+}
+
+export interface PlanDetail extends Omit<Plan, 'counts'> {
+  members: PlanMember[]
 }
