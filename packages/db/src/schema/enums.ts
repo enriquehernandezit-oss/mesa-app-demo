@@ -18,3 +18,14 @@ export const restaurantSource = pgEnum('restaurant_source', ['seed', 'foursquare
 // map handler (GET /restaurants/map) fans these out with a deterministic
 // per-id jitter so they don't stack on one pixel.
 export const geoPrecision = pgEnum('geo_precision', ['exact', 'sector'])
+
+// A group dinner's lifecycle. 'open' = still voting (2–3 candidate spots) or
+// just awaiting its date; 'confirmed' = the host picked a spot, whether that
+// took a vote or the plan only ever had one spot to begin with; 'cancelled' =
+// the host called it off. Terminal states don't revert to 'open'.
+export const planStatus = pgEnum('plan_status', ['open', 'confirmed', 'cancelled'])
+
+// A guest's RSVP on a plan. 'pending' is the default until they answer; the
+// other three are their actual reply. There is no 'maybe I'll vote later' —
+// voting for a spot (see plans.ts) is independent of this.
+export const planReply = pgEnum('plan_reply', ['pending', 'going', 'maybe', 'declined'])

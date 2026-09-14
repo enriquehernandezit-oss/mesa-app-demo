@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import { user } from './auth'
 import { restaurants, savedPlaces } from './discovery'
+import { planInvites, planOptions, plans } from './plans'
 import { rankings, vibeNotes } from './ranking'
 import { neighborhoods } from './reference'
 import { follows, userBlocks } from './social'
@@ -85,6 +86,39 @@ export const savedPlacesRelations = relations(savedPlaces, ({ one }) => ({
   user: one(user, { fields: [savedPlaces.userId], references: [user.id] }),
   restaurant: one(restaurants, {
     fields: [savedPlaces.restaurantId],
+    references: [restaurants.id],
+  }),
+}))
+
+// Only these three tables' relations exist for plans — the API's own routes
+// build their own joins for everything else (GET /plans, /plans/:id), same as
+// dishes/cheers/moderation elsewhere in this schema. This set exists because
+// the public share page (routes/share-pages.ts) reads via one relational
+// query (`db.query.plans.findFirst({ with: { host, options: { with: { restaurant } } } })`)
+// rather than hand-joining for a single, low-traffic public page.
+export const plansRelations = relations(plans, ({ one, many }) => ({
+  host: one(user, { fields: [plans.hostId], references: [user.id] }),
+  chosenRestaurant: one(restaurants, {
+    fields: [plans.chosenRestaurantId],
+    references: [restaurants.id],
+  }),
+  options: many(planOptions),
+  invites: many(planInvites),
+}))
+
+export const planOptionsRelations = relations(planOptions, ({ one }) => ({
+  plan: one(plans, { fields: [planOptions.planId], references: [plans.id] }),
+  restaurant: one(restaurants, {
+    fields: [planOptions.restaurantId],
+    references: [restaurants.id],
+  }),
+}))
+
+export const planInvitesRelations = relations(planInvites, ({ one }) => ({
+  plan: one(plans, { fields: [planInvites.planId], references: [plans.id] }),
+  user: one(user, { fields: [planInvites.userId], references: [user.id] }),
+  voteRestaurant: one(restaurants, {
+    fields: [planInvites.voteRestaurantId],
     references: [restaurants.id],
   }),
 }))
