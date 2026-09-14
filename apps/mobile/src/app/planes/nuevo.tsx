@@ -1,0 +1,524 @@
+import { FollowerPicker } from '@/components/FollowerPicker'
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  Chip,
+  ChipRail,
+  Eyebrow,
+  RowsSkeleton,
+  SerifItalic,
+  Title,
+} from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
+import { Field } from '@/components/ui/Field'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { CheckIcon } from '@/components/ui/icons'
+import { Characteristics } from '@/components/ui/patterns'
+import { toast } from '@/components/ui/toast-store'
+import { showActionSheet } from '@/lib/actionSheet'
+import { track } from '@/lib/analytics'
+import { ApiError, api } from '@/lib/api'
+import { captureError } from '@/lib/errors'
+import { tapSelect, tapSuccess } from '@/lib/haptics'
+import { dayChipLabel, timeChipLabel } from '@/lib/time'
+import type { ExploreResponse, FollowUser } from '@/lib/types'
+import { useDebounced } from '@/lib/useDebounced'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigation, useRouter } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+// A plan's spot: the slice of GET /restaurants' ExploreHit this screen
+// actually renders/sends — kept narrow rather than importing ExploreHit
+// itself, since candidates come from BOTH the search results and (in review)
+// spots already picked, and only these fields are ever read.
+type PlanSpot = {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  priceTier: number | null
+}
+
+type TimeSlot = { h: number; m: number; nextDay: boolean }
+type Step = 'spots' | 'when' | 'who' | 'review'
+const STEP_ORDER: Step[] = ['spots', 'when', 'who', 'review']
+
+function buildTimeSlots(startMin: number, endMin: number, stepMin: number): TimeSlot[] {
+  const out: TimeSlot[] = []
+  for (let t = startMin; t <= endMin; t += stepMin) {
+    const normalized = ((t % 1440) + 1440) % 1440
+    out.push({ h: Math.floor(normalized / 60), m: normalized % 60, nextDay: t >= 1440 })
+  }
+  return out
+}
+// The dinner window most Planes fall in, so it's the default rail — "Otra
+// hora" expands to everything else (lunch through the small hours) rather
+// than repeating these.
+const DEFAULT_TIMES = buildTimeSlots(19 * 60, 23 * 60, 30)
+const EXTRA_TIMES = buildTimeSlots(12 * 60, 25 * 60, 30).filter(
+  (t) => !DEFAULT_TIMES.some((d) => d.h === t.h && d.m === t.m && d.nextDay === t.nextDay),
+)
+const sameSlot = (a: TimeSlot | null, b: TimeSlot) =>
+  a != null && a.h === b.h && a.m === b.m && a.nextDay === b.nextDay
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate()
+function addDays(d: Date, n: number): Date {
+  const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  copy.setDate(copy.getDate() + n)
+  return copy
+}
+
+// Nueva mesa (M3): create a Planes dinner — up to 3 candidate spots (1 = fixed
+// venue, 2-3 = a vote), a day/time chip picker (no date-picker library is
+// installed, see the M3 plan doc), and an invitee list drawn from the host's
+// own followers. One route on local state, same shape as rank.tsx: `step`
+// walks forward with "Continuar" and backward with beforeRemove, which also
+// guards the drag-to-dismiss / edge-swipe against silently losing a
+// half-built plan.
+export default function NuevaMesa() {
+  const router = useRouter()
+  const navigation = useNavigation()
+  const queryClient = useQueryClient()
+  const insets = useSafeAreaInsets()
+
+  const [step, setStep] = useState<Step>('spots')
+  const [spots, setSpots] = useState<PlanSpot[]>([])
+  const [query, setQuery] = useState('')
+  const today = useMemo(() => new Date(), [])
+  const [day, setDay] = useState<Date>(today)
+  const [time, setTime] = useState<TimeSlot | null>(null)
+  const [showExtraTimes, setShowExtraTimes] = useState(false)
+  const [invitees, setInvitees] = useState<Map<string, FollowUser>>(new Map())
+  const [note, setNote] = useState('')
+
+  const goBack = () => {
+    if (step === 'spots') {
+      router.back()
+      return
+    }
+    setStep(STEP_ORDER[STEP_ORDER.indexOf(step) - 1])
+  }
+
+  // Physical back (edge-swipe, hardware back, drag-to-dismiss on this modal)
+  // unwinds one step at a time instead of leaving outright; only once
+  // something has actually been picked does leaving from the first step ask
+  // for confirmation — an empty flow can just close. Same beforeRemove
+  // pattern as rank.tsx's multi-step flow.
+  useEffect(() => {
+    const sub = navigation.addListener('beforeRemove', (e) => {
+      if (step !== 'spots') {
+        e.preventDefault()
+        setStep(STEP_ORDER[STEP_ORDER.indexOf(step) - 1])
+        return
+      }
+      if (spots.length === 0) return
+      e.preventDefault()
+      showActionSheet({
+        title: '¿Descartar la mesa?',
+        options: [{ label: 'Descartar', destructive: true }],
+      }).then((idx) => {
+        if (idx === 0) navigation.dispatch(e.data.action)
+      })
+    })
+    return sub
+  }, [navigation, step, spots.length])
+
+  const debouncedQ = useDebounced(query.trim(), 300)
+  const results = useQuery({
+    queryKey: ['plan-spots', debouncedQ],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (debouncedQ.length >= 2) params.set('q', debouncedQ)
+      return api.get<ExploreResponse>(`/restaurants?${params}`)
+    },
+  })
+
+  function toggleSpot(item: PlanSpot) {
+    setSpots((prev) => {
+      if (prev.some((s) => s.id === item.id)) return prev.filter((s) => s.id !== item.id)
+      if (prev.length >= 3) {
+        toast({ variant: 'error', message: 'Máximo tres spots' })
+        return prev
+      }
+      tapSelect()
+      return [...prev, item]
+    })
+  }
+
+  function isTimeDisabled(t: TimeSlot): boolean {
+    const candidate = new Date(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate() + (t.nextDay ? 1 : 0),
+      t.h,
+      t.m,
+    )
+    return candidate.getTime() < Date.now()
+  }
+
+  const resolvedDate = time
+    ? new Date(
+        day.getFullYear(),
+        day.getMonth(),
+        day.getDate() + (time.nextDay ? 1 : 0),
+        time.h,
+        time.m,
+      )
+    : null
+  const resolvedLabel =
+    resolvedDate && time
+      ? `${new Intl.DateTimeFormat('es-DO', { weekday: 'short', day: 'numeric', month: 'short' }).format(resolvedDate)}, ${timeChipLabel(time.h, time.m)}`
+      : null
+
+  const create = useMutation({
+    mutationFn: () =>
+      api.post<{ id: string }>('/plans', {
+        restaurantIds: spots.map((s) => s.id),
+        startsAt: resolvedDate?.toISOString(),
+        note: note.trim() || undefined,
+        inviteeIds: [...invitees.keys()],
+      }),
+    onSuccess: ({ id }) => {
+      tapSuccess()
+      const daysAhead = resolvedDate
+        ? Math.round((resolvedDate.getTime() - today.getTime()) / 86_400_000)
+        : 0
+      track('plan_created', { options: spots.length, invitees: invitees.size, daysAhead })
+      queryClient.invalidateQueries({ queryKey: ['plans'] })
+      queryClient.invalidateQueries({ queryKey: ['activity'] })
+      router.replace(`/planes/${id}`)
+    },
+    onError: (err) => {
+      captureError(err, 'plans.create')
+      const invalidInvitees = err instanceof ApiError && err.code === 'invalid_invitees'
+      toast({
+        variant: 'error',
+        message: invalidInvitees
+          ? 'Alguien ya no te sigue — revisa la lista.'
+          : 'No se pudo crear la mesa.',
+        action: invalidInvitees
+          ? undefined
+          : { label: 'Intentar de nuevo', onClick: () => create.mutate() },
+      })
+    },
+  })
+
+  return (
+    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-10"
+        keyboardShouldPersistTaps="handled"
+      >
+        <BackBar label={step === 'spots' ? '✕ Nueva mesa' : '‹ Atrás'} onBack={goBack} />
+
+        {step === 'spots' && (
+          <SpotsStep
+            spots={spots}
+            query={query}
+            setQuery={setQuery}
+            results={results.data?.restaurants ?? []}
+            isPending={results.isPending}
+            onToggle={toggleSpot}
+          />
+        )}
+        {step === 'when' && (
+          <WhenStep
+            today={today}
+            day={day}
+            setDay={setDay}
+            time={time}
+            setTime={setTime}
+            showExtraTimes={showExtraTimes}
+            setShowExtraTimes={setShowExtraTimes}
+            isTimeDisabled={isTimeDisabled}
+            resolvedLabel={resolvedLabel}
+          />
+        )}
+        {step === 'who' && (
+          <>
+            <Title className="mt-4">¿Con quién?</Title>
+            <Body className="mt-1">Solo puedes invitar a quienes te siguen.</Body>
+            <View className="mt-4">
+              <FollowerPicker
+                selected={new Set(invitees.keys())}
+                onToggle={(user) =>
+                  setInvitees((prev) => {
+                    const next = new Map(prev)
+                    if (next.has(user.id)) next.delete(user.id)
+                    else next.set(user.id, user)
+                    return next
+                  })
+                }
+              />
+            </View>
+          </>
+        )}
+        {step === 'review' && (
+          <ReviewStep
+            spots={spots}
+            resolvedLabel={resolvedLabel}
+            invitees={[...invitees.values()]}
+            note={note}
+            setNote={setNote}
+          />
+        )}
+      </ScrollView>
+
+      <View
+        className="border-line border-t px-5 pt-3"
+        style={{ paddingBottom: insets.bottom + 12 }}
+      >
+        {step === 'review' ? (
+          <Button
+            loading={create.isPending}
+            disabled={create.isPending}
+            onPress={() => create.mutate()}
+          >
+            Crear mesa
+          </Button>
+        ) : (
+          <Button
+            disabled={
+              (step === 'spots' && spots.length === 0) ||
+              (step === 'when' && !time) ||
+              (step === 'who' && invitees.size === 0)
+            }
+            onPress={() => setStep(STEP_ORDER[STEP_ORDER.indexOf(step) + 1])}
+          >
+            Continuar
+          </Button>
+        )}
+      </View>
+    </View>
+  )
+}
+
+function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onBack}
+      className="min-h-[44px] self-start justify-center active:opacity-60"
+    >
+      <Text className="font-ui-medium text-label text-text-muted">{label}</Text>
+    </Pressable>
+  )
+}
+
+function SpotsStep({
+  spots,
+  query,
+  setQuery,
+  results,
+  isPending,
+  onToggle,
+}: {
+  spots: PlanSpot[]
+  query: string
+  setQuery: (v: string) => void
+  results: PlanSpot[]
+  isPending: boolean
+  onToggle: (item: PlanSpot) => void
+}) {
+  const selectedIds = new Set(spots.map((s) => s.id))
+  return (
+    <>
+      <Title className="mt-4">¿Dónde?</Title>
+      <Field
+        className="mt-4"
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Busca un spot…"
+        returnKeyType="search"
+        clearButtonMode="while-editing"
+        autoCorrect={false}
+      />
+      {spots.length > 0 && (
+        <View className="mt-3 flex-row flex-wrap gap-2">
+          {spots.map((s) => (
+            <Chip key={s.id} state="selected" size="sm" onPress={() => onToggle(s)}>
+              {s.name} ✕
+            </Chip>
+          ))}
+        </View>
+      )}
+      <Caption className="mt-3">1 spot = fijo · 2–3 = votación</Caption>
+
+      <View className="mt-2">
+        {isPending ? (
+          <RowsSkeleton />
+        ) : (
+          results.map((r) => {
+            const selected = selectedIds.has(r.id)
+            return (
+              <Pressable
+                key={r.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => onToggle(r)}
+                className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+              >
+                <PlaceCover
+                  seed={r.id}
+                  name={r.name}
+                  coverImageId={r.coverImageId}
+                  size={{ w: 160, h: 160 }}
+                  className="h-14 w-14"
+                />
+                <View className="min-w-0 flex-1">
+                  <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+                    {r.name}
+                  </Text>
+                  <Characteristics
+                    priceTier={r.priceTier}
+                    cuisine={r.cuisine}
+                    neighborhood={r.neighborhood}
+                  />
+                </View>
+                {selected ? <CheckIcon size={18} color="accent" /> : null}
+              </Pressable>
+            )
+          })
+        )}
+      </View>
+    </>
+  )
+}
+
+function WhenStep({
+  today,
+  day,
+  setDay,
+  time,
+  setTime,
+  showExtraTimes,
+  setShowExtraTimes,
+  isTimeDisabled,
+  resolvedLabel,
+}: {
+  today: Date
+  day: Date
+  setDay: (d: Date) => void
+  time: TimeSlot | null
+  setTime: (t: TimeSlot) => void
+  showExtraTimes: boolean
+  setShowExtraTimes: (v: boolean) => void
+  isTimeDisabled: (t: TimeSlot) => boolean
+  resolvedLabel: string | null
+}) {
+  const dayChips = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today])
+  const timeChip = (t: TimeSlot) => {
+    const disabled = isTimeDisabled(t)
+    const selected = sameSlot(time, t)
+    return (
+      <Chip
+        key={`${t.h}:${t.m}:${t.nextDay}`}
+        size="sm"
+        state={selected ? 'selected' : 'default'}
+        disabled={disabled}
+        className={disabled ? 'opacity-40' : ''}
+        onPress={() => {
+          tapSelect()
+          setTime(t)
+        }}
+      >
+        {timeChipLabel(t.h, t.m)}
+      </Chip>
+    )
+  }
+  return (
+    <>
+      <Title className="mt-4">¿Cuándo?</Title>
+      <ChipRail className="mt-4">
+        {dayChips.map((d) => (
+          <Chip
+            key={d.toISOString()}
+            size="sm"
+            state={sameDay(d, day) ? 'selected' : 'default'}
+            onPress={() => {
+              tapSelect()
+              setDay(d)
+            }}
+          >
+            {dayChipLabel(d, today)}
+          </Chip>
+        ))}
+      </ChipRail>
+      <View className="mt-4 flex-row flex-wrap gap-2">
+        {DEFAULT_TIMES.map(timeChip)}
+        {showExtraTimes ? (
+          EXTRA_TIMES.map(timeChip)
+        ) : (
+          <Chip size="sm" chevron onPress={() => setShowExtraTimes(true)}>
+            Otra hora
+          </Chip>
+        )}
+      </View>
+      {resolvedLabel ? (
+        <SerifItalic className="mt-5 text-serif-sm">{resolvedLabel}</SerifItalic>
+      ) : null}
+    </>
+  )
+}
+
+function ReviewStep({
+  spots,
+  resolvedLabel,
+  invitees,
+  note,
+  setNote,
+}: {
+  spots: PlanSpot[]
+  resolvedLabel: string | null
+  invitees: FollowUser[]
+  note: string
+  setNote: (v: string) => void
+}) {
+  const shown = invitees.slice(0, 6)
+  const extra = invitees.length - shown.length
+  return (
+    <>
+      <Title className="mt-4">Revisa tu mesa</Title>
+      <Card className="mt-4 gap-3">
+        {spots.length > 1 ? (
+          <View>
+            <Eyebrow className="mb-1 font-mono">Votarán entre:</Eyebrow>
+            {spots.map((s, i) => (
+              <Text key={s.id} className="font-ui text-body text-text">
+                {i + 1}. {s.name}
+              </Text>
+            ))}
+          </View>
+        ) : (
+          <Text className="font-serif text-serif-md text-text">{spots[0]?.name}</Text>
+        )}
+        {resolvedLabel ? <Caption>{resolvedLabel}</Caption> : null}
+        {invitees.length > 0 ? (
+          <View className="flex-row items-center gap-1.5">
+            {shown.map((u) => (
+              <Avatar key={u.id} name={u.name || u.handle || 'm'} src={u.image} size={28} />
+            ))}
+            {extra > 0 ? <Caption className="ml-1 font-mono">+{extra}</Caption> : null}
+          </View>
+        ) : null}
+      </Card>
+      <View className="mt-4">
+        <Field
+          label="Nota · opcional"
+          value={note}
+          onChangeText={setNote}
+          maxLength={140}
+          multilineBox
+        />
+      </View>
+    </>
+  )
+}
