@@ -135,7 +135,18 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
   return (
     <View
       className="flex-row items-stretch justify-around border-t border-line bg-surface"
-      style={{ minHeight: 56, paddingBottom: insets.bottom, paddingHorizontal: 10 }}
+      // `minHeight` is the CONTENT area, on top of the bottom safe-area inset
+      // it doesn't include — home-indicator devices have ~34pt there, which
+      // was silently eating into the 56 total before (no paddingTop existed
+      // at all), squeezing icon+label rows against the top edge until they
+      // visibly clipped. Explicit paddingTop is the actual fix; the bumped
+      // minHeight is just margin so a future taller item still fits.
+      style={{
+        minHeight: 64,
+        paddingTop: 10,
+        paddingBottom: insets.bottom,
+        paddingHorizontal: 10,
+      }}
     >
       {item('discover')}
       {item('explore')}

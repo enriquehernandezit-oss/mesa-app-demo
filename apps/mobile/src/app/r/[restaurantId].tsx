@@ -313,7 +313,6 @@ export default function RestaurantProfile() {
               cuisine={restaurant.cuisine}
               neighborhood={restaurant.neighborhood?.name}
               city="Santo Domingo"
-              hours={restaurant.closesAt ? `hasta ${restaurant.closesAt}` : null}
               social={
                 friendsWantToTry.count > 0
                   ? {

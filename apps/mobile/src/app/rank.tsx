@@ -1179,7 +1179,6 @@ function FindStep({
             priceTier={r.priceTier}
             cuisine={r.cuisine}
             neighborhood={r.neighborhood}
-            hours={r.closesAt ? `hasta ${r.closesAt}` : null}
             distance={dist != null ? formatDistance(dist) : null}
           />
         </View>

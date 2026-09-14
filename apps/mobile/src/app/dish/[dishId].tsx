@@ -146,7 +146,6 @@ export default function DishDetail() {
                   priceTier={restaurant.priceTier}
                   cuisine={restaurant.cuisine}
                   neighborhood={dish.neighborhood}
-                  hours={restaurant.closesAt ? `hasta ${restaurant.closesAt}` : null}
                 />
               </View>
               <ScoreBadge

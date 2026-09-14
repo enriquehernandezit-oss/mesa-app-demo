@@ -59,6 +59,7 @@ function ToastItem({ toast }: { toast: Toast }) {
       {toast.action && (
         <Pressable
           accessibilityRole="button"
+          className="active:opacity-60"
           onPress={() => {
             toast.action?.onClick()
             dismiss(toast.id)

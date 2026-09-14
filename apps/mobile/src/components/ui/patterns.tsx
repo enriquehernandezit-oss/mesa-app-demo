@@ -75,13 +75,15 @@ export function SpotCard({
   )
 }
 
-// A single stat in a passport/profile trio: big serif number over a muted
-// label. Shared by the user's own profile and another member's passport — the
-// two are the same object and should read that way.
+// A single stat in a passport/profile trio: serif number over a muted label.
+// Shared by the user's own profile and another member's passport — the two
+// are the same object and should read that way. text-serif-md, not -lg: a
+// trio of these opens the screen before any real content, and at 30px they
+// ran a third of the screen's height for numbers nobody taps.
 export function Stat({ n, l }: { n: string; l: string }) {
   return (
     <View className="items-center">
-      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-text">
+      <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
         {n}
       </Text>
       <Caption>{l}</Caption>
@@ -91,14 +93,17 @@ export function Stat({ n, l }: { n: string; l: string }) {
 
 // The "$$$ | Parrilla · Piantini" metadata block under a place's name, ported
 // from apps/app/src/components/ui/patterns.tsx. Occasion tags on top, price |
-// cuisine, then neighborhood · distance · hours, then optional friend avatars.
+// cuisine, then neighborhood · distance, then optional friend avatars.
+// No `hours`: "hasta 1a" / "hasta 12a" was ambiguous (reads as both "1am" and
+// "12 años") for what it added, and every call site dropped it — closesAt
+// itself stays wired everywhere it's actually read as data (the "Abierto
+// ahora" filters and their coverage gates), only the display copy is gone.
 type CharacteristicsProps = {
   occasionTags?: string[]
   priceTier?: number | null
   cuisine?: string | null
   neighborhood?: string | null
   city?: string | null
-  hours?: string | null
   distance?: string | null
   social?: { people: { name: string; image?: string | null }[]; label?: string }
 }
@@ -109,12 +114,11 @@ export function Characteristics({
   cuisine,
   neighborhood,
   city,
-  hours,
   distance,
   social,
 }: CharacteristicsProps) {
   const priceCuisine = [priceLabel(priceTier), cuisineLabel(cuisine)].filter(Boolean).join(' | ')
-  const place = [[neighborhood, city].filter(Boolean).join(', '), distance, hours]
+  const place = [[neighborhood, city].filter(Boolean).join(', '), distance]
     .filter(Boolean)
     .join(' · ')
   return (

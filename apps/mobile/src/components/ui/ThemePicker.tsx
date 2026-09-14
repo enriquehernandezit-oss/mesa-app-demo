@@ -33,7 +33,12 @@ export function ThemePicker() {
               className="h-3.5 w-3.5 rounded-pill border"
               style={{ backgroundColor: o.chip, borderColor: o.border }}
             />
-            <Caption className={on ? 'text-accent-strong' : undefined}>{o.label}</Caption>
+            {/* text-on-accent, not text-accent-strong: the selected chip's
+                fill is bg-accent-fill, which is literally the same hex as
+                bg-accent in both themes (see D1's ScoreBadge fix) — so
+                accent-strong sits at low contrast on it. on-accent is the
+                token built for text on a solid accent fill. */}
+            <Caption className={on ? 'text-on-accent' : undefined}>{o.label}</Caption>
           </Pressable>
         )
       })}
