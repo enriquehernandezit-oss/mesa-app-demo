@@ -1,5 +1,4 @@
 import { ExternalResults } from '@/components/ExternalResults'
-import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import {
   Body,
   Caption,
@@ -206,7 +205,7 @@ export default function ExploreScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"

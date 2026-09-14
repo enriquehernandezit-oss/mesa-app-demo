@@ -1,4 +1,3 @@
-import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, Eyebrow, SerifItalic } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -153,7 +152,7 @@ export default function ProfileTab() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+        contentContainerStyle={{ paddingBottom: 24 }}
       >
         <View className="items-center pt-2">
           {/* Tapping the avatar opens the camera/library chooser directly —

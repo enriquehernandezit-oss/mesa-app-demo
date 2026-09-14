@@ -1,5 +1,4 @@
 import { CheersButton } from '@/components/CheersButton'
-import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import {
   Body,
@@ -99,7 +98,7 @@ export default function DiscoverTab() {
             </>
           }
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+          contentContainerStyle={{ paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -278,11 +277,10 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       priceTier={item.restaurant.priceTier}
       cuisine={item.restaurant.cuisine}
       neighborhood={item.neighborhood}
-      hours={item.restaurant.closesAt ? `hasta ${item.restaurant.closesAt}` : null}
     />
   )
   // One line, for the plain (no-photo) card below — price|cuisine and
-  // neighborhood/hours collapsed into a single row instead of Characteristics'
+  // neighborhood collapsed into a single row instead of Characteristics'
   // usual two, and truncated rather than ever wrapping to a third.
   const priceCuisine = [
     priceLabel(item.restaurant.priceTier),
@@ -290,13 +288,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   ]
     .filter(Boolean)
     .join(' | ')
-  const place = [
-    item.neighborhood,
-    item.restaurant.closesAt ? `hasta ${item.restaurant.closesAt}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const oneLineMeta = [priceCuisine, place].filter(Boolean).join(' · ')
+  const oneLineMeta = [priceCuisine, item.neighborhood].filter(Boolean).join(' · ')
 
   const who = (verb: string, avatarSize: number) => (
     <Link href={`/u/${item.user.id}`} asChild>
@@ -359,85 +351,84 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   }
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-      className="mb-3 rounded border border-line bg-surface p-3"
+    // The whole card is one tap target to the restaurant now — it used to be
+    // tappable only at the avatar, the two name spans, and the score, which
+    // looked tappable everywhere and mostly wasn't (a self-inflicted D4 fix:
+    // this traded a nested-<Link>-in-<Link> gesture bug for an under-tappable
+    // card; a plain Pressable nested inside a plain Pressable, as used here,
+    // doesn't have that problem — only <Link>'s own gesture machinery did).
+    // The avatar keeps its OWN destination (the person, not the place) as the
+    // one nested exception; CheersButton keeps working the same way it always
+    // has, as the second nested exception.
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(`/r/${item.restaurant.id}`)}
+      className="mb-3 active:opacity-90"
     >
-      <View className="flex-row items-center">
-        {/* Avatar is its own small tap target; the person's name and the
-            restaurant name are separate onPress spans inside ONE Text — RN's
-            supported way to linkify part of a sentence. No Pressable nested
-            inside another Pressable (that's a gesture-conflict bug — the
-            outer one wins and the inner tap target silently stops working). */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(`/u/${item.user.id}`)}
-          className="active:opacity-70"
-        >
-          <Avatar
-            name={item.user.name || item.user.handle || 'm'}
-            src={item.user.image}
-            size={28}
-          />
-        </Pressable>
-        <View className="ml-2 flex-1">
-          {/* The restaurant name rides in the sentence itself, not its own
-              heading line — an activity-feed line, not a headline plus a
-              caption plus a caption. Saved the single biggest chunk of this
-              card's old height. */}
-          <Text className="font-ui text-body text-text">
-            <Text
-              className="font-ui-semibold"
-              onPress={() => router.push(`/u/${item.user.id}`)}
-              suppressHighlighting
-            >
-              {firstName}
-            </Text>{' '}
-            rankeó{' '}
-            <Text
-              className="font-serif text-serif-sm text-text"
-              onPress={() => router.push(`/r/${item.restaurant.id}`)}
-              suppressHighlighting
-            >
-              {item.restaurant.name}
+      <Animated.View
+        entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
+        className="rounded border border-line bg-surface p-3"
+      >
+        <View className="flex-row items-center">
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push(`/u/${item.user.id}`)}
+            className="active:opacity-70"
+          >
+            <Avatar
+              name={item.user.name || item.user.handle || 'm'}
+              src={item.user.image}
+              size={28}
+            />
+          </Pressable>
+          <View className="ml-2 flex-1">
+            {/* The restaurant name rides in the sentence itself, not its own
+                heading line — an activity-feed line, not a headline plus a
+                caption plus a caption. Saved the single biggest chunk of this
+                card's old height. */}
+            <Text className="font-ui text-body text-text">
+              <Text
+                className="font-ui-semibold"
+                onPress={() => router.push(`/u/${item.user.id}`)}
+                suppressHighlighting
+              >
+                {firstName}
+              </Text>{' '}
+              rankeó{' '}
+              <Text className="font-serif text-serif-sm text-text">{item.restaurant.name}</Text>
             </Text>
-          </Text>
-          <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
+            <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
+          </View>
         </View>
-      </View>
-      {oneLineMeta ? (
-        <Caption className="mt-1 text-text-2" numberOfLines={1}>
-          {oneLineMeta}
-        </Caption>
-      ) : null}
-      {item.note ? (
-        <Text
-          selectable
-          numberOfLines={2}
-          className="mt-1 font-serif-italic text-serif-sm text-text-2"
-        >
-          “{item.note}”
-        </Text>
-      ) : null}
-      {/* Footer: cheers on the left (its own established position across the
-          app), the score badge in the bottom-right corner — the card's final
-          tally, read last. Dropped the "#N" that used to ride beside it: bare
-          digits plus a small #1 is exactly what reads as a page number
-          instead of a rating; the badge alone is the point. */}
-      <View className="mt-1 flex-row items-center justify-between">
-        <CheersButton
-          rankingId={item.rankingId}
-          count={item.cheersCount ?? 0}
-          cheered={item.cheeredByMe ?? false}
-        />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(`/r/${item.restaurant.id}`)}
-          className="active:opacity-70"
-        >
+        {oneLineMeta ? (
+          <Caption className="mt-1 text-text-2" numberOfLines={1}>
+            {oneLineMeta}
+          </Caption>
+        ) : null}
+        {item.note ? (
+          <Text
+            selectable
+            numberOfLines={2}
+            className="mt-1 font-serif-italic text-serif-sm text-text-2"
+          >
+            “{item.note}”
+          </Text>
+        ) : null}
+        {/* Footer: cheers on the left (its own established position across
+            the app), the score badge in the bottom-right corner — the card's
+            final tally, read last. Dropped the "#N" that used to ride beside
+            it: bare digits plus a small #1 is exactly what reads as a page
+            number instead of a rating; the badge alone is the point. */}
+        <View className="mt-1 flex-row items-center justify-between">
+          <CheersButton
+            rankingId={item.rankingId}
+            count={item.cheersCount ?? 0}
+            cheered={item.cheeredByMe ?? false}
+          />
           <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
-        </Pressable>
-      </View>
-    </Animated.View>
+        </View>
+      </Animated.View>
+    </Pressable>
   )
 }

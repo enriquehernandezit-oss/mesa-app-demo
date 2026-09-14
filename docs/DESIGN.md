@@ -231,7 +231,7 @@ decision, so it doesn't drift again.
 
   | English | Spanish | Notes |
   |---|---|---|
-  | Rank a place | Rankear un spot | FAB, screen titles |
+  | Rank a place | Rankear un spot | tab-bar action, screen titles |
   | Tonight (tab) | Esta noche | wraps to 2 lines in the tab bar; that's fine |
   | You (tab) | Perfil | "Tú" reads wrong as a tab label |
   | Reserve / Order / Nearby | Reservar / Pedir / Cerca | quick-action pills |

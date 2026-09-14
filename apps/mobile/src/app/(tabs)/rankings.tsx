@@ -1,4 +1,3 @@
-import { RANK_FAB_CLEARANCE } from '@/components/RankFab'
 import { TopBar } from '@/components/TopBar'
 import {
   Button,
@@ -138,7 +137,10 @@ export default function RankingsTab() {
             n={stats.data.avgScore != null ? displayScore(stats.data.avgScore) : '—'}
             l="prom."
           />
-          <Stat n={stats.data.streakWeeks > 0 ? `${stats.data.streakWeeks} sem.` : '—'} l="racha" />
+          <Stat
+            n={stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—'}
+            l="sem. de racha"
+          />
         </View>
       )}
 
@@ -313,7 +315,8 @@ export default function RankingsTab() {
           }
           indicatorStyle={indicator}
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           automaticallyAdjustKeyboardInsets
@@ -322,7 +325,7 @@ export default function RankingsTab() {
         <ScrollView
           indicatorStyle={indicator}
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: RANK_FAB_CLEARANCE }}
+          contentContainerStyle={{ paddingBottom: 24 }}
         >
           {topMatter}
           {tab === 'barrios' ? (
@@ -356,7 +359,7 @@ export default function RankingsTab() {
 function Stat({ n, l }: { n: string; l: string }) {
   return (
     <View>
-      <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-text">
+      <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
         {n}
       </Text>
       <Caption>{l}</Caption>
@@ -487,12 +490,13 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
           ) : (
             <>
               {ranking.note ? <SerifNote>{ranking.note}</SerifNote> : null}
-              <View className="mt-2 flex-row gap-4">
+              {/* "Quitar" used to sit here too, permanently equal-billed with
+                  the primary action — a destructive action doesn't need a
+                  second entry point when the row already swipes to remove
+                  (SwipeToRemove, above). */}
+              <View className="mt-2">
                 <ActionText onPress={() => setEditing(true)}>
                   {ranking.note ? 'Editar nota' : 'Agregar nota'}
-                </ActionText>
-                <ActionText danger onPress={() => removeRankingWithUndo(ranking)}>
-                  Quitar
                 </ActionText>
               </View>
             </>

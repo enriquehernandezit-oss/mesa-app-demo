@@ -1,12 +1,13 @@
 import { MesaTabBar } from '@/components/MesaTabBar'
-import { RankFab } from '@/components/RankFab'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
+import { tapLight } from '@/lib/haptics'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
-import { Redirect, Tabs } from 'expo-router'
+import { Redirect, Tabs, useRouter } from 'expo-router'
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { useRef } from 'react'
 import { View } from 'react-native'
 
 // The four-tab shell. Self-guards: if the session is lost or the account is
@@ -20,8 +21,8 @@ import { View } from 'react-native'
 //
 // NativeTabs is still an unstable API. `NATIVE_TABS` is the escape hatch: flip it
 // to false and the shipped custom MesaTabBar comes back untouched, no other edit.
-// (The custom bar carries its own center "+"; the native path floats RankFab
-// instead, since a UITabBar can't host a non-tab item.)
+// (The custom bar's own center "+" already matches this one — see the `add`
+// trigger below for how the native path does the same thing.)
 const NATIVE_TABS = true
 
 export default function TabsLayout() {
@@ -36,6 +37,29 @@ function NativeShell() {
   const theme = useResolvedTheme()
   const c = themeColors[theme]
   const unseen = useUnseenActivity()
+  const router = useRouter()
+
+  // The center item is a `disabled` trigger, not a real destination: iOS still
+  // renders it normally (react-native-screens blocks selection at the native
+  // layer via `preventNativeSelection`, it does NOT grey the item out via
+  // `UITabBarItem.isEnabled`), and expo-router still emits `tabPress` with
+  // `isPrevented: true` to this listener — so tapping it opens the rank sheet
+  // without ever becoming the selected tab or losing the one underneath.
+  //
+  // Guarded like dishPhoto.ts's `picking` flag: a few rapid taps each fire
+  // their own `tabPress` (this isn't a single Pressable expo-router debounces),
+  // so without a guard each one pushes its own `/rank` instance and they stack
+  // — dismissing one just reveals the next underneath instead of the tab bar.
+  const openingRank = useRef(false)
+  const openRank = () => {
+    if (openingRank.current) return
+    openingRank.current = true
+    tapLight()
+    router.push('/rank')
+    setTimeout(() => {
+      openingRank.current = false
+    }, 1000)
+  }
 
   return (
     <View className="flex-1 bg-bg">
@@ -57,11 +81,29 @@ function NativeShell() {
           <NativeTabs.Trigger.Label>Feed</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
 
-        {/* Deliberately NOT role="search": iOS 26 pins a search-role tab to a
-            separated right-hand slot, which would sit under the floating FAB. */}
+        {/* Deliberately NOT role="search": iOS 26 pins a search-role tab to its
+            own separated right-hand slot, which would break the 2-1-2 symmetry
+            around the center "+" below. */}
         <NativeTabs.Trigger name="explore">
           <NativeTabs.Trigger.Icon sf="magnifyingglass" />
           <NativeTabs.Trigger.Label>Explora</NativeTabs.Trigger.Label>
+        </NativeTabs.Trigger>
+
+        {/* Instagram-style center action: a filled glyph (the app's one filled
+            icon among outline ones) marks it as a different kind of item —
+            an action, not a destination. `add` is its own route name so it
+            doesn't collide with `app/rank.tsx`'s `/rank`; the route itself is
+            an inert placeholder that's never shown (see app/(tabs)/add.tsx). */}
+        <NativeTabs.Trigger
+          name="add"
+          disabled
+          accessibilityLabel="Rankear un spot"
+          listeners={{ tabPress: openRank }}
+        >
+          <NativeTabs.Trigger.Icon
+            sf={{ default: 'plus.circle.fill', selected: 'plus.circle.fill' }}
+          />
+          <NativeTabs.Trigger.Label>Rankear</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="rankings">
@@ -81,7 +123,6 @@ function NativeShell() {
           ) : null}
         </NativeTabs.Trigger>
       </NativeTabs>
-      <RankFab />
     </View>
   )
 }
