@@ -91,7 +91,17 @@ function NativeShell() {
 
         {/* Instagram-style center action: a filled glyph (the app's one filled
             icon among outline ones) marks it as a different kind of item —
-            an action, not a destination. `add` is its own route name so it
+            an action, not a destination. Blank-but-not-empty <Label> (a
+            single space): omitting <Label> entirely falls back to the route
+            name ("add"), and an empty string title still rendered "add" too
+            — react-native-screens' native bottom-tabs treats a falsy title
+            as unset and substitutes the route name at the UIKit layer, below
+            where expo-router's JS fallback could catch it. A space is a
+            genuinely blank, truthy title, so it survives to native and lets
+            UITabBarItem re-center/enlarge the icon into the label's space —
+            the actual Instagram treatment; a real title would make it look
+            like a fifth ordinary tab. VoiceOver still gets the right name via
+            accessibilityLabel below. `add` is its own route name so it
             doesn't collide with `app/rank.tsx`'s `/rank`; the route itself is
             an inert placeholder that's never shown (see app/(tabs)/add.tsx). */}
         <NativeTabs.Trigger
@@ -103,7 +113,7 @@ function NativeShell() {
           <NativeTabs.Trigger.Icon
             sf={{ default: 'plus.circle.fill', selected: 'plus.circle.fill' }}
           />
-          <NativeTabs.Trigger.Label>Rankear</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Label> </NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="rankings">
