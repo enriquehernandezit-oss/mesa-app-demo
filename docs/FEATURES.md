@@ -1,10 +1,10 @@
 # Mesa — what the app does today
 
-**Status as of 2026-09-04.** This document describes the product *as built*, not as planned.
+**Status as of 2026-09-14.** This document describes the product *as built*, not as planned.
 Where `docs/BUILD_PLAN.md`, `docs/APPSTORE.md` and `docs/SUBMISSION.md` disagree with this file,
 this file is right — those three still describe the retired Vite/Capacitor stack.
 
-At a glance: **23 screens · 57 API endpoints · 22 tables · 13 migrations · 199 commits.**
+At a glance: **27 screens · 64 API endpoints · 25 tables · 14 migrations.**
 iOS-only, Spanish-only, no web app (the sole web surface is the API's server-rendered `/p/*`
 share pages).
 
@@ -102,7 +102,27 @@ You can **delete your own dish post**; anyone else's is reportable.
 
 ---
 
-## 6. Moderation and safety (App Store 1.2)
+## 6. Planes (group dinners)
+
+Arm a group dinner and invite the people you follow — the one workflow in the app that isn't a
+solo action.
+
+- **Create** (`planes/nuevo.tsx`, a modal) — pick 1–3 candidate spots (1 = a fixed venue, 2–3 = a
+  vote), a day/time via chip pickers (no native date-picker dependency), and invitees from your own
+  followers. Up to 50 invitees, up to 90 days out.
+- **Invite = your followers, only.** Nobody else can be added — a decision made up front, so the
+  invite picker (`components/FollowerPicker.tsx`) is just a filtered `GET /social/followers`.
+- **RSVP** — Voy / Tal vez / No puedo. **Voting** — when there's more than one candidate spot, each
+  invitee votes for one; the host confirms a winner once the votes are in.
+- **Delivery** — in-app (the Planes tab section, plus the Activity bell/badge) **and** a
+  WhatsApp-first share link, matching how invites and share cards already work.
+- **Public page** (`/p/plan/:id`) — server-rendered, shows the spot (or the open vote) and the
+  date; deliberately carries **no guest list**.
+- Reached from Profile's "Planes" row (with a pending-invite count) and from Activity's plan rows.
+
+---
+
+## 7. Moderation and safety (App Store 1.2)
 
 Complete, both directions:
 
@@ -120,7 +140,7 @@ Complete, both directions:
 
 ---
 
-## 7. Growth
+## 8. Growth
 
 - **Invite links** — one permanent code per member, **unlimited**, gating nothing. The link opens
   a personalised public page (`/p/i/CODE`) showing who invited you and their top 3. Attribution is
@@ -136,7 +156,7 @@ Complete, both directions:
 
 ---
 
-## 8. Account
+## 9. Account
 
 | | |
 |---|---|
@@ -155,7 +175,7 @@ finding friends. Nothing is gated behind invites, contacts, or a ranking count.
 
 ---
 
-## 9. Design
+## 10. Design
 
 Two first-class themes — **Afternoon** (light paper) and **Candlelit** (dark oxblood) — plus Auto,
 which flips at 6pm regardless of the OS setting. Everything resolves through a semantic token
@@ -179,7 +199,7 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
 
 ---
 
-## 10. Production infrastructure
+## 11. Production infrastructure
 
 **Wired:**
 - **CI** — GitHub Actions on every push: typecheck (API, db, mobile), lint, tests, and an
@@ -202,7 +222,7 @@ URLs through the API) · server-side caching · background jobs · route tests (
 
 ---
 
-## 11. Deliberately not built
+## 12. Deliberately not built
 
 Refusing these is a design position, not a backlog:
 
@@ -212,14 +232,15 @@ Refusing these is a design position, not a backlog:
 - **No ads, no sponsored placement, ever.**
 - **No referral-locked features** — invites gate nothing.
 - **No streak-restore purchases**; streaks are weekly and free.
-- **Reservations, Tonight, group planning, events** — planned, not built. No schema exists.
+- **Reservations, Tonight, events** — planned, not built. No schema exists. (Group planning
+  shipped as Planes — see §6.)
 
 One control still says "pronto": **Notifications**, which becomes real with push. Stealth mode and
 DMs were removed rather than left as dated promises.
 
 ---
 
-## 12. Stack
+## 13. Stack
 
 - **Runtime** Bun · **API** Hono · **DB** PostgreSQL + Drizzle · **Auth** Better Auth
 - **App** Expo SDK 57 / React Native 0.86, Expo Router, NativeWind, TanStack Query
@@ -233,7 +254,7 @@ but nothing proves the mirror still matches the server.
 
 ---
 
-## 13. What's blocking launch
+## 14. What's blocking launch
 
 | Blocker | Needs |
 |---|---|

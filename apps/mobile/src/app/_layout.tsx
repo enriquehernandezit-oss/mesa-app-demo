@@ -170,6 +170,8 @@ function MesaStack() {
           ranking still steps backward instead of being thrown away. */}
       <Stack.Screen name="rank" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
 
       {/* These three scroll horizontal rails/swipe-rows that reach the screen
           edge (similar-spots rail, ranking-row swipe-to-remove, list-detail
@@ -185,6 +187,10 @@ function MesaStack() {
       {/* Title (Seguidores/Siguiendo) is set by the screen itself, same
           pattern as lists/[slug] below. */}
       <Stack.Screen name="people/[userId]" options={utility} />
+      <Stack.Screen name="planes/index" options={{ ...utility, title: 'Planes' }} />
+      {/* Title (the chosen spot, or "Votación abierta") is set by the screen
+          itself once the plan loads — same pattern as people/[userId] above. */}
+      <Stack.Screen name="planes/[planId]" options={{ ...utility, headerLargeTitle: false }} />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
       <Stack.Screen name="moderation" options={{ ...utility, title: 'Moderación' }} />
       {/* Titles for these two are set by the screens themselves once the data

@@ -14,7 +14,7 @@ import { useFollow } from '@/hooks/useFollow'
 import { markActivitySeen } from '@/lib/activitySeen'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
-import { timeAgo } from '@/lib/time'
+import { formatPlanDate, timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,11 +27,12 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // action. "Marcar leído" advances the local watermark, clearing the bell badge.
 // Ported from apps/app/src/screens/activity/ActivityScreen.tsx. The inert
 // "Mesas" (table activity) filter is cut — Tonight is out of the launch subset.
-type Filter = 'all' | 'follows' | 'rankings'
+type Filter = 'all' | 'follows' | 'rankings' | 'plans'
 const FILTERS: { value: Filter; label: string }[] = [
   { value: 'all', label: 'Todo' },
   { value: 'follows', label: 'Seguidores' },
   { value: 'rankings', label: 'Rankings' },
+  { value: 'plans', label: 'Planes' },
 ]
 
 function bucket(at: string): 'today' | 'week' | 'earlier' {
@@ -77,6 +78,7 @@ export default function ActivityScreen() {
   const shown = items.filter((a) => {
     if (filter === 'all') return true
     if (filter === 'follows') return a.type === 'follow'
+    if (filter === 'plans') return a.type === 'plan_invite' || a.type === 'plan_reply'
     return a.type === 'cheers' || a.type === 'saved_ranked' || a.type === 'friend_ranked'
   })
   const sections = SECTIONS.map((s) => ({
@@ -140,20 +142,30 @@ export default function ActivityScreen() {
 function ActivityRow({ a }: { a: ActivityItem }) {
   const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
+  const isPlan = a.type === 'plan_invite' || a.type === 'plan_reply'
 
-  // The row's primary destination — the restaurant when the row names one,
-  // else the person. Doesn't replace the avatar/cover's own nested links
-  // below, which stay their specific targets; this is the fallback for
-  // everywhere else on the row (the gap around the sentence, the timestamp).
-  const primaryHref: Href = a.restaurant ? `/r/${a.restaurant.id}` : `/u/${a.user.id}`
+  // The row's primary destination — a plan when the row is one, else the
+  // restaurant when the row names one, else the person. Doesn't replace the
+  // avatar/cover's own nested links below, which stay their specific targets;
+  // this is the fallback for everywhere else on the row (the gap around the
+  // sentence, the timestamp).
+  const primaryHref: Href = isPlan
+    ? `/planes/${a.planId}`
+    : a.restaurant
+      ? `/r/${a.restaurant.id}`
+      : `/u/${a.user.id}`
   const place = a.restaurant ? (
-    <Text
-      className="font-ui-medium text-text"
-      onPress={() => a.restaurant && router.push(`/r/${a.restaurant.id}`)}
-      suppressHighlighting
-    >
-      {a.restaurant.name}
-    </Text>
+    isPlan ? (
+      <Text className="font-ui-medium text-text">{a.restaurant.name}</Text>
+    ) : (
+      <Text
+        className="font-ui-medium text-text"
+        onPress={() => a.restaurant && router.push(`/r/${a.restaurant.id}`)}
+        suppressHighlighting
+      >
+        {a.restaurant.name}
+      </Text>
+    )
   ) : null
 
   return (
@@ -190,6 +202,17 @@ function ActivityRow({ a }: { a: ActivityItem }) {
               )}
             </>
           )}
+          {a.type === 'plan_invite' && (
+            <>
+              te invitó a una mesa en {place}
+              {a.startsAt ? ` · ${formatPlanDate(a.startsAt)}` : ''}
+            </>
+          )}
+          {a.type === 'plan_reply' && (
+            <>
+              {a.reply === 'going' ? 'va' : 'tal vez va'} a tu mesa en {place}
+            </>
+          )}
         </Text>
         <Caption className="font-mono text-micro">{timeAgo(a.at)}</Caption>
       </View>
@@ -207,6 +230,20 @@ function ActivityRow({ a }: { a: ActivityItem }) {
             {following ? 'Siguiendo' : 'Seguir'}
           </Text>
         </Pressable>
+      ) : isPlan ? (
+        a.planId && (
+          <Link href={`/planes/${a.planId}`} asChild>
+            <Pressable className="active:opacity-80">
+              <PlaceCover
+                seed={a.restaurant?.id ?? a.planId}
+                name={a.restaurant?.name ?? ''}
+                coverImageId={a.restaurant?.coverImageId ?? null}
+                size={{ w: 96, h: 96 }}
+                className="h-11 w-11"
+              />
+            </Pressable>
+          </Link>
+        )
       ) : (
         a.restaurant && (
           <Link href={`/r/${a.restaurant.id}`} asChild>

@@ -3,7 +3,14 @@ import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } fro
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
 import { showSheet } from '@/components/ui/Sheet'
-import { BookmarkIcon, CheckIcon, ChevronIcon, CompassIcon, PlusIcon } from '@/components/ui/icons'
+import {
+  BookmarkIcon,
+  CalendarIcon,
+  CheckIcon,
+  ChevronIcon,
+  CompassIcon,
+  PlusIcon,
+} from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
@@ -11,7 +18,8 @@ import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
-import type { MeStats, Neighborhood } from '@/lib/types'
+import { isPendingInvite } from '@/lib/plans'
+import type { MeStats, Neighborhood, Plan } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
@@ -120,6 +128,14 @@ export default function ProfileTab() {
   const avatarPicker = useAvatarPicker()
 
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
+  // Same ['plans'] cache key planes/index.tsx reads — the pending-invite
+  // count here and the app's own list never disagree, and a visit to either
+  // screen warms the other's cache.
+  const plans = useQuery({
+    queryKey: ['plans'],
+    queryFn: () => api.get<{ plans: Plan[] }>('/plans'),
+  })
+  const pendingPlans = (plans.data?.plans ?? []).filter(isPendingInvite).length
 
   if (editing) {
     return <EditProfile onClose={() => setEditing(false)} />
@@ -250,6 +266,12 @@ export default function ProfileTab() {
             icon={<BookmarkIcon size={15} />}
             label="Quiero probar"
             onPress={() => router.push('/rankings?tab=saved')}
+          />
+          <NavRow
+            icon={<CalendarIcon size={15} />}
+            label="Planes"
+            meta={pendingPlans > 0 ? String(pendingPlans) : undefined}
+            onPress={() => router.push('/planes')}
           />
           {/* Was "Recomendados para ti", which promised a personalized list this
               row never opened — it goes to Explore, whose default browse state
