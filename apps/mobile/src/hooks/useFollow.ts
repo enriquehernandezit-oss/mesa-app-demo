@@ -19,7 +19,7 @@ import { useEffect, useRef, useState } from 'react'
 // optimistic flip before that refetch actually lands — the ref (not
 // `mutation.isPending`) is what the sync effect reads, so it never needs to be
 // a dependency of that effect.
-type FollowSource = 'onboarding' | 'empty_feed' | 'activity' | 'passport'
+export type FollowSource = 'onboarding' | 'empty_feed' | 'activity' | 'passport' | 'people_screen'
 
 const RELATED_QUERY_KEYS = ['feed', 'activity', 'people', 'me-stats'] as const
 

@@ -80,14 +80,30 @@ export function SpotCard({
 // are the same object and should read that way. text-serif-md, not -lg: a
 // trio of these opens the screen before any real content, and at 30px they
 // ran a third of the screen's height for numbers nobody taps.
-export function Stat({ n, l }: { n: string; l: string }) {
-  return (
-    <View className="items-center">
+// `onPress`, when given, renders the whole stat as a real control (44pt
+// min-height, `active:opacity-70`, `accessibilityRole="button"`) instead of
+// inert text — most call sites (Seguidores, Siguiendo, Rankeados…) name a
+// destination that already has a screen, so it should be one tap away.
+export function Stat({ n, l, onPress }: { n: string; l: string; onPress?: () => void }) {
+  const body = (
+    <>
       <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
         {n}
       </Text>
       <Caption>{l}</Caption>
-    </View>
+    </>
+  )
+  if (!onPress) {
+    return <View className="items-center">{body}</View>
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="min-h-[44px] items-center justify-center active:opacity-70"
+    >
+      {body}
+    </Pressable>
   )
 }
 

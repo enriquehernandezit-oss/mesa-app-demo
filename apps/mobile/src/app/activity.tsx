@@ -18,7 +18,7 @@ import { timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useFocusEffect, useRouter } from 'expo-router'
+import { type Href, Link, useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
@@ -138,14 +138,30 @@ export default function ActivityScreen() {
 }
 
 function ActivityRow({ a }: { a: ActivityItem }) {
+  const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
 
+  // The row's primary destination — the restaurant when the row names one,
+  // else the person. Doesn't replace the avatar/cover's own nested links
+  // below, which stay their specific targets; this is the fallback for
+  // everywhere else on the row (the gap around the sentence, the timestamp).
+  const primaryHref: Href = a.restaurant ? `/r/${a.restaurant.id}` : `/u/${a.user.id}`
   const place = a.restaurant ? (
-    <Text className="font-ui-medium text-text">{a.restaurant.name}</Text>
+    <Text
+      className="font-ui-medium text-text"
+      onPress={() => a.restaurant && router.push(`/r/${a.restaurant.id}`)}
+      suppressHighlighting
+    >
+      {a.restaurant.name}
+    </Text>
   ) : null
 
   return (
-    <View className="flex-row items-center gap-3 border-line border-b py-3">
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(primaryHref)}
+      className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+    >
       <Link href={`/u/${a.user.id}`} asChild>
         <Pressable className="active:opacity-80">
           <Avatar name={a.user.name || a.user.handle || 'm'} src={a.user.image} size={36} />
@@ -153,7 +169,13 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       </Link>
       <View className="flex-1">
         <Text className="font-ui text-body text-text">
-          <Text className="font-ui-semibold">{a.user.name || a.user.handle}</Text>{' '}
+          <Text
+            className="font-ui-semibold"
+            onPress={() => router.push(`/u/${a.user.id}`)}
+            suppressHighlighting
+          >
+            {a.user.name || a.user.handle}
+          </Text>{' '}
           {a.type === 'cheers' && <>le dio cheers a tu ranking de {place}</>}
           {a.type === 'follow' && 'empezó a seguirte'}
           {a.type === 'saved_ranked' && <>rankeó {place} — está en tu lista</>}
@@ -200,6 +222,6 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           </Link>
         )
       )}
-    </View>
+    </Pressable>
   )
 }

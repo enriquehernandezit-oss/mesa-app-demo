@@ -6,7 +6,7 @@ import type { LeaderboardRow } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'expo-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Citywide leaderboard — who's eaten the most of Santo Domingo. Understated by
@@ -22,10 +22,16 @@ export default function LeaderboardScreen() {
       ),
   })
   const rows = q.data?.leaderboard ?? []
+  // "Eres #N" jumps straight to that row — rows are all mounted (a plain
+  // ScrollView, not virtualized), so each records its own offset on layout
+  // and the tap just scrolls there.
+  const scrollRef = useRef<ScrollView>(null)
+  const rowY = useRef<number[]>([])
 
   return (
     <View className="flex-1 bg-bg">
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5 pb-10"
         contentInsetAdjustmentBehavior="automatic"
@@ -45,7 +51,16 @@ export default function LeaderboardScreen() {
         </View>
 
         {q.data?.myRank ? (
-          <Body className="mb-4 text-accent">Eres #{q.data.myRank} en la ciudad.</Body>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              const y = rowY.current[(q.data?.myRank ?? 1) - 1]
+              if (y != null) scrollRef.current?.scrollTo({ y, animated: true })
+            }}
+            className="mb-4 self-start active:opacity-70"
+          >
+            <Body className="text-accent">Eres #{q.data.myRank} en la ciudad.</Body>
+          </Pressable>
         ) : null}
 
         {q.isPending ? (
@@ -55,7 +70,12 @@ export default function LeaderboardScreen() {
         ) : (
           rows.map((r, i) => (
             <Link key={r.id} href={`/u/${r.id}`} asChild>
-              <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+              <Pressable
+                onLayout={(e) => {
+                  rowY.current[i] = e.nativeEvent.layout.y
+                }}
+                className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+              >
                 <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-lg text-accent">
                   {i + 1}
                 </Text>

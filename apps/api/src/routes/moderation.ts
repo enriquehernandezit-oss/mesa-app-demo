@@ -112,7 +112,12 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     const [notes, dishRows, users] = await Promise.all([
       noteIds.length
         ? db
-            .select({ id: vibeNotes.id, body: vibeNotes.body, removedAt: vibeNotes.removedAt })
+            .select({
+              id: vibeNotes.id,
+              body: vibeNotes.body,
+              userId: vibeNotes.userId,
+              removedAt: vibeNotes.removedAt,
+            })
             .from(vibeNotes)
             .where(inArray(vibeNotes.id, noteIds))
         : [],
@@ -154,7 +159,11 @@ export const moderationRoutes = new Hono<AuthedEnv>()
         const n = noteById.get(r.targetId)
         return {
           ...r,
-          target: n ? { kind: 'vibe_note' as const, body: n.body } : null,
+          // userId: so the queue can link to the note's author — a moderator
+          // deciding whether to remove content previously had no way to see
+          // who else that person is (their other rankings, whether they've
+          // been reported before) without leaving the queue.
+          target: n ? { kind: 'vibe_note' as const, body: n.body, userId: n.userId } : null,
           alreadyHandled: n ? n.removedAt !== null : true,
         }
       }

@@ -18,6 +18,12 @@ const { follows, userBlocks } = schema
 export const followingIds = (userId: string) =>
   db.select({ id: follows.followingId }).from(follows).where(eq(follows.followerId, userId))
 
+// Ids that follow the given user. The mirror of followingIds — added
+// alongside GET /social/followers, which needed it and had no existing helper
+// (every prior reader of "who follows X" was a one-off inline join).
+export const followerIds = (userId: string) =>
+  db.select({ id: follows.followerId }).from(follows).where(eq(follows.followingId, userId))
+
 // Ids the given user has blocked.
 export const blockedByMe = (userId: string) =>
   db.select({ id: userBlocks.blockedId }).from(userBlocks).where(eq(userBlocks.blockerId, userId))

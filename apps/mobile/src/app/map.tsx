@@ -43,7 +43,10 @@ export default function MapScreen() {
         <Eyebrow>Santo Domingo</Eyebrow>
         <Title>El mapa</Title>
         {rankedByFriends > 0 && (
-          <Body className="text-accent">
+          // text-text-2, not text-accent: this line names a fact, it doesn't
+          // open or toggle anything, and accent everywhere else on this
+          // screen (the "Ubícame"/retry text below) IS a control.
+          <Body className="text-text-2">
             {rankedByFriends} spot{rankedByFriends === 1 ? '' : 's'} que tus amigos han rankeado.
           </Body>
         )}
@@ -100,30 +103,38 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
     .join(' · ')
   return (
     <View className="absolute inset-x-3 bottom-6 flex-row items-center gap-3 rounded border border-line bg-surface-raised p-3 shadow-lg">
-      <PlaceCover
-        seed={spot.id}
-        name={spot.name}
-        coverImageId={spot.coverImageId}
-        size={{ w: 200, h: 200 }}
-        className="h-16 w-16"
-      />
-      <View className="flex-1">
-        <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-          {spot.name}
-        </Text>
-        <Caption numberOfLines={1}>{meta}</Caption>
-        {spot.friendCount > 0 && spot.friendAvg != null ? (
-          <View className="mt-1 items-start">
-            <ScoreBadge
-              size="sm"
-              score={spot.friendAvg}
-              attribution={{ kind: 'friends', count: spot.friendCount }}
-            />
+      <Link href={`/r/${spot.id}`} asChild>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onClose}
+          className="flex-1 flex-row items-center gap-3 active:opacity-80"
+        >
+          <PlaceCover
+            seed={spot.id}
+            name={spot.name}
+            coverImageId={spot.coverImageId}
+            size={{ w: 200, h: 200 }}
+            className="h-16 w-16"
+          />
+          <View className="flex-1">
+            <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+              {spot.name}
+            </Text>
+            <Caption numberOfLines={1}>{meta}</Caption>
+            {spot.friendCount > 0 && spot.friendAvg != null ? (
+              <View className="mt-1 items-start">
+                <ScoreBadge
+                  size="sm"
+                  score={spot.friendAvg}
+                  attribution={{ kind: 'friends', count: spot.friendCount }}
+                />
+              </View>
+            ) : (
+              <Caption className="mt-1">Nadie que sigues lo ha rankeado aún.</Caption>
+            )}
           </View>
-        ) : (
-          <Caption className="mt-1">Nadie que sigues lo ha rankeado aún.</Caption>
-        )}
-      </View>
+        </Pressable>
+      </Link>
       <View className="items-end gap-2">
         <Pressable
           accessibilityRole="button"

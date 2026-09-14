@@ -1,5 +1,6 @@
 import { ReportControl } from '@/components/ReportControl'
 import { Body, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
 import { GlassCircle } from '@/components/ui/GlassCircle'
 import { BackIcon, DirectionsIcon, PhoneIcon, WebIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, UtilityPill } from '@/components/ui/patterns'
@@ -130,7 +131,24 @@ export default function DishDetail() {
         </View>
 
         <View className="px-5 pt-4">
-          <Text className="font-serif text-title text-text">{dish.name}</Text>
+          {/* The poster — a photo with an attributed score and, until now, no
+              way to reach the person it was attributed to. */}
+          <Link href={`/u/${dish.user.id}`} asChild>
+            <Pressable
+              accessibilityRole="button"
+              className="flex-row items-center gap-2 active:opacity-80"
+            >
+              <Avatar
+                name={dish.user.name || dish.user.handle || 'm'}
+                src={dish.user.image}
+                size={28}
+              />
+              <Text className="font-ui-medium text-body text-text">
+                {dish.user.name || dish.user.handle}
+              </Text>
+            </Pressable>
+          </Link>
+          <Text className="mt-2 font-serif text-title text-text">{dish.name}</Text>
           {dish.caption ? (
             <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">
               “{dish.caption}”

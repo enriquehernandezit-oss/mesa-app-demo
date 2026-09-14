@@ -1,8 +1,8 @@
+import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
-import { useFollow } from '@/hooks/useFollow'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
@@ -520,7 +520,18 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
         <View className="mt-4">
           {suggested.isPending && <Body>Buscando gente…</Body>}
           {list.map((u) => (
-            <FriendRow key={u.id} user={u} onFollowChange={(v) => reportFollowed(u.id, v)} />
+            <PersonRow
+              key={u.id}
+              user={u}
+              right={
+                <FollowPill
+                  userId={u.id}
+                  initial={false}
+                  from="onboarding"
+                  onChange={(v) => reportFollowed(u.id, v)}
+                />
+              }
+            />
           ))}
         </View>
       </ScrollView>
@@ -530,46 +541,6 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
           {followed.size > 0 ? `Listo — siguiendo a ${followed.size}` : 'Omitir por ahora'}
         </Button>
       </View>
-    </View>
-  )
-}
-
-function FriendRow({
-  user,
-  onFollowChange,
-}: { user: SuggestedUser; onFollowChange: (following: boolean) => void }) {
-  const { following, toggle } = useFollow(user.id, false, 'onboarding')
-
-  // `onFollowChange` is a fresh closure every render (it closes over
-  // `user.id` from the parent's `.map()`); only `following` should re-trigger
-  // this.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
-  useEffect(() => {
-    onFollowChange(following)
-  }, [following])
-
-  return (
-    <View className="flex-row items-center gap-3 border-line border-b py-3">
-      <View className="min-w-0 flex-1">
-        <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-          {user.name || user.handle}
-        </Text>
-        <Caption numberOfLines={1}>
-          {[user.handle ? `@${user.handle}` : null, user.neighborhood].filter(Boolean).join(' · ')}
-        </Caption>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: following }}
-        onPress={toggle}
-        className={`min-h-[36px] justify-center rounded-pill border px-4 ${following ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
-      >
-        <Text
-          className={`font-mono text-eyebrow ${following ? 'text-accent-strong' : 'text-text-muted'}`}
-        >
-          {following ? 'Siguiendo' : 'Seguir'}
-        </Text>
-      </Pressable>
     </View>
   )
 }

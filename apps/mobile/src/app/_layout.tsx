@@ -182,6 +182,9 @@ function MesaStack() {
       <Stack.Screen name="settings" options={{ ...utility, title: 'Ajustes' }} />
       <Stack.Screen name="activity" options={{ ...utility, title: 'Actividad' }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: 'Clasificación' }} />
+      {/* Title (Seguidores/Siguiendo) is set by the screen itself, same
+          pattern as lists/[slug] below. */}
+      <Stack.Screen name="people/[userId]" options={utility} />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
       <Stack.Screen name="moderation" options={{ ...utility, title: 'Moderación' }} />
       {/* Titles for these two are set by the screens themselves once the data

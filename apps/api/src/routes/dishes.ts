@@ -166,9 +166,16 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .limit(1)
     if (!row) return c.json({ error: 'not_found' }, 404)
 
-    // Visibility: mine, public, or someone I follow.
+    // Visibility: mine, public, someone I follow — or, unconditionally, a
+    // moderator's. The moderation queue links straight to this endpoint so a
+    // report can be reviewed with real context, and a moderator reviewing a
+    // report is very often looking at exactly the case they don't follow the
+    // poster — the same visibility gate that protects everyone else would
+    // otherwise 404 the one person whose job is to look at it. Moderators
+    // could already act on any dish blind via DELETE /moderation/dishes/:id;
+    // this only lets them see it first.
     const posterIsMe = row.user.id === me.id
-    if (!posterIsMe && row.visibility !== 'public') {
+    if (!posterIsMe && !me.isModerator && row.visibility !== 'public') {
       const [f] = await db
         .select({ id: follows.followingId })
         .from(follows)
@@ -176,7 +183,9 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         .limit(1)
       if (!f) return c.json({ error: 'not_found' }, 404)
     }
-    // Never surface a dish when either of us has blocked the other (symmetric).
+    // Never surface a dish when either of us has blocked the other (symmetric)
+    // — including for a moderator, who still shouldn't see a blocked poster's
+    // content through this path (they have the queue for that).
     if (!posterIsMe) {
       const [blocked] = await db
         .select({ id: userBlocks.blockerId })

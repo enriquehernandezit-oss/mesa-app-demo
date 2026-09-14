@@ -73,6 +73,16 @@ export default function RestaurantProfile() {
   // a state flag gates its tap target so the back button isn't hit while hidden.
   const scrollY = useRef(new Animated.Value(0)).current
   const [condensed, setCondensed] = useState(false)
+  // Imperative scroll target for two things a plain link can't reach: the
+  // condensed header's name (scroll to top) and the score trio's friend/Mesa
+  // badges (jump down to "Sus puntuaciones", the section they summarize).
+  const scrollRef = useRef<ScrollView>(null)
+  // Two nested offsets, not one: `scoresY` is captured relative to its own
+  // parent (the px-5 identity block), not the scroll content root, since
+  // that's what onLayout gives you. `identityY` is that parent's own offset
+  // within the scroll content. Their sum is the real, absolute scroll target.
+  const identityY = useRef(0)
+  const scoresY = useRef(0)
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
@@ -214,6 +224,7 @@ export default function RestaurantProfile() {
           plain ScrollView RN calls props.onScroll(...) directly and throws
           "Object is not a function" on every scroll frame. */}
       <Animated.ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
@@ -273,10 +284,27 @@ export default function RestaurantProfile() {
           </View>
         </View>
 
-        <View className="px-5">
+        <View
+          className="px-5"
+          onLayout={(e) => {
+            identityY.current = e.nativeEvent.layout.y
+          }}
+        >
           {/* Identity, on the paper ground below the photo. */}
           <View className="pt-4">
-            <Eyebrow>{restaurant.neighborhood?.name ?? 'Santo Domingo'}</Eyebrow>
+            {restaurant.neighborhood ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push(`/explore?neighborhood=${restaurant.neighborhood?.slug}`)
+                }
+                className="self-start active:opacity-70"
+              >
+                <Eyebrow>{restaurant.neighborhood.name}</Eyebrow>
+              </Pressable>
+            ) : (
+              <Eyebrow>Santo Domingo</Eyebrow>
+            )}
             <View className="mt-1 flex-row items-start justify-between gap-3">
               <Title className="flex-1">{restaurant.name}</Title>
               {/* The fixed bottom bar is the one ranking CTA; this is only the
@@ -303,7 +331,14 @@ export default function RestaurantProfile() {
               </View>
             )}
             {restaurant.address ? (
-              <Caption className="mt-1 text-text-2">{restaurant.address}</Caption>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+                onPress={openPlaceMap}
+                className="mt-1 self-start active:opacity-70"
+              >
+                <Caption className="text-text-2">{restaurant.address}</Caption>
+              </Pressable>
             ) : null}
             {lists.length > 0 && (
               <View className="mt-3 flex-row flex-wrap gap-2">
@@ -361,27 +396,58 @@ export default function RestaurantProfile() {
               <SectionHeader>Puntuaciones</SectionHeader>
               <View className="mt-2 flex-row justify-around">
                 {myRanking && (
-                  <ScoreBadge
-                    score={myRanking.score}
-                    attribution={{ kind: 'you' }}
-                    caption="Tu puntuación"
-                    sub={`#${myRanking.position} en tu lista`}
-                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Rankear otra vez"
+                    onPress={() => router.push(`/rank?restaurant=${restaurantId}`)}
+                    className="active:opacity-80"
+                  >
+                    <ScoreBadge
+                      score={myRanking.score}
+                      attribution={{ kind: 'you' }}
+                      caption="Tu puntuación"
+                      sub={`#${myRanking.position} en tu lista`}
+                    />
+                  </Pressable>
                 )}
                 {friendAvg != null && (
-                  <ScoreBadge
-                    score={friendAvg}
-                    attribution={{ kind: 'friends', count: friendsRankings.length }}
-                    sub="lo que piensan"
-                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Ver puntuaciones de tus amigos"
+                    onPress={() =>
+                      scrollRef.current?.scrollTo({
+                        y: identityY.current + scoresY.current,
+                        animated: true,
+                      })
+                    }
+                    className="active:opacity-80"
+                  >
+                    <ScoreBadge
+                      score={friendAvg}
+                      attribution={{ kind: 'friends', count: friendsRankings.length }}
+                      sub="lo que piensan"
+                    />
+                  </Pressable>
                 )}
                 {allMesa.avg != null && showMesa && (
-                  <ScoreBadge
-                    score={allMesa.avg}
-                    attribution={{ kind: 'mesa', count: allMesa.count }}
-                    caption="Todo Mesa"
-                    sub={`${allMesa.count} rankeados`}
-                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Ver quién lo rankeó"
+                    onPress={() =>
+                      scrollRef.current?.scrollTo({
+                        y: identityY.current + scoresY.current,
+                        animated: true,
+                      })
+                    }
+                    className="active:opacity-80"
+                  >
+                    <ScoreBadge
+                      score={allMesa.avg}
+                      attribution={{ kind: 'mesa', count: allMesa.count }}
+                      caption="Todo Mesa"
+                      sub={`${allMesa.count} rankeados`}
+                    />
+                  </Pressable>
                 )}
               </View>
             </>
@@ -389,7 +455,13 @@ export default function RestaurantProfile() {
 
           <PopularDishes restaurantId={restaurantId} canAdd={Boolean(myRanking)} />
 
-          <TheirScores rankings={friendsRankings} />
+          <View
+            onLayout={(e) => {
+              scoresY.current = e.nativeEvent.layout.y
+            }}
+          >
+            <TheirScores rankings={friendsRankings} />
+          </View>
 
           {/* Locator map — a static MapBox tile that opens the full pannable map
               (place-map). Hidden when the hero itself is the map (one map per
@@ -455,9 +527,16 @@ export default function RestaurantProfile() {
         >
           <Text className="font-serif text-title text-text">‹</Text>
         </Pressable>
-        <Text className="flex-1 font-serif text-serif-md text-text" numberOfLines={1}>
-          {restaurant.name}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Volver arriba"
+          onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+          className="flex-1 active:opacity-70"
+        >
+          <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+            {restaurant.name}
+          </Text>
+        </Pressable>
         {allMesa.avg != null && showMesa && (
           <ScoreBadge
             size="sm"
@@ -612,9 +691,18 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
                 <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
                   {d.name}
                 </Text>
-                <Caption numberOfLines={1}>
-                  por {(d.user.name || d.user.handle || '').split(' ')[0]}
-                </Caption>
+                {/* A plain Pressable, not a nested Link — Link-in-Link has its
+                    own gesture-machinery bug (see the feed card's note on the
+                    same fix); a router.push here avoids it. */}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/u/${d.user.id}`)}
+                  className="self-start active:opacity-70"
+                >
+                  <Caption numberOfLines={1}>
+                    por {(d.user.name || d.user.handle || '').split(' ')[0]}
+                  </Caption>
+                </Pressable>
               </Pressable>
             </Link>
           ))}

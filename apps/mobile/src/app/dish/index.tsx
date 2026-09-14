@@ -252,7 +252,15 @@ export default function DishCompose() {
         {myRanking && restaurant && (
           <>
             <SectionHeader>Ranking vinculado</SectionHeader>
-            <View className="flex-row items-center gap-3 rounded border border-line bg-surface p-3">
+            {/* router.push, not a dismiss: this only stacks the profile on
+                top — the composer (and whatever's typed so far) is still
+                there on the way back, same as the rank flow's own nested
+                navigations. */}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/r/${restaurant.id}`)}
+              className="flex-row items-center gap-3 rounded border border-line bg-surface p-3 active:opacity-80"
+            >
               <View className="flex-1">
                 <Text className="font-serif text-serif-md text-text">{restaurant.name}</Text>
                 <Characteristics
@@ -262,7 +270,7 @@ export default function DishCompose() {
                 />
               </View>
               <ScoreBadge size="sm" score={myRanking.score} attribution={{ kind: 'you' }} />
-            </View>
+            </Pressable>
           </>
         )}
 

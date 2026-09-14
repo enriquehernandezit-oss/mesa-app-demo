@@ -13,7 +13,7 @@ import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
 import { ShareIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, FilterGroup, ScoreBadge } from '@/components/ui/patterns'
+import { Characteristics, FilterGroup, ScoreBadge, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -149,11 +149,20 @@ export default function RankingsTab() {
         // numbers here) is now "Quiero probar", the saved-places count, which
         // is a real destination (the tab right next to this one).
         <View className="mb-4 flex-row gap-6">
-          <Stat n={stats.data ? String(stats.data.places) : '—'} l="lugares" />
-          <Stat n={stats.data ? String(stats.data.saved) : '—'} l="quiero probar" />
+          <Stat
+            n={stats.data ? String(stats.data.places) : '—'}
+            l="lugares"
+            onPress={() => setTab('mine')}
+          />
+          <Stat
+            n={stats.data ? String(stats.data.saved) : '—'}
+            l="quiero probar"
+            onPress={() => setTab('saved')}
+          />
           <Stat
             n={stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—'}
             l="sem. de racha"
+            onPress={() => router.push('/leaderboard')}
           />
         </View>
       )}
@@ -350,7 +359,13 @@ export default function RankingsTab() {
         >
           {topMatter}
           {tab === 'barrios' ? (
-            <BarriosView rankings={ranked} />
+            <BarriosView
+              rankings={ranked}
+              onSelectSector={(sector) => {
+                setFilters({ ...NO_FILTERS, sector })
+                setTab('mine')
+              }}
+            />
           ) : saved.isPending ? (
             <Skeleton height={64} />
           ) : saved.isError ? (
@@ -373,17 +388,6 @@ export default function RankingsTab() {
           )}
         </ScrollView>
       )}
-    </View>
-  )
-}
-
-function Stat({ n, l }: { n: string; l: string }) {
-  return (
-    <View>
-      <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
-        {n}
-      </Text>
-      <Caption>{l}</Caption>
     </View>
   )
 }
@@ -463,26 +467,32 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
           />
         </Link>
         <View className="flex-1">
-          <Link href={`/r/${ranking.restaurant.id}`}>
-            <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
-          </Link>
-          <Characteristics
-            priceTier={ranking.restaurant.priceTier}
-            cuisine={ranking.restaurant.cuisine}
-            neighborhood={ranking.neighborhood}
-          />
-          {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
-            <View className="mt-1 flex-row flex-wrap items-center gap-2">
-              {ranking.favoriteDish && (
-                <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+          {/* Name + characteristics + Pide/tags is one tap target now — it
+              used to be three islands (a Link around just the name, then
+              dead space over Characteristics and the Pide/tags line) with no
+              visible seam telling you where the tappable part stopped. */}
+          <Link href={`/r/${ranking.restaurant.id}`} asChild>
+            <Pressable accessibilityRole="button" className="active:opacity-80">
+              <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
+              <Characteristics
+                priceTier={ranking.restaurant.priceTier}
+                cuisine={ranking.restaurant.cuisine}
+                neighborhood={ranking.neighborhood}
+              />
+              {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
+                <View className="mt-1 flex-row flex-wrap items-center gap-2">
+                  {ranking.favoriteDish && (
+                    <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+                  )}
+                  {(ranking.tags ?? []).map((t) => (
+                    <Caption key={t} className="font-mono text-micro">
+                      {tagLabel(t)}
+                    </Caption>
+                  ))}
+                </View>
               )}
-              {(ranking.tags ?? []).map((t) => (
-                <Caption key={t} className="font-mono text-micro">
-                  {tagLabel(t)}
-                </Caption>
-              ))}
-            </View>
-          )}
+            </Pressable>
+          </Link>
           {editing ? (
             <View className="mt-2 gap-2">
               <TextInput
@@ -511,7 +521,15 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             </View>
           ) : (
             <>
-              {ranking.note ? <SerifNote>{ranking.note}</SerifNote> : null}
+              {ranking.note ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setEditing(true)}
+                  className="active:opacity-70"
+                >
+                  <SerifNote>{ranking.note}</SerifNote>
+                </Pressable>
+              ) : null}
               {/* "Quitar" used to sit here too, permanently equal-billed with
                   the primary action — a destructive action doesn't need a
                   second entry point when the row already swipes to remove
@@ -524,7 +542,11 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
             </>
           )}
         </View>
-        <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+        <Link href={`/rank?restaurant=${ranking.restaurant.id}`} asChild>
+          <Pressable accessibilityRole="button" accessibilityLabel="Rankear otra vez">
+            <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+          </Pressable>
+        </Link>
       </View>
     </SwipeToRemove>
   )
@@ -556,16 +578,28 @@ function ActionText({
   )
 }
 
-function BarriosView({ rankings }: { rankings: Ranking[] }) {
+function BarriosView({
+  rankings,
+  onSelectSector,
+}: { rankings: Ranking[]; onSelectSector: (sector: string) => void }) {
   const router = useRouter()
-  const byHood = new Map<string, { count: number; sum: number }>()
+  // Keyed by the RAW neighborhood (nullable), not the display fallback — the
+  // filter system (lib/rankingSort.ts) matches `filters.sector` against
+  // `r.neighborhood` directly, so a bar's tap payload has to be that same raw
+  // value. The one bucket with no real neighborhood ("Santo Domingo") stays
+  // inert: there's no filter value that means "unset."
+  const byHood = new Map<string | null, { count: number; sum: number }>()
   for (const r of rankings) {
-    const hood = r.neighborhood ?? 'Santo Domingo'
-    const cur = byHood.get(hood) ?? { count: 0, sum: 0 }
-    byHood.set(hood, { count: cur.count + 1, sum: cur.sum + r.score })
+    const cur = byHood.get(r.neighborhood) ?? { count: 0, sum: 0 }
+    byHood.set(r.neighborhood, { count: cur.count + 1, sum: cur.sum + r.score })
   }
   const hoods = [...byHood.entries()]
-    .map(([name, v]) => ({ name, count: v.count, avg: v.sum / v.count }))
+    .map(([neighborhood, v]) => ({
+      neighborhood,
+      name: neighborhood ?? 'Santo Domingo',
+      count: v.count,
+      avg: v.sum / v.count,
+    }))
     .sort((a, b) => b.count - a.count)
   const max = hoods[0]?.count ?? 1
   if (hoods.length === 0)
@@ -582,25 +616,38 @@ function BarriosView({ rankings }: { rankings: Ranking[] }) {
     )
   return (
     <View className="gap-4">
-      {hoods.map((h) => (
-        <View key={h.name}>
-          <View className="flex-row items-baseline justify-between">
-            <Text className="font-serif text-serif-md text-text">{h.name}</Text>
-            <Caption>
-              {h.count} · prom.{' '}
-              <Text style={DATA_FIGURES} className="text-accent">
-                {displayScore(h.avg)}
-              </Text>
-            </Caption>
-          </View>
-          <View className="mt-1 h-1 rounded-pill bg-bg-sunk">
-            <View
-              className="h-1 rounded-pill bg-accent-fill"
-              style={{ width: `${(h.count / max) * 100}%` }}
-            />
-          </View>
-        </View>
-      ))}
+      {hoods.map((h) => {
+        const bar = (
+          <>
+            <View className="flex-row items-baseline justify-between">
+              <Text className="font-serif text-serif-md text-text">{h.name}</Text>
+              <Caption>
+                {h.count} · prom.{' '}
+                <Text style={DATA_FIGURES} className="text-accent">
+                  {displayScore(h.avg)}
+                </Text>
+              </Caption>
+            </View>
+            <View className="mt-1 h-1 rounded-pill bg-bg-sunk">
+              <View
+                className="h-1 rounded-pill bg-accent-fill"
+                style={{ width: `${(h.count / max) * 100}%` }}
+              />
+            </View>
+          </>
+        )
+        if (!h.neighborhood) return <View key={h.name}>{bar}</View>
+        return (
+          <Pressable
+            key={h.name}
+            accessibilityRole="button"
+            onPress={() => onSelectSector(h.neighborhood as string)}
+            className="active:opacity-70"
+          >
+            {bar}
+          </Pressable>
+        )
+      })}
     </View>
   )
 }
@@ -621,14 +668,16 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
   return (
     <SwipeToRemove onRemove={() => remove.mutate()}>
       <View className="flex-row items-center justify-between border-b border-line py-3">
-        <View className="flex-1 pr-3">
-          <Text className="font-serif text-serif-md text-text">{saved.restaurant.name}</Text>
-          <Characteristics
-            priceTier={saved.restaurant.priceTier}
-            cuisine={saved.restaurant.cuisine}
-            neighborhood={saved.neighborhood}
-          />
-        </View>
+        <Link href={`/r/${saved.restaurant.id}`} asChild>
+          <Pressable accessibilityRole="button" className="flex-1 pr-3 active:opacity-80">
+            <Text className="font-serif text-serif-md text-text">{saved.restaurant.name}</Text>
+            <Characteristics
+              priceTier={saved.restaurant.priceTier}
+              cuisine={saved.restaurant.cuisine}
+              neighborhood={saved.neighborhood}
+            />
+          </Pressable>
+        </Link>
         <View className="flex-none flex-row items-center gap-3">
           <Button
             variant="secondary"

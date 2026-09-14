@@ -9,7 +9,7 @@ import { timeAgo } from '@/lib/time'
 import type { ModerationReport } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { Redirect, Stack } from 'expo-router'
+import { Redirect, Stack, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The moderation queue (App Store 1.2). Until this screen existed, a member
@@ -132,6 +132,7 @@ function ReportRow({
   busy: boolean
   onAct: (action: 'remove' | 'dismiss') => void
 }) {
+  const router = useRouter()
   const t = report.target
   return (
     <View className="mb-3 rounded border border-line bg-surface p-4">
@@ -148,11 +149,24 @@ function ReportRow({
           El contenido ya no existe. Descarta el reporte.
         </Caption>
       ) : t.kind === 'vibe_note' ? (
-        <Text selectable className="mt-2 font-serif-italic text-serif-sm text-text-2">
-          “{t.body}”
-        </Text>
+        // A moderator deciding whether to remove a note previously had no way
+        // to see who wrote it — their other rankings, prior reports — without
+        // leaving the queue and hand-searching for them.
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/u/${t.userId}`)}
+          className="mt-2 active:opacity-70"
+        >
+          <Text selectable className="font-serif-italic text-serif-sm text-text-2">
+            “{t.body}”
+          </Text>
+        </Pressable>
       ) : t.kind === 'dish' ? (
-        <View className="mt-2 flex-row items-center gap-3">
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/dish/${report.targetId}`)}
+          className="mt-2 flex-row items-center gap-3 active:opacity-70"
+        >
           <Image
             source={{ uri: cloudinaryUrl(t.imageId, { w: 200, h: 200 }) ?? undefined }}
             style={{ width: 56, height: 56, borderRadius: 10 }}
@@ -166,12 +180,20 @@ function ReportRow({
               </Text>
             ) : null}
           </View>
-        </View>
+        </Pressable>
       ) : (
-        <Text className="mt-2 font-ui text-body text-text">
-          {t.name}
-          {t.handle ? <Text className="font-mono text-label text-text-2"> @{t.handle}</Text> : null}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/u/${report.targetId}`)}
+          className="mt-2 active:opacity-70"
+        >
+          <Text className="font-ui text-body text-text">
+            {t.name}
+            {t.handle ? (
+              <Text className="font-mono text-label text-text-2"> @{t.handle}</Text>
+            ) : null}
+          </Text>
+        </Pressable>
       )}
 
       <Caption className="mt-2">

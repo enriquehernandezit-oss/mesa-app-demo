@@ -35,7 +35,7 @@ export interface ModerationReport {
   status: 'open' | 'reviewing' | 'actioned' | 'dismissed'
   createdAt: string
   target:
-    | { kind: 'vibe_note'; body: string }
+    | { kind: 'vibe_note'; body: string; userId: string }
     | { kind: 'dish'; name: string; caption: string | null; imageId: string }
     | { kind: 'user'; name: string; handle: string | null }
     | null
@@ -60,6 +60,16 @@ export interface SuggestedUser {
   neighborhood?: string | null
   followerCount?: number
   rankedCount?: number // "41 ranked · Piantini" on start-with-these rows
+}
+
+// GET /social/followers and /following — a member row in someone's graph.
+export interface FollowUser {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  neighborhood: string | null
+  isFollowing: boolean
 }
 
 export interface RankedRestaurant {

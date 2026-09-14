@@ -36,7 +36,7 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useRouter } from 'expo-router'
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 
@@ -73,8 +73,14 @@ export default function ExploreScreen() {
   const c = themeColors[theme]
   const accent = useColor('accent')
   const [q, setQ] = useState('')
-  const [hood, setHood] = useState<string | null>(null)
-  const [cuisine, setCuisine] = useState<string | null>(null)
+  // Seeds the filter panel from a deep link — the restaurant profile's
+  // neighborhood tap lands here with `?neighborhood=<slug>` already applied,
+  // for instance. Read once on mount; the filter chips own the state after
+  // that (a later navigation to /explore with new params re-mounts the
+  // screen, so this isn't stale).
+  const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string }>()
+  const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
+  const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [occasion, setOccasion] = useState<string | null>(null)

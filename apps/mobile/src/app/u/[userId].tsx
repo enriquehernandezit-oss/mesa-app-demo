@@ -21,8 +21,8 @@ import { tagLabel } from '@/lib/display'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Another person's ranked passport (mock E2) — and the surface where UGC
@@ -37,6 +37,15 @@ export default function UserRankings() {
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
+
+  // "Rankeados" in the stats trio jumps straight to the list below — expand it
+  // (it's capped at 4 otherwise) and scroll it into view in one tap.
+  const scrollRef = useRef<ScrollView>(null)
+  const rankingsY = useRef(0)
+  const jumpToRankings = () => {
+    setExpanded(true)
+    scrollRef.current?.scrollTo({ y: rankingsY.current, animated: true })
+  }
 
   const q = useQuery({
     queryKey: ['user-rankings', userId],
@@ -125,7 +134,11 @@ export default function UserRankings() {
   return (
     <View className="flex-1 bg-bg">
       <ScreenHeader onBack={goBack} backLabel={user.name || user.handle || 'Atrás'} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+      <ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-10"
+      >
         <View className="items-center gap-1">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
           {user.handle ? (
@@ -134,9 +147,14 @@ export default function UserRankings() {
           {barrio ? <Caption>{barrio}</Caption> : null}
           {matchPercent != null && (
             <View className="mt-2 items-center gap-1">
-              <Chip size="sm" state="selected">
-                +{matchPercent}% de gustos en común
-              </Chip>
+              {/* Styled like a selected Chip but isn't one — a match % names a
+                  fact about this pair, it doesn't open or toggle anything, and
+                  a Chip everywhere else in the app IS a control. */}
+              <View className="min-h-[36px] justify-center rounded-pill bg-accent-fill px-3">
+                <Text className="font-ui-medium text-label text-on-accent">
+                  +{matchPercent}% de gustos en común
+                </Text>
+              </View>
               {/* The denominator behind the percentage — a match with no shared
                   count is the least trustworthy way to show a number. */}
               <Caption className="font-mono text-micro">sobre {sharedCount} spots en común</Caption>
@@ -145,9 +163,17 @@ export default function UserRankings() {
 
           {/* Same trio as your own profile — the passport is the same object. */}
           <View className="mt-4 flex-row justify-around self-stretch">
-            <Stat n={String(followerCount)} l="Seguidores" />
-            <Stat n={String(followingCount)} l="Siguiendo" />
-            <Stat n={String(rankings.length)} l="Rankeados" />
+            <Stat
+              n={String(followerCount)}
+              l="Seguidores"
+              onPress={() => router.push(`/people/${userId}?tab=followers`)}
+            />
+            <Stat
+              n={String(followingCount)}
+              l="Siguiendo"
+              onPress={() => router.push(`/people/${userId}?tab=following`)}
+            />
+            <Stat n={String(rankings.length)} l="Rankeados" onPress={jumpToRankings} />
           </View>
 
           <View className="mt-4 flex-row items-center gap-3">
@@ -199,25 +225,36 @@ export default function UserRankings() {
         {rankings.length === 0 ? (
           <EmptyState>Todavía no hay rankings.</EmptyState>
         ) : (
-          <>
-            <SectionHeader action={<Caption>Todos {rankings.length}</Caption>}>
+          <View
+            onLayout={(e) => {
+              rankingsY.current = e.nativeEvent.layout.y
+            }}
+          >
+            {/* One expand control instead of two: the header used to show an
+                inert "Todos N" caption while a second, separate Pressable
+                below did the actual expanding — same information, only one of
+                the two worked. */}
+            <SectionHeader
+              action={
+                rankings.length > 4 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setExpanded((v) => !v)}
+                    className="min-h-[44px] justify-center active:opacity-60"
+                  >
+                    <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
+                      {expanded ? 'Mostrar menos' : `Todos ${rankings.length}`}
+                    </Text>
+                  </Pressable>
+                ) : undefined
+              }
+            >
               Los favoritos de {firstName}
             </SectionHeader>
             {shown.map((r) => (
               <TheirRow key={r.id} ranking={r} />
             ))}
-            {rankings.length > 4 && (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setExpanded((v) => !v)}
-                className="min-h-[44px] justify-center active:opacity-60"
-              >
-                <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                  {expanded ? 'Mostrar menos' : `Ver los ${rankings.length} ›`}
-                </Text>
-              </Pressable>
-            )}
-          </>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -226,39 +263,47 @@ export default function UserRankings() {
 
 function TheirRow({ ranking }: { ranking: TheirRanking }) {
   return (
-    <View className="flex-row gap-3 border-line border-b py-3">
-      <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
-        {ranking.position}
-      </Text>
-      <View className="flex-1">
-        <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
-        <Characteristics
-          priceTier={ranking.restaurant.priceTier}
-          cuisine={ranking.restaurant.cuisine}
-          neighborhood={ranking.neighborhood}
-        />
-        {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && (
-          <View className="mt-1 flex-row flex-wrap items-center gap-2">
-            {ranking.favoriteDish && (
-              <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
-            )}
-            {(ranking.tags ?? []).map((t) => (
-              <Caption key={t} className="font-mono text-micro">
-                {tagLabel(t)}
-              </Caption>
-            ))}
-          </View>
-        )}
-        {ranking.note ? (
-          <Text selectable className="mt-1 font-serif-italic text-serif-sm text-text-2">
-            “{ranking.note}”
-          </Text>
-        ) : null}
-        {ranking.note && ranking.noteId ? (
-          <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
-        ) : null}
-      </View>
-      <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
-    </View>
+    <Link href={`/r/${ranking.restaurant.id}`} asChild>
+      <Pressable
+        accessibilityRole="button"
+        className="flex-row gap-3 border-line border-b py-3 active:opacity-80"
+      >
+        <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
+          {ranking.position}
+        </Text>
+        <View className="flex-1">
+          <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
+          <Characteristics
+            priceTier={ranking.restaurant.priceTier}
+            cuisine={ranking.restaurant.cuisine}
+            neighborhood={ranking.neighborhood}
+          />
+          {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && (
+            <View className="mt-1 flex-row flex-wrap items-center gap-2">
+              {ranking.favoriteDish && (
+                <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+              )}
+              {(ranking.tags ?? []).map((t) => (
+                <Caption key={t} className="font-mono text-micro">
+                  {tagLabel(t)}
+                </Caption>
+              ))}
+            </View>
+          )}
+          {ranking.note ? (
+            <Text selectable className="mt-1 font-serif-italic text-serif-sm text-text-2">
+              “{ranking.note}”
+            </Text>
+          ) : null}
+          {/* Nested Pressable inside the row's own Link is fine in RN (unlike
+              Link-in-Link, which has its own gesture-machinery bug — see the
+              feed card's comment on the same fix). */}
+          {ranking.note && ranking.noteId ? (
+            <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
+          ) : null}
+        </View>
+        <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+      </Pressable>
+    </Link>
   )
 }

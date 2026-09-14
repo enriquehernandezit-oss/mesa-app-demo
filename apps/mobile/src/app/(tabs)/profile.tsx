@@ -213,9 +213,21 @@ export default function ProfileTab() {
             the whole header shifting down; hidden only on a genuine error. */}
         {!stats.isError && (
           <View className="mt-5 flex-row justify-around">
-            <Stat n={stats.data ? String(stats.data.followers) : '—'} l="Seguidores" />
-            <Stat n={stats.data ? String(stats.data.following) : '—'} l="Siguiendo" />
-            <Stat n={stats.data ? String(stats.data.places) : '—'} l="Rankeados" />
+            <Stat
+              n={stats.data ? String(stats.data.followers) : '—'}
+              l="Seguidores"
+              onPress={() => router.push(`/people/${p?.id}?tab=followers`)}
+            />
+            <Stat
+              n={stats.data ? String(stats.data.following) : '—'}
+              l="Siguiendo"
+              onPress={() => router.push(`/people/${p?.id}?tab=following`)}
+            />
+            <Stat
+              n={stats.data ? String(stats.data.places) : '—'}
+              l="Rankeados"
+              onPress={() => router.push('/rankings')}
+            />
           </View>
         )}
 
@@ -256,6 +268,7 @@ export default function ProfileTab() {
               value={
                 stats.data ? (stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—') : '—'
               }
+              onPress={() => router.push('/leaderboard')}
             />
             <StatCard
               label="Racha actual"
@@ -298,14 +311,30 @@ function NavRow({
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1 rounded border border-line bg-surface p-4">
+function StatCard({
+  label,
+  value,
+  onPress,
+}: { label: string; value: string; onPress?: () => void }) {
+  const body = (
+    <>
       <Caption className="font-mono text-micro">{label}</Caption>
       <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-md text-accent">
         {value}
       </Text>
-    </View>
+    </>
+  )
+  if (!onPress) {
+    return <View className="flex-1 rounded border border-line bg-surface p-4">{body}</View>
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      className="flex-1 rounded border border-line bg-surface p-4 active:opacity-70"
+    >
+      {body}
+    </Pressable>
   )
 }
 

@@ -1,4 +1,5 @@
 import { CheersButton } from '@/components/CheersButton'
+import { PersonRow } from '@/components/PersonRow'
 import { pickReportReason } from '@/components/ReportControl'
 import { TopBar } from '@/components/TopBar'
 import {
@@ -183,29 +184,20 @@ function EmptyFeed() {
 function SuggestedRow({ user: u }: { user: SuggestedUser }) {
   const { following, toggle, pending } = useFollow(u.id, false, 'empty_feed')
   return (
-    <View className="flex-row items-center gap-3 border-line border-b py-3">
-      <Link href={`/u/${u.id}`} asChild>
-        <Pressable className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80">
-          <Avatar name={u.name || u.handle || 'm'} src={u.image} size={40} />
-          <View className="min-w-0 flex-1">
-            <Text className="font-ui-medium text-body text-text" numberOfLines={1}>
-              {u.name || u.handle}
-            </Text>
-            <Caption numberOfLines={1}>
-              {[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
-            </Caption>
-          </View>
-        </Pressable>
-      </Link>
-      <Button
-        variant="secondary"
-        className="w-auto min-h-[40px] px-4"
-        onPress={toggle}
-        disabled={pending}
-      >
-        {following ? 'Siguiendo' : 'Seguir'}
-      </Button>
-    </View>
+    <PersonRow
+      user={u}
+      subtitle={[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
+      right={
+        <Button
+          variant="secondary"
+          className="w-auto min-h-[40px] px-4"
+          onPress={toggle}
+          disabled={pending}
+        >
+          {following ? 'Siguiendo' : 'Seguir'}
+        </Button>
+      }
+    />
   )
 }
 
@@ -362,11 +354,19 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
         </Link>
         <View className="p-4">
           {who('publicó un plato', 24)}
-          <Text className="mt-2 font-serif text-serif-md text-text">
-            {item.dishName || item.restaurant.name}
-          </Text>
-          {chars}
-          <Caption className="mt-1 font-mono text-micro">#{item.position} en su lista</Caption>
+          <Link href={`/r/${item.restaurant.id}`} asChild>
+            <Pressable accessibilityRole="button" className="mt-2 active:opacity-80">
+              <Text className="font-serif text-serif-md text-text">
+                {item.dishName || item.restaurant.name}
+              </Text>
+              {chars}
+            </Pressable>
+          </Link>
+          <Link href={`/u/${item.user.id}`} asChild>
+            <Pressable accessibilityRole="button" className="mt-1 self-start active:opacity-70">
+              <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
+            </Pressable>
+          </Link>
           <CheersButton
             rankingId={item.rankingId}
             count={item.cheersCount ?? 0}
