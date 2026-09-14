@@ -13,17 +13,25 @@ import { View } from 'react-native'
 // The four-tab shell. Self-guards: if the session is lost or the account is
 // ejected, redirect straight to sign-in (this is what makes sign-out reactive).
 //
-// The bar is the REAL UITabBar (expo-router's NativeTabs), so iOS gives us the
-// things a JS bar can only imitate: the Liquid Glass material, the scroll-edge
-// treatment, minimize-on-scroll, system re-press scroll-to-top, and badges.
-// Mesa's identity rides through the props native chrome exposes — brass tint and
-// the app's own UI face on the labels.
+// SHIPPED: MesaTabBar (NATIVE_TABS = false). The REAL UITabBar (expo-router's
+// NativeTabs, kept below as NativeShell) was tried first for the raised center
+// "+": it gives iOS's own Liquid Glass material, scroll-edge treatment,
+// minimize-on-scroll, system re-press scroll-to-top, and badges for free. Two
+// things it can't do killed it: no exposed way to render one item's icon at a
+// larger point size than its siblings (checked react-native-screens' full
+// native prop list — icon *color* is overridable, size isn't), and its
+// "scroll edge" transparency needs an explicit opt-out that still read as
+// translucent against real content on-device. Instagram and TikTok's own
+// raised center buttons are plain overlays on the native bar for exactly this
+// reason (bigger button = leave the constrained native item system).
+// MesaTabBar is that same move, done as a full custom bar instead of an
+// overlay, since it also fixes the transparency for free (it's a plain View).
 //
-// NativeTabs is still an unstable API. `NATIVE_TABS` is the escape hatch: flip it
-// to false and the shipped custom MesaTabBar comes back untouched, no other edit.
-// (The custom bar's own center "+" already matches this one — see the `add`
-// trigger below for how the native path does the same thing.)
-const NATIVE_TABS = true
+// `NATIVE_TABS` stays as the escape hatch — NativeTabs may mature past these
+// limits, and it's a one-line revert back to it if the custom bar needs to
+// go. Keep both paths' center "+" behavior (haptic, re-entrancy guard) in
+// sync if either changes.
+const NATIVE_TABS = false
 
 export default function TabsLayout() {
   const authLost = useAuthLost()
@@ -70,6 +78,12 @@ function NativeShell() {
         // dark ground. Same c.bg the utility header bars already use, so the
         // tab bar and a pushed screen's nav bar are the same solid chrome.
         backgroundColor={c.bg}
+        // Without this, iOS 26's "scroll edge" treatment overrides
+        // backgroundColor and goes translucent whenever content is scrolled
+        // to the top — confirmed live, not just a screenshot artifact — which
+        // is exactly the "invisible bar" backgroundColor above is there to
+        // prevent. Keeps the bar solid regardless of scroll position.
+        disableTransparentOnScrollEdge
         minimizeBehavior="onScrollDown"
         badgeBackgroundColor={c['status-packed']}
         badgeTextColor={c['on-accent']}
@@ -137,8 +151,6 @@ function NativeShell() {
   )
 }
 
-// The pre-native bar, kept whole behind NATIVE_TABS so a bad device report is a
-// one-line revert rather than a re-port.
 function CustomShell() {
   return (
     <View className="flex-1 bg-bg">
@@ -148,6 +160,11 @@ function CustomShell() {
       >
         <Tabs.Screen name="discover" />
         <Tabs.Screen name="explore" />
+        {/* app/(tabs)/add.tsx exists only so NativeShell's "add" trigger has a
+            matching route file — inert here too, and excluded from this
+            navigator's own route list the documented way so it can't become
+            reachable through it (deep link, swipe, etc). */}
+        <Tabs.Screen name="add" options={{ href: null }} />
         <Tabs.Screen name="rankings" />
         <Tabs.Screen name="profile" />
       </Tabs>

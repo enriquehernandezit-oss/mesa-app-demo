@@ -40,7 +40,7 @@ section). In practice that means these are real system components, not styled
 
 | Surface | Built on |
 | --- | --- |
-| Tab bar | `expo-router/unstable-native-tabs`, 5 items: 4 real tabs + a center `disabled` trigger (`plus.circle.fill`) that opens the rank flow via its `tabPress` listener (`isPrevented: true`) instead of navigating. **Unstable API** — `(tabs)/_layout.tsx` keeps the previous custom bar behind a `NATIVE_TABS` flag; flip it to `false` if a device report is bad. |
+| Tab bar | `components/MesaTabBar.tsx` — a Mesa-drawn bar, not native chrome. Tried `expo-router/unstable-native-tabs` first (kept in `(tabs)/_layout.tsx` as `NativeShell`, behind the `NATIVE_TABS` flag) for its free Liquid Glass/minimize-on-scroll/badges, but it has no way to render one tab's icon larger than its neighbors and its scroll-edge transparency stayed visible against real content even with the opt-out set — the same reason Instagram/TikTok's raised center buttons are plain overlays, not native tab items. MesaTabBar's raised brass "+" solves both by just being a normal `View`. |
 | Navigation bars | native-stack `headerLargeTitle` + `headerBlurEffect`, with Mesa's serif via `headerTitleStyle`. Utility screens only; content screens stay immersive. |
 | Search (Explore) | `headerSearchBarOptions` — which is why Explore has its own nested Stack. |
 | Sheets, alerts, confirms | `ActionSheetIOS` through `lib/actionSheet.ts`. Every call is told the **resolved** theme explicitly. |
