@@ -176,8 +176,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
           <View className="items-center">
             <Eyebrow className="font-mono text-accent-strong">Revolución gastronómica</Eyebrow>
             <View className="flex-row items-baseline">
-              <Eyebrow className="font-mono text-accent-strong">Primer </Eyebrow>
-              <SerifItalic className="text-serif-sm text-text">objetivo: SDQ</SerifItalic>
+              <SerifItalic className="text-serif-sm text-text">Primer objetivo: SDQ</SerifItalic>
               <BlinkingCursor />
             </View>
           </View>

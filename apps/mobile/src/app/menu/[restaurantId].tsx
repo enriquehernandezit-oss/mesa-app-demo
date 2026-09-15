@@ -1,16 +1,7 @@
-import {
-  Caption,
-  Chip,
-  ChipRail,
-  EmptyState,
-  ErrorState,
-  Eyebrow,
-  RowsSkeleton,
-} from '@/components/ui'
+import { Caption, Chip, EmptyState, ErrorState, Eyebrow, RowsSkeleton } from '@/components/ui'
 import { api } from '@/lib/api'
 import { dateLocale, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
-import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -73,7 +64,19 @@ export default function RestaurantMenuScreen() {
   return (
     <View className="flex-1 bg-bg">
       {sections.length > 1 ? (
-        <ChipRail className="border-line border-b bg-bg px-5 py-2">
+        // Not the shared ChipRail here: as the first child above the flex-1
+        // content ScrollView (no sibling to size against), its row-direction
+        // cross-axis stretch default blew each Chip up to fill the whole
+        // remaining screen. A NativeWind h-[] class on the ScrollView didn't
+        // stop it — the fix needs a real style height plus alignItems on the
+        // content container, not just a className, to actually pin it down.
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ height: 52 }}
+          className="-mx-5 border-line border-b bg-bg px-5"
+          contentContainerClassName="flex-row items-center gap-2 px-5"
+        >
           {sections.map((s, i) => (
             <Chip
               key={s.name}
@@ -84,7 +87,7 @@ export default function RestaurantMenuScreen() {
               {s.name}
             </Chip>
           ))}
-        </ChipRail>
+        </ScrollView>
       ) : null}
       <ScrollView
         ref={scrollRef}
@@ -116,32 +119,17 @@ export default function RestaurantMenuScreen() {
             </Text>
           </View>,
           <View key={`b-${s.name}`}>
+            {/* Prices deliberately not shown — they drift with time and a
+                stale price reads worse than no price at all. The data is
+                still fetched/stored (see docs/MENUS.md); this is a display
+                decision only. */}
             {s.items.map((item) => (
-              <View
-                key={item.id}
-                className="flex-row items-start gap-3 border-line border-b py-2.5"
-              >
-                <View className="flex-1">
-                  <Text
-                    className="font-ui text-body text-text"
-                    accessibilityLabel={
-                      item.priceCents != null && item.currency
-                        ? `${item.name}, ${formatPrice(item.priceCents, item.currency)}`
-                        : item.name
-                    }
-                  >
-                    {item.name}
-                  </Text>
-                  {item.description ? (
-                    <Caption numberOfLines={2} className="mt-0.5 text-text-2">
-                      {item.description}
-                    </Caption>
-                  ) : null}
-                </View>
-                {item.priceCents != null && item.currency ? (
-                  <Text style={DATA_FIGURES} className="font-mono text-label text-accent">
-                    {formatPrice(item.priceCents, item.currency)}
-                  </Text>
+              <View key={item.id} className="border-line border-b py-2.5">
+                <Text className="font-ui text-body text-text">{item.name}</Text>
+                {item.description ? (
+                  <Caption numberOfLines={2} className="mt-0.5 text-text-2">
+                    {item.description}
+                  </Caption>
                 ) : null}
               </View>
             ))}
@@ -150,12 +138,4 @@ export default function RestaurantMenuScreen() {
       </ScrollView>
     </View>
   )
-}
-
-function formatPrice(priceCents: number, currency: string): string {
-  return new Intl.NumberFormat(dateLocale(), {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: priceCents % 100 === 0 ? 0 : 2,
-  }).format(priceCents / 100)
 }

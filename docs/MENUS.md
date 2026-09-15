@@ -16,10 +16,10 @@ entire job.
 | `restaurantId` | FK to `restaurants`, cascade delete |
 | `section` | e.g. "Appetizers" — section order is each section's first-appearance order, not alphabetical |
 | `name`, `description` | as supplied; never translated, shown exactly as given |
-| `priceCents` | integer — `Math.round(price * 100)`, never a float. This is what lets a price like 460.20 round-trip exactly instead of drifting |
+| `priceCents` | integer — `Math.round(price * 100)`, never a float. Stored but **not displayed** (founder decision: prices drift too fast to keep accurate, a stale price reads worse than no price) — still worth capturing honestly in case that changes |
 | `currency` | `DOP` or `USD`, per item — a single menu can mix currencies (e.g. a US-priced import item next to DOP-priced local dishes) |
 | `sourceRef` | free text or a URL; **never rendered as a link** in the app |
-| `verifiedAt` | the real date the price was checked — drives the "Prices verified · {date}" caption. Leave `null` if you don't actually know |
+| `verifiedAt` | the real date the menu was checked — drives the "Menú verificado · {date}" caption. Leave `null` if you don't actually know |
 | `position` | sequential per restaurant, preserving section order then item order within it |
 
 `GET /restaurants/:id` reports `hasMenu` (`menu_items` count > 0 for that id,

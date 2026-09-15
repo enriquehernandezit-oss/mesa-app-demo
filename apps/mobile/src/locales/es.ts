@@ -474,7 +474,7 @@ export const es = {
   'restaurant.menu_title': 'Menú',
   'restaurant.menu_load_error': 'No se pudo cargar el menú.',
   'restaurant.menu_empty': 'Este lugar aún no tiene menú.',
-  'restaurant.menu_verified_on': 'Precios verificados · {date}',
+  'restaurant.menu_verified_on': 'Menú verificado · {date}',
   'restaurant.by_name': 'por {name}',
 
   // app/onboarding.tsx

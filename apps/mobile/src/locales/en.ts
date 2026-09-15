@@ -429,7 +429,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.menu_title': 'Menu',
   'restaurant.menu_load_error': "Couldn't load the menu.",
   'restaurant.menu_empty': "This place doesn't have a menu yet.",
-  'restaurant.menu_verified_on': 'Prices verified · {date}',
+  'restaurant.menu_verified_on': 'Menu verified · {date}',
   'restaurant.by_name': 'by {name}',
 
   'onboarding.step_progress': 'Step {step} of {total} · build your starter list',
