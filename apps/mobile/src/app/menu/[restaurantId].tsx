@@ -2,6 +2,7 @@ import { Caption, Chip, EmptyState, ErrorState, Eyebrow, RowsSkeleton } from '@/
 import { api } from '@/lib/api'
 import { dateLocale, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -20,6 +21,9 @@ export default function RestaurantMenuScreen() {
     name ??
     queryClient.getQueryData<{ restaurant: { name: string } }>(['restaurant', restaurantId])
       ?.restaurant.name
+
+  const bg = useColor('bg')
+  const line = useColor('line')
 
   const q = useQuery({
     queryKey: ['menu', restaurantId],
@@ -67,15 +71,28 @@ export default function RestaurantMenuScreen() {
         // Not the shared ChipRail here: as the first child above the flex-1
         // content ScrollView (no sibling to size against), its row-direction
         // cross-axis stretch default blew each Chip up to fill the whole
-        // remaining screen. A NativeWind h-[] class on the ScrollView didn't
-        // stop it — the fix needs a real style height plus alignItems on the
-        // content container, not just a className, to actually pin it down.
+        // remaining screen. Neither a NativeWind h-[] class NOR a `style`
+        // height prop alongside a `className` on the same ScrollView fixed
+        // it — NativeWind's class-derived style was winning over the inline
+        // one. Every layout-critical property here is plain `style`/
+        // `contentContainerStyle` with no `className` in the mix at all, so
+        // there's nothing for NativeWind to override.
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ height: 52 }}
-          className="-mx-5 border-line border-b bg-bg px-5"
-          contentContainerClassName="flex-row items-center gap-2 px-5"
+          style={{
+            height: 52,
+            marginHorizontal: -20,
+            backgroundColor: bg,
+            borderBottomWidth: 1,
+            borderBottomColor: line,
+          }}
+          contentContainerStyle={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            paddingHorizontal: 20,
+          }}
         >
           {sections.map((s, i) => (
             <Chip
