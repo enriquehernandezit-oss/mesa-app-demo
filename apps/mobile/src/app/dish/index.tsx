@@ -11,6 +11,7 @@ import {
 } from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
+import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
@@ -18,6 +19,7 @@ import { type Grain, grainLabel, grainOptions } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
+import { usePreventRemove } from '@/lib/preventRemove'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -57,7 +59,8 @@ export default function DishCompose() {
   const [name, setName] = useState('')
   const [caption, setCaption] = useState('')
   const [friendsOnly, setFriendsOnly] = useState(true)
-  const posted = useRef(false)
+  const [posted, setPosted] = useState(false)
+  const goneRef = useRef(false)
   const captionRef = useRef<TextInput>(null)
 
   const post = useMutation({
@@ -73,12 +76,11 @@ export default function DishCompose() {
     },
     onSuccess: () => {
       track('dish_posted', { grain, friendsOnly })
-      posted.current = true
+      setPosted(true)
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
-      goBack()
     },
     onError: (err) => {
       captureError(err, 'dish.post')
@@ -90,16 +92,31 @@ export default function DishCompose() {
     },
   })
 
-  // Hardware back / edge-swipe at step 2 unwinds to the photo step instead of
-  // leaving the composer (mirrors RankAPlace's beforeRemove guard).
+  // Leaves once a post succeeds — done in an effect, not inline in onSuccess,
+  // so the render that flips `posted` to true (and so `dirty` to false) lands
+  // before goBack() asks the navigator to remove the screen; calling it
+  // synchronously in onSuccess would still see the OLD `dirty=true` closure
+  // usePreventRemove registered for this render and block its own exit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot on `posted`; goBack is stable enough (router + a route param) not to need retriggering this.
   useEffect(() => {
-    const sub = navigation.addListener('beforeRemove', (e) => {
-      if (step !== 'details' || posted.current) return
-      e.preventDefault()
-      setStep('photo')
+    if (posted && !goneRef.current) {
+      goneRef.current = true
+      goBack()
+    }
+  }, [posted])
+
+  // Swipe-down-to-dismiss (and Android hardware back) closes the composer
+  // outright once nothing's been entered; the step-2 BackBar already steps
+  // back to the photo step on its own (line ~208).
+  const dirty = !posted && (image !== null || caption.trim() !== '')
+  usePreventRemove(dirty, ({ data }) => {
+    showActionSheet({
+      title: t('dish.discard_title'),
+      options: [{ label: t('dish.discard_button'), destructive: true }],
+    }).then((idx) => {
+      if (idx === 0) navigation.dispatch(data.action)
     })
-    return sub
-  }, [navigation, step])
+  })
 
   // One tap target, one system chooser — the screen used to have two separate
   // entry points (a "Cámara" header button and the box for the library), which

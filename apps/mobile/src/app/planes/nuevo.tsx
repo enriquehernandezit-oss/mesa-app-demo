@@ -23,12 +23,13 @@ import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
+import { usePreventRemove } from '@/lib/preventRemove'
 import { dayChipLabel, timeChipLabel } from '@/lib/time'
 import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigation, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -108,29 +109,18 @@ export default function NuevaMesa() {
     setStep(STEP_ORDER[STEP_ORDER.indexOf(step) - 1])
   }
 
-  // Physical back (edge-swipe, hardware back, drag-to-dismiss on this modal)
-  // unwinds one step at a time instead of leaving outright; only once
-  // something has actually been picked does leaving from the first step ask
-  // for confirmation — an empty flow can just close. Same beforeRemove
-  // pattern as rank.tsx's multi-step flow.
-  useEffect(() => {
-    const sub = navigation.addListener('beforeRemove', (e) => {
-      if (step !== 'spots') {
-        e.preventDefault()
-        setStep(STEP_ORDER[STEP_ORDER.indexOf(step) - 1])
-        return
-      }
-      if (spots.length === 0) return
-      e.preventDefault()
-      showActionSheet({
-        title: t('plans.discard_title'),
-        options: [{ label: t('plans.discard_button'), destructive: true }],
-      }).then((idx) => {
-        if (idx === 0) navigation.dispatch(e.data.action)
-      })
+  // Swipe-down-to-dismiss (and Android hardware back) closes the modal
+  // outright rather than stepping back one step — the visible BackBar above
+  // already does the stepping, on every step. An empty flow (no spot picked
+  // yet) just closes; once a spot is picked, confirm before throwing it away.
+  usePreventRemove(spots.length > 0, ({ data }) => {
+    showActionSheet({
+      title: t('plans.discard_title'),
+      options: [{ label: t('plans.discard_button'), destructive: true }],
+    }).then((idx) => {
+      if (idx === 0) navigation.dispatch(data.action)
     })
-    return sub
-  }, [navigation, step, spots.length, t])
+  })
 
   const debouncedQ = useDebounced(query.trim(), 300)
   const results = useQuery({

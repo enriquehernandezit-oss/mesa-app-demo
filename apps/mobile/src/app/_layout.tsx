@@ -175,13 +175,16 @@ function MesaStack() {
       <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
 
-      {/* These three scroll horizontal rails/swipe-rows that reach the screen
-          edge (similar-spots rail, ranking-row swipe-to-remove, list-detail
-          rows). The global edge-anywhere back-swipe above would fight a
-          horizontal drag that starts near the edge, so it's off here and these
-          fall back to the standard left-edge-only swipe. */}
-      <Stack.Screen name="r/[restaurantId]" options={{ fullScreenGestureEnabled: false }} />
-      <Stack.Screen name="u/[userId]" options={{ fullScreenGestureEnabled: false }} />
+      {/* r/[restaurantId] has a horizontal similar-spots rail near the screen
+          edge; react-native-screens' iOS full-screen swipe already lets a
+          horizontal ScrollView claim the drag before starting the back
+          gesture, so no override is needed here. */}
+      <Stack.Screen name="r/[restaurantId]" />
+      <Stack.Screen name="u/[userId]" />
+      <Stack.Screen
+        name="menu/[restaurantId]"
+        options={{ ...utility, headerLargeTitle: false, title: t('restaurant.menu_title') }}
+      />
 
       <Stack.Screen name="settings" options={{ ...utility, title: t('nav.settings') }} />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
@@ -197,7 +200,7 @@ function MesaStack() {
       <Stack.Screen name="moderation" options={{ ...utility, title: t('nav.moderation') }} />
       {/* Titles for these two are set by the screens themselves once the data
           (a list's name, a legal doc's name) is known. */}
-      <Stack.Screen name="lists/[slug]" options={{ ...utility, fullScreenGestureEnabled: false }} />
+      <Stack.Screen name="lists/[slug]" options={utility} />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

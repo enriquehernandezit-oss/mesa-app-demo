@@ -20,6 +20,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
@@ -47,6 +48,7 @@ import {
   nextComparison,
   tie,
 } from '@/lib/pairwise'
+import { usePreventRemove } from '@/lib/preventRemove'
 import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
@@ -329,41 +331,37 @@ export default function RankAPlace() {
   })
 
   const deepLinked = Boolean(params.restaurant || addedPlace)
-  const inFlow = pickedId !== null && !placedStamp
 
-  // Guard the multi-step flow against the platform back-gesture / Android back.
-  // The whole flow lives at one route on local state, so without this a single
-  // edge-swipe would unwind straight out and silently lose an in-progress
-  // ranking. Instead we intercept the screen-remove and consume BACK as one
-  // in-flow step (mirroring the in-app "‹ Atrás" controls), only letting it
-  // leave once there's nothing left to unwind. `inFlow` goes false at the find
-  // step and after the stamp, so the success/dish-chain navigation passes
-  // through. This is expo-router's supported beforeRemove path — the RN
-  // equivalent of the web app's useBlocker (SDK 56+ forbids importing
-  // usePreventRemove from @react-navigation directly).
-  useEffect(() => {
-    const sub = navigation.addListener('beforeRemove', (e) => {
-      if (!inFlow) return
-      e.preventDefault()
-      if (revealed) {
-        setRevealed(false)
-      } else if (position !== null) {
-        committedForId.current = null // re-arm auto-commit if they redo comparisons
-        setPosition(null)
-      } else if (sentiment !== null) {
-        setSentiment(null)
-      } else if (!deepLinked) {
-        setPickedId(null)
-      } else {
-        navigation.dispatch(e.data.action) // arrived straight in — let back leave
-      }
+  // Guard swipe-down-to-dismiss (and the modal's hardware-back on Android)
+  // against silently losing real effort. Picking a place or a sentiment costs
+  // nothing to redo, so those never prompt; once pairwise placement has
+  // started, several taps are on the line, and once the score is revealed and
+  // committed (commitInitial already saved the ranking itself — only a note,
+  // tags, a dish or its photo can still be lost here). `usePreventRemove` is
+  // the one path that also tells native to hold the screen in place
+  // (`preventNativeDismiss`) — the ad-hoc `beforeRemove` + `preventDefault`
+  // this replaced could let the native drag-to-dismiss finish while JS still
+  // thought the screen was there, which is what produced the "screen 'rank'
+  // was removed natively but didn't get removed from JS state" warning.
+  const dirty =
+    !placedStamp &&
+    ((sentiment !== null && position === null) ||
+      (revealed &&
+        (note.trim() !== '' || tags.length > 0 || dish.trim() !== '' || Boolean(dishImage))))
+  usePreventRemove(dirty, ({ data }) => {
+    showActionSheet({
+      title: revealed ? t('rank.discard_note_title') : t('rank.discard_title'),
+      message: revealed ? t('rank.discard_note_message') : undefined,
+      options: [{ label: t('rank.discard_button'), destructive: true }],
+    }).then((i) => {
+      if (i === 0) navigation.dispatch(data.action)
     })
-    return sub
-  }, [navigation, inFlow, revealed, position, sentiment, deepLinked])
+  })
 
   // The furthest stage reached, ratcheted forward only — never downgraded by
-  // the beforeRemove staircase above unwinding a state back to null. Read only
-  // from the unmount effect below.
+  // the in-app "Atrás" handlers (RevealStep/NoteStep's onBack) unwinding a
+  // state back to null as the member steps backward. Read only from the
+  // unmount effect below.
   const stageRef = useRef<RankStage | null>(null)
   useEffect(() => {
     const current: RankStage | null = revealed
@@ -381,14 +379,12 @@ export default function RankAPlace() {
   placedStampRef.current = placedStamp
 
   // Fires once, on the screen's REAL exit — any path (back gesture, swipe,
-  // switching tabs mid-flow), not just the in-app back control the
-  // beforeRemove staircase above sees. The previous implementation only
-  // tracked one narrow deep-link sub-case, and even then always reported
-  // stage: 'sentiment' regardless of how far the flow had actually gotten
-  // (by the time that branch could fire, revealed/position had already been
-  // unwound back to falsy by the very staircase reporting on them). Skipped
-  // when the flow actually finished (placedStamp true): that's a completion,
-  // not a drop-off — the "drop-off we most need to see" this metric exists for.
+  // switching tabs mid-flow), not just the in-app "Atrás" controls. An
+  // earlier implementation only tracked one narrow deep-link sub-case, and
+  // even then always reported stage: 'sentiment' regardless of how far the
+  // flow had actually gotten. Skipped when the flow actually finished
+  // (placedStamp true): that's a completion, not a drop-off — the "drop-off
+  // we most need to see" this metric exists for.
   useEffect(() => {
     return () => {
       if (stageRef.current && !placedStampRef.current) {
