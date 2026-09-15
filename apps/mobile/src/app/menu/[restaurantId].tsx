@@ -71,40 +71,42 @@ export default function RestaurantMenuScreen() {
         // Not the shared ChipRail here: as the first child above the flex-1
         // content ScrollView (no sibling to size against), its row-direction
         // cross-axis stretch default blew each Chip up to fill the whole
-        // remaining screen. Neither a NativeWind h-[] class NOR a `style`
-        // height prop alongside a `className` on the same ScrollView fixed
-        // it — NativeWind's class-derived style was winning over the inline
-        // one. Every layout-critical property here is plain `style`/
-        // `contentContainerStyle` with no `className` in the mix at all, so
-        // there's nothing for NativeWind to override.
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{
-            height: 52,
-            marginHorizontal: -20,
-            backgroundColor: bg,
-            borderBottomWidth: 1,
-            borderBottomColor: line,
-          }}
-          contentContainerStyle={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingHorizontal: 20,
-          }}
-        >
-          {sections.map((s, i) => (
-            <Chip
-              key={s.name}
-              size="sm"
-              state={i === activeIndex ? 'selected' : 'default'}
-              onPress={() => jumpTo(i)}
-            >
-              {s.name}
-            </Chip>
-          ))}
-        </ScrollView>
+        // remaining screen. `height` in a ScrollView's own `style` is
+        // silently ignored in this app regardless of whether it's plain or
+        // NativeWind-derived — confirmed by swapping 52 for 200 and seeing
+        // no change at all. A plain View wrapper with overflow:hidden clips
+        // it from the outside instead, which Views (unlike this ScrollView)
+        // do respect.
+        <View style={{ height: 52, overflow: 'hidden' }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{
+              marginHorizontal: -20,
+              backgroundColor: bg,
+              borderBottomWidth: 1,
+              borderBottomColor: line,
+            }}
+            contentContainerStyle={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              paddingHorizontal: 20,
+              height: 52,
+            }}
+          >
+            {sections.map((s, i) => (
+              <Chip
+                key={s.name}
+                size="sm"
+                state={i === activeIndex ? 'selected' : 'default'}
+                onPress={() => jumpTo(i)}
+              >
+                {s.name}
+              </Chip>
+            ))}
+          </ScrollView>
+        </View>
       ) : null}
       <ScrollView
         ref={scrollRef}
