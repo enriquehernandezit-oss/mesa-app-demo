@@ -1,5 +1,6 @@
 import { Button, Caption, ErrorState, Eyebrow, Toggle } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { LanguagePicker } from '@/components/ui/LanguagePicker'
 import { ThemePicker } from '@/components/ui/ThemePicker'
 import { ChevronIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
@@ -7,9 +8,10 @@ import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { authClient, signOut } from '@/lib/auth-client'
-import { authErrorEs } from '@/lib/authErrors'
+import { authErrorMessage } from '@/lib/authErrors'
 import { comingSoon } from '@/lib/comingSoon'
 import { captureError } from '@/lib/errors'
+import { useT } from '@/lib/i18n'
 import { setFriendsOnlyScores, useFriendsOnlyScores } from '@/lib/prefs'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { BlockedUser, MeStats, Ranking } from '@/lib/types'
@@ -29,6 +31,7 @@ import { Pressable, ScrollView, Share, Text, TextInput, View } from 'react-nativ
 export default function SettingsScreen() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const t = useT()
   const placeholder = useColor('text-muted')
   const { data } = useProfile(true)
   const p = data?.profile
@@ -40,8 +43,7 @@ export default function SettingsScreen() {
   const unblock = useMutation({
     mutationFn: (userId: string) => api.del(`/moderation/blocks/${userId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocks'] }),
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo desbloquear. Intenta de nuevo.' }),
+    onError: () => toast({ variant: 'error', message: t('settings.unblock_error') }),
   })
   const blocked = blocks.data?.blocked ?? []
 
@@ -73,7 +75,7 @@ export default function SettingsScreen() {
       inviteStats.refetch()
     } catch (err) {
       captureError(err, 'invite.share')
-      toast({ variant: 'error', message: 'No se pudo crear tu invitación.' })
+      toast({ variant: 'error', message: t('settings.invite_error') })
     } finally {
       setInviting(false)
     }
@@ -96,7 +98,7 @@ export default function SettingsScreen() {
     if (res && 'error' in res && res.error) {
       toast({
         variant: 'error',
-        message: authErrorEs(res.error, 'No se pudo enviar el correo. Intenta de nuevo.'),
+        message: authErrorMessage(res.error, t('settings.email_send_error')),
       })
       return
     }
@@ -126,12 +128,12 @@ export default function SettingsScreen() {
         variant: 'error',
         message:
           code === 'invalid_password'
-            ? 'Esa contraseña no es correcta.'
+            ? t('settings.wrong_password')
             : code === 'password_required'
-              ? 'Escribe tu contraseña para confirmar.'
+              ? t('settings.password_required_confirm')
               : code === 'session_not_fresh'
-                ? 'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar la cuenta.'
-                : 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+                ? t('settings.session_not_fresh_delete')
+                : t('settings.delete_error'),
       })
     },
   })
@@ -152,12 +154,15 @@ export default function SettingsScreen() {
       setChangingPassword(false)
       setCurrentPassword('')
       setNewPassword('')
-      toast({ message: 'Contraseña actualizada. Cerramos las otras sesiones.' })
+      toast({ message: t('settings.password_updated') })
     },
     onError: (err) =>
       toast({
         variant: 'error',
-        message: authErrorEs(err as { code?: string; status?: number }, 'No se pudo cambiar.'),
+        message: authErrorMessage(
+          err as { code?: string; status?: number },
+          t('settings.change_password_error'),
+        ),
       }),
   })
 
@@ -166,13 +171,13 @@ export default function SettingsScreen() {
       const res = await authClient.revokeOtherSessions()
       if (res.error) throw res.error
     },
-    onSuccess: () => toast({ message: 'Cerramos la sesión en los demás dispositivos.' }),
+    onSuccess: () => toast({ message: t('settings.other_sessions_ended') }),
     onError: (err) =>
       toast({
         variant: 'error',
-        message: authErrorEs(
+        message: authErrorMessage(
           err as { code?: string; status?: number },
-          'No se pudo cerrar las otras sesiones.',
+          t('settings.revoke_sessions_error'),
         ),
       }),
   })
@@ -189,9 +194,9 @@ export default function SettingsScreen() {
       // create({ overwrite }) so a second export doesn't fail on the leftover.
       file.create({ overwrite: true })
       file.write(JSON.stringify(res.rankings, null, 2))
-      await Share.share({ url: file.uri, message: 'Mis rankings de Mesa' })
+      await Share.share({ url: file.uri, message: t('settings.export_share_message') })
     } catch {
-      toast({ variant: 'error', message: 'No se pudo exportar. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('settings.export_error') })
     } finally {
       setExporting(false)
     }
@@ -215,7 +220,7 @@ export default function SettingsScreen() {
           <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={44} />
           <View className="min-w-0 flex-1">
             <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-              {p?.name || 'Tú'}
+              {p?.name || t('common.you')}
             </Text>
             <Caption numberOfLines={1}>
               {[
@@ -223,7 +228,7 @@ export default function SettingsScreen() {
                 // Omitted (not "0 rankeados") on a failed fetch — a real zero
                 // and a fetch error are different facts and shouldn't look
                 // the same.
-                stats.isError ? null : `${stats.data?.places ?? 0} rankeados`,
+                stats.isError ? null : t('settings.ranked_count', { n: stats.data?.places ?? 0 }),
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -232,20 +237,25 @@ export default function SettingsScreen() {
           <ChevronIcon size={16} color="text-faint" />
         </Pressable>
 
-        <Eyebrow className="mt-6 mb-2">Apariencia</Eyebrow>
+        <Eyebrow className="mt-6 mb-2">{t('settings.appearance')}</Eyebrow>
         <ThemePicker />
 
-        <Eyebrow className="mt-6 mb-2">Tu lista</Eyebrow>
+        <Eyebrow className="mt-6 mb-2">{t('settings.language')}</Eyebrow>
+        <LanguagePicker />
+
+        <Eyebrow className="mt-6 mb-2">{t('settings.your_list')}</Eyebrow>
         <View className="rounded border border-line bg-surface px-4">
           <Row>
-            <Text className="flex-1 font-ui text-body text-text">Puntuaciones solo de amigos</Text>
+            <Text className="flex-1 font-ui text-body text-text">
+              {t('settings.friends_only_scores')}
+            </Text>
             <Toggle
               checked={friendsOnly}
               onChange={(v) => {
                 setFriendsOnlyScores(v)
                 queryClient.invalidateQueries({ queryKey: ['restaurant'] })
               }}
-              label="Puntuaciones solo de amigos"
+              label={t('settings.friends_only_scores')}
             />
           </Row>
           {/* "Modo sigiloso" removed rather than left as "Pronto". It first
@@ -255,7 +265,9 @@ export default function SettingsScreen() {
               undecided product question. Blocking already delivers the concrete
               case. A control returns when it works, not before. */}
           <RowButton onPress={exportRankings} disabled={exporting} last>
-            <Text className="flex-1 font-ui text-body text-text">Exportar mis rankings</Text>
+            <Text className="flex-1 font-ui text-body text-text">
+              {t('settings.export_rankings')}
+            </Text>
             {exporting ? (
               <Caption className="font-mono text-micro">…</Caption>
             ) : (
@@ -270,20 +282,20 @@ export default function SettingsScreen() {
             an error. */}
         {blocks.isError ? (
           <View className="mt-6">
-            <Eyebrow className="mb-2">Cuentas bloqueadas</Eyebrow>
+            <Eyebrow className="mb-2">{t('settings.blocked_accounts')}</Eyebrow>
             <ErrorState onRetry={() => blocks.refetch()}>
-              No se pudieron cargar tus cuentas bloqueadas.
+              {t('settings.blocked_load_error')}
             </ErrorState>
           </View>
         ) : (
           blocked.length > 0 && (
             <>
-              <Eyebrow className="mt-6 mb-2">Cuentas bloqueadas</Eyebrow>
+              <Eyebrow className="mt-6 mb-2">{t('settings.blocked_accounts')}</Eyebrow>
               <View className="rounded border border-line bg-surface px-4">
                 {blocked.map((u, i) => (
                   <Row key={u.id} last={i === blocked.length - 1}>
                     <Text className="flex-1 font-ui text-body text-text">
-                      {u.name || (u.handle ? `@${u.handle}` : 'Alguien')}
+                      {u.name || (u.handle ? `@${u.handle}` : t('common.someone'))}
                     </Text>
                     <Pressable
                       accessibilityRole="button"
@@ -292,7 +304,7 @@ export default function SettingsScreen() {
                       className="min-h-[36px] justify-center active:opacity-60"
                     >
                       <Text className="font-ui-medium text-label text-accent-strong">
-                        Desbloquear
+                        {t('settings.unblock')}
                       </Text>
                     </Pressable>
                   </Row>
@@ -302,11 +314,13 @@ export default function SettingsScreen() {
           )
         )}
 
-        <Eyebrow className="mt-6 mb-2">Cuenta</Eyebrow>
+        <Eyebrow className="mt-6 mb-2">{t('settings.account')}</Eyebrow>
         <View className="rounded border border-line bg-surface px-4">
           {/* Notifications + invites are inert-by-design (no backend yet). */}
-          <RowButton onPress={() => comingSoon('Las notificaciones llegan pronto a Mesa.')}>
-            <Text className="flex-1 font-ui text-body text-text-muted">Notificaciones</Text>
+          <RowButton onPress={() => comingSoon(t('settings.notifications_coming_soon'))}>
+            <Text className="flex-1 font-ui text-body text-text-muted">
+              {t('settings.notifications')}
+            </Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           {/* Was a `comingSoon` toast next to a fake "4 restantes" counter —
@@ -314,10 +328,12 @@ export default function SettingsScreen() {
               real now, unlimited, and gate nothing; the only number shown is
               how many people actually joined. */}
           <RowButton onPress={shareInvite} disabled={inviting}>
-            <Text className="flex-1 font-ui text-body text-text">Invitar amigos</Text>
+            <Text className="flex-1 font-ui text-body text-text">
+              {t('settings.invite_friends')}
+            </Text>
             {inviteStats.data && inviteStats.data.joined > 0 ? (
               <Caption className="font-mono text-micro">
-                {inviteStats.data.joined} {inviteStats.data.joined === 1 ? 'se unió' : 'se unieron'}
+                {t('settings.joined_count', { n: inviteStats.data.joined })}
               </Caption>
             ) : (
               <ChevronIcon size={16} color="text-faint" />
@@ -329,9 +345,9 @@ export default function SettingsScreen() {
                 {realEmail}
               </Text>
               {p?.emailVerified ? (
-                <Caption className="font-mono">Verificado ✓</Caption>
+                <Caption className="font-mono">{t('settings.verified')}</Caption>
               ) : verifySent ? (
-                <Caption className="font-mono">Enlace enviado ›</Caption>
+                <Caption className="font-mono">{t('settings.link_sent')}</Caption>
               ) : (
                 <Pressable
                   accessibilityRole="button"
@@ -340,7 +356,7 @@ export default function SettingsScreen() {
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
                   <Text className="font-ui-medium text-label text-accent-strong">
-                    {verifying ? 'Enviando…' : 'Verificar correo'}
+                    {verifying ? t('settings.sending') : t('settings.verify_email')}
                   </Text>
                 </Pressable>
               )}
@@ -350,25 +366,27 @@ export default function SettingsScreen() {
               the flag is set directly in the DB, never granted in-product. */}
           {p?.isModerator ? (
             <RowButton onPress={() => router.push('/moderation')}>
-              <Text className="flex-1 font-ui text-body text-text">Moderación</Text>
+              <Text className="flex-1 font-ui text-body text-text">{t('settings.moderation')}</Text>
               <ChevronIcon size={16} color="text-faint" />
             </RowButton>
           ) : null}
           <RowButton onPress={() => router.push('/legal/privacy')}>
-            <Text className="flex-1 font-ui text-body text-text">Política de Privacidad</Text>
+            <Text className="flex-1 font-ui text-body text-text">
+              {t('settings.privacy_policy')}
+            </Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={() => router.push('/legal/terms')}>
-            <Text className="flex-1 font-ui text-body text-text">Términos</Text>
+            <Text className="flex-1 font-ui text-body text-text">{t('settings.terms')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={() => router.push('/legal/eula')}>
-            <Text className="flex-1 font-ui text-body text-text">EULA</Text>
+            <Text className="flex-1 font-ui text-body text-text">{t('settings.eula')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
           <RowButton onPress={handleSignOut}>
             <Text className="flex-1 font-ui-medium text-body text-accent-strong">
-              Cerrar sesión
+              {t('settings.sign_out')}
             </Text>
           </RowButton>
 
@@ -381,7 +399,7 @@ export default function SettingsScreen() {
                 <TextInput
                   className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
                   placeholderTextColor={placeholder}
-                  placeholder="Contraseña actual"
+                  placeholder={t('settings.current_password_placeholder')}
                   secureTextEntry
                   textContentType="password"
                   autoComplete="current-password"
@@ -391,7 +409,7 @@ export default function SettingsScreen() {
                 <TextInput
                   className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
                   placeholderTextColor={placeholder}
-                  placeholder="Nueva contraseña (8+ caracteres)"
+                  placeholder={t('settings.new_password_placeholder')}
                   secureTextEntry
                   textContentType="newPassword"
                   passwordRules="minlength: 8;"
@@ -405,7 +423,7 @@ export default function SettingsScreen() {
                   disabled={newPassword.length < 8 || !currentPassword}
                   onPress={() => changePassword.mutate()}
                 >
-                  {changePassword.isPending ? 'Guardando…' : 'Guardar contraseña'}
+                  {changePassword.isPending ? t('common.saving') : t('settings.save_password')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -415,39 +433,40 @@ export default function SettingsScreen() {
                     setNewPassword('')
                   }}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </Button>
               </View>
             ) : (
               <RowButton onPress={() => setChangingPassword(true)}>
-                <Text className="flex-1 font-ui text-body text-text">Cambiar contraseña</Text>
+                <Text className="flex-1 font-ui text-body text-text">
+                  {t('settings.change_password')}
+                </Text>
               </RowButton>
             ))}
 
           {/* The control people look for after a scare: end every OTHER session. */}
           <RowButton onPress={() => revokeOthers.mutate()} disabled={revokeOthers.isPending} last>
             <Text className="flex-1 font-ui text-body text-text">
-              {revokeOthers.isPending ? 'Cerrando…' : 'Cerrar sesión en otros dispositivos'}
+              {revokeOthers.isPending
+                ? t('settings.signing_out_others')
+                : t('settings.sign_out_others')}
             </Text>
           </RowButton>
         </View>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
         <View className="mt-8 gap-3 rounded border border-status-packed p-4">
-          <Eyebrow className="text-status-packed">Zona de peligro</Eyebrow>
+          <Eyebrow className="text-status-packed">{t('settings.danger_zone')}</Eyebrow>
           {!confirmingDelete ? (
             <>
-              <Caption>
-                Eliminar tu cuenta borra permanentemente tus rankings, notas, follows y perfil. Esto
-                no se puede deshacer.
-              </Caption>
+              <Caption>{t('settings.delete_account_warning')}</Caption>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setConfirmingDelete(true)}
                 className="min-h-[44px] items-center justify-center rounded border border-status-packed active:opacity-70"
               >
                 <Text className="font-ui-medium text-label text-status-packed">
-                  Eliminar cuenta
+                  {t('settings.delete_account')}
                 </Text>
               </Pressable>
             </>
@@ -455,14 +474,14 @@ export default function SettingsScreen() {
             <>
               <Caption>
                 {realEmail
-                  ? '¿Estás seguro? Escribe tu contraseña para confirmar. Esto borra todo y no se puede deshacer.'
-                  : '¿Estás seguro? Esto borra todo y no se puede deshacer.'}
+                  ? t('settings.delete_confirm_with_password')
+                  : t('settings.delete_confirm_no_password')}
               </Caption>
               {realEmail && (
                 <TextInput
                   className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
                   placeholderTextColor={placeholder}
-                  placeholder="Tu contraseña"
+                  placeholder={t('settings.your_password_placeholder')}
                   secureTextEntry
                   textContentType="password"
                   autoComplete="current-password"
@@ -476,7 +495,9 @@ export default function SettingsScreen() {
                 disabled={Boolean(realEmail) && !deletePassword}
                 onPress={() => deleteAccount.mutate()}
               >
-                {deleteAccount.isPending ? 'Eliminando…' : 'Sí, eliminar todo'}
+                {deleteAccount.isPending
+                  ? t('settings.deleting')
+                  : t('settings.delete_confirm_button')}
               </Button>
               <Button
                 variant="ghost"
@@ -485,7 +506,7 @@ export default function SettingsScreen() {
                   setDeletePassword('')
                 }}
               >
-                Cancelar
+                {t('common.cancel')}
               </Button>
             </>
           )}

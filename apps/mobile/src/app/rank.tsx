@@ -23,10 +23,18 @@ import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
-import { GRAINS, type Grain, OCCASION_TAGS, displayScore, scoreForPosition } from '@/lib/display'
+import {
+  type Grain,
+  OCCASION_TAGS,
+  displayScore,
+  grainOptions,
+  scoreForPosition,
+  tagLabel,
+} from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
 import { cloudinaryUrl } from '@/lib/media'
 import {
@@ -134,6 +142,7 @@ export default function RankAPlace() {
   const navigation = useNavigation()
   const queryClient = useQueryClient()
   const params = useLocalSearchParams<{ restaurant?: string }>()
+  const t = useT()
 
   const mine = useQuery({
     queryKey: ['rankings'],
@@ -289,7 +298,7 @@ export default function RankAPlace() {
       if (dishImage) {
         await api.post('/dishes', {
           restaurantId: pickedId,
-          name: dish.trim() || picked?.name || 'Plato',
+          name: dish.trim() || picked?.name || t('rank.default_dish_name'),
           caption: note.trim() || undefined,
           image: dishImage,
           grain: dishGrain,
@@ -313,8 +322,8 @@ export default function RankAPlace() {
       captureError(err, 'rank.save')
       toast({
         variant: 'error',
-        message: 'No se pudo guardar tu nota',
-        action: { label: 'Intentar de nuevo', onClick: () => save.mutate(pos) },
+        message: t('rank.save_error'),
+        action: { label: t('common.retry'), onClick: () => save.mutate(pos) },
       })
     },
   })
@@ -409,7 +418,7 @@ export default function RankAPlace() {
       const capped = err instanceof ApiError && err.status === 429
       toast({
         variant: 'error',
-        message: capped ? 'Llegaste al límite de lugares por hoy.' : 'No se pudo agregar el lugar.',
+        message: capped ? t('rank.add_place_capped') : t('rank.add_place_error'),
       })
     },
   })
@@ -462,7 +471,7 @@ export default function RankAPlace() {
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(150)} className="items-center gap-3">
           <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
-          <Caption>añadido a tu pasaporte</Caption>
+          <Caption>{t('rank.added_to_passport')}</Caption>
         </Animated.View>
         {/* "Listo" is the only action that leaves — sharing doesn't navigate
             away on its own, so tapping it and coming back still shows this
@@ -470,10 +479,10 @@ export default function RankAPlace() {
         {showFinishActions && (
           <Animated.View entering={FadeIn} className="mt-4 w-full gap-3">
             <Button variant="primary" onPress={shareTop5}>
-              Compartir mi top 5
+              {t('rank.share_top5')}
             </Button>
             <Button variant="ghost" onPress={() => router.replace('/rankings')}>
-              Listo
+              {t('common.done')}
             </Button>
           </Animated.View>
         )}
@@ -497,7 +506,7 @@ export default function RankAPlace() {
             mine.refetch()
           }}
         >
-          No se pudo cargar tu lista.
+          {t('rank.list_load_error')}
         </ErrorState>
       </View>
     )
@@ -576,7 +585,7 @@ export default function RankAPlace() {
     return (
       <StepScreen>
         <BackBar
-          label="‹ Atrás"
+          label={t('common.back')}
           onBack={() => {
             if (deepLinked) router.replace('/rankings')
             else setPickedId(null)
@@ -584,7 +593,7 @@ export default function RankAPlace() {
         />
         <View className="mt-4 items-center gap-1">
           <Eyebrow>{picked.name}</Eyebrow>
-          <Title>¿Cómo estuvo?</Title>
+          <Title>{t('rank.sentiment_title')}</Title>
         </View>
         <View className="mt-6 gap-3">
           <SentimentButton
@@ -595,7 +604,7 @@ export default function RankAPlace() {
               setSentiment('loved')
             }}
           >
-            Me encantó
+            {t('rank.sentiment_loved')}
           </SentimentButton>
           <SentimentButton
             tone="fine"
@@ -605,7 +614,7 @@ export default function RankAPlace() {
               setSentiment('fine')
             }}
           >
-            Estuvo bien
+            {t('rank.sentiment_fine')}
           </SentimentButton>
           <SentimentButton
             tone="low"
@@ -615,7 +624,7 @@ export default function RankAPlace() {
               setSentiment('disliked')
             }}
           >
-            No me convenció
+            {t('rank.sentiment_disliked')}
           </SentimentButton>
         </View>
       </StepScreen>
@@ -625,7 +634,7 @@ export default function RankAPlace() {
   // B2 — pairwise placement, banded by sentiment.
   return (
     <StepScreen>
-      <BackBar label="‹ Atrás" onBack={() => setSentiment(null)} />
+      <BackBar label={t('common.back')} onBack={() => setSentiment(null)} />
       <PlaceStep
         existing={existingForCompare}
         item={picked}
@@ -704,6 +713,7 @@ function RevealStep({
   onAddNote: () => void
 }) {
   const insets = useSafeAreaInsets()
+  const t = useT()
   const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
   const total = orderedByPos.length + 1
   const score = scoreForPosition(position - 1, total)
@@ -721,14 +731,14 @@ function RevealStep({
   return (
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
-        <BackBar label="‹ Atrás" onBack={onBack} />
+        <BackBar label={t('common.back')} onBack={onBack} />
         <Pressable
           accessibilityRole="button"
           onPress={onDone}
           className="min-h-[44px] justify-center active:opacity-60"
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            Listo
+            {t('common.done')}
           </Text>
         </Pressable>
       </View>
@@ -739,7 +749,7 @@ function RevealStep({
         keyboardShouldPersistTaps="handled"
       >
         <View className="items-center">
-          <Eyebrow>Tu puntuación</Eyebrow>
+          <Eyebrow>{t('rank.your_score')}</Eyebrow>
           <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
             {displayScore(score)}
           </Text>
@@ -750,7 +760,7 @@ function RevealStep({
             neighborhood={picked.neighborhood}
           />
           <Chip size="sm" state="selected" className="mt-3">
-            #{position} de {total} en tu lista
+            {t('rank.position_of_total', { position, total })}
           </Chip>
         </View>
 
@@ -773,16 +783,14 @@ function RevealStep({
 
         {/* The other half of the core loop: where friends put this same place. */}
         <View className="mt-6">
-          <Eyebrow>Tus amigos</Eyebrow>
+          <Eyebrow>{t('rank.your_friends')}</Eyebrow>
           {friendsPending ? (
-            <Caption className="mt-1">Buscando…</Caption>
+            <Caption className="mt-1">{t('rank.searching')}</Caption>
           ) : friendsRankings.length > 0 ? (
             <>
               <Caption className="mt-1">
-                {friendsRankings.length === 1
-                  ? '1 amigo rankeó esto'
-                  : `${friendsRankings.length} amigos rankearon esto`}{' '}
-                · prom.{' '}
+                {t('rank.friends_ranked_count', { n: friendsRankings.length })} ·{' '}
+                {t('rank.avg_abbrev')}{' '}
                 <Text style={DATA_FIGURES} className="text-accent">
                   {displayScore(friendAvg)}
                 </Text>
@@ -805,30 +813,30 @@ function RevealStep({
               ))}
             </>
           ) : (
-            <SerifItalic className="mt-1 text-serif-sm">
-              Ninguno de tus amigos ha rankeado esto todavía — vas primero.
-            </SerifItalic>
+            <SerifItalic className="mt-1 text-serif-sm">{t('rank.no_friends_ranked')}</SerifItalic>
           )}
         </View>
 
         {commitError && (
           <View className="mt-4 flex-row items-center justify-center gap-3">
-            <Caption>No se pudo guardar este ranking.</Caption>
+            <Caption>{t('rank.commit_error')}</Caption>
             <Pressable
               accessibilityRole="button"
               onPress={onRetryCommit}
               className="active:opacity-60"
             >
-              <Text className="font-ui-medium text-label text-accent-strong">Reintentar</Text>
+              <Text className="font-ui-medium text-label text-accent-strong">
+                {t('rank.retry_short')}
+              </Text>
             </Pressable>
           </View>
         )}
         <Body className="mt-6 text-center text-text-muted">
-          Tu respuesta movió a {picked.name}, no la puntuación del spot.
+          {t('rank.your_answer_moved', { name: picked.name })}
         </Body>
         <View className="mt-4">
           <Button variant="primary" onPress={onAddNote}>
-            Agregar una nota
+            {t('rank.add_a_note')}
           </Button>
         </View>
       </ScrollView>
@@ -875,10 +883,11 @@ function NoteStep({
 }) {
   const insets = useSafeAreaInsets()
   const placeholder = useColor('text-muted')
+  const t = useT()
   return (
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
-        <BackBar label="‹ Agregar nota" onBack={onBack} />
+        <BackBar label={t('rank.add_note_back')} onBack={onBack} />
         <Pressable
           accessibilityRole="button"
           disabled={saving}
@@ -886,7 +895,7 @@ function NoteStep({
           className="min-h-[44px] justify-center active:opacity-60"
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            Listo
+            {t('common.done')}
           </Text>
         </Pressable>
       </View>
@@ -921,7 +930,7 @@ function NoteStep({
         <TextInput
           className="mt-4 min-h-[84px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
           placeholderTextColor={placeholder}
-          placeholder="con velas, vino natural, pide el branzino…"
+          placeholder={t('rank.note_placeholder')}
           maxLength={140}
           multiline
           inputAccessoryViewID="rank-note"
@@ -931,38 +940,38 @@ function NoteStep({
 
         <KeyboardDone id="rank-note" />
 
-        <Eyebrow className="mt-4 font-mono">Ocasión</Eyebrow>
+        <Eyebrow className="mt-4 font-mono">{t('rank.occasion')}</Eyebrow>
         <View className="mt-2 flex-row flex-wrap gap-2">
-          {OCCASION_TAGS.map((t) => {
-            const on = tags.includes(t)
+          {OCCASION_TAGS.map((tag) => {
+            const on = tags.includes(tag)
             return (
               <Chip
-                key={t}
+                key={tag}
                 size="sm"
                 state={on ? 'selected' : 'default'}
                 onPress={() =>
                   setTags((cur) =>
-                    on ? cur.filter((x) => x !== t) : cur.length < 4 ? [...cur, t] : cur,
+                    on ? cur.filter((x) => x !== tag) : cur.length < 4 ? [...cur, tag] : cur,
                   )
                 }
               >
-                {t}
+                {tagLabel(tag)}
               </Chip>
             )
           })}
         </View>
 
-        <Eyebrow className="mt-4 font-mono">Qué pedir</Eyebrow>
+        <Eyebrow className="mt-4 font-mono">{t('rank.what_to_order')}</Eyebrow>
         <Field
           className="mt-2"
-          placeholder="branzino, vino natural…"
+          placeholder={t('rank.what_to_order_placeholder')}
           maxLength={60}
           returnKeyType="done"
           value={dish}
           onChangeText={setDish}
         />
 
-        <Eyebrow className="mt-4 font-mono">Foto del plato</Eyebrow>
+        <Eyebrow className="mt-4 font-mono">{t('rank.dish_photo')}</Eyebrow>
         {dishImage ? (
           <>
             <View className="mt-2 h-40 w-full overflow-hidden rounded border border-line">
@@ -973,7 +982,7 @@ function NoteStep({
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Quitar foto"
+                accessibilityLabel={t('rank.remove_photo')}
                 onPress={() => setDishImage(null)}
                 className="absolute top-2 right-2 h-8 w-8 items-center justify-center rounded-pill bg-surface active:opacity-70"
               >
@@ -981,7 +990,7 @@ function NoteStep({
               </Pressable>
             </View>
             <View className="mt-2 flex-row flex-wrap gap-2">
-              {GRAINS.map((g) => (
+              {grainOptions().map((g) => (
                 <Chip
                   key={g.value}
                   size="sm"
@@ -996,7 +1005,7 @@ function NoteStep({
                 pedir" above into this dish's public name, and the note into its
                 caption — not two more fields to fill in. */}
             <Caption className="mt-2 text-text-faint">
-              Se publica como “{dish.trim() || picked.name}”
+              {t('rank.will_publish_as', { name: dish.trim() || picked.name })}
               {note.trim() ? ` — “${note.trim()}”` : ''}
             </Caption>
           </>
@@ -1010,13 +1019,13 @@ function NoteStep({
             className="mt-2 min-h-[56px] flex-row items-center gap-3 rounded border border-line border-dashed px-4 active:opacity-80"
           >
             <Text className="font-serif text-serif-lg text-accent">+</Text>
-            <Text className="font-ui text-body text-text">Agregar una foto</Text>
+            <Text className="font-ui text-body text-text">{t('rank.add_a_photo')}</Text>
           </Pressable>
         )}
 
         <View className="mt-6">
           <Button variant="primary" disabled={saving} onPress={onSave}>
-            {saving ? 'Guardando…' : 'Guardar nota'}
+            {saving ? t('common.saving') : t('rank.save_note')}
           </Button>
         </View>
       </ScrollView>
@@ -1037,6 +1046,7 @@ function PlaceStep({
   isRerank: boolean
   onPlaced: (position: number) => void
 }) {
+  const t = useT()
   const initial = useMemo(
     () => initInsertBounded(existing, item, sentiment),
     [existing, item, sentiment],
@@ -1064,7 +1074,7 @@ function PlaceStep({
   }, [done, state.ordered, item.id, onPlaced])
 
   if (comparison === null) {
-    return <Body className="mt-6">Ubicando…</Body>
+    return <Body className="mt-6">{t('rank.placing')}</Body>
   }
 
   const step = answered + 1
@@ -1077,15 +1087,15 @@ function PlaceStep({
         {step} de {total}
       </Text>
       <View className="items-center gap-1">
-        <Title>¿Cuál estuvo mejor?</Title>
+        <Title>{t('rank.which_was_better')}</Title>
         <Text className="text-center font-mono text-eyebrow text-text-muted">
-          Tu respuesta mueve a {item.name}, no la puntuación del spot.
+          {t('rank.your_answer_moves', { name: item.name })}
         </Text>
       </View>
       <View className="gap-3">
         <CompareCard
           item={comparison.current}
-          subline={isRerank ? 'ya en tu lista' : 'nuevo en tu lista'}
+          subline={isRerank ? t('rank.already_on_list') : t('rank.new_on_list')}
           onPress={() => {
             tapSelect()
             setAnswered((a) => a + 1)
@@ -1102,12 +1112,12 @@ function PlaceStep({
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
           <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            Más o menos igual
+            {t('rank.roughly_equal')}
           </Text>
         </Pressable>
         <CompareCard
           item={comparison.pivot}
-          subline={`#${pivotPos} en tu lista`}
+          subline={t('rank.position_on_list', { position: pivotPos })}
           score={comparison.pivot.score ?? null}
           onPress={() => {
             tapSelect()
@@ -1131,6 +1141,7 @@ function PlaceStep({
 // First-run explainer for the pairwise mechanic — the one non-self-evident step.
 // Never blocks: tapping the scrim or the CTA both dismiss.
 function RankCoachmark({ onDismiss }: { onDismiss: () => void }) {
+  const t = useT()
   return (
     <AnimatedPressable
       entering={FadeIn.duration(180)}
@@ -1139,20 +1150,17 @@ function RankCoachmark({ onDismiss }: { onDismiss: () => void }) {
     >
       <Animated.View entering={FadeInDown.springify().damping(16)} className="w-full">
         <Card raised onStartShouldSetResponder={() => true} className="gap-2">
-          <Eyebrow>Cómo funciona</Eyebrow>
-          <Title>Sin estrellas. Solo comparas.</Title>
+          <Eyebrow>{t('rank.how_it_works')}</Eyebrow>
+          <Title>{t('rank.no_stars_only_compare')}</Title>
           <View className="my-1 flex-row gap-2">
             <Chip size="sm" state="selected">
-              Este
+              {t('rank.this_one')}
             </Chip>
-            <Chip size="sm">O este</Chip>
+            <Chip size="sm">{t('rank.or_this_one')}</Chip>
           </View>
-          <Body>
-            Te mostramos dos spots a la vez. Eliges el que estuvo mejor, unas cuantas veces, y con
-            eso encontramos el orden exacto de tu lista — la puntuación sale de ahí.
-          </Body>
+          <Body>{t('rank.explainer_body')}</Body>
           <Button variant="primary" onPress={onDismiss}>
-            Entendido
+            {t('rank.got_it')}
           </Button>
         </Card>
       </Animated.View>
@@ -1196,6 +1204,7 @@ function FindStep({
 }) {
   const insets = useSafeAreaInsets()
   const placeholder = useColor('text-muted')
+  const t = useT()
   const [adding, setAdding] = useState(false)
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
@@ -1300,7 +1309,7 @@ function FindStep({
           <ScoreBadge size="sm" score={r.score} attribution={{ kind: 'you' }} />
         ) : (
           <Text className="font-mono text-micro text-text-faint uppercase tracking-eyebrow">
-            sin rankear
+            {t('rank.unranked')}
           </Text>
         )}
       </Pressable>
@@ -1310,12 +1319,12 @@ function FindStep({
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="px-5">
-        <BackBar label="✕ Rankear un spot" onBack={onBack} />
-        <Title className="mt-4">Encuentra el spot</Title>
+        <BackBar label={t('rank.back')} onBack={onBack} />
+        <Title className="mt-4">{t('rank.find_title')}</Title>
         <TextInput
           className="mt-4 min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
           placeholderTextColor={placeholder}
-          placeholder="Busca un spot donde hayas estado…"
+          placeholder={t('rank.find_placeholder')}
           value={query}
           onChangeText={setQuery}
           returnKeyType="search"
@@ -1331,7 +1340,7 @@ function FindStep({
               requestLocation()
             }}
           >
-            Cerca
+            {t('rank.nearby')}
           </Chip>
           {showOpenChip && (
             <Chip
@@ -1339,7 +1348,7 @@ function FindStep({
               state={openNow ? 'selected' : 'default'}
               onPress={() => setOpenNow((v) => !v)}
             >
-              Abierto ahora
+              {t('rank.open_now')}
             </Chip>
           )}
         </ChipRail>
@@ -1352,16 +1361,16 @@ function FindStep({
         keyboardShouldPersistTaps="handled"
       >
         {leadGroup.length === 0 && results.length === 0 && !q ? (
-          <Body>Ya rankeaste todo en Mesa.</Body>
+          <Body>{t('rank.ranked_everything')}</Body>
         ) : leadGroup.length === 0 && results.length === 0 ? (
-          <Body>Nada coincide. Prueba con otro nombre.</Body>
+          <Body>{t('rank.no_matches')}</Body>
         ) : (
           <>
             {leadGroup.length > 0 && (
               <>
-                <Eyebrow className="font-mono">Quiero probar</Eyebrow>
+                <Eyebrow className="font-mono">{t('rank.want_to_try')}</Eyebrow>
                 {leadGroup.map(renderRow)}
-                <Eyebrow className="mt-3 font-mono">Todos</Eyebrow>
+                <Eyebrow className="mt-3 font-mono">{t('rank.all')}</Eyebrow>
               </>
             )}
             {results.map(renderRow)}
@@ -1370,7 +1379,7 @@ function FindStep({
 
         {!adding && (
           <ExternalResults
-            heading={<Eyebrow className="mt-3 font-mono">En Google</Eyebrow>}
+            heading={<Eyebrow className="mt-3 font-mono">{t('rank.on_google')}</Eyebrow>}
             suggestions={suggestions}
             creatingId={creatingId}
             onPick={createFromGoogle}
@@ -1386,7 +1395,7 @@ function FindStep({
             className="mt-4 min-h-[48px] items-center justify-center rounded border border-line border-dashed active:opacity-70"
           >
             <Text className="font-ui-medium text-label text-text-muted">
-              + ¿No lo encuentras? Agrega un restaurante
+              {t('rank.add_restaurant_cta')}
             </Text>
           </Pressable>
         )}
@@ -1405,6 +1414,7 @@ function AddPlaceForm({
   onCancel: () => void
 }) {
   const placeholder = useColor('text-muted')
+  const t = useT()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const neighborhoods = useQuery({
@@ -1419,13 +1429,13 @@ function AddPlaceForm({
       <TextInput
         className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
         placeholderTextColor={placeholder}
-        placeholder="Nombre del restaurante"
+        placeholder={t('rank.restaurant_name_placeholder')}
         value={name}
         onChangeText={setName}
         maxLength={80}
       />
       <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
-        Sector
+        {t('rank.sector')}
       </Text>
       <View className="flex-row flex-wrap gap-2">
         {neighborhoods.data?.neighborhoods.map((n) => (
@@ -1441,7 +1451,7 @@ function AddPlaceForm({
       </View>
       <View className="flex-row justify-end gap-3">
         <Button variant="secondary" className="w-auto min-h-[44px] px-4" onPress={onCancel}>
-          Cancelar
+          {t('common.cancel')}
         </Button>
         <Button
           variant="primary"
@@ -1449,7 +1459,7 @@ function AddPlaceForm({
           disabled={!canAdd}
           onPress={() => addPlace.mutate({ name: name.trim(), neighborhoodSlug: slug })}
         >
-          {addPlace.isPending ? 'Agregando…' : 'Agregar y rankear'}
+          {addPlace.isPending ? t('rank.adding') : t('rank.add_and_rank')}
         </Button>
       </View>
     </View>

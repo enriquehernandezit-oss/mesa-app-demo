@@ -9,6 +9,7 @@ import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/
 import { useSession } from '@/lib/auth-client'
 import { initToken } from '@/lib/auth-token'
 import { captureError, setErrorUser } from '@/lib/errors'
+import { initLanguage, useT } from '@/lib/i18n'
 import { queryClient } from '@/lib/query'
 import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
@@ -94,7 +95,7 @@ export default function RootLayout() {
     // Warming the analytics client here means the first real event doesn't also
     // pay for init. No-ops without a key.
     initAnalytics()
-    Promise.all([initToken(), initThemeChoice()]).finally(() => setPreloaded(true))
+    Promise.all([initToken(), initThemeChoice(), initLanguage()]).finally(() => setPreloaded(true))
   }, [])
 
   const ready = (loaded || Boolean(fontError)) && preloaded
@@ -140,6 +141,7 @@ export default function RootLayout() {
 function MesaStack() {
   const theme = useResolvedTheme()
   const c = themeColors[theme]
+  const t = useT()
   const utility = {
     headerShown: true,
     headerLargeTitle: true,
@@ -153,7 +155,7 @@ function MesaStack() {
     headerShadowVisible: false,
     headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
     headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-    headerBackTitle: 'Atrás',
+    headerBackTitle: t('nav.back'),
   }
   return (
     <Stack
@@ -181,18 +183,18 @@ function MesaStack() {
       <Stack.Screen name="r/[restaurantId]" options={{ fullScreenGestureEnabled: false }} />
       <Stack.Screen name="u/[userId]" options={{ fullScreenGestureEnabled: false }} />
 
-      <Stack.Screen name="settings" options={{ ...utility, title: 'Ajustes' }} />
-      <Stack.Screen name="activity" options={{ ...utility, title: 'Actividad' }} />
-      <Stack.Screen name="leaderboard" options={{ ...utility, title: 'Clasificación' }} />
+      <Stack.Screen name="settings" options={{ ...utility, title: t('nav.settings') }} />
+      <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
+      <Stack.Screen name="leaderboard" options={{ ...utility, title: t('nav.leaderboard') }} />
       {/* Title (Seguidores/Siguiendo) is set by the screen itself, same
           pattern as lists/[slug] below. */}
       <Stack.Screen name="people/[userId]" options={utility} />
-      <Stack.Screen name="planes/index" options={{ ...utility, title: 'Planes' }} />
+      <Stack.Screen name="planes/index" options={{ ...utility, title: t('nav.planes') }} />
       {/* Title (the chosen spot, or "Votación abierta") is set by the screen
           itself once the plan loads — same pattern as people/[userId] above. */}
       <Stack.Screen name="planes/[planId]" options={{ ...utility, headerLargeTitle: false }} />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
-      <Stack.Screen name="moderation" options={{ ...utility, title: 'Moderación' }} />
+      <Stack.Screen name="moderation" options={{ ...utility, title: t('nav.moderation') }} />
       {/* Titles for these two are set by the screens themselves once the data
           (a list's name, a legal doc's name) is known. */}
       <Stack.Screen name="lists/[slug]" options={{ ...utility, fullScreenGestureEnabled: false }} />

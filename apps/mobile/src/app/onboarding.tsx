@@ -12,6 +12,7 @@ import { contactsAvailable, importContactPhones } from '@/lib/contacts'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
@@ -47,6 +48,7 @@ export default function Onboarding() {
   const [step, setStep] = useState<Step>('profile')
   const queryClient = useQueryClient()
   const router = useRouter()
+  const t = useT()
 
   if (authLost || (!isPending && !authed)) return <Redirect href="/sign-in" />
   if (me?.onboardingComplete) return <Redirect href="/discover" />
@@ -77,7 +79,7 @@ export default function Onboarding() {
           />
         </View>
         <Caption className="mt-2 font-mono text-micro">
-          Paso {stepIndex + 1} de {STEPS.length} · arma tu lista inicial
+          {t('onboarding.step_progress', { step: stepIndex + 1, total: STEPS.length })}
         </Caption>
       </View>
 
@@ -92,6 +94,7 @@ export default function Onboarding() {
 // app needs at signup (App Store 1.2).
 function ProfileStep({ onNext }: { onNext: () => void }) {
   const placeholder = useColor('text-muted')
+  const t = useT()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
   const [neighborhoodSlug, setNeighborhood] = useState('')
@@ -130,9 +133,9 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const canSubmit = name.trim().length > 0 && handleValid && neighborhoodSlug !== '' && accepted
   const errorText =
     save.error instanceof ApiError && save.error.code === 'handle_taken'
-      ? 'Ese usuario ya está en uso — prueba con otro.'
+      ? t('onboarding.handle_taken')
       : save.isError
-        ? 'No se pudo guardar — revisa tus datos e intenta de nuevo.'
+        ? t('onboarding.profile_save_error')
         : null
 
   return (
@@ -142,25 +145,25 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
     >
-      <Title>¿Quién eres en la mesa?</Title>
-      <Body className="mt-1">Así te encuentran y reconocen tus amigos en Mesa.</Body>
+      <Title>{t('onboarding.who_are_you')}</Title>
+      <Body className="mt-1">{t('onboarding.identity_subtitle')}</Body>
 
-      <Eyebrow className="mt-6 mb-2">Nombre</Eyebrow>
+      <Eyebrow className="mt-6 mb-2">{t('onboarding.name_label')}</Eyebrow>
       <TextInput
         className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
         placeholderTextColor={placeholder}
-        placeholder="Tu nombre"
+        placeholder={t('onboarding.name_placeholder')}
         autoComplete="name"
         textContentType="name"
         value={name}
         onChangeText={setName}
       />
 
-      <Eyebrow className="mt-5 mb-2">@usuario · opcional</Eyebrow>
+      <Eyebrow className="mt-5 mb-2">{t('onboarding.handle_label')}</Eyebrow>
       <TextInput
         className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
         placeholderTextColor={placeholder}
-        placeholder="@tuusuario"
+        placeholder={t('onboarding.handle_placeholder')}
         autoCapitalize="none"
         autoCorrect={false}
         value={handle}
@@ -169,17 +172,15 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       {/* This is what people tap "Compartir perfil" against later — skipping
           it silently breaks that share link, so the helper line says so up
           front instead of leaving it read as a pure Instagram field. */}
-      <Caption className="mt-1">Sirve para compartir tu perfil. Puede ser tu Instagram.</Caption>
+      <Caption className="mt-1">{t('onboarding.handle_helper')}</Caption>
       {handle.length > 0 && !handleValid && (
-        <Caption className="mt-1 text-status-packed">
-          2–30 caracteres: letras, números, _ o .
-        </Caption>
+        <Caption className="mt-1 text-status-packed">{t('onboarding.handle_rules')}</Caption>
       )}
 
-      <Eyebrow className="mt-5 mb-2">Sector</Eyebrow>
+      <Eyebrow className="mt-5 mb-2">{t('rank.sector')}</Eyebrow>
       {neighborhoodsError ? (
         <ErrorState onRetry={() => refetchNeighborhoods()}>
-          No se pudieron cargar los sectores.
+          {t('onboarding.neighborhoods_error')}
         </ErrorState>
       ) : (
         <View className="flex-row flex-wrap gap-2">
@@ -207,10 +208,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         >
           {accepted && <CheckIcon size={14} color="accent-strong" />}
         </View>
-        <Caption className="flex-1">
-          Acepto los Términos y el EULA de Mesa, y entiendo que el contenido inapropiado y los
-          usuarios abusivos pueden ser reportados, bloqueados y eliminados.
-        </Caption>
+        <Caption className="flex-1">{t('onboarding.eula_accept')}</Caption>
       </Pressable>
 
       {errorText && <Caption className="mt-3 text-status-packed">{errorText}</Caption>}
@@ -221,7 +219,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           disabled={!canSubmit || save.isPending}
           onPress={() => save.mutate()}
         >
-          {save.isPending ? 'Guardando…' : 'Continuar'}
+          {save.isPending ? t('common.saving') : t('onboarding.continue')}
         </Button>
       </View>
     </ScrollView>
@@ -235,6 +233,7 @@ const MIN_TO_RANK = 3
 const MAX_TO_RANK = 8
 
 function RankStep({ onNext }: { onNext: () => void }) {
+  const t = useT()
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['onboarding', 'candidates'],
     queryFn: () => api.get<{ restaurants: Restaurant[] }>('/onboarding/candidates'),
@@ -254,11 +253,11 @@ function RankStep({ onNext }: { onNext: () => void }) {
     onSuccess: onNext,
   })
 
-  if (isPending) return <Body className="px-5 pt-8">Cargando spots…</Body>
+  if (isPending) return <Body className="px-5 pt-8">{t('onboarding.loading_spots')}</Body>
   if (isError) {
     return (
       <View className="flex-1 items-center justify-center px-5">
-        <ErrorState onRetry={() => refetch()}>No se pudieron cargar los spots.</ErrorState>
+        <ErrorState onRetry={() => refetch()}>{t('onboarding.spots_error')}</ErrorState>
       </View>
     )
   }
@@ -275,9 +274,9 @@ function RankStep({ onNext }: { onNext: () => void }) {
     return (
       <View className="flex-1">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-4">
-          <Title>¿A cuáles de estos has ido?</Title>
+          <Title>{t('onboarding.which_have_you_been')}</Title>
           <Body className="mt-1">
-            Elige {MIN_TO_RANK}–{MAX_TO_RANK}. Después los pondrás en orden.
+            {t('onboarding.choose_range', { min: MIN_TO_RANK, max: MAX_TO_RANK })}
           </Body>
           <View className="mt-4 flex-row flex-wrap justify-between gap-y-4">
             {data?.restaurants.map((r) => {
@@ -324,8 +323,8 @@ function RankStep({ onNext }: { onNext: () => void }) {
             onPress={() => setPhase('compare')}
           >
             {selectedIds.length < MIN_TO_RANK
-              ? `Elige ${MIN_TO_RANK - selectedIds.length} más`
-              : `Rankear estos ${selectedIds.length}`}
+              ? t('onboarding.choose_more', { n: MIN_TO_RANK - selectedIds.length })
+              : t('onboarding.rank_these', { n: selectedIds.length })}
           </Button>
         </View>
       </View>
@@ -347,6 +346,7 @@ function ComparePhase({
   restaurants: Restaurant[]
   save: UseMutationResult<unknown, unknown, string[]>
 }) {
+  const t = useT()
   const [state, setState] = useState(() => initPairwise(restaurants))
   const comparison = nextComparison(state)
   const { placed, total } = progress(state)
@@ -374,11 +374,11 @@ function ComparePhase({
     if (save.isError) {
       return (
         <View className="flex-1 items-center justify-center px-5">
-          <ErrorState onRetry={submit}>No se pudieron guardar tus rankings.</ErrorState>
+          <ErrorState onRetry={submit}>{t('onboarding.save_rankings_error')}</ErrorState>
         </View>
       )
     }
-    return <Body className="px-5 pt-10 text-center">Guardando tus rankings…</Body>
+    return <Body className="px-5 pt-10 text-center">{t('onboarding.saving_rankings')}</Body>
   }
 
   const pick = (currentWins: boolean) => setState((s) => choose(s, currentWins))
@@ -395,7 +395,7 @@ function ComparePhase({
       <Text className="font-mono text-eyebrow text-text-muted">
         {placed + 1} de {total}
       </Text>
-      <Title className="mt-1 text-center">¿Cuál estuvo mejor?</Title>
+      <Title className="mt-1 text-center">{t('rank.which_was_better')}</Title>
 
       <View className="mt-4 gap-3">
         <CompareCard item={toItem(comparison.current)} onPress={() => pick(true)} />
@@ -405,7 +405,7 @@ function ComparePhase({
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
           <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            Más o menos igual
+            {t('rank.roughly_equal')}
           </Text>
         </Pressable>
         <CompareCard item={toItem(comparison.pivot)} onPress={() => pick(false)} />
@@ -417,7 +417,7 @@ function ComparePhase({
         className="mt-5 min-h-[44px] items-center justify-center active:opacity-60"
       >
         <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-          ¿No has ido a uno? Cámbialo
+          {t('onboarding.havent_been_swap')}
         </Text>
       </Pressable>
     </ScrollView>
@@ -428,6 +428,7 @@ function ComparePhase({
 // the cold-start fix). Contact import asks permission just-in-time (App Store
 // 5.1). Following is optimistic — both API calls are idempotent.
 function FriendsStep({ onFinish }: { onFinish: () => void }) {
+  const t = useT()
   const queryClient = useQueryClient()
   // Membership only, not a source of truth for the toggle itself — each row
   // owns its own `useFollow` now (optimistic + rollback + a real error
@@ -461,11 +462,11 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
     mutationFn: async () => {
       const result = await importContactPhones()
       if (result.status === 'unsupported') {
-        setContactMsg('Importar contactos funciona en la app del teléfono.')
+        setContactMsg(t('onboarding.contacts_unsupported'))
         return
       }
       if (result.status === 'denied') {
-        setContactMsg('No hay problema — puedes agregar amigos cuando quieras desde tu perfil.')
+        setContactMsg(t('onboarding.contacts_denied'))
         return
       }
       const { users } = await api.post<{ users: SuggestedUser[] }>('/onboarding/contacts/match', {
@@ -474,13 +475,13 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
       setMatched(users)
       setContactMsg(
         users.length
-          ? `${users.length} contactos están en Mesa.`
-          : 'Todavía no hay contactos en Mesa.',
+          ? t('onboarding.contacts_found', { n: users.length })
+          : t('onboarding.contacts_none_found'),
       )
     },
     onError: (err) => {
       captureError(err, 'onboarding.contactMatch')
-      setContactMsg('No se pudo buscar en tus contactos. Intenta de nuevo.')
+      setContactMsg(t('onboarding.contacts_search_error'))
     },
   })
 
@@ -501,8 +502,8 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
   return (
     <View className="flex-1">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-4">
-        <Title>Sigue a algunos amigos</Title>
-        <Body className="mt-1">Sus rankings llenan tu feed. Ese es el punto de Mesa.</Body>
+        <Title>{t('onboarding.follow_some_friends')}</Title>
+        <Body className="mt-1">{t('onboarding.follow_subtitle')}</Body>
 
         {contactsAvailable() && (
           <View className="mt-4">
@@ -511,14 +512,14 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
               disabled={contactMatch.isPending}
               onPress={() => contactMatch.mutate()}
             >
-              {contactMatch.isPending ? 'Buscando…' : 'Buscar amigos en tus contactos'}
+              {contactMatch.isPending ? t('rank.searching') : t('onboarding.search_contacts')}
             </Button>
           </View>
         )}
         {contactMsg && <Caption className="mt-2">{contactMsg}</Caption>}
 
         <View className="mt-4">
-          {suggested.isPending && <Body>Buscando gente…</Body>}
+          {suggested.isPending && <Body>{t('onboarding.finding_people')}</Body>}
           {list.map((u) => (
             <PersonRow
               key={u.id}
@@ -538,7 +539,9 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
 
       <View className="px-5 pb-4">
         <Button variant="primary" onPress={done}>
-          {followed.size > 0 ? `Listo — siguiendo a ${followed.size}` : 'Omitir por ahora'}
+          {followed.size > 0
+            ? t('onboarding.done_following', { n: followed.size })
+            : t('onboarding.skip_for_now')}
         </Button>
       </View>
     </View>

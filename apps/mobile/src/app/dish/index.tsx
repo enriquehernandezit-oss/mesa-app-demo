@@ -14,9 +14,10 @@ import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
-import { GRAINS, GRAIN_LABEL_ES, type Grain } from '@/lib/display'
+import { type Grain, grainLabel, grainOptions } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -34,6 +35,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // The grain treatment is sent as a field but not previewed (a Cloudinary
 // delivery transform in prod; RN can't apply the CSS filter the web preview used).
 export default function DishCompose() {
+  const t = useT()
   const { restaurant: restaurantId } = useLocalSearchParams<{ restaurant: string }>()
   const router = useRouter()
   const navigation = useNavigation()
@@ -82,8 +84,8 @@ export default function DishCompose() {
       captureError(err, 'dish.post')
       toast({
         variant: 'error',
-        message: 'No se pudo publicar el plato.',
-        action: { label: 'Intentar de nuevo', onClick: () => post.mutate() },
+        message: t('dish.post_error'),
+        action: { label: t('common.retry'), onClick: () => post.mutate() },
       })
     },
   })
@@ -119,8 +121,8 @@ export default function DishCompose() {
   if (q.isError) {
     return (
       <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-        <BackBar label="‹ Atrás" onPress={goBack} />
-        <ErrorState onRetry={() => q.refetch()}>No se pudo cargar este spot.</ErrorState>
+        <BackBar label={t('common.back')} onPress={goBack} />
+        <ErrorState onRetry={() => q.refetch()}>{t('dish.load_error')}</ErrorState>
       </View>
     )
   }
@@ -129,19 +131,17 @@ export default function DishCompose() {
   if (q.isSuccess && !hasRanked) {
     return (
       <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-        <BackBar label="‹ Atrás" onPress={goBack} />
-        <Eyebrow className="mt-3">Publicar un plato</Eyebrow>
-        <Title>{restaurant?.name ?? 'Un plato'}</Title>
+        <BackBar label={t('common.back')} onPress={goBack} />
+        <Eyebrow className="mt-3">{t('dish.post_title')}</Eyebrow>
+        <Title>{restaurant?.name ?? t('dish.default_name')}</Title>
         <View className="mt-6 items-center gap-4">
-          <Body className="text-center">
-            Rankea este spot primero — un plato se vincula a tu ranking.
-          </Body>
+          <Body className="text-center">{t('dish.rank_first_body')}</Body>
           <Button
             variant="primary"
             className="w-auto px-6"
             onPress={() => router.replace(`/rank?restaurant=${restaurantId}`)}
           >
-            Rankear
+            {t('dish.rank_button')}
           </Button>
         </View>
       </View>
@@ -152,7 +152,7 @@ export default function DishCompose() {
   if (step === 'photo') {
     return (
       <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-        <BackBar label="✕ Cancelar" onPress={goBack} />
+        <BackBar label={t('dish.cancel')} onPress={goBack} />
 
         <Pressable
           accessibilityRole="button"
@@ -167,17 +167,17 @@ export default function DishCompose() {
                 contentFit="cover"
               />
               <View className="absolute right-3 bottom-3 rounded-pill bg-surface px-2 py-1">
-                <Caption className="font-mono text-micro">film · {GRAIN_LABEL_ES[grain]}</Caption>
+                <Caption className="font-mono text-micro">film · {grainLabel(grain)}</Caption>
               </View>
             </>
           ) : (
-            <Text className="font-ui-medium text-label text-text-muted">＋ Agregar una foto</Text>
+            <Text className="font-ui-medium text-label text-text-muted">{t('dish.add_photo')}</Text>
           )}
         </Pressable>
 
         {image && (
           <View className="mt-3 flex-row gap-2">
-            {GRAINS.map((g) => (
+            {grainOptions().map((g) => (
               <Chip
                 key={g.value}
                 size="sm"
@@ -193,7 +193,7 @@ export default function DishCompose() {
         <View className="flex-1" />
         <View style={{ paddingBottom: insets.bottom + 12 }}>
           <Button variant="primary" disabled={!image} onPress={() => setStep('details')}>
-            Siguiente
+            {t('dish.next')}
           </Button>
         </View>
       </View>
@@ -205,7 +205,7 @@ export default function DishCompose() {
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="px-5">
-        <BackBar label="‹ Nuevo plato" onPress={() => setStep('photo')} />
+        <BackBar label={t('dish.new_dish_back')} onPress={() => setStep('photo')} />
       </View>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -227,7 +227,7 @@ export default function DishCompose() {
             <TextInput
               className="border-line border-b pb-1 font-serif text-serif-md text-text"
               placeholderTextColor={placeholder}
-              placeholder="Short rib, 14 horas…"
+              placeholder={t('dish.name_placeholder')}
               maxLength={60}
               value={name}
               onChangeText={setName}
@@ -235,12 +235,12 @@ export default function DishCompose() {
               submitBehavior="submit"
               onSubmitEditing={() => captionRef.current?.focus()}
             />
-            <Caption className="mt-1 font-mono text-micro">Nombre del plato</Caption>
+            <Caption className="mt-1 font-mono text-micro">{t('dish.name_caption')}</Caption>
             <TextInput
               className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
               placeholderTextColor={placeholder}
               ref={captionRef}
-              placeholder="Se deshace con el tenedor."
+              placeholder={t('dish.caption_placeholder')}
               maxLength={140}
               value={caption}
               onChangeText={setCaption}
@@ -251,7 +251,7 @@ export default function DishCompose() {
 
         {myRanking && restaurant && (
           <>
-            <SectionHeader>Ranking vinculado</SectionHeader>
+            <SectionHeader>{t('dish.linked_ranking')}</SectionHeader>
             {/* router.push, not a dismiss: this only stacks the profile on
                 top — the composer (and whatever's typed so far) is still
                 there on the way back, same as the rank flow's own nested
@@ -275,21 +275,23 @@ export default function DishCompose() {
         )}
 
         <View className="mt-4 flex-row items-center justify-between border-line border-b py-3">
-          <Text className="flex-1 font-ui text-body text-text">Compartir solo con amigos</Text>
+          <Text className="flex-1 font-ui text-body text-text">
+            {t('dish.friends_only_label')}
+          </Text>
           <Toggle
             checked={friendsOnly}
             onChange={setFriendsOnly}
-            label="Compartir solo con amigos"
+            label={t('dish.friends_only_label')}
           />
         </View>
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
-          <Caption className="mt-3 text-status-packed">Rankea este spot primero.</Caption>
+          <Caption className="mt-3 text-status-packed">{t('dish.rank_first_error')}</Caption>
         )}
 
         <View className="mt-6">
           <Button variant="primary" disabled={!canPost} onPress={() => post.mutate()}>
-            {post.isPending ? 'Publicando…' : 'Publicar plato'}
+            {post.isPending ? t('dish.publishing') : t('dish.publish_button')}
           </Button>
         </View>
       </ScrollView>

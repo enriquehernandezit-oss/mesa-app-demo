@@ -1,6 +1,7 @@
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
-import { authErrorEs } from '@/lib/authErrors'
+import { authErrorMessage } from '@/lib/authErrors'
+import { useT } from '@/lib/i18n'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
@@ -15,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 type State = 'verifying' | 'done' | 'expired' | 'missing'
 
 export default function VerifyEmail() {
+  const t = useT()
   const { token, error: errorParam } = useLocalSearchParams<{ token?: string; error?: string }>()
   const router = useRouter()
   const [state, setState] = useState<State>(errorParam ? 'expired' : token ? 'verifying' : 'done')
@@ -28,7 +30,7 @@ export default function VerifyEmail() {
       .then((res) => {
         if (cancelled) return
         if (res.error) {
-          setError(authErrorEs(res.error, 'Ese enlace ya no sirve.'))
+          setError(authErrorMessage(res.error, t('auth.INVALID_TOKEN')))
           setState('expired')
           return
         }
@@ -36,7 +38,7 @@ export default function VerifyEmail() {
       })
       .catch(() => {
         if (cancelled) return
-        setError('No pudimos conectar. Intenta de nuevo.')
+        setError(t('auth.status_502'))
         setState('expired')
       })
     return () => {
@@ -54,18 +56,18 @@ export default function VerifyEmail() {
         <View className="items-center gap-2">
           <Wordmark size={64} />
           <Eyebrow className="font-mono text-accent-strong">
-            {state === 'done' ? 'Correo confirmado' : 'Confirma tu correo'}
+            {state === 'done' ? t('auth.verify_confirmed_eyebrow') : t('auth.verify_pending_eyebrow')}
           </Eyebrow>
 
-          {state === 'verifying' && <Caption>Confirmando…</Caption>}
+          {state === 'verifying' && <Caption>{t('auth.verify_verifying')}</Caption>}
 
           {state === 'done' && (
             <>
               <SerifItalic className="text-title text-center">
-                Listo. Tu correo quedó confirmado.
+                {t('auth.verify_done_title')}
               </SerifItalic>
               <Body className="max-w-[19rem] text-center text-text-2">
-                Ya puedes rankear, escribir notas y agregar platos.
+                {t('auth.verify_done_body')}
               </Body>
             </>
           )}
@@ -73,12 +75,10 @@ export default function VerifyEmail() {
           {(state === 'expired' || state === 'missing') && (
             <>
               <SerifItalic className="text-title text-center">
-                {state === 'missing'
-                  ? 'A este enlace le falta el token.'
-                  : 'Ese enlace ya no sirve.'}
+                {state === 'missing' ? t('auth.verify_missing_token') : t('auth.INVALID_TOKEN')}
               </SerifItalic>
               <Body className="max-w-[19rem] text-center text-text-2">
-                Entra a Mesa y pide uno nuevo desde Ajustes — los enlaces vencen por seguridad.
+                {t('auth.verify_expired_body')}
               </Body>
               {error && (
                 <Caption className="text-center text-status-packed" accessibilityRole="alert">
@@ -91,7 +91,7 @@ export default function VerifyEmail() {
 
         <View className="mt-4">
           <Button variant="primary" onPress={enter}>
-            {state === 'done' ? 'Entrar a Mesa' : 'Ir a Mesa'}
+            {state === 'done' ? t('auth.verify_enter_done') : t('auth.verify_enter_pending')}
           </Button>
         </View>
       </View>

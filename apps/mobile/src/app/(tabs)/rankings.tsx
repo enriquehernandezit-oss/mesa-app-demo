@@ -19,18 +19,19 @@ import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { tapLight } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { removeRankingWithUndo } from '@/lib/rankingRemoval'
 import {
   NO_FILTERS,
   type RankingFilters,
-  SORT_OPTIONS,
   type SortKey,
   activeFilterCount,
   applyFilters,
   deriveFilterOptions,
   filterChipLabel,
   sortLabel,
+  sortOptions,
   sortRankings,
 } from '@/lib/rankingSort'
 import { shareListCard } from '@/lib/shareCardStore'
@@ -62,6 +63,7 @@ import Animated, { LinearTransition } from 'react-native-reanimated'
 // (shareListCard → ShareCardHost).
 export default function RankingsTab() {
   const router = useRouter()
+  const t = useT()
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
@@ -97,12 +99,13 @@ export default function RankingsTab() {
   )
 
   const openSort = async () => {
+    const options = sortOptions()
     const idx = await showSheet({
-      title: 'Ordenar por',
-      options: SORT_OPTIONS.map((o) => ({ label: o.label })),
-      selectedIndex: SORT_OPTIONS.findIndex((o) => o.key === sort),
+      title: t('rankings.sort_by'),
+      options: options.map((o) => ({ label: o.label })),
+      selectedIndex: options.findIndex((o) => o.key === sort),
     })
-    if (idx != null) setSort(SORT_OPTIONS[idx].key)
+    if (idx != null) setSort(options[idx].key)
   }
 
   // The share-my-list story card (the growth loop): the top 5, over the top
@@ -125,13 +128,13 @@ export default function RankingsTab() {
     <>
       <View className="flex-row items-start justify-between">
         <View>
-          <Eyebrow>Tu lista</Eyebrow>
-          <Title className="mb-3">Rankings</Title>
+          <Eyebrow>{t('settings.your_list')}</Eyebrow>
+          <Title className="mb-3">{t('rankings.title')}</Title>
         </View>
         {ranked.length > 0 && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Compartir mi lista"
+            accessibilityLabel={t('rankings.share_my_list')}
             onPress={shareList}
             className="h-10 w-10 items-center justify-center rounded-pill border border-line active:opacity-70"
           >
@@ -151,17 +154,17 @@ export default function RankingsTab() {
         <View className="mb-4 flex-row gap-6">
           <Stat
             n={stats.data ? String(stats.data.places) : '—'}
-            l="lugares"
+            l={t('rankings.places')}
             onPress={() => setTab('mine')}
           />
           <Stat
             n={stats.data ? String(stats.data.saved) : '—'}
-            l="quiero probar"
+            l={t('rankings.want_to_try_stat')}
             onPress={() => setTab('saved')}
           />
           <Stat
             n={stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—'}
-            l="sem. de racha"
+            l={t('rankings.streak_weeks')}
             onPress={() => router.push('/leaderboard')}
           />
         </View>
@@ -169,13 +172,13 @@ export default function RankingsTab() {
 
       <View className="mb-4 flex-row gap-2">
         <Chip state={tab === 'mine' ? 'selected' : 'default'} onPress={() => setTab('mine')}>
-          Mía
+          {t('rankings.mine_tab')}
         </Chip>
         <Chip state={tab === 'saved' ? 'selected' : 'default'} onPress={() => setTab('saved')}>
-          Quiero probar
+          {t('restaurant.want_to_try_label')}
         </Chip>
         <Chip state={tab === 'barrios' ? 'selected' : 'default'} onPress={() => setTab('barrios')}>
-          Sectores
+          {t('rankings.sectors_tab')}
         </Chip>
       </View>
     </>
@@ -194,7 +197,9 @@ export default function RankingsTab() {
           chevron
           onPress={() => setFilterOpen((v) => !v)}
         >
-          {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
+          {activeCount > 0
+            ? t('rankings.filters_count', { n: activeCount })
+            : t('rankings.filters')}
         </Chip>
         {filters.sector && (
           <Chip
@@ -238,7 +243,7 @@ export default function RankingsTab() {
             onPress={() => setFilters(NO_FILTERS)}
             className="min-h-[36px] justify-center px-1 active:opacity-60"
           >
-            <Caption className="font-mono text-accent-strong">Limpiar</Caption>
+            <Caption className="font-mono text-accent-strong">{t('rankings.clear')}</Caption>
           </Pressable>
         )}
       </View>
@@ -246,7 +251,7 @@ export default function RankingsTab() {
       {filterOpen && (
         <View className="gap-3 rounded border border-line bg-surface p-3">
           <FilterGroup
-            label="Sector"
+            label={t('rank.sector')}
             values={filterOptions.sectors}
             selected={filters.sector}
             render={(v) => String(v)}
@@ -255,7 +260,7 @@ export default function RankingsTab() {
             }
           />
           <FilterGroup
-            label="Ocasión"
+            label={t('rankings.occasion_label')}
             values={filterOptions.occasions}
             selected={filters.occasion}
             render={(v) => tagLabel(String(v))}
@@ -264,14 +269,14 @@ export default function RankingsTab() {
             }
           />
           <FilterGroup
-            label="Precio"
+            label={t('rankings.price_label')}
             values={filterOptions.prices}
             selected={filters.price}
             render={(v) => priceLabel(Number(v)) ?? String(v)}
             onToggle={(v) => setFilters((f) => ({ ...f, price: f.price === v ? null : Number(v) }))}
           />
           <FilterGroup
-            label="Cocina"
+            label={t('rankings.cuisine_label')}
             values={filterOptions.cuisines}
             selected={filters.cuisine}
             render={(v) => cuisineLabel(String(v)) ?? String(v)}
@@ -316,30 +321,28 @@ export default function RankingsTab() {
                 <Skeleton height={72} />
               </View>
             ) : mine.isError ? (
-              <ErrorState onRetry={() => mine.refetch()}>
-                No se pudieron cargar tus rankings.
-              </ErrorState>
+              <ErrorState onRetry={() => mine.refetch()}>{t('rankings.load_error')}</ErrorState>
             ) : activeCount > 0 ? (
               <EmptyState
-                body="Ningún ranking coincide con estos filtros."
+                body={t('rankings.no_filter_matches')}
                 action={
                   <Button size="sm" variant="secondary" onPress={() => setFilters(NO_FILTERS)}>
-                    Limpiar filtros
+                    {t('rankings.clear_filters')}
                   </Button>
                 }
               >
-                Nada coincide.
+                {t('rankings.nothing_matches')}
               </EmptyState>
             ) : (
               <EmptyState
-                body="Rankea un spot y ocupa su puesto en tu pasaporte."
+                body={t('rankings.empty_body')}
                 action={
                   <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
-                    Rankear un spot
+                    {t('rankings.rank_a_spot')}
                   </Button>
                 }
               >
-                Tu lista está vacía.
+                {t('rankings.empty_title')}
               </EmptyState>
             )
           }
@@ -370,20 +373,20 @@ export default function RankingsTab() {
             <Skeleton height={64} />
           ) : saved.isError ? (
             <ErrorState onRetry={() => saved.refetch()}>
-              No se pudo cargar tu lista de "Quiero probar".
+              {t('rankings.saved_load_error')}
             </ErrorState>
           ) : saved.data && saved.data.saved.length > 0 ? (
             saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
           ) : (
             <EmptyState
-              body="Los lugares que quieras probar se juntarán aquí."
+              body={t('rankings.saved_empty_body')}
               action={
                 <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
-                  Explorar spots
+                  {t('rankings.explore_spots')}
                 </Button>
               }
             >
-              Nada guardado todavía.
+              {t('rankings.saved_empty_title')}
             </EmptyState>
           )}
         </ScrollView>
@@ -399,6 +402,7 @@ export default function RankingsTab() {
 // optimistic remove + restore); the swipe is a second trigger for it.
 function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
   const ref = useRef<SwipeableMethods>(null)
+  const t = useT()
   return (
     // layout= makes a removal slide the neighbours up rather than teleporting
     // them — it matters right after a swipe, and again when undo puts the row back.
@@ -412,7 +416,7 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
       renderRightActions={() => (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Quitar"
+          accessibilityLabel={t('rankings.remove')}
           onPress={() => {
             // Close first: the row is removed optimistically, and a half-open
             // swipeable left behind reads as a stuck row.
@@ -421,7 +425,7 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
           }}
           className="w-[88px] items-center justify-center bg-status-packed active:opacity-80"
         >
-          <Text className="font-ui-medium text-label text-on-accent">Quitar</Text>
+          <Text className="font-ui-medium text-label text-on-accent">{t('rankings.remove')}</Text>
         </Pressable>
       )}
     >
@@ -433,6 +437,7 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
 function RankingRow({ ranking }: { ranking: Ranking }) {
   const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
+  const t = useT()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(ranking.note ?? '')
 
@@ -446,8 +451,8 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
     onError: () =>
       toast({
         variant: 'error',
-        message: 'No se pudo guardar la nota',
-        action: { label: 'Intentar de nuevo', onClick: () => saveNote.mutate() },
+        message: t('rankings.note_save_error'),
+        action: { label: t('common.retry'), onClick: () => saveNote.mutate() },
       }),
   })
 
@@ -482,7 +487,9 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
               {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
                 <View className="mt-1 flex-row flex-wrap items-center gap-2">
                   {ranking.favoriteDish && (
-                    <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+                    <Caption className="text-text-2">
+                      {t('rankings.order_this', { dish: ranking.favoriteDish })}
+                    </Caption>
                   )}
                   {(ranking.tags ?? []).map((t) => (
                     <Caption key={t} className="font-mono text-micro">
@@ -498,7 +505,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
               <TextInput
                 className="min-h-[64px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
                 placeholderTextColor={placeholder}
-                placeholder="Una línea sobre por qué…"
+                placeholder={t('rankings.note_placeholder')}
                 maxLength={140}
                 multiline
                 inputAccessoryViewID="ranking-note"
@@ -507,7 +514,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
               />
               <View className="flex-row gap-4">
                 <ActionText disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>
-                  Guardar
+                  {t('rankings.save')}
                 </ActionText>
                 <ActionText
                   onPress={() => {
@@ -515,7 +522,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                     setEditing(false)
                   }}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </ActionText>
               </View>
             </View>
@@ -536,14 +543,17 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                   (SwipeToRemove, above). */}
               <View className="mt-2">
                 <ActionText onPress={() => setEditing(true)}>
-                  {ranking.note ? 'Editar nota' : 'Agregar nota'}
+                  {ranking.note ? t('rankings.edit_note') : t('rankings.add_note')}
                 </ActionText>
               </View>
             </>
           )}
         </View>
         <Link href={`/rank?restaurant=${ranking.restaurant.id}`} asChild>
-          <Pressable accessibilityRole="button" accessibilityLabel="Rankear otra vez">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('restaurant.rank_again_label')}
+          >
             <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
           </Pressable>
         </Link>
@@ -583,6 +593,7 @@ function BarriosView({
   onSelectSector,
 }: { rankings: Ranking[]; onSelectSector: (sector: string) => void }) {
   const router = useRouter()
+  const t = useT()
   // Keyed by the RAW neighborhood (nullable), not the display fallback — the
   // filter system (lib/rankingSort.ts) matches `filters.sector` against
   // `r.neighborhood` directly, so a bar's tap payload has to be that same raw
@@ -607,11 +618,11 @@ function BarriosView({
       <EmptyState
         action={
           <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
-            Rankear un spot
+            {t('rankings.rank_a_spot')}
           </Button>
         }
       >
-        Rankea algunos lugares primero.
+        {t('rankings.barrios_empty_body')}
       </EmptyState>
     )
   return (
@@ -622,7 +633,7 @@ function BarriosView({
             <View className="flex-row items-baseline justify-between">
               <Text className="font-serif text-serif-md text-text">{h.name}</Text>
               <Caption>
-                {h.count} · prom.{' '}
+                {h.count} · {t('rank.avg_abbrev')}{' '}
                 <Text style={DATA_FIGURES} className="text-accent">
                   {displayScore(h.avg)}
                 </Text>
@@ -655,14 +666,15 @@ function BarriosView({
 function SavedRow({ saved }: { saved: SavedPlace }) {
   const queryClient = useQueryClient()
   const router = useRouter()
+  const t = useT()
   const remove = useMutation({
     mutationFn: () => api.del(`/saved/${saved.restaurant.id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved'] }),
     onError: () =>
       toast({
         variant: 'error',
-        message: 'No se pudo quitar de tu lista',
-        action: { label: 'Intentar de nuevo', onClick: () => remove.mutate() },
+        message: t('restaurant.unsave_error'),
+        action: { label: t('common.retry'), onClick: () => remove.mutate() },
       }),
   })
   return (
@@ -684,10 +696,10 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
             className="w-auto min-h-[40px] px-4"
             onPress={() => router.push(`/rank?restaurant=${saved.restaurant.id}`)}
           >
-            Rankear
+            {t('rankings.rank_button')}
           </Button>
           <ActionText danger disabled={remove.isPending} onPress={() => remove.mutate()}>
-            {remove.isPending ? 'Quitando…' : 'Quitar'}
+            {remove.isPending ? t('rankings.removing') : t('rankings.remove')}
           </ActionText>
         </View>
       </View>

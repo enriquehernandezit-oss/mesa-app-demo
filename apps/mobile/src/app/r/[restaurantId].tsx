@@ -36,6 +36,7 @@ import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
@@ -62,6 +63,7 @@ export default function RestaurantProfile() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const t = useT()
   const { height: winH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
   const theme = useResolvedTheme()
@@ -107,7 +109,7 @@ export default function RestaurantProfile() {
     onError: (_err, save) =>
       toast({
         variant: 'error',
-        message: save ? 'No se pudo guardar.' : 'No se pudo quitar de tu lista.',
+        message: save ? t('restaurant.save_error') : t('restaurant.unsave_error'),
       }),
   })
 
@@ -116,7 +118,7 @@ export default function RestaurantProfile() {
     // hero + identity shape avoids content jumping into place on arrival.
     return (
       <View className="flex-1 bg-bg">
-        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         <Skeleton height={heroH} />
         <View className="px-5">
           <Skeleton height={11} width={90} className="mt-5" />
@@ -143,12 +145,12 @@ export default function RestaurantProfile() {
     const notFound = q.error instanceof ApiError && q.error.status === 404
     return (
       <View className="flex-1 bg-bg">
-        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         <View className="px-5">
           {notFound ? (
-            <EmptyState>Spot no encontrado.</EmptyState>
+            <EmptyState>{t('restaurant.not_found')}</EmptyState>
           ) : (
-            <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el spot.</ErrorState>
+            <ErrorState onRetry={() => q.refetch()}>{t('restaurant.load_error')}</ErrorState>
           )}
         </View>
       </View>
@@ -243,7 +245,7 @@ export default function RestaurantProfile() {
           {mapCover && heroMapUrl ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+              accessibilityLabel={t('restaurant.view_on_map', { name: restaurant.name })}
               onPress={openPlaceMap}
               className="h-full w-full"
             >
@@ -263,12 +265,12 @@ export default function RestaurantProfile() {
             />
           )}
           <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
-            <GlassCircle accessibilityLabel="Atrás" onPress={goBack}>
+            <GlassCircle accessibilityLabel={t('common.back_plain')} onPress={goBack}>
               <BackIcon size={20} />
             </GlassCircle>
           </View>
           <View style={{ position: 'absolute', top: insets.top + 8, right: 16 }}>
-            <GlassCircle accessibilityLabel="Compartir" onPress={shareSpot}>
+            <GlassCircle accessibilityLabel={t('common.share')} onPress={shareSpot}>
               <ShareIcon size={18} />
             </GlassCircle>
           </View>
@@ -279,7 +281,7 @@ export default function RestaurantProfile() {
             {/* MapBox burns its attribution into the static image's corner, which
                 cover-crop then hides — so it's stated here when the hero is a map. */}
             <Caption className="font-mono text-micro">
-              {mapCover ? '© Mapbox © OpenStreetMap' : 'film · con velas'}
+              {mapCover ? t('restaurant.map_attribution') : t('restaurant.film_note')}
             </Caption>
           </View>
         </View>
@@ -312,7 +314,9 @@ export default function RestaurantProfile() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: saved }}
-                accessibilityLabel={saved ? 'Guardado — toca para quitar' : 'Quiero probar'}
+                accessibilityLabel={
+                  saved ? t('restaurant.saved_tap_remove') : t('restaurant.want_to_try_label')
+                }
                 onPress={() => toggleSave.mutate(!saved)}
                 disabled={toggleSave.isPending}
                 className={`h-10 w-10 items-center justify-center rounded-pill border ${saved ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-80`}
@@ -326,14 +330,14 @@ export default function RestaurantProfile() {
                   size="sm"
                   score={allMesa.avg}
                   attribution={{ kind: 'mesa', count: allMesa.count }}
-                  sub={`${allMesa.count} rankeados`}
+                  sub={t('settings.ranked_count', { n: allMesa.count })}
                 />
               </View>
             )}
             {restaurant.address ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+                accessibilityLabel={t('restaurant.view_on_map', { name: restaurant.name })}
                 onPress={openPlaceMap}
                 className="mt-1 self-start active:opacity-70"
               >
@@ -363,7 +367,7 @@ export default function RestaurantProfile() {
                 friendsWantToTry.count > 0
                   ? {
                       people: friendsWantToTry.people,
-                      label: `${friendsWantToTry.count} amigo${friendsWantToTry.count > 1 ? 's' : ''} quiere${friendsWantToTry.count > 1 ? 'n' : ''} probar`,
+                      label: t('restaurant.friends_want_to_try', { n: friendsWantToTry.count }),
                     }
                   : undefined
               }
@@ -374,46 +378,46 @@ export default function RestaurantProfile() {
           <View className="mt-5 flex-row gap-2">
             {restaurant.website ? (
               <UtilityPill icon={<WebIcon size={13} />} href={restaurant.website}>
-                Sitio web
+                {t('restaurant.website')}
               </UtilityPill>
             ) : null}
             {restaurant.phone ? (
               <UtilityPill icon={<PhoneIcon size={13} />} href={`tel:${restaurant.phone}`}>
-                Llamar
+                {t('restaurant.call')}
               </UtilityPill>
             ) : null}
             <UtilityPill
               icon={<DirectionsIcon size={13} />}
               onPress={() => openDirections(restaurant.lat, restaurant.lng, restaurant.name)}
             >
-              Cómo llegar
+              {t('restaurant.directions')}
             </UtilityPill>
           </View>
 
           {/* The badged score trio — every score is attributed, never the place's. */}
           {(myRanking || friendAvg != null || allMesa.avg != null) && (
             <>
-              <SectionHeader>Puntuaciones</SectionHeader>
+              <SectionHeader>{t('restaurant.scores_header')}</SectionHeader>
               <View className="mt-2 flex-row justify-around">
                 {myRanking && (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Rankear otra vez"
+                    accessibilityLabel={t('restaurant.rank_again_label')}
                     onPress={() => router.push(`/rank?restaurant=${restaurantId}`)}
                     className="active:opacity-80"
                   >
                     <ScoreBadge
                       score={myRanking.score}
                       attribution={{ kind: 'you' }}
-                      caption="Tu puntuación"
-                      sub={`#${myRanking.position} en tu lista`}
+                      caption={t('rank.your_score')}
+                      sub={t('rank.position_on_list', { position: myRanking.position })}
                     />
                   </Pressable>
                 )}
                 {friendAvg != null && (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Ver puntuaciones de tus amigos"
+                    accessibilityLabel={t('restaurant.view_friends_scores')}
                     onPress={() =>
                       scrollRef.current?.scrollTo({
                         y: identityY.current + scoresY.current,
@@ -425,14 +429,14 @@ export default function RestaurantProfile() {
                     <ScoreBadge
                       score={friendAvg}
                       attribution={{ kind: 'friends', count: friendsRankings.length }}
-                      sub="lo que piensan"
+                      sub={t('restaurant.what_they_think')}
                     />
                   </Pressable>
                 )}
                 {allMesa.avg != null && showMesa && (
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel="Ver quién lo rankeó"
+                    accessibilityLabel={t('restaurant.view_who_ranked')}
                     onPress={() =>
                       scrollRef.current?.scrollTo({
                         y: identityY.current + scoresY.current,
@@ -444,8 +448,8 @@ export default function RestaurantProfile() {
                     <ScoreBadge
                       score={allMesa.avg}
                       attribution={{ kind: 'mesa', count: allMesa.count }}
-                      caption="Todo Mesa"
-                      sub={`${allMesa.count} rankeados`}
+                      caption={t('restaurant.all_mesa')}
+                      sub={t('settings.ranked_count', { n: allMesa.count })}
                     />
                   </Pressable>
                 )}
@@ -469,7 +473,7 @@ export default function RestaurantProfile() {
           {!mapCover && mapUrl && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Ver ${restaurant.name} en el mapa`}
+              accessibilityLabel={t('restaurant.view_on_map', { name: restaurant.name })}
               onPress={openPlaceMap}
               className="mt-4 h-40 overflow-hidden rounded active:opacity-90"
             >
@@ -480,7 +484,9 @@ export default function RestaurantProfile() {
               />
               <View className="absolute right-3 bottom-3 flex-row items-center gap-1 rounded-pill bg-surface px-2 py-1">
                 <PinIcon size={12} />
-                <Caption className="font-mono text-micro">Ver en el mapa</Caption>
+                <Caption className="font-mono text-micro">
+                  {t('restaurant.view_on_map_short')}
+                </Caption>
               </View>
             </Pressable>
           )}
@@ -493,7 +499,7 @@ export default function RestaurantProfile() {
 
           {/* Similar spots rail. */}
           {similar.length > 0 && (
-            <SpotRail title="Spots parecidos">
+            <SpotRail title={t('restaurant.similar_spots')}>
               {similar.map((s) => (
                 <SpotCard
                   key={s.id}
@@ -521,7 +527,7 @@ export default function RestaurantProfile() {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Atrás"
+          accessibilityLabel={t('common.back_plain')}
           onPress={goBack}
           className="min-h-[44px] justify-center active:opacity-70"
         >
@@ -529,7 +535,7 @@ export default function RestaurantProfile() {
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Volver arriba"
+          accessibilityLabel={t('restaurant.scroll_to_top')}
           onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
           className="flex-1 active:opacity-70"
         >
@@ -553,7 +559,7 @@ export default function RestaurantProfile() {
         style={{ paddingBottom: insets.bottom + 12 }}
       >
         <Button variant="primary" onPress={() => router.push(`/rank?restaurant=${restaurantId}`)}>
-          {myRanking ? 'Rankear otra vez' : 'Rankear este spot'}
+          {myRanking ? t('restaurant.rank_again_button') : t('restaurant.rank_this_spot')}
         </Button>
       </View>
     </View>
@@ -564,18 +570,19 @@ export default function RestaurantProfile() {
 // serif score. Capped at 3 with a "See all N rankings" expander.
 function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friendsRankings'] }) {
   const [expanded, setExpanded] = useState(false)
+  const t = useT()
   if (rankings.length === 0) {
     return (
       <>
-        <SectionHeader>Sus puntuaciones</SectionHeader>
-        <Body className="mt-1">Cuando alguien que sigues rankee esto, aparecerá aquí.</Body>
+        <SectionHeader>{t('restaurant.their_scores')}</SectionHeader>
+        <Body className="mt-1">{t('restaurant.no_friend_scores')}</Body>
       </>
     )
   }
   const shown = expanded ? rankings : rankings.slice(0, 3)
   return (
     <>
-      <SectionHeader>Sus puntuaciones</SectionHeader>
+      <SectionHeader>{t('restaurant.their_scores')}</SectionHeader>
       {shown.map((fr) => (
         <FriendScoreRow key={fr.user.id} fr={fr} />
       ))}
@@ -586,7 +593,9 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
           className="min-h-[44px] justify-center active:opacity-60"
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {expanded ? 'Mostrar menos' : `Ver los ${rankings.length} rankings ›`}
+            {expanded
+              ? t('restaurant.show_less')
+              : t('restaurant.view_all_rankings', { n: rankings.length })}
           </Text>
         </Pressable>
       )}
@@ -601,12 +610,12 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
 // screen's worth of rows), so the action rides the same gesture as a comment
 // row on most social apps rather than adding a permanent extra line to each.
 function FriendScoreRow({ fr }: { fr: FriendRanking }) {
+  const t = useT()
   const report = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
-    onSuccess: () => toast({ message: 'Reportado. Gracias — lo revisaremos.' }),
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+    onSuccess: () => toast({ message: t('common.reported') }),
+    onError: () => toast({ variant: 'error', message: t('common.report_error') }),
   })
   const noteId = fr.noteId
   const onLongPress =
@@ -642,6 +651,7 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
 // post your own (only if you've ranked the place).
 function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd: boolean }) {
   const router = useRouter()
+  const t = useT()
   const q = useQuery({
     queryKey: ['dishes', restaurantId],
     queryFn: () => api.get<{ dishes: Dish[] }>(`/dishes/restaurant/${restaurantId}`),
@@ -660,18 +670,18 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
               className="min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-accent-strong uppercase tracking-eyebrow">
-                + Agregar un plato
+                {t('restaurant.add_dish')}
               </Text>
             </Pressable>
           ) : undefined
         }
       >
-        Platos populares
+        {t('restaurant.popular_dishes')}
       </SectionHeader>
       {q.isError ? (
-        <Caption className="mt-1">No se pudieron cargar los platos.</Caption>
+        <Caption className="mt-1">{t('restaurant.dishes_load_error')}</Caption>
       ) : dishes.length === 0 ? (
-        <Body className="mt-1">Todavía no hay platos — sé el primero.</Body>
+        <Body className="mt-1">{t('restaurant.no_dishes')}</Body>
       ) : (
         <ScrollView
           horizontal
@@ -700,7 +710,9 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
                   className="self-start active:opacity-70"
                 >
                   <Caption numberOfLines={1}>
-                    por {(d.user.name || d.user.handle || '').split(' ')[0]}
+                    {t('restaurant.by_name', {
+                      name: (d.user.name || d.user.handle || '').split(' ')[0],
+                    })}
                   </Caption>
                 </Pressable>
               </Pressable>

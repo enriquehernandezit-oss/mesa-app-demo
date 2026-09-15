@@ -7,6 +7,7 @@ import { ScoreBadge } from '@/components/ui/patterns'
 import { api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import type { MapSpot } from '@/lib/types'
 import { useMyLocation } from '@/lib/useMyLocation'
 import { useQuery } from '@tanstack/react-query'
@@ -22,6 +23,7 @@ import { Pressable, Text, View } from 'react-native'
 // pin opens the same card with the friends' average and a way into the spot.
 export default function MapScreen() {
   const router = useRouter()
+  const t = useT()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
@@ -38,16 +40,16 @@ export default function MapScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel="Atrás" />
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       <View className="px-5 pb-3">
         <Eyebrow>Santo Domingo</Eyebrow>
-        <Title>El mapa</Title>
+        <Title>{t('map.title')}</Title>
         {rankedByFriends > 0 && (
           // text-text-2, not text-accent: this line names a fact, it doesn't
           // open or toggle anything, and accent everywhere else on this
           // screen (the "Ubícame"/retry text below) IS a control.
           <Body className="text-text-2">
-            {rankedByFriends} spot{rankedByFriends === 1 ? '' : 's'} que tus amigos han rankeado.
+            {t('map.friends_ranked_count', { n: rankedByFriends })}
           </Body>
         )}
         {locationStatus === 'idle' && (
@@ -56,39 +58,35 @@ export default function MapScreen() {
             onPress={() => requestLocation()}
             className="min-h-[40px] justify-center active:opacity-60"
           >
-            <Text className="font-ui-medium text-label text-accent-strong">Ubícame en el mapa</Text>
+            <Text className="font-ui-medium text-label text-accent-strong">
+              {t('map.locate_me')}
+            </Text>
           </Pressable>
         )}
-        {locationStatus === 'loading' && <Caption>Buscando tu ubicación…</Caption>}
-        {locationStatus === 'denied' && (
-          <Caption>
-            La ubicación está desactivada. Actívala para Mesa en los ajustes del teléfono.
-          </Caption>
-        )}
+        {locationStatus === 'loading' && <Caption>{t('map.locating')}</Caption>}
+        {locationStatus === 'denied' && <Caption>{t('map.location_disabled')}</Caption>}
         {locationStatus === 'error' && (
           <Pressable
             accessibilityRole="button"
             onPress={() => requestLocation()}
             className="min-h-[40px] justify-center active:opacity-60"
           >
-            <Caption>No pudimos ubicarte. Toca para intentar de nuevo.</Caption>
+            <Caption>{t('map.location_error')}</Caption>
           </Pressable>
         )}
       </View>
 
       <View className="flex-1">
         {q.isPending ? (
-          <Body className="px-5">Cargando el mapa…</Body>
+          <Body className="px-5">{t('map.loading')}</Body>
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el mapa.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('map.load_error')}</ErrorState>
         ) : spots.length === 0 ? (
-          <EmptyState>Aún no hay spots.</EmptyState>
+          <EmptyState>{t('map.no_spots')}</EmptyState>
         ) : HAS_MAP_TOKEN ? (
           <MesaMap spots={spots} me={myPosition} onSelect={setSelectedId} style={{ flex: 1 }} />
         ) : (
-          <EmptyState body="El mapa llega con la próxima versión.">
-            El mapa no está disponible.
-          </EmptyState>
+          <EmptyState body={t('map.coming_soon_body')}>{t('map.unavailable')}</EmptyState>
         )}
       </View>
 
@@ -98,6 +96,7 @@ export default function MapScreen() {
 }
 
 function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
+  const t = useT()
   const meta = [cuisineLabel(spot.cuisine), spot.neighborhood, priceLabel(spot.priceTier)]
     .filter(Boolean)
     .join(' · ')
@@ -130,7 +129,7 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
                 />
               </View>
             ) : (
-              <Caption className="mt-1">Nadie que sigues lo ha rankeado aún.</Caption>
+              <Caption className="mt-1">{t('map.nobody_ranked')}</Caption>
             )}
           </View>
         </Pressable>
@@ -142,11 +141,15 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
           className="min-h-[36px] flex-row items-center gap-1 active:opacity-70"
         >
           <DirectionsIcon size={14} />
-          <Text className="font-mono text-eyebrow text-text-muted">Cómo llegar</Text>
+          <Text className="font-mono text-eyebrow text-text-muted">
+            {t('restaurant.directions')}
+          </Text>
         </Pressable>
         <Link href={`/r/${spot.id}`} asChild>
           <Pressable accessibilityRole="button" onPress={onClose} className="active:opacity-70">
-            <Text className="font-ui-medium text-label text-accent-strong">Ver ›</Text>
+            <Text className="font-ui-medium text-label text-accent-strong">
+              {t('map.view_arrow')}
+            </Text>
           </Pressable>
         </Link>
       </View>

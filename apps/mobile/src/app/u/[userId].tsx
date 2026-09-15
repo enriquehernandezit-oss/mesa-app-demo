@@ -18,6 +18,7 @@ import { useFollow } from '@/hooks/useFollow'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { tagLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -34,6 +35,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 export default function UserRankings() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const router = useRouter()
+  const t = useT()
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
@@ -76,7 +78,7 @@ export default function UserRankings() {
       }
       router.replace('/discover')
     },
-    onError: () => toast({ variant: 'error', message: 'No se pudo bloquear. Intenta de nuevo.' }),
+    onError: () => toast({ variant: 'error', message: t('passport.block_error') }),
   })
   // `initial` starts false before `q.data` resolves and re-syncs the instant
   // it does — see useFollow's own comment on why that's race-free.
@@ -89,14 +91,13 @@ export default function UserRankings() {
   const reportUser = useMutation({
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+    onError: () => toast({ variant: 'error', message: t('common.report_error') }),
   })
 
   if (q.isPending) {
     return (
       <View className="flex-1 bg-bg">
-        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         <View className="items-center gap-3 pt-2">
           <Skeleton height={88} width={88} />
           <Skeleton height={14} width={120} />
@@ -114,11 +115,11 @@ export default function UserRankings() {
     const gone = q.error instanceof ApiError && q.error.status === 404
     return (
       <View className="flex-1 bg-bg">
-        <ScreenHeader onBack={goBack} backLabel="Atrás" />
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         {gone ? (
-          <EmptyState>Este perfil no está disponible.</EmptyState>
+          <EmptyState>{t('passport.not_available')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar este perfil.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('passport.load_error')}</ErrorState>
         )}
       </View>
     )
@@ -127,13 +128,16 @@ export default function UserRankings() {
   // isFollowing comes from useFollow above, not q.data directly — it stays in
   // sync with the server value but flips optimistically on tap.
   const { user, rankings, matchPercent, sharedCount, followerCount, followingCount } = q.data
-  const firstName = (user.name || user.handle || '').split(' ')[0] || 'esta persona'
+  const firstName = (user.name || user.handle || '').split(' ')[0] || t('passport.someone_fallback')
   const barrio = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel={user.name || user.handle || 'Atrás'} />
+      <ScreenHeader
+        onBack={goBack}
+        backLabel={user.name || user.handle || t('common.back_plain')}
+      />
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
@@ -152,12 +156,14 @@ export default function UserRankings() {
                   a Chip everywhere else in the app IS a control. */}
               <View className="min-h-[36px] justify-center rounded-pill bg-accent-fill px-3">
                 <Text className="font-ui-medium text-label text-on-accent">
-                  +{matchPercent}% de gustos en común
+                  {t('passport.match_percent', { n: matchPercent })}
                 </Text>
               </View>
               {/* The denominator behind the percentage — a match with no shared
                   count is the least trustworthy way to show a number. */}
-              <Caption className="font-mono text-micro">sobre {sharedCount} spots en común</Caption>
+              <Caption className="font-mono text-micro">
+                {t('passport.shared_spots', { n: sharedCount })}
+              </Caption>
             </View>
           )}
 
@@ -165,15 +171,15 @@ export default function UserRankings() {
           <View className="mt-4 flex-row justify-around self-stretch">
             <Stat
               n={String(followerCount)}
-              l="Seguidores"
+              l={t('profile.followers')}
               onPress={() => router.push(`/people/${userId}?tab=followers`)}
             />
             <Stat
               n={String(followingCount)}
-              l="Siguiendo"
+              l={t('profile.following')}
               onPress={() => router.push(`/people/${userId}?tab=following`)}
             />
-            <Stat n={String(rankings.length)} l="Rankeados" onPress={jumpToRankings} />
+            <Stat n={String(rankings.length)} l={t('profile.ranked')} onPress={jumpToRankings} />
           </View>
 
           <View className="mt-4 flex-row items-center gap-3">
@@ -183,7 +189,7 @@ export default function UserRankings() {
               disabled={followPending}
               onPress={toggleFollow}
             >
-              {isFollowing ? 'Siguiendo' : 'Seguir'}
+              {isFollowing ? t('passport.following_button') : t('passport.follow_button')}
             </Button>
           </View>
 
@@ -199,31 +205,30 @@ export default function UserRankings() {
               className="min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                Reportar
+                {t('passport.report')}
               </Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               onPress={async () => {
                 const picked = await showActionSheet({
-                  title: `¿Bloquear a ${firstName}?`,
-                  message:
-                    'No verás su contenido y esta persona no verá el tuyo. Puedes desbloquear luego en Ajustes.',
-                  options: [{ label: 'Bloquear', destructive: true }],
+                  title: t('passport.block_confirm_title', { name: firstName }),
+                  message: t('passport.block_confirm_message'),
+                  options: [{ label: t('passport.block'), destructive: true }],
                 })
                 if (picked === 0) block.mutate()
               }}
               className="min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
-                Bloquear
+                {t('passport.block')}
               </Text>
             </Pressable>
           </View>
         </View>
 
         {rankings.length === 0 ? (
-          <EmptyState>Todavía no hay rankings.</EmptyState>
+          <EmptyState>{t('passport.no_rankings')}</EmptyState>
         ) : (
           <View
             onLayout={(e) => {
@@ -243,13 +248,15 @@ export default function UserRankings() {
                     className="min-h-[44px] justify-center active:opacity-60"
                   >
                     <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                      {expanded ? 'Mostrar menos' : `Todos ${rankings.length}`}
+                      {expanded
+                        ? t('restaurant.show_less')
+                        : t('passport.show_all', { n: rankings.length })}
                     </Text>
                   </Pressable>
                 ) : undefined
               }
             >
-              Los favoritos de {firstName}
+              {t('passport.their_favorites', { name: firstName })}
             </SectionHeader>
             {shown.map((r) => (
               <TheirRow key={r.id} ranking={r} />
@@ -262,6 +269,7 @@ export default function UserRankings() {
 }
 
 function TheirRow({ ranking }: { ranking: TheirRanking }) {
+  const t = useT()
   return (
     <Link href={`/r/${ranking.restaurant.id}`} asChild>
       <Pressable
@@ -281,7 +289,9 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
           {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && (
             <View className="mt-1 flex-row flex-wrap items-center gap-2">
               {ranking.favoriteDish && (
-                <Caption className="text-text-2">Pide: {ranking.favoriteDish}</Caption>
+                <Caption className="text-text-2">
+                  {t('rankings.order_this', { dish: ranking.favoriteDish })}
+                </Caption>
               )}
               {(ranking.tags ?? []).map((t) => (
                 <Caption key={t} className="font-mono text-micro">

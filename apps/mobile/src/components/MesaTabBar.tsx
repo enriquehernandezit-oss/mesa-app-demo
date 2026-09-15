@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/icons'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { tapLight, tapSelect } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
 import { type Tabs, useRouter } from 'expo-router'
 
@@ -43,12 +44,12 @@ const ICONS: Record<string, typeof DiscoverIcon> = {
   rankings: RankingsIcon,
   profile: PersonIcon,
 }
-const LABELS: Record<string, string> = {
-  discover: 'Feed',
-  explore: 'Explora',
-  rankings: 'Rankings',
-  profile: 'Perfil',
-}
+const LABEL_KEYS = {
+  discover: 'tabs.feed',
+  explore: 'tabs.explore',
+  rankings: 'tabs.rankings',
+  profile: 'tabs.profile',
+} as const
 
 const TAB_ICON_STROKE = 2
 const PILL_WIDTH = 52
@@ -60,6 +61,7 @@ function TabItem({
   badge,
   onPress,
 }: { routeName: string; focused: boolean; badge?: number; onPress: () => void }) {
+  const t = useT()
   const Ico = ICONS[routeName]
   return (
     <Pressable
@@ -81,7 +83,7 @@ function TabItem({
       <Text
         className={`font-ui-semibold text-micro ${focused ? 'text-accent' : 'text-tab-inactive'}`}
       >
-        {LABELS[routeName]}
+        {t(LABEL_KEYS[routeName as keyof typeof LABEL_KEYS])}
       </Text>
     </Pressable>
   )

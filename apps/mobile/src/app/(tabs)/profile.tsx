@@ -17,6 +17,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
+import { dateLocale, useT } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
 import { isPendingInvite } from '@/lib/plans'
 import type { MeStats, Neighborhood, Plan } from '@/lib/types'
@@ -38,6 +39,7 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 // promise and orphans the first).
 function useAvatarPicker() {
   const queryClient = useQueryClient()
+  const t = useT()
   const [busy, setBusy] = useState(false)
   const setAvatar = useMutation({
     mutationFn: (image: string) => api.patch('/me/avatar', { image }),
@@ -47,7 +49,7 @@ function useAvatarPicker() {
     },
     onError: (err) => {
       captureError(err, 'me.avatar')
-      toast({ variant: 'error', message: 'No se pudo actualizar la foto. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('profile.avatar_change_error') })
     },
   })
 
@@ -56,8 +58,8 @@ function useAvatarPicker() {
     setBusy(true)
     try {
       const picked = await showSheet({
-        title: 'Foto de perfil',
-        options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
+        title: t('profile.avatar_photo_title'),
+        options: [{ label: t('profile.take_photo') }, { label: t('profile.choose_from_library') }],
       })
       if (picked === null) return
       const source = picked === 0 ? 'camera' : 'library'
@@ -65,8 +67,8 @@ function useAvatarPicker() {
       if (result.status === 'denied') {
         toast({
           variant: 'error',
-          message: 'Mesa no tiene acceso a la cámara/fotos.',
-          action: { label: 'Ajustes', onClick: () => Linking.openSettings() },
+          message: t('profile.no_camera_access'),
+          action: { label: t('profile.settings_action'), onClick: () => Linking.openSettings() },
         })
         return
       }
@@ -81,7 +83,7 @@ function useAvatarPicker() {
       )
     } catch (err) {
       captureError(err, 'image.pick')
-      toast({ variant: 'error', message: 'No se pudo procesar la foto. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('profile.photo_process_error') })
     } finally {
       setBusy(false)
     }
@@ -96,11 +98,12 @@ function AvatarEditButton({
   onPress,
   busy,
 }: { name: string; src?: string | null; onPress: () => void; busy: boolean }) {
+  const t = useT()
   return (
     <View className="items-center">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Cambiar foto de perfil"
+        accessibilityLabel={t('profile.change_avatar_label')}
         onPress={onPress}
         disabled={busy}
         className="active:opacity-80"
@@ -122,6 +125,7 @@ function AvatarEditButton({
 // expo-image-picker + resizeToJpeg (square).
 export default function ProfileTab() {
   const router = useRouter()
+  const t = useT()
   const { data, isPending, isError, refetch } = useProfile(true)
   const p = data?.profile
   const [editing, setEditing] = useState(false)
@@ -149,7 +153,7 @@ export default function ProfileTab() {
   if (isPending) {
     return (
       <View className="flex-1 bg-bg">
-        <TopBar variant="profile" title="Tú" />
+        <TopBar variant="profile" title={t('common.you')} />
         <View className="items-center gap-3 pt-8">
           <Skeleton height={88} width={88} />
           <Skeleton height={14} width={140} />
@@ -161,15 +165,15 @@ export default function ProfileTab() {
   if (isError) {
     return (
       <View className="flex-1 bg-bg">
-        <TopBar variant="profile" title="Tú" />
-        <ErrorState onRetry={() => refetch()}>No se pudo cargar tu perfil.</ErrorState>
+        <TopBar variant="profile" title={t('common.you')} />
+        <ErrorState onRetry={() => refetch()}>{t('profile.load_error')}</ErrorState>
       </View>
     )
   }
 
   const memberSince =
     p?.createdAt &&
-    new Date(p.createdAt).toLocaleDateString('es-DO', { month: 'long', year: 'numeric' })
+    new Date(p.createdAt).toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' })
   const barrio = p?.neighborhood?.name
 
   // One editorial line from the taste stats the API already computes — a read on
@@ -181,16 +185,16 @@ export default function ProfileTab() {
   const topHood = stats.data?.topNeighborhood
   const tasteLine =
     topCuisine && topHood
-      ? `Comes sobre todo ${topCuisine}, casi siempre en ${topHood}.`
+      ? t('profile.taste_both', { cuisine: topCuisine, hood: topHood })
       : topCuisine
-        ? `Comes sobre todo ${topCuisine}.`
+        ? t('profile.taste_cuisine_only', { cuisine: topCuisine })
         : topHood
-          ? `Rankeas casi siempre en ${topHood}.`
+          ? t('profile.taste_hood_only', { hood: topHood })
           : null
 
   return (
     <View className="flex-1 bg-bg">
-      <TopBar variant="profile" title={p?.name || 'Tú'} shareHandle={p?.handle} />
+      <TopBar variant="profile" title={p?.name || t('common.you')} shareHandle={p?.handle} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
@@ -211,7 +215,9 @@ export default function ProfileTab() {
             <Text className="mt-2 font-mono text-label text-text-2">@{p.handle}</Text>
           ) : null}
           <Caption className="mt-1">
-            {[memberSince && `Miembro desde ${memberSince}`, barrio].filter(Boolean).join(' · ')}
+            {[memberSince && t('profile.member_since', { date: memberSince }), barrio]
+              .filter(Boolean)
+              .join(' · ')}
           </Caption>
           {tasteLine ? (
             <SerifItalic className="mt-2 px-6 text-center text-serif-sm text-text-2">
@@ -231,17 +237,17 @@ export default function ProfileTab() {
           <View className="mt-5 flex-row justify-around">
             <Stat
               n={stats.data ? String(stats.data.followers) : '—'}
-              l="Seguidores"
+              l={t('profile.followers')}
               onPress={() => router.push(`/people/${p?.id}?tab=followers`)}
             />
             <Stat
               n={stats.data ? String(stats.data.following) : '—'}
-              l="Siguiendo"
+              l={t('profile.following')}
               onPress={() => router.push(`/people/${p?.id}?tab=following`)}
             />
             <Stat
               n={stats.data ? String(stats.data.places) : '—'}
-              l="Rankeados"
+              l={t('profile.ranked')}
               onPress={() => router.push('/rankings')}
             />
           </View>
@@ -251,7 +257,7 @@ export default function ProfileTab() {
             same handler, two entry points for one action. */}
         <View className="mt-5">
           <Button variant="secondary" onPress={() => setEditing(true)}>
-            Editar perfil
+            {t('profile.edit_profile')}
           </Button>
         </View>
 
@@ -259,17 +265,17 @@ export default function ProfileTab() {
           {/* No count here — the trio above already carries it. */}
           <NavRow
             icon={<CheckIcon size={15} />}
-            label="Rankeados"
+            label={t('profile.ranked')}
             onPress={() => router.push('/rankings')}
           />
           <NavRow
             icon={<BookmarkIcon size={15} />}
-            label="Quiero probar"
+            label={t('restaurant.want_to_try_label')}
             onPress={() => router.push('/rankings?tab=saved')}
           />
           <NavRow
             icon={<CalendarIcon size={15} />}
-            label="Planes"
+            label={t('profile.planes')}
             meta={pendingPlans > 0 ? String(pendingPlans) : undefined}
             onPress={() => router.push('/planes')}
           />
@@ -278,7 +284,7 @@ export default function ProfileTab() {
               is exactly that query. The label now says where it goes. */}
           <NavRow
             icon={<CompassIcon size={15} />}
-            label="Explorar spots"
+            label={t('rankings.explore_spots')}
             onPress={() => router.push('/explore')}
           />
         </View>
@@ -286,19 +292,19 @@ export default function ProfileTab() {
         {!stats.isError && (
           <View className="mt-6 flex-row gap-3">
             <StatCard
-              label="Rank en RD"
+              label={t('profile.rank_in_dr')}
               value={
                 stats.data ? (stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—') : '—'
               }
               onPress={() => router.push('/leaderboard')}
             />
             <StatCard
-              label="Racha actual"
+              label={t('profile.current_streak')}
               value={
                 stats.data
                   ? stats.data.streakWeeks > 0
-                    ? `${stats.data.streakWeeks} semana${stats.data.streakWeeks > 1 ? 's' : ''}`
-                    : 'Aún ninguna'
+                    ? t('profile.streak_weeks_count', { n: stats.data.streakWeeks })
+                    : t('profile.no_streak_yet')
                   : '—'
               }
             />
@@ -366,6 +372,7 @@ function StatCard({
 // /me/avatar for the photo — two endpoints, one screen.
 function EditProfile({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
+  const t = useT()
   const { data } = useProfile(true)
   const p = data?.profile
   const [name, setName] = useState(p?.name ?? '')
@@ -411,7 +418,9 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           onPress={onClose}
           className="min-h-[44px] justify-center active:opacity-60"
         >
-          <Text className="font-ui-medium text-label text-text-muted">‹ Editar perfil</Text>
+          <Text className="font-ui-medium text-label text-text-muted">
+            {t('profile.edit_back')}
+          </Text>
         </Pressable>
 
         <View className="mt-2 items-center">
@@ -425,7 +434,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
 
         <View className="mt-6 gap-4">
           <Field
-            label="Nombre"
+            label={t('onboarding.name_label')}
             value={name}
             onChangeText={setName}
             maxLength={60}
@@ -433,18 +442,18 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             autoComplete="name"
           />
           <Field
-            label="Instagram · opcional"
+            label={t('profile.instagram_label')}
             value={handle}
             onChangeText={setHandle}
-            placeholder="tuusuario"
+            placeholder={t('profile.instagram_placeholder')}
             maxLength={30}
             // iOS capitalizes and autocorrects this by default — it's a handle.
             autoCapitalize="none"
             autoCorrect={false}
-            error={save.error ? 'Prueba con otro usuario.' : undefined}
+            error={save.error ? t('profile.handle_error') : undefined}
           />
           <View>
-            <Eyebrow className="mb-2 font-mono">Sector</Eyebrow>
+            <Eyebrow className="mb-2 font-mono">{t('rank.sector')}</Eyebrow>
             <View className="flex-row flex-wrap gap-2">
               {neighborhoods.data?.neighborhoods.map((n) => (
                 <Chip
@@ -458,7 +467,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               ))}
             </View>
           </View>
-          <Field label="Bio" value={bio} onChangeText={setBio} maxLength={120} />
+          <Field label={t('profile.bio_label')} value={bio} onChangeText={setBio} maxLength={120} />
         </View>
 
         <View className="mt-6">
@@ -468,7 +477,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             disabled={!canSave}
             onPress={() => save.mutate()}
           >
-            {save.isPending ? 'Guardando…' : 'Guardar'}
+            {save.isPending ? t('common.saving') : t('rankings.save')}
           </Button>
         </View>
       </ScrollView>
