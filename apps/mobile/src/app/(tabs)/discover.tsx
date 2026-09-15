@@ -353,7 +353,13 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
                 {firstName}
               </Text>{' '}
               {t('discover.posted_dish')}
-              <Text className="text-text-muted"> · {timeAgo(item.rankedAt)}</Text>
+              {/* A non-breaking space glues "·" to the time so a wrap moves
+                  "· 3w" together instead of stranding "3w" alone on its own
+                  line. */}
+              <Text className="text-text-muted">
+                {' · '}
+                {timeAgo(item.rankedAt)}
+              </Text>
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -436,7 +442,12 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
                 </Text>{' '}
                 {t('discover.ranked_verb')}{' '}
                 <Text className="font-ui-semibold">{item.restaurant.name}</Text>
-                <Text className="text-text-muted"> · {timeAgo(item.rankedAt)}</Text>
+                {/* Non-breaking space between "·" and the time so a wrap
+                    moves "· 3w" together rather than stranding "3w" alone. */}
+                <Text className="text-text-muted">
+                  {' · '}
+                  {timeAgo(item.rankedAt)}
+                </Text>
               </Text>
               {oneLineMeta ? (
                 <Caption className="mt-[2px]" numberOfLines={1}>
