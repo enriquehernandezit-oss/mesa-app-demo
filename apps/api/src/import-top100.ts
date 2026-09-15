@@ -115,6 +115,21 @@ export function namesAgree(a: string, b: string): boolean {
   return shorter.length >= 5 && longer.includes(shorter)
 }
 
+// Founder-verified 2026-09-15: the sheet's name is what to search Google for
+// and compare against — for most rows that's the sheet name itself. These two
+// are exceptions: "Alma" is ambiguous between two real, unrelated restaurants
+// (a pastelería/bistro and a steakhouse — the sheet's rank-20 entry is the
+// steakhouse), and "Dave & Buster's Santo Domingo" is a confirmed-correct hit
+// that namesAgree() rejects only because the venue's actual registered name
+// drops the apostrophe and swaps "Santo Domingo" for "Republica Dominicana".
+const CONFIRMED_NAME_OVERRIDES: Record<string, string> = {
+  Alma: 'Alma Steakhouse',
+  "Dave & Buster's Santo Domingo": 'Dave & Busters Republica Dominicana',
+}
+function searchName(sheetName: string): string {
+  return CONFIRMED_NAME_OVERRIDES[sheetName] ?? sheetName
+}
+
 type ExistingRow = {
   id: string
   name: string
@@ -165,11 +180,12 @@ function findCatalogMatch(
   return null
 }
 
-// For a row Google couldn't confidently place: an exact normalized-name match
-// that is UNIQUE in the whole catalog is still real evidence (seed/member
-// coordinates are approximate anyway, so distance-gating it would just
-// produce false negatives) — but it's listed for human review in --dry-run,
-// never auto-applied, since there's no coordinate to sanity-check it against.
+// For a row Google couldn't confidently place, or one it placed too far from
+// an existing row's approximate seed coordinates to pass findCatalogMatch: an
+// exact normalized-name match that is UNIQUE in the whole catalog is trusted
+// on its own (seed/member coordinates are approximate anyway, so
+// distance-gating it would just produce false negatives and duplicate rows) —
+// merged automatically, logged for visibility in --dry-run.
 function nameOnlyUniqueMatch(name: string, existing: ExistingRow[]): ExistingRow | null {
   const norm = mesaNorm(name)
   const matches = existing.filter((e) => e.nameKey === norm)
@@ -223,8 +239,9 @@ async function run() {
   const cache = loadCache()
   let calls = 0
   for (const r of data.restaurants) {
-    if (!refresh && r.name in cache) continue
-    cache[r.name] = await searchText(`${r.name}, Santo Domingo`)
+    const q = searchName(r.name)
+    if (!refresh && q in cache) continue
+    cache[q] = await searchText(`${q}, Santo Domingo`)
     calls++
   }
   if (calls > 0) saveCache(cache)
@@ -233,7 +250,7 @@ async function run() {
   const lowConfidence: string[] = []
   const unresolved: string[] = []
   for (const r of data.restaurants) {
-    const details = cache[r.name]
+    const details = cache[searchName(r.name)]
     if (!details?.location?.latitude || !details.location.longitude) {
       unresolved.push(r.name)
       continue
@@ -243,7 +260,7 @@ async function run() {
       unresolved.push(r.name)
       continue
     }
-    if (!namesAgree(r.name, fields.name)) {
+    if (!namesAgree(searchName(r.name), fields.name)) {
       lowConfidence.push(r.name)
       continue
     }
@@ -282,14 +299,19 @@ async function run() {
   const toInsert: (typeof restaurants.$inferInsert & { _name: string })[] = []
   const skippedClosed: string[] = []
   const restaurantIdByName = new Map<string, string>()
-  const nameOnlyReview: string[] = []
+  // Founder-reviewed 2026-09-15: an exact normalized-name match that's unique
+  // across the whole catalog is trusted evidence on its own (seed/member
+  // coordinates are only approximate anyway) — merged automatically, listed
+  // here only for visibility, not gated on human approval per row.
+  const nameOnlyMerged: string[] = []
 
   for (const r of data.restaurants) {
     const hit = resolved.get(r.name)
     if (!hit) {
       const nameOnly = nameOnlyUniqueMatch(r.name, existing)
       if (nameOnly) {
-        nameOnlyReview.push(`${r.name} → ${nameOnly.name} (${nameOnly.id})`)
+        nameOnlyMerged.push(`${r.name} → ${nameOnly.name} (${nameOnly.id})`)
+        restaurantIdByName.set(r.name, nameOnly.id)
       }
       continue
     }
@@ -303,6 +325,18 @@ async function run() {
       toUpdate.push({ existingId: match.id, fields, googlePlaceId: details.id })
       restaurantIdByName.set(r.name, match.id)
     } else {
+      // Google resolved this one, but not near enough to an existing row's
+      // (approximate) seed coordinates for findCatalogMatch's distance gates.
+      // A unique exact-name match elsewhere in the catalog is still real
+      // evidence it's the same restaurant — merge instead of inserting a
+      // duplicate.
+      const nameOnly = nameOnlyUniqueMatch(r.name, existing)
+      if (nameOnly) {
+        toUpdate.push({ existingId: nameOnly.id, fields, googlePlaceId: details.id })
+        restaurantIdByName.set(r.name, nameOnly.id)
+        nameOnlyMerged.push(`${r.name} → ${nameOnly.name} (${nameOnly.id})`)
+        continue
+      }
       const hood = resolveNeighborhood(details, hoods)
       toInsert.push({
         _name: r.name,
@@ -335,9 +369,9 @@ async function run() {
   if (unresolved.length) console.log(`  unresolved: ${unresolved.join(', ')}`)
   if (lowConfidence.length) console.log(`  low-confidence: ${lowConfidence.join(', ')}`)
   if (skippedClosed.length) console.log(`  closed per Google: ${skippedClosed.join(', ')}`)
-  if (nameOnlyReview.length) {
-    console.log('  name-only matches for review (NOT auto-applied):')
-    for (const line of nameOnlyReview) console.log(`    ${line}`)
+  if (nameOnlyMerged.length) {
+    console.log(`  name-only matches (auto-merged, ${nameOnlyMerged.length}):`)
+    for (const line of nameOnlyMerged) console.log(`    ${line}`)
   }
   if (toInsert.length) {
     const cuisines = new Map<string, number>()

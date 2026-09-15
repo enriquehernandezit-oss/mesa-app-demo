@@ -85,12 +85,6 @@
       "area": "Santo Domingo"
     },
     {
-      "rank": 15,
-      "name": "SBG Santo Domingo",
-      "cuisineRaw": "International / Contemporary",
-      "area": "Santo Domingo"
-    },
-    {
       "rank": 16,
       "name": "Asador 21",
       "cuisineRaw": "Steakhouse / International",
@@ -271,12 +265,6 @@
       "area": "Santo Domingo"
     },
     {
-      "rank": 46,
-      "name": "Brixx",
-      "cuisineRaw": "International / Casual",
-      "area": "Santo Domingo"
-    },
-    {
       "rank": 47,
       "name": "Muelle 47",
       "cuisineRaw": "Seafood",
@@ -415,12 +403,6 @@
       "area": "Santo Domingo"
     },
     {
-      "rank": 70,
-      "name": "Limoncello",
-      "cuisineRaw": "Italian / Mediterranean",
-      "area": "Santo Domingo"
-    },
-    {
       "rank": 71,
       "name": "La Forchetta",
       "cuisineRaw": "Italian",
@@ -556,18 +538,6 @@
       "rank": 93,
       "name": "Green Bowl",
       "cuisineRaw": "Healthy / Casual",
-      "area": "Santo Domingo"
-    },
-    {
-      "rank": 94,
-      "name": "Fresh Fresh Café",
-      "cuisineRaw": "Healthy / Café",
-      "area": "Santo Domingo"
-    },
-    {
-      "rank": 95,
-      "name": "Kogi Grill",
-      "cuisineRaw": "Korean / Asian",
       "area": "Santo Domingo"
     },
     {
@@ -7572,228 +7542,6 @@
         "sourceRef": "User-provided menu image: niapu.jpg",
         "verifiedAt": "2026-09-08",
         "position": 23
-      }
-    ],
-    "SBG Santo Domingo": [
-      {
-        "section": "Appetizers",
-        "name": "Alaskan King Crab Legs",
-        "description": "Melted garlic butter & ponzu sauce",
-        "price": 2650,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 0
-      },
-      {
-        "section": "Appetizers",
-        "name": "Chicharrón de Pulpo",
-        "description": "Paper thin sliced jalapeño & cilantro \"Chimichurri\"",
-        "price": 720,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 1
-      },
-      {
-        "section": "Appetizers",
-        "name": "Rock Shrimp Tempura",
-        "description": "Sriracha sauce & leek",
-        "price": 580,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 2
-      },
-      {
-        "section": "Appetizers",
-        "name": "Grilled Octopus Skewers",
-        "description": "Celery root puree & sweet paprika infused oil",
-        "price": 850,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 3
-      },
-      {
-        "section": "Appetizers",
-        "name": "Binchotan Grilled Tuna Slices",
-        "description": "Sweet soy glazed tuna sashimi & garlic chips",
-        "price": 620,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 4
-      },
-      {
-        "section": "Appetizers",
-        "name": "NYC Ricotta Gnocchi",
-        "description": "Flourless gnocchi in sage brown butter sauce",
-        "price": 520,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 5
-      },
-      {
-        "section": "Appetizers",
-        "name": "Gambas Sophia's",
-        "description": "Shrimp, cream cheese, bacon & plum sauce",
-        "price": 620,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 6
-      },
-      {
-        "section": "Appetizers",
-        "name": "Soho Shrimp",
-        "description": "Goat cheese fondue over tomato-cilantro salsa",
-        "price": 595,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 7
-      },
-      {
-        "section": "Appetizers",
-        "name": "Japanese Eggplant",
-        "description": "Salsa miso & camarones gratinados",
-        "price": 620,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 8
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Greg Norman's Ranch Wagyu Tartar",
-        "description": "Panko crusted poached quail egg, horseradish sauce",
-        "price": 820,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 9
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Lamb Carpaccio",
-        "description": "Eggplant caponatta & yogurt sauce",
-        "price": 485,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 10
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Crispy Rice Tuna",
-        "description": "Fresh tuna slice & chopped jalapeño",
-        "price": 460,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 11
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Beef Tataki",
-        "description": "Veggies, sprouts, ponzu & truffle",
-        "price": 680,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 12
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Crispy Roast Beef Pancake",
-        "description": "Wasabi lime mayo & baby shiso leaves",
-        "price": 420,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 13
-      },
-      {
-        "section": "Cold Appetizers",
-        "name": "Warm Mozzarella di Bufala",
-        "description": "Served with \"baguette provencale\"",
-        "price": 520,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 14
-      },
-      {
-        "section": "Soups",
-        "name": "Soupe à l'Oignon",
-        "description": "Emmental cheese & toasted bread",
-        "price": 380,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 15
-      },
-      {
-        "section": "Soups",
-        "name": "Lobster Bisque",
-        "description": "Served with taleggio grilled cheese sandwich",
-        "price": 480,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 16
-      },
-      {
-        "section": "Charcuterie",
-        "name": "10 Vetas Dry Cured Ham",
-        "description": "100% Acorn Fed \"Jamón Ibérico\" Grand Reserve, 4 oz",
-        "price": 1595,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 17
-      },
-      {
-        "section": "Salads",
-        "name": "Burrata Caprese",
-        "description": "Sliced tomatoes, olive oil & Maldon salt",
-        "price": 580,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 18
-      },
-      {
-        "section": "Salads",
-        "name": "Calamari Salad",
-        "description": "Calamar crocante, aderezo miso & miel",
-        "price": 450,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 19
-      },
-      {
-        "section": "Salads",
-        "name": "SBG RSTD Chicken Caesar",
-        "description": "Bacon stripes, roasted chicken breast",
-        "price": 680,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 20
-      },
-      {
-        "section": "Salads",
-        "name": "Chinois Salad",
-        "description": "Zanahoria, repollo, bacon & pollo en aderezo de ajonjolí",
-        "price": 465,
-        "currency": "DOP",
-        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
-        "verifiedAt": "2026-09-08",
-        "position": 21
       }
     ],
     "Asador 21": [
@@ -20124,488 +19872,6 @@
         "position": 75
       }
     ],
-    "Limoncello": [
-      {
-        "section": "Appetizers",
-        "name": "Varietà di Crocchette",
-        "description": "Crispy croquettes with rice, potato, prosciutto, and chicken fillings",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 0
-      },
-      {
-        "section": "Appetizers",
-        "name": "Fritto Gamberi & Calamari",
-        "description": "Lightly fried shrimp, squid, and vegetables",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 1
-      },
-      {
-        "section": "Appetizers",
-        "name": "Carpaccio di Pera",
-        "description": "Thinly sliced pear with walnuts, hot honey, cherries, gorgonzola, and arugula",
-        "price": 950,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 2
-      },
-      {
-        "section": "Appetizers",
-        "name": "Mozzarella Marinara",
-        "description": "Fried cherry mozzarella balls served with marinara dipping sauce",
-        "price": 900,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 3
-      },
-      {
-        "section": "Appetizers",
-        "name": "Antipasto Italiano",
-        "description": "Classic Italian charcuterie board with prosciutto, coppa, speck, mortadella, salami, and cheeses",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 4
-      },
-      {
-        "section": "Appetizers",
-        "name": "Parmigiana di Melanzane",
-        "description": "Baked eggplant layered with parmesan, mozzarella, and tomato sauce",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 5
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Ceviche Misco con Chinola & Mango",
-        "description": "Fresh fish and shrimp ceviche with avocado, mango, passion fruit, onion, and citrus",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 6
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Fantasie di Carpacci di Mare",
-        "description": "Delicate seafood carpaccio platter with shrimp, salmon, tuna, lobster, and octopus",
-        "price": 1400,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 7
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Carpaccio di Manzo (Angus) con Rucola & Parmigiano",
-        "description": "Thinly sliced Angus beef with arugula and shaved parmesan",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 8
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Cocktail di Gamberi",
-        "description": "Chilled shrimp cocktail with avocado and pink sauce",
-        "price": 1400,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 9
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Carpaccio di Salmone agli Agrumi",
-        "description": "Thin-sliced salmon with citrus vinaigrette and avocado",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 10
-      },
-      {
-        "section": "Carpacci, Tartare, Ceviches",
-        "name": "Carpaccio di Polipo con Mela Verde",
-        "description": "Tender octopus carpaccio with fresh salad and green apple",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 11
-      },
-      {
-        "section": "Pasta",
-        "name": "Linguine all´Aragosta",
-        "description": "Linguine with lobster, tomatoes, chili, parsley, and garlic",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 12
-      },
-      {
-        "section": "Pasta",
-        "name": "Linguine ai Frutti di Mare",
-        "description": "Linguine loaded with shrimp, squid, lobster, clams, and mussels in tomato sauce",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 13
-      },
-      {
-        "section": "Pasta",
-        "name": "Rigatoni, Pere, Noci & Gorgonzola",
-        "description": "Rigatoni in a creamy gorgonzola sauce with pear and walnuts",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 14
-      },
-      {
-        "section": "Pasta",
-        "name": "Spaghetti alla Carbonara",
-        "description": "Classic Roman pasta with bacon, eggs, and parmesan",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 15
-      },
-      {
-        "section": "Pasta",
-        "name": "Linguine con Pesto, Burrata & Speck",
-        "description": "Linguine with basil pesto, creamy burrata, and smoky speck",
-        "price": 1400,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 16
-      },
-      {
-        "section": "Pasta",
-        "name": "Spaghetti Limoncello",
-        "description": "Spaghetti with shrimp, lobster, chili, and a zesty lemon-garlic sauce",
-        "price": 1500,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 17
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Tagliolini Crema di Tartufo & Funghi Porcini",
-        "description": "Fresh tagliolini with truffle cream, porcini mushrooms, and bacon",
-        "price": 1400,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 18
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Lasagna alla Napoletana",
-        "description": "Layered lasagna with meatballs, mozzarella, tomato sauce, and parmesan",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 19
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Tortellini con Piselli & Prosciutto",
-        "description": "Stuffed tortellini with ham, mortadella, green peas, and parmesan",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 20
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Gnocchi alla Sorrentina",
-        "description": "Soft potato gnocchi baked with tomatoes, mozzarella, parmesan, and basil",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 21
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Ravioli di Pistacchio, Pomodorini & Basilico",
-        "description": "Pistachio ravioli with cherry tomatoes and fresh basil",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 22
-      },
-      {
-        "section": "Pasta Fresca",
-        "name": "Ravioli Ricotta & Spinaci in Salsa di Funghi o Salsa Bolognese",
-        "description": "Ricotta and spinach ravioli in your choice of mushroom or bolognese sauce",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 23
-      },
-      {
-        "section": "Risotti",
-        "name": "Risotto Mari & Monti",
-        "description": "Risotto with porcini mushrooms, squid, octopus, and shrimp",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 24
-      },
-      {
-        "section": "Risotti",
-        "name": "Risotto Asparagi & Zucchine",
-        "description": "Light and fresh risotto with asparagus and zucchini",
-        "price": 1000,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 25
-      },
-      {
-        "section": "Risotti",
-        "name": "Risotto alla Milanese con Ossobuco",
-        "description": "Saffron risotto with braised veal ossobuco",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 26
-      },
-      {
-        "section": "Risotti",
-        "name": "Risotto all´Aragosta",
-        "description": "Creamy risotto with lobster",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 27
-      },
-      {
-        "section": "Risotti",
-        "name": "Risotto di Funghi Porcini",
-        "description": "Classic risotto with rich porcini mushrooms",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 28
-      },
-      {
-        "section": "Meat",
-        "name": "Rib-eye di Angus alla Brace",
-        "description": "Grilled Angus ribeye steak",
-        "price": 2900,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 29
-      },
-      {
-        "section": "Meat",
-        "name": "Tagliata con Rucula, Parmigiano & Aceto Balsamico",
-        "description": "Sliced Angus tenderloin with arugula, parmesan, and balsamic",
-        "price": 2800,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 30
-      },
-      {
-        "section": "Meat",
-        "name": "Hamburger di Manzo (Angus)",
-        "description": "Angus beef burger with bacon, lettuce, tomato, onion, and cheddar",
-        "price": 900,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 31
-      },
-      {
-        "section": "Meat",
-        "name": "Churrasco di Angus alla Brace",
-        "description": "Grilled Angus sirloin steak",
-        "price": 2300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 32
-      },
-      {
-        "section": "Meat",
-        "name": "Scaloppine di Vitella al Marsala o al Limone",
-        "description": "Tender veal scaloppine in marsala wine or lemon sauce",
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 33
-      },
-      {
-        "section": "Meat",
-        "name": "Costolette di Agnello al Cognac & Rosmarino",
-        "description": "Lamb ribs with cognac and rosemary",
-        "price": 2300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 34
-      },
-      {
-        "section": "Meat",
-        "name": "Cotoletta Mignon alla Milanese con Rucula & Pomodorini",
-        "description": null,
-        "price": 1600,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 35
-      },
-      {
-        "section": "Pizza",
-        "name": "Margherita",
-        "description": "Classic mozzarella on a tomato base",
-        "price": 950,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 36
-      },
-      {
-        "section": "Pizza",
-        "name": "Peperoni",
-        "description": "Pepperoni and mozzarella",
-        "price": 1000,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 37
-      },
-      {
-        "section": "Pizza",
-        "name": "Rustica con Salciccia",
-        "description": "Sausage, mushrooms, onions, and mozzarella",
-        "price": 1200,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 38
-      },
-      {
-        "section": "Pizza",
-        "name": "Amalfi",
-        "description": "Prosciutto, arugula, and mozzarella",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 39
-      },
-      {
-        "section": "Pizza",
-        "name": "Positano",
-        "description": "Ham and mozzarella",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 40
-      },
-      {
-        "section": "Pizza",
-        "name": "Frutti di Mare",
-        "description": "Lobster, shrimp, squid, and mozzarella",
-        "price": 1400,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 41
-      },
-      {
-        "section": "Pizza",
-        "name": "Saporita",
-        "description": null,
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 42
-      },
-      {
-        "section": "Pizza Bianca (Without Tomato Sauce)",
-        "name": "Con Stracchino, Rucula & Salsiccia",
-        "description": "Stracchino cheese, fresh arugula, and sausage",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 43
-      },
-      {
-        "section": "Pizza Bianca (Without Tomato Sauce)",
-        "name": "Alla Crema di Tartufo, Porcini, Pancetta & Provola Affumicata",
-        "description": "Truffle cream, porcini, bacon, and smoked provola cheese",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 44
-      },
-      {
-        "section": "Pizza Bianca (Without Tomato Sauce)",
-        "name": "Pistacchio, Mortadella & Burrata",
-        "description": "Pistachio, mortadella, and creamy burrata",
-        "price": 1300,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 45
-      },
-      {
-        "section": "Pizza Bianca (Without Tomato Sauce)",
-        "name": "Con Pollo",
-        "description": "Chicken, mozzarella, and rosemary",
-        "price": 1100,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 46
-      },
-      {
-        "section": "Pizza Bianca (Without Tomato Sauce)",
-        "name": "Ai Quattro Formaggi",
-        "description": "Four-cheese blend of mozzarella, parmesan, gorgonzola, and gouda",
-        "price": 1150,
-        "currency": "DOP",
-        "sourceRef": "User-provided menu screenshots: Limoncello (8 images)",
-        "verifiedAt": "2026-09-10",
-        "position": 47
-      }
-    ],
     "Andale": [
       {
         "section": "Tacos",
@@ -30282,11 +29548,11 @@
       {
         "section": "Cold Appetizers",
         "name": "Crispy Rice Tuna",
-        "description": "Sliced fresh tuna, jalapeño",
-        "price": null,
+        "description": "Fresh tuna slice & chopped jalapeño",
+        "price": 460,
         "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/sophias-bar-%26-grill/z2FmvFkHQmmzSCcMr1CSCQ",
-        "verifiedAt": "2026-09-13",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
         "position": 14
       },
       {
@@ -30368,6 +29634,216 @@
         "sourceRef": "https://www.ubereats.com/do/store/sophias-bar-%26-grill/z2FmvFkHQmmzSCcMr1CSCQ",
         "verifiedAt": "2026-09-13",
         "position": 22
+      },
+      {
+        "section": "Appetizers",
+        "name": "Alaskan King Crab Legs",
+        "description": "Melted garlic butter & ponzu sauce",
+        "price": 2650,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 23
+      },
+      {
+        "section": "Appetizers",
+        "name": "Chicharrón de Pulpo",
+        "description": "Paper thin sliced jalapeño & cilantro \"Chimichurri\"",
+        "price": 720,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 24
+      },
+      {
+        "section": "Appetizers",
+        "name": "Rock Shrimp Tempura",
+        "description": "Sriracha sauce & leek",
+        "price": 580,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 25
+      },
+      {
+        "section": "Appetizers",
+        "name": "Grilled Octopus Skewers",
+        "description": "Celery root puree & sweet paprika infused oil",
+        "price": 850,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 26
+      },
+      {
+        "section": "Appetizers",
+        "name": "Binchotan Grilled Tuna Slices",
+        "description": "Sweet soy glazed tuna sashimi & garlic chips",
+        "price": 620,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 27
+      },
+      {
+        "section": "Appetizers",
+        "name": "NYC Ricotta Gnocchi",
+        "description": "Flourless gnocchi in sage brown butter sauce",
+        "price": 520,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 28
+      },
+      {
+        "section": "Appetizers",
+        "name": "Gambas Sophia's",
+        "description": "Shrimp, cream cheese, bacon & plum sauce",
+        "price": 620,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 29
+      },
+      {
+        "section": "Appetizers",
+        "name": "Soho Shrimp",
+        "description": "Goat cheese fondue over tomato-cilantro salsa",
+        "price": 595,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 30
+      },
+      {
+        "section": "Appetizers",
+        "name": "Japanese Eggplant",
+        "description": "Salsa miso & camarones gratinados",
+        "price": 620,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 31
+      },
+      {
+        "section": "Cold Appetizers",
+        "name": "Greg Norman's Ranch Wagyu Tartar",
+        "description": "Panko crusted poached quail egg, horseradish sauce",
+        "price": 820,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 32
+      },
+      {
+        "section": "Cold Appetizers",
+        "name": "Lamb Carpaccio",
+        "description": "Eggplant caponatta & yogurt sauce",
+        "price": 485,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 33
+      },
+      {
+        "section": "Cold Appetizers",
+        "name": "Beef Tataki",
+        "description": "Veggies, sprouts, ponzu & truffle",
+        "price": 680,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 34
+      },
+      {
+        "section": "Cold Appetizers",
+        "name": "Crispy Roast Beef Pancake",
+        "description": "Wasabi lime mayo & baby shiso leaves",
+        "price": 420,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 35
+      },
+      {
+        "section": "Cold Appetizers",
+        "name": "Warm Mozzarella di Bufala",
+        "description": "Served with \"baguette provencale\"",
+        "price": 520,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 36
+      },
+      {
+        "section": "Soups",
+        "name": "Soupe à l'Oignon",
+        "description": "Emmental cheese & toasted bread",
+        "price": 380,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 37
+      },
+      {
+        "section": "Soups",
+        "name": "Lobster Bisque",
+        "description": "Served with taleggio grilled cheese sandwich",
+        "price": 480,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 38
+      },
+      {
+        "section": "Charcuterie",
+        "name": "10 Vetas Dry Cured Ham",
+        "description": "100% Acorn Fed \"Jamón Ibérico\" Grand Reserve, 4 oz",
+        "price": 1595,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 39
+      },
+      {
+        "section": "Salads",
+        "name": "Burrata Caprese",
+        "description": "Sliced tomatoes, olive oil & Maldon salt",
+        "price": 580,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 40
+      },
+      {
+        "section": "Salads",
+        "name": "Calamari Salad",
+        "description": "Calamar crocante, aderezo miso & miel",
+        "price": 450,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 41
+      },
+      {
+        "section": "Salads",
+        "name": "SBG RSTD Chicken Caesar",
+        "description": "Bacon stripes, roasted chicken breast",
+        "price": 680,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 42
+      },
+      {
+        "section": "Salads",
+        "name": "Chinois Salad",
+        "description": "Zanahoria, repollo, bacon & pollo en aderezo de ajonjolí",
+        "price": 465,
+        "currency": "DOP",
+        "sourceRef": "User-provided SBG menu image: sbg.jpg (image branding reads 'SBG Casa de Campo')",
+        "verifiedAt": "2026-09-08",
+        "position": 43
       }
     ],
     "Dave & Buster's Santo Domingo": [
@@ -31680,190 +31156,6 @@
         "sourceRef": "https://www.ubereats.com/do-en/store/green-bowl-downtown-center/pb-Xj01STPej7t1wIOwSNw",
         "verifiedAt": "2026-09-13",
         "position": 9
-      }
-    ],
-    "Fresh Fresh Café": [
-      {
-        "section": "Menú de Huevos",
-        "name": "Desayuno Dominicano",
-        "description": "Dos huevos, mangú con cebollitas, queso frito y aguacate",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/fresh-fresh-cafe-bella-vista/3UEZ9GNeQqWADxD17gp61g",
-        "verifiedAt": "2026-09-13",
-        "position": 0
-      },
-      {
-        "section": "Menú de Huevos",
-        "name": "Eggs Popeye",
-        "description": "Huevos revueltos con queso feta y espinaca",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/fresh-fresh-cafe-bella-vista/3UEZ9GNeQqWADxD17gp61g",
-        "verifiedAt": "2026-09-13",
-        "position": 1
-      }
-    ],
-    "Kogi Grill": [
-      {
-        "section": "Lo Favorito",
-        "name": "Japchae",
-        "description": "Fideos de batata con filete de res, shiitake y vegetales",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 0
-      },
-      {
-        "section": "Aperitivos",
-        "name": "Mandu",
-        "description": "Dumplings al sartén de cerdo y vegetales con vinagreta de soya",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 1
-      },
-      {
-        "section": "Aperitivos",
-        "name": "Alitas Spicy",
-        "description": "6 piezas salteadas en salsa agri-picante coreana",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 2
-      },
-      {
-        "section": "Aperitivos",
-        "name": "Kimbap",
-        "description": "Roll con jamón, huevo, pepino, zanahoria y nabo dulce",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 3
-      },
-      {
-        "section": "Aperitivos",
-        "name": "Banchan Salad",
-        "description": "Brócoli, maíz, zanahoria, brote de soya, habichuela negra, huevo y wakame",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 4
-      },
-      {
-        "section": "Aperitivos",
-        "name": "Papas Wedges",
-        "description": "Papas fritas wedges",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 5
-      },
-      {
-        "section": "Grill Natural",
-        "name": "Pechuga de Pollo",
-        "description": "Acompañada de guarniciones",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 6
-      },
-      {
-        "section": "Grill Natural",
-        "name": "Ribeye",
-        "description": "Res Angus con guarniciones",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 7
-      },
-      {
-        "section": "Grill Natural",
-        "name": "Shortribs sin hueso",
-        "description": "Shortribs Angus sin hueso",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 8
-      },
-      {
-        "section": "Grill Bulgogi",
-        "name": "Cerdo Bulgogi",
-        "description": "Salsa de soya dulce, con guarniciones",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 9
-      },
-      {
-        "section": "Grill Bulgogi",
-        "name": "Pollo Bulgogi",
-        "description": "Salsa de soya dulce, con guarniciones",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 10
-      },
-      {
-        "section": "Grill Spicy",
-        "name": "Calamar Spicy",
-        "description": "Salsa picante y dulce con aceite de ajonjolí",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 11
-      },
-      {
-        "section": "Grill Spicy",
-        "name": "Costilla de Cerdo Spicy",
-        "description": "Salsa picante y dulce con aceite de ajonjolí",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 12
-      },
-      {
-        "section": "Grill Spicy",
-        "name": "Pollo Spicy",
-        "description": "Salsa picante y dulce con aceite de ajonjolí",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 13
-      },
-      {
-        "section": "Fideos, Arroz y Sopa",
-        "name": "Dukbokki",
-        "description": "Pasta de arroz con tiras de pescado y vegetales en salsa picante",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 14
-      },
-      {
-        "section": "Fideos, Arroz y Sopa",
-        "name": "Soon Dubu Jigae",
-        "description": "Sopa picante de tofu con mariscada, res y huevo",
-        "price": null,
-        "currency": "DOP",
-        "sourceRef": "https://www.ubereats.com/do/store/kogi-grill/BMgc8ESYQA-4IixWayICrw",
-        "verifiedAt": "2026-09-13",
-        "position": 15
       }
     ],
     "Pork & Beer": [
