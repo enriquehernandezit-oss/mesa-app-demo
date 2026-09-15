@@ -149,6 +149,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'dish.publishing': 'Posting…',
   'dish.publish_button': 'Post dish',
   'dish.post_error': "Couldn't post the dish.",
+  'dish.discard_title': 'Discard this dish?',
+  'dish.discard_button': 'Discard',
 
   'dish.deleted_toast': 'Dish deleted',
   'dish.delete_error': "Couldn't delete it. Try again.",
@@ -426,8 +428,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'restaurant.menu_title': 'Menu',
   'restaurant.menu_load_error': "Couldn't load the menu.",
-  'restaurant.menu_see_full': 'See full menu',
-  'restaurant.menu_see_less': 'See less',
+  'restaurant.menu_empty': "This place doesn't have a menu yet.",
   'restaurant.menu_verified_on': 'Prices verified · {date}',
   'restaurant.by_name': 'by {name}',
 
@@ -626,6 +627,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rank.sentiment_fine': 'It was fine',
   'rank.sentiment_disliked': "Didn't love it",
   'rank.default_dish_name': 'Dish',
+  'rank.discard_title': 'Discard this ranking?',
+  'rank.discard_note_title': 'Discard your note?',
+  'rank.discard_note_message': 'Your ranking is already saved.',
+  'rank.discard_button': 'Discard',
   'rank.save_error': "Couldn't save your note",
   'rank.add_place_capped': "You've hit today's limit for adding places.",
   'rank.add_place_error': "Couldn't add the place.",

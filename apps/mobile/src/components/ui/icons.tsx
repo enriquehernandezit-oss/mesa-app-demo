@@ -79,6 +79,15 @@ export const DirectionsIcon = (p: IconProps) => (
     <Path d="M3 12 20 5l-7 17-2.5-7.5L3 12Z" />
   </Icon>
 )
+// A restaurant's own published menu (Menú button, the action row) — a small
+// card with lines, distinct from ListIcon's plain three-line glyph (used for
+// list membership) so the two never read as the same affordance.
+export const MenuIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="4.5" y="3.5" width="15" height="17" rx="2" />
+    <Path d="M8 8.5h8M8 12.5h8M8 16.5h4.5" />
+  </Icon>
+)
 export const PinIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M12 21s-6.5-5.9-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5.1-6.5 11-6.5 11Z" />

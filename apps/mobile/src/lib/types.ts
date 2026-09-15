@@ -391,6 +391,7 @@ export interface RestaurantProfileResponse {
     address: string | null
     geoPrecision: 'exact' | 'sector'
     google: boolean
+    hasMenu: boolean
   }
   friendsRankings: FriendRanking[]
   friendAvg: number | null

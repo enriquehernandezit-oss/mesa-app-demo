@@ -163,6 +163,8 @@ export const es = {
   'dish.publishing': 'Publicando…',
   'dish.publish_button': 'Publicar plato',
   'dish.post_error': 'No se pudo publicar el plato.',
+  'dish.discard_title': '¿Descartar este plato?',
+  'dish.discard_button': 'Descartar',
 
   // app/dish/[dishId].tsx
   'dish.deleted_toast': 'Plato eliminado',
@@ -468,11 +470,10 @@ export const es = {
   'restaurant.dishes_load_error': 'No se pudieron cargar los platos.',
   'restaurant.no_dishes': 'Todavía no hay platos — sé el primero.',
 
-  // components (r/[restaurantId].tsx's RestaurantMenu section, M5)
+  // components (app/menu/[restaurantId].tsx, M5/M7)
   'restaurant.menu_title': 'Menú',
   'restaurant.menu_load_error': 'No se pudo cargar el menú.',
-  'restaurant.menu_see_full': 'Ver menú completo',
-  'restaurant.menu_see_less': 'Ver menos',
+  'restaurant.menu_empty': 'Este lugar aún no tiene menú.',
   'restaurant.menu_verified_on': 'Precios verificados · {date}',
   'restaurant.by_name': 'por {name}',
 
@@ -679,6 +680,10 @@ export const es = {
   'rank.sentiment_fine': 'Estuvo bien',
   'rank.sentiment_disliked': 'No me convenció',
   'rank.default_dish_name': 'Plato',
+  'rank.discard_title': '¿Descartar este ranking?',
+  'rank.discard_note_title': '¿Descartar tu nota?',
+  'rank.discard_note_message': 'Tu ranking ya quedó guardado.',
+  'rank.discard_button': 'Descartar',
   'rank.save_error': 'No se pudo guardar tu nota',
   'rank.add_place_capped': 'Llegaste al límite de lugares por hoy.',
   'rank.add_place_error': 'No se pudo agregar el lugar.',

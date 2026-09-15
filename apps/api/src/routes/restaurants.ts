@@ -702,6 +702,11 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       columns: { restaurantId: true },
     })
 
+    // A flag, not a second round trip from the client: the action row needs to
+    // know whether to render the Menu button in the same paint as the rest of
+    // the row, not pop it in once /menu resolves. Uses menu_items_restaurant_idx.
+    const menuItemCount = await db.$count(schema.menuItems, eq(schema.menuItems.restaurantId, id))
+
     // Similar spots: same cuisine or same neighborhood. Bounded to places
     // someone on Mesa has actually ranked and ordered most-ranked first — with
     // no ORDER BY this returned 6 arbitrary rows, which post-import (M6) means 6
@@ -807,7 +812,11 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // POST /from-google stamps one onto a curated row it recognizes), and
     // that row's name/cover/cuisine are Mesa's own, not Google's.
     return c.json({
-      restaurant: { ...restaurantOut, google: googlePlaceId != null && source === 'member' },
+      restaurant: {
+        ...restaurantOut,
+        google: googlePlaceId != null && source === 'member',
+        hasMenu: menuItemCount > 0,
+      },
       friendsRankings,
       friendAvg,
       occasionTags,

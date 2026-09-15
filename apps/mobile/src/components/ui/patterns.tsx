@@ -206,10 +206,17 @@ export function UtilityPill({
     <Pressable
       accessibilityRole="button"
       onPress={open}
-      className="min-h-[40px] flex-1 flex-row items-center justify-center gap-2 rounded-pill border border-line bg-surface px-3 active:opacity-80"
+      className="min-h-[56px] flex-1 items-center justify-center gap-1 rounded border border-line bg-surface px-1 py-2 active:opacity-80"
     >
       {icon}
-      <Text className="font-mono text-eyebrow text-text">{children}</Text>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        className="font-ui text-eyebrow text-text"
+      >
+        {children}
+      </Text>
     </Pressable>
   )
 }

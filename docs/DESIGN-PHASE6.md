@@ -108,10 +108,16 @@ Never render a score without its badge. An unlabelled number is the ambiguity th
 pattern exists to remove.
 
 ### 3.3 Outlined utility pills
-Website / Call / Directions. Mono `9.5px`, `--deep`, `1px solid var(--brass-line)`,
-`999px`, `padding: 9px 0`, `flex: 1` in a `gap: 7px` row, `text-align: center`,
-`white-space: nowrap`. No fill. These are always outlined so they never compete
-with the screen's one filled CTA.
+Menú (only when the place has one) · Llamar · Sitio web · Cómo llegar — up to
+four, `flex: 1` each in a `gap: 8px` row, equal width. **M7:** icon stacked
+ABOVE the label (not beside it — four labels beside their icons no longer fit
+a phone width without wrapping). `min-height: 56px`, `1px solid var(--line)`,
+`8px` radius (not a full pill anymore, so a two-line label still reads as one
+control), `padding: 8px 4px`, `gap: 4px` between icon and label. Icon `18px`.
+Label sans (`font-ui`, not mono) at eyebrow size, one line, shrinking down to
+80% before it would wrap or clip on a narrow phone or large Dynamic Type. No
+fill. These are always outlined so they never compete with the screen's one
+filled CTA.
 
 ### 3.4 Filter chip rail
 Anything that lists gets one. Mono `9px`, horizontal scroll, `gap: 6px`.

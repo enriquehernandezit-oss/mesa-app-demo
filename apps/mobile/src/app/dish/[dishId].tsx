@@ -178,18 +178,18 @@ export default function DishDetail() {
           </Link>
 
           <View className="mt-4 flex-row gap-2">
-            {restaurant.website ? (
-              <UtilityPill icon={<WebIcon size={13} />} href={restaurant.website}>
-                {t('dish.website')}
-              </UtilityPill>
-            ) : null}
             {restaurant.phone ? (
-              <UtilityPill icon={<PhoneIcon size={13} />} href={`tel:${restaurant.phone}`}>
+              <UtilityPill icon={<PhoneIcon size={18} />} href={`tel:${restaurant.phone}`}>
                 {t('dish.call')}
               </UtilityPill>
             ) : null}
+            {restaurant.website ? (
+              <UtilityPill icon={<WebIcon size={18} />} href={restaurant.website}>
+                {t('dish.website')}
+              </UtilityPill>
+            ) : null}
             <UtilityPill
-              icon={<DirectionsIcon size={13} />}
+              icon={<DirectionsIcon size={18} />}
               onPress={() => openDirections(restaurant.lat, restaurant.lng, restaurant.name)}
             >
               {t('restaurant.directions')}
