@@ -1,4 +1,5 @@
-import { Body, EmptyState, Eyebrow, Title, Wordmark } from '@/components/ui'
+import { Body, Caption, EmptyState, Eyebrow, Wordmark } from '@/components/ui'
+import { useLanguage, useT } from '@/lib/i18n'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ScrollView, View } from 'react-native'
 
@@ -48,6 +49,8 @@ const DOCS: Record<Doc, { title: string; body: string[] }> = {
 }
 
 export default function LegalPage() {
+  const t = useT()
+  const lang = useLanguage()
   const { doc } = useLocalSearchParams<{ doc: string }>()
   const entry = DOCS[doc as Doc]
 
@@ -55,7 +58,7 @@ export default function LegalPage() {
     <View className="flex-1 bg-bg">
       <Stack.Screen options={{ title: entry?.title ?? 'Legal' }} />
       {!entry ? (
-        <EmptyState>Documento no encontrado.</EmptyState>
+        <EmptyState>{t('legal.not_found')}</EmptyState>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -64,6 +67,13 @@ export default function LegalPage() {
         >
           <Wordmark size={32} />
           <Eyebrow className="mt-4 mb-5">Legal</Eyebrow>
+          {/* The prose itself is Spanish BORRADOR pending counsel (see the
+              type comment above) — this note is the only EN-mode concession,
+              per the M4 plan, rather than a half-machine-translated legal
+              document. */}
+          {lang === 'en' && (
+            <Caption className="mb-4 text-text-muted">{t('legal.spanish_only_note')}</Caption>
+          )}
           <View className="gap-4">
             {entry.body.map((paragraph) => (
               <Body key={paragraph.slice(0, 24)}>{paragraph}</Body>

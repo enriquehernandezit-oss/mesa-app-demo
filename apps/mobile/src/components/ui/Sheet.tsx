@@ -1,5 +1,6 @@
 import { Eyebrow } from '@/components/ui'
 import { CheckIcon } from '@/components/ui/icons'
+import { getLanguage, t } from '@/lib/i18n'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { useSyncExternalStore } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -75,7 +76,7 @@ export function showSheet(opts: {
       title: opts.title,
       message: opts.message,
       options: opts.options,
-      cancelLabel: opts.cancelLabel ?? 'Cancelar',
+      cancelLabel: opts.cancelLabel ?? t(getLanguage(), 'common.cancel'),
       selectedIndex: opts.selectedIndex,
       resolve,
     }

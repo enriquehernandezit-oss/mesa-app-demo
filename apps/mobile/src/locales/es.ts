@@ -113,7 +113,8 @@ export const es = {
   'activity.section_week': 'Esta semana',
   'activity.section_earlier': 'Antes',
   'activity.load_error': 'No se pudo cargar la actividad.',
-  'activity.empty_body': 'Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí.',
+  'activity.empty_body':
+    'Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí.',
   'activity.discover_people': 'Descubre gente',
   'activity.empty_title': 'Tranquilo por ahora.',
   'activity.cheers_prefix': 'le dio cheers a tu ranking de ',
@@ -349,6 +350,45 @@ export const es = {
   'plans.share_whatsapp': 'Compartir por WhatsApp',
   'plans.invite_more': 'Invitar a más',
   'plans.voting_open_title': 'Votación abierta',
+  'plans.cancelled_title': 'Mesa cancelada',
+
+  // app/planes/invitar.tsx
+  'plans.invited_count': { one: 'Invitaste a 1 persona.', other: 'Invitaste a {n} personas.' },
+  'plans.invite_error': 'No se pudo invitar. Intenta de nuevo.',
+  'plans.invite_more_back': '✕ Invitar a más',
+  'plans.invite_n': 'Invitar a {n}',
+
+  // lib/dishPhoto.ts
+  'dish.take_photo': 'Tomar foto',
+  'dish.choose_from_library': 'Elegir de la biblioteca',
+
+  // app/legal/[doc].tsx — the prose itself stays Spanish (BORRADOR, pending
+  // counsel) in both languages; only the not-found state and the EN-mode
+  // notice are keyed.
+  'legal.not_found': 'Documento no encontrado.',
+  'legal.spanish_only_note': 'Disponible en español por ahora.',
+
+  // app/people/[userId].tsx
+  'people.invite_link_error': 'No se pudo abrir el enlace de invitación.',
+  'people.followers_title': 'Seguidores',
+  'people.following_title': 'Siguiendo',
+  'people.not_available': 'Este perfil no está disponible.',
+  'people.load_error': 'No se pudo cargar la lista.',
+  'people.followers_empty_body': 'Comparte tu invitación para que la gente empiece a seguirte.',
+  'people.following_empty_body': 'Sigue a algunos amigos — sus rankings llenan tu feed.',
+  'people.invite_friends': 'Invitar amigos',
+  'people.empty_title': 'Nadie todavía.',
+
+  // app/index.tsx, app/sign-in.tsx
+  'app.profile_load_error': 'No pudimos cargar tu perfil.',
+
+  // app/u/handle/[handle].tsx
+  'handle.not_exist_body': 'Puede que la cuenta ya no exista.',
+  'handle.not_available': 'Perfil no disponible.',
+
+  // components/ExternalResults.tsx
+  'external.on_google': 'En Google',
+  'external.creating_profile': 'Creando perfil…',
 
   // components/MesaTabBar.tsx
   'tabs.feed': 'Feed',

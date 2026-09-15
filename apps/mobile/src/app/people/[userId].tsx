@@ -2,6 +2,7 @@ import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Button, Chip, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { FollowUser } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
@@ -16,6 +17,7 @@ import { FlatList, View } from 'react-native'
 type Tab = 'followers' | 'following'
 
 export default function PeopleScreen() {
+  const t = useT()
   const { userId, tab: tabParam } = useLocalSearchParams<{ userId: string; tab?: string }>()
   const [tab, setTab] = useState<Tab>(tabParam === 'following' ? 'following' : 'followers')
 
@@ -29,7 +31,7 @@ export default function PeopleScreen() {
       const { code } = await api.get<{ code: string }>('/invites/me')
       await shareInviteLink(code)
     } catch {
-      toast({ variant: 'error', message: 'No se pudo abrir el enlace de invitación.' })
+      toast({ variant: 'error', message: t('people.invite_link_error') })
     }
   }
 
@@ -39,7 +41,7 @@ export default function PeopleScreen() {
     <View className="flex-1 bg-bg">
       <Stack.Screen
         options={{
-          title: tab === 'followers' ? 'Seguidores' : 'Siguiendo',
+          title: tab === 'followers' ? t('people.followers_title') : t('people.following_title'),
           headerLargeTitle: false,
         }}
       />
@@ -49,14 +51,14 @@ export default function PeopleScreen() {
           state={tab === 'followers' ? 'selected' : 'default'}
           onPress={() => setTab('followers')}
         >
-          Seguidores
+          {t('people.followers_title')}
         </Chip>
         <Chip
           size="sm"
           state={tab === 'following' ? 'selected' : 'default'}
           onPress={() => setTab('following')}
         >
-          Siguiendo
+          {t('people.following_title')}
         </Chip>
       </View>
 
@@ -64,9 +66,9 @@ export default function PeopleScreen() {
         <RowsSkeleton />
       ) : q.isError ? (
         gone ? (
-          <EmptyState>Este perfil no está disponible.</EmptyState>
+          <EmptyState>{t('people.not_available')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la lista.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('people.load_error')}</ErrorState>
         )
       ) : (
         <FlatList
@@ -85,18 +87,18 @@ export default function PeopleScreen() {
             <EmptyState
               body={
                 tab === 'followers'
-                  ? 'Comparte tu invitación para que la gente empiece a seguirte.'
-                  : 'Sigue a algunos amigos — sus rankings llenan tu feed.'
+                  ? t('people.followers_empty_body')
+                  : t('people.following_empty_body')
               }
               action={
                 tab === 'followers' ? (
                   <Button size="sm" variant="secondary" onPress={inviteFriends}>
-                    Invitar amigos
+                    {t('people.invite_friends')}
                   </Button>
                 ) : undefined
               }
             >
-              Nadie todavía.
+              {t('people.empty_title')}
             </EmptyState>
           }
         />

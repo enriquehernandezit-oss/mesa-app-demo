@@ -1,4 +1,5 @@
 import { track } from '@/lib/analytics'
+import { getLanguage, t } from '@/lib/i18n'
 import { Linking, Share } from 'react-native'
 import { apiOrigin } from './api'
 
@@ -10,11 +11,15 @@ export function profileShareLink(handle: string | null | undefined): string {
 }
 
 // The caption that rides with a shared list. Kept URL-free: when a share carries
-// a `url` of its own, repeating it in the message shows the link twice.
-export const PROFILE_SHARE_CAPTION = 'Mi ranking en Mesa 🥂'
+// a `url` of its own, repeating it in the message shows the link twice. Not a
+// component — reads the language directly via t()/getLanguage(), same as
+// lib/authErrors.ts, since share text is built from plain callers.
+export function profileShareCaption(): string {
+  return t(getLanguage(), 'share.profile_caption')
+}
 
 export function profileShareText(handle: string | null | undefined): string {
-  return `${PROFILE_SHARE_CAPTION}\n${profileShareLink(handle)}`
+  return `${profileShareCaption()}\n${profileShareLink(handle)}`
 }
 
 // The own-profile top bar's share button. The link is passed as `url`, not
@@ -24,7 +29,7 @@ export function profileShareText(handle: string | null | undefined): string {
 export async function shareProfile(handle: string | null | undefined): Promise<void> {
   track('share_opened', { kind: 'profile' })
   await Share.share({
-    message: PROFILE_SHARE_CAPTION,
+    message: profileShareCaption(),
     url: profileShareLink(handle),
   }).catch(() => {})
 }
@@ -57,7 +62,5 @@ export async function shareTextWhatsAppFirst(text: string): Promise<void> {
 export async function shareInviteLink(code: string): Promise<void> {
   track('share_opened', { kind: 'invite' })
   const link = inviteShareLink(code)
-  await shareTextWhatsAppFirst(
-    `Te invito a Mesa 🥂 — donde comemos y salimos en Santo Domingo.\n${link}`,
-  )
+  await shareTextWhatsAppFirst(t(getLanguage(), 'share.invite_text', { link }))
 }

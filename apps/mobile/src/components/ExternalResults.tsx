@@ -1,4 +1,5 @@
 import { Caption, SectionHeader } from '@/components/ui'
+import { useT } from '@/lib/i18n'
 import type { ExternalSuggestion } from '@/lib/types'
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -19,11 +20,12 @@ export function ExternalResults({
   creatingId: string | null
   onPick: (placeId: string) => void
 }) {
+  const t = useT()
   if (suggestions.length === 0) return null
   const busy = creatingId !== null
   return (
     <View>
-      {heading ?? <SectionHeader>En Google</SectionHeader>}
+      {heading ?? <SectionHeader>{t('external.on_google')}</SectionHeader>}
       {suggestions.map((s) => {
         const pending = creatingId === s.providerPlaceId
         return (
@@ -36,7 +38,9 @@ export function ExternalResults({
           >
             <Text className="font-serif text-serif-sm text-text">{s.name}</Text>
             {pending || s.secondaryText ? (
-              <Caption className="mt-0.5">{pending ? 'Creando perfil…' : s.secondaryText}</Caption>
+              <Caption className="mt-0.5">
+                {pending ? t('external.creating_profile') : s.secondaryText}
+              </Caption>
             ) : null}
           </Pressable>
         )

@@ -2,6 +2,7 @@ import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton, Title } from 
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import type { ListDetailResponse } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
@@ -11,6 +12,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // friend signal. Reached from the Discover carousel or a restaurant's list
 // pills. Ported from apps/app/src/screens/list/ListScreen.tsx.
 export default function ListScreen() {
+  const t = useT()
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const q = useQuery({
     queryKey: ['list', slug],
@@ -36,9 +38,9 @@ export default function ListScreen() {
         // branch for both meant a dropped connection stranded you on a real list
         // with no way forward. (A retry button on a deleted list would lie.)
         q.error instanceof ApiError && q.error.status === 404 ? (
-          <EmptyState>Lista no encontrada.</EmptyState>
+          <EmptyState>{t('lists.not_found')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la lista.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('lists.load_error')}</ErrorState>
         )
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
@@ -54,11 +56,13 @@ export default function ListScreen() {
               className="absolute right-4 rounded-pill bg-surface px-2 py-1"
               style={{ bottom: 10 }}
             >
-              <Caption className="font-mono text-micro">film · con velas</Caption>
+              <Caption className="font-mono text-micro">{t('lists.film_candlelit')}</Caption>
             </View>
           </View>
           <View className="px-5">
-            <Eyebrow className="mt-4">Destacada · {q.data.items.length} spots</Eyebrow>
+            <Eyebrow className="mt-4">
+              {t('lists.featured_count', { n: q.data.items.length })}
+            </Eyebrow>
             {q.data.list.subtitle ? <Body className="mt-1">{q.data.list.subtitle}</Body> : null}
 
             <View className="mt-4">

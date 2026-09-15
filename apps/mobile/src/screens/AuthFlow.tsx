@@ -111,9 +111,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       setError(
         authErrorMessage(
           res.error,
-          mode === 'signup'
-            ? t('auth.signup_generic_error')
-            : t('auth.INVALID_EMAIL_OR_PASSWORD'),
+          mode === 'signup' ? t('auth.signup_generic_error') : t('auth.INVALID_EMAIL_OR_PASSWORD'),
         ),
       )
       return

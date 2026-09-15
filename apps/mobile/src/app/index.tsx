@@ -3,6 +3,7 @@ import { ErrorState } from '@/components/ui'
 import { useProfile } from '@/hooks/useProfile'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
+import { useT } from '@/lib/i18n'
 import { Redirect } from 'expo-router'
 import { View } from 'react-native'
 
@@ -11,6 +12,7 @@ import { View } from 'react-native'
 // the app reacts when session state changes (sign-out, ejection) without
 // imperative navigation.
 export default function Index() {
+  const t = useT()
   const { data: session, isPending: sessionLoading } = useSession()
   const authed = Boolean(session?.user)
   const { data: me, isPending: profileLoading, refetch } = useProfile(authed)
@@ -22,7 +24,7 @@ export default function Index() {
   if (!me)
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <ErrorState onRetry={() => refetch()}>No pudimos cargar tu perfil.</ErrorState>
+        <ErrorState onRetry={() => refetch()}>{t('app.profile_load_error')}</ErrorState>
       </View>
     )
   if (!me.onboardingComplete) return <Redirect href="/onboarding" />

@@ -2,6 +2,7 @@ import { ShareCard } from '@/components/ShareCard'
 import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { captureError } from '@/lib/errors'
+import { useT } from '@/lib/i18n'
 import { finishShareCard, useShareCardRequest } from '@/lib/shareCardStore'
 import { useEffect, useRef } from 'react'
 import { Share, View } from 'react-native'
@@ -14,10 +15,14 @@ import ViewShot, { type ViewShotRef, captureRef } from 'react-native-view-shot'
 // output size is forced regardless of the on-screen render, so the card is
 // always full story resolution.
 export function ShareCardHost() {
+  const t = useT()
   const req = useShareCardRequest()
   const shotRef = useRef<ViewShotRef>(null)
   const done = useRef(false)
 
+  // A language flip mid-capture must not re-toast or restart the 3s fallback
+  // timer — req identity alone drives the reset (see below).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
   useEffect(() => {
     done.current = false
     if (!req) return
@@ -25,10 +30,10 @@ export function ShareCardHost() {
     // part of this whole flow the tap itself doesn't give feedback for — up to
     // 3s of nothing on screen reads as a dead button. This is the one place to
     // say something: `run()` below fires exactly once per request either way.
-    toast({ message: 'Preparando tu tarjeta…' })
+    toast({ message: t('share.preparing') })
     // Fallback: capture even if the cover's onLoad never fires (slow/broken URL).
-    const t = setTimeout(() => void run(), 3000)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => void run(), 3000)
+    return () => clearTimeout(timer)
     // run is stable enough for this one-shot; req identity drives the reset.
   }, [req])
 
@@ -57,7 +62,7 @@ export function ShareCardHost() {
       // told to the person who tapped it too: a "Preparando…" toast that never
       // resolves into anything is worse than no toast at all.
       captureError(err, 'share.capture')
-      toast({ variant: 'error', message: 'No se pudo preparar la tarjeta. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('share.prepare_error') })
     } finally {
       finishShareCard()
     }

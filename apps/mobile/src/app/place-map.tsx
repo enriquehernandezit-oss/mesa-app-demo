@@ -3,6 +3,7 @@ import { ScreenHeader } from '@/components/ScreenHeader'
 import { Button, Caption, EmptyState } from '@/components/ui'
 import { DirectionsIcon } from '@/components/ui/icons'
 import { openDirections } from '@/lib/directions'
+import { useT } from '@/lib/i18n'
 import type { MapSpot } from '@/lib/types'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo } from 'react'
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // restaurant profile's locator map. Zoom 16 keeps street names readable (the
 // block, not the rooftop). "Cómo llegar" hands off to the maps app.
 export default function PlaceMapScreen() {
+  const t = useT()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const p = useLocalSearchParams<{
@@ -48,7 +50,7 @@ export default function PlaceMapScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel={p.name || 'Atrás'} />
+      <ScreenHeader onBack={goBack} backLabel={p.name || t('common.back_plain')} />
       <View className="flex-1">
         {HAS_MAP_TOKEN && Number.isFinite(lat) && Number.isFinite(lng) ? (
           <MesaMap
@@ -58,9 +60,7 @@ export default function PlaceMapScreen() {
             style={{ flex: 1 }}
           />
         ) : (
-          <EmptyState body="El mapa llega con la próxima versión.">
-            El mapa no está disponible.
-          </EmptyState>
+          <EmptyState body={t('map.coming_soon_body')}>{t('map.unavailable')}</EmptyState>
         )}
       </View>
       <View
@@ -75,7 +75,7 @@ export default function PlaceMapScreen() {
           icon={<DirectionsIcon size={15} color="on-accent" />}
           onPress={() => openDirections(lat, lng, p.name)}
         >
-          Cómo llegar
+          {t('restaurant.directions')}
         </Button>
       </View>
     </View>

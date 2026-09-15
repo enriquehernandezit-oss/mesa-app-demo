@@ -1,4 +1,5 @@
 import { showSheet } from '@/components/ui/Sheet'
+import { getLanguage, t } from '@/lib/i18n'
 import * as SecureStore from 'expo-secure-store'
 import { Linking } from 'react-native'
 
@@ -52,7 +53,7 @@ export async function openDirections(lat: number, lng: number, label?: string): 
   const apps = last ? [last, ...ORDER.filter((a) => a !== last)] : ORDER
 
   const picked = await showSheet({
-    title: 'Cómo llegar',
+    title: t(getLanguage(), 'restaurant.directions'),
     message: label,
     options: apps.map((a) => ({ label: LABEL[a] })),
   })

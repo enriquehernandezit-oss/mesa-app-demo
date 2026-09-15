@@ -1,4 +1,5 @@
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
+import { dateLocale, getLanguage, t } from '@/lib/i18n'
 import type { Ranking } from '@/lib/types'
 
 // Sort + filter for the "mine" tab of the rankings screen. Pure functions over a
@@ -7,15 +8,23 @@ import type { Ranking } from '@/lib/types'
 
 export type SortKey = 'position' | 'score' | 'recent' | 'name'
 
-export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'position', label: 'Mi orden' },
-  { key: 'score', label: 'Puntuación' },
-  { key: 'recent', label: 'Recientes' },
-  { key: 'name', label: 'Nombre' },
-]
+// Not a component — reads the language directly via t()/getLanguage(), same as
+// lib/authErrors.ts, since sort options are consumed by plain callers as well
+// as components.
+export function sortOptions(): { key: SortKey; label: string }[] {
+  const lang = getLanguage()
+  return [
+    { key: 'position', label: t(lang, 'rankings.sort_position') },
+    { key: 'score', label: t(lang, 'rankings.sort_score') },
+    { key: 'recent', label: t(lang, 'rankings.sort_recent') },
+    { key: 'name', label: t(lang, 'rankings.sort_name') },
+  ]
+}
 
 export function sortLabel(key: SortKey): string {
-  return SORT_OPTIONS.find((o) => o.key === key)?.label ?? 'Mi orden'
+  return (
+    sortOptions().find((o) => o.key === key)?.label ?? t(getLanguage(), 'rankings.sort_position')
+  )
 }
 
 export function sortRankings(rows: Ranking[], key: SortKey): Ranking[] {
@@ -30,7 +39,7 @@ export function sortRankings(rows: Ranking[], key: SortKey): Ranking[] {
       return out.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     case 'name':
       return out.sort((a, b) =>
-        a.restaurant.name.localeCompare(b.restaurant.name, 'es', { sensitivity: 'base' }),
+        a.restaurant.name.localeCompare(b.restaurant.name, dateLocale(), { sensitivity: 'base' }),
       )
     default:
       // 'position' — the pairwise order, which is the list's real identity.
@@ -86,11 +95,12 @@ export function deriveFilterOptions(rows: Ranking[]): FilterOptions {
     if (r.restaurant.priceTier) prices.add(r.restaurant.priceTier)
     if (r.restaurant.cuisine) cuisines.add(r.restaurant.cuisine)
   }
+  const locale = dateLocale()
   return {
-    sectors: [...sectors].sort((a, b) => a.localeCompare(b, 'es')),
-    occasions: [...occasions].sort((a, b) => a.localeCompare(b, 'es')),
+    sectors: [...sectors].sort((a, b) => a.localeCompare(b, locale)),
+    occasions: [...occasions].sort((a, b) => a.localeCompare(b, locale)),
     prices: [...prices].sort((a, b) => a - b),
-    cuisines: [...cuisines].sort((a, b) => a.localeCompare(b, 'es')),
+    cuisines: [...cuisines].sort((a, b) => a.localeCompare(b, locale)),
   }
 }
 

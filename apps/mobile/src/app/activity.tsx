@@ -14,6 +14,7 @@ import { useFollow } from '@/hooks/useFollow'
 import { markActivitySeen } from '@/lib/activitySeen'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import { formatPlanDate, timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -28,12 +29,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // Ported from apps/app/src/screens/activity/ActivityScreen.tsx. The inert
 // "Mesas" (table activity) filter is cut — Tonight is out of the launch subset.
 type Filter = 'all' | 'follows' | 'rankings' | 'plans'
-const FILTERS: { value: Filter; label: string }[] = [
-  { value: 'all', label: 'Todo' },
-  { value: 'follows', label: 'Seguidores' },
-  { value: 'rankings', label: 'Rankings' },
-  { value: 'plans', label: 'Planes' },
-]
 
 function bucket(at: string): 'today' | 'week' | 'earlier' {
   const d = new Date(at).getTime()
@@ -43,16 +38,23 @@ function bucket(at: string): 'today' | 'week' | 'earlier' {
   if (d >= startToday - 6 * 86_400_000) return 'week'
   return 'earlier'
 }
-const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
-  { key: 'today', label: 'Hoy' },
-  { key: 'week', label: 'Esta semana' },
-  { key: 'earlier', label: 'Antes' },
-]
 
 export default function ActivityScreen() {
+  const t = useT()
   const router = useRouter()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<Filter>('all')
+  const FILTERS: { value: Filter; label: string }[] = [
+    { value: 'all', label: t('activity.filter_all') },
+    { value: 'follows', label: t('activity.filter_follows') },
+    { value: 'rankings', label: t('activity.filter_rankings') },
+    { value: 'plans', label: t('activity.filter_plans') },
+  ]
+  const SECTIONS: { key: 'today' | 'week' | 'earlier'; label: string }[] = [
+    { key: 'today', label: t('activity.section_today') },
+    { key: 'week', label: t('activity.section_week') },
+    { key: 'earlier', label: t('activity.section_earlier') },
+  ]
   const q = useQuery({
     queryKey: ['activity'],
     queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),
@@ -112,17 +114,17 @@ export default function ActivityScreen() {
         {q.isPending ? (
           <RowsSkeleton />
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la actividad.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('activity.load_error')}</ErrorState>
         ) : sections.length === 0 ? (
           <EmptyState
-            body="Los cheers, nuevos seguidores, y amigos probando tus spots guardados aparecen aquí."
+            body={t('activity.empty_body')}
             action={
               <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
-                Descubre gente
+                {t('activity.discover_people')}
               </Button>
             }
           >
-            Tranquilo por ahora.
+            {t('activity.empty_title')}
           </EmptyState>
         ) : (
           sections.map((s) => (
@@ -140,6 +142,7 @@ export default function ActivityScreen() {
 }
 
 function ActivityRow({ a }: { a: ActivityItem }) {
+  const t = useT()
   const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
   const isPlan = a.type === 'plan_invite' || a.type === 'plan_reply'
@@ -188,29 +191,50 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           >
             {a.user.name || a.user.handle}
           </Text>{' '}
-          {a.type === 'cheers' && <>le dio cheers a tu ranking de {place}</>}
-          {a.type === 'follow' && 'empezó a seguirte'}
-          {a.type === 'saved_ranked' && <>rankeó {place} — está en tu lista</>}
+          {a.type === 'cheers' && (
+            <>
+              {t('activity.cheers_prefix')}
+              {place}
+            </>
+          )}
+          {a.type === 'follow' && t('activity.followed_you')}
+          {a.type === 'saved_ranked' && (
+            <>
+              {t('activity.ranked_prefix')}
+              {place}
+              {t('activity.saved_ranked_suffix')}
+            </>
+          )}
           {a.type === 'friend_ranked' && a.score != null && (
             <>
-              rankeó {place} con{' '}
+              {t('activity.ranked_prefix')}
+              {place}
+              {t('activity.ranked_with')}
               <Text style={DATA_FIGURES} className="text-accent">
                 {displayScore(a.score)}
               </Text>
               {a.yourScore != null && Math.abs(a.score - a.yourScore) >= 10 && (
-                <> — {a.score > a.yourScore ? 'le gustó más que a ti' : 'a ti te gustó más'}</>
+                <>
+                  {' — '}
+                  {a.score > a.yourScore ? t('activity.liked_more') : t('activity.you_liked_more')}
+                </>
               )}
             </>
           )}
           {a.type === 'plan_invite' && (
             <>
-              te invitó a una mesa en {place}
+              {t('activity.plan_invite_prefix')}
+              {place}
               {a.startsAt ? ` · ${formatPlanDate(a.startsAt)}` : ''}
             </>
           )}
           {a.type === 'plan_reply' && (
             <>
-              {a.reply === 'going' ? 'va' : 'tal vez va'} a tu mesa en {place}
+              {a.reply === 'going'
+                ? t('activity.plan_reply_going')
+                : t('activity.plan_reply_maybe')}
+              {t('activity.plan_reply_suffix')}
+              {place}
             </>
           )}
         </Text>
@@ -227,7 +251,7 @@ function ActivityRow({ a }: { a: ActivityItem }) {
           <Text
             className={`font-mono text-eyebrow ${following ? 'text-text-muted' : 'text-accent-strong'}`}
           >
-            {following ? 'Siguiendo' : 'Seguir'}
+            {following ? t('activity.following_pill') : t('activity.follow_pill')}
           </Text>
         </Pressable>
       ) : isPlan ? (

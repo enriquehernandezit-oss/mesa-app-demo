@@ -2,6 +2,7 @@ import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Pressable, Text } from 'react-native'
@@ -25,6 +26,7 @@ export function CheersButton({
   count: number
   cheered: boolean
 }) {
+  const t = useT()
   const [on, setOn] = useState(cheered)
   const [n, setN] = useState(count)
   const scale = useSharedValue(1)
@@ -84,7 +86,7 @@ export function CheersButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={on ? 'Quitar brindis' : 'Brindar'}
+      accessibilityLabel={on ? t('cheers.remove') : t('cheers.give')}
       onPress={onTap}
       className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
     >

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import { isPastPlan, isPendingInvite } from '@/lib/plans'
 import { formatPlanDate } from '@/lib/time'
 import type { Plan, PlanReply } from '@/lib/types'
@@ -20,6 +21,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // member should act on them — what needs a reply first, then what's already
 // on the calendar, then the record of what happened.
 export default function PlanesScreen() {
+  const t = useT()
   const router = useRouter()
   const q = useQuery({
     queryKey: ['plans'],
@@ -39,16 +41,16 @@ export default function PlanesScreen() {
     <View className="flex-1 bg-bg">
       <Stack.Screen
         options={{
-          title: 'Planes',
+          title: t('plans.title'),
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Nueva mesa"
+              accessibilityLabel={t('plans.new_label')}
               onPress={() => router.push('/planes/nuevo')}
               className="min-h-[44px] justify-center active:opacity-70"
             >
               <Text className="font-mono text-eyebrow text-accent uppercase tracking-eyebrow">
-                Nueva
+                {t('plans.new_short')}
               </Text>
             </Pressable>
           ),
@@ -62,23 +64,23 @@ export default function PlanesScreen() {
         {q.isPending ? (
           <RowsSkeleton />
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>No se pudieron cargar tus planes.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('plans.load_error')}</ErrorState>
         ) : items.length === 0 ? (
           <EmptyState
-            body="Arma una mesa e invita a la gente que sigues."
+            body={t('plans.empty_body')}
             action={
               <Button size="sm" variant="secondary" onPress={() => router.push('/planes/nuevo')}>
-                Nueva mesa
+                {t('plans.new_label')}
               </Button>
             }
           >
-            Nada en la agenda.
+            {t('plans.empty_title')}
           </EmptyState>
         ) : (
           <>
             {pending.length > 0 && (
               <View>
-                <SectionHeader>Invitaciones pendientes</SectionHeader>
+                <SectionHeader>{t('plans.section_pending')}</SectionHeader>
                 {pending.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -86,7 +88,7 @@ export default function PlanesScreen() {
             )}
             {upcoming.length > 0 && (
               <View>
-                <SectionHeader>Próximos</SectionHeader>
+                <SectionHeader>{t('plans.section_upcoming')}</SectionHeader>
                 {upcoming.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -94,7 +96,7 @@ export default function PlanesScreen() {
             )}
             {past.length > 0 && (
               <View>
-                <SectionHeader>Pasados</SectionHeader>
+                <SectionHeader>{t('plans.section_past')}</SectionHeader>
                 {past.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -107,22 +109,27 @@ export default function PlanesScreen() {
   )
 }
 
-function replyLabel(reply: PlanReply | null): string {
-  if (reply === 'going') return 'Voy'
-  if (reply === 'maybe') return 'Tal vez'
-  if (reply === 'declined') return 'No puedo'
-  return 'Pendiente'
+function replyLabel(t: ReturnType<typeof useT>, reply: PlanReply | null): string {
+  if (reply === 'going') return t('plans.reply_going')
+  if (reply === 'maybe') return t('plans.reply_maybe')
+  if (reply === 'declined') return t('plans.reply_declined')
+  return t('plans.reply_pending')
 }
 
 function PlanRow({ plan }: { plan: Plan }) {
+  const t = useT()
   const chosen = plan.options.find((o) => o.id === plan.chosenRestaurantId)
   const cover = chosen ?? plan.options[0]
-  const title = chosen ? chosen.name : `${plan.options.length} opciones · votación`
+  const title = chosen ? chosen.name : t('plans.options_voting', { n: plan.options.length })
   const sub = plan.isHost
-    ? `${plan.counts.going} van · ${plan.counts.maybe} tal vez`
-    : `Organiza ${plan.host.name}`
+    ? t('plans.host_summary', { going: plan.counts.going, maybe: plan.counts.maybe })
+    : t('plans.hosted_by', { name: plan.host.name })
   const badge =
-    plan.status === 'cancelled' ? 'Cancelada' : plan.isHost ? 'Organizas' : replyLabel(plan.myReply)
+    plan.status === 'cancelled'
+      ? t('plans.cancelled_badge')
+      : plan.isHost
+        ? t('plans.hosting_badge')
+        : replyLabel(t, plan.myReply)
 
   return (
     <Link href={`/planes/${plan.id}`} asChild>

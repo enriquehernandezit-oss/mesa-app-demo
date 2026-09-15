@@ -1,6 +1,7 @@
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { EmptyState, Skeleton } from '@/components/ui'
 import { api } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 import { useQuery } from '@tanstack/react-query'
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
 import { View } from 'react-native'
@@ -11,6 +12,7 @@ import { View } from 'react-native'
 // way. It renders a passport-shaped skeleton while it does, so arriving from a
 // tapped link doesn't flash an empty screen.
 export default function ResolveHandle() {
+  const t = useT()
   const { handle } = useLocalSearchParams<{ handle: string }>()
   const router = useRouter()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
@@ -28,9 +30,9 @@ export default function ResolveHandle() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel="Atrás" />
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       {q.isError ? (
-        <EmptyState body="Puede que la cuenta ya no exista.">Perfil no disponible.</EmptyState>
+        <EmptyState body={t('handle.not_exist_body')}>{t('handle.not_available')}</EmptyState>
       ) : (
         <View className="items-center gap-3 px-5 pt-6">
           <Skeleton height={88} width={88} />

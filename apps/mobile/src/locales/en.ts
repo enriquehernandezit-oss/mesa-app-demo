@@ -40,13 +40,16 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.suspended_title': 'Account suspended',
   'auth.suspended_headline': 'Your account is no longer active.',
   'auth.suspended_body':
-    "We suspended this account for breaking community guidelines. If you think this was a mistake, reply to the email you signed up with.",
+    'We suspended this account for breaking community guidelines. If you think this was a mistake, reply to the email you signed up with.',
   'auth.back_to_start': 'Back to start',
   'auth.create_account_eyebrow': 'Create your account',
   'auth.welcome_back': 'Welcome back',
   'auth.email_placeholder': 'you@email.com',
   'auth.password_placeholder': 'Password (8+ characters)',
-  'auth.password_chars_left': { one: '1 more character needed.', other: '{n} more characters needed.' },
+  'auth.password_chars_left': {
+    one: '1 more character needed.',
+    other: '{n} more characters needed.',
+  },
   'auth.create_account_button': 'Create account',
   'auth.sign_in_button': 'Sign in',
   'auth.reset_sent': "If that email is registered, you'll get a link to reset it.",
@@ -58,7 +61,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.signup_generic_error': "Couldn't create the account.",
 
   'auth.reset_title': 'Reset password',
-  'auth.reset_missing_token': "This link is missing its token.",
+  'auth.reset_missing_token': 'This link is missing its token.',
   'auth.reset_missing_token_body': 'Request a new link from the sign-in screen.',
   'auth.reset_back_to_signin': 'Back to sign in',
   'auth.reset_done': 'Password updated.',
@@ -73,7 +76,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.verify_verifying': 'Confirming…',
   'auth.verify_done_title': "You're all set. Your email is confirmed.",
   'auth.verify_done_body': 'You can now rank, write notes, and add dishes.',
-  'auth.verify_missing_token': "This link is missing its token.",
+  'auth.verify_missing_token': 'This link is missing its token.',
   'auth.verify_expired_body':
     'Open Mesa and request a new one from Settings — links expire for security.',
   'auth.verify_enter_done': 'Enter Mesa',
@@ -225,10 +228,9 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'moderation.remove_content': 'Remove content',
   'moderation.confirm_dismiss_title': 'Dismiss the report?',
   'moderation.confirm_action_title': '{label}?',
-  'moderation.eject_message': "The account is suspended and its content disappears from Mesa.",
-  'moderation.remove_message':
-    'The content disappears from Mesa. The row is kept for auditing.',
-  'moderation.dismiss_message': "The report closes without touching the content.",
+  'moderation.eject_message': 'The account is suspended and its content disappears from Mesa.',
+  'moderation.remove_message': 'The content disappears from Mesa. The row is kept for auditing.',
+  'moderation.dismiss_message': 'The report closes without touching the content.',
   'moderation.dismiss_button': 'Dismiss',
   'moderation.content_gone': 'The content no longer exists. Dismiss the report.',
   'moderation.reason_label': 'Reason:',
@@ -242,7 +244,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rankings.sort_name': 'Name',
 
   'share.profile_caption': 'My ranking on Mesa 🥂',
-  'share.invite_text': "I'm inviting you to Mesa 🥂 — where we eat and go out in Santo Domingo.\n{link}",
+  'share.invite_text':
+    "I'm inviting you to Mesa 🥂 — where we eat and go out in Santo Domingo.\n{link}",
 
   'rankings.remove_error': "Couldn't remove it from your list",
   'rankings.removed_toast': 'Removed {name} from your list',
@@ -302,7 +305,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'plans.confirm_spot_title': 'Confirm spot',
   'plans.votes_count': { one: '1 vote', other: '{n} votes' },
   'plans.cancel_confirm_title': 'Cancel this table?',
-  'plans.cancel_confirm_message': "Every guest will see it in their Activity.",
+  'plans.cancel_confirm_message': 'Every guest will see it in their Activity.',
   'plans.cancel_confirm_button': 'Cancel table',
   'plans.cancel_confirm_back': 'Back',
   'plans.past_chip': 'Already happened',
@@ -319,6 +322,37 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'plans.share_whatsapp': 'Share on WhatsApp',
   'plans.invite_more': 'Invite more',
   'plans.voting_open_title': 'Vote open',
+  'plans.cancelled_title': 'Cancelled table',
+
+  'plans.invited_count': { one: 'Invited 1 person.', other: 'Invited {n} people.' },
+  'plans.invite_error': "Couldn't invite them. Try again.",
+  'plans.invite_more_back': '✕ Invite more',
+  'plans.invite_n': 'Invite {n}',
+
+  'dish.take_photo': 'Take photo',
+  'dish.choose_from_library': 'Choose from library',
+
+  'legal.not_found': 'Document not found.',
+  'legal.spanish_only_note':
+    "Available in Spanish for now — the legal text hasn't been translated yet.",
+
+  'people.invite_link_error': "Couldn't open the invite link.",
+  'people.followers_title': 'Followers',
+  'people.following_title': 'Following',
+  'people.not_available': "This profile isn't available.",
+  'people.load_error': "Couldn't load the list.",
+  'people.followers_empty_body': 'Share your invite so people start following you.',
+  'people.following_empty_body': 'Follow some friends — their rankings fill your feed.',
+  'people.invite_friends': 'Invite friends',
+  'people.empty_title': 'No one yet.',
+
+  'app.profile_load_error': "We couldn't load your profile.",
+
+  'handle.not_exist_body': 'The account may no longer exist.',
+  'handle.not_available': 'Profile not available.',
+
+  'external.on_google': 'On Google',
+  'external.creating_profile': 'Creating profile…',
 
   'tabs.feed': 'Feed',
   'tabs.explore': 'Explore',

@@ -3,6 +3,7 @@ import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import type { FollowUser } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
@@ -28,6 +29,7 @@ export function FollowerPicker({
   onToggle: (user: FollowUser) => void
   exclude?: Set<string>
 }) {
+  const t = useT()
   const [q, setQ] = useState('')
   const followers = useQuery({
     queryKey: ['followers'],
@@ -51,14 +53,12 @@ export function FollowerPicker({
   if (followers.isPending) return <RowsSkeleton />
   if (followers.isError) {
     return (
-      <ErrorState onRetry={() => followers.refetch()}>
-        No se pudieron cargar tus seguidores.
-      </ErrorState>
+      <ErrorState onRetry={() => followers.refetch()}>{t('plans.followers_load_error')}</ErrorState>
     )
   }
   if (pool.length === 0) {
     return (
-      <EmptyState body="Solo puedes invitar a quienes te siguen.">Aún nadie te sigue.</EmptyState>
+      <EmptyState body={t('plans.no_followers_body')}>{t('plans.no_followers_title')}</EmptyState>
     )
   }
 
@@ -67,7 +67,7 @@ export function FollowerPicker({
       <Field
         value={q}
         onChangeText={setQ}
-        placeholder="Buscar…"
+        placeholder={t('plans.search_placeholder')}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
@@ -75,7 +75,7 @@ export function FollowerPicker({
       />
       <View className="mt-2">
         {rows.length === 0 ? (
-          <Caption className="mt-4 text-center">Nadie coincide con &ldquo;{q}&rdquo;.</Caption>
+          <Caption className="mt-4 text-center">{t('plans.no_match', { q })}</Caption>
         ) : (
           rows.map((u) => (
             <PersonRow
@@ -98,7 +98,7 @@ export function FollowerPicker({
                       selected.has(u.id) ? 'text-accent-strong' : 'text-text-muted'
                     }`}
                   >
-                    {selected.has(u.id) ? 'Invitado' : 'Invitar'}
+                    {selected.has(u.id) ? t('plans.invited_pill') : t('plans.invite_pill')}
                   </Text>
                 </Pressable>
               }

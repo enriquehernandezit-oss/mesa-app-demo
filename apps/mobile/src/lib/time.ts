@@ -62,9 +62,10 @@ export function dayChipLabel(d: Date, today: Date): string {
   const lang = getLanguage()
   if (diffDays === 0) return t(lang, 'plans.today')
   if (diffDays === 1) return t(lang, 'plans.tomorrow')
-  const label = new Intl.DateTimeFormat(dateLocale(lang), { weekday: 'short', day: 'numeric' }).format(
-    d,
-  )
+  const label = new Intl.DateTimeFormat(dateLocale(lang), {
+    weekday: 'short',
+    day: 'numeric',
+  }).format(d)
   return label.replace('.', '')
 }
 

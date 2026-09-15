@@ -2,6 +2,7 @@ import { Wordmark } from '@/components/ui'
 import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
+import { useT } from '@/lib/i18n'
 import { shareProfile } from '@/lib/shareProfile'
 import { Link } from 'expo-router'
 import { Pressable, View } from 'react-native'
@@ -28,12 +29,15 @@ function Btn({ children }: { children: React.ReactNode }) {
 // (advanced by the Activity screen's "Marcar leído"). The ['activity'] query is
 // shared with the Activity screen, so opening it and marking read updates both.
 function ActivityBell() {
+  const t = useT()
   const unseen = useUnseenActivity()
   return (
     <Link href="/activity" asChild>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={unseen > 0 ? `Actividad, ${unseen} sin ver` : 'Actividad'}
+        accessibilityLabel={
+          unseen > 0 ? t('nav.activity_unseen', { n: unseen }) : t('nav.activity')
+        }
         className="active:opacity-70"
       >
         <Btn>
@@ -56,6 +60,7 @@ export function TopBar({
   title,
   shareHandle,
 }: { variant?: 'discover' | 'profile'; title?: string; shareHandle?: string | null }) {
+  const t = useT()
   const insets = useSafeAreaInsets()
   return (
     <View
@@ -63,7 +68,9 @@ export function TopBar({
       style={{ paddingTop: insets.top + 12, paddingBottom: 12 }}
     >
       {variant === 'profile' ? (
-        <Text className="font-serif-semibold text-serif-md text-text">{title || 'Tú'}</Text>
+        <Text className="font-serif-semibold text-serif-md text-text">
+          {title || t('common.you')}
+        </Text>
       ) : (
         <Wordmark size={22} />
       )}
@@ -72,14 +79,14 @@ export function TopBar({
           <>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Compartir perfil"
+              accessibilityLabel={t('nav.share_profile')}
               onPress={() => {
                 // Without a handle, `profileShareLink` falls back to the bare
                 // API origin — a "share your profile" that silently shares a
                 // link to nothing. This variant only ever renders on the
                 // Profile tab, so "Editar perfil" is already on screen below.
                 if (!shareHandle) {
-                  toast({ message: 'Ponte un @usuario para compartir tu perfil.' })
+                  toast({ message: t('nav.share_profile_no_handle') })
                   return
                 }
                 shareProfile(shareHandle)
@@ -99,7 +106,7 @@ export function TopBar({
             <Link href="/settings" asChild>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Ajustes"
+                accessibilityLabel={t('nav.settings')}
                 className="active:opacity-70"
               >
                 <Btn>
@@ -113,7 +120,7 @@ export function TopBar({
             <Link href="/leaderboard" asChild>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Clasificación"
+                accessibilityLabel={t('nav.leaderboard')}
                 className="active:opacity-70"
               >
                 <Btn>

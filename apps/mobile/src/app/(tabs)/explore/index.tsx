@@ -22,7 +22,8 @@ import {
 } from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
-import { OCCASION_TAGS, cuisineLabel } from '@/lib/display'
+import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import type {
   ExploreHit,
   ExploreMember,
@@ -62,13 +63,14 @@ const SCORE_BANDS: { value: number; label: string }[] = [
   { value: 90, label: '9+' },
 ]
 type SortKey = 'score' | 'name'
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'score', label: 'Puntuación' },
-  { key: 'name', label: 'Nombre' },
-]
 
 export default function ExploreScreen() {
+  const t = useT()
   const router = useRouter()
+  const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: 'score', label: t('explore.sort_score') },
+    { key: 'name', label: t('explore.sort_name') },
+  ]
   const theme = useResolvedTheme()
   const c = themeColors[theme]
   const accent = useColor('accent')
@@ -101,7 +103,7 @@ export default function ExploreScreen() {
 
   const openSort = async () => {
     const idx = await showSheet({
-      title: 'Ordenar por',
+      title: t('explore.sort_by'),
       options: SORT_OPTIONS.map((o) => ({ label: o.label })),
       selectedIndex: SORT_OPTIONS.findIndex((o) => o.key === sort),
     })
@@ -186,8 +188,8 @@ export default function ExploreScreen() {
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
-            placeholder: 'Busca un spot, plato o miembro',
-            cancelButtonText: 'Cancelar',
+            placeholder: t('explore.search_placeholder'),
+            cancelButtonText: t('common.cancel'),
             hideWhenScrolling: false,
             autoCapitalize: 'none',
             tintColor: c.accent,
@@ -199,13 +201,13 @@ export default function ExploreScreen() {
           headerRight: () => (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Ver el mapa"
+              accessibilityLabel={t('explore.map_label')}
               onPress={() => router.push('/map')}
               className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
             >
               <PinIcon size={15} />
               <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                Mapa
+                {t('explore.map_chip')}
               </Text>
             </Pressable>
           ),
@@ -234,7 +236,7 @@ export default function ExploreScreen() {
         <View className="mt-3 mb-2 gap-2">
           <View className="flex-row flex-wrap items-center gap-2">
             <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
-              {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Ordenar'}
+              {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
             </Chip>
             <Chip
               size="sm"
@@ -242,7 +244,9 @@ export default function ExploreScreen() {
               chevron
               onPress={() => setFilterOpen((v) => !v)}
             >
-              {activeCount > 0 ? `Filtros (${activeCount})` : 'Filtros'}
+              {activeCount > 0
+                ? t('explore.filters_count', { n: activeCount })
+                : t('explore.filters')}
             </Chip>
             {hood && (
               <Chip size="sm" state="selected" onPress={() => setHood(null)}>
@@ -261,12 +265,12 @@ export default function ExploreScreen() {
             )}
             {openNow && (
               <Chip size="sm" state="selected" onPress={() => setOpenNow(false)}>
-                Abierto ahora ✕
+                {t('explore.open_now')} ✕
               </Chip>
             )}
             {occasion && (
               <Chip size="sm" state="selected" onPress={() => setOccasion(null)}>
-                {occasion} ✕
+                {tagLabel(occasion)} ✕
               </Chip>
             )}
             {minScore != null && (
@@ -280,7 +284,7 @@ export default function ExploreScreen() {
                 onPress={clearFilters}
                 className="min-h-[36px] justify-center px-1 active:opacity-60"
               >
-                <Caption className="font-mono text-accent-strong">Limpiar</Caption>
+                <Caption className="font-mono text-accent-strong">{t('explore.clear')}</Caption>
               </Pressable>
             )}
           </View>
@@ -293,11 +297,11 @@ export default function ExploreScreen() {
                   state={openNow ? 'selected' : 'default'}
                   onPress={() => setOpenNow((v) => !v)}
                 >
-                  Abierto ahora
+                  {t('explore.open_now')}
                 </Chip>
               )}
               <FilterGroup
-                label="Sector"
+                label={t('explore.sector')}
                 values={neighborhoods.data?.neighborhoods.map((n) => n.slug) ?? []}
                 selected={hood}
                 render={(v) =>
@@ -306,28 +310,28 @@ export default function ExploreScreen() {
                 onToggle={(v) => setHood(hood === v ? null : String(v))}
               />
               <FilterGroup
-                label="Cocina"
+                label={t('explore.cuisine')}
                 values={cuisines.data?.cuisines ?? []}
                 selected={cuisine}
                 render={(v) => cuisineLabel(String(v)) ?? String(v)}
                 onToggle={(v) => setCuisine(cuisine === v ? null : String(v))}
               />
               <FilterGroup
-                label="Precio"
+                label={t('explore.price')}
                 values={PRICES}
                 selected={price}
                 render={(v) => '$'.repeat(Number(v))}
                 onToggle={(v) => setPrice(price === v ? null : Number(v))}
               />
               <FilterGroup
-                label="Ocasión"
+                label={t('explore.occasion')}
                 values={OCCASION_TAGS}
                 selected={occasion}
-                render={(v) => String(v)}
+                render={(v) => tagLabel(String(v))}
                 onToggle={(v) => setOccasion(occasion === v ? null : String(v))}
               />
               <FilterGroup
-                label="Puntuación"
+                label={t('explore.sort_score')}
                 values={SCORE_BANDS.map((b) => b.value)}
                 selected={minScore}
                 render={(v) => SCORE_BANDS.find((b) => b.value === v)?.label ?? String(v)}
@@ -345,7 +349,7 @@ export default function ExploreScreen() {
 
           {members.length > 0 && (
             <>
-              <SectionHeader>Miembros</SectionHeader>
+              <SectionHeader>{t('explore.members')}</SectionHeader>
               {members.map((m) => (
                 <MemberRow key={m.id} m={m} />
               ))}
@@ -355,22 +359,24 @@ export default function ExploreScreen() {
           {results.isPending ? (
             <RowsSkeleton rows={3} thumb={48} />
           ) : results.isError ? (
-            <ErrorState onRetry={() => results.refetch()}>No se pudo buscar.</ErrorState>
+            <ErrorState onRetry={() => results.refetch()}>{t('explore.search_error')}</ErrorState>
           ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
             <EmptyState
               action={
                 activeCount > 0 ? (
                   <Button size="sm" variant="secondary" onPress={clearFilters}>
-                    Limpiar filtros
+                    {t('explore.clear_filters')}
                   </Button>
                 ) : undefined
               }
             >
-              Nada coincide.
+              {t('explore.no_match')}
             </EmptyState>
           ) : (
             <>
-              {members.length > 0 && hits.length > 0 && <SectionHeader>Spots</SectionHeader>}
+              {members.length > 0 && hits.length > 0 && (
+                <SectionHeader>{t('explore.spots')}</SectionHeader>
+              )}
               {hits.map((r, i) => (
                 <HitRow key={r.id} r={r} index={i} />
               ))}
@@ -389,6 +395,7 @@ export default function ExploreScreen() {
 }
 
 function HitRow({ r, index }: { r: ExploreHit; index: number }) {
+  const t = useT()
   return (
     <Link href={`/r/${r.id}`} asChild>
       <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
@@ -420,7 +427,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
           />
         ) : r.isNew ? (
           <Text className="font-mono text-micro text-accent-strong uppercase tracking-eyebrow">
-            Sé el primero
+            {t('explore.be_first')}
           </Text>
         ) : null}
       </Pressable>
@@ -437,6 +444,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
 // bare number beside a place reads as the place's own rating, and in Mesa every
 // score is attributed to a person. Cheers are activity, not a verdict.
 function TrendingRail() {
+  const t = useT()
   const q = useQuery({
     queryKey: ['trending'],
     queryFn: () => {
@@ -450,7 +458,7 @@ function TrendingRail() {
   // a cold graph should show nothing at all.
   if (spots.length < 4) return null
   return (
-    <SpotRail title="Sonando esta semana">
+    <SpotRail title={t('explore.trending_title')}>
       {spots.map((s) => (
         <SpotCard
           key={s.id}
@@ -460,7 +468,7 @@ function TrendingRail() {
           coverImageId={s.coverImageId}
           caption={
             <Caption className="font-mono text-micro" numberOfLines={1}>
-              {s.cheerCount} {s.cheerCount === 1 ? 'cheer' : 'cheers'} esta semana
+              {t('explore.cheers_this_week', { n: s.cheerCount ?? 0 })}
             </Caption>
           }
         />
@@ -470,6 +478,7 @@ function TrendingRail() {
 }
 
 function MemberRow({ m }: { m: ExploreMember }) {
+  const t = useT()
   return (
     <Link href={`/u/${m.id}`} asChild>
       <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
@@ -479,7 +488,11 @@ function MemberRow({ m }: { m: ExploreMember }) {
             {m.name || m.handle}
           </Text>
           <Caption numberOfLines={1}>
-            {[m.handle ? `@${m.handle}` : null, `${m.rankedCount} rankeados`, m.neighborhood]
+            {[
+              m.handle ? `@${m.handle}` : null,
+              t('settings.ranked_count', { n: m.rankedCount }),
+              m.neighborhood,
+            ]
               .filter(Boolean)
               .join(' · ')}
           </Caption>

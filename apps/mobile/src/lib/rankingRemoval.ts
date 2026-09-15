@@ -6,6 +6,7 @@ import { toast } from '../components/ui/toast-store'
 import { api } from './api'
 import { scoreForPosition } from './display'
 import { tapLight } from './haptics'
+import { getLanguage, t } from './i18n'
 import { invalidateAfterRanking } from './invalidateAfterRanking'
 import { queryClient } from './query'
 import type { Ranking } from './types'
@@ -62,9 +63,9 @@ export function removeRankingWithUndo(ranking: Ranking): void {
         queryClient.invalidateQueries({ queryKey: KEY })
         toast({
           variant: 'error',
-          message: 'No se pudo quitar de tu lista',
+          message: t(getLanguage(), 'rankings.remove_error'),
           action: {
-            label: 'Intentar de nuevo',
+            label: t(getLanguage(), 'common.retry'),
             onClick: () => removeRankingWithUndo(ranking),
           },
         })
@@ -72,11 +73,11 @@ export function removeRankingWithUndo(ranking: Ranking): void {
   }
 
   toast({
-    message: `Quité ${ranking.restaurant.name} de tu lista`,
+    message: t(getLanguage(), 'rankings.removed_toast', { name: ranking.restaurant.name }),
     duration: UNDO_MS,
     onAutoClose: commit,
     action: {
-      label: 'Deshacer',
+      label: t(getLanguage(), 'rankings.undo'),
       onClick: () => {
         pending.delete(ranking.id)
         const live = queryClient.getQueryData<Cache>(KEY)

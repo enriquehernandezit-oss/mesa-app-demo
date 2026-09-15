@@ -2,6 +2,7 @@ import { Body, Caption, Chip, ErrorState, Eyebrow, RowsSkeleton } from '@/compon
 import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import type { LeaderboardRow } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
@@ -13,6 +14,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // design: brass serif numerals, no badges. Ported from apps/app/src/screens/
 // leaderboard/LeaderboardScreen.tsx.
 export default function LeaderboardScreen() {
+  const t = useT()
   const [period, setPeriod] = useState<'all' | 'month'>('month')
   const q = useQuery({
     queryKey: ['leaderboard', period],
@@ -43,10 +45,10 @@ export default function LeaderboardScreen() {
             state={period === 'month' ? 'selected' : 'default'}
             onPress={() => setPeriod('month')}
           >
-            Este mes
+            {t('leaderboard.period_month')}
           </Chip>
           <Chip state={period === 'all' ? 'selected' : 'default'} onPress={() => setPeriod('all')}>
-            Todo el tiempo
+            {t('leaderboard.period_all')}
           </Chip>
         </View>
 
@@ -59,14 +61,14 @@ export default function LeaderboardScreen() {
             }}
             className="mb-4 self-start active:opacity-70"
           >
-            <Body className="text-accent">Eres #{q.data.myRank} en la ciudad.</Body>
+            <Body className="text-accent">{t('leaderboard.my_rank', { n: q.data.myRank })}</Body>
           </Pressable>
         ) : null}
 
         {q.isPending ? (
           <RowsSkeleton rows={6} thumb={38} />
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la clasificación.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('leaderboard.load_error')}</ErrorState>
         ) : (
           rows.map((r, i) => (
             <Link key={r.id} href={`/u/${r.id}`} asChild>
@@ -96,7 +98,7 @@ export default function LeaderboardScreen() {
                     {r.count}
                   </Text>
                   <Caption>
-                    spots · prom.{' '}
+                    {t('leaderboard.spots_avg')}{' '}
                     <Text style={DATA_FIGURES} className="text-accent">
                       {displayScore(r.avgScore)}
                     </Text>

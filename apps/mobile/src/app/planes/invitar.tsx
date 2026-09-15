@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import type { PlanDetail } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // query key with the detail screen so a plan opened just before landing here
 // doesn't pay for a second fetch.
 export default function InvitarScreen() {
+  const t = useT()
   const { planId } = useLocalSearchParams<{ planId: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -35,12 +37,12 @@ export default function InvitarScreen() {
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['plan', planId] })
       queryClient.invalidateQueries({ queryKey: ['plans'] })
-      toast({ message: added === 1 ? 'Invitaste a 1 persona.' : `Invitaste a ${added} personas.` })
+      toast({ message: t('plans.invited_count', { n: added }) })
       router.back()
     },
     onError: (err) => {
       captureError(err, 'plans.invite')
-      toast({ variant: 'error', message: 'No se pudo invitar. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('plans.invite_error') })
     },
   })
 
@@ -56,9 +58,11 @@ export default function InvitarScreen() {
           onPress={() => router.back()}
           className="min-h-[44px] self-start justify-center active:opacity-60"
         >
-          <Text className="font-ui-medium text-label text-text-muted">✕ Invitar a más</Text>
+          <Text className="font-ui-medium text-label text-text-muted">
+            {t('plans.invite_more_back')}
+          </Text>
         </Pressable>
-        <Title className="mt-4">Invitar a más</Title>
+        <Title className="mt-4">{t('plans.invite_more')}</Title>
         <View className="mt-4">
           {plan.isPending ? (
             <RowsSkeleton />
@@ -87,7 +91,7 @@ export default function InvitarScreen() {
           loading={invite.isPending}
           onPress={() => invite.mutate()}
         >
-          Invitar a {selected.size}
+          {t('plans.invite_n', { n: selected.size })}
         </Button>
       </View>
     </View>

@@ -275,9 +275,7 @@ export default function DishCompose() {
         )}
 
         <View className="mt-4 flex-row items-center justify-between border-line border-b py-3">
-          <Text className="flex-1 font-ui text-body text-text">
-            {t('dish.friends_only_label')}
-          </Text>
+          <Text className="flex-1 font-ui text-body text-text">{t('dish.friends_only_label')}</Text>
           <Toggle
             checked={friendsOnly}
             onChange={setFriendsOnly}

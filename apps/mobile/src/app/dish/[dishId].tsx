@@ -10,6 +10,7 @@ import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { grainLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
+import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -25,6 +26,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // Cloudinary delivery transform in prod, so the photo shows untreated here (same
 // as the feed) rather than through a CSS filter RN doesn't have.
 export default function DishDetail() {
+  const t = useT()
   const { dishId } = useLocalSearchParams<{ dishId: string }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -52,20 +54,20 @@ export default function DishDetail() {
       queryClient.invalidateQueries({ queryKey: ['dish', dishId] })
       queryClient.invalidateQueries({ queryKey: ['restaurant'] })
       if (restaurantId) queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
-      toast({ message: 'Plato eliminado' })
+      toast({ message: t('dish.deleted_toast') })
       goBack()
     },
     onError: (err) => {
       captureError(err, 'dish.delete')
-      toast({ variant: 'error', message: 'No se pudo eliminar. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('dish.delete_error') })
     },
   })
 
   const confirmRemove = async () => {
     const picked = await showActionSheet({
-      title: '¿Eliminar este plato?',
-      message: 'La foto y su nota desaparecen de tu perfil y del feed. No se puede deshacer.',
-      options: [{ label: 'Eliminar', destructive: true }],
+      title: t('dish.confirm_delete_title'),
+      message: t('dish.confirm_delete_message'),
+      options: [{ label: t('dish.delete_button'), destructive: true }],
     })
     if (picked === 0) remove.mutate()
   }
@@ -92,12 +94,12 @@ export default function DishDetail() {
           onPress={goBack}
           className="min-h-[44px] justify-center px-5 active:opacity-60"
         >
-          <Text className="font-ui-medium text-label text-text-muted">‹ Atrás</Text>
+          <Text className="font-ui-medium text-label text-text-muted">{t('common.back')}</Text>
         </Pressable>
         {notFound ? (
-          <EmptyState>Plato no encontrado.</EmptyState>
+          <EmptyState>{t('dish.not_found')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar el plato.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('dish.detail_load_error')}</ErrorState>
         )}
       </View>
     )
@@ -105,7 +107,8 @@ export default function DishDetail() {
 
   const { dish } = q.data
   const { restaurant } = dish
-  const firstName = (dish.user.name || dish.user.handle || '').split(' ')[0] || 'alguien'
+  const firstName =
+    (dish.user.name || dish.user.handle || '').split(' ')[0] || t('dish.someone_fallback')
 
   return (
     <View className="flex-1 bg-bg">
@@ -118,7 +121,7 @@ export default function DishDetail() {
             transition={120}
           />
           <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
-            <GlassCircle accessibilityLabel="Atrás" onPress={goBack}>
+            <GlassCircle accessibilityLabel={t('common.back_plain')} onPress={goBack}>
               <BackIcon size={20} />
             </GlassCircle>
           </View>
@@ -177,19 +180,19 @@ export default function DishDetail() {
           <View className="mt-4 flex-row gap-2">
             {restaurant.website ? (
               <UtilityPill icon={<WebIcon size={13} />} href={restaurant.website}>
-                Sitio web
+                {t('dish.website')}
               </UtilityPill>
             ) : null}
             {restaurant.phone ? (
               <UtilityPill icon={<PhoneIcon size={13} />} href={`tel:${restaurant.phone}`}>
-                Llamar
+                {t('dish.call')}
               </UtilityPill>
             ) : null}
             <UtilityPill
               icon={<DirectionsIcon size={13} />}
               onPress={() => openDirections(restaurant.lat, restaurant.lng, restaurant.name)}
             >
-              Cómo llegar
+              {t('restaurant.directions')}
             </UtilityPill>
           </View>
 
@@ -205,11 +208,11 @@ export default function DishDetail() {
               className="mt-5 min-h-[44px] justify-center active:opacity-60"
             >
               <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
-                {remove.isPending ? 'Eliminando…' : 'Eliminar este plato'}
+                {remove.isPending ? t('dish.deleting') : t('dish.delete_this')}
               </Text>
             </Pressable>
           ) : (
-            <ReportControl targetType="dish" targetId={dishId} label="Reportar este plato" />
+            <ReportControl targetType="dish" targetId={dishId} label={t('dish.report_this')} />
           )}
         </View>
       </ScrollView>

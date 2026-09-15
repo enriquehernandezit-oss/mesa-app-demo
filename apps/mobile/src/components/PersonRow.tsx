@@ -1,6 +1,7 @@
 import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { type FollowSource, useFollow } from '@/hooks/useFollow'
+import { useT } from '@/lib/i18n'
 import { Link } from 'expo-router'
 import { type ReactNode, useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
@@ -66,6 +67,7 @@ export function FollowPill({
   from: FollowSource
   onChange?: (following: boolean) => void
 }) {
+  const t = useT()
   const { following, toggle, pending } = useFollow(userId, initial, from)
 
   // `onChange` is typically a fresh closure per render (callers building it
@@ -86,7 +88,7 @@ export function FollowPill({
       <Text
         className={`font-mono text-eyebrow ${following ? 'text-accent-strong' : 'text-text-muted'}`}
       >
-        {following ? 'Siguiendo' : 'Seguir'}
+        {following ? t('activity.following_pill') : t('activity.follow_pill')}
       </Text>
     </Pressable>
   )

@@ -22,6 +22,9 @@ export default function VerifyEmail() {
   const [state, setState] = useState<State>(errorParam ? 'expired' : token ? 'verifying' : 'done')
   const [error, setError] = useState<string | null>(null)
 
+  // A language flip mid-verification must not re-POST the same token to the
+  // auth server — this only ever runs the one-shot verifyEmail call.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
   useEffect(() => {
     if (!token) return
     let cancelled = false
@@ -56,7 +59,9 @@ export default function VerifyEmail() {
         <View className="items-center gap-2">
           <Wordmark size={64} />
           <Eyebrow className="font-mono text-accent-strong">
-            {state === 'done' ? t('auth.verify_confirmed_eyebrow') : t('auth.verify_pending_eyebrow')}
+            {state === 'done'
+              ? t('auth.verify_confirmed_eyebrow')
+              : t('auth.verify_pending_eyebrow')}
           </Eyebrow>
 
           {state === 'verifying' && <Caption>{t('auth.verify_verifying')}</Caption>}

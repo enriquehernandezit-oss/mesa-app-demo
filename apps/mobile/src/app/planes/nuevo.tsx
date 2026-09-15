@@ -22,6 +22,7 @@ import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
+import { dateLocale, useT } from '@/lib/i18n'
 import { dayChipLabel, timeChipLabel } from '@/lib/time'
 import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
@@ -83,6 +84,7 @@ function addDays(d: Date, n: number): Date {
 // guards the drag-to-dismiss / edge-swipe against silently losing a
 // half-built plan.
 export default function NuevaMesa() {
+  const t = useT()
   const router = useRouter()
   const navigation = useNavigation()
   const queryClient = useQueryClient()
@@ -121,14 +123,14 @@ export default function NuevaMesa() {
       if (spots.length === 0) return
       e.preventDefault()
       showActionSheet({
-        title: '¿Descartar la mesa?',
-        options: [{ label: 'Descartar', destructive: true }],
+        title: t('plans.discard_title'),
+        options: [{ label: t('plans.discard_button'), destructive: true }],
       }).then((idx) => {
         if (idx === 0) navigation.dispatch(e.data.action)
       })
     })
     return sub
-  }, [navigation, step, spots.length])
+  }, [navigation, step, spots.length, t])
 
   const debouncedQ = useDebounced(query.trim(), 300)
   const results = useQuery({
@@ -144,7 +146,7 @@ export default function NuevaMesa() {
     setSpots((prev) => {
       if (prev.some((s) => s.id === item.id)) return prev.filter((s) => s.id !== item.id)
       if (prev.length >= 3) {
-        toast({ variant: 'error', message: 'Máximo tres spots' })
+        toast({ variant: 'error', message: t('plans.max_spots_toast') })
         return prev
       }
       tapSelect()
@@ -174,7 +176,7 @@ export default function NuevaMesa() {
     : null
   const resolvedLabel =
     resolvedDate && time
-      ? `${new Intl.DateTimeFormat('es-DO', { weekday: 'short', day: 'numeric', month: 'short' }).format(resolvedDate)}, ${timeChipLabel(time.h, time.m)}`
+      ? `${new Intl.DateTimeFormat(dateLocale(), { weekday: 'short', day: 'numeric', month: 'short' }).format(resolvedDate)}, ${timeChipLabel(time.h, time.m)}`
       : null
 
   const create = useMutation({
@@ -200,12 +202,10 @@ export default function NuevaMesa() {
       const invalidInvitees = err instanceof ApiError && err.code === 'invalid_invitees'
       toast({
         variant: 'error',
-        message: invalidInvitees
-          ? 'Alguien ya no te sigue — revisa la lista.'
-          : 'No se pudo crear la mesa.',
+        message: invalidInvitees ? t('plans.invalid_invitees_error') : t('plans.create_error'),
         action: invalidInvitees
           ? undefined
-          : { label: 'Intentar de nuevo', onClick: () => create.mutate() },
+          : { label: t('common.retry'), onClick: () => create.mutate() },
       })
     },
   })
@@ -217,7 +217,10 @@ export default function NuevaMesa() {
         contentContainerClassName="px-5 pb-10"
         keyboardShouldPersistTaps="handled"
       >
-        <BackBar label={step === 'spots' ? '✕ Nueva mesa' : '‹ Atrás'} onBack={goBack} />
+        <BackBar
+          label={step === 'spots' ? t('plans.new_table_back') : t('common.back')}
+          onBack={goBack}
+        />
 
         {step === 'spots' && (
           <SpotsStep
@@ -244,8 +247,8 @@ export default function NuevaMesa() {
         )}
         {step === 'who' && (
           <>
-            <Title className="mt-4">¿Con quién?</Title>
-            <Body className="mt-1">Solo puedes invitar a quienes te siguen.</Body>
+            <Title className="mt-4">{t('plans.who_title')}</Title>
+            <Body className="mt-1">{t('plans.no_followers_body')}</Body>
             <View className="mt-4">
               <FollowerPicker
                 selected={new Set(invitees.keys())}
@@ -282,7 +285,7 @@ export default function NuevaMesa() {
             disabled={create.isPending}
             onPress={() => create.mutate()}
           >
-            Crear mesa
+            {t('plans.create_button')}
           </Button>
         ) : (
           <Button
@@ -293,7 +296,7 @@ export default function NuevaMesa() {
             }
             onPress={() => setStep(STEP_ORDER[STEP_ORDER.indexOf(step) + 1])}
           >
-            Continuar
+            {t('plans.continue_button')}
           </Button>
         )}
       </View>
@@ -328,15 +331,16 @@ function SpotsStep({
   isPending: boolean
   onToggle: (item: PlanSpot) => void
 }) {
+  const t = useT()
   const selectedIds = new Set(spots.map((s) => s.id))
   return (
     <>
-      <Title className="mt-4">¿Dónde?</Title>
+      <Title className="mt-4">{t('plans.where_title')}</Title>
       <Field
         className="mt-4"
         value={query}
         onChangeText={setQuery}
-        placeholder="Busca un spot…"
+        placeholder={t('plans.search_spot_placeholder')}
         returnKeyType="search"
         clearButtonMode="while-editing"
         autoCorrect={false}
@@ -350,7 +354,7 @@ function SpotsStep({
           ))}
         </View>
       )}
-      <Caption className="mt-3">1 spot = fijo · 2–3 = votación</Caption>
+      <Caption className="mt-3">{t('plans.spot_rule_caption')}</Caption>
 
       <View className="mt-2">
         {isPending ? (
@@ -414,6 +418,7 @@ function WhenStep({
   isTimeDisabled: (t: TimeSlot) => boolean
   resolvedLabel: string | null
 }) {
+  const t = useT()
   const dayChips = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(today, i)), [today])
   const timeChip = (t: TimeSlot) => {
     const disabled = isTimeDisabled(t)
@@ -436,7 +441,7 @@ function WhenStep({
   }
   return (
     <>
-      <Title className="mt-4">¿Cuándo?</Title>
+      <Title className="mt-4">{t('plans.when_title')}</Title>
       <ChipRail className="mt-4">
         {dayChips.map((d) => (
           <Chip
@@ -458,7 +463,7 @@ function WhenStep({
           EXTRA_TIMES.map(timeChip)
         ) : (
           <Chip size="sm" chevron onPress={() => setShowExtraTimes(true)}>
-            Otra hora
+            {t('plans.other_time')}
           </Chip>
         )}
       </View>
@@ -482,15 +487,16 @@ function ReviewStep({
   note: string
   setNote: (v: string) => void
 }) {
+  const t = useT()
   const shown = invitees.slice(0, 6)
   const extra = invitees.length - shown.length
   return (
     <>
-      <Title className="mt-4">Revisa tu mesa</Title>
+      <Title className="mt-4">{t('plans.review_title')}</Title>
       <Card className="mt-4 gap-3">
         {spots.length > 1 ? (
           <View>
-            <Eyebrow className="mb-1 font-mono">Votarán entre:</Eyebrow>
+            <Eyebrow className="mb-1 font-mono">{t('plans.voting_between')}</Eyebrow>
             {spots.map((s, i) => (
               <Text key={s.id} className="font-ui text-body text-text">
                 {i + 1}. {s.name}
@@ -512,7 +518,7 @@ function ReviewStep({
       </Card>
       <View className="mt-4">
         <Field
-          label="Nota · opcional"
+          label={t('plans.note_label')}
           value={note}
           onChangeText={setNote}
           maxLength={140}

@@ -1,3 +1,4 @@
+import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 import { Stack } from 'expo-router'
@@ -8,6 +9,7 @@ import { Stack } from 'expo-router'
 // piece of this screen a JS TextInput can only imitate. The map screen it pushes
 // to keeps its own immersive presentation.
 export default function ExploreLayout() {
+  const t = useT()
   const theme = useResolvedTheme()
   const c = themeColors[theme]
   return (
@@ -15,7 +17,7 @@ export default function ExploreLayout() {
       screenOptions={{
         headerShown: true,
         headerLargeTitle: true,
-        title: 'Explora',
+        title: t('tabs.explore'),
         headerTintColor: c.accent,
         headerStyle: { backgroundColor: c.bg },
         headerLargeStyle: { backgroundColor: c.bg },

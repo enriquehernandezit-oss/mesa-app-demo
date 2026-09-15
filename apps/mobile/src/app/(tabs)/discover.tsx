@@ -18,6 +18,7 @@ import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
 import { cuisineLabel, priceLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
@@ -47,6 +48,7 @@ function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
 }
 
 export default function DiscoverTab() {
+  const t = useT()
   const accent = useColor('accent')
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const feed = useInfiniteQuery({
@@ -82,7 +84,7 @@ export default function DiscoverTab() {
           }
         >
           <FeedHeader />
-          <ErrorState onRetry={() => feed.refetch()}>No se pudo cargar el feed.</ErrorState>
+          <ErrorState onRetry={() => feed.refetch()}>{t('discover.load_error')}</ErrorState>
         </ScrollView>
       ) : items.length === 0 ? (
         <ScrollView
@@ -142,17 +144,20 @@ export default function DiscoverTab() {
 // the header sat ~24pt further right than "Listas destacadas" and the
 // carousel just below it, with no shared left edge on the page.
 function FeedHeader() {
+  const t = useT()
   const router = useRouter()
   return (
     <View className="pt-2 pb-1">
-      <Eyebrow>Descubre</Eyebrow>
-      <Title className="mb-3">Donde comen tus amigos</Title>
+      <Eyebrow>{t('discover.eyebrow')}</Eyebrow>
+      <Title className="mb-3">{t('discover.title')}</Title>
       <Pressable
         accessibilityRole="search"
         onPress={() => router.push('/explore')}
         className="min-h-[44px] justify-center rounded border border-line bg-surface px-4 active:opacity-80"
       >
-        <Text className="font-ui text-body text-text-muted">Busca un spot, plato o miembro…</Text>
+        <Text className="font-ui text-body text-text-muted">
+          {t('discover.search_placeholder')}
+        </Text>
       </Pressable>
     </View>
   )
@@ -160,6 +165,7 @@ function FeedHeader() {
 
 // Empty feed — the invite card + a few people to follow so the feed fills.
 function EmptyFeed() {
+  const t = useT()
   const suggested = useQuery({
     queryKey: ['people'],
     queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
@@ -168,12 +174,12 @@ function EmptyFeed() {
   return (
     <View className="px-5">
       <View className="items-center gap-2 rounded border border-line bg-surface p-6">
-        <SerifItalic className="text-title">Tu mesa está lista</SerifItalic>
-        <Body className="text-center">
-          Sigue a algunos amigos — sus rankings y notas de vibe llenan este feed.
-        </Body>
+        <SerifItalic className="text-title">{t('discover.empty_title')}</SerifItalic>
+        <Body className="text-center">{t('discover.empty_body')}</Body>
       </View>
-      {users.length > 0 && <Eyebrow className="mb-3 mt-5">Empieza con estos</Eyebrow>}
+      {users.length > 0 && (
+        <Eyebrow className="mb-3 mt-5">{t('discover.start_with_these')}</Eyebrow>
+      )}
       {users.map((u) => (
         <SuggestedRow key={u.id} user={u} />
       ))}
@@ -182,11 +188,14 @@ function EmptyFeed() {
 }
 
 function SuggestedRow({ user: u }: { user: SuggestedUser }) {
+  const t = useT()
   const { following, toggle, pending } = useFollow(u.id, false, 'empty_feed')
   return (
     <PersonRow
       user={u}
-      subtitle={[`${u.rankedCount ?? 0} rankeados`, u.neighborhood].filter(Boolean).join(' · ')}
+      subtitle={[t('settings.ranked_count', { n: u.rankedCount ?? 0 }), u.neighborhood]
+        .filter(Boolean)
+        .join(' · ')}
       right={
         <Button
           variant="secondary"
@@ -194,7 +203,7 @@ function SuggestedRow({ user: u }: { user: SuggestedUser }) {
           onPress={toggle}
           disabled={pending}
         >
-          {following ? 'Siguiendo' : 'Seguir'}
+          {following ? t('activity.following_pill') : t('activity.follow_pill')}
         </Button>
       }
     />
@@ -203,6 +212,7 @@ function SuggestedRow({ user: u }: { user: SuggestedUser }) {
 
 // Featured editorial lists — a carousel of light paper cards (mock A3).
 function ListsRail() {
+  const t = useT()
   const q = useQuery({
     queryKey: ['lists'],
     queryFn: () => api.get<{ lists: FeaturedList[] }>('/lists'),
@@ -212,7 +222,7 @@ function ListsRail() {
   if (lists.length === 0) return null
   return (
     <View className="mb-2">
-      <SpotRail title="Listas destacadas">
+      <SpotRail title={t('discover.featured_lists')}>
         {lists.map((l) => (
           <SpotCard
             key={l.slug}
@@ -223,7 +233,7 @@ function ListsRail() {
             coverImageId={l.coverImageId}
             caption={
               <Caption className="font-mono text-micro" numberOfLines={1}>
-                {l.mine} de {l.total} rankeados
+                {t('discover.list_progress', { mine: l.mine, total: l.total })}
               </Caption>
             }
           />
@@ -271,6 +281,7 @@ function FeedSkeleton() {
 // (attributed to the friend — never the place's own rating). The film-grain
 // treatment on dish photos lands with the image work in N6.
 function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
+  const t = useT()
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
   // Long-press on the note itself reports it (App Store 1.2) — the card is one
@@ -279,9 +290,8 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const reportNote = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
-    onSuccess: () => toast({ message: 'Reportado. Gracias — lo revisaremos.' }),
-    onError: () =>
-      toast({ variant: 'error', message: 'No se pudo enviar el reporte. Intenta de nuevo.' }),
+    onSuccess: () => toast({ message: t('common.reported') }),
+    onError: () => toast({ variant: 'error', message: t('common.report_error') }),
   })
   const noteId = item.noteId
   const onLongPressNote =
@@ -353,7 +363,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           </Pressable>
         </Link>
         <View className="p-4">
-          {who('publicó un plato', 24)}
+          {who(t('discover.posted_dish'), 24)}
           <Link href={`/r/${item.restaurant.id}`} asChild>
             <Pressable accessibilityRole="button" className="mt-2 active:opacity-80">
               <Text className="font-serif text-serif-md text-text">
@@ -364,7 +374,9 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           </Link>
           <Link href={`/u/${item.user.id}`} asChild>
             <Pressable accessibilityRole="button" className="mt-1 self-start active:opacity-70">
-              <Caption className="font-mono text-micro">#{item.position} en su lista</Caption>
+              <Caption className="font-mono text-micro">
+                {t('discover.position_in_list', { n: item.position })}
+              </Caption>
             </Pressable>
           </Link>
           <CheersButton
@@ -422,7 +434,7 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
               >
                 {firstName}
               </Text>{' '}
-              rankeó{' '}
+              {t('discover.ranked_verb')}{' '}
               <Text className="font-serif text-serif-sm text-text">{item.restaurant.name}</Text>
             </Text>
             <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>

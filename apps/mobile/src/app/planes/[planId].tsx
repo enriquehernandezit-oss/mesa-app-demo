@@ -20,6 +20,7 @@ import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
 import { isPastPlan } from '@/lib/plans'
 import { sharePlan } from '@/lib/sharePlan'
 import { formatPlanDate } from '@/lib/time'
@@ -32,6 +33,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // `isHost`/`myReply`/`myVote` on the response already carry the viewer's own
 // relationship to the plan, so no separate "am I the host" check runs here.
 export default function PlanDetailScreen() {
+  const t = useT()
   const { planId } = useLocalSearchParams<{ planId: string }>()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -57,7 +59,7 @@ export default function PlanDetailScreen() {
     },
     onError: (err) => {
       captureError(err, 'plans.reply')
-      toast({ variant: 'error', message: 'No se pudo guardar tu respuesta.' })
+      toast({ variant: 'error', message: t('plans.reply_save_error') })
     },
   })
 
@@ -70,7 +72,7 @@ export default function PlanDetailScreen() {
     },
     onError: (err) => {
       captureError(err, 'plans.confirm')
-      toast({ variant: 'error', message: 'No se pudo confirmar el spot.' })
+      toast({ variant: 'error', message: t('plans.confirm_error') })
     },
   })
 
@@ -79,12 +81,12 @@ export default function PlanDetailScreen() {
     onSuccess: () => {
       track('plan_cancelled')
       invalidate()
-      toast({ message: 'Mesa cancelada.' })
+      toast({ message: t('plans.cancelled_toast') })
       router.back()
     },
     onError: (err) => {
       captureError(err, 'plans.cancel')
-      toast({ variant: 'error', message: 'No se pudo cancelar la mesa.' })
+      toast({ variant: 'error', message: t('plans.cancel_error') })
     },
   })
 
@@ -93,7 +95,7 @@ export default function PlanDetailScreen() {
   if (q.isPending) {
     return (
       <View className="flex-1 bg-bg">
-        <Stack.Screen options={{ title: 'Mesa' }} />
+        <Stack.Screen options={{ title: t('plans.detail_loading_title') }} />
         <RowsSkeleton rows={3} thumb={64} />
       </View>
     )
@@ -102,13 +104,13 @@ export default function PlanDetailScreen() {
     const forbidden = q.error instanceof ApiError && q.error.status === 403
     return (
       <View className="flex-1 bg-bg">
-        <Stack.Screen options={{ title: 'Mesa' }} />
+        <Stack.Screen options={{ title: t('plans.detail_loading_title') }} />
         {forbidden ? (
-          <EmptyState>Esta mesa es solo por invitación.</EmptyState>
+          <EmptyState>{t('plans.forbidden')}</EmptyState>
         ) : q.error instanceof ApiError && q.error.status === 404 ? (
-          <EmptyState>Esta mesa ya no existe.</EmptyState>
+          <EmptyState>{t('plans.not_found')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la mesa.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('plans.detail_load_error')}</ErrorState>
         )}
       </View>
     )
@@ -123,9 +125,9 @@ export default function PlanDetailScreen() {
 
   const openConfirmSheet = async () => {
     const idx = await showSheet({
-      title: 'Confirmar spot',
+      title: t('plans.confirm_spot_title'),
       options: plan.options.map((o) => ({
-        label: `${o.name} · ${o.votes ?? 0} ${o.votes === 1 ? 'voto' : 'votos'}`,
+        label: `${o.name} · ${t('plans.votes_count', { n: o.votes ?? 0 })}`,
       })),
       selectedIndex: plan.options.findIndex((o) => o.id === plan.chosenRestaurantId),
     })
@@ -134,10 +136,10 @@ export default function PlanDetailScreen() {
 
   const openCancelConfirm = async () => {
     const idx = await showActionSheet({
-      title: '¿Cancelar esta mesa?',
-      message: 'Todos los invitados lo verán en su Actividad.',
-      options: [{ label: 'Cancelar mesa', destructive: true }],
-      cancelLabel: 'Volver',
+      title: t('plans.cancel_confirm_title'),
+      message: t('plans.cancel_confirm_message'),
+      options: [{ label: t('plans.cancel_confirm_button'), destructive: true }],
+      cancelLabel: t('plans.cancel_confirm_back'),
     })
     if (idx === 0) cancel.mutate()
   }
@@ -152,7 +154,11 @@ export default function PlanDetailScreen() {
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen
-        options={{ title: cancelled ? 'Mesa cancelada' : (chosen?.name ?? 'Votación abierta') }}
+        options={{
+          title: cancelled
+            ? t('plans.cancelled_title')
+            : (chosen?.name ?? t('plans.voting_open_title')),
+        }}
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -166,20 +172,20 @@ export default function PlanDetailScreen() {
           size={{ w: 640, h: 480 }}
           className="mt-3 h-44 w-full"
         />
-        <Title className="mt-4">{chosen ? chosen.name : 'Votación abierta'}</Title>
+        <Title className="mt-4">{chosen ? chosen.name : t('plans.voting_open_title')}</Title>
         <Caption className="mt-1">{formatPlanDate(plan.startsAt)}</Caption>
-        <Caption className="mt-0.5">Organiza {plan.host.name}</Caption>
+        <Caption className="mt-0.5">{t('plans.hosted_by', { name: plan.host.name })}</Caption>
         {plan.note ? <SerifItalic className="mt-2 text-serif-sm">{plan.note}</SerifItalic> : null}
         {(cancelled || past) && (
           <View className="mt-3 flex-row gap-2">
             {cancelled ? (
               <Chip size="sm" state="default">
-                Cancelada
+                {t('plans.cancelled_badge')}
               </Chip>
             ) : null}
             {past && !cancelled ? (
               <Chip size="sm" state="default">
-                Ya pasó
+                {t('plans.past_chip')}
               </Chip>
             ) : null}
           </View>
@@ -191,26 +197,28 @@ export default function PlanDetailScreen() {
               state={plan.myReply === 'going' ? 'selected' : 'default'}
               onPress={() => reply.mutate({ reply: 'going' })}
             >
-              Voy
+              {t('plans.reply_going')}
             </Chip>
             <Chip
               state={plan.myReply === 'maybe' ? 'selected' : 'default'}
               onPress={() => reply.mutate({ reply: 'maybe' })}
             >
-              Tal vez
+              {t('plans.reply_maybe')}
             </Chip>
             <Chip
               state={plan.myReply === 'declined' ? 'selected' : 'default'}
               onPress={() => reply.mutate({ reply: 'declined' })}
             >
-              No puedo
+              {t('plans.reply_declined')}
             </Chip>
           </View>
         )}
 
         {plan.options.length > 1 && (
           <View>
-            <SectionHeader>{voting ? 'Votación' : 'Opciones'}</SectionHeader>
+            <SectionHeader>
+              {voting ? t('plans.voting_section') : t('plans.options_section')}
+            </SectionHeader>
             {plan.options.map((o) => {
               const mine = plan.myVote === o.id
               return (
@@ -233,7 +241,7 @@ export default function PlanDetailScreen() {
                       {o.name}
                     </Text>
                     <Caption className="font-mono text-micro">
-                      {o.votes ?? 0} {o.votes === 1 ? 'voto' : 'votos'}
+                      {t('plans.votes_count', { n: o.votes ?? 0 })}
                     </Caption>
                   </View>
                   {mine ? <CheckIcon size={16} color="accent" /> : null}
@@ -247,50 +255,50 @@ export default function PlanDetailScreen() {
                 loading={confirm.isPending}
                 onPress={openConfirmSheet}
               >
-                Confirmar spot
+                {t('plans.confirm_spot_button')}
               </Button>
             )}
           </View>
         )}
 
         <View>
-          <SectionHeader>Invitados</SectionHeader>
+          <SectionHeader>{t('plans.guests_section')}</SectionHeader>
           {groups.going.length > 0 || plan.isHost ? (
             <MemberGroup
-              label={`Van (${groups.going.length + 1})`}
+              label={t('plans.group_going', { n: groups.going.length + 1 })}
               rows={[
                 {
                   id: plan.host.id,
                   name: plan.host.name,
                   handle: plan.host.handle,
                   image: plan.host.image,
-                  badge: 'Organiza',
+                  badge: t('plans.host_tag'),
                 },
                 ...groups.going.map((m) => ({
                   id: m.id,
                   name: m.name,
                   handle: m.handle,
                   image: m.image,
-                  badge: voting ? voteBadge(m, plan.options) : undefined,
+                  badge: voting ? voteBadge(t, m, plan.options) : undefined,
                 })),
               ]}
             />
           ) : null}
           {groups.maybe.length > 0 && (
             <MemberGroup
-              label={`Tal vez (${groups.maybe.length})`}
+              label={t('plans.group_maybe', { n: groups.maybe.length })}
               rows={groups.maybe.map((m) => ({
                 id: m.id,
                 name: m.name,
                 handle: m.handle,
                 image: m.image,
-                badge: voting ? voteBadge(m, plan.options) : undefined,
+                badge: voting ? voteBadge(t, m, plan.options) : undefined,
               }))}
             />
           )}
           {groups.pending.length > 0 && (
             <MemberGroup
-              label={`Sin responder (${groups.pending.length})`}
+              label={t('plans.group_pending', { n: groups.pending.length })}
               rows={groups.pending.map((m) => ({
                 id: m.id,
                 name: m.name,
@@ -301,7 +309,7 @@ export default function PlanDetailScreen() {
           )}
           {groups.declined.length > 0 && (
             <MemberGroup
-              label={`No pueden (${groups.declined.length})`}
+              label={t('plans.group_declined', { n: groups.declined.length })}
               rows={groups.declined.map((m) => ({
                 id: m.id,
                 name: m.name,
@@ -314,14 +322,14 @@ export default function PlanDetailScreen() {
 
         <View className="mt-6 gap-3">
           <Button variant="secondary" onPress={() => sharePlan(plan)}>
-            Compartir por WhatsApp
+            {t('plans.share_whatsapp')}
           </Button>
           {plan.isHost && !cancelled && !past ? (
             <Button
               variant="secondary"
               onPress={() => router.push(`/planes/invitar?planId=${plan.id}`)}
             >
-              Invitar a más
+              {t('plans.invite_more')}
             </Button>
           ) : null}
           {plan.isHost && !cancelled ? (
@@ -330,7 +338,9 @@ export default function PlanDetailScreen() {
               onPress={openCancelConfirm}
               className="min-h-[44px] items-center justify-center active:opacity-70"
             >
-              <Text className="font-ui-medium text-label text-status-packed">Cancelar mesa</Text>
+              <Text className="font-ui-medium text-label text-status-packed">
+                {t('plans.cancel_confirm_button')}
+              </Text>
             </Pressable>
           ) : null}
         </View>
@@ -339,10 +349,14 @@ export default function PlanDetailScreen() {
   )
 }
 
-function voteBadge(m: PlanMember, options: PlanDetail['options']): string | undefined {
+function voteBadge(
+  t: ReturnType<typeof useT>,
+  m: PlanMember,
+  options: PlanDetail['options'],
+): string | undefined {
   if (!m.voteRestaurantId) return undefined
   const spot = options.find((o) => o.id === m.voteRestaurantId)
-  return spot ? `votó ${spot.name}` : undefined
+  return spot ? t('plans.voted_spot', { name: spot.name }) : undefined
 }
 
 function MemberGroup({

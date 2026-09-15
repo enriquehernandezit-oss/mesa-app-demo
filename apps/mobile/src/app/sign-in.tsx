@@ -3,6 +3,7 @@ import { ErrorState } from '@/components/ui'
 import { useProfile } from '@/hooks/useProfile'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
+import { useT } from '@/lib/i18n'
 import { AuthFlow } from '@/screens/AuthFlow'
 import { Redirect } from 'expo-router'
 import { View } from 'react-native'
@@ -11,6 +12,7 @@ import { View } from 'react-native'
 // self-guard redirects onward — that's how AuthFlow's invalidate(['session'])
 // leaves this screen without an imperative navigation.
 export default function SignIn() {
+  const t = useT()
   const authLost = useAuthLost()
   const { data: session } = useSession()
   const authed = Boolean(session?.user)
@@ -26,7 +28,7 @@ export default function SignIn() {
     if (me) return <Redirect href="/discover" />
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <ErrorState onRetry={() => refetch()}>No pudimos cargar tu perfil.</ErrorState>
+        <ErrorState onRetry={() => refetch()}>{t('app.profile_load_error')}</ErrorState>
       </View>
     )
   }

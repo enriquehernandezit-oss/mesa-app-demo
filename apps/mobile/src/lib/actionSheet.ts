@@ -1,3 +1,4 @@
+import { getLanguage, t } from '@/lib/i18n'
 import { getResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 import { ActionSheetIOS, Alert, Platform } from 'react-native'
@@ -35,7 +36,7 @@ export function showActionSheet(opts: {
   options: { label: string; destructive?: boolean }[]
   cancelLabel?: string
 }): Promise<number | null> {
-  const { title, message, options, cancelLabel = 'Cancelar' } = opts
+  const { title, message, options, cancelLabel = t(getLanguage(), 'common.cancel') } = opts
   const theme = getResolvedTheme()
   const c = themeColors[theme]
 

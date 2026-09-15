@@ -1,4 +1,5 @@
 import { ChevronIcon } from '@/components/ui/icons'
+import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, useEffect } from 'react'
@@ -308,22 +309,25 @@ export const RowsSkeleton = ({ rows = 4, thumb = 36 }: { rows?: number; thumb?: 
 export const ErrorState = ({
   children,
   onRetry,
-}: { children?: ReactNode; onRetry?: () => void }) => (
-  <View className="mt-6 items-center px-5">
-    <Caption className="text-center">
-      {children ?? 'Algo salió mal. Intenta de nuevo en un momento.'}
-    </Caption>
-    {onRetry && (
-      <Pressable
-        accessibilityRole="button"
-        onPress={onRetry}
-        className="mt-3 min-h-[44px] justify-center rounded-pill border border-accent px-4 active:opacity-80"
-      >
-        <Text className="font-ui-semibold text-label text-accent-strong">Intentar de nuevo</Text>
-      </Pressable>
-    )}
-  </View>
-)
+}: { children?: ReactNode; onRetry?: () => void }) => {
+  const t = useT()
+  return (
+    <View className="mt-6 items-center px-5">
+      <Caption className="text-center">{children ?? t('common.error_fallback')}</Caption>
+      {onRetry && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onRetry}
+          className="mt-3 min-h-[44px] justify-center rounded-pill border border-accent px-4 active:opacity-80"
+        >
+          <Text className="font-ui-semibold text-label text-accent-strong">
+            {t('common.retry')}
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  )
+}
 
 /* --- SectionHeader --- mono brass eyebrow + optional right-aligned action. */
 export const SectionHeader = ({

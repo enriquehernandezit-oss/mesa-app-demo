@@ -1,5 +1,6 @@
 import { showActionSheet } from '@/lib/actionSheet'
 import { captureError } from '@/lib/errors'
+import { getLanguage, t } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
 
 // The camera-or-library → permission → resize pipeline for a dish photo.
@@ -29,8 +30,12 @@ export async function pickDishPhoto(): Promise<string | null> {
   if (picking) return null
   picking = true
   try {
+    const lang = getLanguage()
     const picked = await showActionSheet({
-      options: [{ label: 'Tomar foto' }, { label: 'Elegir de la biblioteca' }],
+      options: [
+        { label: t(lang, 'dish.take_photo') },
+        { label: t(lang, 'dish.choose_from_library') },
+      ],
     })
     if (picked === null) return null
     const source = picked === 0 ? 'camera' : 'library'

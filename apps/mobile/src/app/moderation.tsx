@@ -4,6 +4,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
+import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { ModerationReport } from '@/lib/types'
@@ -21,13 +22,17 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // and every endpoint behind this screen re-checks it (requireModerator). The
 // redirect below is a courtesy, not the security boundary — there is no way to
 // grant yourself the flag from inside the product.
-const TYPE_ES: Record<ModerationReport['targetType'], string> = {
-  vibe_note: 'Nota',
-  dish: 'Plato',
-  user: 'Miembro',
+const TYPE_KEYS: Record<
+  ModerationReport['targetType'],
+  'moderation.type_vibe_note' | 'moderation.type_dish' | 'moderation.type_user'
+> = {
+  vibe_note: 'moderation.type_vibe_note',
+  dish: 'moderation.type_dish',
+  user: 'moderation.type_user',
 }
 
 export default function ModerationQueue() {
+  const t = useT()
   const { data: me, isPending: meLoading } = useProfile(true)
   const queryClient = useQueryClient()
 
@@ -58,11 +63,14 @@ export default function ModerationQueue() {
       queryClient.invalidateQueries({ queryKey: ['dishes'] })
       queryClient.invalidateQueries({ queryKey: ['dish'] })
       queryClient.invalidateQueries({ queryKey: ['restaurant'] })
-      toast({ message: action === 'dismiss' ? 'Reporte descartado' : 'Contenido retirado' })
+      toast({
+        message:
+          action === 'dismiss' ? t('moderation.dismissed_toast') : t('moderation.removed_toast'),
+      })
     },
     onError: (err) => {
       captureError(err, 'moderation.act')
-      toast({ variant: 'error', message: 'No se pudo completar. Intenta de nuevo.' })
+      toast({ variant: 'error', message: t('moderation.act_error') })
     },
   })
 
@@ -75,7 +83,7 @@ export default function ModerationQueue() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: 'Moderación' }} />
+      <Stack.Screen options={{ title: t('moderation.title') }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5 pb-10"
@@ -84,15 +92,13 @@ export default function ModerationQueue() {
         {q.isPending ? (
           <RowsSkeleton rows={3} />
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>No se pudo cargar la cola.</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('moderation.load_error')}</ErrorState>
         ) : reports.length === 0 ? (
-          <EmptyState body="Los reportes de la comunidad aparecen aquí para revisarlos.">
-            Nada pendiente.
-          </EmptyState>
+          <EmptyState body={t('moderation.empty_body')}>{t('moderation.empty_title')}</EmptyState>
         ) : (
           <>
             <Caption className="mb-3 mt-2 font-mono text-micro">
-              {reports.length} {reports.length === 1 ? 'reporte abierto' : 'reportes abiertos'}
+              {t('moderation.open_reports_count', { n: reports.length })}
             </Caption>
             {reports.map((r) => (
               <ReportRow
@@ -101,15 +107,25 @@ export default function ModerationQueue() {
                 busy={act.isPending}
                 onAct={(action) => {
                   const isRemove = action === 'remove'
-                  const label = r.targetType === 'user' ? 'Expulsar miembro' : 'Retirar contenido'
+                  const label =
+                    r.targetType === 'user'
+                      ? t('moderation.eject_member')
+                      : t('moderation.remove_content')
                   showActionSheet({
-                    title: isRemove ? `¿${label}?` : '¿Descartar el reporte?',
+                    title: isRemove
+                      ? t('moderation.confirm_action_title', { label })
+                      : t('moderation.confirm_dismiss_title'),
                     message: isRemove
                       ? r.targetType === 'user'
-                        ? 'La cuenta queda suspendida y su contenido desaparece de Mesa.'
-                        : 'El contenido desaparece de Mesa. La fila se conserva para auditoría.'
-                      : 'El reporte se cierra sin tocar el contenido.',
-                    options: [{ label: isRemove ? label : 'Descartar', destructive: isRemove }],
+                        ? t('moderation.eject_message')
+                        : t('moderation.remove_message')
+                      : t('moderation.dismiss_message'),
+                    options: [
+                      {
+                        label: isRemove ? label : t('moderation.dismiss_button'),
+                        destructive: isRemove,
+                      },
+                    ],
                   }).then((picked) => {
                     if (picked === 0) act.mutate({ report: r, action })
                   })
@@ -132,51 +148,50 @@ function ReportRow({
   busy: boolean
   onAct: (action: 'remove' | 'dismiss') => void
 }) {
+  const t = useT()
   const router = useRouter()
-  const t = report.target
+  const target = report.target
   return (
     <View className="mb-3 rounded border border-line bg-surface p-4">
       <View className="flex-row items-center justify-between">
         <Caption className="font-mono text-micro text-accent-strong">
-          {TYPE_ES[report.targetType]}
+          {t(TYPE_KEYS[report.targetType])}
         </Caption>
         <Caption className="font-mono text-micro">{timeAgo(report.createdAt)}</Caption>
       </View>
 
       {/* The reported content itself — without it there's nothing to judge. */}
-      {t === null ? (
-        <Caption className="mt-2 text-text-muted">
-          El contenido ya no existe. Descarta el reporte.
-        </Caption>
-      ) : t.kind === 'vibe_note' ? (
+      {target === null ? (
+        <Caption className="mt-2 text-text-muted">{t('moderation.content_gone')}</Caption>
+      ) : target.kind === 'vibe_note' ? (
         // A moderator deciding whether to remove a note previously had no way
         // to see who wrote it — their other rankings, prior reports — without
         // leaving the queue and hand-searching for them.
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push(`/u/${t.userId}`)}
+          onPress={() => router.push(`/u/${target.userId}`)}
           className="mt-2 active:opacity-70"
         >
           <Text selectable className="font-serif-italic text-serif-sm text-text-2">
-            “{t.body}”
+            “{target.body}”
           </Text>
         </Pressable>
-      ) : t.kind === 'dish' ? (
+      ) : target.kind === 'dish' ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(`/dish/${report.targetId}`)}
           className="mt-2 flex-row items-center gap-3 active:opacity-70"
         >
           <Image
-            source={{ uri: cloudinaryUrl(t.imageId, { w: 200, h: 200 }) ?? undefined }}
+            source={{ uri: cloudinaryUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
             style={{ width: 56, height: 56, borderRadius: 10 }}
             contentFit="cover"
           />
           <View className="flex-1">
-            <Text className="font-serif text-serif-sm text-text">{t.name}</Text>
-            {t.caption ? (
+            <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
+            {target.caption ? (
               <Text selectable className="font-serif-italic text-serif-sm text-text-2">
-                “{t.caption}”
+                “{target.caption}”
               </Text>
             ) : null}
           </View>
@@ -188,26 +203,26 @@ function ReportRow({
           className="mt-2 active:opacity-70"
         >
           <Text className="font-ui text-body text-text">
-            {t.name}
-            {t.handle ? (
-              <Text className="font-mono text-label text-text-2"> @{t.handle}</Text>
+            {target.name}
+            {target.handle ? (
+              <Text className="font-mono text-label text-text-2"> @{target.handle}</Text>
             ) : null}
           </Text>
         </Pressable>
       )}
 
       <Caption className="mt-2">
-        Motivo: <Text className="text-text-2">{report.reason}</Text>
+        {t('moderation.reason_label')} <Text className="text-text-2">{report.reason}</Text>
       </Caption>
 
       {report.alreadyHandled ? (
         <Caption className="mt-3 font-mono text-micro text-text-muted">
-          Ya retirado — solo queda cerrar el reporte.
+          {t('moderation.already_handled')}
         </Caption>
       ) : null}
 
       <View className="mt-3 flex-row gap-5">
-        {!report.alreadyHandled && t !== null && (
+        {!report.alreadyHandled && target !== null && (
           <Pressable
             accessibilityRole="button"
             disabled={busy}
@@ -215,7 +230,9 @@ function ReportRow({
             className="min-h-[44px] justify-center active:opacity-60"
           >
             <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
-              {report.targetType === 'user' ? 'Expulsar' : 'Retirar'}
+              {report.targetType === 'user'
+                ? t('moderation.eject_button')
+                : t('moderation.remove_button')}
             </Text>
           </Pressable>
         )}
@@ -226,7 +243,7 @@ function ReportRow({
           className="min-h-[44px] justify-center active:opacity-60"
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            Descartar
+            {t('moderation.dismiss_button')}
           </Text>
         </Pressable>
       </View>

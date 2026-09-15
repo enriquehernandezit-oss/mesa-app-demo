@@ -1,6 +1,7 @@
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { authClient } from '@/lib/auth-client'
+import { useT } from '@/lib/i18n'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
@@ -11,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 // so a signed-out member can complete it. Collects a new password and calls
 // resetPassword. Ported from apps/app/src/screens/auth/ResetPassword.tsx.
 export default function ResetPassword() {
+  const t = useT()
   const { token } = useLocalSearchParams<{ token?: string }>()
   const router = useRouter()
   const [password, setPassword] = useState('')
@@ -28,7 +30,7 @@ export default function ResetPassword() {
     setBusy(true)
     const { error: err } = await authClient.resetPassword({ newPassword: password, token })
     setBusy(false)
-    if (err) return setError(err.message ?? 'Este enlace no es válido o ya venció.')
+    if (err) return setError(err.message ?? t('auth.reset_invalid_link'))
     setDone(true)
   }
 
@@ -40,32 +42,30 @@ export default function ResetPassword() {
       >
         <View className="items-center gap-2">
           <Wordmark size={56} />
-          <Eyebrow>Restablecer contraseña</Eyebrow>
+          <Eyebrow>{t('auth.reset_title')}</Eyebrow>
         </View>
 
         {!token ? (
           <View className="gap-3">
             <SerifItalic className="text-serif-sm text-center">
-              A este enlace le falta el token.
+              {t('auth.reset_missing_token')}
             </SerifItalic>
-            <Body className="text-center text-text-2">
-              Pide un nuevo enlace desde la pantalla de inicio de sesión.
-            </Body>
+            <Body className="text-center text-text-2">{t('auth.reset_missing_token_body')}</Body>
             <Button variant="primary" onPress={goSignIn}>
-              Volver a iniciar sesión
+              {t('auth.reset_back_to_signin')}
             </Button>
           </View>
         ) : done ? (
           <View className="gap-3">
-            <SerifItalic className="text-serif-md text-center">Contraseña actualizada.</SerifItalic>
+            <SerifItalic className="text-serif-md text-center">{t('auth.reset_done')}</SerifItalic>
             <Button variant="primary" onPress={goSignIn}>
-              Iniciar sesión
+              {t('auth.sign_in_button')}
             </Button>
           </View>
         ) : (
           <View className="gap-3">
             <Field
-              placeholder="Nueva contraseña (8+ caracteres)"
+              placeholder={t('auth.reset_new_password_placeholder')}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
@@ -78,7 +78,7 @@ export default function ResetPassword() {
             />
             <Field
               ref={confirmRef}
-              placeholder="Confirma la nueva contraseña"
+              placeholder={t('auth.reset_confirm_placeholder')}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
@@ -96,10 +96,10 @@ export default function ResetPassword() {
               disabled={busy || password.length < 8 || password !== confirm}
               onPress={submit}
             >
-              {busy ? '…' : 'Guardar nueva contraseña'}
+              {busy ? '…' : t('auth.reset_save_button')}
             </Button>
             {password.length > 0 && confirm.length > 0 && password !== confirm && (
-              <Caption className="text-status-packed">Las contraseñas no coinciden.</Caption>
+              <Caption className="text-status-packed">{t('auth.reset_mismatch')}</Caption>
             )}
             {error && <Caption className="text-status-packed">{error}</Caption>}
           </View>
