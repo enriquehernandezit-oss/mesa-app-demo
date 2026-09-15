@@ -1,3 +1,4 @@
+import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -126,6 +127,7 @@ function AvatarEditButton({
 export default function ProfileTab() {
   const router = useRouter()
   const t = useT()
+  const tabBarClearance = useTabBarClearance()
   const { data, isPending, isError, refetch } = useProfile(true)
   const p = data?.profile
   const [editing, setEditing] = useState(false)
@@ -198,7 +200,7 @@ export default function ProfileTab() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
       >
         <View className="items-center pt-2">
           {/* Tapping the avatar opens the camera/library chooser directly —

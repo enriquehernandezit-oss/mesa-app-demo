@@ -18,6 +18,21 @@ import { useRef } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+// The bar's own content height (minHeight + paddingTop below), on top of
+// whatever bottom safe-area inset the device adds — a screen scrolling
+// underneath this floating bar needs at least this much bottom clearance
+// or its last row ends up permanently hidden behind it. Exported so screen
+// content can't drift out of sync with the bar's actual layout.
+export const TAB_BAR_CONTENT_HEIGHT = 74
+
+// A tab screen's own scrollable content should pad its bottom by this much
+// (plus a little breathing room) so the last row clears the floating bar
+// instead of ending up underneath it.
+export function useTabBarClearance(extra = 16) {
+  const insets = useSafeAreaInsets()
+  return insets.bottom + TAB_BAR_CONTENT_HEIGHT + extra
+}
+
 // Custom bottom bar: four tabs plus an inline "+" pill (rank a place), ported
 // from app/router.tsx's 5-slot layout. Tonight is cut, so the tabs are
 // Discover · Explore · (+) · Rankings · Profile.
@@ -144,7 +159,7 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
       // visibly clipped. Explicit paddingTop is the actual fix; the bumped
       // minHeight is just margin so a future taller item still fits.
       style={{
-        minHeight: 64,
+        minHeight: TAB_BAR_CONTENT_HEIGHT - 10,
         paddingTop: 10,
         paddingBottom: insets.bottom,
         paddingHorizontal: 10,

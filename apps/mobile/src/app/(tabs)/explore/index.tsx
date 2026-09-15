@@ -1,4 +1,5 @@
 import { ExternalResults } from '@/components/ExternalResults'
+import { useTabBarClearance } from '@/components/MesaTabBar'
 import {
   Body,
   Button,
@@ -67,6 +68,7 @@ type SortKey = 'score' | 'name'
 export default function ExploreScreen() {
   const t = useT()
   const router = useRouter()
+  const tabBarClearance = useTabBarClearance()
   const SORT_OPTIONS: { key: SortKey; label: string }[] = [
     { key: 'score', label: t('explore.sort_score') },
     { key: 'name', label: t('explore.sort_name') },
@@ -216,7 +218,7 @@ export default function ExploreScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"

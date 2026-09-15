@@ -1,3 +1,4 @@
+import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
 import {
   Button,
@@ -64,6 +65,7 @@ import Animated, { LinearTransition } from 'react-native-reanimated'
 export default function RankingsTab() {
   const router = useRouter()
   const t = useT()
+  const tabBarClearance = useTabBarClearance()
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
@@ -348,7 +350,7 @@ export default function RankingsTab() {
           }
           indicatorStyle={indicator}
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -358,7 +360,7 @@ export default function RankingsTab() {
         <ScrollView
           indicatorStyle={indicator}
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
         >
           {topMatter}
           {tab === 'barrios' ? (

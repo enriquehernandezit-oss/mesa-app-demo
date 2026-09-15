@@ -1,4 +1,5 @@
 import { CheersButton } from '@/components/CheersButton'
+import { useTabBarClearance } from '@/components/MesaTabBar'
 import { PersonRow } from '@/components/PersonRow'
 import { pickReportReason } from '@/components/ReportControl'
 import { TopBar } from '@/components/TopBar'
@@ -51,6 +52,7 @@ function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
 export default function DiscoverTab() {
   const t = useT()
   const accent = useColor('accent')
+  const tabBarClearance = useTabBarClearance()
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
@@ -69,13 +71,17 @@ export default function DiscoverTab() {
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
       {feed.isPending ? (
-        <ScrollView contentContainerClassName="px-5 pb-8">
+        <ScrollView
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        >
           <FeedHeader />
           <FeedSkeleton />
         </ScrollView>
       ) : feed.isError ? (
         <ScrollView
-          contentContainerClassName="px-5 pb-8"
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
           refreshControl={
             <RefreshControl
               refreshing={feed.isRefetching}
@@ -89,7 +95,8 @@ export default function DiscoverTab() {
         </ScrollView>
       ) : items.length === 0 ? (
         <ScrollView
-          contentContainerClassName="px-5 pb-8"
+          contentContainerClassName="px-5"
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
           refreshControl={
             <RefreshControl
               refreshing={feed.isRefetching}
@@ -113,7 +120,7 @@ export default function DiscoverTab() {
             </>
           }
           contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: tabBarClearance }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
