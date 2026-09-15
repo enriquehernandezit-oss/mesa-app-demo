@@ -426,11 +426,18 @@ async function run() {
     const inserted = await db
       .insert(restaurants)
       .values(batch.map(({ _name, ...row }) => row))
-      .returning({ id: restaurants.id, name: restaurants.name })
-    // Insert order is preserved by Postgres for a single multi-row VALUES
-    // list, but matching back by name (rather than trusting order) is one
-    // extra safety net that costs nothing at this scale.
-    for (const row of inserted) restaurantIdByName.set(row.name, row.id)
+      .returning({ id: restaurants.id })
+    // Keyed by _name (the sheet name — data.menus' key), NOT the inserted
+    // row's own `name` column (Google's canonical name, e.g. "ALMA,
+    // pasteleria cafe & bistro" for sheet name "Alma"): those two differ for
+    // ~40% of this catalog, and keying by the DB name silently orphaned every
+    // menu whose restaurant just got inserted under a different display name.
+    // Postgres preserves insert order for a single multi-row VALUES list, so
+    // zipping inserted[i] with batch[i] is safe.
+    inserted.forEach((row, i) => {
+      const name = batch[i]?._name
+      if (name) restaurantIdByName.set(name, row.id)
+    })
   }
 
   let menuRowsWritten = 0
