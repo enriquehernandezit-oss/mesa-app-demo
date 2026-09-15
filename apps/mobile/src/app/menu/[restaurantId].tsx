@@ -82,7 +82,6 @@ export default function RestaurantMenuScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{
-              marginHorizontal: -20,
               backgroundColor: bg,
               borderBottomWidth: 1,
               borderBottomColor: line,
@@ -91,7 +90,7 @@ export default function RestaurantMenuScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 8,
-              paddingHorizontal: 20,
+              paddingHorizontal: 24,
               height: 52,
             }}
           >
@@ -118,7 +117,7 @@ export default function RestaurantMenuScreen() {
       >
         {restaurantName ? <Eyebrow className="mt-4">{restaurantName}</Eyebrow> : null}
         {q.data?.verifiedAt ? (
-          <Caption className="mt-1 font-mono text-micro text-text-muted">
+          <Caption className="mt-1">
             {t('restaurant.menu_verified_on', {
               date: new Date(q.data.verifiedAt).toLocaleDateString(dateLocale()),
             })}
@@ -133,9 +132,7 @@ export default function RestaurantMenuScreen() {
               sectionOffsets.current[i] = e.nativeEvent.layout.y
             }}
           >
-            <Text className="font-mono text-micro uppercase tracking-micro text-accent-strong">
-              {s.name}
-            </Text>
+            <Eyebrow className="text-accent-strong">{s.name}</Eyebrow>
           </View>,
           <View key={`b-${s.name}`}>
             {/* Prices deliberately not shown — they drift with time and a
