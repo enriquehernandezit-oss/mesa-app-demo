@@ -36,13 +36,19 @@ import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
-import { useT } from '@/lib/i18n'
+import { dateLocale, useT } from '@/lib/i18n'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
-import type { Dish, FriendRanking, RestaurantProfileResponse } from '@/lib/types'
+import type {
+  Dish,
+  FriendRanking,
+  RestaurantMenu as RestaurantMenuData,
+  RestaurantProfileResponse,
+} from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
@@ -457,6 +463,8 @@ export default function RestaurantProfile() {
             </>
           )}
 
+          <RestaurantMenu restaurantId={restaurantId} />
+
           <PopularDishes restaurantId={restaurantId} canAdd={Boolean(myRanking)} />
 
           <View
@@ -644,6 +652,101 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
         <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />
       </Pressable>
     </Link>
+  )
+}
+
+// The restaurant's own published menu (M5) — verified prices/items sourced
+// from the business itself, distinct from PopularDishes below (member photos
+// attributed to a person). Collapses to the first ~8 items so a 90-item menu
+// (Mijas) doesn't push the social content off the fold; "See full menu"
+// expands it in place.
+const MENU_COLLAPSED_COUNT = 8
+
+function RestaurantMenu({ restaurantId }: { restaurantId: string }) {
+  const t = useT()
+  const [expanded, setExpanded] = useState(false)
+  const q = useQuery({
+    queryKey: ['menu', restaurantId],
+    queryFn: () => api.get<RestaurantMenuData>(`/restaurants/${restaurantId}/menu`),
+  })
+  const sections = q.data?.sections ?? []
+  const totalItems = sections.reduce((n, s) => n + s.items.length, 0)
+  if (totalItems === 0 && !q.isError) return null
+
+  // Flatten to a running count so the "first ~8" cutoff can land mid-section
+  // rather than only ever showing whole sections.
+  let shown = 0
+  const visibleSections = expanded
+    ? sections
+    : sections
+        .map((s) => {
+          if (shown >= MENU_COLLAPSED_COUNT) return null
+          const room = MENU_COLLAPSED_COUNT - shown
+          const items = s.items.slice(0, room)
+          shown += items.length
+          return { ...s, items }
+        })
+        .filter((s): s is NonNullable<typeof s> => s !== null)
+
+  return (
+    <>
+      <SectionHeader>{t('restaurant.menu_title')}</SectionHeader>
+      {q.isError ? (
+        <Caption className="mt-1">{t('restaurant.menu_load_error')}</Caption>
+      ) : (
+        <View className="mt-1">
+          {visibleSections.map((s) => (
+            <View key={s.name} className="mb-3">
+              <Text className="mb-1 font-mono text-micro uppercase tracking-micro text-accent-strong">
+                {s.name}
+              </Text>
+              {s.items.map((item) => (
+                <View
+                  key={item.id}
+                  className="flex-row items-start gap-3 border-line border-b py-2"
+                >
+                  <View className="flex-1">
+                    <Text className="font-ui text-body text-text">{item.name}</Text>
+                    {item.description ? (
+                      <Caption numberOfLines={2} className="mt-0.5 text-text-2">
+                        {item.description}
+                      </Caption>
+                    ) : null}
+                  </View>
+                  {item.priceCents != null && item.currency ? (
+                    <Text style={DATA_FIGURES} className="font-mono text-label text-accent">
+                      {new Intl.NumberFormat(dateLocale(), {
+                        style: 'currency',
+                        currency: item.currency,
+                        maximumFractionDigits: item.priceCents % 100 === 0 ? 0 : 2,
+                      }).format(item.priceCents / 100)}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ))}
+          {totalItems > MENU_COLLAPSED_COUNT && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setExpanded((v) => !v)}
+              className="min-h-[44px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui-medium text-label text-accent-strong">
+                {expanded ? t('restaurant.menu_see_less') : t('restaurant.menu_see_full')}
+              </Text>
+            </Pressable>
+          )}
+          {q.data?.verifiedAt ? (
+            <Caption className="mt-1 font-mono text-micro text-text-muted">
+              {t('restaurant.menu_verified_on', {
+                date: new Date(q.data.verifiedAt).toLocaleDateString(dateLocale()),
+              })}
+            </Caption>
+          ) : null}
+        </View>
+      )}
+    </>
   )
 }
 

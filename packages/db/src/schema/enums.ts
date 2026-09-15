@@ -9,8 +9,16 @@ export const reportStatus = pgEnum('report_status', ['open', 'reviewing', 'actio
 
 // Where a restaurant row came from. 'seed' = demo data, 'foursquare' = the OS
 // Places bulk import, 'member' = added through the app (either by hand or via
-// the Google Places typeahead gap-filler).
-export const restaurantSource = pgEnum('restaurant_source', ['seed', 'foursquare', 'member'])
+// the Google Places typeahead gap-filler), 'catalog' = a curated real-world
+// import (M5's Top 100 + menus) — real, non-demo data, but distinct from
+// 'foursquare' since it isn't a bulk geo extract and carries its own
+// menu_items rows the seed guard must also protect.
+export const restaurantSource = pgEnum('restaurant_source', [
+  'seed',
+  'foursquare',
+  'member',
+  'catalog',
+])
 
 // How trustworthy a restaurant's lat/lng actually is. 'exact' = a real geocode
 // (seeded, or Foursquare-sourced). 'sector' = no geocode exists yet, so it sits

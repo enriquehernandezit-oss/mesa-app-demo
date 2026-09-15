@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
 import { db, pool } from './client'
+import { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 import * as schema from './schema'
 
 // ADDITIVE, idempotent bulk importer for Foursquare OS Places restaurant rows
@@ -51,62 +52,12 @@ type ExistingRow = {
   nameKey: string
   lat: number
   lng: number
-  source: 'seed' | 'foursquare' | 'member'
+  source: 'seed' | 'foursquare' | 'member' | 'catalog'
   fsqPlaceId: string | null
   closedAt: Date | null
 }
 
 type NeighborhoodRow = { id: string; lat: number; lng: number }
-
-// --- geo (meters). Haversine, mirroring apps/mobile/src/lib/geo.ts — this
-// package can't import from an app, so the formula lives here too. ---
-function haversineM(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const R = 6371000
-  const dLat = ((bLat - aLat) * Math.PI) / 180
-  const dLng = ((bLng - aLng) * Math.PI) / 180
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)))
-}
-
-// --- name normalization — mirrors mesa_norm() (migration 0008): lower + strip
-// accents. unaccent and Unicode-NFD agree on the Spanish diacritics that appear
-// in DR restaurant names (á é í ó ú ñ ü). ---
-function mesaNorm(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .trim()
-}
-
-// --- pg_trgm similarity() faithfully — Jaccard over the two trigram SETS. The
-// exact algorithm matters, verified against show_trgm(): pg_trgm splits on every
-// non-alphanumeric char, pads EACH word with two leading + one trailing space,
-// generates that word's trigrams, and unions (dedups) across words — it does NOT
-// pad the whole string once (that would invent cross-word trigrams and mishandle
-// a repeated word, e.g. "boga boga" must score 1.0 against "boga", not 0.83).
-// Inputs here are already mesa_norm'd (lowercased, accent-stripped), matching the
-// live matcher's `similarity(name_key, mesa_norm(...))`, so the 0.55 threshold
-// means the same thing on both sides. ---
-function trigrams(s: string): Set<string> {
-  const out = new Set<string>()
-  for (const word of s.split(/[^a-z0-9]+/)) {
-    if (!word) continue
-    const padded = `  ${word} `
-    for (let i = 0; i <= padded.length - 3; i++) out.add(padded.slice(i, i + 3))
-  }
-  return out
-}
-function trigramSimilarity(a: string, b: string): number {
-  const ta = trigrams(a)
-  const tb = trigrams(b)
-  if (ta.size === 0 || tb.size === 0) return 0
-  let inter = 0
-  for (const t of ta) if (tb.has(t)) inter++
-  return inter / (ta.size + tb.size - inter)
-}
 
 // --- spatial grid. 300m cells at SD's latitude — larger than the 250m match
 // radius, so a match never spans more than one cell boundary; check the
@@ -275,8 +226,11 @@ async function run() {
     for (const c of candidates) {
       if (claimed.has(c.id)) continue
       // Never re-touch a row another fsq_place_id already owns — only exact
-      // rule-1 id equality (above) may update a foursquare-owned row.
-      if (c.source !== 'seed' && c.source !== 'member') continue
+      // rule-1 id equality (above) may update a foursquare-owned row. 'catalog'
+      // rows (M5) are adoptable too, on the same terms as seed/member: only
+      // null fields get filled in the upsert below, so a catalog row's curated
+      // name/coords/menu never get overwritten.
+      if (c.source !== 'seed' && c.source !== 'member' && c.source !== 'catalog') continue
       const dist = haversineM(f.latitude, f.longitude, c.lat, c.lng)
       // Rule 2: normalized name equal AND ≤250m.
       if (c.nameKey === norm && dist <= 250) {

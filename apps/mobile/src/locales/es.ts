@@ -467,6 +467,13 @@ export const es = {
   'restaurant.popular_dishes': 'Platos populares',
   'restaurant.dishes_load_error': 'No se pudieron cargar los platos.',
   'restaurant.no_dishes': 'Todavía no hay platos — sé el primero.',
+
+  // components (r/[restaurantId].tsx's RestaurantMenu section, M5)
+  'restaurant.menu_title': 'Menú',
+  'restaurant.menu_load_error': 'No se pudo cargar el menú.',
+  'restaurant.menu_see_full': 'Ver menú completo',
+  'restaurant.menu_see_less': 'Ver menos',
+  'restaurant.menu_verified_on': 'Precios verificados · {date}',
   'restaurant.by_name': 'por {name}',
 
   // app/onboarding.tsx

@@ -1,6 +1,7 @@
 import { relations } from 'drizzle-orm'
 import { user } from './auth'
 import { restaurants, savedPlaces } from './discovery'
+import { menuItems } from './menu'
 import { planInvites, planOptions, plans } from './plans'
 import { rankings, vibeNotes } from './ranking'
 import { neighborhoods } from './reference'
@@ -64,6 +65,14 @@ export const restaurantsRelations = relations(restaurants, ({ one, many }) => ({
   rankings: many(rankings),
   vibeNotes: many(vibeNotes),
   savedBy: many(savedPlaces),
+  menuItems: many(menuItems),
+}))
+
+export const menuItemsRelations = relations(menuItems, ({ one }) => ({
+  restaurant: one(restaurants, {
+    fields: [menuItems.restaurantId],
+    references: [restaurants.id],
+  }),
 }))
 
 export const rankingsRelations = relations(rankings, ({ one }) => ({

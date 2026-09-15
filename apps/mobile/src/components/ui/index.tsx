@@ -41,7 +41,7 @@ const MAX_SCALE = 1.35
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif text-title leading-title text-text ${className ?? ''}`}
+    className={`font-serif-semibold text-title leading-title text-text ${className ?? ''}`}
     {...p}
   />
 )

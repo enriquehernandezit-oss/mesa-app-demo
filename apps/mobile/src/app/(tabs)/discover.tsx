@@ -149,7 +149,7 @@ function FeedHeader() {
   return (
     <View className="pt-2 pb-1">
       <Eyebrow>{t('discover.eyebrow')}</Eyebrow>
-      <Title className="mb-3">{t('discover.title')}</Title>
+      <Title className="mt-1 mb-3">{t('discover.title')}</Title>
       <Pressable
         accessibilityRole="search"
         onPress={() => router.push('/explore')}

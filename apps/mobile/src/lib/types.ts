@@ -404,6 +404,19 @@ export interface RestaurantProfileResponse {
   saved: boolean
 }
 
+// A restaurant's own published menu (M5) — GET /restaurants/:id/menu.
+export interface MenuItem {
+  id: string
+  name: string
+  description: string | null
+  priceCents: number | null
+  currency: string | null
+}
+export interface RestaurantMenu {
+  sections: { name: string; items: MenuItem[] }[]
+  verifiedAt: string | null
+}
+
 // Planes (M3) — group dinners. Mirrors apps/api/src/routes/plans.ts's response
 // shapes; that file has no equivalent client this app can import (same reason
 // as ActivityItem above), so this is the hand-kept copy.

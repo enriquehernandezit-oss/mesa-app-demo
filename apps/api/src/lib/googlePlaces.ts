@@ -9,6 +9,14 @@
 // handlers, is the whole reason this isn't just inlined into restaurants.ts.
 const GOOGLE_PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY
 
+// For a caller that needs to tell "the key is unset" apart from "Google
+// looked and found nothing" — the live app never needs this (both calls
+// below already degrade to an empty result either way), but import-top100.ts
+// does: without a key, "not found" isn't a real answer worth caching.
+export function hasGooglePlacesKey(): boolean {
+  return Boolean(GOOGLE_PLACES_KEY)
+}
+
 export interface ExternalSuggestion {
   provider: 'google'
   providerPlaceId: string
@@ -103,10 +111,30 @@ export interface GooglePlaceDetails {
   businessStatus?: string
 }
 
+// Shared by placeDetails and searchText below — same object shape either
+// call returns, so the same field list applies to both. Deliberately broad
+// (this is the Enterprise SKU regardless, since hours/phone/website push it
+// there) but still excludes photos, reviews, and anything else with no
+// caching story.
+const PLACE_FIELDS = [
+  'id',
+  'displayName',
+  'formattedAddress',
+  'shortFormattedAddress',
+  'addressComponents',
+  'location',
+  'primaryType',
+  'types',
+  'priceLevel',
+  'nationalPhoneNumber',
+  'internationalPhoneNumber',
+  'websiteUri',
+  'regularOpeningHours',
+  'businessStatus',
+]
+
 // Place Details — called ONLY when a member taps a suggestion (M9), never for
-// the typeahead itself. Field mask is deliberately broad (this is the
-// Enterprise SKU regardless, since hours/phone/website push it there) but
-// still excludes photos, reviews, and anything else with no caching story.
+// the typeahead itself.
 export async function placeDetails(
   placeId: string,
   sessionToken?: string,
@@ -120,22 +148,7 @@ export async function placeDetails(
       {
         headers: {
           'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
-          'X-Goog-FieldMask': [
-            'id',
-            'displayName',
-            'formattedAddress',
-            'shortFormattedAddress',
-            'addressComponents',
-            'location',
-            'primaryType',
-            'types',
-            'priceLevel',
-            'nationalPhoneNumber',
-            'internationalPhoneNumber',
-            'websiteUri',
-            'regularOpeningHours',
-            'businessStatus',
-          ].join(','),
+          'X-Goog-FieldMask': PLACE_FIELDS.join(','),
         },
         signal: AbortSignal.timeout(5000),
       },
@@ -148,6 +161,52 @@ export async function placeDetails(
     return (await res.json()) as GooglePlaceDetails
   } catch (err) {
     console.error('[places] details threw:', err)
+    return null
+  }
+}
+
+// A center + radius over Santo Domingo's metro area — biases (never
+// restricts) Text Search results toward the city Mesa actually covers, per
+// Google's own recommendation for a single-city catalog. Center is roughly
+// Piantini; the 25km radius covers the whole metro (Zona Colonial to
+// Santo Domingo Este/Oeste) with room to spare.
+const SD_LOCATION_BIAS = {
+  circle: { center: { latitude: 18.4682, longitude: -69.9388 }, radius: 25000 },
+}
+
+// Text Search — the M5 Top 100 catalog importer's one geocoding call per
+// restaurant name (never called from the live app; that's autocomplete +
+// placeDetails above). pageSize: 1 keeps this to the cheapest useful shape:
+// the importer only ever wants the single best guess, which it then verifies
+// itself (bounding box + name agreement) before trusting.
+export async function searchText(query: string): Promise<GooglePlaceDetails | null> {
+  if (!GOOGLE_PLACES_KEY) return null
+  try {
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
+        'X-Goog-FieldMask': PLACE_FIELDS.map((f) => `places.${f}`).join(','),
+      },
+      body: JSON.stringify({
+        textQuery: query,
+        languageCode: 'es',
+        regionCode: 'do',
+        locationBias: SD_LOCATION_BIAS,
+        pageSize: 1,
+      }),
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      console.error(`[places] searchText failed (${res.status}): ${detail.slice(0, 300)}`)
+      return null
+    }
+    const data = (await res.json()) as { places?: GooglePlaceDetails[] }
+    return data.places?.[0] ?? null
+  } catch (err) {
+    console.error('[places] searchText threw:', err)
     return null
   }
 }

@@ -819,6 +819,59 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       saved: Boolean(savedRow),
     })
   })
+  // A restaurant's own published menu (M5) — verified prices/items sourced
+  // from the business itself via the Top 100 catalog importer, distinct from
+  // PopularDishes above (member photos). One query, grouped into sections in
+  // JS; `verifiedAt` is the latest of any item's so the screen can show one
+  // "prices verified as of" line rather than per-item dates.
+  .get('/:id/menu', async (c) => {
+    const id = c.req.param('id')
+    const restaurant = await db.query.restaurants.findFirst({
+      where: and(eq(restaurants.id, id), isNull(restaurants.removedAt)),
+      columns: { id: true },
+    })
+    if (!restaurant) return c.json({ error: 'not_found' }, 404)
+
+    const rows = await db.query.menuItems.findMany({
+      where: eq(schema.menuItems.restaurantId, id),
+      orderBy: asc(schema.menuItems.position),
+      columns: {
+        id: true,
+        section: true,
+        name: true,
+        description: true,
+        priceCents: true,
+        currency: true,
+        verifiedAt: true,
+      },
+    })
+
+    const sections: { name: string; items: (typeof rows)[number][] }[] = []
+    const bySection = new Map<string, (typeof rows)[number][]>()
+    for (const row of rows) {
+      let bucket = bySection.get(row.section)
+      if (!bucket) {
+        bucket = []
+        bySection.set(row.section, bucket)
+        sections.push({ name: row.section, items: bucket })
+      }
+      bucket.push(row)
+    }
+
+    let verifiedAt: string | null = null
+    for (const row of rows) {
+      if (row.verifiedAt && (!verifiedAt || row.verifiedAt > verifiedAt))
+        verifiedAt = row.verifiedAt
+    }
+
+    return c.json({
+      sections: sections.map((s) => ({
+        name: s.name,
+        items: s.items.map(({ verifiedAt: _v, ...item }) => item),
+      })),
+      verifiedAt,
+    })
+  })
   // Add a place that isn't on Mesa yet ("Can't find it? Add a new restaurant" in
   // the rank flow). Minimal fields; coordinates land on the neighborhood's
   // centroid — a real, computed point (see packages/db/drizzle/0008), not the

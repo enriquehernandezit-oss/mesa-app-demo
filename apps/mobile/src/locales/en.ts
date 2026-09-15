@@ -423,6 +423,12 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.popular_dishes': 'Popular dishes',
   'restaurant.dishes_load_error': "Couldn't load the dishes.",
   'restaurant.no_dishes': 'No dishes yet — be the first.',
+
+  'restaurant.menu_title': 'Menu',
+  'restaurant.menu_load_error': "Couldn't load the menu.",
+  'restaurant.menu_see_full': 'See full menu',
+  'restaurant.menu_see_less': 'See less',
+  'restaurant.menu_verified_on': 'Prices verified · {date}',
   'restaurant.by_name': 'by {name}',
 
   'onboarding.step_progress': 'Step {step} of {total} · build your starter list',

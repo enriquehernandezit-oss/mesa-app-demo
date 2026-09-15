@@ -58,6 +58,16 @@ const CUISINE_ES: Record<string, string> = {
   Thai: 'Tailandesa',
   Seafood: 'Mariscos',
   Café: 'Café',
+  // Added for the Top 100 catalog import (M5) — see import-top100.ts's own
+  // cuisine mapping, which emits only these keys (plus everything above) for
+  // an unmapped "Cuisine / Category" segment.
+  International: 'Internacional',
+  Asian: 'Asiática',
+  American: 'Americana',
+  French: 'Francesa',
+  Healthy: 'Saludable',
+  Korean: 'Coreana',
+  'Middle Eastern': 'Medio Oriente',
 }
 // EN shows the raw DB value (already English) — translation is a display
 // concern only, so a language flip never touches what's written or filtered on.

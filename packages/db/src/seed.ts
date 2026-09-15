@@ -80,17 +80,24 @@ async function seed() {
   console.log('seeding…')
 
   // Guard: seed TRUNCATEs the whole catalog (and cascades through every ranking
-  // pointing at it). Once the Foursquare importer (M6) has run, that's real,
-  // non-demo data — refuse unless explicitly forced. Mirrors docs/DEPLOY.md's
-  // "only ever run against a fresh/empty database".
-  const fsqRows = await db
-    .select({ fsqCount: sql<number>`count(*)::int` })
+  // pointing at it). Once the Foursquare importer (M6) or the Top 100 catalog
+  // importer (M5) has run, that's real, non-demo data — refuse unless
+  // explicitly forced. Mirrors docs/DEPLOY.md's "only ever run against a
+  // fresh/empty database". menu_items is checked separately from `source`
+  // since a matched row (enriched in place) can keep source='seed' while
+  // still owning real imported menu rows that TRUNCATE would silently drop.
+  const realDataRows = await db
+    .select({
+      fsqCount: sql<number>`count(*) filter (where ${schema.restaurants.source} = 'foursquare')::int`,
+      catalogCount: sql<number>`count(*) filter (where ${schema.restaurants.source} = 'catalog')::int`,
+    })
     .from(schema.restaurants)
-    .where(eq(schema.restaurants.source, 'foursquare'))
-  const fsqCount = fsqRows[0]?.fsqCount ?? 0
-  if (fsqCount > 0 && process.env.MESA_SEED_FORCE !== '1') {
+  const { fsqCount, catalogCount } = realDataRows[0] ?? { fsqCount: 0, catalogCount: 0 }
+  const menuRows = await db.select({ menuCount: sql<number>`count(*)::int` }).from(schema.menuItems)
+  const menuCount = menuRows[0]?.menuCount ?? 0
+  if ((fsqCount > 0 || catalogCount > 0 || menuCount > 0) && process.env.MESA_SEED_FORCE !== '1') {
     throw new Error(
-      `refusing to seed: ${fsqCount} Foursquare-imported restaurant(s) present — this would TRUNCATE the real catalog and every ranking on it. Set MESA_SEED_FORCE=1 to override.`,
+      `refusing to seed: ${fsqCount} Foursquare-imported, ${catalogCount} catalog-imported restaurant(s), and ${menuCount} menu item(s) present — this would TRUNCATE the real catalog and every ranking on it. Set MESA_SEED_FORCE=1 to override.`,
     )
   }
 

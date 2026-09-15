@@ -151,7 +151,7 @@ export default function DishDetail() {
               </Text>
             </Pressable>
           </Link>
-          <Text className="mt-2 font-serif text-title text-text">{dish.name}</Text>
+          <Text className="mt-2 font-serif-semibold text-title text-text">{dish.name}</Text>
           {dish.caption ? (
             <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">
               “{dish.caption}”
