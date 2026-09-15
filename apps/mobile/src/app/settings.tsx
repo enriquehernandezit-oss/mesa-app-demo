@@ -269,7 +269,7 @@ export default function SettingsScreen() {
               {t('settings.export_rankings')}
             </Text>
             {exporting ? (
-              <Caption className="font-mono text-micro">…</Caption>
+              <Caption className="text-micro">…</Caption>
             ) : (
               <ChevronIcon size={16} color="text-faint" />
             )}
@@ -332,7 +332,7 @@ export default function SettingsScreen() {
               {t('settings.invite_friends')}
             </Text>
             {inviteStats.data && inviteStats.data.joined > 0 ? (
-              <Caption className="font-mono text-micro">
+              <Caption className="text-micro">
                 {t('settings.joined_count', { n: inviteStats.data.joined })}
               </Caption>
             ) : (
@@ -345,9 +345,9 @@ export default function SettingsScreen() {
                 {realEmail}
               </Text>
               {p?.emailVerified ? (
-                <Caption className="font-mono">{t('settings.verified')}</Caption>
+                <Caption>{t('settings.verified')}</Caption>
               ) : verifySent ? (
-                <Caption className="font-mono">{t('settings.link_sent')}</Caption>
+                <Caption>{t('settings.link_sent')}</Caption>
               ) : (
                 <Pressable
                   accessibilityRole="button"

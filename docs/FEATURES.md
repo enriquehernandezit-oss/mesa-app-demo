@@ -60,7 +60,7 @@ away a half-finished ranking.
 
 | Screen | What it does |
 |---|---|
-| **Feed** (`discover.tsx`) | Friends' rankings and dish posts, newest first, infinite scroll + pull-to-refresh. Ranking cards carry the attributed score **and `#N en su lista`** — where the place sits in that friend's own ranking. Dish posts carry the photo. Cheers on any row. Featured-lists carousel on top. |
+| **Feed** (`discover.tsx`) | Friends' rankings and dish posts, newest first, infinite scroll + pull-to-refresh. Flat, compact rows (M9) — no card box, just a hairline under the text column. Ranking rows carry the attributed score; no `#N en su lista`. Dish posts carry the photo. Cheers on any row. Featured-lists carousel on top. |
 | **Explore** (`explore/index.tsx`) | Searches your circle's rankings — not the open internet. Native search bar in the nav bar. Filters: score/open-now/price, sector, cuisine. Also returns **members** and dish matches. Falls through to Google when Mesa has fewer than 3 hits. |
 | **Trending rail** | "Sonando esta semana" — 14-day cheer velocity, in Explore's default browse state only. Shows **only a cheer count**, never a score. Self-hides under 4 qualifying spots. |
 | **Restaurant profile** (`r/[restaurantId].tsx`) | The payoff surface: hero photo or tinted map, characteristics, the attributed score trio, occasion tags, popular dishes, friends who ranked it with their notes, similar-spots rail, list membership pills. Sticky condensed header on scroll. Save, share, rank. Action row shows a **Menú** button when the place has one, next to Llamar/Sitio web/Cómo llegar — opens the full menu page (`menu/[restaurantId].tsx`: sticky section headers, a chip rail to jump between them). See `docs/MENUS.md` for how to add a menu to a place that doesn't have one yet. |
@@ -190,9 +190,10 @@ The governing line is **content is Mesa, chrome is iOS**:
   transparency stayed visible against real content — so the shipped bar (`components/MesaTabBar.tsx`)
   is Mesa-drawn, tokened chrome instead of the native component, sized and opaque on purpose.
 
-Typography: Cormorant Garamond (serif), Plus Jakarta Sans (UI), JetBrains Mono (metadata). Data
-numerals use lining + tabular figures so scores sit on the baseline and columns align; prose keeps
-Cormorant's oldstyle figures.
+Typography: Cormorant Garamond (serif) and Plus Jakarta Sans, the one UI family — it carries body,
+metadata, eyebrows and pill labels (JetBrains Mono held the metadata voice until it was retired
+2026-09-15). Data numerals use lining + tabular figures so scores sit on the baseline and columns
+align; prose keeps Cormorant's oldstyle figures.
 
 Other details: haptics taxonomy, skeleton loaders shaped like the content they replace, Dynamic
 Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove with undo.

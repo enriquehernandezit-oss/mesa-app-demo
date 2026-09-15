@@ -38,7 +38,7 @@ export function SpotRail({ title, children }: { title: string; children: ReactNo
 }
 
 // One card in a SpotRail. 'wide' is the editorial-list shape (short, letterbox);
-// 'tall' is the place shape. `caption` is a node so a rail can put mono metadata
+// 'tall' is the place shape. `caption` is a node so a rail can put metadata
 // (trending's cheer count) where another puts plain text.
 export function SpotCard({
   href,
@@ -140,7 +140,7 @@ export function Characteristics({
   return (
     <View className="mt-1 gap-[2px]">
       {occasionTags && occasionTags.length > 0 && (
-        <Caption className="font-mono text-micro text-accent-strong">
+        <Caption className="font-ui-medium text-micro text-accent-strong">
           {occasionTags.map(tagLabel).join(' · ')}
         </Caption>
       )}
@@ -271,7 +271,7 @@ export function ScoreBadge({
         </Text>
       </View>
       {badge ? (
-        <Caption className="font-mono text-micro text-accent-strong">{badge}</Caption>
+        <Caption className="font-ui-medium text-micro text-accent-strong">{badge}</Caption>
       ) : null}
       {caption ? <Caption>{caption}</Caption> : null}
       {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}
@@ -301,7 +301,7 @@ export function FilterGroup({
   if (values.length === 0) return null
   return (
     <View>
-      <Eyebrow className="mb-2 font-mono">{label}</Eyebrow>
+      <Eyebrow className="mb-2">{label}</Eyebrow>
       <View className="flex-row flex-wrap gap-2">
         {values.map((v) => (
           <Chip

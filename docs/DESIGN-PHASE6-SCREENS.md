@@ -21,7 +21,9 @@ surface must also resolve in Candlelit. Every new token gets a Candlelit value.
    `DESIGN-PHASE6.md §3.4`. Mono 9px, `--surface`/`--line-strong` inactive, `--brass-wash`/
    `--brass-line-soft`/`--accent-strong` active.
 3. **Mono voice** carries every timestamp, count, meta line, section header, pill/chip label,
-   eyebrow. Serif for names/scores/quotes. Sans for UI/body.
+   eyebrow. Serif for names/scores/quotes. Sans for UI/body. **"Mono" throughout these notes
+   now means the sans metadata style** — JetBrains Mono was retired 2026-09-15 and Plus Jakarta
+   Sans carries that voice (see DESIGN.md › Type).
 4. **Section headers**: mono brass eyebrow, optional right-aligned mono link
    ("FEATURED LISTS … See all", "POPULAR DISHES … See all photos", "HER TOP PLACES … All 41").
 5. **Score circles are always attributed** (badge naming whose score). Friend/aggregate badges
@@ -41,13 +43,12 @@ Nearby → map.
 - `FEATURED LISTS` section header + `See all`. Horizontal rail of **light cards**: veiled photo
   on top (radius ~12), then on paper **below** the photo a sans title + mono progress
   ("3 of 10 ranked"). NOT overlay text on the photo.
-- Feed column of cards:
-  - **Ranking card** (paper, no cover photo): row = avatar + "**Name** ranked a place", and
-    directly beneath that line a mono timestamp ("2h ago"); a badged score circle (md) pinned
-    top-right; serif place name; characteristics (tags brass · "$$$ | Parrilla, Argentine" ink
-    · "Piantini · 1.2 km · till 1a" muted); serif-italic quoted note ("Get the branzino, sit
-    outside."). Cheers footer (working).
-  - **Dish card**: veiled photo with `film · candlelit` mono tag (top-left) + a caption block.
+- Feed column (M9, 2026-09-15: flat rows, not boxed cards — see DESIGN.md's flat-row note):
+  - **Ranking row**: avatar top-left; a hairline (inset to the text column) is the only
+    separator, no card box. Sentence line = "**Name** ranked **Place** · 2h ago", a score badge
+    (sm) beside it; one-line price|cuisine · neighborhood meta; serif-italic quoted note; cheers.
+  - **Dish row**: same avatar/hairline shell; sentence "**Name** posted a dish · 2h ago"; dish
+    name + place name caption; photo below (no `film` tag pill); cheers.
 - No Trending / "Para ti" rails (removed this phase).
 
 **A1 loading:** skeleton must **hold the action rail + the featured-lists carousel + the feed
@@ -122,7 +123,8 @@ rankings fill this feed."; mono "START WITH THESE"; 3 rows: avatar · **Name** �
   name · chars · sm score circle with bare-count ink badge). Tab bar visible on this screen in
   the mock via its own shell.
 - **F2**: header "‹ Activity" + mono "Mark read". Chips `All · Follows · Rankings · Tables`.
-  Mono section headers `TODAY` / `THIS WEEK`. Rows carry **thumbnails + actions**:
+  Mono section headers `TODAY` / `THIS WEEK`. Rows carry **thumbnails + actions**, same flat-row
+  hairline treatment as the feed (M9, 2026-09-15) — no card box:
   - ranking row: "**Camila** ranked Lumbre 9.1 — above your 8.8" + mono time + photo thumb.
   - table row: "**Tomás** opened a table at Fogo de Naco · 8:30p" + mono "2 seats left" +
     "Join" pill (**inert**).

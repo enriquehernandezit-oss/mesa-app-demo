@@ -243,7 +243,7 @@ export default function RankingsTab() {
             onPress={() => setFilters(NO_FILTERS)}
             className="min-h-[36px] justify-center px-1 active:opacity-60"
           >
-            <Caption className="font-mono text-accent-strong">{t('rankings.clear')}</Caption>
+            <Caption className="font-ui-semibold text-accent-strong">{t('rankings.clear')}</Caption>
           </Pressable>
         )}
       </View>
@@ -492,7 +492,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
                     </Caption>
                   )}
                   {(ranking.tags ?? []).map((t) => (
-                    <Caption key={t} className="font-mono text-micro">
+                    <Caption key={t} className="text-micro">
                       {tagLabel(t)}
                     </Caption>
                   ))}

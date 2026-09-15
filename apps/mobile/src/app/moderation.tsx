@@ -97,7 +97,7 @@ export default function ModerationQueue() {
           <EmptyState body={t('moderation.empty_body')}>{t('moderation.empty_title')}</EmptyState>
         ) : (
           <>
-            <Caption className="mb-3 mt-2 font-mono text-micro">
+            <Caption className="mb-3 mt-2 text-micro">
               {t('moderation.open_reports_count', { n: reports.length })}
             </Caption>
             {reports.map((r) => (
@@ -154,10 +154,10 @@ function ReportRow({
   return (
     <View className="mb-3 rounded border border-line bg-surface p-4">
       <View className="flex-row items-center justify-between">
-        <Caption className="font-mono text-micro text-accent-strong">
+        <Caption className="font-ui-medium text-micro text-accent-strong">
           {t(TYPE_KEYS[report.targetType])}
         </Caption>
-        <Caption className="font-mono text-micro">{timeAgo(report.createdAt)}</Caption>
+        <Caption className="text-micro">{timeAgo(report.createdAt)}</Caption>
       </View>
 
       {/* The reported content itself — without it there's nothing to judge. */}
@@ -205,7 +205,7 @@ function ReportRow({
           <Text className="font-ui text-body text-text">
             {target.name}
             {target.handle ? (
-              <Text className="font-mono text-label text-text-2"> @{target.handle}</Text>
+              <Text className="text-label text-text-2"> @{target.handle}</Text>
             ) : null}
           </Text>
         </Pressable>
@@ -216,7 +216,7 @@ function ReportRow({
       </Caption>
 
       {report.alreadyHandled ? (
-        <Caption className="mt-3 font-mono text-micro text-text-muted">
+        <Caption className="mt-3 text-micro text-text-muted">
           {t('moderation.already_handled')}
         </Caption>
       ) : null}

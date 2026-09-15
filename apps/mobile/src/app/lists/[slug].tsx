@@ -4,6 +4,7 @@ import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import type { ListDetailResponse } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -56,7 +57,7 @@ export default function ListScreen() {
               className="absolute right-4 rounded-pill bg-surface px-2 py-1"
               style={{ bottom: 10 }}
             >
-              <Caption className="font-mono text-micro">{t('lists.film_candlelit')}</Caption>
+              <Caption className="text-micro">{t('lists.film_candlelit')}</Caption>
             </View>
           </View>
           <View className="px-5">
@@ -69,7 +70,12 @@ export default function ListScreen() {
               {q.data.items.map((r) => (
                 <Link key={r.id} href={`/r/${r.id}`} asChild>
                   <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-                    <Text className="w-5 font-mono text-eyebrow text-text-muted">{r.position}</Text>
+                    <Text
+                      style={DATA_FIGURES}
+                      className="w-5 font-ui-medium text-eyebrow text-text-muted"
+                    >
+                      {r.position}
+                    </Text>
                     <PlaceCover
                       seed={r.id}
                       name={r.name}

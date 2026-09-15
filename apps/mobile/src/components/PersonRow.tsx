@@ -86,7 +86,7 @@ export function FollowPill({
       className={`min-h-[36px] justify-center rounded-pill border px-4 ${following ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
     >
       <Text
-        className={`font-mono text-eyebrow ${following ? 'text-accent-strong' : 'text-text-muted'}`}
+        className={`font-ui-semibold text-eyebrow ${following ? 'text-accent-strong' : 'text-text-muted'}`}
       >
         {following ? t('activity.following_pill') : t('activity.follow_pill')}
       </Text>

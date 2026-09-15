@@ -58,7 +58,7 @@ export default function VerifyEmail() {
       <View className="flex-1 justify-center gap-4 px-5">
         <View className="items-center gap-2">
           <Wordmark size={64} />
-          <Eyebrow className="font-mono text-accent-strong">
+          <Eyebrow className="text-accent-strong">
             {state === 'done'
               ? t('auth.verify_confirmed_eyebrow')
               : t('auth.verify_pending_eyebrow')}

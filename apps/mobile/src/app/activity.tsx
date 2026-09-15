@@ -5,6 +5,7 @@ import {
   ChipRail,
   EmptyState,
   ErrorState,
+  MAX_SCALE,
   RowsSkeleton,
   SectionHeader,
 } from '@/components/ui'
@@ -159,10 +160,10 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       : `/u/${a.user.id}`
   const place = a.restaurant ? (
     isPlan ? (
-      <Text className="font-ui-medium text-text">{a.restaurant.name}</Text>
+      <Text className="font-ui-semibold text-text">{a.restaurant.name}</Text>
     ) : (
       <Text
-        className="font-ui-medium text-text"
+        className="font-ui-semibold text-text"
         onPress={() => a.restaurant && router.push(`/r/${a.restaurant.id}`)}
         suppressHighlighting
       >
@@ -175,114 +176,118 @@ function ActivityRow({ a }: { a: ActivityItem }) {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push(primaryHref)}
-      className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+      className="flex-row items-start gap-3 active:opacity-80"
     >
       <Link href={`/u/${a.user.id}`} asChild>
-        <Pressable className="active:opacity-80">
+        <Pressable className="mt-3 active:opacity-80">
           <Avatar name={a.user.name || a.user.handle || 'm'} src={a.user.image} size={36} />
         </Pressable>
       </Link>
-      <View className="flex-1">
-        <Text className="font-ui text-body text-text">
-          <Text
-            className="font-ui-semibold"
-            onPress={() => router.push(`/u/${a.user.id}`)}
-            suppressHighlighting
-          >
-            {a.user.name || a.user.handle}
-          </Text>{' '}
-          {a.type === 'cheers' && (
-            <>
-              {t('activity.cheers_prefix')}
-              {place}
-            </>
-          )}
-          {a.type === 'follow' && t('activity.followed_you')}
-          {a.type === 'saved_ranked' && (
-            <>
-              {t('activity.ranked_prefix')}
-              {place}
-              {t('activity.saved_ranked_suffix')}
-            </>
-          )}
-          {a.type === 'friend_ranked' && a.score != null && (
-            <>
-              {t('activity.ranked_prefix')}
-              {place}
-              {t('activity.ranked_with')}
-              <Text style={DATA_FIGURES} className="text-accent">
-                {displayScore(a.score)}
-              </Text>
-              {a.yourScore != null && Math.abs(a.score - a.yourScore) >= 10 && (
-                <>
-                  {' — '}
-                  {a.score > a.yourScore ? t('activity.liked_more') : t('activity.you_liked_more')}
-                </>
-              )}
-            </>
-          )}
-          {a.type === 'plan_invite' && (
-            <>
-              {t('activity.plan_invite_prefix')}
-              {place}
-              {a.startsAt ? ` · ${formatPlanDate(a.startsAt)}` : ''}
-            </>
-          )}
-          {a.type === 'plan_reply' && (
-            <>
-              {a.reply === 'going'
-                ? t('activity.plan_reply_going')
-                : t('activity.plan_reply_maybe')}
-              {t('activity.plan_reply_suffix')}
-              {place}
-            </>
-          )}
-        </Text>
-        <Caption className="font-mono text-micro">{timeAgo(a.at)}</Caption>
-      </View>
-      {a.type === 'follow' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: following, disabled: pending }}
-          disabled={pending}
-          onPress={toggle}
-          className={`min-h-[36px] justify-center rounded-pill border px-4 active:opacity-70 ${following ? 'border-line' : 'border-accent'}`}
-        >
-          <Text
-            className={`font-mono text-eyebrow ${following ? 'text-text-muted' : 'text-accent-strong'}`}
-          >
-            {following ? t('activity.following_pill') : t('activity.follow_pill')}
+      <View className="flex-1 flex-row items-start gap-3 border-line border-b py-3">
+        <View className="flex-1">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
+            <Text
+              className="font-ui-semibold"
+              onPress={() => router.push(`/u/${a.user.id}`)}
+              suppressHighlighting
+            >
+              {a.user.name || a.user.handle}
+            </Text>{' '}
+            {a.type === 'cheers' && (
+              <>
+                {t('activity.cheers_prefix')}
+                {place}
+              </>
+            )}
+            {a.type === 'follow' && t('activity.followed_you')}
+            {a.type === 'saved_ranked' && (
+              <>
+                {t('activity.ranked_prefix')}
+                {place}
+                {t('activity.saved_ranked_suffix')}
+              </>
+            )}
+            {a.type === 'friend_ranked' && a.score != null && (
+              <>
+                {t('activity.ranked_prefix')}
+                {place}
+                {t('activity.ranked_with')}
+                <Text style={DATA_FIGURES} className="text-accent">
+                  {displayScore(a.score)}
+                </Text>
+                {a.yourScore != null && Math.abs(a.score - a.yourScore) >= 10 && (
+                  <>
+                    {' — '}
+                    {a.score > a.yourScore
+                      ? t('activity.liked_more')
+                      : t('activity.you_liked_more')}
+                  </>
+                )}
+              </>
+            )}
+            {a.type === 'plan_invite' && (
+              <>
+                {t('activity.plan_invite_prefix')}
+                {place}
+                {a.startsAt ? ` · ${formatPlanDate(a.startsAt)}` : ''}
+              </>
+            )}
+            {a.type === 'plan_reply' && (
+              <>
+                {a.reply === 'going'
+                  ? t('activity.plan_reply_going')
+                  : t('activity.plan_reply_maybe')}
+                {t('activity.plan_reply_suffix')}
+                {place}
+              </>
+            )}
           </Text>
-        </Pressable>
-      ) : isPlan ? (
-        a.planId && (
-          <Link href={`/planes/${a.planId}`} asChild>
-            <Pressable className="active:opacity-80">
-              <PlaceCover
-                seed={a.restaurant?.id ?? a.planId}
-                name={a.restaurant?.name ?? ''}
-                coverImageId={a.restaurant?.coverImageId ?? null}
-                size={{ w: 96, h: 96 }}
-                className="h-11 w-11"
-              />
-            </Pressable>
-          </Link>
-        )
-      ) : (
-        a.restaurant && (
-          <Link href={`/r/${a.restaurant.id}`} asChild>
-            <Pressable className="active:opacity-80">
-              <PlaceCover
-                seed={a.restaurant.id}
-                name={a.restaurant.name}
-                coverImageId={a.restaurant.coverImageId}
-                size={{ w: 96, h: 96 }}
-                className="h-11 w-11"
-              />
-            </Pressable>
-          </Link>
-        )
-      )}
+          <Caption className="mt-[2px]">{timeAgo(a.at)}</Caption>
+        </View>
+        {a.type === 'follow' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: following, disabled: pending }}
+            disabled={pending}
+            onPress={toggle}
+            className={`min-h-[36px] justify-center rounded-pill border px-4 active:opacity-70 ${following ? 'border-line' : 'border-accent'}`}
+          >
+            <Text
+              className={`font-ui-semibold text-eyebrow ${following ? 'text-text-muted' : 'text-accent-strong'}`}
+            >
+              {following ? t('activity.following_pill') : t('activity.follow_pill')}
+            </Text>
+          </Pressable>
+        ) : isPlan ? (
+          a.planId && (
+            <Link href={`/planes/${a.planId}`} asChild>
+              <Pressable className="active:opacity-80">
+                <PlaceCover
+                  seed={a.restaurant?.id ?? a.planId}
+                  name={a.restaurant?.name ?? ''}
+                  coverImageId={a.restaurant?.coverImageId ?? null}
+                  size={{ w: 96, h: 96 }}
+                  className="h-11 w-11"
+                />
+              </Pressable>
+            </Link>
+          )
+        ) : (
+          a.restaurant && (
+            <Link href={`/r/${a.restaurant.id}`} asChild>
+              <Pressable className="active:opacity-80">
+                <PlaceCover
+                  seed={a.restaurant.id}
+                  name={a.restaurant.name}
+                  coverImageId={a.restaurant.coverImageId}
+                  size={{ w: 96, h: 96 }}
+                  className="h-11 w-11"
+                />
+              </Pressable>
+            </Link>
+          )
+        )}
+      </View>
     </Pressable>
   )
 }

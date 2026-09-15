@@ -91,10 +91,9 @@ export default function LeaderboardScreen() {
                   </Caption>
                 </View>
                 <View className="items-end">
-                  {/* A COUNT, not a score — font-mono (Mesa's metadata voice),
-                      not the brass serif a rating gets, so it can't be read
-                      as one. */}
-                  <Text style={DATA_FIGURES} className="font-mono text-label text-text">
+                  {/* A COUNT, not a score — sans metadata, not the brass serif
+                      a rating gets, so it can't be read as one. */}
+                  <Text style={DATA_FIGURES} className="font-ui-semibold text-label text-text">
                     {r.count}
                   </Text>
                   <Caption>

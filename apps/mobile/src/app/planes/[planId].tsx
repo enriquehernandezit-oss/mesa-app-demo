@@ -240,7 +240,7 @@ export default function PlanDetailScreen() {
                     <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
                       {o.name}
                     </Text>
-                    <Caption className="font-mono text-micro">
+                    <Caption className="text-micro">
                       {t('plans.votes_count', { n: o.votes ?? 0 })}
                     </Caption>
                   </View>
@@ -379,7 +379,7 @@ function MemberGroup({
             <Text className="flex-1 font-ui text-body text-text" numberOfLines={1}>
               {m.name || m.handle}
             </Text>
-            {m.badge ? <Caption className="font-mono text-micro">{m.badge}</Caption> : null}
+            {m.badge ? <Caption className="font-ui-semibold text-micro">{m.badge}</Caption> : null}
           </Pressable>
         </Link>
       ))}

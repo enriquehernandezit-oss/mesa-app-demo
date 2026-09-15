@@ -139,7 +139,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 items-center justify-center gap-4 px-5">
           <Wordmark size={64} />
-          <Eyebrow className="font-mono text-accent-strong">{t('auth.suspended_title')}</Eyebrow>
+          <Eyebrow className="text-accent-strong">{t('auth.suspended_title')}</Eyebrow>
           <SerifItalic className="text-title text-center">
             {t('auth.suspended_headline')}
           </SerifItalic>
@@ -147,7 +147,6 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
           <View className="mt-4 w-full">
             <Button
               variant="secondary"
-              mono
               onPress={async () => {
                 await signOut().catch(() => {})
                 clearAuthLost()
@@ -174,7 +173,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
         <View className="items-center gap-2">
           <Wordmark size={84} />
           <View className="items-center">
-            <Eyebrow className="font-mono text-accent-strong">Revolución gastronómica</Eyebrow>
+            <Eyebrow className="text-accent-strong">Revolución gastronómica</Eyebrow>
             <View className="flex-row items-baseline">
               <SerifItalic className="text-serif-sm text-text">Primer objetivo: SDQ</SerifItalic>
               <BlinkingCursor />
@@ -265,7 +264,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             <>
               <View className="my-1 flex-row items-center gap-3">
                 <View className="h-px flex-1 bg-line" />
-                <Caption className="font-mono text-micro">{t('auth.or_divider')}</Caption>
+                <Caption className="text-micro">{t('auth.or_divider')}</Caption>
                 <View className="h-px flex-1 bg-line" />
               </View>
               <AppleAuthentication.AppleAuthenticationButton

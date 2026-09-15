@@ -86,7 +86,7 @@ export function PlaceCover({
           textAnchor="middle"
           fill={faint}
           fontSize={64}
-          fontFamily="JetBrainsMono_400Regular"
+          fontFamily="PlusJakartaSans_500Medium"
         >
           {initial}
         </SvgText>

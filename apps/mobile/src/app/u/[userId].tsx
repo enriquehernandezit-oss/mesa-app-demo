@@ -145,9 +145,7 @@ export default function UserRankings() {
       >
         <View className="items-center gap-1">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
-          {user.handle ? (
-            <Text className="mt-2 font-mono text-label text-text-2">@{user.handle}</Text>
-          ) : null}
+          {user.handle ? <Text className="mt-2 text-label text-text-2">@{user.handle}</Text> : null}
           {barrio ? <Caption>{barrio}</Caption> : null}
           {matchPercent != null && (
             <View className="mt-2 items-center gap-1">
@@ -161,7 +159,7 @@ export default function UserRankings() {
               </View>
               {/* The denominator behind the percentage — a match with no shared
                   count is the least trustworthy way to show a number. */}
-              <Caption className="font-mono text-micro">
+              <Caption className="text-micro">
                 {t('passport.shared_spots', { n: sharedCount })}
               </Caption>
             </View>
@@ -294,7 +292,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
                 </Caption>
               )}
               {(ranking.tags ?? []).map((t) => (
-                <Caption key={t} className="font-mono text-micro">
+                <Caption key={t} className="text-micro">
                   {tagLabel(t)}
                 </Caption>
               ))}

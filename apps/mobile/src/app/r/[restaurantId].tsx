@@ -281,7 +281,7 @@ export default function RestaurantProfile() {
           >
             {/* MapBox burns its attribution into the static image's corner, which
                 cover-crop then hides — so it's stated here when the hero is a map. */}
-            <Caption className="font-mono text-micro">
+            <Caption className="text-micro">
               {mapCover ? t('restaurant.map_attribution') : t('restaurant.film_note')}
             </Caption>
           </View>
@@ -500,9 +500,7 @@ export default function RestaurantProfile() {
               />
               <View className="absolute right-3 bottom-3 flex-row items-center gap-1 rounded-pill bg-surface px-2 py-1">
                 <PinIcon size={12} />
-                <Caption className="font-mono text-micro">
-                  {t('restaurant.view_on_map_short')}
-                </Caption>
+                <Caption className="text-micro">{t('restaurant.view_on_map_short')}</Caption>
               </View>
             </Pressable>
           )}

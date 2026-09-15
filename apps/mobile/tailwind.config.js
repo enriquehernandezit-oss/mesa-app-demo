@@ -63,7 +63,6 @@ module.exports = {
         ui: ['PlusJakartaSans_400Regular'],
         'ui-medium': ['PlusJakartaSans_500Medium'],
         'ui-semibold': ['PlusJakartaSans_600SemiBold'],
-        mono: ['JetBrainsMono_400Regular'],
       },
       fontSize: {
         display: 38,
@@ -72,9 +71,11 @@ module.exports = {
         body: 16,
         label: 13,
         eyebrow: 11,
-        // The smallest step, for mono metadata captions (timestamps, counts,
-        // the "film" pill). Absorbs the text-[10px]/text-[9px] one-offs.
-        micro: 10,
+        // Smallest sans content size: small chip labels, photo pills, badge
+        // attribution, caption metadata. (HIG Caption 1.)
+        micro: 12,
+        // The dense-row sentence size for flat feed/activity rows (HIG Subheadline).
+        subhead: 15,
         'serif-sm': 18,
         'serif-md': 22,
         'serif-lg': 30,
@@ -92,8 +93,6 @@ module.exports = {
       },
       letterSpacing: {
         eyebrow: '1.76px',
-        // Tight tracking for the mono micro-caps label.
-        micro: '0.8px',
       },
     },
   },

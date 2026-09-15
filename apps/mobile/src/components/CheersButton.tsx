@@ -1,8 +1,10 @@
+import { MAX_SCALE } from '@/components/ui'
 import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Pressable, Text } from 'react-native'
@@ -21,10 +23,12 @@ export function CheersButton({
   rankingId,
   count,
   cheered,
+  className,
 }: {
   rankingId: string
   count: number
   cheered: boolean
+  className?: string
 }) {
   const t = useT()
   const [on, setOn] = useState(cheered)
@@ -88,12 +92,21 @@ export function CheersButton({
       accessibilityRole="button"
       accessibilityLabel={on ? t('cheers.remove') : t('cheers.give')}
       onPress={onTap}
-      className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+      hitSlop={{ top: 12, bottom: 12 }}
+      className={`min-w-[44px] flex-row items-center gap-1.5 active:opacity-70 ${className ?? ''}`}
     >
       <Animated.View style={style}>
-        {on ? <HeartFilledIcon size={16} /> : <HeartIcon size={16} color="text-muted" />}
+        {on ? <HeartFilledIcon size={20} /> : <HeartIcon size={20} color="text-muted" />}
       </Animated.View>
-      {n > 0 ? <Text className="font-mono text-eyebrow text-text-muted">{n}</Text> : null}
+      {n > 0 ? (
+        <Text
+          style={DATA_FIGURES}
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="font-ui-medium text-label text-text-muted"
+        >
+          {n}
+        </Text>
+      ) : null}
     </Pressable>
   )
 }

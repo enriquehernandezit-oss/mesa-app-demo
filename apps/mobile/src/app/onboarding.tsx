@@ -17,6 +17,7 @@ import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } fro
 import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import {
   type UseMutationResult,
   useMutation,
@@ -78,7 +79,7 @@ export default function Onboarding() {
             style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
           />
         </View>
-        <Caption className="mt-2 font-mono text-micro">
+        <Caption className="mt-2 text-micro">
           {t('onboarding.step_progress', { step: stepIndex + 1, total: STEPS.length })}
         </Caption>
       </View>
@@ -392,7 +393,7 @@ function ComparePhase({
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-5 pb-10">
-      <Text className="font-mono text-eyebrow text-text-muted">
+      <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
         {placed + 1} de {total}
       </Text>
       <Title className="mt-1 text-center">{t('rank.which_was_better')}</Title>
@@ -404,7 +405,7 @@ function ComparePhase({
           onPress={() => setState((s) => tie(s))}
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
-          <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
+          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
             {t('rank.roughly_equal')}
           </Text>
         </Pressable>

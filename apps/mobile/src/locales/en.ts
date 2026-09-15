@@ -177,7 +177,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'discover.featured_lists': 'Featured lists',
   'discover.list_progress': '{mine} of {total} ranked',
   'discover.posted_dish': 'posted a dish',
-  'discover.position_in_list': '#{n} on their list',
   'discover.ranked_verb': 'ranked',
 
   'explore.sort_by': 'Sort by',

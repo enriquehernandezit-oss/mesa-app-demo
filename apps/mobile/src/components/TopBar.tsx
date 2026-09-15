@@ -44,7 +44,7 @@ function ActivityBell() {
           <BellIcon size={19} color="text" />
           {unseen > 0 && (
             <View className="absolute right-1.5 top-1.5 min-w-[16px] items-center justify-center rounded-pill bg-status-packed px-1">
-              <Text className="font-mono text-micro text-on-accent">
+              <Text className="font-ui-semibold text-[10px] text-on-accent leading-[14px]">
                 {unseen > 9 ? '9+' : unseen}
               </Text>
             </View>

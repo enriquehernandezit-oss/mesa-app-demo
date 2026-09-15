@@ -184,7 +184,7 @@ export default function DishCompose() {
                 contentFit="cover"
               />
               <View className="absolute right-3 bottom-3 rounded-pill bg-surface px-2 py-1">
-                <Caption className="font-mono text-micro">film · {grainLabel(grain)}</Caption>
+                <Caption className="text-micro">film · {grainLabel(grain)}</Caption>
               </View>
             </>
           ) : (
@@ -252,7 +252,7 @@ export default function DishCompose() {
               submitBehavior="submit"
               onSubmitEditing={() => captionRef.current?.focus()}
             />
-            <Caption className="mt-1 font-mono text-micro">{t('dish.name_caption')}</Caption>
+            <Caption className="mt-1 text-micro">{t('dish.name_caption')}</Caption>
             <TextInput
               className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
               placeholderTextColor={placeholder}

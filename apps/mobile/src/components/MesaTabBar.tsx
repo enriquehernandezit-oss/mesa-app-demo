@@ -81,7 +81,7 @@ function TabItem({
         ) : null}
       </View>
       <Text
-        className={`font-ui-semibold text-micro ${focused ? 'text-accent' : 'text-tab-inactive'}`}
+        className={`font-ui-semibold text-[10px] ${focused ? 'text-accent' : 'text-tab-inactive'}`}
       >
         {t(LABEL_KEYS[routeName as keyof typeof LABEL_KEYS])}
       </Text>

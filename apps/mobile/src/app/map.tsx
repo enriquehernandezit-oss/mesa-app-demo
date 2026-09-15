@@ -141,7 +141,7 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
           className="min-h-[36px] flex-row items-center gap-1 active:opacity-70"
         >
           <DirectionsIcon size={14} />
-          <Text className="font-mono text-eyebrow text-text-muted">
+          <Text className="font-ui-medium text-eyebrow text-text-muted">
             {t('restaurant.directions')}
           </Text>
         </Pressable>

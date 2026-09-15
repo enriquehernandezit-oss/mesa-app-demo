@@ -113,7 +113,7 @@ function AvatarEditButton({
           <PlusIcon size={12} color="on-accent" />
         </View>
       </Pressable>
-      {busy && <Caption className="mt-1 font-mono text-micro">…</Caption>}
+      {busy && <Caption className="mt-1 text-micro">…</Caption>}
     </View>
   )
 }
@@ -211,9 +211,7 @@ export default function ProfileTab() {
             onPress={avatarPicker.change}
             busy={avatarPicker.busy}
           />
-          {p?.handle ? (
-            <Text className="mt-2 font-mono text-label text-text-2">@{p.handle}</Text>
-          ) : null}
+          {p?.handle ? <Text className="mt-2 text-label text-text-2">@{p.handle}</Text> : null}
           <Caption className="mt-1">
             {[memberSince && t('profile.member_since', { date: memberSince }), barrio]
               .filter(Boolean)
@@ -332,7 +330,7 @@ function NavRow({
         <Text className="font-ui text-body text-text">{label}</Text>
       </View>
       <View className="flex-row items-center gap-1.5">
-        {meta ? <Caption className="font-mono">{meta}</Caption> : null}
+        {meta ? <Caption>{meta}</Caption> : null}
         <ChevronIcon size={16} color="text-faint" />
       </View>
     </Pressable>
@@ -346,7 +344,7 @@ function StatCard({
 }: { label: string; value: string; onPress?: () => void }) {
   const body = (
     <>
-      <Caption className="font-mono text-micro">{label}</Caption>
+      <Caption className="text-micro">{label}</Caption>
       <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-md text-accent">
         {value}
       </Text>
@@ -453,7 +451,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             error={save.error ? t('profile.handle_error') : undefined}
           />
           <View>
-            <Eyebrow className="mb-2 font-mono">{t('rank.sector')}</Eyebrow>
+            <Eyebrow className="mb-2">{t('rank.sector')}</Eyebrow>
             <View className="flex-row flex-wrap gap-2">
               {neighborhoods.data?.neighborhoods.map((n) => (
                 <Chip

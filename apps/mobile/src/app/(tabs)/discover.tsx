@@ -8,12 +8,13 @@ import {
   Caption,
   ErrorState,
   Eyebrow,
+  MAX_SCALE,
   SerifItalic,
   Skeleton,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
@@ -26,7 +27,7 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { type Href, Link, useRouter } from 'expo-router'
+import { type Href, useRouter } from 'expo-router'
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
@@ -68,13 +69,13 @@ export default function DiscoverTab() {
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
       {feed.isPending ? (
-        <ScrollView contentContainerClassName="pb-8">
+        <ScrollView contentContainerClassName="px-5 pb-8">
           <FeedHeader />
           <FeedSkeleton />
         </ScrollView>
       ) : feed.isError ? (
         <ScrollView
-          contentContainerClassName="pb-8"
+          contentContainerClassName="px-5 pb-8"
           refreshControl={
             <RefreshControl
               refreshing={feed.isRefetching}
@@ -88,7 +89,7 @@ export default function DiscoverTab() {
         </ScrollView>
       ) : items.length === 0 ? (
         <ScrollView
-          contentContainerClassName="pb-8"
+          contentContainerClassName="px-5 pb-8"
           refreshControl={
             <RefreshControl
               refreshing={feed.isRefetching}
@@ -172,7 +173,7 @@ function EmptyFeed() {
   })
   const users = suggested.data?.users ?? []
   return (
-    <View className="px-5">
+    <View>
       <View className="items-center gap-2 rounded border border-line bg-surface p-6">
         <SerifItalic className="text-title">{t('discover.empty_title')}</SerifItalic>
         <Body className="text-center">{t('discover.empty_body')}</Body>
@@ -232,7 +233,7 @@ function ListsRail() {
             name={l.title}
             coverImageId={l.coverImageId}
             caption={
-              <Caption className="font-mono text-micro" numberOfLines={1}>
+              <Caption className="text-micro" numberOfLines={1}>
                 {t('discover.list_progress', { mine: l.mine, total: l.total })}
               </Caption>
             }
@@ -247,7 +248,7 @@ function ListsRail() {
 // data arrives (mock A1).
 function FeedSkeleton() {
   return (
-    <View className="px-5">
+    <View>
       <Skeleton height={12} width={110} className="mb-3 mt-5" />
       <View className="mb-4 flex-row gap-3">
         {[0, 1, 2].map((i) => (
@@ -258,35 +259,38 @@ function FeedSkeleton() {
           </View>
         ))}
       </View>
-      {[0, 1, 2].map((i) => (
-        <View key={i} className="mb-3 rounded border border-line bg-surface p-4">
-          <View className="flex-row items-center gap-3">
-            <Skeleton height={28} width={28} />
-            <View className="flex-1">
-              <Skeleton height={12} width={130} />
-              <Skeleton height={9} width={44} className="mt-1" />
+      {[0, 1, 2, 3].map((i) => (
+        <View key={i} className="flex-row items-start gap-3">
+          <Skeleton height={36} width={36} className="mt-3" />
+          <View className="flex-1 border-line border-b py-3">
+            <View className="flex-row items-start gap-3">
+              <View className="flex-1">
+                <Skeleton height={15} width="80%" />
+                <Skeleton height={13} width="55%" className="mt-1" />
+              </View>
+              <Skeleton height={30} width={40} />
             </View>
-            <Skeleton height={46} width={46} />
+            <Skeleton height={18} width="90%" className="mt-2" />
+            <Skeleton height={20} width={20} className="mt-2" />
           </View>
-          <Skeleton height={18} width="55%" className="mt-3" />
-          <Skeleton height={11} width="80%" className="mt-2" />
         </View>
       ))}
     </View>
   )
 }
 
-// Phase 6: two card types on paper. A dish post carries a photo; a ranking is a
-// compact card with the characteristics block and an inline badged score circle
-// (attributed to the friend — never the place's own rating). The film-grain
-// treatment on dish photos lands with the image work in N6.
+// Phase 6 (M9 flat-row pass): two flat, borderless row types instead of boxed
+// cards — a dish post carries a photo; a ranking is a dense sentence-plus-note
+// row with an inline badged score circle (attributed to the friend — never the
+// place's own rating). A hairline (`border-line border-b`) inset to the text
+// column is the only separator, matching Threads/X/Beli-style density.
 function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const t = useT()
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
-  // Long-press on the note itself reports it (App Store 1.2) — the card is one
+  // Long-press on the note itself reports it (App Store 1.2) — the row is one
   // big tap target to the restaurant, so this rides a different gesture rather
-  // than adding a permanent "Reportar" line to every card in the feed.
+  // than adding a permanent "Reportar" line to every row in the feed.
   const reportNote = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
@@ -301,16 +305,8 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
           if (reason) reportNote.mutate({ reason, noteId })
         }
       : undefined
-  const chars = (
-    <Characteristics
-      priceTier={item.restaurant.priceTier}
-      cuisine={item.restaurant.cuisine}
-      neighborhood={item.neighborhood}
-    />
-  )
-  // One line, for the plain (no-photo) card below — price|cuisine and
-  // neighborhood collapsed into a single row instead of Characteristics'
-  // usual two, and truncated rather than ever wrapping to a third.
+  // One line — price|cuisine and neighborhood collapsed into a single row,
+  // truncated rather than ever wrapping to a second.
   const priceCuisine = [
     priceLabel(item.restaurant.priceTier),
     cuisineLabel(item.restaurant.cuisine),
@@ -319,78 +315,81 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
     .join(' | ')
   const oneLineMeta = [priceCuisine, item.neighborhood].filter(Boolean).join(' · ')
 
-  const who = (verb: string, avatarSize: number) => (
-    <Link href={`/u/${item.user.id}`} asChild>
-      <Pressable className="flex-row items-center gap-2 active:opacity-80">
-        <Avatar
-          name={item.user.name || item.user.handle || 'm'}
-          src={item.user.image}
-          size={avatarSize}
-        />
-        <View>
-          <Text className="font-ui text-body text-text">
-            <Text className="font-ui-semibold">{firstName}</Text> {verb}
-          </Text>
-          <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
-        </View>
-      </Pressable>
-    </Link>
-  )
-
   if (item.dishImage) {
     const href: Href = item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
     return (
-      <Animated.View
-        entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-        className="mb-3 overflow-hidden rounded border border-line bg-surface"
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push(href)}
+        className="active:opacity-90"
       >
-        <Link href={href} asChild>
-          <Pressable className="active:opacity-90">
-            <View className="h-44">
+        <Animated.View
+          entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
+          className="flex-row items-start gap-3"
+        >
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => router.push(`/u/${item.user.id}`)}
+            className="mt-3 active:opacity-70"
+          >
+            <Avatar
+              name={item.user.name || item.user.handle || 'm'}
+              src={item.user.image}
+              size={36}
+            />
+          </Pressable>
+          <View className="flex-1 border-line border-b py-3">
+            <Text
+              numberOfLines={2}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui text-subhead text-text"
+            >
+              <Text
+                className="font-ui-semibold"
+                onPress={() => router.push(`/u/${item.user.id}`)}
+                suppressHighlighting
+              >
+                {firstName}
+              </Text>{' '}
+              {t('discover.posted_dish')}
+              <Text className="text-text-muted"> · {timeAgo(item.rankedAt)}</Text>
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/r/${item.restaurant.id}`)}
+              className="active:opacity-70"
+            >
+              <Caption className="mt-[2px]" numberOfLines={1}>
+                <Text className="font-ui-semibold text-text">
+                  {item.dishName || item.restaurant.name}
+                </Text>
+                {' · '}
+                {item.restaurant.name}
+              </Caption>
+            </Pressable>
+            <View className="mt-2 h-44 overflow-hidden rounded-sm bg-bg-sunk">
               <Image
                 source={{ uri: cloudinaryUrl(item.dishImage, { w: 800, h: 600 }) ?? undefined }}
                 style={{ width: '100%', height: '100%' }}
                 contentFit="cover"
                 transition={120}
               />
-              <View
-                className="absolute right-3 rounded-pill bg-surface px-2 py-1"
-                style={{ bottom: 10 }}
-              >
-                <Caption className="font-mono text-micro">film</Caption>
-              </View>
             </View>
-          </Pressable>
-        </Link>
-        <View className="p-4">
-          {who(t('discover.posted_dish'), 24)}
-          <Link href={`/r/${item.restaurant.id}`} asChild>
-            <Pressable accessibilityRole="button" className="mt-2 active:opacity-80">
-              <Text className="font-serif text-serif-md text-text">
-                {item.dishName || item.restaurant.name}
-              </Text>
-              {chars}
-            </Pressable>
-          </Link>
-          <Link href={`/u/${item.user.id}`} asChild>
-            <Pressable accessibilityRole="button" className="mt-1 self-start active:opacity-70">
-              <Caption className="font-mono text-micro">
-                {t('discover.position_in_list', { n: item.position })}
-              </Caption>
-            </Pressable>
-          </Link>
-          <CheersButton
-            rankingId={item.rankingId}
-            count={item.cheersCount ?? 0}
-            cheered={item.cheeredByMe ?? false}
-          />
-        </View>
-      </Animated.View>
+            <CheersButton
+              className="mt-2"
+              rankingId={item.rankingId}
+              count={item.cheersCount ?? 0}
+              cheered={item.cheeredByMe ?? false}
+            />
+          </View>
+        </Animated.View>
+      </Pressable>
     )
   }
 
   return (
-    // The whole card is one tap target to the restaurant now — it used to be
+    // The whole row is one tap target to the restaurant — it used to be
     // tappable only at the avatar, the two name spans, and the score, which
     // looked tappable everywhere and mostly wasn't (a self-inflicted D4 fix:
     // this traded a nested-<Link>-in-<Link> gesture bug for an under-tappable
@@ -402,71 +401,67 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push(`/r/${item.restaurant.id}`)}
-      className="mb-3 active:opacity-90"
+      className="active:opacity-90"
     >
       <Animated.View
         entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-        className="rounded border border-line bg-surface p-3"
+        className="flex-row items-start gap-3"
       >
-        <View className="flex-row items-center">
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => router.push(`/u/${item.user.id}`)}
-            className="active:opacity-70"
-          >
-            <Avatar
-              name={item.user.name || item.user.handle || 'm'}
-              src={item.user.image}
-              size={28}
-            />
-          </Pressable>
-          <View className="ml-2 flex-1">
-            {/* The restaurant name rides in the sentence itself, not its own
-                heading line — an activity-feed line, not a headline plus a
-                caption plus a caption. Saved the single biggest chunk of this
-                card's old height. */}
-            <Text className="font-ui text-body text-text">
+        <Pressable
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => router.push(`/u/${item.user.id}`)}
+          className="mt-3 active:opacity-70"
+        >
+          <Avatar
+            name={item.user.name || item.user.handle || 'm'}
+            src={item.user.image}
+            size={36}
+          />
+        </Pressable>
+        <View className="flex-1 border-line border-b py-3">
+          <View className="flex-row items-start gap-3">
+            <View className="flex-1">
               <Text
-                className="font-ui-semibold"
-                onPress={() => router.push(`/u/${item.user.id}`)}
-                suppressHighlighting
+                numberOfLines={2}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui text-subhead text-text"
               >
-                {firstName}
-              </Text>{' '}
-              {t('discover.ranked_verb')}{' '}
-              <Text className="font-serif text-serif-sm text-text">{item.restaurant.name}</Text>
-            </Text>
-            <Caption className="font-mono text-micro">{timeAgo(item.rankedAt)}</Caption>
+                <Text
+                  className="font-ui-semibold"
+                  onPress={() => router.push(`/u/${item.user.id}`)}
+                  suppressHighlighting
+                >
+                  {firstName}
+                </Text>{' '}
+                {t('discover.ranked_verb')}{' '}
+                <Text className="font-ui-semibold">{item.restaurant.name}</Text>
+                <Text className="text-text-muted"> · {timeAgo(item.rankedAt)}</Text>
+              </Text>
+              {oneLineMeta ? (
+                <Caption className="mt-[2px]" numberOfLines={1}>
+                  {oneLineMeta}
+                </Caption>
+              ) : null}
+            </View>
+            <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
           </View>
-        </View>
-        {oneLineMeta ? (
-          <Caption className="mt-1 text-text-2" numberOfLines={1}>
-            {oneLineMeta}
-          </Caption>
-        ) : null}
-        {item.note ? (
-          <Text
-            selectable
-            numberOfLines={2}
-            onLongPress={onLongPressNote}
-            className="mt-1 font-serif-italic text-serif-sm text-text-2"
-          >
-            “{item.note}”
-          </Text>
-        ) : null}
-        {/* Footer: cheers on the left (its own established position across
-            the app), the score badge in the bottom-right corner — the card's
-            final tally, read last. Dropped the "#N" that used to ride beside
-            it: bare digits plus a small #1 is exactly what reads as a page
-            number instead of a rating; the badge alone is the point. */}
-        <View className="mt-1 flex-row items-center justify-between">
+          {item.note ? (
+            <Text
+              selectable
+              numberOfLines={2}
+              onLongPress={onLongPressNote}
+              className="mt-1 font-serif-italic text-serif-sm text-text-2"
+            >
+              “{item.note}”
+            </Text>
+          ) : null}
           <CheersButton
+            className="mt-2"
             rankingId={item.rankingId}
             count={item.cheersCount ?? 0}
             cheered={item.cheeredByMe ?? false}
           />
-          <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
         </View>
       </Animated.View>
     </Pressable>

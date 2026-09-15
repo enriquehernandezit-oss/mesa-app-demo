@@ -193,7 +193,6 @@ export const es = {
   'discover.featured_lists': 'Listas destacadas',
   'discover.list_progress': '{mine} de {total} rankeados',
   'discover.posted_dish': 'publicó un plato',
-  'discover.position_in_list': '#{n} en su lista',
   'discover.ranked_verb': 'rankeó',
 
   // app/(tabs)/explore/index.tsx

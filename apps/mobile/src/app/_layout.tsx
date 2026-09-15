@@ -18,7 +18,6 @@ import {
   CormorantGaramond_500Medium,
   CormorantGaramond_600SemiBold,
 } from '@expo-google-fonts/cormorant-garamond'
-import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono'
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -80,7 +79,6 @@ export default function RootLayout() {
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
-    JetBrainsMono_400Regular,
   })
   useEffect(() => {
     if (fontError) captureError(fontError, 'fonts.load')

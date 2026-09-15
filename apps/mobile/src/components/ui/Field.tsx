@@ -22,7 +22,7 @@ import { Text, TextInput, View } from 'react-native'
 type FieldProps = React.ComponentProps<typeof TextInput> & {
   // Roomier variant for multiline notes/captions.
   multilineBox?: boolean
-  // A mono eyebrow above the input; when present the field renders wrapped.
+  // An eyebrow above the input; when present the field renders wrapped.
   label?: string
   // A red line below the input (e.g. a failed save) — also reddens the border.
   error?: string
@@ -51,7 +51,7 @@ export function Field({ multilineBox, label, error, className, ref, ...props }: 
   return (
     <View>
       {label ? (
-        <Text className="mb-1 font-mono text-micro uppercase tracking-micro text-text-muted">
+        <Text className="mb-1 font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-text-muted">
           {label}
         </Text>
       ) : null}

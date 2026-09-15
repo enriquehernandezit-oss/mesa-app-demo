@@ -94,7 +94,7 @@ export function FollowerPicker({
                   }`}
                 >
                   <Text
-                    className={`font-mono text-eyebrow ${
+                    className={`font-ui-semibold text-eyebrow ${
                       selected.has(u.id) ? 'text-accent-strong' : 'text-text-muted'
                     }`}
                   >

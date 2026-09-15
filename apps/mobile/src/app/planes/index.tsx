@@ -49,7 +49,7 @@ export default function PlanesScreen() {
               onPress={() => router.push('/planes/nuevo')}
               className="min-h-[44px] justify-center active:opacity-70"
             >
-              <Text className="font-mono text-eyebrow text-accent uppercase tracking-eyebrow">
+              <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
                 {t('plans.new_short')}
               </Text>
             </Pressable>
@@ -149,11 +149,11 @@ function PlanRow({ plan }: { plan: Plan }) {
             {title}
           </Text>
           <Caption numberOfLines={1}>{formatPlanDate(plan.startsAt)}</Caption>
-          <Caption className="font-mono text-micro" numberOfLines={1}>
+          <Caption className="text-micro" numberOfLines={1}>
             {sub}
           </Caption>
         </View>
-        <Caption className="font-mono text-micro uppercase tracking-micro text-accent-strong">
+        <Caption className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
           {badge}
         </Caption>
       </Pressable>

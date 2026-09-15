@@ -114,6 +114,9 @@ export const BRASS_SHADOW = '#6b4715'
 //   lining-nums  — one shared height, all on the baseline
 //   tabular-nums — one shared width, so stacked scores and positions align
 //
+// Plus Jakarta's digits are already lining, so on sans data it's `tabular-nums`
+// that does the work — the columns of counts and positions still need to align.
+//
 // Applied per-site with a style prop because NativeWind can't express
 // fontVariant. Prose keeps the default oldstyle figures — don't spread this
 // onto body copy.

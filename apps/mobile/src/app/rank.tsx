@@ -802,7 +802,12 @@ function RevealStep({
                     <Text className="flex-1 font-ui-medium text-body text-text" numberOfLines={1}>
                       {f.user.name || f.user.handle}
                     </Text>
-                    <Text className="font-mono text-eyebrow text-text-muted">#{f.position}</Text>
+                    <Text
+                      style={DATA_FIGURES}
+                      className="font-ui-medium text-eyebrow text-text-muted"
+                    >
+                      #{f.position}
+                    </Text>
                     <ScoreBadge size="sm" score={f.score} attribution={{ kind: 'stated' }} />
                   </Pressable>
                 </Link>
@@ -936,7 +941,7 @@ function NoteStep({
 
         <KeyboardDone id="rank-note" />
 
-        <Eyebrow className="mt-4 font-mono">{t('rank.occasion')}</Eyebrow>
+        <Eyebrow className="mt-4">{t('rank.occasion')}</Eyebrow>
         <View className="mt-2 flex-row flex-wrap gap-2">
           {OCCASION_TAGS.map((tag) => {
             const on = tags.includes(tag)
@@ -957,7 +962,7 @@ function NoteStep({
           })}
         </View>
 
-        <Eyebrow className="mt-4 font-mono">{t('rank.what_to_order')}</Eyebrow>
+        <Eyebrow className="mt-4">{t('rank.what_to_order')}</Eyebrow>
         <Field
           className="mt-2"
           placeholder={t('rank.what_to_order_placeholder')}
@@ -967,7 +972,7 @@ function NoteStep({
           onChangeText={setDish}
         />
 
-        <Eyebrow className="mt-4 font-mono">{t('rank.dish_photo')}</Eyebrow>
+        <Eyebrow className="mt-4">{t('rank.dish_photo')}</Eyebrow>
         {dishImage ? (
           <>
             <View className="mt-2 h-40 w-full overflow-hidden rounded border border-line">
@@ -1079,12 +1084,12 @@ function PlaceStep({
 
   return (
     <View className="mt-4 gap-4">
-      <Text className="font-mono text-eyebrow text-text-muted">
+      <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
         {step} de {total}
       </Text>
       <View className="items-center gap-1">
         <Title>{t('rank.which_was_better')}</Title>
-        <Text className="text-center font-mono text-eyebrow text-text-muted">
+        <Text className="text-center text-eyebrow text-text-muted">
           {t('rank.your_answer_moves', { name: item.name })}
         </Text>
       </View>
@@ -1107,7 +1112,7 @@ function PlaceStep({
           }}
           className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
-          <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
+          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
             {t('rank.roughly_equal')}
           </Text>
         </Pressable>
@@ -1304,7 +1309,7 @@ function FindStep({
         {r.score != null ? (
           <ScoreBadge size="sm" score={r.score} attribution={{ kind: 'you' }} />
         ) : (
-          <Text className="font-mono text-micro text-text-faint uppercase tracking-eyebrow">
+          <Text className="font-ui-semibold text-eyebrow text-text-faint uppercase tracking-eyebrow">
             {t('rank.unranked')}
           </Text>
         )}
@@ -1364,9 +1369,9 @@ function FindStep({
           <>
             {leadGroup.length > 0 && (
               <>
-                <Eyebrow className="font-mono">{t('rank.want_to_try')}</Eyebrow>
+                <Eyebrow>{t('rank.want_to_try')}</Eyebrow>
                 {leadGroup.map(renderRow)}
-                <Eyebrow className="mt-3 font-mono">{t('rank.all')}</Eyebrow>
+                <Eyebrow className="mt-3">{t('rank.all')}</Eyebrow>
               </>
             )}
             {results.map(renderRow)}
@@ -1375,7 +1380,7 @@ function FindStep({
 
         {!adding && (
           <ExternalResults
-            heading={<Eyebrow className="mt-3 font-mono">{t('rank.on_google')}</Eyebrow>}
+            heading={<Eyebrow className="mt-3">{t('rank.on_google')}</Eyebrow>}
             suggestions={suggestions}
             creatingId={creatingId}
             onPick={createFromGoogle}
@@ -1430,7 +1435,7 @@ function AddPlaceForm({
         onChangeText={setName}
         maxLength={80}
       />
-      <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
+      <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
         {t('rank.sector')}
       </Text>
       <View className="flex-row flex-wrap gap-2">

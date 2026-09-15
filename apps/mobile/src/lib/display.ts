@@ -127,7 +127,7 @@ export const OCCASION_TAGS = [
   'Trasnoche',
 ]
 
-// Dish-photo grain treatment — shown as a mono "film · <grain>" tag and as a
+// Dish-photo grain treatment — shown as a "film · <grain>" tag and as a
 // picker chip label (DishCompose, and the inline photo step in the rank flow).
 const GRAIN_LABEL_ES: Record<string, string> = {
   candlelit: 'Con velas',

@@ -13,7 +13,8 @@ resolve through the token layer.
 ## 1. What changes and what does not
 
 **Changes:** color ground (dark → light), the addition of a monospace family for
-metadata, and four component patterns that must repeat everywhere a place is named.
+metadata (retired 2026-09-15 — see DESIGN.md › Type), and four component patterns
+that must repeat everywhere a place is named.
 
 **Does not change:** the type families for display and UI (Cormorant Garamond and
 Plus Jakarta Sans stay), the spacing scale, the radius scale, the spring easing,
@@ -54,11 +55,12 @@ else in the app; reference these.
   --brass-line-soft: rgba(154, 106, 40, 0.28);
   --brass-wash: rgba(154, 106, 40, 0.1);   /* filled chips */
 
-  /* Type — mono is NEW; it carries all metadata, eyebrows and pill labels */
+  /* Type — mono is NEW; it carries all metadata, eyebrows and pill labels
+     (retired 2026-09-15 — see DESIGN.md › Type) */
   --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-ui: "Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace; /* retired 2026-09-15 */
 
   /* Scale unchanged from the current tokens.css — keep --space-*, --radius*,
      --ease-spring, --safe-* exactly as they are. */
@@ -76,6 +78,7 @@ nothing when you're done.
 
 Add JetBrains Mono to the font loading in `apps/app/src/styles/fonts.ts` and
 `index.html` alongside the two existing families (weights 400 and 500 only).
+(Retired 2026-09-15 — see DESIGN.md › Type.)
 
 ---
 
@@ -87,7 +90,9 @@ Build each once as a component in `apps/app/src/components/` and use it everywhe
 ### 3.1 Characteristics block
 Four lines, always this order, always these treatments. It goes under the
 restaurant name on the profile, and inside every ranking card in the feed and
-every row in the rankings list.
+every row in the rankings list. (M9, 2026-09-15: the feed itself now renders
+these as flat rows, not boxed cards — see DESIGN-PHASE6-SCREENS.md § 01 — but
+this block's own rules are unchanged everywhere else it appears.)
 
 1. **Tags** — `11.5px`, `font-weight: 600`, `--deep`, single line, ellipsis on
    overflow. Middle dot separated: `Fine Dining · Date Night · Special Occasion`
@@ -98,11 +103,15 @@ every row in the rankings list.
 Grid, `gap: 3px`, with `margin-top: 5px` on line 4 only.
 
 ### 3.2 Badged score circles
+(M9, 2026-09-15: in the feed's flat rows this renders at `size="sm"` beside the
+sentence line, not pinned to a card corner — the badge/attribution rules below
+still hold.)
 A 46px circle: `1px solid var(--brass-line)`, `background: var(--card)`, serif
-`19px` `--accent` numeral centred. A mono `7px` badge pinned `bottom: -4px; right:
--4px`, `--card` text on `--ink` fill, `999px` radius, `2px 4px` padding, naming
-whose score it is: `You` / `Friends` / `Mesa`. Caption under: `10px --ink` label +
-`8px` mono `--muted` sub-line (`#3 on your list`).
+`19px` `--accent` numeral centred. A mono `7px` badge (mono retired 2026-09-15 —
+see DESIGN.md › Type) pinned `bottom: -4px; right: -4px`, `--card` text on `--ink`
+fill, `999px` radius, `2px 4px` padding, naming whose score it is: `You` /
+`Friends` / `Mesa`. Caption under: `10px --ink` label + `8px` mono `--muted`
+sub-line (`#3 on your list`).
 
 Never render a score without its badge. An unlabelled number is the ambiguity this
 pattern exists to remove.
@@ -114,13 +123,15 @@ ABOVE the label (not beside it — four labels beside their icons no longer fit
 a phone width without wrapping). `min-height: 56px`, `1px solid var(--line)`,
 `8px` radius (not a full pill anymore, so a two-line label still reads as one
 control), `padding: 8px 4px`, `gap: 4px` between icon and label. Icon `18px`.
-Label sans (`font-ui`, not mono) at eyebrow size, one line, shrinking down to
+Label sans (`font-ui`, not mono — mono retired 2026-09-15, see DESIGN.md › Type;
+everything is `font-ui` now) at eyebrow size, one line, shrinking down to
 80% before it would wrap or clip on a narrow phone or large Dynamic Type. No
 fill. These are always outlined so they never compete with the screen's one
 filled CTA.
 
 ### 3.4 Filter chip rail
-Anything that lists gets one. Mono `9px`, horizontal scroll, `gap: 6px`.
+Anything that lists gets one. Mono `9px` (retired 2026-09-15 — see DESIGN.md ›
+Type), horizontal scroll, `gap: 6px`.
 Inactive: `--card` fill, `1px solid var(--line-strong)`, `8px` radius, `--ink` text.
 Active: `--brass-wash` fill, `1px solid var(--brass-line-soft)`, `--deep` text.
 

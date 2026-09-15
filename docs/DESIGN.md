@@ -85,8 +85,9 @@ Notes that are load-bearing, not stylistic:
 - **One card color in Phase 6.** `--surface`/`--surface-raised` are both `#fffdf8`
   on paper; the skeleton shimmer no longer depends on the two differing — it
   shimmers across `--bg-sunk → #f0e7d8 → --bg-sunk`.
-- **Monospace is a first-class family (`--font-mono`, JetBrains Mono).** It carries
-  all metadata, eyebrows, and pill labels — the "spec-sheet" voice. Theme-invariant.
+- **One UI family.** Plus Jakarta Sans carries all metadata, eyebrows, and pill
+  labels. Theme-invariant. (JetBrains Mono held this role until it was retired on
+  2026-09-15 at the founder's request — see Type & spacing below.)
 - **Photos carry their own dark island.** Text over a photograph is always
   light-on-a-dark-scrim, in *both* themes. `--on-photo*` and the scrims are
   deliberately theme-invariant.
@@ -99,9 +100,12 @@ also live in `tokens.css` (`--font-serif`, `--font-ui`, `--text-*`, `--space-*`,
 
 - **Display serif:** Cormorant Garamond (wordmark `mesa`, restaurant names, the
   big rank numerals). Georgia is the fallback.
-- **UI / body:** Plus Jakarta Sans.
-- **Metadata / eyebrows / pill labels:** JetBrains Mono (`--font-mono`), weights
-  400–500 — the Phase 6 "spec-sheet" voice on every place listing.
+- **UI / body:** Plus Jakarta Sans — the one UI family. It also carries
+  **metadata** (400, 12–13pt, muted), **eyebrows** (600, 11pt, uppercase, 1.76px
+  tracking), **pill labels** (600), and **data numerals** (with `DATA_FIGURES`
+  tabular figures). JetBrains Mono held metadata/eyebrows/pills through Phase 6
+  and was **retired on 2026-09-15** at the founder's request; there is no
+  monospace family in Mesa.
 - **Eyebrows:** uppercase, letter-spaced ~0.16em, small, in `--accent`.
 - **Editorial italic:** the quiz tagline treatment — italic serif for editorial
   moments.

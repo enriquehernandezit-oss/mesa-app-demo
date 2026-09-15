@@ -35,7 +35,7 @@ import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { themeColors } from '@/theme/vars'
+import { DATA_FIGURES, themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -206,7 +206,7 @@ export default function ExploreScreen() {
               className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
             >
               <PinIcon size={15} />
-              <Text className="font-mono text-eyebrow text-text-muted uppercase tracking-eyebrow">
+              <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
                 {t('explore.map_chip')}
               </Text>
             </Pressable>
@@ -284,7 +284,9 @@ export default function ExploreScreen() {
                 onPress={clearFilters}
                 className="min-h-[36px] justify-center px-1 active:opacity-60"
               >
-                <Caption className="font-mono text-accent-strong">{t('explore.clear')}</Caption>
+                <Caption className="font-ui-semibold text-accent-strong">
+                  {t('explore.clear')}
+                </Caption>
               </Pressable>
             )}
           </View>
@@ -399,7 +401,9 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
   return (
     <Link href={`/r/${r.id}`} asChild>
       <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-        <Text className="w-5 font-mono text-eyebrow text-text-muted">{index + 1}</Text>
+        <Text style={DATA_FIGURES} className="w-5 font-ui-medium text-eyebrow text-text-muted">
+          {index + 1}
+        </Text>
         <PlaceCover
           seed={r.id}
           name={r.name}
@@ -426,7 +430,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
             attribution={{ kind: 'friends', count: r.friendCount }}
           />
         ) : r.isNew ? (
-          <Text className="font-mono text-micro text-accent-strong uppercase tracking-eyebrow">
+          <Text className="font-ui-semibold text-eyebrow text-accent-strong uppercase tracking-eyebrow">
             {t('explore.be_first')}
           </Text>
         ) : null}
@@ -467,7 +471,7 @@ function TrendingRail() {
           name={s.name}
           coverImageId={s.coverImageId}
           caption={
-            <Caption className="font-mono text-micro" numberOfLines={1}>
+            <Caption className="text-micro" numberOfLines={1}>
               {t('explore.cheers_this_week', { n: s.cheerCount ?? 0 })}
             </Caption>
           }

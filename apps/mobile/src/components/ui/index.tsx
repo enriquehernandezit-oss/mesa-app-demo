@@ -36,7 +36,7 @@ import Animated, {
  * still gets larger, it just can't break the layout. Display numerals cap lower
  * because they're already huge.
  */
-const MAX_SCALE = 1.35
+export const MAX_SCALE = 1.35
 
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
@@ -89,7 +89,6 @@ export const Wordmark = ({ size = 40, className }: { size?: number; className?: 
 type ButtonProps = Omit<PressableProps, 'children'> & {
   variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
   size?: 'md' | 'sm'
-  mono?: boolean
   icon?: ReactNode
   // Swaps the icon slot for a spinner and disables the button; the label stays,
   // so call sites keep their own "Guardando…"/"Eliminando…" copy.
@@ -112,7 +111,6 @@ const BTN_FG: Record<NonNullable<ButtonProps['variant']>, string> = {
 export const Button = ({
   variant = 'primary',
   size = 'md',
-  mono,
   icon,
   loading,
   children,
@@ -147,11 +145,7 @@ export const Button = ({
       {...p}
     >
       {loading ? <ActivityIndicator size="small" color={spinnerColor} /> : icon}
-      <Text
-        className={`${mono ? 'font-mono text-eyebrow tracking-eyebrow' : 'font-ui-semibold text-label'} ${BTN_FG[variant]}`}
-      >
-        {children}
-      </Text>
+      <Text className={`font-ui-semibold text-label ${BTN_FG[variant]}`}>{children}</Text>
     </Pressable>
   )
 }
@@ -214,7 +208,7 @@ export const Chip = ({
       : sm
         ? 'text-text'
         : 'text-text-2'
-  const font = sm ? 'font-mono text-micro' : 'font-ui-medium text-label'
+  const font = sm ? 'font-ui-medium text-micro' : 'font-ui-medium text-label'
   return (
     <Pressable
       accessibilityRole="button"
@@ -329,13 +323,13 @@ export const ErrorState = ({
   )
 }
 
-/* --- SectionHeader --- mono brass eyebrow + optional right-aligned action. */
+/* --- SectionHeader --- brass eyebrow + optional right-aligned action. */
 export const SectionHeader = ({
   children,
   action,
 }: { children: ReactNode; action?: ReactNode }) => (
   <View className="mb-3 mt-5 flex-row items-baseline justify-between gap-3">
-    <Text className="font-mono text-micro uppercase tracking-micro text-accent-strong">
+    <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
       {children}
     </Text>
     {action}

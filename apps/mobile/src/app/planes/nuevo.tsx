@@ -27,6 +27,7 @@ import { usePreventRemove } from '@/lib/preventRemove'
 import { dayChipLabel, timeChipLabel } from '@/lib/time'
 import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigation, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
@@ -486,7 +487,7 @@ function ReviewStep({
       <Card className="mt-4 gap-3">
         {spots.length > 1 ? (
           <View>
-            <Eyebrow className="mb-1 font-mono">{t('plans.voting_between')}</Eyebrow>
+            <Eyebrow className="mb-1">{t('plans.voting_between')}</Eyebrow>
             {spots.map((s, i) => (
               <Text key={s.id} className="font-ui text-body text-text">
                 {i + 1}. {s.name}
@@ -502,7 +503,11 @@ function ReviewStep({
             {shown.map((u) => (
               <Avatar key={u.id} name={u.name || u.handle || 'm'} src={u.image} size={28} />
             ))}
-            {extra > 0 ? <Caption className="ml-1 font-mono">+{extra}</Caption> : null}
+            {extra > 0 ? (
+              <Caption style={DATA_FIGURES} className="ml-1 font-ui-medium">
+                +{extra}
+              </Caption>
+            ) : null}
           </View>
         ) : null}
       </Card>
