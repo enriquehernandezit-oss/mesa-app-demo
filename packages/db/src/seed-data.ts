@@ -419,13 +419,3 @@ export const waitlist = [
     quizResult: 'El Explorador',
   },
 ]
-
-// Derives a 0–100 display score from a place's position in an ordered list.
-// Top of a list scores ~95, tapering toward ~62 at the bottom — the pairwise
-// flow (M2/M3) will replace this with a comparison-derived score, but the shape
-// (higher = better, monotonic with position) is the same.
-export function scoreForPosition(position: number, listLength: number): number {
-  if (listLength <= 1) return 95
-  const t = (position - 1) / (listLength - 1) // 0 at top .. 1 at bottom
-  return Math.round(95 - t * 33)
-}

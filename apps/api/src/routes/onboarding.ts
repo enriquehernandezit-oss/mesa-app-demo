@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
-import { scoreFor } from '../lib/score'
+import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -101,9 +101,12 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
     return c.json({ restaurants })
   })
 
-  // Persist the ordered starter list. One multi-row upsert (single round trip):
-  // position is 1..n in the given order, score derived from position. Re-running
-  // it replaces positions/scores for the same places rather than erroring.
+  // Persist the ordered starter list, then densely renumber the WHOLE list
+  // (this call's ids first, in the given order, then any pre-existing rankings
+  // that weren't in this submission, in their prior relative order). This
+  // endpoint can be called again after a user already has rankings — a plain
+  // per-submitted-id upsert left those older rows' positions untouched,
+  // producing duplicate positions the moment the two sets overlapped in range.
   .post('/rankings', async (c) => {
     const current = c.get('user')
 
@@ -123,25 +126,14 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
       return c.json({ error: 'unknown_restaurant' }, 400)
     }
 
-    const total = ids.length
-    const values = ids.map((restaurantId, i) => ({
-      userId: current.id,
-      restaurantId,
-      position: i + 1,
-      score: scoreFor(i, total),
-    }))
-
-    await db
-      .insert(schema.rankings)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [schema.rankings.userId, schema.rankings.restaurantId],
-        set: {
-          position: sql`excluded.position`,
-          score: sql`excluded.score`,
-          updatedAt: new Date(),
-        },
-      })
+    const total = await db.transaction(async (tx) => {
+      await lockUserList(tx, current.id)
+      const idSet = new Set(ids)
+      const rest = (await currentOrder(tx, current.id)).filter((id) => !idSet.has(id))
+      const order = [...ids, ...rest]
+      await rewrite(tx, current.id, order)
+      return order.length
+    })
 
     return c.json({ ok: true, count: total })
   })

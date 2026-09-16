@@ -12,10 +12,9 @@
 // Login:  demo@mesa.test  /  mesademo2026
 // Idempotent — re-running deletes and recreates the account cleanly.
 
-import { db, pool, schema } from '@mesa/db'
+import { db, pool, schema, scoreFor } from '@mesa/db'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
 import { auth } from './auth'
-import { scoreFor } from './lib/score'
 
 const EMAIL = 'demo@mesa.test'
 const PASSWORD = 'mesademo2026'

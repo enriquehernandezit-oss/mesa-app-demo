@@ -2,15 +2,9 @@ import { randomUUID } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import { db, pool } from './client'
 import * as schema from './schema'
+import { scoreFor } from './score'
 import { seedCuration } from './seed-curation'
-import {
-  dishPosts,
-  friends,
-  neighborhoods,
-  restaurants,
-  scoreForPosition,
-  waitlist,
-} from './seed-data'
+import { dishPosts, friends, neighborhoods, restaurants, waitlist } from './seed-data'
 import {
   COVER_BY_CUISINE,
   extraNeighborhoods,
@@ -229,7 +223,7 @@ async function seed() {
         userId: uid(f.handle),
         restaurantId: rid(entry.key),
         position,
-        score: scoreForPosition(position, f.ranked.length),
+        score: scoreFor(i, f.ranked.length),
         createdAt: at,
         updatedAt: at,
       })
@@ -250,7 +244,7 @@ async function seed() {
         userId: uid(g.handle),
         restaurantId: rid(entry.key),
         position,
-        score: scoreForPosition(position, g.ranked.length),
+        score: scoreFor(i, g.ranked.length),
         tags: entry.tags,
         favoriteDish: entry.dish,
         createdAt: at,

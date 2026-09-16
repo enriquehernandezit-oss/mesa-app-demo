@@ -4,7 +4,7 @@ import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
-import { scoreFor } from '../lib/score'
+import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { requireAuth } from '../middleware/session'
 
 // The ranking loop — Mesa's atomic unit. A user keeps one ordered list of
@@ -14,10 +14,6 @@ import { requireAuth } from '../middleware/session'
 
 const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user, follows, savedPlaces } =
   schema
-
-// The transaction executor type, so helpers can run against either db or an open
-// transaction without an unsafe cast.
-type Executor = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 // Vibe notes are deliberately short — one line, not a review.
 const VIBE_MAX = 140
@@ -31,50 +27,6 @@ const placeSchema = z.object({
   favoriteDish: z.string().trim().max(60).optional(),
 })
 const noteSchema = z.object({ body: z.string().trim().max(VIBE_MAX) })
-
-// Read the user's current order as restaurantIds, best-first. Takes the executor
-// (db or an open transaction) so callers inside a tx see in-flight state. Small
-// list, so a full read is cheap.
-async function currentOrder(exec: Executor, userId: string): Promise<string[]> {
-  const rows = await exec
-    .select({ restaurantId: rankings.restaurantId })
-    .from(rankings)
-    .where(eq(rankings.userId, userId))
-    .orderBy(asc(rankings.position))
-  return rows.map((r) => r.restaurantId)
-}
-
-// Rewrite the whole list's positions (dense 1..n) and derived scores in one
-// upsert. The list is per-user and small, so a full rewrite is simpler and
-// safer than shifting a window of rows, and it's a single statement.
-async function rewrite(tx: Executor, userId: string, orderedIds: string[]): Promise<void> {
-  if (orderedIds.length === 0) return
-  const total = orderedIds.length
-  await tx
-    .insert(rankings)
-    .values(
-      orderedIds.map((restaurantId, i) => ({
-        userId,
-        restaurantId,
-        position: i + 1,
-        score: scoreFor(i, total),
-      })),
-    )
-    .onConflictDoUpdate({
-      target: [rankings.userId, rankings.restaurantId],
-      set: {
-        position: sql`excluded.position`,
-        score: sql`excluded.score`,
-        // Only rows that actually moved get a fresh updatedAt — a full-list
-        // rewrite used to stamp every row on every rank, including places
-        // whose position didn't change, which is what let the feed (paged on
-        // this column) treat "ranked one new place" as "republish the whole
-        // list". The feed itself now pages on createdAt instead (see
-        // routes/feed.ts), but this column should mean what it says regardless.
-        updatedAt: sql`case when ${rankings.position} is distinct from excluded.position or ${rankings.score} is distinct from excluded.score then now() else ${rankings.updatedAt} end`,
-      },
-    })
-}
 
 export const rankingsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -315,6 +267,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     if (!exists) return c.json({ error: 'unknown_restaurant' }, 400)
 
     await db.transaction(async (tx) => {
+      await lockUserList(tx, me.id)
       const order = (await currentOrder(tx, me.id)).filter((id) => id !== restaurantId)
       const idx = Math.min(Math.max(position - 1, 0), order.length)
       order.splice(idx, 0, restaurantId)
@@ -326,10 +279,20 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         .delete(savedPlaces)
         .where(and(eq(savedPlaces.userId, me.id), eq(savedPlaces.restaurantId, restaurantId)))
 
-      if (tags?.length || favoriteDish) {
+      // `tags` and `favoriteDish` are independent optional fields — a save that
+      // only carries one must not blank out the other. (Previously `tags?.length
+      // || favoriteDish` gated a single `set` that always wrote both, so a
+      // tags-only save silently cleared favoriteDish, and vice versa.)
+      if (tags !== undefined) {
         await tx
           .update(rankings)
-          .set({ tags: tags ?? null, favoriteDish: favoriteDish ?? null })
+          .set({ tags: tags.length ? tags : null })
+          .where(and(eq(rankings.userId, me.id), eq(rankings.restaurantId, restaurantId)))
+      }
+      if (favoriteDish !== undefined) {
+        await tx
+          .update(rankings)
+          .set({ favoriteDish: favoriteDish || null })
           .where(and(eq(rankings.userId, me.id), eq(rankings.restaurantId, restaurantId)))
       }
 
@@ -385,6 +348,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     if (!ranking) return c.json({ error: 'not_found' }, 404)
 
     await db.transaction(async (tx) => {
+      await lockUserList(tx, me.id)
       await tx.delete(rankings).where(eq(rankings.id, c.req.param('id')))
       await tx
         .delete(vibeNotes)

@@ -8,3 +8,6 @@ export * as schema from './schema'
 // Pure name/distance matchers shared by the bulk importers (M5, M6) — see
 // placeMatchPure.ts's own header for why these live outside any one importer.
 export { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
+// The one ranking-score formula — see score.ts's header for why this used to
+// have a silent second copy.
+export { scoreFor } from './score'
