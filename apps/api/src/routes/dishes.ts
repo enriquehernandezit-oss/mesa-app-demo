@@ -1,17 +1,17 @@
-import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, notInArray, or } from 'drizzle-orm'
+import { DISH_CATEGORIES, DISH_GROUPS, db, mesaNorm, schema } from '@mesa/db'
+import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
-// Dish posts (Phase 6). A dish is a photo attached to one of your own rankings —
-// linking to a ranking is required, so you can only post a dish for a place
-// you've ranked. The image is a client-resized data URL in dev (no Cloudinary);
-// in prod this endpoint would instead take a Cloudinary public id from a signed
-// direct upload. Soft-removal + reporting (via 'dish' report target) satisfy
-// App Store 1.2.
+// Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
+// evidence attached to one of your own rankings — linking to a ranking is
+// required, so you can only post a dish for a place you've ranked. The image
+// is a client-resized data URL in dev (no Cloudinary); in prod this endpoint
+// would instead take a Cloudinary public id from a signed direct upload.
+// Soft-removal + reporting (via 'dish' report target) satisfy App Store 1.2.
 const { dishes, rankings, user, follows, userBlocks } = schema
 
 // ~700 KB cap on the inline data URL (a resized ~1280px JPEG lands well under).
@@ -21,6 +21,8 @@ const createSchema = z.object({
   restaurantId: z.string().uuid(),
   name: z.string().trim().min(1).max(60),
   caption: z.string().trim().max(140).optional(),
+  // Optional as of M11 — a dish with a name and category but no photo is a
+  // first-class row, not a broken one.
   image: z
     .string()
     .max(MAX_IMAGE_CHARS)
@@ -31,7 +33,10 @@ const createSchema = z.object({
     .refine(
       (s) => s.startsWith('data:image/') || s.startsWith('https://'),
       'image must be a data URL or https URL',
-    ),
+    )
+    .optional(),
+  categoryId: z.string(),
+  sentiment: z.enum(['loved', 'fine', 'disliked']).optional(),
   grain: z.enum(['candlelit', 'daylight', 'none']).default('none'),
   visibility: z.enum(['friends', 'public']).default('friends'),
   alsoFavorite: z.boolean().optional(),
@@ -40,13 +45,69 @@ const createSchema = z.object({
 export const dishesRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
+  // The closed category taxonomy, with keywords, for the picker's search.
+  // Served straight from the in-memory list (the same one the POST handler
+  // validates against and the backfill script guesses from) — no DB query,
+  // since packages/db's seed migration and this module share one source.
+  .get('/categories', (c) => {
+    c.header('Cache-Control', 'private, max-age=60')
+    return c.json({ groups: DISH_GROUPS, categories: DISH_CATEGORIES })
+  })
+
+  // Distinct dish names already logged at a restaurant, most-common first —
+  // the chip source for the rank flow's "Qué pedir" step. Aggregated names
+  // and counts ONLY, never dish rows or posters: a name several people have
+  // logged is catalog data, not any one person's content, so this
+  // deliberately skips the visibility/block filters every other dish query
+  // applies. One query, grouped on the same generated nameKey column the
+  // search index already uses.
+  .get('/restaurant/:id/names', async (c) => {
+    const id = c.req.param('id')
+    if (!z.string().uuid().safeParse(id).success) return c.json({ names: [] })
+
+    const rows = await db
+      .select({
+        nameKey: dishes.nameKey,
+        label: sql<string>`mode() within group (order by ${dishes.name})`,
+        count: sql<number>`count(*)::int`,
+        categoryId: sql<string>`coalesce(mode() within group (order by ${dishes.categoryId}), 'otro')`,
+      })
+      .from(dishes)
+      .innerJoin(user, eq(user.id, dishes.userId))
+      .where(and(eq(dishes.restaurantId, id), isNull(dishes.removedAt), isNull(user.bannedAt)))
+      .groupBy(dishes.nameKey)
+      .orderBy(desc(sql`count(*)`), asc(dishes.nameKey))
+      .limit(20)
+
+    c.header('Cache-Control', 'private, max-age=60')
+    return c.json({ names: rows })
+  })
+
   // Post a dish. The linked ranking is derived from my ranking of this place —
-  // if I haven't ranked it, I can't post a dish for it.
+  // if I haven't ranked it, I can't post a dish for it. Photo-less posts
+  // upsert on (rankingId, nameKey, no image, not removed) so selecting the
+  // same "Qué pedir" chip again (a retry, or a second visit to the same
+  // dish) updates it in place instead of duplicating — the backfill script
+  // uses the same rule.
   .post('/', async (c) => {
     const me = c.get('user')
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
-    const { restaurantId, name, caption, image, grain, visibility, alsoFavorite } = parsed.data
+    const {
+      restaurantId,
+      name,
+      caption,
+      image,
+      categoryId,
+      sentiment,
+      grain,
+      visibility,
+      alsoFavorite,
+    } = parsed.data
+
+    if (!DISH_CATEGORIES.some((cat) => cat.id === categoryId)) {
+      return c.json({ error: 'unknown_category' }, 400)
+    }
 
     const [myRanking] = await db
       .select({ id: rankings.id })
@@ -55,19 +116,50 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .limit(1)
     if (!myRanking) return c.json({ error: 'rank_it_first' }, 400)
 
-    const [dish] = await db
-      .insert(dishes)
-      .values({
-        userId: me.id,
-        rankingId: myRanking.id,
-        restaurantId,
-        name,
-        caption: caption || null,
-        imageId: image,
-        grain,
-        visibility,
-      })
-      .returning({ id: dishes.id })
+    let dishId: string | undefined
+    let created = true
+
+    if (!image) {
+      const [existing] = await db
+        .select({ id: dishes.id })
+        .from(dishes)
+        .where(
+          and(
+            eq(dishes.rankingId, myRanking.id),
+            eq(dishes.nameKey, mesaNorm(name)),
+            isNull(dishes.imageId),
+            isNull(dishes.removedAt),
+          ),
+        )
+        .limit(1)
+      if (existing) {
+        await db
+          .update(dishes)
+          .set({ categoryId, sentiment: sentiment ?? null, updatedAt: new Date() })
+          .where(eq(dishes.id, existing.id))
+        dishId = existing.id
+        created = false
+      }
+    }
+
+    if (!dishId) {
+      const [dish] = await db
+        .insert(dishes)
+        .values({
+          userId: me.id,
+          rankingId: myRanking.id,
+          restaurantId,
+          name,
+          caption: caption || null,
+          imageId: image ?? null,
+          categoryId,
+          sentiment: sentiment ?? null,
+          grain,
+          visibility,
+        })
+        .returning({ id: dishes.id })
+      dishId = dish?.id
+    }
 
     // Optional: also set this as the ranking's favorite dish (no schema change —
     // integrates with the existing rankings.favoriteDish field).
@@ -75,11 +167,13 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       await db.update(rankings).set({ favoriteDish: name }).where(eq(rankings.id, myRanking.id))
     }
 
-    return c.json({ ok: true, id: dish?.id })
+    return c.json({ ok: true, id: dishId, created })
   })
 
   // Popular dishes at a place — visible ones (mine, public, or from people I
-  // follow), newest first. One query with the block/visibility rules.
+  // follow), newest first. One query with the block/visibility rules. This
+  // rail is photo-led, so a photo-less dish (a bare "Qué pedir" pick with no
+  // image) is excluded rather than rendered with a placeholder.
   .get('/restaurant/:id', async (c) => {
     const me = c.get('user')
     const id = c.req.param('id')
@@ -90,6 +184,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         name: dishes.name,
         caption: dishes.caption,
         imageId: dishes.imageId,
+        categoryId: dishes.categoryId,
         grain: dishes.grain,
         createdAt: dishes.createdAt,
         user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
@@ -104,6 +199,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         and(
           eq(dishes.restaurantId, id),
           isNull(dishes.removedAt),
+          sql`${dishes.imageId} is not null`,
           isNull(user.bannedAt),
           notInArray(dishes.userId, blockedByMe(me.id)),
           notInArray(dishes.userId, blockedMe(me.id)),
@@ -138,6 +234,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         name: dishes.name,
         caption: dishes.caption,
         imageId: dishes.imageId,
+        categoryId: dishes.categoryId,
         grain: dishes.grain,
         createdAt: dishes.createdAt,
         visibility: dishes.visibility,
@@ -204,14 +301,20 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     return c.json({ dish: { ...dish, posterIsMe } })
   })
 
-  // Soft-remove my own dish.
+  // Soft-remove my own dish, and clear it as the ranking's favorite pick if
+  // it was one — favoriteDish always mirrors a live dish now, never a
+  // dangling name.
   .delete('/:id', async (c) => {
     const me = c.get('user')
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, c.req.param('id')), eq(dishes.userId, me.id)),
-      columns: { id: true },
+      columns: { id: true, name: true, rankingId: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
     await db.update(dishes).set({ removedAt: new Date() }).where(eq(dishes.id, found.id))
+    await db
+      .update(rankings)
+      .set({ favoriteDish: null })
+      .where(and(eq(rankings.id, found.rankingId), eq(rankings.favoriteDish, found.name)))
     return c.json({ ok: true })
   })

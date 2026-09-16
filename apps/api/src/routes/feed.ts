@@ -46,9 +46,12 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
   // already severs follows, but we still filter so nothing leaks) —
   // followingIds/blockedByMe/blockedMe below (lib/visibility).
 
-  // The latest visible dish per ranking — a dish is evidence attached to a
-  // ranking, so it rides on the same feed row (no second feed type, no cursor
-  // change). DISTINCT ON keeps it to the newest one.
+  // The latest visible PHOTO dish per ranking — a dish is evidence attached to
+  // a ranking, so it rides on the same feed row (no second feed type, no
+  // cursor change). DISTINCT ON keeps it to the newest one. imageId IS NOT
+  // NULL as of M11 (dishes can be photo-less "Qué pedir" picks now): the feed
+  // card's dish branch is photo-led, so a photo-less pick is captured
+  // silently and never shadows an earlier photo dish on the same ranking.
   const latestDish = db
     .selectDistinctOn([dishes.rankingId], {
       rankingId: dishes.rankingId,
@@ -58,7 +61,7 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
       grain: dishes.grain,
     })
     .from(dishes)
-    .where(isNull(dishes.removedAt))
+    .where(and(isNull(dishes.removedAt), sql`${dishes.imageId} is not null`))
     .orderBy(dishes.rankingId, desc(dishes.createdAt))
     .as('latest_dish')
 

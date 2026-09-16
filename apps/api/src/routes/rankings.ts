@@ -24,7 +24,9 @@ const placeSchema = z.object({
   position: z.number().int().min(1),
   vibeNote: z.string().trim().max(VIBE_MAX).optional(),
   tags: z.array(z.string().trim().min(1).max(24)).max(4).optional(),
-  favoriteDish: z.string().trim().max(60).optional(),
+  // favoriteDish is NOT accepted here as of M11 — it's derived entirely from
+  // POST /dishes' `alsoFavorite` flag now. zod strips the unknown key if an
+  // un-reloaded dev client still sends one, rather than erroring.
 })
 const noteSchema = z.object({ body: z.string().trim().max(VIBE_MAX) })
 
@@ -258,7 +260,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     if (!parsed.success) {
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     }
-    const { restaurantId, position, vibeNote, tags, favoriteDish } = parsed.data
+    const { restaurantId, position, vibeNote, tags } = parsed.data
 
     const exists = await db.query.restaurants.findFirst({
       where: eq(restaurants.id, restaurantId),
@@ -279,20 +281,10 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         .delete(savedPlaces)
         .where(and(eq(savedPlaces.userId, me.id), eq(savedPlaces.restaurantId, restaurantId)))
 
-      // `tags` and `favoriteDish` are independent optional fields — a save that
-      // only carries one must not blank out the other. (Previously `tags?.length
-      // || favoriteDish` gated a single `set` that always wrote both, so a
-      // tags-only save silently cleared favoriteDish, and vice versa.)
       if (tags !== undefined) {
         await tx
           .update(rankings)
           .set({ tags: tags.length ? tags : null })
-          .where(and(eq(rankings.userId, me.id), eq(rankings.restaurantId, restaurantId)))
-      }
-      if (favoriteDish !== undefined) {
-        await tx
-          .update(rankings)
-          .set({ favoriteDish: favoriteDish || null })
           .where(and(eq(rankings.userId, me.id), eq(rankings.restaurantId, restaurantId)))
       }
 
