@@ -191,6 +191,7 @@ function MesaStack() {
           pattern as lists/[slug] below. */}
       <Stack.Screen name="people/[userId]" options={utility} />
       <Stack.Screen name="planes/index" options={{ ...utility, title: t('nav.planes') }} />
+      <Stack.Screen name="amigos/index" options={{ ...utility, title: t('amigos.title') }} />
       {/* Title (the chosen spot, or "Votación abierta") is set by the screen
           itself once the plan loads — same pattern as people/[userId] above. */}
       <Stack.Screen name="planes/[planId]" options={{ ...utility, headerLargeTitle: false }} />

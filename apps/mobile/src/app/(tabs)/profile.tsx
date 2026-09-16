@@ -10,6 +10,7 @@ import {
   CheckIcon,
   ChevronIcon,
   CompassIcon,
+  PeopleIcon,
   PlusIcon,
 } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
@@ -286,6 +287,11 @@ export default function ProfileTab() {
             icon={<CompassIcon size={15} />}
             label={t('rankings.explore_spots')}
             onPress={() => router.push('/explore')}
+          />
+          <NavRow
+            icon={<PeopleIcon size={15} />}
+            label={t('amigos.title')}
+            onPress={() => router.push('/amigos')}
           />
         </View>
 

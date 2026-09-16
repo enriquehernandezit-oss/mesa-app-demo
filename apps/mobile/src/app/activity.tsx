@@ -120,7 +120,7 @@ export default function ActivityScreen() {
           <EmptyState
             body={t('activity.empty_body')}
             action={
-              <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
+              <Button size="sm" variant="secondary" onPress={() => router.push('/amigos')}>
                 {t('activity.discover_people')}
               </Button>
             }
