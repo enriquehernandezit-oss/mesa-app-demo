@@ -579,7 +579,7 @@ export default function RankAPlace() {
   if (candidates.isPending || mine.isPending) {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
-        <RowsSkeleton rows={5} thumb={56} />
+        <RowsSkeleton rows={5} thumb={56} className="px-5" />
       </View>
     )
   }

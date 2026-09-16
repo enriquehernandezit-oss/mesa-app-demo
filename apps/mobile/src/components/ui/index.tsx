@@ -300,9 +300,19 @@ export const EmptyState = ({
    rows will take so nothing jumps when the data lands. Same reasoning as the
    restaurant profile's loader: a screen whose row geometry is known ahead of
    time shouldn't throw that away for a spinner and reflow on arrival. Shared by
-   activity, leaderboard and the passport. */
-export const RowsSkeleton = ({ rows = 4, thumb = 36 }: { rows?: number; thumb?: number }) => (
-  <View className="gap-3 px-5 pt-2">
+   activity, leaderboard and the passport.
+   No horizontal padding of its own — every current caller except rank.tsx
+   already renders this inside a `px-5`-padded ScrollView, so a self-padded
+   default made every one of THOSE skeletons sit visibly narrower than the
+   real rows that replace them: exactly the "jump" this component exists to
+   prevent. `className` lets the one caller with no padded ancestor (rank.tsx)
+   add its own. */
+export const RowsSkeleton = ({
+  rows = 4,
+  thumb = 36,
+  className,
+}: { rows?: number; thumb?: number; className?: string }) => (
+  <View className={`gap-3 pt-2 ${className ?? ''}`}>
     {Array.from({ length: rows }, (_, i) => i).map((i) => (
       <View key={i} className="flex-row items-center gap-3 py-2">
         <Skeleton height={thumb} width={thumb} />
