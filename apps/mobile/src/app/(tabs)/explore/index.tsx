@@ -34,6 +34,7 @@ import type {
 } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
+import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
@@ -151,6 +152,7 @@ export default function ExploreScreen() {
     },
   })
 
+  const { refreshing, onRefresh } = usePullToRefresh(results.refetch)
   const hits = results.data?.restaurants ?? []
   const members = results.data?.members ?? []
   // The default browse state: no query, no filters. Anything else is a search,
@@ -223,11 +225,7 @@ export default function ExploreScreen() {
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         refreshControl={
-          <RefreshControl
-            refreshing={results.isRefetching}
-            onRefresh={() => results.refetch()}
-            tintColor={accent}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
       >
         {/* Sort + filter trigger row, and — while open — the grouped panel

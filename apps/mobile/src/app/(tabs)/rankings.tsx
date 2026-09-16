@@ -38,6 +38,7 @@ import {
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
 import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
+import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -87,6 +88,7 @@ export default function RankingsTab() {
     enabled: tab === 'saved',
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
+  const { refreshing, onRefresh } = usePullToRefresh(mine.refetch)
 
   const ranked = mine.data?.rankings ?? []
   // Sort/filter run over the whole in-memory list (see lib/rankingSort.ts and
@@ -303,11 +305,7 @@ export default function RankingsTab() {
           keyExtractor={(r) => r.id}
           renderItem={({ item }) => <RankingRow ranking={item} />}
           refreshControl={
-            <RefreshControl
-              refreshing={mine.isRefetching}
-              onRefresh={() => mine.refetch()}
-              tintColor={accent}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
           }
           ListHeaderComponent={
             <>

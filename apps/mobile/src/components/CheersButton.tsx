@@ -4,6 +4,7 @@ import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
+import type { FeedItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -45,12 +46,33 @@ export function CheersButton({
       setOn(!next)
       setN((cur) => cur + (next ? -1 : 1))
     },
-    onSuccess: () => {
-      // Trending is driven by cheer counts and nothing else invalidates it;
-      // feed rows carry their own cheersCount that a refetch (pull-to-refresh,
-      // remount) would otherwise serve stale.
-      queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['trending'] })
+    onSuccess: (_data, next) => {
+      // Patch the cache instead of invalidating: an invalidation here used to
+      // refetch the whole feed on every heart tap, which is also what made
+      // Feed's pull-to-refresh spinner freeze mid-scroll so often (a
+      // background refetch triggered from any screen looks identical to a
+      // user's own pull — see lib/usePullToRefresh.ts). This row's own
+      // cheersCount/cheeredByMe is the only thing that changed, so patch it
+      // directly wherever it appears in the cached feed pages; trending is a
+      // 5-minute-stale rail (staleTime in discover.tsx) that doesn't need
+      // read-your-own-write freshness for one cheer.
+      queryClient.setQueriesData<{ pages: { feed: FeedItem[]; nextCursor: string | null }[] }>(
+        { queryKey: ['feed'] },
+        (data) => {
+          if (!data) return data
+          return {
+            ...data,
+            pages: data.pages.map((page) => ({
+              ...page,
+              feed: page.feed.map((item) =>
+                item.rankingId === rankingId
+                  ? { ...item, cheeredByMe: next, cheersCount: n + (next ? 1 : 0) - (on ? 1 : 0) }
+                  : item,
+              ),
+            })),
+          }
+        },
+      )
     },
   })
 

@@ -24,6 +24,7 @@ import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
+import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
@@ -66,6 +67,7 @@ export default function DiscoverTab() {
   // feed anyway (one row per ranking) — deduping by id is a cheap guarantee
   // either way, not a workaround for a specific known gap.
   const items = uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? [])
+  const { refreshing, onRefresh } = usePullToRefresh(feed.refetch)
 
   return (
     <View className="flex-1 bg-bg">
@@ -83,11 +85,7 @@ export default function DiscoverTab() {
           contentContainerClassName="px-5"
           contentContainerStyle={{ paddingBottom: tabBarClearance }}
           refreshControl={
-            <RefreshControl
-              refreshing={feed.isRefetching}
-              onRefresh={() => feed.refetch()}
-              tintColor={accent}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
           }
         >
           <FeedHeader />
@@ -98,11 +96,7 @@ export default function DiscoverTab() {
           contentContainerClassName="px-5"
           contentContainerStyle={{ paddingBottom: tabBarClearance }}
           refreshControl={
-            <RefreshControl
-              refreshing={feed.isRefetching}
-              onRefresh={() => feed.refetch()}
-              tintColor={accent}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
           }
         >
           <FeedHeader />
@@ -123,11 +117,7 @@ export default function DiscoverTab() {
           contentContainerStyle={{ paddingBottom: tabBarClearance }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl
-              refreshing={feed.isRefetching}
-              onRefresh={() => feed.refetch()}
-              tintColor={accent}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
           }
           // Without this a 2-item feed can't be pulled — there's nothing to
           // overscroll — so a new member has no way to refresh.
