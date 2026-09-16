@@ -10,6 +10,7 @@
     "import:top100": "bun run src/import-top100.ts",
     "rankings:check": "bun run src/check-rankings.ts",
     "rankings:renormalize": "bun run src/renormalize-rankings.ts",
+    "backfill:dishes": "bun run src/backfill-dishes.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
   },
