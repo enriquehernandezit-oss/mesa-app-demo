@@ -92,6 +92,7 @@ type Item = {
   lat?: number
   lng?: number
   score?: number // present when it's already on your list
+  position?: number // present when it's already on your list
 }
 
 type AddPlaceMutation = UseMutationResult<
@@ -111,7 +112,12 @@ type Top5Item = { position: number; name: string; score: number; coverImageId?: 
 // moment the "Compartir mi top 5" button appears. Mirrors RevealStep's `around`
 // loop, generalized from ±1 neighbor to the whole ordered list.
 function buildTop5(existingForCompare: Item[], picked: Item, position: number): Top5Item[] {
-  const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  // Sorted by the server's own position, not the rounded display score — with
+  // >=25 places the linear score formula gives adjacent positions the same
+  // integer, so sorting by score could show two places swapped.
+  const orderedByPos = [...existingForCompare].sort(
+    (a, b) => (a.position ?? Number.POSITIVE_INFINITY) - (b.position ?? Number.POSITIVE_INFINITY),
+  )
   const total = orderedByPos.length + 1
   const full: Top5Item[] = []
   for (let pos = 1; pos <= total; pos++) {
@@ -206,6 +212,7 @@ export default function RankAPlace() {
         lat: r.restaurant.lat,
         lng: r.restaurant.lng,
         score: r.score,
+        position: r.position,
       })),
     [mine.data],
   )
@@ -710,7 +717,10 @@ function RevealStep({
 }) {
   const insets = useSafeAreaInsets()
   const t = useT()
-  const orderedByPos = [...existingForCompare].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+  // Sorted by position, not rounded score — see buildTop5's comment above.
+  const orderedByPos = [...existingForCompare].sort(
+    (a, b) => (a.position ?? Number.POSITIVE_INFINITY) - (b.position ?? Number.POSITIVE_INFINITY),
+  )
   const total = orderedByPos.length + 1
   const score = scoreForPosition(position - 1, total)
   const around: { pos: number; name: string; score: number; isNew: boolean }[] = []

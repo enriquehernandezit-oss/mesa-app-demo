@@ -69,6 +69,15 @@ export type Sentiment = 'loved' | 'fine' | 'disliked'
  * initInsert, but the sentiment pre-narrows the binary search to the matching
  * third of the list — "loved" competes near the top, "disliked" near the bottom.
  * Fewer comparisons, and the question order feels right to the user.
+ *
+ * The three bands partition [0, n] with no overlap: `loved` gets the first
+ * `ceil(n/3)` slots, `disliked` gets the last `floor(n/3)`, and `fine` gets
+ * whatever's left in between — always non-empty for n >= 3 (a prior version
+ * computed `fine`'s upper bound independently as `max(third+1, n-third)`,
+ * which for small n (e.g. n=4, third=2) put it at 3, one past the boundary
+ * `disliked` used as its own lower bound, so `fine` and `disliked` both
+ * covered slot 2..3 — the sentiment bands the user tapped could silently mean
+ * two different score ranges for the same spot).
  */
 export function initInsertBounded<T>(
   existing: T[],
@@ -78,10 +87,11 @@ export function initInsertBounded<T>(
   const base = initInsert(existing, item)
   if (base.current === null || existing.length < 3) return base
   const n = existing.length
-  const third = Math.ceil(n / 3)
-  if (sentiment === 'loved') return { ...base, lo: 0, hi: third }
-  if (sentiment === 'disliked') return { ...base, lo: n - third, hi: n }
-  return { ...base, lo: third, hi: Math.max(third + 1, n - third) }
+  const loved = Math.ceil(n / 3)
+  const disliked = Math.floor(n / 3)
+  if (sentiment === 'loved') return { ...base, lo: 0, hi: loved }
+  if (sentiment === 'disliked') return { ...base, lo: n - disliked, hi: n }
+  return { ...base, lo: loved, hi: n - disliked }
 }
 
 /** Seed a session from an unordered set of spots. */
@@ -136,12 +146,16 @@ export function choose<T>(s: PairwiseState<T>, currentWins: boolean): PairwiseSt
 /**
  * The user judged the current spot ≈ the pivot ("About the same"). Settle it
  * immediately, adjacent to (just below) the pivot — no more comparisons for it.
+ * Clamped to `hi`: `mid + 1` can exceed the current search bound (e.g. right
+ * after the very first comparison of a sentiment band, where `mid` already
+ * sits one below `hi`), and an unclamped splice there placed the spot outside
+ * the band the user's own sentiment selected.
  */
 export function tie<T>(s: PairwiseState<T>): PairwiseState<T> {
   if (s.current === null) return s
   const mid = (s.lo + s.hi) >> 1
   const ordered = [...s.ordered]
-  ordered.splice(mid + 1, 0, s.current)
+  ordered.splice(Math.min(mid + 1, s.hi), 0, s.current)
   return startNext({ ...s, ordered, lo: 0, hi: 0 })
 }
 
