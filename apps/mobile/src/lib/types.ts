@@ -36,7 +36,7 @@ export interface ModerationReport {
   createdAt: string
   target:
     | { kind: 'vibe_note'; body: string; userId: string }
-    | { kind: 'dish'; name: string; caption: string | null; imageId: string }
+    | { kind: 'dish'; name: string; caption: string | null; imageId: string | null }
     | { kind: 'user'; name: string; handle: string | null }
     | null
   // True when the content was already removed/banned by someone else — the row
@@ -130,7 +130,9 @@ export interface Dish {
   id: string
   name: string
   caption: string | null
-  imageId: string
+  // Nullable as of M11 — a dish can be a photo-less "Qué pedir" pick.
+  imageId: string | null
+  categoryId: string
   grain: string
   createdAt: string
   user: { id: string; name: string; handle: string | null; image: string | null }
@@ -141,7 +143,8 @@ export interface DishDetail {
   id: string
   name: string
   caption: string | null
-  imageId: string
+  imageId: string | null
+  categoryId: string
   grain: string
   createdAt: string
   user: { id: string; name: string; handle: string | null; image: string | null }
@@ -160,6 +163,33 @@ export interface DishDetail {
     coverImageId: string | null
   }
   neighborhood: string | null
+}
+
+// The closed dish-category taxonomy (M11) — GET /dishes/categories. Mirrors
+// packages/db/src/dishCategories.ts's shape; see
+// apps/mobile/src/lib/dishCategories.ts for why this app keeps its own copy
+// of the (small) keyword-guess function instead of importing that package.
+export interface DishGroup {
+  id: string
+  nameEs: string
+}
+export interface DishCategory {
+  id: string
+  group: string
+  nameEs: string
+  sortOrder: number
+  keywords: string[]
+}
+
+// A distinct dish name already logged at a restaurant, with a count and the
+// most common category among its loggers — GET /dishes/restaurant/:id/names,
+// the chip source for the rank flow's "Qué pedir" step. Aggregated data only;
+// deliberately carries no poster information.
+export interface DishName {
+  nameKey: string
+  label: string
+  count: number
+  categoryId: string
 }
 
 export interface FeaturedList {

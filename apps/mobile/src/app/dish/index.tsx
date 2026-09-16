@@ -1,3 +1,4 @@
+import { DishCategoryPicker } from '@/components/DishCategoryPicker'
 import {
   Body,
   Button,
@@ -14,6 +15,7 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
+import { guessDishCategory, useDishCategories } from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { type Grain, grainLabel, grainOptions } from '@/lib/display'
 import { captureError } from '@/lib/errors'
@@ -52,30 +54,42 @@ export default function DishCompose() {
     queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${restaurantId}`),
     retry: false,
   })
+  const categoriesQuery = useDishCategories()
 
-  const [step, setStep] = useState<'photo' | 'details'>('photo')
   const [image, setImage] = useState<string | null>(null)
   const [grain, setGrain] = useState<Grain>('candlelit')
   const [name, setName] = useState('')
+  const [categoryId, setCategoryId] = useState<string | null>(null)
+  const [categoryTouched, setCategoryTouched] = useState(false)
   const [caption, setCaption] = useState('')
   const [friendsOnly, setFriendsOnly] = useState(true)
   const [posted, setPosted] = useState(false)
   const goneRef = useRef(false)
   const captionRef = useRef<TextInput>(null)
 
+  // The category picker pre-selects a keyword guess so picking one is usually
+  // zero taps; it stops re-guessing the moment the member picks one themselves,
+  // even if they keep editing the name afterward.
+  useEffect(() => {
+    if (categoryTouched) return
+    if (!name.trim() || !categoriesQuery.data) return
+    setCategoryId(guessDishCategory(name, categoriesQuery.data.categories))
+  }, [name, categoryTouched, categoriesQuery.data])
+
   const post = useMutation({
     mutationFn: async () => {
       await api.post('/dishes', {
         restaurantId,
         name: name.trim(),
+        categoryId,
         caption: caption.trim() || undefined,
-        image,
-        grain,
+        image: image ?? undefined,
+        grain: image ? grain : 'none',
         visibility: friendsOnly ? 'friends' : 'public',
       })
     },
     onSuccess: () => {
-      track('dish_posted', { grain, friendsOnly })
+      track('dish_posted', { grain, friendsOnly, hasPhoto: image !== null, category: categoryId })
       setPosted(true)
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
@@ -106,9 +120,8 @@ export default function DishCompose() {
   }, [posted])
 
   // Swipe-down-to-dismiss (and Android hardware back) closes the composer
-  // outright once nothing's been entered; the step-2 BackBar already steps
-  // back to the photo step on its own (line ~208).
-  const dirty = !posted && (image !== null || caption.trim() !== '')
+  // outright once nothing's been entered.
+  const dirty = !posted && (name.trim() !== '' || image !== null || caption.trim() !== '')
   usePreventRemove(dirty, ({ data }) => {
     showActionSheet({
       title: t('dish.discard_title'),
@@ -165,16 +178,51 @@ export default function DishCompose() {
     )
   }
 
-  // C1 — choose the shot + treatment.
-  if (step === 'photo') {
-    return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+  // Name-first: a dish can be logged with just a name + category, so the
+  // photo (still the richest post) is one optional block among several
+  // rather than a gate the whole flow gets stuck behind.
+  const canPost = name.trim().length > 0 && categoryId !== null && !post.isPending
+  return (
+    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+      <View className="px-5">
         <BackBar label={t('dish.cancel')} onPress={goBack} />
+      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerClassName="px-5 pb-8"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+      >
+        <TextInput
+          className="mt-3 border-line border-b pb-1 font-serif text-serif-md text-text"
+          placeholderTextColor={placeholder}
+          placeholder={t('dish.name_placeholder')}
+          maxLength={60}
+          value={name}
+          onChangeText={setName}
+          returnKeyType="next"
+        />
+        <Caption className="mt-1 text-micro">{t('dish.name_caption')}</Caption>
+
+        <Eyebrow className="mt-4">{t('dish.category_label')}</Eyebrow>
+        <View className="mt-2">
+          {categoriesQuery.data ? (
+            <DishCategoryPicker
+              categories={categoriesQuery.data.categories}
+              groups={categoriesQuery.data.groups}
+              selected={categoryId}
+              onSelect={(id) => {
+                setCategoryId(id)
+                setCategoryTouched(true)
+              }}
+            />
+          ) : null}
+        </View>
 
         <Pressable
           accessibilityRole="button"
           onPress={choosePhoto}
-          className="mt-3 aspect-square w-full items-center justify-center overflow-hidden rounded border border-line border-dashed bg-bg-sunk active:opacity-90"
+          className="mt-4 aspect-square w-full items-center justify-center overflow-hidden rounded border border-line border-dashed bg-bg-sunk active:opacity-90"
         >
           {image ? (
             <>
@@ -207,64 +255,16 @@ export default function DishCompose() {
           </View>
         )}
 
-        <View className="flex-1" />
-        <View style={{ paddingBottom: insets.bottom + 12 }}>
-          <Button variant="primary" disabled={!image} onPress={() => setStep('details')}>
-            {t('dish.next')}
-          </Button>
-        </View>
-      </View>
-    )
-  }
-
-  // C2 — name, caption, linked ranking, and the two toggles.
-  const canPost = name.trim().length > 0 && !post.isPending
-  return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="px-5">
-        <BackBar label={t('dish.new_dish_back')} onPress={() => setStep('photo')} />
-      </View>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-8"
-        automaticallyAdjustKeyboardInsets
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="mt-3 flex-row gap-3">
-          {image ? (
-            <View className="h-20 w-20 overflow-hidden rounded">
-              <Image
-                source={{ uri: image }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-            </View>
-          ) : null}
-          <View className="flex-1">
-            <TextInput
-              className="border-line border-b pb-1 font-serif text-serif-md text-text"
-              placeholderTextColor={placeholder}
-              placeholder={t('dish.name_placeholder')}
-              maxLength={60}
-              value={name}
-              onChangeText={setName}
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => captionRef.current?.focus()}
-            />
-            <Caption className="mt-1 text-micro">{t('dish.name_caption')}</Caption>
-            <TextInput
-              className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
-              placeholderTextColor={placeholder}
-              ref={captionRef}
-              placeholder={t('dish.caption_placeholder')}
-              maxLength={140}
-              value={caption}
-              onChangeText={setCaption}
-              returnKeyType="done"
-            />
-          </View>
-        </View>
+        <TextInput
+          className="mt-4 border-line border-b pb-1 font-ui text-body text-text"
+          placeholderTextColor={placeholder}
+          ref={captionRef}
+          placeholder={t('dish.caption_placeholder')}
+          maxLength={140}
+          value={caption}
+          onChangeText={setCaption}
+          returnKeyType="done"
+        />
 
         {myRanking && restaurant && (
           <>

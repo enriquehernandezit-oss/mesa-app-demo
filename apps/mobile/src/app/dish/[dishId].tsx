@@ -8,9 +8,10 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
+import { categoryLabel, useDishCategories } from '@/lib/dishCategories'
 import { grainLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
-import { useT } from '@/lib/i18n'
+import { useLanguage, useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,10 +28,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // as the feed) rather than through a CSS filter RN doesn't have.
 export default function DishDetail() {
   const t = useT()
+  const lang = useLanguage()
   const { dishId } = useLocalSearchParams<{ dishId: string }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
+  const categoriesQuery = useDishCategories()
 
   const queryClient = useQueryClient()
 
@@ -109,29 +112,42 @@ export default function DishDetail() {
   const { restaurant } = dish
   const firstName =
     (dish.user.name || dish.user.handle || '').split(' ')[0] || t('dish.someone_fallback')
+  const category = categoriesQuery.data?.categories.find((c) => c.id === dish.categoryId)
+  const categoryText = category ? categoryLabel(category, lang) : dish.categoryId
 
   return (
     <View className="flex-1 bg-bg">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
-        <View className="h-80">
-          <Image
-            source={{ uri: cloudinaryUrl(dish.imageId, { w: 1000, h: 1000 }) ?? undefined }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            transition={120}
-          />
-          <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
-            <GlassCircle accessibilityLabel={t('common.back_plain')} onPress={goBack}>
-              <BackIcon size={20} />
-            </GlassCircle>
+        {dish.imageId ? (
+          <View className="h-80">
+            <Image
+              source={{ uri: cloudinaryUrl(dish.imageId, { w: 1000, h: 1000 }) ?? undefined }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={120}
+            />
+            <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
+              <GlassCircle accessibilityLabel={t('common.back_plain')} onPress={goBack}>
+                <BackIcon size={20} />
+              </GlassCircle>
+            </View>
+            <View
+              className="absolute right-4 rounded-pill bg-surface px-2 py-1"
+              style={{ bottom: 10 }}
+            >
+              <Caption className="text-micro">film · {grainLabel(dish.grain)}</Caption>
+            </View>
           </View>
-          <View
-            className="absolute right-4 rounded-pill bg-surface px-2 py-1"
-            style={{ bottom: 10 }}
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            onPress={goBack}
+            className="min-h-[44px] justify-center px-5 active:opacity-60"
+            style={{ marginTop: insets.top + 12 }}
           >
-            <Caption className="text-micro">film · {grainLabel(dish.grain)}</Caption>
-          </View>
-        </View>
+            <Text className="font-ui-medium text-label text-text-muted">{t('common.back')}</Text>
+          </Pressable>
+        )}
 
         <View className="px-5 pt-4">
           {/* The poster — a photo with an attributed score and, until now, no
@@ -152,6 +168,7 @@ export default function DishDetail() {
             </Pressable>
           </Link>
           <Text className="mt-2 font-serif-semibold text-title text-text">{dish.name}</Text>
+          {dish.categoryId ? <Caption className="mt-0.5">{categoryText}</Caption> : null}
           {dish.caption ? (
             <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">
               “{dish.caption}”

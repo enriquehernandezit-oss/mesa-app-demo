@@ -182,11 +182,13 @@ function ReportRow({
           onPress={() => router.push(`/dish/${report.targetId}`)}
           className="mt-2 flex-row items-center gap-3 active:opacity-70"
         >
-          <Image
-            source={{ uri: cloudinaryUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
-            style={{ width: 56, height: 56, borderRadius: 10 }}
-            contentFit="cover"
-          />
+          {target.imageId ? (
+            <Image
+              source={{ uri: cloudinaryUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
+              style={{ width: 56, height: 56, borderRadius: 10 }}
+              contentFit="cover"
+            />
+          ) : null}
           <View className="flex-1">
             <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
             {target.caption ? (
