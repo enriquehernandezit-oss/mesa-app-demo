@@ -63,9 +63,10 @@ cd ../.. && bun run lint               # biome, repo-wide
 `app.json` holds the static config; **`app.config.js`** layers on the two things
 that must come from the environment:
 
-- `RNMAPBOX_DOWNLOAD_TOKEN` — the MapBox **SDK download token** (`sk.…`), read by
-  the `@rnmapbox/maps` config plugin at prebuild so CocoaPods can fetch the native
-  SDK. Build-time only; never shipped in the bundle.
+- `RNMAPBOX_MAPS_DOWNLOAD_TOKEN` — the MapBox **SDK download token** (`sk.…`), read
+  directly from ENV by the `@rnmapbox/maps` CocoaPods podspec at prebuild (no
+  config plugin option — see `app.config.js`'s header comment) so CocoaPods can
+  fetch the native SDK. Build-time only; never shipped in the bundle.
 - `APP_LINK_DOMAIN` — the universal-link domain, which becomes
   `ios.associatedDomains: ["applinks:<domain>"]` so password-reset and
   verify-email links open the app instead of a browser.

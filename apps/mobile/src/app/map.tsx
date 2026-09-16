@@ -1,4 +1,3 @@
-import { HAS_MAP_TOKEN, MesaMap } from '@/components/MesaMap'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -8,6 +7,7 @@ import { api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
+import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useMyLocation } from '@/lib/useMyLocation'
 import { useQuery } from '@tanstack/react-query'
@@ -21,6 +21,14 @@ import { Pressable, Text, View } from 'react-native'
 // when a token is configured, else a graceful "map unavailable" state (native
 // maps are the v1 feature, so there's no hand-drawn SVG fallback here). Tapping a
 // pin opens the same card with the friends' average and a way into the spot.
+//
+// MesaMap.tsx does a top-level `import ... from '@rnmapbox/maps'`, which
+// touches the native module the moment the FILE loads — before any runtime
+// check gets a chance to gate it. require() it only once we already know
+// HAS_MAP_TOKEN, so a token-less build never touches it at all.
+const MesaMap = HAS_MAP_TOKEN
+  ? (require('@/components/MesaMap') as typeof import('@/components/MesaMap')).MesaMap
+  : null
 export default function MapScreen() {
   const router = useRouter()
   const t = useT()
@@ -83,7 +91,7 @@ export default function MapScreen() {
           <ErrorState onRetry={() => q.refetch()}>{t('map.load_error')}</ErrorState>
         ) : spots.length === 0 ? (
           <EmptyState>{t('map.no_spots')}</EmptyState>
-        ) : HAS_MAP_TOKEN ? (
+        ) : MesaMap ? (
           <MesaMap spots={spots} me={myPosition} onSelect={setSelectedId} style={{ flex: 1 }} />
         ) : (
           <EmptyState body={t('map.coming_soon_body')}>{t('map.unavailable')}</EmptyState>

@@ -37,7 +37,9 @@ feature is not load-bearing for that loop, it is not Phase 1.
 - **iOS delivery:** **EAS Build** → TestFlight → App Store. Needs the Apple
   Developer account plus two MapBox tokens: the public runtime one
   (`EXPO_PUBLIC_MAPBOX_TOKEN`) and the build-time SDK download token
-  (`RNMAPBOX_DOWNLOAD_TOKEN`, injected via `apps/mobile/app.config.js`).
+  (`RNMAPBOX_MAPS_DOWNLOAD_TOKEN`, read directly from ENV by the
+  `@rnmapbox/maps` CocoaPods podspec — no plugin option, see
+  `apps/mobile/app.config.js`'s header comment).
 - **Language:** TypeScript everywhere, `strict` on, no `any`
 
 **App Store compliance is a build constraint, not a submission step.** Read

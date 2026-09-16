@@ -1,4 +1,5 @@
 import type { LatLng } from '@/lib/geo'
+import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps'
@@ -9,11 +10,10 @@ import { Pressable, View } from 'react-native'
 // replacement for the web's mapbox-gl MapGL (apps/app/src/screens/map/MapGL.tsx).
 // Brass pins for spots friends have ranked (or the map's subject), quiet ink
 // otherwise; the style follows the active theme (light-v11 / dark-v11 via the
-// Mapbox default StyleURLs). Needs EXPO_PUBLIC_MAPBOX_TOKEN — callers gate on it.
-const TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN
-if (TOKEN) Mapbox.setAccessToken(TOKEN)
-
-export const HAS_MAP_TOKEN = Boolean(TOKEN)
+// Mapbox default StyleURLs). Needs EXPO_PUBLIC_MAPBOX_TOKEN — callers gate on
+// HAS_MAP_TOKEN (from lib/mapbox.ts, NOT re-exported here — see that file's
+// comment for why importing this file at all must stay behind that check).
+if (HAS_MAP_TOKEN) Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN as string)
 
 export function MesaMap({
   spots,

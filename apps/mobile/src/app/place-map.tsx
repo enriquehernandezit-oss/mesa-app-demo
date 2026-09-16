@@ -1,9 +1,9 @@
-import { HAS_MAP_TOKEN, MesaMap } from '@/components/MesaMap'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Button, Caption, EmptyState } from '@/components/ui'
 import { DirectionsIcon } from '@/components/ui/icons'
 import { openDirections } from '@/lib/directions'
 import { useT } from '@/lib/i18n'
+import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo } from 'react'
@@ -14,6 +14,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // web's PlaceMapSheet (apps/app/src/components/PlaceMapSheet.tsx). Reached from a
 // restaurant profile's locator map. Zoom 16 keeps street names readable (the
 // block, not the rooftop). "Cómo llegar" hands off to the maps app.
+//
+// See map.tsx's comment: MesaMap is require()'d only once HAS_MAP_TOKEN is
+// already known, so a token-less build never touches @rnmapbox/maps at all.
+const MesaMap = HAS_MAP_TOKEN
+  ? (require('@/components/MesaMap') as typeof import('@/components/MesaMap')).MesaMap
+  : null
 export default function PlaceMapScreen() {
   const t = useT()
   const router = useRouter()
@@ -52,7 +58,7 @@ export default function PlaceMapScreen() {
     <View className="flex-1 bg-bg">
       <ScreenHeader onBack={goBack} backLabel={p.name || t('common.back_plain')} />
       <View className="flex-1">
-        {HAS_MAP_TOKEN && Number.isFinite(lat) && Number.isFinite(lng) ? (
+        {MesaMap && Number.isFinite(lat) && Number.isFinite(lng) ? (
           <MesaMap
             spots={spots}
             center={{ lat, lng, zoom: 16 }}
