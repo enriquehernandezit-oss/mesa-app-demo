@@ -42,6 +42,7 @@ import {
   searchText,
   toMesaFields,
 } from './lib/googlePlaces'
+import { MENU_SECTION_LABELS } from './lib/menuSections'
 
 const { restaurants, neighborhoods, menuItems } = schema
 
@@ -440,12 +441,23 @@ async function run() {
     })
   }
 
+  // Section HEADERS (not item names — see docs/MENUS.md) follow the language
+  // toggle via a static es/en map (lib/menuSections.ts); an unmapped name
+  // just falls back to its raw string in both languages, which is correct
+  // for a restaurant's own stylized title, but this still flags every newly
+  // imported name the map doesn't recognize yet so that's a deliberate
+  // decision, not a silent gap.
+  const unmappedSections = new Set<string>()
+
   let menuRowsWritten = 0
   for (const name of resolvableMenuNames) {
     const restaurantId = restaurantIdByName.get(name)
     if (!restaurantId) continue
     await db.delete(menuItems).where(sql`${menuItems.restaurantId} = ${restaurantId}`)
     const rows = data.menus[name] ?? []
+    for (const row of rows) {
+      if (!(row.section in MENU_SECTION_LABELS)) unmappedSections.add(row.section)
+    }
     for (const batch of chunk(rows, CHUNK)) {
       await db.insert(menuItems).values(
         batch.map((item) => ({
@@ -467,6 +479,12 @@ async function run() {
   console.log(
     `  done — ${menuRowsWritten} menu item(s) written across ${resolvableMenuNames.length} restaurant(s)`,
   )
+  if (unmappedSections.size) {
+    console.log(
+      `  ${unmappedSections.size} section name(s) with no es/en label yet — add to src/lib/menuSections.ts if they're a generic category, not a restaurant's own stylized title:`,
+    )
+    for (const s of [...unmappedSections].sort()) console.log(`    ${s}`)
+  }
   await pool.end()
 }
 

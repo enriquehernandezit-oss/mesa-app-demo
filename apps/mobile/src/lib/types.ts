@@ -444,7 +444,7 @@ export interface MenuItem {
   currency: string | null
 }
 export interface RestaurantMenu {
-  sections: { name: string; items: MenuItem[] }[]
+  sections: { name: string; label: { es: string; en: string }; items: MenuItem[] }[]
   verifiedAt: string | null
 }
 

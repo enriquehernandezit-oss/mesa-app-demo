@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
+import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -876,6 +877,10 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     return c.json({
       sections: sections.map((s) => ({
         name: s.name,
+        // The section HEADER is generic-enough category vocabulary (unlike
+        // item names/descriptions, which stay untranslated by design — see
+        // docs/MENUS.md) that the language toggle should reach it.
+        label: menuSectionLabel(s.name),
         items: s.items.map(({ verifiedAt: _v, ...item }) => item),
       })),
       verifiedAt,

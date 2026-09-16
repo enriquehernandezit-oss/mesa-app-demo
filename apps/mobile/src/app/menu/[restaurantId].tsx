@@ -1,11 +1,11 @@
 import { Caption, Chip, EmptyState, ErrorState, Eyebrow, RowsSkeleton } from '@/components/ui'
 import { api } from '@/lib/api'
-import { dateLocale, useT } from '@/lib/i18n'
+import { dateLocale, useLanguage, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 // The restaurant's own published menu (M5), pulled out of the profile into
@@ -15,6 +15,7 @@ import { ScrollView, Text, View } from 'react-native'
 // inline, collapsible section.
 export default function RestaurantMenuScreen() {
   const t = useT()
+  const lang = useLanguage()
   const { restaurantId, name } = useLocalSearchParams<{ restaurantId: string; name?: string }>()
   const queryClient = useQueryClient()
   const restaurantName =
@@ -34,10 +35,43 @@ export default function RestaurantMenuScreen() {
   const scrollRef = useRef<ScrollView>(null)
   const sectionOffsets = useRef<number[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
+  // Tapping a chip used to only call scrollTo — the highlight itself only
+  // ever moved once `onScroll` below caught up, which a short animated hop to
+  // a nearby section can outrun entirely (a handful of scrollEventThrottle-32
+  // events over a fast, short scroll can land zero of them on the way), so
+  // the tap visibly "did nothing." Setting the index immediately on tap fixes
+  // that; `jumping` then mutes the scroll-spy below for the span of that
+  // animation so it can't fight the just-tapped chip with a stale in-between
+  // read before the scroll settles.
+  const jumping = useRef(false)
+  const jumpTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (jumpTimeout.current) clearTimeout(jumpTimeout.current)
+    },
+    [],
+  )
+
+  const railRef = useRef<ScrollView>(null)
+  const chipOffsets = useRef<number[]>([])
+  // Keeps the active chip on-screen in the horizontal rail — it used to only
+  // ever move the PAGE, so a chip near the end of a long rail could highlight
+  // while sitting off the edge of the visible strip.
+  useEffect(() => {
+    const x = chipOffsets.current[activeIndex]
+    if (x != null) railRef.current?.scrollTo({ x: Math.max(0, x - 24), animated: true })
+  }, [activeIndex])
 
   const jumpTo = (i: number) => {
     const y = sectionOffsets.current[i]
-    if (y != null) scrollRef.current?.scrollTo({ y, animated: true })
+    if (y == null) return
+    setActiveIndex(i)
+    jumping.current = true
+    if (jumpTimeout.current) clearTimeout(jumpTimeout.current)
+    jumpTimeout.current = setTimeout(() => {
+      jumping.current = false
+    }, 400)
+    scrollRef.current?.scrollTo({ y, animated: true })
   }
 
   // The chip rail tracks scroll position: whichever section's header is the
@@ -45,6 +79,7 @@ export default function RestaurantMenuScreen() {
   // lookahead (24px) keeps the chip from flipping right as a header's top
   // edge crosses zero, which read as one tick early against the eye.
   const onScroll = (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    if (jumping.current) return
     const y = e.nativeEvent.contentOffset.y + 24
     let idx = 0
     for (let i = 0; i < sectionOffsets.current.length; i++) {
@@ -79,6 +114,7 @@ export default function RestaurantMenuScreen() {
         // do respect.
         <View style={{ height: 52, overflow: 'hidden' }}>
           <ScrollView
+            ref={railRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{
@@ -100,8 +136,11 @@ export default function RestaurantMenuScreen() {
                 size="sm"
                 state={i === activeIndex ? 'selected' : 'default'}
                 onPress={() => jumpTo(i)}
+                onLayout={(e) => {
+                  chipOffsets.current[i] = e.nativeEvent.layout.x
+                }}
               >
-                {s.name}
+                {s.label[lang]}
               </Chip>
             ))}
           </ScrollView>
@@ -132,7 +171,7 @@ export default function RestaurantMenuScreen() {
               sectionOffsets.current[i] = e.nativeEvent.layout.y
             }}
           >
-            <Eyebrow className="text-accent-strong">{s.name}</Eyebrow>
+            <Eyebrow className="text-accent-strong">{s.label[lang]}</Eyebrow>
           </View>,
           <View key={`b-${s.name}`}>
             {/* Prices deliberately not shown — they drift with time and a
