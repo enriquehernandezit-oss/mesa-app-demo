@@ -38,38 +38,53 @@ import Animated, {
  */
 export const MAX_SCALE = 1.35
 
+// A caller's own `className` color (e.g. `text-on-accent` on a selected pill)
+// is meant to REPLACE these primitives' default text color, not fight it —
+// but NativeWind resolves a duplicated property by generated-CSS order, not
+// by JSX string order, so the primitive's own `text-*` color class could
+// silently win regardless of which one the caller intended. This checks only
+// the color keys from tailwind.config.js's `colors` map (never the `text-*`
+// FONT-SIZE keys like `text-label`/`text-title`, which share the same prefix
+// but aren't colors) so the primitive can omit its default color whenever the
+// caller already specified one.
+const TEXT_COLOR_KEYS =
+  /\btext-(bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
+function hasTextColor(className?: string): boolean {
+  return Boolean(className && TEXT_COLOR_KEYS.test(className))
+}
+
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif-semibold text-title leading-title text-text ${className ?? ''}`}
+    className={`font-serif-semibold text-title leading-title ${hasTextColor(className) ? '' : 'text-text'} ${className ?? ''}`}
     {...p}
   />
 )
 export const Body = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-ui text-body text-text-2 ${className ?? ''}`}
+    className={`font-ui text-body ${hasTextColor(className) ? '' : 'text-text-2'} ${className ?? ''}`}
     {...p}
   />
 )
 export const Caption = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-ui text-label text-text-muted ${className ?? ''}`}
+    className={`font-ui text-label ${hasTextColor(className) ? '' : 'text-text-muted'} ${className ?? ''}`}
     {...p}
   />
 )
 export const Eyebrow = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent ${className ?? ''}`}
+    className={`font-ui-semibold text-eyebrow uppercase tracking-eyebrow ${hasTextColor(className) ? '' : 'text-accent'} ${className ?? ''}`}
     {...p}
   />
 )
 export const SerifItalic = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif-italic text-text-2 ${className ?? ''}`}
+    className={`font-serif-italic ${hasTextColor(className) ? '' : 'text-text-2'} ${className ?? ''}`}
     {...p}
   />
 )

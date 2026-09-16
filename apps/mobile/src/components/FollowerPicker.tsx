@@ -95,7 +95,7 @@ export function FollowerPicker({
                 >
                   <Text
                     className={`font-ui-semibold text-eyebrow ${
-                      selected.has(u.id) ? 'text-accent-strong' : 'text-text-muted'
+                      selected.has(u.id) ? 'text-on-accent' : 'text-text-muted'
                     }`}
                   >
                     {selected.has(u.id) ? t('plans.invited_pill') : t('plans.invite_pill')}

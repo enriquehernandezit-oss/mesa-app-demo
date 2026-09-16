@@ -207,7 +207,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         <View
           className={`h-6 w-6 items-center justify-center rounded border ${accepted ? 'border-accent bg-accent-fill' : 'border-line'}`}
         >
-          {accepted && <CheckIcon size={14} color="accent-strong" />}
+          {accepted && <CheckIcon size={14} color="on-accent" />}
         </View>
         <Caption className="flex-1">{t('onboarding.eula_accept')}</Caption>
       </Pressable>

@@ -322,7 +322,7 @@ export default function RestaurantProfile() {
                 disabled={toggleSave.isPending}
                 className={`h-10 w-10 items-center justify-center rounded-pill border ${saved ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-80`}
               >
-                <CheckIcon size={17} color={saved ? 'accent-strong' : 'text-muted'} />
+                <CheckIcon size={17} color={saved ? 'on-accent' : 'text-muted'} />
               </Pressable>
             </View>
             {allMesa.avg != null && showMesa && (
