@@ -120,6 +120,13 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'activity.following_pill': 'Following',
   'activity.follow_pill': 'Follow',
 
+  'amigos.title': 'Find friends',
+  'amigos.invite_title': 'Invite your friends',
+  'amigos.invite_body': 'Share your invite link on WhatsApp.',
+  'amigos.suggestions_title': 'People you may know',
+  'amigos.load_error': "Couldn't load suggestions.",
+  'amigos.no_suggestions': 'No suggestions right now.',
+
   'share.preparing': 'Preparing your card…',
   'share.prepare_error': "Couldn't prepare the card. Try again.",
 
@@ -644,6 +651,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rank.no_friends_ranked': "None of your friends have ranked this yet — you're first.",
   'rank.commit_error': "Couldn't save this ranking.",
   'rank.retry_short': 'Retry',
+  'rank.saving_ranking': 'Saving your ranking…',
+  'rank.saved_without_stamp': '{name} landed at #{position} on your list.',
   'rank.your_answer_moved': "Your answer moved {name}, not the spot's score.",
   'rank.your_answer_moves': "Your answer moves {name}, not the spot's score.",
   'rank.add_a_note': 'Add a note',

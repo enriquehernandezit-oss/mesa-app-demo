@@ -131,6 +131,13 @@ export const es = {
   'activity.following_pill': 'Siguiendo',
   'activity.follow_pill': 'Seguir',
 
+  'amigos.title': 'Encuentra amigos',
+  'amigos.invite_title': 'Invita a tus amigos',
+  'amigos.invite_body': 'Comparte tu link de invitación por WhatsApp.',
+  'amigos.suggestions_title': 'Quizás conoces a',
+  'amigos.load_error': 'No se pudieron cargar las sugerencias.',
+  'amigos.no_suggestions': 'No tenemos sugerencias por ahora.',
+
   // components/ShareCardHost.tsx
   'share.preparing': 'Preparando tu tarjeta…',
   'share.prepare_error': 'No se pudo preparar la tarjeta. Intenta de nuevo.',
@@ -697,6 +704,8 @@ export const es = {
   'rank.no_friends_ranked': 'Ninguno de tus amigos ha rankeado esto todavía — vas primero.',
   'rank.commit_error': 'No se pudo guardar este ranking.',
   'rank.retry_short': 'Reintentar',
+  'rank.saving_ranking': 'Guardando tu ranking…',
+  'rank.saved_without_stamp': '{name} quedó #{position} en tu lista.',
   'rank.your_answer_moved': 'Tu respuesta movió a {name}, no la puntuación del spot.',
   'rank.your_answer_moves': 'Tu respuesta mueve a {name}, no la puntuación del spot.',
   'rank.add_a_note': 'Agregar una nota',

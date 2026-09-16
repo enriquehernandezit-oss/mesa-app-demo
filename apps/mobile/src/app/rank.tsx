@@ -264,20 +264,39 @@ export default function RankAPlace() {
   // Commits the ranking the moment its score is revealed — not at "Guardar nota"
   // — so an interrupted flow never loses the ranking itself (only the optional
   // note/tags/dish). The note step re-POSTs the same pair, which the API upserts.
+  // `retry: 2` plus a real onError (previously none — a failed POST after a
+  // swipe-down away from the reveal used to fail completely silently, with no
+  // toast, no retry, and no sign anything was wrong) covers a flaky connection
+  // without the member ever finding out their ranking didn't actually save.
   const commitInitial = useMutation({
     mutationFn: (pos: number) => api.post('/rankings', { restaurantId: pickedId, position: pos }),
+    retry: 2,
     onSuccess: () => {
       track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
       invalidateAfterRanking(pickedId)
     },
+    onError: (err) => {
+      captureError(err, 'rank.commit')
+    },
   })
   const committedForId = useRef<string | null>(null)
+  // Snapshot of `picked` at the exact moment a position first commits for this
+  // pick — RevealStep/NoteStep/the placed-stamp below read THIS instead of
+  // the live `picked` memo. `invalidateAfterRanking` (in commitInitial's own
+  // onSuccess) also invalidates the candidates query, which excludes already-
+  // ranked places; if that refetch lands before `mine` catches up, live
+  // `picked` can transiently go null and the render would otherwise fall
+  // through to the very top FindStep gate, flashing the search screen back
+  // over an in-progress reveal.
+  const pickedRef = useRef<Item | null>(null)
   useEffect(() => {
     if (pickedId && position !== null && committedForId.current !== pickedId) {
       committedForId.current = pickedId
+      pickedRef.current = picked
       commitInitial.mutate(position)
     }
-  }, [pickedId, position, commitInitial.mutate])
+  }, [pickedId, position, picked, commitInitial.mutate])
+  const committedPlace = pickedRef.current
 
   // The friend signal for the reveal screen — the same profile data the
   // restaurant page shows, fetched once the score is on screen.
@@ -387,17 +406,16 @@ export default function RankAPlace() {
   // Guard swipe-down-to-dismiss (and the modal's hardware-back on Android)
   // against silently losing real effort. Picking a place or a sentiment costs
   // nothing to redo, so those never prompt; once pairwise placement has
-  // started, several taps are on the line, and once the score is revealed and
-  // committed (commitInitial already saved the ranking itself — only a note,
-  // tags, a dish or its photo can still be lost here). `usePreventRemove` is
-  // the one path that also tells native to hold the screen in place
-  // (`preventNativeDismiss`) — the ad-hoc `beforeRemove` + `preventDefault`
-  // this replaced could let the native drag-to-dismiss finish while JS still
-  // thought the screen was there, which is what produced the "screen 'rank'
-  // was removed natively but didn't get removed from JS state" warning.
+  // started, several taps are on the line. Once the score is revealed AND
+  // committed, only a note/tags/dish/photo can still be lost — but while the
+  // commit is still pending or has failed, the ranking itself is still on the
+  // line too, so that state prompts on its own even with nothing typed yet
+  // (this is the fix for a swipe-down silently discarding the score the
+  // member was just given).
   const dirty =
     !placedStamp &&
     ((sentiment !== null && position === null) ||
+      (position !== null && !revealed && (commitInitial.isPending || commitInitial.isError)) ||
       (revealed &&
         (note.trim() !== '' || tags.length > 0 || selectedDishes.length > 0 || Boolean(dishImage))))
   usePreventRemove(dirty, ({ data }) => {
@@ -429,6 +447,10 @@ export default function RankAPlace() {
   }, [sentiment, position, revealed])
   const placedStampRef = useRef(placedStamp)
   placedStampRef.current = placedStamp
+  const positionRef = useRef<number | null>(null)
+  positionRef.current = position
+  const commitSucceededRef = useRef(false)
+  commitSucceededRef.current = commitInitial.isSuccess
 
   // Fires once, on the screen's REAL exit — any path (back gesture, swipe,
   // switching tabs mid-flow), not just the in-app "Atrás" controls. An
@@ -437,10 +459,26 @@ export default function RankAPlace() {
   // flow had actually gotten. Skipped when the flow actually finished
   // (placedStamp true): that's a completion, not a drop-off — the "drop-off
   // we most need to see" this metric exists for.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot unmount cleanup by design (see above); t is stable enough (only changes on a language toggle) not to need retriggering this.
   useEffect(() => {
     return () => {
       if (stageRef.current && !placedStampRef.current) {
         track('rank_abandoned', { stage: stageRef.current })
+        // Swiped away (or backed out) after the score committed, but without
+        // ever tapping "Listo" or "Guardar nota" — the ranking is real and on
+        // the list either way, so say so. `<Toaster/>` can't render above a
+        // still-presented native modal (rank IS one), but this fires from the
+        // unmount cleanup, i.e. as the modal is already going away, so it
+        // lands the moment the sheet is actually gone — same mechanism as any
+        // other post-dismissal toast in this app.
+        if (positionRef.current !== null && commitSucceededRef.current && pickedRef.current) {
+          toast({
+            message: t('rank.saved_without_stamp', {
+              name: pickedRef.current.name,
+              position: positionRef.current,
+            }),
+          })
+        }
       }
     }
   }, [])
@@ -491,10 +529,10 @@ export default function RankAPlace() {
   // finishTimer's 1.3s pause is up, two actions fade in: this is the highest-
   // intent moment in the whole app, and it used to have no share affordance at
   // all before silently auto-navigating away.
-  if (placedStamp && picked && position !== null) {
+  if (placedStamp && committedPlace && position !== null) {
     const firstName = (me.data?.profile.name ?? '').split(' ')[0] || 'Mi'
     const shareTop5 = () => {
-      const items = buildTop5(existingForCompare, picked, position)
+      const items = buildTop5(existingForCompare, committedPlace, position)
       shareListCard({
         eyebrow: `${firstName} · top ${Math.min(items.length, 5)}`,
         subtitle: [me.data?.profile.neighborhood?.name, 'Santo Domingo']
@@ -518,7 +556,7 @@ export default function RankAPlace() {
           </Text>
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(150)} className="items-center gap-3">
-          <Text className="font-serif text-serif-lg text-text">{picked.name}</Text>
+          <Text className="font-serif text-serif-lg text-text">{committedPlace.name}</Text>
           <Caption>{t('rank.added_to_passport')}</Caption>
         </Animated.View>
         {/* "Listo" is the only action that leaves — sharing doesn't navigate
@@ -560,8 +598,11 @@ export default function RankAPlace() {
     )
   }
 
-  // B1 — Find the place.
-  if (!picked) {
+  // B1 — Find the place. Only while nothing has committed yet — once a
+  // position exists, `picked` (live) transiently going null must NOT fall
+  // through to here (see committedPlace's comment above); the branches below
+  // read committedPlace instead, which stays set for the rest of the flow.
+  if (!picked && position === null) {
     return (
       <FindStep
         candList={candList}
@@ -583,15 +624,16 @@ export default function RankAPlace() {
   }
 
   // B3 — the score reveal.
-  if (position !== null && !revealed) {
+  if (position !== null && !revealed && committedPlace) {
     return (
       <RevealStep
-        picked={picked}
+        picked={committedPlace}
         position={position}
         existingForCompare={existingForCompare}
         friendsPending={friendsQuery.isPending}
         friendsRankings={friendsQuery.data?.friendsRankings ?? []}
         friendAvg={friendsQuery.data?.friendAvg ?? 0}
+        commitPending={commitInitial.isPending}
         commitError={commitInitial.isError}
         onRetryCommit={() => commitInitial.mutate(position)}
         onBack={() => {
@@ -605,10 +647,10 @@ export default function RankAPlace() {
   }
 
   // B4 — note + occasion tags + a dish.
-  if (position !== null) {
+  if (position !== null && committedPlace) {
     return (
       <NoteStep
-        picked={picked}
+        picked={committedPlace}
         position={position}
         existingCount={existingForCompare.length}
         note={note}
@@ -631,6 +673,12 @@ export default function RankAPlace() {
       />
     )
   }
+
+  // Every branch above that needs `position !== null` already returned, so
+  // `picked` being null here can only mean the very first FindStep gate above
+  // would already have returned too — this is just re-establishing that for
+  // the type checker, not a real runtime path.
+  if (!picked) return null
 
   // Sentiment — how did it feel? Narrows the comparison band.
   if (!sentiment) {
@@ -746,6 +794,7 @@ function RevealStep({
   friendsPending,
   friendsRankings,
   friendAvg,
+  commitPending,
   commitError,
   onRetryCommit,
   onBack,
@@ -758,6 +807,7 @@ function RevealStep({
   friendsPending: boolean
   friendsRankings: RestaurantProfileResponse['friendsRankings']
   friendAvg: number
+  commitPending: boolean
   commitError: boolean
   onRetryCommit: () => void
   onBack: () => void
@@ -787,13 +837,19 @@ function RevealStep({
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
         <BackBar label={t('common.back')} onBack={onBack} />
+        {/* Disabled while the commit hasn't settled — tapping "Listo" here
+            used to jump straight to the celebration stamp regardless of
+            whether the ranking had actually saved, so a fast tap right after
+            the reveal (or a slow connection) could show "#3 · Mijas" for a
+            ranking that then silently failed to persist. */}
         <Pressable
           accessibilityRole="button"
           onPress={onDone}
-          className="min-h-[44px] justify-center active:opacity-60"
+          disabled={commitPending || commitError}
+          className={`min-h-[44px] justify-center active:opacity-60 ${commitPending || commitError ? 'opacity-40' : ''}`}
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {t('common.done')}
+            {commitPending ? t('common.saving') : t('common.done')}
           </Text>
         </Pressable>
       </View>
@@ -823,7 +879,7 @@ function RevealStep({
           {around.map((n) => (
             <View
               key={n.pos}
-              className={`flex-row items-center gap-3 rounded px-3 py-2 ${n.isNew ? 'bg-accent-fill' : ''}`}
+              className={`flex-row items-center gap-3 rounded px-3 py-2 ${n.isNew ? 'border border-accent bg-surface' : ''}`}
             >
               <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-md text-text-muted">
                 {n.pos}
@@ -877,7 +933,11 @@ function RevealStep({
           )}
         </View>
 
-        {commitError && (
+        {commitPending ? (
+          <View className="mt-4 items-center">
+            <Caption>{t('rank.saving_ranking')}</Caption>
+          </View>
+        ) : commitError ? (
           <View className="mt-4 flex-row items-center justify-center gap-3">
             <Caption>{t('rank.commit_error')}</Caption>
             <Pressable
@@ -890,7 +950,7 @@ function RevealStep({
               </Text>
             </Pressable>
           </View>
-        )}
+        ) : null}
         <Body className="mt-6 text-center text-text-muted">
           {t('rank.your_answer_moved', { name: picked.name })}
         </Body>
