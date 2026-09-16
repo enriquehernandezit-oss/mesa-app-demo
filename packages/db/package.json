@@ -13,7 +13,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "bun run src/migrate.ts",
     "seed": "bun run src/seed.ts",
-    "import:foursquare": "bun run src/import-foursquare.ts"
+    "import:foursquare": "bun run src/import-foursquare.ts",
+    "dishes:audit": "bun run src/dishes-audit.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.3",

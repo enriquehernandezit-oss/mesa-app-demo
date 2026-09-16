@@ -101,6 +101,23 @@ describe('guessDishCategory — fixtures from the real local dish names', () => 
     ['Grilled octopus', 'mariscos'],
     ['Tagliatelle al mare', 'pasta'],
     ['Wild mushroom risotto', 'risotto'],
+    // M13 — the keyword database expansion (see packages/db/src/dishes-audit.ts
+    // for the audit against the real 3,107-item Top 100 menu catalog).
+    ['Rib eye', 'carne'],
+    ['Ribeye Angus, 16 oz', 'carne'],
+    // "French Dip Sandwich" beats plain "dip" (entrada) on keyword length.
+    ['French Dip Sandwich', 'sandwich'],
+    ['Tomahawk, 40 oz for two', 'carne'],
+    ['Porterhouse', 'carne'],
+    ['Beef Stroganoff', 'carne'],
+    ['Chuletón Angus', 'carne'],
+    ['Pechuga a la plancha', 'pollo'],
+    ['Cochinita pibil', 'cerdo'],
+    ['Chirashi', 'sushi'],
+    ['Guacamole', 'mexicano'],
+    ['Crab Stuffed Mushrooms', 'mariscos'],
+    ['Mac & Cheese', 'americano'],
+    ['Kim Crawford Sauvignon Blanc', 'vino'],
   ]
 
   for (const [name, expected] of cases) {
