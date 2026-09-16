@@ -2,9 +2,19 @@ import type { LatLng } from '@/lib/geo'
 import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { MAP_USER_LOCATION_BLUE } from '@/theme/vars'
 import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps'
+import { useEffect } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { Pressable, View } from 'react-native'
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated'
 
 // The real, pannable/zoomable street map (@rnmapbox/maps) — the native
 // replacement for the web's mapbox-gl MapGL (apps/app/src/screens/map/MapGL.tsx).
@@ -89,9 +99,52 @@ export function MesaMap({
       })}
       {me ? (
         <MarkerView coordinate={[me.lng, me.lat]}>
-          <View className="h-3.5 w-3.5 rounded-pill border-2 border-surface bg-status-good" />
+          <UserLocationDot />
         </MarkerView>
       ) : null}
     </MapView>
+  )
+}
+
+// "You are here" — Apple Maps' own affordance for it (a solid blue dot,
+// bordered, with a ring that continuously expands and fades outward) rather
+// than a plain static pin: this is the one marker on the map that reflects a
+// live GPS fix, not a fixed place, and the pulse is what reads as "live"
+// instead of "just another pin." MAP_USER_LOCATION_BLUE is a deliberate,
+// documented exception to the token system — see theme/vars.ts.
+function UserLocationDot() {
+  const pulse = useSharedValue(0)
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 1800, easing: Easing.out(Easing.ease) }), -1)
+  }, [pulse])
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(pulse.value, [0, 1], [1, 3.2]) }],
+    opacity: interpolate(pulse.value, [0, 0.5, 1], [0.55, 0.2, 0]),
+  }))
+  return (
+    <View className="items-center justify-center" style={{ width: 44, height: 44 }}>
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            width: 14,
+            height: 14,
+            borderRadius: 7,
+            backgroundColor: MAP_USER_LOCATION_BLUE,
+          },
+          ringStyle,
+        ]}
+      />
+      <View
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 7,
+          backgroundColor: MAP_USER_LOCATION_BLUE,
+          borderWidth: 2,
+          borderColor: '#fff',
+        }}
+      />
+    </View>
   )
 }

@@ -103,6 +103,15 @@ const strip = (m: Record<string, string>) =>
 // here and only here (docs/DESIGN.md).
 export const BRASS_SHADOW = '#6b4715'
 
+// The map's own "you are here" marker (components/MesaMap.tsx) — deliberately
+// the same system blue Apple Maps/MapKit uses for a user-location dot, not a
+// brand token. The map itself is already native-styled chrome (Mapbox's own
+// light-v11/dark-v11 StyleURLs, not Mesa's token layer — see MesaMap.tsx's
+// header comment), and this is the one universally-recognized "that's you"
+// affordance on any map; recoloring it brass would read as a bug, not a
+// choice. Theme-invariant for the same reason BRASS_SHADOW is.
+export const MAP_USER_LOCATION_BLUE = '#007AFF'
+
 // Cormorant ships OLDSTYLE figures by default: the digits sit at different
 // heights and 3/4/5/7/9 hang well below the baseline (measured: cap height 625,
 // but `nine` bottoms out at -275 while `one` sits flat at 0). That is correct
