@@ -1,0 +1,761 @@
+import { mesaNorm } from './placeMatchPure'
+
+// The closed dish-category taxonomy (M11) — cuisine-complete by design
+// (Enrique's call): categories describe what the DISH is, not a diet, so
+// there's no "vegetariano". `otro` is the only fallback and is deliberately
+// never compared across restaurants in a later milestone.
+//
+// This is the ONE place the list and its keyword-guess map live. The API
+// exposes it via GET /dishes/categories (with keywords, for the picker's
+// search); apps/mobile/src/lib/dishCategories.ts mirrors ONLY the matcher
+// function below (Metro can't import a workspace package), reading the list
+// itself from that endpoint — so the data never has a second copy.
+export interface DishCategory {
+  id: string
+  group: string
+  nameEs: string
+  sortOrder: number
+  keywords: string[]
+}
+
+export interface DishGroup {
+  id: string
+  nameEs: string
+}
+
+export const DISH_GROUPS: DishGroup[] = [
+  { id: 'dominicano', nameEs: 'Dominicano' },
+  { id: 'espanol', nameEs: 'Español' },
+  { id: 'mediterraneo', nameEs: 'Mediterráneo' },
+  { id: 'italiano', nameEs: 'Italiano' },
+  { id: 'frances', nameEs: 'Francés' },
+  { id: 'americano', nameEs: 'Americano' },
+  { id: 'latino', nameEs: 'Mexicano y Latino' },
+  { id: 'asiatico', nameEs: 'Asiático' },
+  { id: 'mar', nameEs: 'Del mar' },
+  { id: 'carnes', nameEs: 'Carnes' },
+  { id: 'entradas', nameEs: 'Entradas, verde y sopas' },
+  { id: 'desayuno', nameEs: 'Desayuno y pan' },
+  { id: 'dulce', nameEs: 'Dulce' },
+  { id: 'bebidas', nameEs: 'Bebidas' },
+  { id: 'otro', nameEs: 'Otro' },
+]
+
+// sortOrder is the table's own order below — also the tie-break when two
+// keywords of equal length match the same name (lower sortOrder wins).
+export const DISH_CATEGORIES: DishCategory[] = [
+  // Dominicano
+  { id: 'mofongo', group: 'dominicano', nameEs: 'Mofongo', sortOrder: 1, keywords: ['mofongo'] },
+  {
+    id: 'mangu',
+    group: 'dominicano',
+    nameEs: 'Mangú y tres golpes',
+    sortOrder: 2,
+    keywords: ['mangú', 'tres golpes', 'mangú con los tres golpes'],
+  },
+  {
+    id: 'guisado',
+    group: 'dominicano',
+    nameEs: 'Guisados',
+    sortOrder: 3,
+    keywords: [
+      'chivo guisado',
+      'res guisada',
+      'pollo guisado',
+      'rabo encendido',
+      'estofado',
+      'guiso',
+      'guisado',
+    ],
+  },
+  {
+    id: 'sancocho',
+    group: 'dominicano',
+    nameEs: 'Sancocho y asopao',
+    sortOrder: 4,
+    keywords: ['sancocho', 'asopao', 'sopa de siete carnes'],
+  },
+  {
+    id: 'criollo',
+    group: 'dominicano',
+    nameEs: 'Plato criollo',
+    sortOrder: 5,
+    keywords: [
+      'la bandera',
+      'pastelón',
+      'chenchén',
+      'moro con habichuelas',
+      'longaniza',
+      'bandera dominicana',
+    ],
+  },
+  {
+    id: 'arroz',
+    group: 'dominicano',
+    nameEs: 'Arroz y locrio',
+    sortOrder: 6,
+    keywords: ['arroz con pollo', 'arroz blanco', 'locrio', 'moro', 'arroz'],
+  },
+  {
+    id: 'fritura',
+    group: 'dominicano',
+    nameEs: 'Frituras',
+    sortOrder: 7,
+    keywords: [
+      'empanada',
+      'quipe',
+      'kipe',
+      'pastelito',
+      'yaniqueque',
+      'arepita',
+      'catibía',
+      'bolita de yuca',
+      'chicharrón de pollo',
+      'tostones',
+      'tostón',
+    ],
+  },
+  {
+    id: 'yaroa',
+    group: 'dominicano',
+    nameEs: 'Yaroa y comida de calle',
+    sortOrder: 8,
+    keywords: ['yaroa', 'picalonga'],
+  },
+  {
+    id: 'dulce_criollo',
+    group: 'dominicano',
+    nameEs: 'Dulces criollos',
+    sortOrder: 9,
+    keywords: [
+      'habichuelas con dulce',
+      'majarete',
+      'dulce de leche',
+      'jalao',
+      'arepa dulce',
+      'dulce de coco',
+    ],
+  },
+  // Español
+  {
+    id: 'tapas',
+    group: 'espanol',
+    nameEs: 'Tapas',
+    sortOrder: 10,
+    keywords: [
+      'patatas bravas',
+      'pulpo a la gallega',
+      'pan con tomate',
+      'tortilla',
+      'croqueta',
+      'gambas',
+      'boquerón',
+      'pimientos',
+      'tapa',
+    ],
+  },
+  {
+    id: 'paella',
+    group: 'espanol',
+    nameEs: 'Paella y arroces',
+    sortOrder: 11,
+    keywords: ['paella', 'fideuá', 'arroz negro', 'arroz caldoso'],
+  },
+  {
+    id: 'embutidos',
+    group: 'espanol',
+    nameEs: 'Jamón y embutidos',
+    sortOrder: 12,
+    keywords: [
+      'jamón ibérico',
+      'jamón serrano',
+      'tabla de embutidos',
+      'charcutería',
+      'chorizo',
+      'embutido',
+    ],
+  },
+  // Mediterráneo
+  {
+    id: 'arabe',
+    group: 'mediterraneo',
+    nameEs: 'Árabe',
+    sortOrder: 13,
+    keywords: ['shawarma', 'kebab', 'falafel', 'kibbeh', 'kafta', 'shish'],
+  },
+  {
+    id: 'mezze',
+    group: 'mediterraneo',
+    nameEs: 'Mezze y dips',
+    sortOrder: 14,
+    keywords: ['babaganoush', 'tzatziki', 'labneh', 'hummus', 'tabule', 'pita', 'mezze'],
+  },
+  {
+    id: 'griego',
+    group: 'mediterraneo',
+    nameEs: 'Griego',
+    sortOrder: 15,
+    keywords: ['souvlaki', 'moussaka', 'spanakopita', 'gyro', 'griego'],
+  },
+  // Italiano
+  {
+    id: 'pasta',
+    group: 'italiano',
+    nameEs: 'Pasta',
+    sortOrder: 16,
+    keywords: [
+      'tagliatelle',
+      'spaghetti',
+      'ravioli',
+      'gnocchi',
+      'lasagna',
+      'cacio e pepe',
+      'carbonara',
+      'fettuccine',
+      'linguine',
+      'rigatoni',
+      'pappardelle',
+      'bolognese',
+      'penne',
+      'pasta',
+    ],
+  },
+  {
+    id: 'pizza',
+    group: 'italiano',
+    nameEs: 'Pizza',
+    sortOrder: 17,
+    keywords: ['margherita', 'focaccia', 'calzone', 'pizza'],
+  },
+  { id: 'risotto', group: 'italiano', nameEs: 'Risotto', sortOrder: 18, keywords: ['risotto'] },
+  {
+    id: 'antipasto',
+    group: 'italiano',
+    nameEs: 'Antipasti',
+    sortOrder: 19,
+    keywords: [
+      'carpaccio',
+      'bruschetta',
+      'prosciutto',
+      'arancini',
+      'antipasto',
+      'burrata',
+      'caprese',
+    ],
+  },
+  // Francés
+  {
+    id: 'frances',
+    group: 'frances',
+    nameEs: 'Francés',
+    sortOrder: 20,
+    keywords: [
+      'coq au vin',
+      'boeuf bourguignon',
+      'ratatouille',
+      'steak frites',
+      'bouillabaisse',
+      'escargot',
+      'confit',
+      'quiche',
+      'croque',
+      'foie',
+    ],
+  },
+  {
+    id: 'crepa',
+    group: 'frances',
+    nameEs: 'Crepas y galettes',
+    sortOrder: 21,
+    keywords: ['galette', 'crepa', 'crepe'],
+  },
+  // Americano
+  {
+    id: 'hamburguesa',
+    group: 'americano',
+    nameEs: 'Hamburguesas',
+    sortOrder: 22,
+    keywords: ['hamburguesa', 'cheeseburger', 'chimi burger', 'burger', 'smash'],
+  },
+  {
+    id: 'bbq',
+    group: 'americano',
+    nameEs: 'BBQ y ahumados',
+    sortOrder: 23,
+    keywords: ['pulled pork', 'costillas bbq', 'brisket', 'ahumado', 'costillas', 'ribs', 'bbq'],
+  },
+  {
+    id: 'alitas',
+    group: 'americano',
+    nameEs: 'Alitas',
+    sortOrder: 24,
+    keywords: ['alitas', 'buffalo', 'wings'],
+  },
+  {
+    id: 'americano',
+    group: 'americano',
+    nameEs: 'Comfort americano',
+    sortOrder: 25,
+    keywords: ['mac and cheese', 'meatloaf', 'pot pie', 'corn dog', 'chili', 'philly'],
+  },
+  {
+    id: 'sandwich',
+    group: 'americano',
+    nameEs: 'Sándwiches y wraps',
+    sortOrder: 26,
+    keywords: [
+      'sándwich de pierna',
+      'bánh mì',
+      'panini',
+      'bocadillo',
+      'hot dog',
+      'cubano',
+      'sándwich',
+      'wrap',
+      'club',
+    ],
+  },
+  // Mexicano y Latino
+  {
+    id: 'tacos',
+    group: 'latino',
+    nameEs: 'Tacos',
+    sortOrder: 27,
+    keywords: ['tacos al pastor', 'taco de birria', 'taco'],
+  },
+  {
+    id: 'mexicano',
+    group: 'latino',
+    nameEs: 'Mexicano',
+    sortOrder: 28,
+    keywords: [
+      'quesadilla',
+      'enchilada',
+      'chilaquiles',
+      'burrito',
+      'nachos',
+      'fajita',
+      'esquites',
+      'tostada',
+      'elote',
+    ],
+  },
+  {
+    id: 'arepa',
+    group: 'latino',
+    nameEs: 'Arepas y venezolano',
+    sortOrder: 29,
+    keywords: ['tequeño', 'cachapa', 'patacón', 'pabellón', 'arepa'],
+  },
+  {
+    id: 'peruano',
+    group: 'latino',
+    nameEs: 'Peruano',
+    sortOrder: 30,
+    keywords: ['lomo saltado', 'ají de gallina', 'pollo a la brasa', 'anticucho', 'causa'],
+  },
+  {
+    id: 'ceviche',
+    group: 'latino',
+    nameEs: 'Ceviches y crudos',
+    sortOrder: 31,
+    keywords: ['ceviche', 'tiradito', 'aguachile', 'tartar', 'crudo'],
+  },
+  {
+    id: 'parrilla',
+    group: 'latino',
+    nameEs: 'Parrilla argentina',
+    sortOrder: 32,
+    keywords: ['parrillada', 'choripán', 'provoleta', 'entraña', 'asado', 'vacío'],
+  },
+  {
+    id: 'latino',
+    group: 'latino',
+    nameEs: 'Latino',
+    sortOrder: 33,
+    keywords: ['bandeja paisa', 'empanada argentina', 'ropa vieja', 'pupusa', 'tamal'],
+  },
+  // Asiático
+  {
+    id: 'sushi',
+    group: 'asiatico',
+    nameEs: 'Sushi y rolls',
+    sortOrder: 34,
+    keywords: ['sashimi', 'nigiri', 'temaki', 'uramaki', 'sushi', 'maki', 'roll'],
+  },
+  { id: 'poke', group: 'asiatico', nameEs: 'Poke bowls', sortOrder: 35, keywords: ['poke'] },
+  {
+    id: 'ramen',
+    group: 'asiatico',
+    nameEs: 'Ramen',
+    sortOrder: 36,
+    keywords: ['tonkotsu', 'shoyu', 'ramen'],
+  },
+  {
+    id: 'noodles',
+    group: 'asiatico',
+    nameEs: 'Fideos asiáticos',
+    sortOrder: 37,
+    keywords: [
+      'pad thai',
+      'lo mein',
+      'yakisoba',
+      'chow mein',
+      'noodles',
+      'fideos',
+      'udon',
+      'soba',
+      'pho',
+    ],
+  },
+  {
+    id: 'chino',
+    group: 'asiatico',
+    nameEs: 'Comida china',
+    sortOrder: 38,
+    keywords: ['arroz chino', 'pollo agridulce', 'chow fan', 'chop suey', 'chofán', 'wok', 'chino'],
+  },
+  {
+    id: 'dim_sum',
+    group: 'asiatico',
+    nameEs: 'Dim sum y dumplings',
+    sortOrder: 39,
+    keywords: ['dumpling', 'gyoza', 'wonton', 'dim sum', 'siu mai', 'bao'],
+  },
+  {
+    id: 'japones',
+    group: 'asiatico',
+    nameEs: 'Japonés',
+    sortOrder: 40,
+    keywords: ['okonomiyaki', 'teppanyaki', 'teriyaki', 'donburi', 'robata', 'tempura', 'katsu'],
+  },
+  {
+    id: 'coreano',
+    group: 'asiatico',
+    nameEs: 'Coreano',
+    sortOrder: 41,
+    keywords: ['korean fried chicken', 'tteokbokki', 'bibimbap', 'bulgogi', 'kimchi', 'coreano'],
+  },
+  {
+    id: 'tailandes',
+    group: 'asiatico',
+    nameEs: 'Tailandés',
+    sortOrder: 42,
+    keywords: ['curry tailandés', 'tom yum', 'tom kha', 'massaman', 'tailandés', 'thai'],
+  },
+  {
+    id: 'indio',
+    group: 'asiatico',
+    nameEs: 'Indio',
+    sortOrder: 43,
+    keywords: ['tikka masala', 'butter chicken', 'biryani', 'samosa', 'naan', 'curry', 'indio'],
+  },
+  {
+    id: 'asiatico',
+    group: 'asiatico',
+    nameEs: 'Asiático (otro)',
+    sortOrder: 44,
+    keywords: ['springroll', 'rollito', 'fusión asiática', 'satay', 'asiático'],
+  },
+  // Del mar
+  {
+    id: 'pescado',
+    group: 'mar',
+    nameEs: 'Pescado',
+    sortOrder: 45,
+    keywords: [
+      'pescado frito',
+      'branzino',
+      'salmón',
+      'corvina',
+      'bacalao',
+      'chillo',
+      'robalo',
+      'lubina',
+      'tataki',
+      'dorado',
+      'pescado',
+      'atún',
+      'tuna',
+      'mero',
+      'fish',
+    ],
+  },
+  {
+    id: 'mariscos',
+    group: 'mar',
+    nameEs: 'Mariscos',
+    sortOrder: 46,
+    keywords: [
+      'camarón',
+      'camarones',
+      'langosta',
+      'lobster',
+      'calamar',
+      'mejillón',
+      'cangrejo',
+      'octopus',
+      'vieira',
+      'lambí',
+      'almeja',
+      'gamba',
+      'ostra',
+      'pulpo',
+      'mariscos',
+    ],
+  },
+  // Carnes
+  {
+    id: 'carne',
+    group: 'carnes',
+    nameEs: 'Carnes y steaks',
+    sortOrder: 47,
+    keywords: [
+      // Explicit phrases first so they outrank a shorter, misleading
+      // substring match in another category — "bife de chorizo" is an
+      // Argentine steak cut, not a sausage (embutidos' "chorizo" would
+      // otherwise win on length), and "short rib" is a beef cut, not
+      // automatically bbq-style (bbq's "rib"/"ribs" would otherwise win).
+      'bife de chorizo',
+      'short rib',
+      'ojo de bife',
+      'churrasco',
+      'entrecot',
+      'picanha',
+      'txuleta',
+      'cordero',
+      'filete',
+      'wagyu',
+      'steak',
+      'lamb',
+      'bife',
+      'lomo',
+      'carne',
+      'res',
+    ],
+  },
+  {
+    id: 'cerdo',
+    group: 'carnes',
+    nameEs: 'Cerdo',
+    sortOrder: 48,
+    keywords: ['chicharrón', 'cochinillo', 'lechón', 'pernil', 'chuleta', 'cerdo', 'puerco'],
+  },
+  {
+    id: 'pollo',
+    group: 'carnes',
+    nameEs: 'Pollo',
+    sortOrder: 49,
+    keywords: ['pica pollo', 'pollo al carbón', 'pollo frito', 'chicken', 'pollo'],
+  },
+  // Entradas, verde y sopas
+  {
+    id: 'entrada',
+    group: 'entradas',
+    nameEs: 'Entradas y picaderas',
+    sortOrder: 50,
+    keywords: [
+      'tabla de quesos',
+      'para compartir',
+      'picadera',
+      'aperitivo',
+      'entrada',
+      'queso',
+      'chips',
+      'dip',
+    ],
+  },
+  {
+    id: 'ensalada',
+    group: 'entradas',
+    nameEs: 'Ensaladas',
+    sortOrder: 51,
+    keywords: ['ensalada', 'salad', 'césar'],
+  },
+  {
+    id: 'sopa',
+    group: 'entradas',
+    nameEs: 'Sopas y cremas',
+    sortOrder: 52,
+    keywords: ['consomé', 'mondongo', 'gazpacho', 'crema', 'caldo', 'sopa'],
+  },
+  {
+    id: 'saludable',
+    group: 'entradas',
+    nameEs: 'Saludable y bowls',
+    sortOrder: 53,
+    keywords: ['buddha bowl', 'smoothie bowl', 'granola', 'quinoa', 'açaí', 'bowl'],
+  },
+  // Desayuno y pan
+  {
+    id: 'brunch',
+    group: 'desayuno',
+    nameEs: 'Desayuno y brunch',
+    sortOrder: 54,
+    keywords: [
+      'avocado toast',
+      'french toast',
+      'benedict',
+      'pancakes',
+      'omelette',
+      'desayuno',
+      'waffle',
+      'huevos',
+      'eggs',
+    ],
+  },
+  {
+    id: 'panaderia',
+    group: 'desayuno',
+    nameEs: 'Panadería y bollería',
+    sortOrder: 55,
+    keywords: ['croissant', 'bollería', 'brioche', 'muffin', 'bagel', 'scone', 'dona', 'pan'],
+  },
+  // Dulce
+  {
+    id: 'postre',
+    group: 'dulce',
+    nameEs: 'Postres',
+    sortOrder: 56,
+    keywords: [
+      'cheesecake',
+      'tres leches',
+      'tiramisú',
+      'brûlée',
+      'mousse',
+      'chocolate',
+      'postre',
+      'flan',
+    ],
+  },
+  {
+    id: 'torta',
+    group: 'dulce',
+    nameEs: 'Tortas y pasteles',
+    sortOrder: 57,
+    keywords: ['bizcocho', 'torta', 'tarta', 'pastel', 'cake', 'pie'],
+  },
+  {
+    id: 'helado',
+    group: 'dulce',
+    nameEs: 'Helados y gelato',
+    sortOrder: 58,
+    keywords: ['sorbete', 'helado', 'gelato', 'paleta'],
+  },
+  // Bebidas
+  {
+    id: 'cafe',
+    group: 'bebidas',
+    nameEs: 'Café y té',
+    sortOrder: 59,
+    keywords: [
+      'flat white',
+      'cappuccino',
+      'espresso',
+      'matcha',
+      'coffee',
+      'latte',
+      'café',
+      'chai',
+      'té',
+    ],
+  },
+  {
+    id: 'coctel',
+    group: 'bebidas',
+    nameEs: 'Cócteles',
+    sortOrder: 60,
+    keywords: [
+      'piña colada',
+      'margarita',
+      'daiquiri',
+      'negroni',
+      'sangría',
+      'cocktail',
+      'cóctel',
+      'mojito',
+      'spritz',
+    ],
+  },
+  {
+    id: 'vino',
+    group: 'bebidas',
+    nameEs: 'Vino',
+    sortOrder: 61,
+    keywords: ['orange wine', 'espumante', 'blanco', 'rosado', 'tinto', 'vino', 'wine'],
+  },
+  {
+    id: 'cerveza',
+    group: 'bebidas',
+    nameEs: 'Cerveza',
+    sortOrder: 62,
+    keywords: ['cerveza', 'lager', 'beer', 'ipa'],
+  },
+  {
+    id: 'licor',
+    group: 'bebidas',
+    nameEs: 'Ron y licores',
+    sortOrder: 63,
+    keywords: ['mamajuana', 'whisky', 'tequila', 'mezcal', 'ron', 'rum', 'gin', 'shot'],
+  },
+  {
+    id: 'bebida',
+    group: 'bebidas',
+    nameEs: 'Jugos y batidas',
+    sortOrder: 64,
+    keywords: [
+      'morir soñando',
+      'agua de coco',
+      'limonada',
+      'smoothie',
+      'refresco',
+      'batida',
+      'jugo',
+    ],
+  },
+  // Otro
+  { id: 'otro', group: 'otro', nameEs: 'Otro', sortOrder: 65, keywords: [] },
+]
+
+// Whole-word/phrase match, tolerant of a trailing "s" or "es" plural
+// (mesaNorm already lowercases and strips accents, so "café" and "cafes"
+// both compare against the same normalized keyword). Escaped for regex
+// safety even though this codebase's keywords never contain regex
+// metacharacters today.
+function keywordRegex(keyword: string): RegExp {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped}(?:es|s)?\\b`, 'i')
+}
+
+/**
+ * Guess a dish's category from its name. Whole-word/phrase match on the
+ * normalized name; the LONGEST matching keyword wins (so "pollo guisado"
+ * matches "guisado" over the shorter "pollo", and "arroz chino" matches
+ * "chino" via its own "arroz chino" keyword rather than plain "arroz"). Ties
+ * (equal-length keywords from different categories) break on the lower
+ * `sortOrder`. No match falls back to 'otro'.
+ */
+export function guessDishCategory(
+  name: string,
+  categories: DishCategory[] = DISH_CATEGORIES,
+): string {
+  const normalized = mesaNorm(name)
+  let best: { categoryId: string; sortOrder: number; length: number } | null = null
+
+  for (const cat of categories) {
+    for (const keyword of cat.keywords) {
+      const normalizedKeyword = mesaNorm(keyword)
+      if (!keywordRegex(normalizedKeyword).test(normalized)) continue
+      const length = normalizedKeyword.length
+      if (
+        best === null ||
+        length > best.length ||
+        (length === best.length && cat.sortOrder < best.sortOrder)
+      ) {
+        best = { categoryId: cat.id, sortOrder: cat.sortOrder, length }
+      }
+    }
+  }
+
+  return best?.categoryId ?? 'otro'
+}

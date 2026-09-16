@@ -11,3 +11,13 @@ export { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 // The one ranking-score formula — see score.ts's header for why this used to
 // have a silent second copy.
 export { scoreFor } from './score'
+// The closed dish-category taxonomy + keyword guesser (M11) — shared by the
+// API's validation/GET /categories/backfill and, as a mirrored matcher only
+// (Metro can't import this workspace), apps/mobile/src/lib/dishCategories.ts.
+export {
+  DISH_CATEGORIES,
+  DISH_GROUPS,
+  type DishCategory,
+  type DishGroup,
+  guessDishCategory,
+} from './dishCategories'
