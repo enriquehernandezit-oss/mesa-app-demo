@@ -1,4 +1,4 @@
-import { DISH_CATEGORIES, DISH_GROUPS, db, mesaNorm, schema } from '@mesa/db'
+import { DISH_CATEGORIES, DISH_GROUPS, db, guessDishCategory, mesaNorm, schema } from '@mesa/db'
 import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -35,7 +35,16 @@ const createSchema = z.object({
       'image must be a data URL or https URL',
     )
     .optional(),
-  categoryId: z.string(),
+  // A follow-up post (M13's "saved as you tap") that wants to clear a photo
+  // set by an earlier one — plain omission of `image` means "leave it as is"
+  // (see the upsert doc comment below), so removal needs its own explicit
+  // signal. Ignored on insert; there's nothing to clear yet.
+  removeImage: z.boolean().optional(),
+  // Optional as of M13 — the rank flow never asks for a category (that's the
+  // whole point: nobody should have to categorize their own food), so this
+  // falls back to guessDishCategory(name) server-side. The standalone
+  // composer still sends one explicitly (its own guess, pill-correctable).
+  categoryId: z.string().optional(),
   sentiment: z.enum(['loved', 'fine', 'disliked']).optional(),
   grain: z.enum(['candlelit', 'daylight', 'none']).default('none'),
   visibility: z.enum(['friends', 'public']).default('friends'),
@@ -55,7 +64,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
   })
 
   // Distinct dish names already logged at a restaurant, most-common first —
-  // the chip source for the rank flow's "Qué pedir" step. Aggregated names
+  // the chip source for the reveal's "¿Qué pediste?" step (M13). Aggregated names
   // and counts ONLY, never dish rows or posters: a name several people have
   // logged is catalog data, not any one person's content, so this
   // deliberately skips the visibility/block filters every other dish query
@@ -84,11 +93,16 @@ export const dishesRoutes = new Hono<AuthedEnv>()
   })
 
   // Post a dish. The linked ranking is derived from my ranking of this place —
-  // if I haven't ranked it, I can't post a dish for it. Photo-less posts
-  // upsert on (rankingId, nameKey, no image, not removed) so selecting the
-  // same "Qué pedir" chip again (a retry, or a second visit to the same
-  // dish) updates it in place instead of duplicating — the backfill script
-  // uses the same rule.
+  // if I haven't ranked it, I can't post a dish for it. Upserts on
+  // (rankingId, nameKey, not removed) regardless of image state — the reveal
+  // step (M13) posts a dish the instant it's picked and then re-posts on
+  // every sentiment change or photo attach, so "already has this dish, no
+  // photo yet" and "already has this dish, now attaching a photo" both need
+  // to land on the SAME row, not a second one. `imageId`/`grain` are only
+  // included in the update when this call actually sent an image, so a
+  // sentiment-only re-post can never blank out a photo a previous call set —
+  // clearing one takes the explicit `removeImage` flag instead of bare
+  // omission. The backfill script's own anti-join uses this identical rule.
   .post('/', async (c) => {
     const me = c.get('user')
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
@@ -98,16 +112,18 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       name,
       caption,
       image,
-      categoryId,
+      removeImage,
+      categoryId: requestedCategoryId,
       sentiment,
       grain,
       visibility,
       alsoFavorite,
     } = parsed.data
 
-    if (!DISH_CATEGORIES.some((cat) => cat.id === categoryId)) {
+    if (requestedCategoryId && !DISH_CATEGORIES.some((cat) => cat.id === requestedCategoryId)) {
       return c.json({ error: 'unknown_category' }, 400)
     }
+    const categoryId = requestedCategoryId ?? guessDishCategory(name)
 
     const [myRanking] = await db
       .select({ id: rankings.id })
@@ -119,27 +135,29 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     let dishId: string | undefined
     let created = true
 
-    if (!image) {
-      const [existing] = await db
-        .select({ id: dishes.id })
-        .from(dishes)
-        .where(
-          and(
-            eq(dishes.rankingId, myRanking.id),
-            eq(dishes.nameKey, mesaNorm(name)),
-            isNull(dishes.imageId),
-            isNull(dishes.removedAt),
-          ),
-        )
-        .limit(1)
-      if (existing) {
-        await db
-          .update(dishes)
-          .set({ categoryId, sentiment: sentiment ?? null, updatedAt: new Date() })
-          .where(eq(dishes.id, existing.id))
-        dishId = existing.id
-        created = false
-      }
+    const [existing] = await db
+      .select({ id: dishes.id })
+      .from(dishes)
+      .where(
+        and(
+          eq(dishes.rankingId, myRanking.id),
+          eq(dishes.nameKey, mesaNorm(name)),
+          isNull(dishes.removedAt),
+        ),
+      )
+      .limit(1)
+    if (existing) {
+      await db
+        .update(dishes)
+        .set({
+          categoryId,
+          sentiment: sentiment ?? null,
+          updatedAt: new Date(),
+          ...(image ? { imageId: image, grain } : removeImage ? { imageId: null } : {}),
+        })
+        .where(eq(dishes.id, existing.id))
+      dishId = existing.id
+      created = false
     }
 
     if (!dishId) {

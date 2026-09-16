@@ -14,6 +14,16 @@
 // never inserted twice — so this can also be re-run later if an old client
 // ever writes a new favoriteDish string (it can't as of this migration, but
 // the check costs nothing).
+//
+// A separate mode, unrelated to the migration above:
+//
+//   DATABASE_URL="<url>" bun run backfill:dishes --recategorize-otro [--dry-run]
+//
+// M13 substantially expanded the keyword database (packages/db/src/dishes-audit.ts
+// has the real-menu-data audit that drove it). This re-guesses every LIVE
+// dish still sitting in 'otro' and only writes the ones whose new guess is
+// no longer 'otro' — so it's a no-op the moment nothing's left to improve,
+// safe to re-run after any future taxonomy change.
 import { DISH_CATEGORIES, db, guessDishCategory, pool, schema } from '@mesa/db'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
@@ -118,6 +128,41 @@ async function backfillFavoriteDish(dryRun: boolean): Promise<{
   return { created: toInsert.length, distribution, toOtro }
 }
 
+async function recategorizeOtro(dryRun: boolean): Promise<{
+  updated: number
+  stillOtro: number
+  distribution: Map<string, number>
+}> {
+  const rows = await db
+    .select({ id: dishes.id, name: dishes.name })
+    .from(dishes)
+    .where(and(eq(dishes.categoryId, 'otro'), isNull(dishes.removedAt)))
+
+  const distribution = new Map<string, number>()
+  const toUpdate = rows
+    .map((r) => ({ id: r.id, categoryId: guessDishCategory(r.name) }))
+    .filter((g) => g.categoryId !== 'otro')
+  for (const g of toUpdate)
+    distribution.set(g.categoryId, (distribution.get(g.categoryId) ?? 0) + 1)
+
+  if (!dryRun) {
+    for (let i = 0; i < toUpdate.length; i += CHUNK) {
+      const chunk = toUpdate.slice(i, i + CHUNK)
+      if (chunk.length === 0) continue
+      const params = chunk.flatMap((g) => [g.id, g.categoryId])
+      const valuesList = chunk.map((_, j) => `($${j * 2 + 1}::uuid, $${j * 2 + 2})`).join(', ')
+      await pool.query(
+        `update dishes set category_id = v.cat, updated_at = now()
+         from (values ${valuesList}) as v(id, cat)
+         where dishes.id = v.id`,
+        params,
+      )
+    }
+  }
+
+  return { updated: toUpdate.length, stillOtro: rows.length - toUpdate.length, distribution }
+}
+
 function printDistribution(dist: Map<string, number>): void {
   const known = new Set(DISH_CATEGORIES.map((c) => c.id))
   const sorted = [...dist.entries()].sort((a, b) => b[1] - a[1])
@@ -129,6 +174,23 @@ function printDistribution(dist: Map<string, number>): void {
 
 async function run(): Promise<void> {
   const dryRun = process.argv.includes('--dry-run')
+  const recategorize = process.argv.includes('--recategorize-otro')
+
+  if (recategorize) {
+    console.log(`backfill:dishes --recategorize-otro ${dryRun ? '(DRY RUN)' : ''}`)
+    console.log('='.repeat(40))
+    const result = await recategorizeOtro(dryRun)
+    console.log(
+      `\nRe-guessed ${result.updated} 'otro' dish(es) into a real category (${result.stillOtro} still 'otro').`,
+    )
+    console.log('  new category distribution:')
+    printDistribution(result.distribution)
+    console.log(`\n${'='.repeat(40)}`)
+    console.log(dryRun ? 'Dry run — nothing written. Re-run without --dry-run to apply.' : 'Done.')
+    await pool.end()
+    return
+  }
+
   console.log(`backfill:dishes ${dryRun ? '(DRY RUN)' : ''}`)
   console.log('='.repeat(40))
 
