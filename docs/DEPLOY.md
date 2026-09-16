@@ -144,6 +144,30 @@ DATABASE_URL="postgres://...from railway..." bun run db:seed
 
 ---
 
+## One-time data backfills after a schema migration
+
+Railway's `preDeployCommand` only runs `bun run db:migrate` — a **schema**
+migration reaches prod automatically on push. A **data** backfill script does
+not; run it yourself, once, against the public `DATABASE_URL`, after its
+migration has deployed.
+
+After the "Dish entity foundation" migration (`0015`, adds `dish_categories` +
+nullable `dishes.category_id`/`sentiment`) has deployed, run the backfill that
+categorizes any pre-existing dish rows and folds old `rankings.favoriteDish`
+text into real `dishes` rows:
+
+```bash
+DATABASE_URL="postgres://...from railway..." bun run backfill:dishes --dry-run
+DATABASE_URL="postgres://...from railway..." bun run backfill:dishes
+```
+
+Both are idempotent — a re-run reports 0 created / 0 skipped once done. Only
+after the real run's report confirms zero dishes left uncategorized should
+migration `0016` (tightens `dishes.category_id` to `NOT NULL`) be generated
+and deployed.
+
+---
+
 ## Three gotchas to expect
 
 1. **Phone login won't work in prod** until you add an SMS provider

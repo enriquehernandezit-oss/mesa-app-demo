@@ -38,10 +38,16 @@ labelled as your circle's.
 4. **The reveal** — your score, derived from the final position (0–100 stored, shown 7.2–9.6).
    **The ranking is committed here**, not at the end, so an interrupted flow never loses it.
 5. **The note step** — a one-line vibe note (140 chars), occasion tags (8 Spanish values), and
-   *Qué pedir* (the dish worth ordering). Optionally chain straight into posting a photo.
+   *Qué pedir*: a chip search over dishes already logged at the place (or "+ Agregar" a new one),
+   up to 3, each with a category (auto-guessed, correctable) and an optional sentiment
+   (*Me encantó · Estuvo bien · No me convenció*). Optionally attach a photo to the first one.
 
 The back gesture and drag-to-dismiss both step *backward* through the flow rather than throwing
 away a half-finished ranking.
+
+Ranking-list integrity (dense 1..n positions, one score formula, no lost-update races) is
+verified with `bun run rankings:check` (read-only) and repaired with `bun run rankings:renormalize`
+(`apps/api/src/check-rankings.ts` / `renormalize-rankings.ts`).
 
 ### Your list (`(tabs)/rankings.tsx`)
 - **Mía** — your ordered passport, brass serif numerals, swipe-to-remove with undo.
@@ -76,10 +82,16 @@ choice.
 
 ## 4. Dishes
 
-Post a photo attached to one of your own rankings: pick or shoot the photo, choose a grain
-treatment, name it, caption it, set visibility (friends or public), optionally mark the place as
-want-to-try. Dish detail shows the photo, the caption, and the **place card as the anchor** —
-carrying the poster's attributed score, because a dish is never free-floating.
+Log a dish attached to one of your own rankings — a name and a **required category** from a
+closed, cuisine-complete 65-category taxonomy (keyword-guessed, correctable in a searchable
+picker); a photo is **optional**. With a photo, also choose a grain treatment and caption. Dish
+detail shows the photo (or, photo-less, a plain name-led header) and the **place card as the
+anchor** — carrying the poster's attributed score, because a dish is never free-floating.
+
+The first dish logged on a ranking becomes that ranking's "Qué pedir" pick automatically — there
+is no separate free-text field for it anymore. See `docs/DISHES.md` for the full schema, API and
+taxonomy detail; dish-level ranking and cross-restaurant "best dish" lists are a later milestone,
+not built yet.
 
 You can **delete your own dish post**; anyone else's is reportable.
 
