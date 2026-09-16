@@ -1,4 +1,3 @@
-import { DishCategoryPicker } from '@/components/DishCategoryPicker'
 import {
   Body,
   Button,
@@ -15,12 +14,17 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { guessDishCategory, useDishCategories } from '@/lib/dishCategories'
+import {
+  categoryLabel,
+  groupLabel,
+  guessDishCategory,
+  useDishCategories,
+} from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { type Grain, grainLabel, grainOptions } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
-import { useT } from '@/lib/i18n'
+import { useLanguage, useT } from '@/lib/i18n'
 import { usePreventRemove } from '@/lib/preventRemove'
 import type { RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
@@ -40,6 +44,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // delivery transform in prod; RN can't apply the CSS filter the web preview used).
 export default function DishCompose() {
   const t = useT()
+  const lang = useLanguage()
   const { restaurant: restaurantId } = useLocalSearchParams<{ restaurant: string }>()
   const router = useRouter()
   const navigation = useNavigation()
@@ -67,7 +72,7 @@ export default function DishCompose() {
   const goneRef = useRef(false)
   const captionRef = useRef<TextInput>(null)
 
-  // The category picker pre-selects a keyword guess so picking one is usually
+  // The category pills pre-select a keyword guess so picking one is usually
   // zero taps; it stops re-guessing the moment the member picks one themselves,
   // even if they keep editing the name afterward.
   useEffect(() => {
@@ -75,6 +80,53 @@ export default function DishCompose() {
     if (!name.trim() || !categoriesQuery.data) return
     setCategoryId(guessDishCategory(name, categoriesQuery.data.categories))
   }, [name, categoryTouched, categoriesQuery.data])
+
+  const categories = categoriesQuery.data?.categories ?? []
+  const groups = categoriesQuery.data?.groups ?? []
+  const currentCategory = categories.find((c) => c.id === categoryId) ?? null
+  const currentGroup = groups.find((g) => g.id === currentCategory?.group) ?? null
+
+  // Two sequential dropdown pills (M13), not the old inline search-and-select
+  // picker: the composer is a native modal, and Mesa's own Sheet can't render
+  // above one (see lib/actionSheet.ts's header comment) — a flat 65-item
+  // action sheet would be a scrolling wall, so "Cocina" narrows to one of the
+  // 15 groups first and "Plato" only ever lists that group's categories.
+  // Both list options with a "✓ " prefix on the current one — ActionSheetIOS
+  // has no separate selected-state affordance to hang a checkmark on.
+  async function pickGroup() {
+    if (groups.length === 0) return
+    const idx = await showActionSheet({
+      title: t('dish.cuisine_pill'),
+      options: groups.map((g) => ({
+        label: `${g.id === currentGroup?.id ? '✓ ' : ''}${groupLabel(g, lang)}`,
+      })),
+    })
+    if (idx === null) return
+    const group = groups[idx]
+    const inGroup = categories
+      .filter((c) => c.group === group.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    if (inGroup[0]) {
+      setCategoryId(inGroup[0].id)
+      setCategoryTouched(true)
+    }
+  }
+
+  async function pickCategory() {
+    const inGroup = categories
+      .filter((c) => c.group === currentGroup?.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    if (inGroup.length === 0) return
+    const idx = await showActionSheet({
+      title: t('dish.category_label'),
+      options: inGroup.map((c) => ({
+        label: `${c.id === categoryId ? '✓ ' : ''}${categoryLabel(c, lang)}`,
+      })),
+    })
+    if (idx === null) return
+    setCategoryId(inGroup[idx].id)
+    setCategoryTouched(true)
+  }
 
   const post = useMutation({
     mutationFn: async () => {
@@ -205,18 +257,18 @@ export default function DishCompose() {
         <Caption className="mt-1 text-micro">{t('dish.name_caption')}</Caption>
 
         <Eyebrow className="mt-4">{t('dish.category_label')}</Eyebrow>
-        <View className="mt-2">
-          {categoriesQuery.data ? (
-            <DishCategoryPicker
-              categories={categoriesQuery.data.categories}
-              groups={categoriesQuery.data.groups}
-              selected={categoryId}
-              onSelect={(id) => {
-                setCategoryId(id)
-                setCategoryTouched(true)
-              }}
-            />
-          ) : null}
+        <View className="mt-2 flex-row gap-2">
+          <Chip size="sm" chevron state={currentGroup ? 'active' : 'default'} onPress={pickGroup}>
+            {currentGroup ? groupLabel(currentGroup, lang) : t('dish.cuisine_pill')}
+          </Chip>
+          <Chip
+            size="sm"
+            chevron
+            state={currentCategory ? 'active' : 'default'}
+            onPress={pickCategory}
+          >
+            {currentCategory ? categoryLabel(currentCategory, lang) : t('dish.dish_type_pill')}
+          </Chip>
         </View>
 
         <Pressable
@@ -255,8 +307,9 @@ export default function DishCompose() {
           </View>
         )}
 
+        <Eyebrow className="mt-4">{t('dish.caption_label')}</Eyebrow>
         <TextInput
-          className="mt-4 border-line border-b pb-1 font-ui text-body text-text"
+          className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
           placeholderTextColor={placeholder}
           ref={captionRef}
           placeholder={t('dish.caption_placeholder')}

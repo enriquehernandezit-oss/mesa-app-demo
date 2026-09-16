@@ -1,4 +1,3 @@
-import { DishCategoryPicker } from '@/components/DishCategoryPicker'
 import { ExternalResults } from '@/components/ExternalResults'
 import {
   Body,
@@ -23,7 +22,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { categoryLabel, guessDishCategory, mesaNorm, useDishCategories } from '@/lib/dishCategories'
+import { mesaNorm } from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import {
   type Grain,
@@ -54,8 +53,6 @@ import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
 import type {
-  DishCategory,
-  DishGroup,
   DishName,
   NewRestaurant,
   Ranking,
@@ -111,15 +108,18 @@ type AddPlaceMutation = UseMutationResult<
   { name: string; neighborhoodSlug: string }
 >
 
-// A dish chosen (or freshly typed) in the "Qué pedir" step. `isNew` is only
-// telemetry — the server upserts by (rankingId, nameKey) either way, so a
-// mis-typed name that happens to match an existing one just joins it.
+// A dish chosen (or freshly typed) on the reveal's "¿Qué pediste?" step.
+// `isNew` is only telemetry — the server upserts by (rankingId, nameKey)
+// either way, so a mis-typed name that happens to match an existing one just
+// joins it. No categoryId: as of M13 the rank flow never asks for one, the
+// server infers it via guessDishCategory. `dishId` is filled in once the
+// dish's own POST resolves — used only to target a later DELETE.
 type SelectedDish = {
   name: string
   nameKey: string
-  categoryId: string
   sentiment: Sentiment | null
   isNew: boolean
+  dishId?: string
 }
 
 type RankStage = 'sentiment' | 'placed' | 'revealed'
@@ -306,16 +306,14 @@ export default function RankAPlace() {
     enabled: Boolean(pickedId) && position !== null,
     staleTime: 30_000,
   })
-  // Prefetched alongside the reveal (not on NoteStep mount) so the "Qué
-  // pedir" chips are already there the instant the member taps "Agregar una
-  // nota" — no spinner between the reveal and the chip row.
+  // Fetched the moment the score reveals, so the "¿Qué pediste?" chips are
+  // already there — no spinner between the reveal and the chip row.
   const dishNamesQuery = useQuery({
     queryKey: ['dish-names', pickedId],
     queryFn: () => api.get<{ names: DishName[] }>(`/dishes/restaurant/${pickedId}/names`),
     enabled: Boolean(pickedId) && position !== null,
     staleTime: 60_000,
   })
-  const dishCategoriesQuery = useDishCategories()
 
   // Held so a swipe-back (or the modal's own beforeRemove-driven dismiss)
   // during the 1.3s stamp can cancel the pending state change — acting on a
@@ -337,44 +335,139 @@ export default function RankAPlace() {
     finishTimer.current = setTimeout(() => setShowFinishActions(true), 1300)
   }
 
-  // Skips dishes already posted by an earlier attempt of the same mutation —
-  // a retry after a mid-sequence failure never double-posts, since the
-  // server's own upsert (rankingId, nameKey) covers the rest anyway.
-  const postedDishIndices = useRef<Set<number>>(new Set())
+  // "Saved as you tap" (M13): each dish add, sentiment change, or photo
+  // attach on the reveal's "¿Qué pediste?" step POSTs immediately — there's
+  // no longer a batch post at "Guardar nota" time. `dishQueueRef` serializes
+  // those calls (a ref-based promise chain) so a fast run of taps can't race
+  // each other; `dishIdByKey` remembers each dish's server-assigned id (by
+  // nameKey) purely for a later DELETE to target the right row, resolved
+  // lazily since the DELETE can be enqueued before its own POST resolves —
+  // the queue's FIFO order guarantees the POST's ref write always lands
+  // first. `dishSyncPending` (count > 0) gates "Listo" and "Agregar una
+  // nota", which must not proceed while the queue is still draining.
+  const dishQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const dishIdByKey = useRef<Map<string, string>>(new Map())
+  const dishSyncCountRef = useRef(0)
+  const [dishSyncPending, setDishSyncPending] = useState(false)
 
+  function enqueueDish(fn: () => Promise<void>) {
+    dishSyncCountRef.current++
+    setDishSyncPending(true)
+    const run = async () => {
+      try {
+        await fn()
+      } catch (err) {
+        captureError(err, 'rank.dish_sync')
+        toast({ variant: 'error', message: t('rank.dish_sync_error') })
+      } finally {
+        dishSyncCountRef.current--
+        if (dishSyncCountRef.current === 0) setDishSyncPending(false)
+      }
+    }
+    dishQueueRef.current = dishQueueRef.current.then(run, run)
+    return dishQueueRef.current
+  }
+
+  async function postDish(
+    dish: SelectedDish,
+    opts: { isFirst: boolean; image?: string; grain?: Grain; removeImage?: boolean },
+  ) {
+    const res = await api.post<{ id: string }>('/dishes', {
+      restaurantId: pickedId,
+      name: dish.name,
+      sentiment: dish.sentiment ?? undefined,
+      visibility: 'friends',
+      alsoFavorite: opts.isFirst,
+      ...(opts.image ? { image: opts.image, grain: opts.grain } : {}),
+      ...(opts.removeImage ? { removeImage: true } : {}),
+    })
+    dishIdByKey.current.set(dish.nameKey, res.id)
+    setSelectedDishes((cur) =>
+      cur.map((d) => (d.nameKey === dish.nameKey ? { ...d, dishId: res.id } : d)),
+    )
+    queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
+  }
+
+  async function deleteDish(nameKey: string) {
+    const id = dishIdByKey.current.get(nameKey)
+    dishIdByKey.current.delete(nameKey)
+    if (id) {
+      await api.del(`/dishes/${id}`)
+      queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
+    }
+  }
+
+  function addDish(candidate: SelectedDish) {
+    if (selectedDishes.some((d) => d.nameKey === candidate.nameKey)) return
+    if (selectedDishes.length >= 3) {
+      toast({ message: t('rank.dish_max') })
+      return
+    }
+    const isFirst = selectedDishes.length === 0
+    setSelectedDishes((cur) => [...cur, candidate])
+    enqueueDish(() => postDish(candidate, { isFirst }))
+  }
+
+  // Removing the favorite (index 0) dish re-syncs the new first dish (if any)
+  // so `rankings.favoriteDish` points at something live — DELETE already
+  // clears it server-side when it matches the removed dish's name, but only
+  // this re-post picks a new one. The deleted dish's own photo doesn't carry
+  // over: it belonged to that row, which is now gone.
+  function removeDish(nameKey: string) {
+    const wasFirst = selectedDishes[0]?.nameKey === nameKey
+    const newFirst = selectedDishes.find((d) => d.nameKey !== nameKey)
+    setSelectedDishes((cur) => cur.filter((d) => d.nameKey !== nameKey))
+    if (wasFirst) setDishImage(null)
+    enqueueDish(() => deleteDish(nameKey))
+    if (wasFirst && newFirst) enqueueDish(() => postDish(newFirst, { isFirst: true }))
+  }
+
+  function toggleDishSentiment(nameKey: string, sentiment: Sentiment) {
+    const target = selectedDishes.find((d) => d.nameKey === nameKey)
+    if (!target) return
+    const updated: SelectedDish = {
+      ...target,
+      sentiment: target.sentiment === sentiment ? null : sentiment,
+    }
+    setSelectedDishes((cur) => cur.map((d) => (d.nameKey === nameKey ? updated : d)))
+    const isFirst = selectedDishes[0]?.nameKey === nameKey
+    enqueueDish(() => postDish(updated, { isFirst }))
+  }
+
+  async function attachDishPhoto() {
+    const uri = await pickDishPhoto()
+    if (!uri || !selectedDishes[0]) return
+    setDishImage(uri)
+    enqueueDish(() => postDish(selectedDishes[0], { isFirst: true, image: uri, grain: dishGrain }))
+  }
+
+  function removeDishPhoto() {
+    setDishImage(null)
+    if (selectedDishes[0]) {
+      enqueueDish(() => postDish(selectedDishes[0], { isFirst: true, removeImage: true }))
+    }
+  }
+
+  function setDishGrainAndSync(g: Grain) {
+    setDishGrain(g)
+    if (dishImage && selectedDishes[0]) {
+      enqueueDish(() => postDish(selectedDishes[0], { isFirst: true, image: dishImage, grain: g }))
+    }
+  }
+
+  // Only the note + occasion tags post here now — every selected dish is
+  // already persisted by the time this fires (see the queue above). The
+  // initial commitInitial POST already exists by the time this fires (it
+  // runs the moment the score reveals), so /dishes' "rank it first" check
+  // was always satisfied for every dish POST too.
   const save = useMutation({
-    // The note (as always) and, sequentially, each selected dish — in the
-    // same "Guardar nota" tap, no separate composer screen. The first
-    // selected dish carries `alsoFavorite` (backfills the ranking's
-    // favoriteDish) and, if one was attached, the photo. The initial
-    // commitInitial POST already exists by the time this fires (it runs the
-    // moment the score reveals), so /dishes' "rank it first" check is always
-    // satisfied.
-    mutationFn: async (pos: number) => {
-      await api.post('/rankings', {
+    mutationFn: (pos: number) =>
+      api.post('/rankings', {
         restaurantId: pickedId,
         position: pos,
         vibeNote: note.trim() || undefined,
         tags: tags.length ? tags : undefined,
-      })
-      for (let i = 0; i < selectedDishes.length; i++) {
-        if (postedDishIndices.current.has(i)) continue
-        const d = selectedDishes[i]
-        const isFirst = i === 0
-        await api.post('/dishes', {
-          restaurantId: pickedId,
-          name: d.name,
-          categoryId: d.categoryId,
-          sentiment: d.sentiment ?? undefined,
-          visibility: 'friends',
-          alsoFavorite: isFirst,
-          ...(isFirst && dishImage
-            ? { image: dishImage, grain: dishGrain, caption: note.trim() || undefined }
-            : {}),
-        })
-        postedDishIndices.current.add(i)
-      }
-    },
+      }),
     onSuccess: () => {
       track('rank_saved', {
         hasNote: note.trim().length > 0,
@@ -385,10 +478,6 @@ export default function RankAPlace() {
         hasPhoto: Boolean(dishImage),
       })
       invalidateAfterRanking(pickedId)
-      if (selectedDishes.length > 0) {
-        queryClient.invalidateQueries({ queryKey: ['dishes', pickedId] })
-        queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
-      }
       finishToRankings()
     },
     onError: (err, pos) => {
@@ -407,17 +496,18 @@ export default function RankAPlace() {
   // against silently losing real effort. Picking a place or a sentiment costs
   // nothing to redo, so those never prompt; once pairwise placement has
   // started, several taps are on the line. Once the score is revealed AND
-  // committed, only a note/tags/dish/photo can still be lost — but while the
-  // commit is still pending or has failed, the ranking itself is still on the
-  // line too, so that state prompts on its own even with nothing typed yet
-  // (this is the fix for a swipe-down silently discarding the score the
-  // member was just given).
+  // committed, only a note/tags edit can still be lost — a selected dish or
+  // its photo is not in this list any more, since M13 posts those the
+  // instant they're picked, not at "Guardar nota" (swiping away can't lose
+  // them). While the commit is still pending or has failed, the ranking
+  // itself is still on the line too, so that state prompts on its own even
+  // with nothing typed yet (this is the fix for a swipe-down silently
+  // discarding the score the member was just given).
   const dirty =
     !placedStamp &&
     ((sentiment !== null && position === null) ||
       (position !== null && !revealed && (commitInitial.isPending || commitInitial.isError)) ||
-      (revealed &&
-        (note.trim() !== '' || tags.length > 0 || selectedDishes.length > 0 || Boolean(dishImage))))
+      (revealed && (note.trim() !== '' || tags.length > 0)))
   usePreventRemove(dirty, ({ data }) => {
     showActionSheet({
       title: revealed ? t('rank.discard_note_title') : t('rank.discard_title'),
@@ -623,7 +713,7 @@ export default function RankAPlace() {
     )
   }
 
-  // B3 — the score reveal.
+  // B3 — the score reveal, including "¿Qué pediste?" (M13).
   if (position !== null && !revealed && committedPlace) {
     return (
       <RevealStep
@@ -636,17 +726,35 @@ export default function RankAPlace() {
         commitPending={commitInitial.isPending}
         commitError={commitInitial.isError}
         onRetryCommit={() => commitInitial.mutate(position)}
+        selectedDishes={selectedDishes}
+        dishNames={dishNamesQuery.data?.names ?? []}
+        dishNamesError={dishNamesQuery.isError}
+        dishImage={dishImage}
+        dishGrain={dishGrain}
+        onAddDish={addDish}
+        onRemoveDish={removeDish}
+        onToggleSentiment={toggleDishSentiment}
+        onAttachPhoto={attachDishPhoto}
+        onRemovePhoto={removeDishPhoto}
+        onSetGrain={setDishGrainAndSync}
+        dishSyncPending={dishSyncPending}
         onBack={() => {
           committedForId.current = null
           setPosition(null)
         }}
-        onDone={finishToRankings}
-        onAddNote={() => setRevealed(true)}
+        onDone={async () => {
+          await dishQueueRef.current
+          finishToRankings()
+        }}
+        onAddNote={async () => {
+          await dishQueueRef.current
+          setRevealed(true)
+        }}
       />
     )
   }
 
-  // B4 — note + occasion tags + a dish.
+  // B4 — note + occasion tags. Every dish was already saved on the reveal.
   if (position !== null && committedPlace) {
     return (
       <NoteStep
@@ -657,16 +765,6 @@ export default function RankAPlace() {
         setNote={setNote}
         tags={tags}
         setTags={setTags}
-        selectedDishes={selectedDishes}
-        setSelectedDishes={setSelectedDishes}
-        dishNames={dishNamesQuery.data?.names ?? []}
-        dishNamesError={dishNamesQuery.isError}
-        dishCategories={dishCategoriesQuery.data?.categories ?? []}
-        dishGroups={dishCategoriesQuery.data?.groups ?? []}
-        dishImage={dishImage}
-        setDishImage={setDishImage}
-        dishGrain={dishGrain}
-        setDishGrain={setDishGrain}
         saving={save.isPending}
         onBack={() => setRevealed(false)}
         onSave={() => save.mutate(position)}
@@ -785,8 +883,10 @@ function SentimentButton({
   )
 }
 
-// B3 — the score reveal. Pure presentation of where the spot landed (its
-// neighbours + the friend signal); the parent already committed the ranking.
+// B3 — the score reveal, plus "¿Qué pediste?" (M13): where the spot landed
+// (its neighbours + the friend signal), then which dishes were ordered. The
+// parent already committed the ranking; every dish tap here posts on its own
+// through the parent's serial queue — nothing on this screen is batched.
 function RevealStep({
   picked,
   position,
@@ -797,6 +897,18 @@ function RevealStep({
   commitPending,
   commitError,
   onRetryCommit,
+  selectedDishes,
+  dishNames,
+  dishNamesError,
+  dishImage,
+  dishGrain,
+  onAddDish,
+  onRemoveDish,
+  onToggleSentiment,
+  onAttachPhoto,
+  onRemovePhoto,
+  onSetGrain,
+  dishSyncPending,
   onBack,
   onDone,
   onAddNote,
@@ -810,12 +922,27 @@ function RevealStep({
   commitPending: boolean
   commitError: boolean
   onRetryCommit: () => void
+  selectedDishes: SelectedDish[]
+  dishNames: DishName[]
+  dishNamesError: boolean
+  dishImage: string | null
+  dishGrain: Grain
+  onAddDish: (dish: SelectedDish) => void
+  onRemoveDish: (nameKey: string) => void
+  onToggleSentiment: (nameKey: string, sentiment: Sentiment) => void
+  onAttachPhoto: () => void
+  onRemovePhoto: () => void
+  onSetGrain: (g: Grain) => void
+  dishSyncPending: boolean
   onBack: () => void
   onDone: () => void
   onAddNote: () => void
 }) {
   const insets = useSafeAreaInsets()
+  const placeholder = useColor('text-muted')
   const t = useT()
+  const [dishQuery, setDishQuery] = useState('')
+  const debouncedDishQuery = useDebounced(dishQuery, 150)
   // Sorted by position, not rounded score — see buildTop5's comment above.
   const orderedByPos = [...existingForCompare].sort(
     (a, b) => (a.position ?? Number.POSITIVE_INFINITY) - (b.position ?? Number.POSITIVE_INFINITY),
@@ -833,23 +960,42 @@ function RevealStep({
         around.push({ pos, name: r.name, score: scoreForPosition(pos - 1, total), isNew: false })
     }
   }
+
+  const selectedKeys = new Set(selectedDishes.map((d) => d.nameKey))
+  const needle = mesaNorm(debouncedDishQuery.trim())
+  const visibleNames = (
+    needle ? dishNames.filter((n) => mesaNorm(n.label).includes(needle)) : dishNames
+  )
+    .filter((n) => !selectedKeys.has(n.nameKey))
+    .slice(0, 6)
+  const exactExists = dishNames.some((n) => n.nameKey === needle) || selectedKeys.has(needle)
+  const showAddChip = debouncedDishQuery.trim().length >= 2 && !exactExists
+  function addNewDishFromQuery() {
+    const trimmed = dishQuery.trim()
+    if (!trimmed) return
+    onAddDish({ name: trimmed, nameKey: mesaNorm(trimmed), sentiment: null, isNew: true })
+    setDishQuery('')
+  }
+
+  const listoBlocked = commitPending || commitError || dishSyncPending
   return (
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
         <BackBar label={t('common.back')} onBack={onBack} />
-        {/* Disabled while the commit hasn't settled — tapping "Listo" here
-            used to jump straight to the celebration stamp regardless of
-            whether the ranking had actually saved, so a fast tap right after
-            the reveal (or a slow connection) could show "#3 · Mijas" for a
-            ranking that then silently failed to persist. */}
+        {/* Disabled while the commit hasn't settled, or the dish queue is
+            still draining — tapping "Listo" here used to jump straight to
+            the celebration stamp regardless of whether the ranking (and now,
+            every selected dish) had actually saved, so a fast tap right
+            after the reveal (or a slow connection) could show "#3 · Mijas"
+            for a ranking that then silently failed to persist. */}
         <Pressable
           accessibilityRole="button"
           onPress={onDone}
-          disabled={commitPending || commitError}
-          className={`min-h-[44px] justify-center active:opacity-60 ${commitPending || commitError ? 'opacity-40' : ''}`}
+          disabled={listoBlocked}
+          className={`min-h-[44px] justify-center active:opacity-60 ${listoBlocked ? 'opacity-40' : ''}`}
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {commitPending ? t('common.saving') : t('common.done')}
+            {commitPending || dishSyncPending ? t('common.saving') : t('common.done')}
           </Text>
         </Pressable>
       </View>
@@ -891,6 +1037,171 @@ function RevealStep({
             </View>
           ))}
         </View>
+
+        {/* M13: dish-logging lives here now, not gated behind the note step —
+            no category caption, picker, or auto-expand anywhere in this
+            block, since the server infers it (guessDishCategory). Every tap
+            below posts on its own through the parent's queue. */}
+        <Eyebrow className="mt-6">{t('rank.what_did_you_order')}</Eyebrow>
+        <Caption className="mt-1">{t('rank.what_did_you_order_helper')}</Caption>
+        <View className="mt-2 min-h-[48px] rounded border border-line bg-surface px-4 justify-center">
+          <TextInput
+            className="font-ui text-body text-text"
+            placeholderTextColor={placeholder}
+            placeholder={t('rank.dish_search_placeholder')}
+            maxLength={60}
+            returnKeyType="search"
+            value={dishQuery}
+            onChangeText={setDishQuery}
+            onSubmitEditing={addNewDishFromQuery}
+          />
+        </View>
+        {dishNamesError && (
+          <Caption className="mt-1 text-status-packed">{t('rank.dish_names_error')}</Caption>
+        )}
+
+        <View className="mt-3 flex-row flex-wrap gap-2">
+          {selectedDishes.map((d) => (
+            <Chip
+              key={d.nameKey}
+              size="sm"
+              state="selected"
+              hitSlop={4}
+              onPress={() => {
+                tapSelect()
+                onRemoveDish(d.nameKey)
+              }}
+            >
+              {d.name}
+            </Chip>
+          ))}
+          {visibleNames.map((n) => (
+            <Chip
+              key={n.nameKey}
+              size="sm"
+              hitSlop={4}
+              onPress={() => {
+                tapSelect()
+                onAddDish({
+                  name: n.label,
+                  nameKey: n.nameKey,
+                  sentiment: null,
+                  isNew: false,
+                })
+              }}
+            >
+              {n.label} · {n.count}
+            </Chip>
+          ))}
+          {showAddChip && (
+            <Chip
+              size="sm"
+              state="active"
+              hitSlop={4}
+              onPress={() => {
+                tapSelect()
+                addNewDishFromQuery()
+              }}
+            >
+              {t('rank.add_dish_named', { name: dishQuery.trim() })}
+            </Chip>
+          )}
+        </View>
+
+        {selectedDishes.map((d, i) => (
+          <View key={d.nameKey} className="mt-3 gap-2 rounded border border-line bg-surface p-3">
+            <View className="flex-row items-center gap-2">
+              <Text className="flex-1 font-serif text-serif-sm text-text" numberOfLines={1}>
+                {d.name}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  tapSelect()
+                  onRemoveDish(d.nameKey)
+                }}
+                className="h-8 w-8 items-center justify-center active:opacity-60"
+              >
+                <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+              </Pressable>
+            </View>
+            <View className="flex-row gap-2">
+              <Chip
+                size="sm"
+                state={d.sentiment === 'loved' ? 'selected' : 'default'}
+                onPress={() => {
+                  tapSelect()
+                  onToggleSentiment(d.nameKey, 'loved')
+                }}
+              >
+                {t('rank.sentiment_loved')}
+              </Chip>
+              <Chip
+                size="sm"
+                state={d.sentiment === 'fine' ? 'selected' : 'default'}
+                onPress={() => {
+                  tapSelect()
+                  onToggleSentiment(d.nameKey, 'fine')
+                }}
+              >
+                {t('rank.sentiment_fine')}
+              </Chip>
+              <Chip
+                size="sm"
+                state={d.sentiment === 'disliked' ? 'selected' : 'default'}
+                onPress={() => {
+                  tapSelect()
+                  onToggleSentiment(d.nameKey, 'disliked')
+                }}
+              >
+                {t('rank.sentiment_disliked')}
+              </Chip>
+            </View>
+            {/* The photo affordance only ever shows on the first selected
+                dish — one dish photo per rank, same as before M13. */}
+            {i === 0 &&
+              (dishImage ? (
+                <>
+                  <View className="h-40 w-full overflow-hidden rounded border border-line">
+                    <Image
+                      source={{ uri: dishImage }}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t('rank.remove_photo')}
+                      onPress={onRemovePhoto}
+                      className="absolute top-2 right-2 h-8 w-8 items-center justify-center rounded-pill bg-surface active:opacity-70"
+                    >
+                      <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+                    </Pressable>
+                  </View>
+                  <View className="flex-row flex-wrap gap-2">
+                    {grainOptions().map((g) => (
+                      <Chip
+                        key={g.value}
+                        size="sm"
+                        state={dishGrain === g.value ? 'selected' : 'default'}
+                        onPress={() => onSetGrain(g.value)}
+                      >
+                        {g.label}
+                      </Chip>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onAttachPhoto}
+                  className="min-h-[56px] flex-row items-center gap-3 rounded border border-line border-dashed px-4 active:opacity-80"
+                >
+                  <Text className="font-serif text-serif-lg text-accent">+</Text>
+                  <Text className="font-ui text-body text-text">{t('rank.add_a_photo')}</Text>
+                </Pressable>
+              ))}
+          </View>
+        ))}
 
         {/* The other half of the core loop: where friends put this same place. */}
         <View className="mt-6">
@@ -955,8 +1266,8 @@ function RevealStep({
           {t('rank.your_answer_moved', { name: picked.name })}
         </Body>
         <View className="mt-4">
-          <Button variant="primary" onPress={onAddNote}>
-            {t('rank.add_a_note')}
+          <Button variant="primary" disabled={dishSyncPending} onPress={onAddNote}>
+            {dishSyncPending ? t('common.saving') : t('rank.add_a_note')}
           </Button>
         </View>
       </ScrollView>
@@ -964,8 +1275,8 @@ function RevealStep({
   )
 }
 
-// B4 — note + occasion tags + a dish. The ranking already saved on reveal; this
-// only finalizes the optional note/tags and whether to chain into the composer.
+// B4 — note + occasion tags. Every dish was already saved on the reveal
+// (M13), so this step only finalizes the optional note/tags themselves.
 function NoteStep({
   picked,
   position,
@@ -974,16 +1285,6 @@ function NoteStep({
   setNote,
   tags,
   setTags,
-  selectedDishes,
-  setSelectedDishes,
-  dishNames,
-  dishNamesError,
-  dishCategories,
-  dishGroups,
-  dishImage,
-  setDishImage,
-  dishGrain,
-  setDishGrain,
   saving,
   onBack,
   onSave,
@@ -995,16 +1296,6 @@ function NoteStep({
   setNote: Dispatch<SetStateAction<string>>
   tags: string[]
   setTags: Dispatch<SetStateAction<string[]>>
-  selectedDishes: SelectedDish[]
-  setSelectedDishes: Dispatch<SetStateAction<SelectedDish[]>>
-  dishNames: DishName[]
-  dishNamesError: boolean
-  dishCategories: DishCategory[]
-  dishGroups: DishGroup[]
-  dishImage: string | null
-  setDishImage: Dispatch<SetStateAction<string | null>>
-  dishGrain: Grain
-  setDishGrain: Dispatch<SetStateAction<Grain>>
   saving: boolean
   onBack: () => void
   onSave: () => void
@@ -1012,56 +1303,6 @@ function NoteStep({
   const insets = useSafeAreaInsets()
   const placeholder = useColor('text-muted')
   const t = useT()
-  const lang = useLanguage()
-
-  const [dishQuery, setDishQuery] = useState('')
-  const debouncedDishQuery = useDebounced(dishQuery, 150)
-  const [categoryPickerFor, setCategoryPickerFor] = useState<string | null>(null)
-
-  const needle = mesaNorm(debouncedDishQuery.trim())
-  const selectedKeys = new Set(selectedDishes.map((d) => d.nameKey))
-  const visibleNames = (
-    needle ? dishNames.filter((n) => mesaNorm(n.label).includes(needle)) : dishNames
-  )
-    .filter((n) => !selectedKeys.has(n.nameKey))
-    .slice(0, 6)
-  const exactExists = dishNames.some((n) => n.nameKey === needle) || selectedKeys.has(needle)
-  const showAddChip = debouncedDishQuery.trim().length >= 2 && !exactExists
-
-  function addDish(candidate: SelectedDish) {
-    setSelectedDishes((cur) => {
-      if (cur.some((d) => d.nameKey === candidate.nameKey)) return cur
-      if (cur.length >= 3) {
-        toast({ message: t('rank.dish_max') })
-        return cur
-      }
-      return [...cur, candidate]
-    })
-  }
-  function removeDish(nameKey: string) {
-    setSelectedDishes((cur) => cur.filter((d) => d.nameKey !== nameKey))
-  }
-  function setDishCategory(nameKey: string, categoryId: string) {
-    setSelectedDishes((cur) => cur.map((d) => (d.nameKey === nameKey ? { ...d, categoryId } : d)))
-  }
-  function toggleDishSentiment(nameKey: string, sentiment: Sentiment) {
-    setSelectedDishes((cur) =>
-      cur.map((d) =>
-        d.nameKey === nameKey
-          ? { ...d, sentiment: d.sentiment === sentiment ? null : sentiment }
-          : d,
-      ),
-    )
-  }
-  function addNewDishFromQuery() {
-    const trimmed = dishQuery.trim()
-    if (!trimmed) return
-    const nameKey = mesaNorm(trimmed)
-    const guess = guessDishCategory(trimmed, dishCategories)
-    addDish({ name: trimmed, nameKey, categoryId: guess, sentiment: null, isNew: true })
-    if (guess === 'otro') setCategoryPickerFor(nameKey)
-    setDishQuery('')
-  }
 
   return (
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
@@ -1139,200 +1380,6 @@ function NoteStep({
             )
           })}
         </View>
-
-        <Eyebrow className="mt-4">{t('rank.what_to_order')}</Eyebrow>
-        <View className="mt-2 min-h-[48px] rounded border border-line bg-surface px-4 justify-center">
-          <TextInput
-            className="font-ui text-body text-text"
-            placeholderTextColor={placeholder}
-            placeholder={t('rank.dish_search_placeholder')}
-            maxLength={60}
-            returnKeyType="search"
-            value={dishQuery}
-            onChangeText={setDishQuery}
-            onSubmitEditing={addNewDishFromQuery}
-          />
-        </View>
-        {dishNamesError && (
-          <Caption className="mt-1 text-status-packed">{t('rank.dish_names_error')}</Caption>
-        )}
-
-        <View className="mt-3 flex-row flex-wrap gap-2">
-          {selectedDishes.map((d) => (
-            <Chip
-              key={d.nameKey}
-              size="sm"
-              state="selected"
-              hitSlop={4}
-              onPress={() => {
-                tapSelect()
-                removeDish(d.nameKey)
-              }}
-            >
-              {d.name}
-            </Chip>
-          ))}
-          {visibleNames.map((n) => (
-            <Chip
-              key={n.nameKey}
-              size="sm"
-              hitSlop={4}
-              onPress={() => {
-                tapSelect()
-                addDish({
-                  name: n.label,
-                  nameKey: n.nameKey,
-                  categoryId: n.categoryId,
-                  sentiment: null,
-                  isNew: false,
-                })
-              }}
-            >
-              {n.label}
-            </Chip>
-          ))}
-          {showAddChip && (
-            <Chip
-              size="sm"
-              state="active"
-              hitSlop={4}
-              onPress={() => {
-                tapSelect()
-                addNewDishFromQuery()
-              }}
-            >
-              {t('rank.add_dish_named', { name: dishQuery.trim() })}
-            </Chip>
-          )}
-        </View>
-
-        {selectedDishes.map((d) => {
-          const category = dishCategories.find((c) => c.id === d.categoryId)
-          const categoryText = category ? categoryLabel(category, lang) : d.categoryId
-          const pickerOpen = categoryPickerFor === d.nameKey
-          return (
-            <View key={d.nameKey} className="mt-3 gap-2 rounded border border-line bg-surface p-3">
-              <View className="flex-row items-center gap-2">
-                <Text className="flex-1 font-serif text-serif-sm text-text" numberOfLines={1}>
-                  {d.name}
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => removeDish(d.nameKey)}
-                  className="h-8 w-8 items-center justify-center active:opacity-60"
-                >
-                  <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
-                </Pressable>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setCategoryPickerFor(pickerOpen ? null : d.nameKey)}
-                className="self-start active:opacity-70"
-              >
-                <Caption className="text-accent-strong">{categoryText}</Caption>
-              </Pressable>
-              {pickerOpen && (
-                <DishCategoryPicker
-                  categories={dishCategories}
-                  groups={dishGroups}
-                  selected={d.categoryId}
-                  onSelect={(id) => {
-                    setDishCategory(d.nameKey, id)
-                    setCategoryPickerFor(null)
-                  }}
-                />
-              )}
-              <View className="flex-row gap-2">
-                <Chip
-                  size="sm"
-                  state={d.sentiment === 'loved' ? 'selected' : 'default'}
-                  onPress={() => {
-                    tapSelect()
-                    toggleDishSentiment(d.nameKey, 'loved')
-                  }}
-                >
-                  {t('rank.sentiment_loved')}
-                </Chip>
-                <Chip
-                  size="sm"
-                  state={d.sentiment === 'fine' ? 'selected' : 'default'}
-                  onPress={() => {
-                    tapSelect()
-                    toggleDishSentiment(d.nameKey, 'fine')
-                  }}
-                >
-                  {t('rank.sentiment_fine')}
-                </Chip>
-                <Chip
-                  size="sm"
-                  state={d.sentiment === 'disliked' ? 'selected' : 'default'}
-                  onPress={() => {
-                    tapSelect()
-                    toggleDishSentiment(d.nameKey, 'disliked')
-                  }}
-                >
-                  {t('rank.sentiment_disliked')}
-                </Chip>
-              </View>
-            </View>
-          )
-        })}
-
-        {selectedDishes.length > 0 && (
-          <>
-            <Eyebrow className="mt-4">{t('rank.dish_photo')}</Eyebrow>
-            {dishImage ? (
-              <>
-                <View className="mt-2 h-40 w-full overflow-hidden rounded border border-line">
-                  <Image
-                    source={{ uri: dishImage }}
-                    style={{ width: '100%', height: '100%' }}
-                    contentFit="cover"
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t('rank.remove_photo')}
-                    onPress={() => setDishImage(null)}
-                    className="absolute top-2 right-2 h-8 w-8 items-center justify-center rounded-pill bg-surface active:opacity-70"
-                  >
-                    <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
-                  </Pressable>
-                </View>
-                <View className="mt-2 flex-row flex-wrap gap-2">
-                  {grainOptions().map((g) => (
-                    <Chip
-                      key={g.value}
-                      size="sm"
-                      state={dishGrain === g.value ? 'selected' : 'default'}
-                      onPress={() => setDishGrain(g.value)}
-                    >
-                      {g.label}
-                    </Chip>
-                  ))}
-                </View>
-                {/* This is the only place that confirms it: a photo attaches to
-                    the FIRST selected dish above, and the note becomes its
-                    caption — not two more fields to fill in. */}
-                <Caption className="mt-2 text-text-faint">
-                  {t('rank.will_publish_as', { name: selectedDishes[0].name })}
-                  {note.trim() ? ` — “${note.trim()}”` : ''}
-                </Caption>
-              </>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={async () => {
-                  const uri = await pickDishPhoto()
-                  if (uri) setDishImage(uri)
-                }}
-                className="mt-2 min-h-[56px] flex-row items-center gap-3 rounded border border-line border-dashed px-4 active:opacity-80"
-              >
-                <Text className="font-serif text-serif-lg text-accent">+</Text>
-                <Text className="font-ui text-body text-text">{t('rank.add_a_photo')}</Text>
-              </Pressable>
-            )}
-          </>
-        )}
 
         <View className="mt-6">
           <Button variant="primary" disabled={saving} onPress={onSave}>
