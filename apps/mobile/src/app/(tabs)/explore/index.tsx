@@ -109,11 +109,25 @@ export default function ExploreScreen() {
       if (params.focus !== '1') return
       let cancelled = false
       let attempts = 0
+      // Calls .focus() several times once the ref appears, not just once —
+      // the ref going non-null only means the JS component mounted, not that
+      // UIKit's UISearchBar has actually become ready to accept first-
+      // responder status. A focus() call in that gap can silently no-op
+      // with nothing to catch it by, which read as "the search bar does
+      // nothing, it just navigates" — the params flag only clears once this
+      // whole window has passed, so a late-arriving native view still gets
+      // a real focus() call before this gives up.
+      let focusCallsAfterRefAppeared = 0
       const tryFocus = () => {
         if (cancelled) return
         if (searchBarRef.current) {
           searchBarRef.current.focus()
-          router.setParams({ focus: '' })
+          focusCallsAfterRefAppeared++
+          if (focusCallsAfterRefAppeared >= 5) {
+            router.setParams({ focus: '' })
+            return
+          }
+          setTimeout(tryFocus, 120)
           return
         }
         attempts++

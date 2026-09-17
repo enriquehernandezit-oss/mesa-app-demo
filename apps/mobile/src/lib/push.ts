@@ -8,20 +8,33 @@ import { api } from './api'
 // (the rank finish screen, a new plan, the Activity header), not a splash
 // effect.
 //
-// Every expo-notifications access goes through loadNotifications() below —
-// NEVER a top-level `import * as Notifications from 'expo-notifications'`.
-// Several of that package's submodules call requireNativeModule(...) at
-// their OWN module-eval time (confirmed by reading its build output), which
-// throws synchronously the moment anything imports the package on a binary
-// that predates the founder's EAS rebuild (M17's own founder steps say this
-// rebuild is required). A static import here would crash on load — and
-// this file is reachable from auth-client.ts (sign-out) and the tab shell,
-// so that crash previously took down the entire app, every screen, the
-// moment expo-notifications (or expo-device, removed for the same reason —
-// see its package.json optional-require, which some path around it doesn't
-// actually catch) landed in node_modules, well before anyone had rebuilt.
-// A dynamic `import()` inside a try/catch defers that failure to actual
-// use, and lets it be caught.
+// PUSH_NATIVE_LINKED gates every access to expo-notifications. This is NOT
+// cosmetic — it is the only thing standing between this file and a repeat
+// app-wide crash. Two earlier, more clever attempts both failed in
+// production:
+//   1. A static `import * as Notifications from 'expo-notifications'` at
+//      the top of this file — crashed immediately on any screen that
+//      touched it (this file is reachable from auth-client.ts, so that
+//      meant everywhere), because several of the package's submodules call
+//      requireNativeModule(...) at their OWN module-eval time.
+//   2. A dynamic `await import('expo-notifications')` wrapped in
+//      try/catch, reasoning that Metro would only evaluate the module (and
+//      its native requires) once actually awaited, and that the throw
+//      would be a normal rejection a try/catch could catch. Live-confirmed
+//      wrong: resolving the package's barrel file still eagerly evaluates
+//      EVERY re-exported submodule (getDevicePushTokenAsync among them,
+//      not something this file even calls), and Metro's import()
+//      transform let that throw escape as an UNCAUGHT error instead of a
+//      catchable rejection — crashed on the very first real use (Activity
+//      mount) rather than at boot, which is what made it look fixed until
+//      someone actually opened a push-adjacent screen.
+//
+// The only fix that's actually safe against both failure modes: never let
+// any code path resolve the module at all until the founder's EAS rebuild
+// has genuinely linked its native side. Flip this to true only after that's
+// confirmed (a real device build, or a rebuilt simulator dev client, that
+// doesn't crash when a push function is used) — not preemptively.
+const PUSH_NATIVE_LINKED = false
 
 const TOKEN_KEY = 'mesa.push_token'
 
@@ -30,6 +43,7 @@ type NotificationsModule = typeof import('expo-notifications')
 let cached: NotificationsModule | null | undefined
 
 async function loadNotifications(): Promise<NotificationsModule | null> {
+  if (!PUSH_NATIVE_LINKED) return null
   if (cached !== undefined) return cached
   try {
     const mod = await import('expo-notifications')
