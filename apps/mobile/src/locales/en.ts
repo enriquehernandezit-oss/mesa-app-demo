@@ -126,6 +126,57 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'amigos.suggestions_title': 'People you may know',
   'amigos.load_error': "Couldn't load suggestions.",
   'amigos.no_suggestions': 'No suggestions right now.',
+  'amigos.reason_mutual': { one: '{name} follows them', other: '{name} and {n} more follow them' },
+  'amigos.reason_taste': '{n}% taste match',
+  'amigos.reason_popular': 'Popular on Mesa',
+
+  // Contacts card (M18)
+  'amigos.contacts_title': 'Contacts',
+  'amigos.contacts_findable_toggle': 'Let your contacts find you',
+  'amigos.contacts_findable_body': 'We store your number encrypted — we never show it.',
+  'amigos.contacts_phone_placeholder': '809-555-1234',
+  'amigos.contacts_phone_save': 'Save',
+  'amigos.contacts_phone_invalid': "That number doesn't look valid.",
+  'amigos.contacts_phone_error': "Couldn't save your number. Try again.",
+  'amigos.search_contacts': 'Search my contacts',
+  'amigos.contacts_unsupported': 'Importing contacts only works in the phone app.',
+  'amigos.contacts_denied':
+    "Mesa doesn't have permission to see your contacts. Turn it on in Settings.",
+  'amigos.contacts_found': {
+    one: '1 of your contacts is on Mesa',
+    other: '{n} of your contacts are on Mesa',
+  },
+  'amigos.contacts_none_found': 'None of your contacts are on Mesa yet.',
+  'amigos.contacts_search_error': "Couldn't search your contacts. Try again.",
+  'amigos.contact_match_subtitle': 'Matches your contact "{name}"',
+
+  // Instagram card (M18)
+  'amigos.instagram_title': 'Instagram',
+  'amigos.instagram_body': 'Find people you already follow on Instagram.',
+  'amigos.instagram_import_button': 'Import from Instagram',
+
+  // app/amigos/instagram.tsx
+  'instagram.title': 'Import from Instagram',
+  'instagram.subtitle':
+    'Find people you already follow on Instagram, without connecting your account.',
+  'instagram.how_to_title': 'How to download your information',
+  'instagram.step1': 'Open Instagram and go to your profile.',
+  'instagram.step2':
+    "Tap the menu (☰) → Your activity → Download your information. On Android it's Settings → Accounts Center → Your information and permissions.",
+  'instagram.step3': 'Choose JSON format and select only "Followers and following".',
+  'instagram.step4':
+    'When Instagram emails you the file (can take a few hours), download it and pick it here.',
+  'instagram.pick_file': 'Choose file',
+  'instagram.no_handles_found':
+    "We couldn't find any accounts in that file. Did you pick the right one?",
+  'instagram.import_error': "Couldn't read that file. Try again.",
+  'instagram.matches_found': { one: '1 match on Mesa', other: '{n} matches on Mesa' },
+  'instagram.no_matches': 'None of those accounts are on Mesa yet.',
+  'instagram.matched_subtitle': 'Matches @{handle} from your Instagram',
+  'instagram.unmatched_count': {
+    one: "1 person you follow on Instagram isn't on Mesa yet.",
+    other: "{n} people you follow on Instagram aren't on Mesa yet.",
+  },
 
   'share.preparing': 'Preparing your card…',
   'share.prepare_error': "Couldn't prepare the card. Try again.",

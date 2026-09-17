@@ -21,6 +21,12 @@ const contactsMatchSchema = z.object({
   phones: z.array(z.string().trim().min(1).max(32)).min(1).max(2000),
 })
 
+// A followers/following export file can run into the low thousands for an
+// active Instagram account.
+const instagramMatchSchema = z.object({
+  handles: z.array(z.string().trim().min(1).max(60)).min(1).max(5000),
+})
+
 // Unset -> the contacts feature is fully dark, same convention as PUT /me/phone.
 const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
 
@@ -176,6 +182,51 @@ export const socialRoutes = new Hono<AuthedEnv>()
     return c.json({ matches })
   })
 
+  // Instagram find-friends (M18): given the @handles from a member's own
+  // "Descarga tu información" export (parsed entirely on-device — see
+  // lib/instagramImport.ts), find which ones are Mesa members. Matches
+  // Mesa's OWN @handle column, not a separate table — `user.handle` already
+  // doubles as a member's Instagram handle when they connected that
+  // provider (CLAUDE.md's own note), and is otherwise just their chosen
+  // display handle. Stores nothing: the submitted list is never persisted,
+  // only diffed against existing rows. Unverified by construction (an
+  // Instagram export can't prove Mesa's handle is even the same person), so
+  // the client must always present this as a suggestion, never an
+  // auto-follow.
+  .post('/instagram/match', async (c) => {
+    const me = c.get('user')
+    const parsed = instagramMatchSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+
+    const handles = [
+      ...new Set(
+        parsed.data.handles.map((h) => h.trim().toLowerCase().replace(/^@/, '')).filter(Boolean),
+      ),
+    ]
+    if (handles.length === 0) return c.json({ matches: [] })
+
+    const matches = await db
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        handle: schema.user.handle,
+        image: schema.user.image,
+      })
+      .from(schema.user)
+      .where(
+        and(
+          inArray(schema.user.handle, handles),
+          ne(schema.user.id, me.id),
+          isNull(schema.user.bannedAt),
+          notInArray(schema.user.id, blockedByMe(me.id)),
+          notInArray(schema.user.id, blockedMe(me.id)),
+        ),
+      )
+      .limit(200)
+
+    return c.json({ matches })
+  })
+
   // Resolve a public @handle to a user id. Shared profile links address people by
   // handle (`/p/u/@ana`), but every in-app profile route is keyed by id — so the
   // app hits this once when a shared link opens, then navigates to /u/<id>.
@@ -293,7 +344,10 @@ export const socialRoutes = new Hono<AuthedEnv>()
         .from(schema.follows)
         .innerJoin(schema.user, eq(schema.user.id, schema.follows.followerId))
         .where(
-          and(inArray(schema.follows.followingId, mutualIds), inArray(schema.follows.followerId, myFollows)),
+          and(
+            inArray(schema.follows.followingId, mutualIds),
+            inArray(schema.follows.followerId, myFollows),
+          ),
         )
       for (const s of samples) {
         if (!sampleMutualFriend.has(s.candidateId)) {

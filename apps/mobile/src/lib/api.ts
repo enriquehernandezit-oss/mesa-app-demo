@@ -102,6 +102,9 @@ async function request<T>(path: string, init?: RequestInit & { json?: unknown })
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, json?: unknown) => request<T>(path, { method: 'POST', json }),
+  // A full replace of one resource (PUT /me/phone's opt-in number) — distinct
+  // from patch's partial-update semantics.
+  put: <T>(path: string, json?: unknown) => request<T>(path, { method: 'PUT', json }),
   patch: <T>(path: string, json?: unknown) => request<T>(path, { method: 'PATCH', json }),
   // Optional body: account deletion carries proof of identity (a password).
   del: <T>(path: string, json?: unknown) => request<T>(path, { method: 'DELETE', json }),

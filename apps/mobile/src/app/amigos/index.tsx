@@ -1,23 +1,220 @@
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Body, Button, Caption, ErrorState, RowsSkeleton, Title } from '@/components/ui'
-import { ShareIcon } from '@/components/ui/icons'
+import {
+  Body,
+  Button,
+  Caption,
+  Card,
+  ErrorState,
+  RowsSkeleton,
+  Title,
+  Toggle,
+} from '@/components/ui'
+import { ChevronIcon, ShareIcon } from '@/components/ui/icons'
 import { useInviteLink } from '@/hooks/useInviteLink'
-import { api } from '@/lib/api'
+import { useProfile } from '@/hooks/useProfile'
+import { ApiError, api } from '@/lib/api'
+import { importContactsWithNames } from '@/lib/contacts'
+import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
-import type { SuggestedUser } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import type { ContactMatchUser, FriendSuggestion, SuggestionReason } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-// Find friends v1 (M12.5) — a real destination "Descubre gente" now routes
-// to, instead of the restaurant browser it used to. An invite-link card plus
-// the existing GET /onboarding/suggested-friends list (most-followed-first);
-// contacts, mutuals-of-friends and taste-based reasons land in M18.
+// Find friends (M18) — the v1 (M12.5) invite card + suggestions, now joined
+// by contacts (opt-in "let them find you" + search-my-contacts) and an
+// Instagram import. Reached from Profile, the empty feed, Settings and the
+// followers screen.
+
+function reasonLine(t: ReturnType<typeof useT>, reason: SuggestionReason): string {
+  if (reason.kind === 'mutual')
+    return t('amigos.reason_mutual', { name: reason.name, n: reason.extraCount })
+  if (reason.kind === 'taste') return t('amigos.reason_taste', { n: reason.percent })
+  return t('amigos.reason_popular')
+}
+
+function ContactsCard() {
+  const t = useT()
+  const queryClient = useQueryClient()
+  const me = useProfile(true)
+  const placeholderColor = useColor('text-muted')
+  const findable = me.data?.profile.phoneMatchEnabled ?? false
+
+  const [editingPhone, setEditingPhone] = useState(false)
+  const [phone, setPhone] = useState('')
+
+  const savePhone = useMutation({
+    mutationFn: () => api.put('/me/phone', { phone }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      setEditingPhone(false)
+      setPhone('')
+    },
+    onError: (err) => {
+      const code = err instanceof ApiError ? err.code : ''
+      captureError(err, 'amigos.savePhone')
+      setContactMsg(
+        code === 'invalid_phone'
+          ? t('amigos.contacts_phone_invalid')
+          : t('amigos.contacts_phone_error'),
+      )
+    },
+  })
+  const clearPhone = useMutation({
+    mutationFn: () => api.del('/me/phone'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+  })
+
+  const [searching, setSearching] = useState(false)
+  const [contactMsg, setContactMsg] = useState<string | null>(null)
+  const [matches, setMatches] = useState<{ user: ContactMatchUser; contactName: string }[] | null>(
+    null,
+  )
+
+  async function searchContacts() {
+    if (searching) return
+    setSearching(true)
+    setContactMsg(null)
+    setMatches(null)
+    try {
+      const result = await importContactsWithNames()
+      if (result.status === 'unsupported') {
+        setContactMsg(t('amigos.contacts_unsupported'))
+        return
+      }
+      if (result.status === 'denied') {
+        setContactMsg(t('amigos.contacts_denied'))
+        return
+      }
+      const nameByPhone = new Map<string, string>()
+      const phones: string[] = []
+      for (const contact of result.contacts) {
+        for (const p of contact.phoneNumbers) {
+          phones.push(p)
+          if (!nameByPhone.has(p)) nameByPhone.set(p, contact.name)
+        }
+      }
+      if (phones.length === 0) {
+        setContactMsg(t('amigos.contacts_none_found'))
+        return
+      }
+      const { matches: found } = await api.post<{
+        matches: (ContactMatchUser & { phone: string })[]
+      }>('/social/contacts/match', { phones })
+      setMatches(
+        found.map((m) => ({
+          user: { id: m.id, name: m.name, handle: m.handle, image: m.image },
+          contactName: nameByPhone.get(m.phone) ?? '',
+        })),
+      )
+      setContactMsg(
+        found.length
+          ? t('amigos.contacts_found', { n: found.length })
+          : t('amigos.contacts_none_found'),
+      )
+    } catch (err) {
+      captureError(err, 'amigos.contactsSearch')
+      setContactMsg(t('amigos.contacts_search_error'))
+    } finally {
+      setSearching(false)
+    }
+  }
+
+  return (
+    <Card className="mt-4">
+      <Text className="font-ui-semibold text-body text-text">{t('amigos.contacts_title')}</Text>
+
+      <View className="mt-3 flex-row items-center gap-3">
+        <View className="min-w-0 flex-1">
+          <Text className="font-ui text-body text-text">
+            {t('amigos.contacts_findable_toggle')}
+          </Text>
+          <Caption className="mt-0.5">{t('amigos.contacts_findable_body')}</Caption>
+        </View>
+        <Toggle
+          checked={findable}
+          onChange={(v) => {
+            if (v) setEditingPhone(true)
+            else clearPhone.mutate()
+          }}
+          label={t('amigos.contacts_findable_toggle')}
+        />
+      </View>
+
+      {editingPhone && !findable ? (
+        <View className="mt-3 flex-row items-center gap-2">
+          <TextInput
+            className="min-h-[44px] flex-1 rounded border border-line bg-bg px-3 font-ui text-body text-text"
+            placeholderTextColor={placeholderColor}
+            placeholder={t('amigos.contacts_phone_placeholder')}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+          <Button
+            size="sm"
+            disabled={!phone.trim()}
+            loading={savePhone.isPending}
+            onPress={() => savePhone.mutate()}
+          >
+            {t('amigos.contacts_phone_save')}
+          </Button>
+        </View>
+      ) : null}
+
+      <View className="mt-4 border-line border-t pt-4">
+        <Button variant="secondary" disabled={searching} onPress={searchContacts}>
+          {searching ? t('rank.searching') : t('amigos.search_contacts')}
+        </Button>
+        {contactMsg ? <Caption className="mt-2">{contactMsg}</Caption> : null}
+      </View>
+
+      {matches && matches.length > 0 ? (
+        <View className="mt-2">
+          {matches.map(({ user, contactName }) => (
+            <PersonRow
+              key={user.id}
+              user={user}
+              subtitle={t('amigos.contact_match_subtitle', { name: contactName })}
+              right={<FollowPill userId={user.id} initial={false} from="find_friends" />}
+            />
+          ))}
+        </View>
+      ) : null}
+    </Card>
+  )
+}
+
+function InstagramCard() {
+  const t = useT()
+  const router = useRouter()
+  return (
+    <Card className="mt-4">
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/amigos/instagram')}
+        className="flex-row items-center gap-3 active:opacity-70"
+      >
+        <View className="min-w-0 flex-1">
+          <Text className="font-ui-semibold text-body text-text">
+            {t('amigos.instagram_title')}
+          </Text>
+          <Caption className="mt-0.5">{t('amigos.instagram_body')}</Caption>
+        </View>
+        <ChevronIcon size={16} color="text-faint" />
+      </Pressable>
+    </Card>
+  )
+}
+
 export default function AmigosScreen() {
   const t = useT()
   const invite = useInviteLink()
   const suggested = useQuery({
-    queryKey: ['people'],
-    queryFn: () => api.get<{ users: SuggestedUser[] }>('/onboarding/suggested-friends'),
+    queryKey: ['suggestions'],
+    queryFn: () => api.get<{ users: FriendSuggestion[] }>('/social/suggestions'),
   })
   const users = suggested.data?.users ?? []
 
@@ -46,6 +243,9 @@ export default function AmigosScreen() {
         </View>
       </Pressable>
 
+      <ContactsCard />
+      <InstagramCard />
+
       <Title className="mt-6 mb-1">{t('amigos.suggestions_title')}</Title>
       {suggested.isPending ? (
         <RowsSkeleton rows={5} thumb={36} />
@@ -58,9 +258,7 @@ export default function AmigosScreen() {
           <PersonRow
             key={u.id}
             user={u}
-            subtitle={[t('settings.ranked_count', { n: u.rankedCount ?? 0 }), u.neighborhood]
-              .filter(Boolean)
-              .join(' · ')}
+            subtitle={reasonLine(t, u.reason)}
             right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
           />
         ))

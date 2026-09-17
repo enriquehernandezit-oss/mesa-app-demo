@@ -137,6 +137,55 @@ export const es = {
   'amigos.suggestions_title': 'Quizás conoces a',
   'amigos.load_error': 'No se pudieron cargar las sugerencias.',
   'amigos.no_suggestions': 'No tenemos sugerencias por ahora.',
+  'amigos.reason_mutual': { one: 'Lo sigue {name}', other: 'Lo siguen {name} y {n} más' },
+  'amigos.reason_taste': '{n}% de gustos en común',
+  'amigos.reason_popular': 'Popular en Mesa',
+
+  // Contactos card (M18)
+  'amigos.contacts_title': 'Contactos',
+  'amigos.contacts_findable_toggle': 'Deja que tus contactos te encuentren',
+  'amigos.contacts_findable_body': 'Guardamos tu número de forma cifrada — nunca lo mostramos.',
+  'amigos.contacts_phone_placeholder': '809-555-1234',
+  'amigos.contacts_phone_save': 'Guardar',
+  'amigos.contacts_phone_invalid': 'Ese número no parece válido.',
+  'amigos.contacts_phone_error': 'No se pudo guardar tu número. Intenta de nuevo.',
+  'amigos.search_contacts': 'Buscar amigos en mis contactos',
+  'amigos.contacts_unsupported': 'Importar contactos funciona en la app del teléfono.',
+  'amigos.contacts_denied': 'Mesa no tiene permiso para ver tus contactos. Actívalo en Ajustes.',
+  'amigos.contacts_found': {
+    one: '1 de tus contactos está en Mesa',
+    other: '{n} de tus contactos están en Mesa',
+  },
+  'amigos.contacts_none_found': 'Ninguno de tus contactos está en Mesa todavía.',
+  'amigos.contacts_search_error': 'No se pudo buscar en tus contactos. Intenta de nuevo.',
+  'amigos.contact_match_subtitle': 'Coincide con tu contacto «{name}»',
+
+  // Instagram card (M18)
+  'amigos.instagram_title': 'Instagram',
+  'amigos.instagram_body': 'Encuentra a quienes ya sigues en Instagram.',
+  'amigos.instagram_import_button': 'Importar desde Instagram',
+
+  // app/amigos/instagram.tsx
+  'instagram.title': 'Importar de Instagram',
+  'instagram.subtitle': 'Encuentra a quienes ya sigues en Instagram, sin conectar tu cuenta.',
+  'instagram.how_to_title': 'Cómo descargar tu información',
+  'instagram.step1': 'Abre Instagram y ve a tu perfil.',
+  'instagram.step2':
+    'Toca el menú (☰) → Tu actividad → Descarga tu información. En Android es Configuración → Centro de cuentas → Tu información y permisos.',
+  'instagram.step3': 'Elige formato JSON y selecciona solo "Seguidores y seguidos".',
+  'instagram.step4':
+    'Cuando Instagram te envíe el archivo (puede tardar unas horas), descárgalo y selecciónalo aquí.',
+  'instagram.pick_file': 'Elegir archivo',
+  'instagram.no_handles_found':
+    'No encontramos cuentas en ese archivo. ¿Elegiste el archivo correcto?',
+  'instagram.import_error': 'No se pudo leer el archivo. Intenta de nuevo.',
+  'instagram.matches_found': { one: '1 coincidencia en Mesa', other: '{n} coincidencias en Mesa' },
+  'instagram.no_matches': 'Ninguna de esas cuentas está en Mesa todavía.',
+  'instagram.matched_subtitle': 'Coincide con @{handle} de tu Instagram',
+  'instagram.unmatched_count': {
+    one: '1 persona que sigues en Instagram no está en Mesa todavía.',
+    other: '{n} personas que sigues en Instagram no están en Mesa todavía.',
+  },
 
   // components/ShareCardHost.tsx
   'share.preparing': 'Preparando tu tarjeta…',

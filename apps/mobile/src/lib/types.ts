@@ -20,6 +20,9 @@ export interface MeResponse {
     // Gates the moderation queue. Set directly in the DB; nothing in the
     // product can grant it.
     isModerator?: boolean
+    // Contacts find-friends opt-in (M18) — "let your contacts find you".
+    // Never the phone number or its hash, just whether one is on file.
+    phoneMatchEnabled: boolean
   }
   onboardingComplete: boolean
 }
@@ -60,6 +63,31 @@ export interface SuggestedUser {
   neighborhood?: string | null
   followerCount?: number
   rankedCount?: number // "41 ranked · Piantini" on start-with-these rows
+}
+
+// GET /social/suggestions (M18) — richer than SuggestedUser above: every row
+// carries why it's suggested.
+export type SuggestionReason =
+  | { kind: 'mutual'; name: string; extraCount: number }
+  | { kind: 'taste'; percent: number }
+  | { kind: 'popular' }
+
+export interface FriendSuggestion {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  neighborhood: string | null
+  reason: SuggestionReason
+}
+
+// A minimal person row shared by /social/contacts/match and
+// /social/instagram/match's responses.
+export interface ContactMatchUser {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
 }
 
 // GET /social/followers and /following — a member row in someone's graph.
