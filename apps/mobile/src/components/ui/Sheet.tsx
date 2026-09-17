@@ -3,7 +3,7 @@ import { CheckIcon } from '@/components/ui/icons'
 import { getLanguage, t } from '@/lib/i18n'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { useSyncExternalStore } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -35,8 +35,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // (app/rank.tsx): a full-screen scrim Pressable dismisses on tap; the panel
 // claims the touch responder itself (onStartShouldSetResponder) so a tap
 // inside it doesn't bubble up and close the sheet. No drag-to-dismiss in v1 —
-// tap-scrim plus a Cancel row is enough, and this is 2-8 fixed rows, not a
-// scrollable/snapping surface that would need one.
+// tap-scrim plus a Cancel row is enough. The options list itself DOES scroll
+// (capped at 60% of the window height, title/Cancel stay fixed outside it) —
+// a sort menu is 2-4 fixed rows, but a filter dimension like cuisine or
+// sector can run well past that on the real catalog (M14).
 
 export type SheetOption = { label: string; destructive?: boolean }
 
@@ -84,6 +86,30 @@ export function showSheet(opts: {
   })
 }
 
+// A single-select "dropdown pill" chooser built on showSheet (M14): shared
+// by every filter-dimension pill across the app (Explore, Rankings) so they
+// can't drift on this shape — "Cualquiera" always first, then `values` with
+// a checkmark on the current one. Resolves to `undefined` (not `null`) when
+// the sheet is dismissed without a pick, so a caller can tell "cancelled"
+// apart from "explicitly chose Cualquiera" (which resolves to `null`).
+export async function pickOne<V>(
+  title: string,
+  values: V[],
+  selected: V | null,
+  render: (v: V) => string,
+): Promise<V | null | undefined> {
+  const idx = await showSheet({
+    title,
+    options: [
+      { label: t(getLanguage(), 'common.any') },
+      ...values.map((v) => ({ label: render(v) })),
+    ],
+    selectedIndex: selected == null ? 0 : 1 + values.findIndex((v) => v === selected),
+  })
+  if (idx == null) return undefined
+  return idx === 0 ? null : (values[idx - 1] ?? null)
+}
+
 function resolveCurrent(index: number | null) {
   if (!current) return
   const req = current
@@ -107,6 +133,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 export function SheetHost() {
   const req = useSheetRequest()
   const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
   if (!req) return null
   const showCheckSlot = req.selectedIndex != null
   return (
@@ -150,33 +177,39 @@ export function SheetHost() {
         ) : (
           <View className="pt-2" />
         )}
-        {req.options.map((o, i) => {
-          const active = i === req.selectedIndex
-          return (
-            <Pressable
-              key={o.label}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              onPress={() => resolveCurrent(i)}
-              className="min-h-[52px] flex-row items-center gap-3 px-5 active:opacity-70"
-            >
-              <Text
-                className={`flex-1 font-ui text-body ${
-                  o.destructive ? 'text-status-packed' : active ? 'text-accent' : 'text-text'
-                }`}
+        <ScrollView
+          style={{ maxHeight: windowHeight * 0.6 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {req.options.map((o, i) => {
+            const active = i === req.selectedIndex
+            return (
+              <Pressable
+                key={`${i}:${o.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                onPress={() => resolveCurrent(i)}
+                className="min-h-[52px] flex-row items-center gap-3 px-5 active:opacity-70"
               >
-                {o.label}
-              </Text>
-              {showCheckSlot ? (
-                active ? (
-                  <CheckIcon size={16} color="accent" />
-                ) : (
-                  <View style={{ width: 16 }} />
-                )
-              ) : null}
-            </Pressable>
-          )
-        })}
+                <Text
+                  className={`flex-1 font-ui text-body ${
+                    o.destructive ? 'text-status-packed' : active ? 'text-accent' : 'text-text'
+                  }`}
+                >
+                  {o.label}
+                </Text>
+                {showCheckSlot ? (
+                  active ? (
+                    <CheckIcon size={16} color="accent" />
+                  ) : (
+                    <View style={{ width: 16 }} />
+                  )
+                ) : null}
+              </Pressable>
+            )
+          })}
+        </ScrollView>
         <View className="mt-1 border-line border-t">
           <Pressable
             accessibilityRole="button"
