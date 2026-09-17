@@ -1,12 +1,16 @@
-import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton, Title } from '@/components/ui'
+import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { ApiError, api } from '@/lib/api'
+import { listAuthorLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
+import { cloudinaryUrl } from '@/lib/media'
 import type { ListDetailResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
+import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // A curated list's detail — its members in editorial order, each with the
@@ -20,6 +24,7 @@ export default function ListScreen() {
     queryFn: () => api.get<ListDetailResponse>(`/lists/${slug}`),
     retry: false,
   })
+  const [noteOpen, setNoteOpen] = useState(false)
 
   return (
     <View className="flex-1 bg-bg">
@@ -65,6 +70,37 @@ export default function ListScreen() {
               {t('lists.featured_count', { n: q.data.items.length })}
             </Eyebrow>
             {q.data.list.subtitle ? <Body className="mt-1">{q.data.list.subtitle}</Body> : null}
+
+            {/* M15 — who curated it. Mirrors listAuthorLabel's "por Mesa" /
+                "por @handle" wording so the card and this page never
+                disagree. */}
+            <View className="mt-3 flex-row items-center gap-2">
+              <Avatar
+                name={q.data.list.authorName || 'Mesa'}
+                src={cloudinaryUrl(q.data.list.authorAvatarId, { w: 80, h: 80 })}
+                size={24}
+              />
+              <Caption>{listAuthorLabel(q.data.list)}</Caption>
+            </View>
+
+            {q.data.list.description ? (
+              <Body className="mt-3">{q.data.list.description}</Body>
+            ) : null}
+
+            {q.data.list.curationNote ? (
+              <View className="mt-3">
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setNoteOpen((v) => !v)}
+                  className="min-h-[36px] flex-row items-center active:opacity-70"
+                >
+                  <Text className="font-ui-medium text-label text-accent-strong">
+                    {t('lists.how_we_made_it')} {noteOpen ? '▲' : '▾'}
+                  </Text>
+                </Pressable>
+                {noteOpen ? <Caption className="mt-1">{q.data.list.curationNote}</Caption> : null}
+              </View>
+            ) : null}
 
             <View className="mt-4">
               {q.data.items.map((r) => (

@@ -24,6 +24,11 @@ export const listsRoutes = new Hono<AuthedEnv>()
         title: lists.title,
         subtitle: lists.subtitle,
         coverImageId: lists.coverImageId,
+        // M15 — the carousel card's "por Mesa" / "por @handle" byline.
+        authorKind: lists.authorKind,
+        authorName: lists.authorName,
+        authorHandle: lists.authorHandle,
+        authorAvatarId: lists.authorAvatarId,
         total: sql<number>`count(${listItems.restaurantId})::int`,
         mine: sql<number>`count(${rankings.id})::int`,
       })
@@ -44,10 +49,24 @@ export const listsRoutes = new Hono<AuthedEnv>()
     // Explicit columns: no `columns` here used to ship sortOrder and createdAt
     // straight to the client — internal-ordering fields the [slug] screen
     // never reads. id is kept (unused by the client) because the member-items
-    // query below joins on it.
+    // query below joins on it. `slug` itself used to be missing too — the
+    // screen already had it from the route param, but a share/refresh path
+    // reading it off this response instead had nothing to read.
     const list = await db.query.lists.findFirst({
       where: eq(lists.slug, c.req.param('slug')),
-      columns: { id: true, title: true, subtitle: true, coverImageId: true },
+      columns: {
+        id: true,
+        slug: true,
+        title: true,
+        subtitle: true,
+        coverImageId: true,
+        description: true,
+        curationNote: true,
+        authorKind: true,
+        authorName: true,
+        authorHandle: true,
+        authorAvatarId: true,
+      },
     })
     if (!list) return c.json({ error: 'not_found' }, 404)
 

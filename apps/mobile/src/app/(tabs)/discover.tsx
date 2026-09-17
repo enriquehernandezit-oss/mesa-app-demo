@@ -19,7 +19,7 @@ import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
-import { cuisineLabel, priceLabel } from '@/lib/display'
+import { cuisineLabel, listAuthorLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
@@ -234,9 +234,14 @@ function ListsRail() {
             name={l.title}
             coverImageId={l.coverImageId}
             caption={
-              <Caption className="text-micro" numberOfLines={1}>
-                {t('discover.list_progress', { mine: l.mine, total: l.total })}
-              </Caption>
+              <View className="gap-0.5">
+                <Caption className="text-micro" numberOfLines={1}>
+                  {t('discover.list_progress', { mine: l.mine, total: l.total })}
+                </Caption>
+                <Caption className="text-micro text-text-faint" numberOfLines={1}>
+                  {listAuthorLabel(l)}
+                </Caption>
+              </View>
             }
           />
         ))}

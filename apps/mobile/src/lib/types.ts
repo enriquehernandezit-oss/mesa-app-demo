@@ -192,7 +192,17 @@ export interface DishName {
   categoryId: string
 }
 
-export interface FeaturedList {
+// M15 — who curated a list. authorKind 'mesa' (the schema default) never
+// carries a name/handle: the byline just reads "Mesa" for that case; see
+// lib/display.ts's listAuthorLabel.
+export interface ListAuthor {
+  authorKind: 'mesa' | 'creator' | 'venue'
+  authorName: string | null
+  authorHandle: string | null
+  authorAvatarId: string | null
+}
+
+export interface FeaturedList extends ListAuthor {
   id: string
   slug: string
   title: string
@@ -216,7 +226,14 @@ export interface ListDetailItem {
 }
 
 export interface ListDetailResponse {
-  list: { slug: string; title: string; subtitle: string | null; coverImageId: string | null }
+  list: ListAuthor & {
+    slug: string
+    title: string
+    subtitle: string | null
+    coverImageId: string | null
+    description: string | null
+    curationNote: string | null
+  }
   items: ListDetailItem[]
 }
 

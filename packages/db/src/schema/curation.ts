@@ -1,5 +1,6 @@
 import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { restaurants } from './discovery'
+import { listAuthorKind } from './enums'
 
 // Editorial curated lists — "Top 10 Parrillas", "Mesa Best · DR 2026". NOT
 // user-created in Phase 6; seeded by the team. A list is an ordered set of
@@ -11,6 +12,19 @@ export const lists = pgTable('lists', {
   title: text('title').notNull(),
   subtitle: text('subtitle'),
   coverImageId: text('cover_image_id'),
+  // Longer editorial copy for the list's own detail page (subtitle stays the
+  // short carousel-card line) — nullable, since not every list earns one.
+  description: text('description'),
+  // "Cómo la armamos" — the criteria behind the list, shown collapsed on the
+  // detail page. Distinct from `description` (what the list IS) vs this
+  // (how it was PUT TOGETHER).
+  curationNote: text('curation_note'),
+  authorKind: listAuthorKind('author_kind').notNull().default('mesa'),
+  // Null for authorKind: 'mesa' — the byline falls back to "Mesa" without
+  // needing these filled in for the common case.
+  authorName: text('author_name'),
+  authorHandle: text('author_handle'),
+  authorAvatarId: text('author_avatar_id'),
   // Display order in the carousel (ascending).
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),

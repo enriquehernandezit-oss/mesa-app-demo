@@ -144,6 +144,23 @@ export function grainLabel(grain: string | null | undefined): string {
   return dict[grain ?? 'candlelit'] ?? grain ?? dict.candlelit
 }
 
+// M15 — the byline on a curated list's card and detail page: "por Mesa" for
+// the editorial team (the schema default, no name/handle needed), "por
+// @handle" for a creator/venue that has one, falling back to the bare name
+// for a venue byline like "Comedor Doña Chana" that has no handle at all.
+export function listAuthorLabel(list: {
+  authorKind: 'mesa' | 'creator' | 'venue'
+  authorName: string | null
+  authorHandle: string | null
+}): string {
+  const by = getLanguage() === 'en' ? 'by' : 'por'
+  if (list.authorKind !== 'mesa') {
+    if (list.authorHandle) return `${by} @${list.authorHandle}`
+    if (list.authorName) return `${by} ${list.authorName}`
+  }
+  return `${by} Mesa`
+}
+
 export type Grain = 'candlelit' | 'daylight' | 'none'
 // A function, not a static list: the label has to reflect whichever language
 // is current at render time, and the caller already re-renders on a language

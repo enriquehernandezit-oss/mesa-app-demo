@@ -17,6 +17,16 @@ interface ListDef {
   sortOrder: number
   where?: ReturnType<typeof or> | ReturnType<typeof ilike>
   limit: number
+  // M15 — mirrors the mock data hand-appended to drizzle/0016_living_toad_men.sql's
+  // UPDATEs exactly. This script deletes+rebuilds `lists` from scratch on
+  // every run, so without these fields here too, a reseed would blank the
+  // migration's own mock data right back out. Every creator/venue name is
+  // fictional, never a real person or business.
+  description: string
+  curationNote: string
+  authorKind?: 'creator' | 'venue' // omitted = 'mesa', the schema default
+  authorName?: string
+  authorHandle?: string
 }
 
 const LISTS: ListDef[] = [
@@ -31,6 +41,12 @@ const LISTS: ListDef[] = [
       ilike(restaurants.cuisine, '%pasta%'),
     ),
     limit: 10,
+    description: 'Nuestros rincones favoritos para una noche de pasta fresca y vino tinto.',
+    curationNote:
+      'Elegidos a mano por Grecia entre los spots italianos mejor puntuados por la comunidad Mesa.',
+    authorKind: 'creator',
+    authorName: 'Grecia Duval',
+    authorHandle: 'greciaeats',
   },
   {
     slug: 'piantini-after-dark',
@@ -39,6 +55,10 @@ const LISTS: ListDef[] = [
     sortOrder: 2,
     where: ilike(neighborhoods.name, 'Piantini'),
     limit: 12,
+    description:
+      'Piantini no se duerme — estos son los lugares que se quedan animados hasta tarde.',
+    curationNote:
+      'Ordenados por la puntuación de tus amigos entre los spots de Piantini con más actividad nocturna.',
   },
   {
     slug: 'mesa-best-2026',
@@ -47,6 +67,9 @@ const LISTS: ListDef[] = [
     sortOrder: 3,
     where: undefined, // all spots, by score
     limit: 12,
+    description: 'Nuestra selección editorial de los mejores lugares de Santo Domingo este año.',
+    curationNote:
+      'Los spots con mejor puntuación promedio en todo el catálogo de Mesa, revisados por el equipo.',
   },
   {
     slug: 'criolla-clasica',
@@ -55,6 +78,10 @@ const LISTS: ListDef[] = [
     sortOrder: 4,
     where: or(ilike(restaurants.cuisine, '%dominican%'), ilike(restaurants.cuisine, '%criolla%')),
     limit: 10,
+    description: 'Los platos de siempre, como los prepara la generación que nos enseñó a cocinar.',
+    curationNote: 'Una selección de Comedor Doña Chana — sazón criolla sin atajos, desde 1987.',
+    authorKind: 'venue',
+    authorName: 'Comedor Doña Chana',
   },
 ]
 
@@ -84,6 +111,11 @@ export async function seedCuration(database: Database = db): Promise<number> {
         subtitle: def.subtitle,
         coverImageId: top.cover,
         sortOrder: def.sortOrder,
+        description: def.description,
+        curationNote: def.curationNote,
+        authorKind: def.authorKind ?? 'mesa',
+        authorName: def.authorName,
+        authorHandle: def.authorHandle,
       })
       .returning({ id: lists.id })
     if (!list) continue

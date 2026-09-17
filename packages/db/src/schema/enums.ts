@@ -37,3 +37,10 @@ export const planStatus = pgEnum('plan_status', ['open', 'confirmed', 'cancelled
 // other three are their actual reply. There is no 'maybe I'll vote later' —
 // voting for a spot (see plans.ts) is independent of this.
 export const planReply = pgEnum('plan_reply', ['pending', 'going', 'maybe', 'declined'])
+
+// Who's credited for a curated list (M15). 'mesa' (the default) is the
+// editorial team itself — every list before this milestone, and most after
+// it. 'creator'/'venue' are for a byline that isn't Mesa's own; the four
+// seeded lists' mock creators are fictional (never a real influencer's name)
+// per the founder's own instruction.
+export const listAuthorKind = pgEnum('list_author_kind', ['mesa', 'creator', 'venue'])
