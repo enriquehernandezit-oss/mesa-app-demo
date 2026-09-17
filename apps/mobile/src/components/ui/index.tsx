@@ -53,6 +53,20 @@ function hasTextColor(className?: string): boolean {
   return Boolean(className && TEXT_COLOR_KEYS.test(className))
 }
 
+// The same trap as TEXT_COLOR_KEYS, one layer down, for Button's size classes.
+// `size` picks a default width / min-height / horizontal padding, and a caller
+// passing its own in `className` means to REPLACE that default — but NativeWind
+// again resolves the duplicate by generated-CSS order, so the primitive's
+// `w-full` could silently beat a caller's `w-auto`. When it does, a Button in a
+// flex-row eats the whole row: its `flex-1` siblings collapse to zero width and
+// vanish. That is exactly how M19's saved-place rows shipped — every row
+// rendered as a bare "Rank" button with the restaurant name squeezed out of
+// existence. Each axis is tested on its own so a caller overriding only the
+// padding doesn't also lose the width default.
+const WIDTH_KEY = /\bw-(full|auto|\[[^\]]+\])\b/
+const MIN_H_KEY = /\bmin-h-\[/
+const PX_KEY = /\bpx-/
+
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
@@ -135,6 +149,17 @@ export const Button = ({
 }: ButtonProps) => {
   const sm = size === 'sm'
   const off = disabled || loading
+  // Ghost's taller tap target is a min-height default too, so it defers to a
+  // caller's own min-h on the same terms as the size defaults above.
+  const ghostMinH = variant === 'ghost' ? 'min-h-[44px]' : ''
+  const sizing = [
+    WIDTH_KEY.test(className ?? '') ? '' : sm ? 'w-auto' : 'w-full',
+    MIN_H_KEY.test(className ?? '') ? '' : sm ? 'min-h-[40px]' : 'min-h-[52px]',
+    PX_KEY.test(className ?? '') ? '' : sm ? 'px-4' : 'px-5',
+    MIN_H_KEY.test(className ?? '') ? '' : ghostMinH,
+  ]
+    .filter(Boolean)
+    .join(' ')
   // ActivityIndicator needs a resolved color, not a class — pull it from the
   // token layer so it tracks the theme (and stays hex-free per the design law).
   const onNeutral = useColor('accent')
@@ -145,7 +170,7 @@ export const Button = ({
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(off), busy: Boolean(loading) }}
       disabled={off}
-      className={`${sm ? 'w-auto min-h-[40px] px-4' : 'w-full min-h-[52px] px-5'} flex-row items-center justify-center gap-2 rounded active:opacity-90 ${BTN_BG[variant]} ${variant === 'ghost' ? 'min-h-[44px]' : ''} ${off ? 'opacity-45' : ''} ${className ?? ''}`}
+      className={`${sizing} flex-row items-center justify-center gap-2 rounded active:opacity-90 ${BTN_BG[variant]} ${off ? 'opacity-45' : ''} ${className ?? ''}`}
       style={
         variant === 'primary'
           ? {
