@@ -209,8 +209,6 @@ export const es = {
   'explore.sort_score': 'Puntuación',
   'explore.sort_name': 'Nombre',
   'explore.sort_chip': 'Ordenar',
-  'explore.filters': 'Filtros',
-  'explore.filters_count': 'Filtros ({n})',
   'explore.open_now': 'Abierto ahora',
   'explore.clear': 'Limpiar',
   'explore.sector': 'Sector',
@@ -421,6 +419,7 @@ export const es = {
   'common.reported': 'Reportado. Gracias — lo revisaremos.',
   'common.report_error': 'No se pudo enviar el reporte. Intenta de nuevo.',
   'common.error_fallback': 'Algo salió mal. Intenta de nuevo en un momento.',
+  'common.any': 'Cualquiera',
 
   // components/ReportControl.tsx
   'report.label': 'Reportar',
@@ -532,8 +531,6 @@ export const es = {
   'rankings.streak_weeks': 'sem. de racha',
   'rankings.mine_tab': 'Mía',
   'rankings.sectors_tab': 'Sectores',
-  'rankings.filters': 'Filtros',
-  'rankings.filters_count': 'Filtros ({n})',
   'rankings.clear': 'Limpiar',
   'rankings.occasion_label': 'Ocasión',
   'rankings.price_label': 'Precio',
