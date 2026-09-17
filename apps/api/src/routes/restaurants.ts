@@ -265,18 +265,20 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .limit(EXPLORE_LIMIT)
       ids = idRows.map((r) => r.id)
     } else {
-      const rankedPool = db.selectDistinct({ id: rankings.restaurantId }).from(rankings)
       // Only the id list is used downstream; the friend/all-Mesa averages that
       // decide the order live in the ORDER BY below, so they don't need to be
       // selected here (phase 2 recomputes the display aggregates fresh).
+      //
+      // No inner join against a "has at least one ranking" pool here — that
+      // used to hide every unranked restaurant from Explore's default browse
+      // view entirely, even though phase 2 already computes `isNew` and the
+      // client already has a "Sé el primero" treatment for exactly this case
+      // (explore/index.tsx). The LEFT JOIN below plus "nulls last" in the
+      // ORDER BY already sorts unranked places after ranked ones on their own.
       const idRows = await db
         .select({ id: restaurants.id })
         .from(restaurants)
         .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-        // The subquery's select key ("id") is a JS-side label only — Drizzle
-        // doesn't rename the column in the generated SQL, so the exposed
-        // column is still restaurant_id (confirmed via .toSQL()).
-        .innerJoin(rankedPool.as('ranked'), sql`ranked.restaurant_id = ${restaurants.id}`)
         .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
         .where(and(...liveConds))
         .groupBy(restaurants.id)
