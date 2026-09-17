@@ -83,7 +83,7 @@ export default function ExploreScreen() {
   // for instance. Read once on mount; the filter chips own the state after
   // that (a later navigation to /explore with new params re-mounts the
   // screen, so this isn't stale).
-  const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string }>()
+  const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string; focus?: string }>()
   const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
   const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
   const [price, setPrice] = useState<number | null>(null)
@@ -196,6 +196,11 @@ export default function ExploreScreen() {
             cancelButtonText: t('common.cancel'),
             hideWhenScrolling: false,
             autoCapitalize: 'none',
+            // Feed's own search field (FeedHeader in discover.tsx) is just a
+            // Pressable that hands off here — without this, tapping it used
+            // to just land on Explore's plain browse view with no keyboard
+            // up, reading as a dead-end redirect instead of "go search".
+            autoFocus: params.focus === '1',
             tintColor: c.accent,
             textColor: c.text,
             hintTextColor: c['text-muted'],

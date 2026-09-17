@@ -136,7 +136,11 @@ export default function DiscoverTab() {
   )
 }
 
-// The tab-header — eyebrow + title + a search field that links to Explore.
+// The tab-header — eyebrow + title + a search field that hands off to
+// Explore's real (native) search bar. Search itself doesn't live here — this
+// is just the entry point — but `?focus=1` tells Explore to open with its
+// search bar already focused and the keyboard up, so tapping this reads as
+// "go search" rather than a dead-end redirect to Explore's plain browse view.
 // No horizontal padding of its own: the parent FlatList's contentContainer
 // already applies px-5, and this used to add a SECOND px-5 on top of it —
 // the header sat ~24pt further right than "Listas destacadas" and the
@@ -150,7 +154,7 @@ function FeedHeader() {
       <Title className="mt-1 mb-3">{t('discover.title')}</Title>
       <Pressable
         accessibilityRole="search"
-        onPress={() => router.push('/explore')}
+        onPress={() => router.push('/explore?focus=1')}
         className="min-h-[44px] justify-center rounded border border-line bg-surface px-4 active:opacity-80"
       >
         <Text className="font-ui text-body text-text-muted">

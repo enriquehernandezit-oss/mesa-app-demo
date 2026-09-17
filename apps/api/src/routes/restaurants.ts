@@ -26,10 +26,18 @@ const { neighborhoods, lists, listItems } = schema
 //
 // Not index-assisted (the GIN trigram index backs ILIKE and the % operator, not
 // word_similarity), so this is a scan — fine at catalog scale here because the
-// id-resolving phase is LIMIT 30 and the row count is thousands, not millions.
-// If the catalog ever gets big, switch to the `<%` operator with a session-level
-// pg_trgm.word_similarity_threshold.
+// id-resolving phase is capped at EXPLORE_LIMIT and the row count is thousands,
+// not millions. If the catalog ever gets big, switch to the `<%` operator with
+// a session-level pg_trgm.word_similarity_threshold.
 const WORD_MATCH_MIN = 0.55
+
+// GET /restaurants has no pagination UI on the client (a flat list, not
+// infinite scroll) — this cap exists only so a runaway catalog can't blow up
+// a response, not to page real results. It used to be 30, which was well
+// under the 49 ranked places already in the live catalog and silently
+// truncated Explore's default view. Bump this (or add real pagination) well
+// before the live catalog gets anywhere close to it.
+const EXPLORE_LIMIT = 300
 
 // Deterministic per-id coordinate jitter for sector-precision map pins, so
 // places sharing a neighborhood centroid fan out instead of stacking. FNV-1a
@@ -254,7 +262,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
                   similarity(${restaurants.nameKey}, ${norm}) desc,
                   ${restaurants.name} asc`,
         )
-        .limit(30)
+        .limit(EXPLORE_LIMIT)
       ids = idRows.map((r) => r.id)
     } else {
       const rankedPool = db.selectDistinct({ id: rankings.restaurantId }).from(rankings)
@@ -279,7 +287,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
                   avg(${rankings.score}) desc nulls last,
                   ${restaurants.name} asc`,
         )
-        .limit(30)
+        .limit(EXPLORE_LIMIT)
       ids = idRows.map((r) => r.id)
     }
 
