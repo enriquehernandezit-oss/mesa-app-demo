@@ -184,7 +184,30 @@ function MesaStack() {
         options={{ ...utility, headerLargeTitle: false, title: t('restaurant.menu_title') }}
       />
 
-      <Stack.Screen name="settings" options={{ ...utility, title: t('nav.settings') }} />
+      {/* Settings (M15): a hub + Tu cuenta/Privacidad/Preferencias/Acerca de/
+          Cuentas bloqueadas sub-screens, all on this same stack so each gets
+          a real back button — was one flat app/settings.tsx route. */}
+      <Stack.Screen name="settings/index" options={{ ...utility, title: t('nav.settings') }} />
+      <Stack.Screen
+        name="settings/account"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.account') }}
+      />
+      <Stack.Screen
+        name="settings/privacy"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.privacy') }}
+      />
+      <Stack.Screen
+        name="settings/preferences"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.preferences') }}
+      />
+      <Stack.Screen
+        name="settings/about"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.about') }}
+      />
+      <Stack.Screen
+        name="settings/blocked"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.blocked_accounts') }}
+      />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: t('nav.leaderboard') }} />
       {/* Title (Seguidores/Siguiendo) is set by the screen itself, same

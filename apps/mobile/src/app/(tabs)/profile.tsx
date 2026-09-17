@@ -25,7 +25,7 @@ import { isPendingInvite } from '@/lib/plans'
 import type { MeStats, Neighborhood, Plan } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
@@ -131,7 +131,12 @@ export default function ProfileTab() {
   const tabBarClearance = useTabBarClearance()
   const { data, isPending, isError, refetch } = useProfile(true)
   const p = data?.profile
-  const [editing, setEditing] = useState(false)
+  // Settings' own header card (M15) links straight into edit mode via
+  // ?edit=1 — one less tap than landing here in view mode and hunting for
+  // the "Editar perfil" button. Read once on mount; this screen's own
+  // button still owns `editing` after that.
+  const { edit: editParam } = useLocalSearchParams<{ edit?: string }>()
+  const [editing, setEditing] = useState(editParam === '1')
   const avatarPicker = useAvatarPicker()
 
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
