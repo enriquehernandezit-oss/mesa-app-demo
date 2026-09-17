@@ -4,6 +4,7 @@ import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
+import { sendPush } from '../lib/push'
 import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -183,6 +184,17 @@ export const plansRoutes = new Hono<AuthedEnv>()
       await tx.insert(planInvites).values(inviteeIds.map((userId) => ({ planId: plan.id, userId })))
       return plan.id
     })
+
+    sendPush(
+      inviteeIds.map((userId) => ({
+        userId,
+        key: `plan-invite:${id}:${userId}`,
+        category: 'plans',
+        title: 'Mesa',
+        body: `${me.name || 'Alguien'} te invitó a un plan`,
+        data: { type: 'plan', planId: id },
+      })),
+    )
 
     return c.json({ id })
   })
@@ -396,6 +408,34 @@ export const plansRoutes = new Hono<AuthedEnv>()
         repliedAt: new Date(),
       })
       .where(and(eq(planInvites.planId, planId), eq(planInvites.userId, me.id)))
+
+    // The host is never an invite row, so this always has a real recipient.
+    // One push per call, describing whichever changed — reply wins when both
+    // did, since "declined" is the more important thing for the host to see
+    // than the vote that came with it.
+    const name = me.name || 'Alguien'
+    const replyBody =
+      reply === 'going'
+        ? `${name} va a tu plan`
+        : reply === 'maybe'
+          ? `${name} tal vez va a tu plan`
+          : reply === 'declined'
+            ? `${name} no puede ir a tu plan`
+            : null
+    const body = replyBody ?? `${name} votó en tu plan`
+    // Keyed on the resulting state, not the request time — a genuine change
+    // (going -> declined) is a new key and re-notifies the host; an accidental
+    // duplicate submit of the same reply/vote dedupes for free.
+    sendPush([
+      {
+        userId: found.plan.hostId,
+        key: `plan-reply:${planId}:${me.id}:${reply ?? ''}:${voteRestaurantId ?? ''}`,
+        category: 'plans',
+        title: 'Mesa',
+        body,
+        data: { type: 'plan', planId },
+      },
+    ])
 
     return c.json({ ok: true })
   })

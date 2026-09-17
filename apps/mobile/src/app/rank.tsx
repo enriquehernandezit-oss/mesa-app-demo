@@ -49,6 +49,7 @@ import {
   tie,
 } from '@/lib/pairwise'
 import { usePreventRemove } from '@/lib/preventRemove'
+import { registerForPush } from '@/lib/push'
 import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
@@ -274,6 +275,11 @@ export default function RankAPlace() {
     onSuccess: () => {
       track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
       invalidateAfterRanking(pickedId)
+      // Contextual push-permission prompt (M17) — a member who just placed a
+      // ranking has demonstrated real intent, unlike a cold-launch prompt.
+      // No-op if already decided (granted just re-registers the token,
+      // cheap; denied does nothing).
+      void registerForPush()
     },
     onError: (err) => {
       captureError(err, 'rank.commit')

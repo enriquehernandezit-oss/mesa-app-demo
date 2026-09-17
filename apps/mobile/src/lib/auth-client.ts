@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { clearToken, getToken, setToken } from './auth-token'
+import { unregisterPush } from './push'
 import { queryClient } from './query'
 
 // Better Auth client, pointed at the Hono API. Mirrors the server's providers
@@ -38,15 +39,22 @@ export const authClient = createAuthClient({
 })
 
 export const signOut = () =>
-  authClient.signOut().finally(() => {
-    track('signed_out')
-    // Drop the local token regardless of the network result, so the app can't
-    // reauthenticate with a stale token after sign-out — then clear the cache so
-    // the ['session'] query re-resolves to null and the route guards send the
-    // user back to sign-in (no hard reload exists on native).
-    clearToken()
-    queryClient.clear()
-  })
+  // Unregister this device's push token FIRST — it needs the still-valid
+  // Bearer token to authenticate, so it has to run before clearToken() below.
+  // Best-effort: unregisterPush already swallows its own failures, so a
+  // flaky network never blocks signing out.
+  unregisterPush()
+    .catch(() => {})
+    .then(() => authClient.signOut())
+    .finally(() => {
+      track('signed_out')
+      // Drop the local token regardless of the network result, so the app can't
+      // reauthenticate with a stale token after sign-out — then clear the cache so
+      // the ['session'] query re-resolves to null and the route guards send the
+      // user back to sign-in (no hard reload exists on native).
+      clearToken()
+      queryClient.clear()
+    })
 
 // Session state via a cached TanStack Query rather than Better Auth's reactive
 // useSession — same reason as the web app: under React 19 that hook's snapshot

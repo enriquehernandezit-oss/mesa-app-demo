@@ -668,6 +668,7 @@ export const es = {
   'settings.account': 'Tu cuenta',
   'settings.privacy': 'Privacidad',
   'settings.preferences': 'Preferencias',
+  'settings.notifications': 'Notificaciones',
   'settings.about': 'Acerca de',
   'settings.friends_section': 'Amigos',
   'settings.find_friends': 'Encuentra amigos',
@@ -707,6 +708,19 @@ export const es = {
   'settings.session_not_fresh_delete':
     'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar la cuenta.',
   'settings.delete_error': 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+
+  // app/notificaciones.tsx
+  'notifications.social': 'Follows y cheers',
+  'notifications.plans': 'Planes',
+  'notifications.friends': 'Actividad de amigos',
+  'notifications.dishes': 'Tus platos',
+  'notifications.permission_denied':
+    'Las notificaciones están desactivadas para Mesa en Ajustes de iOS.',
+  'notifications.open_settings': 'Abrir Ajustes',
+  'notifications.permission_prompt': 'Activa las notificaciones para no perderte nada.',
+  'notifications.enable': 'Activar notificaciones',
+  'notifications.footer':
+    'Puedes desactivar cualquier categoría cuando quieras — esto no afecta si recibes notificaciones del sistema, solo cuáles.',
 
   // app/rank.tsx
   'rank.back': '✕ Rankear un spot',

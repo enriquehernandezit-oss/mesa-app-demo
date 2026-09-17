@@ -60,7 +60,8 @@
         {
           "contactsPermission": "Mesa compara los números de tus contactos con miembros de Mesa para encontrar a tus amigos. No guardamos tu lista de contactos."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

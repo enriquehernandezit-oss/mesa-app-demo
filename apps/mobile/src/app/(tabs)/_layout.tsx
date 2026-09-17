@@ -1,4 +1,5 @@
 import { MesaTabBar } from '@/components/MesaTabBar'
+import { usePushRouting } from '@/hooks/usePushRouting'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
@@ -36,6 +37,10 @@ const NATIVE_TABS = false
 export default function TabsLayout() {
   const authLost = useAuthLost()
   const { data: session, isPending } = useSession()
+  // Routes a tapped push (cold start or backgrounded) to its screen — mounted
+  // here since this is the first authed layout, not a splash effect. See
+  // usePushRouting's own header.
+  usePushRouting(useRouter())
   if (authLost) return <Redirect href="/sign-in" />
   if (!isPending && !session?.user) return <Redirect href="/sign-in" />
   return NATIVE_TABS ? <NativeShell /> : <CustomShell />

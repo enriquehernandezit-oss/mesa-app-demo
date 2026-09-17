@@ -1,10 +1,12 @@
 import { db, isAgreement, schema, tasteMatch } from '@mesa/db'
-import { type SQL, and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
+import { type SQL, and, asc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
+import { sendPush } from '../lib/push'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
+import { blockedByMe, blockedMe, followerIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The ranking loop — Mesa's atomic unit. A user keeps one ordered list of
@@ -389,13 +391,16 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
     const exists = await db.query.restaurants.findFirst({
       where: eq(restaurants.id, restaurantId),
-      columns: { id: true },
+      columns: { id: true, name: true },
     })
     if (!exists) return c.json({ error: 'unknown_restaurant' }, 400)
 
+    let isFirstRanking = false
     await db.transaction(async (tx) => {
       await lockUserList(tx, me.id)
-      const order = (await currentOrder(tx, me.id)).filter((id) => id !== restaurantId)
+      const before = await currentOrder(tx, me.id)
+      isFirstRanking = !before.includes(restaurantId)
+      const order = before.filter((id) => id !== restaurantId)
       const idx = Math.min(Math.max(position - 1, 0), order.length)
       order.splice(idx, 0, restaurantId)
       await rewrite(tx, me.id, order)
@@ -423,6 +428,36 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
           })
       }
     })
+
+    // "A friend ranked a place you saved" — first ranking only (a re-rank/
+    // reposition of a place you'd already ranked isn't news to anyone).
+    // Recipients: people who follow ME (the one-directional "friend" this
+    // app's feed already uses) and had this restaurant in their own saved
+    // list, minus either direction of block.
+    if (isFirstRanking) {
+      const savers = await db
+        .select({ userId: savedPlaces.userId })
+        .from(savedPlaces)
+        .where(
+          and(
+            eq(savedPlaces.restaurantId, restaurantId),
+            inArray(savedPlaces.userId, followerIds(me.id)),
+            notInArray(savedPlaces.userId, blockedByMe(me.id)),
+            notInArray(savedPlaces.userId, blockedMe(me.id)),
+          ),
+        )
+      sendPush(
+        savers.map((s) => ({
+          userId: s.userId,
+          key: `saved-ranked:${restaurantId}:${s.userId}`,
+          category: 'friends',
+          title: 'Mesa',
+          body: `${me.name || 'Alguien'} rankeó ${exists.name}, que tienes guardado`,
+          data: { type: 'restaurant', restaurantId },
+        })),
+      )
+    }
+
     return c.json({ ok: true })
   })
 

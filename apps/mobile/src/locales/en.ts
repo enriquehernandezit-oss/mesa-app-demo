@@ -615,6 +615,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.account': 'Your account',
   'settings.privacy': 'Privacy',
   'settings.preferences': 'Preferences',
+  'settings.notifications': 'Notifications',
   'settings.about': 'About',
   'settings.friends_section': 'Friends',
   'settings.find_friends': 'Find friends',
@@ -655,6 +656,18 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.session_not_fresh_delete':
     'For security, sign out and sign back in before deleting your account.',
   'settings.delete_error': "Couldn't delete the account. Try again.",
+
+  // app/notificaciones.tsx
+  'notifications.social': 'Follows and cheers',
+  'notifications.plans': 'Plans',
+  'notifications.friends': "Friends' activity",
+  'notifications.dishes': 'Your dishes',
+  'notifications.permission_denied': 'Notifications are turned off for Mesa in iOS Settings.',
+  'notifications.open_settings': 'Open Settings',
+  'notifications.permission_prompt': "Turn on notifications so you don't miss anything.",
+  'notifications.enable': 'Enable notifications',
+  'notifications.footer':
+    "You can turn off any category any time — this doesn't affect whether you get system notifications, only which.",
 
   'rank.back': '✕ Rank a spot',
   'rank.add_note_back': '‹ Add a note',

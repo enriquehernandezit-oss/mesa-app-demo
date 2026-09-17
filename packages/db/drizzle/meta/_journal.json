@@ -120,6 +120,13 @@
       "when": 1789641299384,
       "tag": "0016_living_toad_men",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789647611705,
+      "tag": "0017_milky_deadpool",
+      "breakpoints": true
     }
   ]
 }

@@ -118,6 +118,12 @@ export default function SettingsHub() {
             <Text className="flex-1 font-ui text-body text-text">{t('settings.preferences')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
+          <RowButton onPress={() => router.push('/notificaciones')}>
+            <Text className="flex-1 font-ui text-body text-text">
+              {t('settings.notifications')}
+            </Text>
+            <ChevronIcon size={16} color="text-faint" />
+          </RowButton>
           <RowButton onPress={() => router.push('/settings/about')} last>
             <Text className="flex-1 font-ui text-body text-text">{t('settings.about')}</Text>
             <ChevronIcon size={16} color="text-faint" />

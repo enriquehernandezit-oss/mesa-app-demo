@@ -1,7 +1,7 @@
 import { lt } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { db, pool } from './client'
-import { authEvent } from './schema'
+import { authEvent, pushLog } from './schema'
 
 // Applies generated migrations from ./drizzle against the pooled client.
 // Run with: bun run --env-file=.env src/migrate.ts  (or `bun db:migrate`).
@@ -18,5 +18,18 @@ const pruned = await db
   .where(lt(authEvent.createdAt, new Date(Date.now() - RETENTION_MS)))
   .returning({ id: authEvent.id })
 
+// Prune push_log (M17) past 7 days — it's a dedupe/throttle log, not an audit
+// trail, so it only needs to outlive the longest throttle window (cheers'
+// hourly bucket) plus a comfortable margin, not authEvent's 90 days.
+const PUSH_LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
+const prunedPushLog = await db
+  .delete(pushLog)
+  .where(lt(pushLog.sentAt, new Date(Date.now() - PUSH_LOG_RETENTION_MS)))
+  .returning({ userId: pushLog.userId })
+
 await pool.end()
-console.log(`migrations applied${pruned.length ? ` · pruned ${pruned.length} auth events` : ''}`)
+console.log(
+  `migrations applied${pruned.length ? ` · pruned ${pruned.length} auth events` : ''}${
+    prunedPushLog.length ? ` · pruned ${prunedPushLog.length} push log rows` : ''
+  }`,
+)

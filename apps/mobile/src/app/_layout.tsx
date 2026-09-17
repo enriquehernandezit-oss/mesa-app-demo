@@ -211,6 +211,12 @@ function MesaStack() {
         name="settings/blocked"
         options={{ ...utility, headerLargeTitle: false, title: t('settings.blocked_accounts') }}
       />
+      {/* Push notification prefs (M17) — reached from Settings' nav card, same
+          utility-header idiom as its Tu cuenta/Privacidad siblings. */}
+      <Stack.Screen
+        name="notificaciones"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.notifications') }}
+      />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: t('nav.leaderboard') }} />
       {/* Title (Seguidores/Siguiendo) is set by the screen itself, same

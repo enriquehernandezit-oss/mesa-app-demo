@@ -5,6 +5,7 @@ import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { auth } from './auth'
 import type { AppEnv } from './context'
+import { startPushSweep } from './lib/pushSweep'
 import { sessionMiddleware } from './middleware/session'
 import { activityRoutes } from './routes/activity'
 import { authPagesRoutes } from './routes/auth-pages'
@@ -16,6 +17,7 @@ import { leaderboardRoutes } from './routes/leaderboard'
 import { listsRoutes } from './routes/lists'
 import { meRoutes } from './routes/me'
 import { moderationRoutes } from './routes/moderation'
+import { notificationsRoutes } from './routes/notifications'
 import { onboardingRoutes } from './routes/onboarding'
 import { plansRoutes } from './routes/plans'
 import { rankingsRoutes } from './routes/rankings'
@@ -176,6 +178,7 @@ app.route('/dishes', dishesRoutes)
 app.route('/activity', activityRoutes)
 app.route('/invites', inviteRoutes)
 app.route('/plans', plansRoutes)
+app.route('/notifications', notificationsRoutes)
 
 // Uniform JSON error + 404 handling.
 app.notFound((c) => c.json({ error: 'not_found' }, 404))
@@ -188,6 +191,8 @@ app.onError((err, c) => {
   })
   return c.json({ error: 'internal_error' }, 500)
 })
+
+startPushSweep()
 
 const port = Number(process.env.PORT ?? 3000)
 

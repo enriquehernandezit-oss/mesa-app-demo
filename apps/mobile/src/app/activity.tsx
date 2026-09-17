@@ -16,12 +16,13 @@ import { markActivitySeen } from '@/lib/activitySeen'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
 import { useT } from '@/lib/i18n'
+import { registerForPush } from '@/lib/push'
 import { formatPlanDate, timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type Href, Link, useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The screen behind the bell (mock F2): cheers, new followers, friends ranking
@@ -60,6 +61,15 @@ export default function ActivityScreen() {
     queryKey: ['activity'],
     queryFn: () => api.get<{ activity: ActivityItem[] }>('/activity'),
   })
+
+  // Contextual push-permission prompt (M17) — someone opening Activity has
+  // already shown they care about friend activity, the exact thing push
+  // notifications extend beyond the app being open. Mount-only, not on every
+  // focus — see rank.tsx's own comment on why this is safe to call more than
+  // once (idempotent once decided).
+  useEffect(() => {
+    void registerForPush()
+  }, [])
 
   // Advances the watermark on the way OUT, not in — the header comment on
   // `lib/activitySeen.ts` already claimed opening this screen does this, but

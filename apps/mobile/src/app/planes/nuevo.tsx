@@ -24,6 +24,7 @@ import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
 import { usePreventRemove } from '@/lib/preventRemove'
+import { registerForPush } from '@/lib/push'
 import { dayChipLabel, timeChipLabel } from '@/lib/time'
 import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
@@ -186,6 +187,8 @@ export default function NuevaMesa() {
       track('plan_created', { options: spots.length, invitees: invitees.size, daysAhead })
       queryClient.invalidateQueries({ queryKey: ['plans'] })
       queryClient.invalidateQueries({ queryKey: ['activity'] })
+      // Contextual push-permission prompt (M17) — see rank.tsx's own comment.
+      void registerForPush()
       router.replace(`/planes/${id}`)
     },
     onError: (err) => {

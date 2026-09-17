@@ -5,6 +5,7 @@ import type { Context } from 'hono'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
+import { sendPush } from '../lib/push'
 import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -75,11 +76,28 @@ export const socialRoutes = new Hono<AuthedEnv>()
     })
     if (blocked) return c.json({ error: 'not_found' }, 404)
 
-    // Idempotent: following someone you already follow is a no-op, not an error.
-    await db
+    // Idempotent: following someone you already follow is a no-op, not an
+    // error — and `.returning()` is how the push trigger tells "new follow"
+    // from "already following", so a repeat tap of a Follow button never
+    // re-notifies.
+    const inserted = await db
       .insert(schema.follows)
       .values({ followerId: current.id, followingId: targetId })
       .onConflictDoNothing()
+      .returning({ followerId: schema.follows.followerId })
+
+    if (inserted.length > 0) {
+      sendPush([
+        {
+          userId: targetId,
+          key: `follow:${current.id}:${targetId}`,
+          category: 'social',
+          title: 'Mesa',
+          body: `${current.name || 'Alguien'} te empezó a seguir`,
+          data: { type: 'user', userId: current.id },
+        },
+      ])
+    }
 
     return c.json({ ok: true })
   })
