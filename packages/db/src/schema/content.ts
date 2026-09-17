@@ -70,5 +70,8 @@ export const dishes = pgTable(
     index('dishes_user_idx').on(t.userId, t.createdAt),
     index('dishes_ranking_idx').on(t.rankingId),
     index('dishes_name_key_trgm_idx').using('gin', sql`${t.nameKey} gin_trgm_ops`),
+    // The repeat-dish nudge (M20) counts a member's own distinct restaurants
+    // per nameKey on every dish POST — this is that query's index.
+    index('dishes_user_name_key_idx').on(t.userId, t.nameKey),
   ],
 )

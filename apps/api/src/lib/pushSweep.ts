@@ -1,14 +1,15 @@
-import { checkReceipts } from './push'
+import { checkReceipts, sweepDishNudges } from './push'
 
 const SWEEP_INTERVAL_MS = 10 * 60 * 1000
 
-// Starts the M17 background sweep: every 10 minutes, check Expo receipts for
-// dead tokens. (Due dish nudges join this sweep in M20, once dish_lists
-// exists — see push.ts's header for why the ticket queue this drains is
-// in-process rather than a table.) Called once from index.ts; a no-op when
-// EXPO_ACCESS_TOKEN is unset (checkReceipts itself returns immediately).
+// Starts the M17/M20 background sweep: every 10 minutes, check Expo receipts
+// for dead tokens and push any dish list that's crossed the ~20h due mark
+// (sweepDishNudges gates its own 11:00–21:00 Santo Domingo send window, so
+// most ticks in a day find nothing due there). Called once from index.ts; a
+// no-op when EXPO_ACCESS_TOKEN is unset (both functions return immediately).
 export function startPushSweep(): void {
   setInterval(() => {
     checkReceipts().catch((err) => console.error('push sweep failed', err))
+    sweepDishNudges().catch((err) => console.error('dish nudge sweep failed', err))
   }, SWEEP_INTERVAL_MS)
 }

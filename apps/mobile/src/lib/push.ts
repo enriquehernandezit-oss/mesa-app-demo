@@ -151,6 +151,8 @@ export function pushDeepLink(data: Record<string, unknown> | undefined): string 
   if (type === 'restaurant' && typeof data.restaurantId === 'string')
     return `/r/${data.restaurantId}`
   if (type === 'plan' && typeof data.planId === 'string') return `/planes/${data.planId}`
+  // The repeat-dish nudge (M20's sweepDishNudges).
+  if (type === 'dish-list' && typeof data.listId === 'string') return `/platos/${data.listId}`
   return null
 }
 

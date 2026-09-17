@@ -10,6 +10,7 @@ import {
   CheckIcon,
   ChevronIcon,
   CompassIcon,
+  ForkKnifeIcon,
   PeopleIcon,
   PlusIcon,
 } from '@/components/ui/icons'
@@ -278,6 +279,11 @@ export default function ProfileTab() {
             icon={<BookmarkIcon size={15} />}
             label={t('restaurant.want_to_try_label')}
             onPress={() => router.push('/rankings?tab=saved')}
+          />
+          <NavRow
+            icon={<ForkKnifeIcon size={15} />}
+            label={t('platos.title')}
+            onPress={() => router.push('/platos')}
           />
           <NavRow
             icon={<CalendarIcon size={15} />}

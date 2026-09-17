@@ -62,6 +62,56 @@ export function initInsert<T>(existing: T[], item: T): PairwiseState<T> {
   }
 }
 
+/**
+ * initInsert generalized to MULTIPLE new items (M20) — the dish-ranking flow
+ * at app/platos/rankear.tsx, where a member can have accumulated more than
+ * one not-yet-placed restaurant for a dish (they ignored an earlier "insert"
+ * nudge, or several new posts arrived before they got to it). Each item is
+ * inserted one at a time via the same binary search initInsert uses, in
+ * `items` order, and every insertion searches over the list AS IT STANDS AT
+ * THAT MOMENT — `existing` plus every item already placed earlier in this
+ * same call — never the original `existing` alone. That's `startNext`'s own
+ * behavior (it reads `s.ordered.length` fresh each time it pops the queue),
+ * so this is genuinely just initInsert's existing machinery run in sequence,
+ * not new binary-search logic.
+ *
+ * An empty `existing` mirrors initPairwise: the first item seeds the list
+ * with no comparison (there's nothing yet to compare it against), and only
+ * the rest binary-search from there — initInsert's own empty-list branch
+ * only handles a SINGLE item that way, so it can't be reused as-is here.
+ */
+export function initInsertMany<T>(existing: T[], items: T[]): PairwiseState<T> {
+  if (items.length === 0) {
+    return {
+      ordered: [...existing],
+      queue: [],
+      current: null,
+      lo: 0,
+      hi: 0,
+      total: existing.length,
+    }
+  }
+  if (existing.length === 0) {
+    const [first, ...rest] = items
+    return startNext({
+      ordered: [first as T],
+      queue: rest,
+      current: null,
+      lo: 0,
+      hi: 0,
+      total: items.length,
+    })
+  }
+  return startNext({
+    ordered: [...existing],
+    queue: [...items],
+    current: null,
+    lo: 0,
+    hi: 0,
+    total: existing.length + items.length,
+  })
+}
+
 /** How the user felt about the place before placing it (Beli-style). */
 export type Sentiment = 'loved' | 'fine' | 'disliked'
 

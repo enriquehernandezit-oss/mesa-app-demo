@@ -11,6 +11,7 @@ import { activityRoutes } from './routes/activity'
 import { authPagesRoutes } from './routes/auth-pages'
 import { cheersRoutes } from './routes/cheers'
 import { collectionsRoutes } from './routes/collections'
+import { dishListsRoutes } from './routes/dishLists'
 import { dishesRoutes } from './routes/dishes'
 import { feedRoutes } from './routes/feed'
 import { inviteRoutes } from './routes/invites'
@@ -177,6 +178,7 @@ app.route('/cheers', cheersRoutes)
 app.route('/leaderboard', leaderboardRoutes)
 app.route('/lists', listsRoutes)
 app.route('/dishes', dishesRoutes)
+app.route('/dish-lists', dishListsRoutes)
 app.route('/activity', activityRoutes)
 app.route('/invites', inviteRoutes)
 app.route('/plans', plansRoutes)

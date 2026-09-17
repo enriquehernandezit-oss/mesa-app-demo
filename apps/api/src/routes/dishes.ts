@@ -12,7 +12,8 @@ import { requireAuth } from '../middleware/session'
 // is a client-resized data URL in dev (no Cloudinary); in prod this endpoint
 // would instead take a Cloudinary public id from a signed direct upload.
 // Soft-removal + reporting (via 'dish' report target) satisfy App Store 1.2.
-const { dishes, rankings, user, follows, userBlocks, savedDishes } = schema
+const { dishes, rankings, user, follows, userBlocks, savedDishes, dishLists, dishListItems } =
+  schema
 
 // ~700 KB cap on the inline data URL (a resized ~1280px JPEG lands well under).
 const MAX_IMAGE_CHARS = 700_000
@@ -185,7 +186,57 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       await db.update(rankings).set({ favoriteDish: name }).where(eq(rankings.id, myRanking.id))
     }
 
-    return c.json({ ok: true, id: dishId, created })
+    // Repeat-dish tracking (M20). The upsert above guarantees at most one
+    // (not-removed) dish row per (me, restaurant, nameKey), so a plain count
+    // of my own not-removed rows for this nameKey IS the distinct-restaurant
+    // count — no need for a separate COUNT(DISTINCT restaurant_id).
+    const nameKey = mesaNorm(name)
+    const myCountRows = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(dishes)
+      .where(and(eq(dishes.userId, me.id), eq(dishes.nameKey, nameKey), isNull(dishes.removedAt)))
+    const myCount = myCountRows[0]?.count ?? 0
+
+    let nudge: { kind: 'first' | 'insert'; listId: string; label: string } | null = null
+    if (myCount >= 3) {
+      const existingList = await db.query.dishLists.findFirst({
+        where: and(eq(dishLists.userId, me.id), eq(dishLists.nameKey, nameKey)),
+      })
+      if (!existingList) {
+        // First time this nameKey crosses 3 restaurants — create its list.
+        // onConflictDoNothing guards a concurrent double-post of the same
+        // dish racing here; only the request that actually inserted the row
+        // returns a nudge, so it never fires twice for one crossing.
+        const labelRows = await db
+          .select({ label: sql<string>`mode() within group (order by ${dishes.name})` })
+          .from(dishes)
+          .where(
+            and(eq(dishes.userId, me.id), eq(dishes.nameKey, nameKey), isNull(dishes.removedAt)),
+          )
+        const label = labelRows[0]?.label ?? name
+        const [createdList] = await db
+          .insert(dishLists)
+          .values({ userId: me.id, nameKey, label })
+          .onConflictDoNothing()
+          .returning({ id: dishLists.id })
+        if (createdList) nudge = { kind: 'first', listId: createdList.id, label }
+      } else if (existingList.rankedAt && created) {
+        // Already ranked, and `created` (the dish upsert above) means THIS
+        // restaurant is genuinely new for this nameKey, not a re-post at one
+        // already in the list — offer to slot it into the existing order.
+        const already = await db.query.dishListItems.findFirst({
+          where: and(
+            eq(dishListItems.listId, existingList.id),
+            eq(dishListItems.restaurantId, restaurantId),
+          ),
+        })
+        if (!already) {
+          nudge = { kind: 'insert', listId: existingList.id, label: existingList.label }
+        }
+      }
+    }
+
+    return c.json({ ok: true, id: dishId, created, myCount, nudge })
   })
 
   // Popular dishes at a place — visible ones (mine, public, or from people I

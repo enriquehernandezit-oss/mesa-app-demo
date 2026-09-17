@@ -170,6 +170,9 @@ function MesaStack() {
           ranking still steps backward instead of being thrown away. */}
       <Stack.Screen name="rank" options={{ presentation: 'modal' }} />
       <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
+      {/* The dish-ranking pairwise flow (M20) — same compare-card idiom as
+          rank.tsx's own PlaceStep, so it gets the same modal presentation. */}
+      <Stack.Screen name="platos/rankear" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
       {/* The list picker (M19) — a real half-height sheet, not a full modal:
@@ -251,6 +254,11 @@ function MesaStack() {
           u/[userId] and match/[userId]; the native Stack.Screen title is set
           once the list's name loads. */}
       <Stack.Screen name="guardados/[collectionId]" />
+      {/* Dish ranking (M20) — "Tus platos" and one list's detail, same custom
+          ScreenHeader idiom as guardados/[collectionId] above; each sets its
+          own title internally the same way that screen does. */}
+      <Stack.Screen name="platos/index" />
+      <Stack.Screen name="platos/[listId]" />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

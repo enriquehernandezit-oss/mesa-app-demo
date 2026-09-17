@@ -16,6 +16,26 @@ export function scoreForPosition(index: number, total: number): number {
   return Math.round(top - (index * (top - bottom)) / (total - 1))
 }
 
+// Small-number ordinal, for the repeat-dish progress caption (M20 — "tu 2ª
+// carbonara" / "your 2nd carbonara"). Spanish informally suffixes any number
+// with "ª" regardless of the noun's gender in this kind of casual copy — no
+// need to special-case 1st/21st/etc the way English does.
+export function ordinal(n: number): string {
+  if (getLanguage() === 'es') return `${n}ª`
+  const v = n % 100
+  if (v >= 11 && v <= 13) return `${n}th`
+  switch (n % 10) {
+    case 1:
+      return `${n}st`
+    case 2:
+      return `${n}nd`
+    case 3:
+      return `${n}rd`
+    default:
+      return `${n}th`
+  }
+}
+
 // Price tier (1–4) as $ signs.
 export function priceLabel(tier: number | null | undefined): string | null {
   if (!tier || tier < 1) return null

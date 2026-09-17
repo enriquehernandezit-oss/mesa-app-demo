@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { inArray } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
 
 // Push notifications over Expo's push service (M17). Unset EXPO_ACCESS_TOKEN
 // -> every send is a no-op (same "dark, not broken" convention as
@@ -13,7 +13,7 @@ const RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts'
 // 10-minute sweeps in practice).
 const BATCH_SIZE = 100
 
-const { pushTokens, notificationPrefs, pushLog } = schema
+const { pushTokens, notificationPrefs, pushLog, dishLists, dishes } = schema
 
 export type PushCategory = 'social' | 'plans' | 'friends' | 'dishes'
 
@@ -217,4 +217,72 @@ export async function checkReceipts(): Promise<void> {
     .filter((t) => receipts[t.ticketId]?.details?.error === 'DeviceNotRegistered')
     .map((t) => t.token)
   await deleteTokens(deadTokens)
+}
+
+// M20's repeat-dish nudge: a dish_lists row created by routes/dishes.ts's
+// POST handler (a member has posted the same dish at 3+ restaurants) that's
+// still unranked and undismissed ~20h later gets ONE push. Santo Domingo has
+// no DST (fixed UTC-4), so its local hour is a plain offset — no timezone
+// library needed. Sent only in the 11:00–21:00 window so a list that turns
+// due overnight waits for morning instead of buzzing someone at 3am.
+const DUE_AFTER_MS = 20 * 60 * 60 * 1000
+const SD_UTC_OFFSET_HOURS = 4
+const SEND_WINDOW = { start: 11, end: 21 }
+
+export async function sweepDishNudges(): Promise<void> {
+  if (!EXPO_ACCESS_TOKEN) return
+  const sdHour = (new Date().getUTCHours() + 24 - SD_UTC_OFFSET_HOURS) % 24
+  if (sdHour < SEND_WINDOW.start || sdHour >= SEND_WINDOW.end) return
+
+  const due = await db
+    .select({
+      id: dishLists.id,
+      userId: dishLists.userId,
+      nameKey: dishLists.nameKey,
+      label: dishLists.label,
+      restaurantCount: sql<number>`count(${dishes.id})::int`,
+    })
+    .from(dishLists)
+    .innerJoin(
+      dishes,
+      and(
+        eq(dishes.userId, dishLists.userId),
+        eq(dishes.nameKey, dishLists.nameKey),
+        isNull(dishes.removedAt),
+      ),
+    )
+    .where(
+      and(
+        isNull(dishLists.rankedAt),
+        isNull(dishLists.dismissedAt),
+        isNull(dishLists.pushedAt),
+        lt(dishLists.createdAt, new Date(Date.now() - DUE_AFTER_MS)),
+      ),
+    )
+    .groupBy(dishLists.id)
+    .limit(200)
+  if (due.length === 0) return
+
+  sendPush(
+    due.map((d) => ({
+      userId: d.userId,
+      key: `dish-nudge:${d.id}`,
+      category: 'dishes',
+      title: 'Mesa',
+      body: `Has comido ${d.label} en ${d.restaurantCount} lugares. ¿Cuál fue la mejor?`,
+      data: { type: 'dish-list', listId: d.id },
+    })),
+  )
+  // Marked here, not inside sendPush's own claim — pushedAt is this sweep's
+  // own "don't reconsider next tick" flag (the due query above already
+  // filters on it), separate from push_log's per-(user,key) dedupe.
+  await db
+    .update(dishLists)
+    .set({ pushedAt: new Date() })
+    .where(
+      inArray(
+        dishLists.id,
+        due.map((d) => d.id),
+      ),
+    )
 }

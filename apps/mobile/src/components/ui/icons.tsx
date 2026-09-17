@@ -211,3 +211,10 @@ export const PeopleIcon = (p: IconProps) => (
     <Path d="M16 21a6 6 0 0 0-12 0M10 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM21 20a5 5 0 0 0-4-4.9M15.5 5.3a4 4 0 0 1 0 7.4" />
   </Icon>
 )
+// Dish ranking (M20) — Profile's "Tus platos" row. Fork (three tines merging
+// into a handle) beside a knife (a blade tapering into its own handle).
+export const ForkKnifeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M6 3v6M8.5 3v6M11 3v6M8.5 9v12M17 3c-2 0-2.5 2.3-2.5 4.5S15 12 17 12v9" />
+  </Icon>
+)

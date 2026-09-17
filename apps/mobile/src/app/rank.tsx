@@ -1,3 +1,4 @@
+import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
 import {
   Body,
@@ -29,6 +30,7 @@ import {
   OCCASION_TAGS,
   displayScore,
   grainOptions,
+  ordinal,
   scoreForPosition,
   tagLabel,
 } from '@/lib/display'
@@ -55,6 +57,7 @@ import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
 import type {
   DishName,
+  DishNudge,
   NewRestaurant,
   Ranking,
   RestaurantProfileResponse,
@@ -355,6 +358,13 @@ export default function RankAPlace() {
   const dishIdByKey = useRef<Map<string, string>>(new Map())
   const dishSyncCountRef = useRef(0)
   const [dishSyncPending, setDishSyncPending] = useState(false)
+  // M20 — each dish POST also returns how many distinct restaurants I've now
+  // posted this nameKey at (dishCounts, for the "tu 2ª carbonara" chip
+  // caption) and, on the one call that crosses a threshold, a nudge to go
+  // rank them. Dismissing the card only hides it for the rest of THIS
+  // session — the list itself lives on in Profile's "Tus platos" regardless.
+  const [dishCounts, setDishCounts] = useState<Map<string, number>>(new Map())
+  const [dishNudge, setDishNudge] = useState<DishNudge | null>(null)
 
   function enqueueDish(fn: () => Promise<void>) {
     dishSyncCountRef.current++
@@ -378,19 +388,24 @@ export default function RankAPlace() {
     dish: SelectedDish,
     opts: { isFirst: boolean; image?: string; grain?: Grain; removeImage?: boolean },
   ) {
-    const res = await api.post<{ id: string }>('/dishes', {
-      restaurantId: pickedId,
-      name: dish.name,
-      sentiment: dish.sentiment ?? undefined,
-      visibility: 'friends',
-      alsoFavorite: opts.isFirst,
-      ...(opts.image ? { image: opts.image, grain: opts.grain } : {}),
-      ...(opts.removeImage ? { removeImage: true } : {}),
-    })
+    const res = await api.post<{ id: string; myCount: number; nudge: DishNudge | null }>(
+      '/dishes',
+      {
+        restaurantId: pickedId,
+        name: dish.name,
+        sentiment: dish.sentiment ?? undefined,
+        visibility: 'friends',
+        alsoFavorite: opts.isFirst,
+        ...(opts.image ? { image: opts.image, grain: opts.grain } : {}),
+        ...(opts.removeImage ? { removeImage: true } : {}),
+      },
+    )
     dishIdByKey.current.set(dish.nameKey, res.id)
     setSelectedDishes((cur) =>
       cur.map((d) => (d.nameKey === dish.nameKey ? { ...d, dishId: res.id } : d)),
     )
+    setDishCounts((cur) => new Map(cur).set(dish.nameKey, res.myCount))
+    if (res.nudge) setDishNudge(res.nudge)
     queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
   }
 
@@ -733,6 +748,9 @@ export default function RankAPlace() {
         commitError={commitInitial.isError}
         onRetryCommit={() => commitInitial.mutate(position)}
         selectedDishes={selectedDishes}
+        dishCounts={dishCounts}
+        dishNudge={dishNudge}
+        onDismissNudge={() => setDishNudge(null)}
         dishNames={dishNamesQuery.data?.names ?? []}
         dishNamesError={dishNamesQuery.isError}
         dishImage={dishImage}
@@ -904,6 +922,9 @@ function RevealStep({
   commitError,
   onRetryCommit,
   selectedDishes,
+  dishCounts,
+  dishNudge,
+  onDismissNudge,
   dishNames,
   dishNamesError,
   dishImage,
@@ -929,6 +950,9 @@ function RevealStep({
   commitError: boolean
   onRetryCommit: () => void
   selectedDishes: SelectedDish[]
+  dishCounts: Map<string, number>
+  dishNudge: DishNudge | null
+  onDismissNudge: () => void
   dishNames: DishName[]
   dishNamesError: boolean
   dishImage: string | null
@@ -1067,20 +1091,28 @@ function RevealStep({
         )}
 
         <View className="mt-3 flex-row flex-wrap gap-2">
-          {selectedDishes.map((d) => (
-            <Chip
-              key={d.nameKey}
-              size="sm"
-              state="selected"
-              hitSlop={4}
-              onPress={() => {
-                tapSelect()
-                onRemoveDish(d.nameKey)
-              }}
-            >
-              {d.name}
-            </Chip>
-          ))}
+          {selectedDishes.map((d) => {
+            // M20 — once you've had this exact dish somewhere before, the
+            // chip says which time this is ("tu 2ª carbonara"). Never shown
+            // for the very first ("tu 1ª" would just be noise).
+            const count = dishCounts.get(d.nameKey)
+            return (
+              <Chip
+                key={d.nameKey}
+                size="sm"
+                state="selected"
+                hitSlop={4}
+                onPress={() => {
+                  tapSelect()
+                  onRemoveDish(d.nameKey)
+                }}
+              >
+                {count != null && count >= 2
+                  ? t('rank.dish_repeat_chip', { name: d.name, ordinal: ordinal(count) })
+                  : d.name}
+              </Chip>
+            )
+          })}
           {visibleNames.map((n) => (
             <Chip
               key={n.nameKey}
@@ -1208,6 +1240,15 @@ function RevealStep({
               ))}
           </View>
         ))}
+
+        {dishNudge && (
+          <DishNudgeCard
+            label={dishNudge.label}
+            listId={dishNudge.listId}
+            count={dishNudge.kind === 'first' ? 3 : undefined}
+            onDismiss={onDismissNudge}
+          />
+        )}
 
         {/* The other half of the core loop: where friends put this same place. */}
         <View className="mt-6">

@@ -26,7 +26,7 @@ import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useLanguage, useT } from '@/lib/i18n'
 import { usePreventRemove } from '@/lib/preventRemove'
-import type { RestaurantProfileResponse } from '@/lib/types'
+import type { DishNudge, RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
@@ -129,8 +129,8 @@ export default function DishCompose() {
   }
 
   const post = useMutation({
-    mutationFn: async () => {
-      await api.post('/dishes', {
+    mutationFn: () =>
+      api.post<{ nudge: DishNudge | null }>('/dishes', {
         restaurantId,
         name: name.trim(),
         categoryId,
@@ -138,15 +138,29 @@ export default function DishCompose() {
         image: image ?? undefined,
         grain: image ? grain : 'none',
         visibility: friendsOnly ? 'friends' : 'public',
-      })
-    },
-    onSuccess: () => {
+      }),
+    onSuccess: (res) => {
       track('dish_posted', { grain, friendsOnly, hasPhoto: image !== null, category: categoryId })
       setPosted(true)
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
+      // Repeat-dish nudge (M20) — the composer closes right after this, so a
+      // toast (not an inline card) is the only affordance that survives the
+      // screen going away; its action is the entire path into the flow.
+      if (res.nudge) {
+        toast({
+          message:
+            res.nudge.kind === 'first'
+              ? t('platos.nudge_toast_first', { label: res.nudge.label })
+              : t('platos.nudge_toast_insert', { label: res.nudge.label }),
+          action: {
+            label: t('platos.rank_button'),
+            onClick: () => router.push(`/platos/rankear?listId=${res.nudge?.listId}`),
+          },
+        })
+      }
     },
     onError: (err) => {
       captureError(err, 'dish.post')

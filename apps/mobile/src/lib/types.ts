@@ -420,6 +420,49 @@ export interface CollectionDetail {
   items: CollectionItem[]
 }
 
+// Repeat-dish ranking (M20). POST /dishes returns `nudge` on the exact call
+// that either creates the list (3rd distinct restaurant, 'first') or adds a
+// new restaurant to an already-ranked one ('insert') — see routes/dishes.ts's
+// own comment for why each fires exactly once.
+export interface DishNudge {
+  kind: 'first' | 'insert'
+  listId: string
+  label: string
+}
+
+// GET /dish-lists — one row per dish the member has posted at 3+ places.
+export interface DishListSummary {
+  id: string
+  nameKey: string
+  label: string
+  rankedAt: string | null
+  restaurantCount: number
+}
+
+// One entry in a dish list's ranked[] or unranked[] — the same restaurant +
+// dish shape either way; `dish` carries this member's own sentiment/caption
+// for it (never anyone else's, since a dish list is entirely one person's).
+export interface DishListEntry {
+  restaurant: RestaurantRef & { coverImageId: string | null; neighborhood: string | null }
+  dish: {
+    id: string
+    name: string
+    caption: string | null
+    imageId: string | null
+    sentiment: 'loved' | 'fine' | 'disliked' | null
+  }
+}
+
+export interface DishListDetail {
+  id: string
+  label: string
+  nameKey: string
+  rankedAt: string | null
+  // Ordered, position-ascending.
+  ranked: (DishListEntry & { position: number })[]
+  unranked: DishListEntry[]
+}
+
 // The ranking row shape on someone ELSE's passport — narrower than Ranking
 // (no createdAt, restaurant is a RestaurantRef) because rankings.ts's
 // /user/:userId select genuinely sends less than the owner's own /rankings

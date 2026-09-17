@@ -6,6 +6,8 @@ import {
   comparisonsLeft,
   initInsert,
   initInsertBounded,
+  initInsertMany,
+  isDone,
   nextComparison,
   tie,
 } from './pairwise'
@@ -71,6 +73,58 @@ describe('initInsert (unbanded) — full-list reconstruction', () => {
     const one = initInsert<P>([{ id: 1, truth: 5 }], item)
     // A single existing item still needs exactly one comparison (span 1).
     expect(comparisonsLeft(one)).toBe(1)
+  })
+})
+
+describe('initInsertMany — multiple new items into an existing order (M20)', () => {
+  test('inserting a batch of new items in one call reproduces the true full sort, for many trials', () => {
+    for (let trial = 0; trial < 200; trial++) {
+      const rand = mulberry32(10_000 + trial)
+      const n = Math.floor(rand() * 30) // 0..29 already-ordered existing
+      const k = 1 + Math.floor(rand() * 10) // 1..10 new, unordered
+      const all: P[] = Array.from({ length: n + k }, (_, i) => ({ id: i, truth: i }))
+      const shuffledAll = shuffled(all, rand)
+      const existing = [...shuffledAll.slice(0, n)].sort((a, b) => a.truth - b.truth)
+      const newItems = shuffledAll.slice(n)
+
+      let state = initInsertMany(existing, newItems)
+      while (state.current !== null) {
+        const cmp = nextComparison(state)
+        if (cmp === null) break
+        state = choose(state, cmp.current.truth < cmp.pivot.truth)
+      }
+
+      expect(isDone(state)).toBe(true)
+      expect(state.ordered.map((p) => p.truth)).toEqual(
+        [...all].sort((a, b) => a.truth - b.truth).map((p) => p.truth),
+      )
+    }
+  })
+
+  test('empty existing list seeds from the first new item with no comparison, like initPairwise', () => {
+    const first: P = { id: 0, truth: 0 }
+    const second: P = { id: 1, truth: 5 }
+    const state = initInsertMany<P>([], [first, second])
+    expect(state.ordered).toEqual([first])
+    expect(state.current).toEqual(second)
+    // The second item still compares against the first exactly once.
+    expect(comparisonsLeft(state)).toBe(1)
+  })
+
+  test('no new items leaves the existing order unchanged and already done', () => {
+    const existing: P[] = [
+      { id: 0, truth: 0 },
+      { id: 1, truth: 1 },
+    ]
+    const state = initInsertMany(existing, [])
+    expect(state.ordered).toEqual(existing)
+    expect(isDone(state)).toBe(true)
+  })
+
+  test('both empty returns an empty, already-done state', () => {
+    const state = initInsertMany<P>([], [])
+    expect(state.ordered).toEqual([])
+    expect(isDone(state)).toBe(true)
   })
 })
 
