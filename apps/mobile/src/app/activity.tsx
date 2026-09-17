@@ -132,7 +132,17 @@ export default function ActivityScreen() {
             <View key={s.key}>
               <SectionHeader>{s.label}</SectionHeader>
               {s.items.map((a) => (
-                <ActivityRow key={`${a.type}-${a.user.id}-${a.at}`} a={a} />
+                // type + user + at isn't always unique on its own — the same
+                // friend can rank two different restaurants (or reply to two
+                // different plans) with the exact same updatedAt/createdAt
+                // timestamp (a bulk backfill sharing one `now()` is the most
+                // common real cause), which produced a real "two children
+                // with the same key" crash. restaurant/plan close the gap;
+                // together with type+user+at they're unique per real event.
+                <ActivityRow
+                  key={`${a.type}-${a.user.id}-${a.restaurant?.id ?? ''}-${a.planId ?? ''}-${a.at}`}
+                  a={a}
+                />
               ))}
             </View>
           ))
