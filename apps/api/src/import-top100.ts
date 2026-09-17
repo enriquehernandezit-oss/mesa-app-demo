@@ -131,7 +131,7 @@ function searchName(sheetName: string): string {
   return CONFIRMED_NAME_OVERRIDES[sheetName] ?? sheetName
 }
 
-type ExistingRow = {
+export type ExistingRow = {
   id: string
   name: string
   nameKey: string
@@ -147,8 +147,11 @@ type ExistingRow = {
 // version) as a pure in-memory scan — same three rules, same order, plus the
 // same-googlePlaceId short-circuit for a re-run. A closed row is never
 // adopted; that status shouldn't silently clear because an unrelated import
-// happened to geocode nearby.
-function findCatalogMatch(
+// happened to geocode nearby. Exported for discover-italian.ts (and any
+// future discovery script) to reuse — the dedup rules must never drift
+// between "enrich a known list" and "find new places" or one of them starts
+// producing duplicate catalog rows.
+export function findCatalogMatch(
   fields: MesaFieldsFromGoogle,
   googlePlaceId: string,
   existing: ExistingRow[],
@@ -187,7 +190,7 @@ function findCatalogMatch(
 // on its own (seed/member coordinates are approximate anyway, so
 // distance-gating it would just produce false negatives and duplicate rows) —
 // merged automatically, logged for visibility in --dry-run.
-function nameOnlyUniqueMatch(name: string, existing: ExistingRow[]): ExistingRow | null {
+export function nameOnlyUniqueMatch(name: string, existing: ExistingRow[]): ExistingRow | null {
   const norm = mesaNorm(name)
   const matches = existing.filter((e) => e.nameKey === norm)
   return matches.length === 1 ? (matches[0] ?? null) : null

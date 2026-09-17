@@ -211,6 +211,48 @@ export async function searchText(query: string): Promise<GooglePlaceDetails | nu
   }
 }
 
+// Text Search, multi-result variant — for a one-off discovery script that
+// wants "every place matching this query" rather than import-top100.ts's one
+// best guess for a known name. pageSize maxes at 20 (Google's own cap for
+// Text Search New); callers wanting broader coverage than one query's 20
+// results issue several differently-worded queries instead of paginating —
+// simpler, and each query is independently useful for logging/debugging.
+export async function searchTextMany(
+  query: string,
+  opts: { pageSize?: number; includedType?: string } = {},
+): Promise<GooglePlaceDetails[]> {
+  if (!GOOGLE_PLACES_KEY) return []
+  try {
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
+        'X-Goog-FieldMask': PLACE_FIELDS.map((f) => `places.${f}`).join(','),
+      },
+      body: JSON.stringify({
+        textQuery: query,
+        languageCode: 'es',
+        regionCode: 'do',
+        locationBias: SD_LOCATION_BIAS,
+        pageSize: Math.min(opts.pageSize ?? 20, 20),
+        ...(opts.includedType ? { includedType: opts.includedType } : {}),
+      }),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      console.error(`[places] searchTextMany failed (${res.status}): ${detail.slice(0, 300)}`)
+      return []
+    }
+    const data = (await res.json()) as { places?: GooglePlaceDetails[] }
+    return data.places ?? []
+  } catch (err) {
+    console.error('[places] searchTextMany threw:', err)
+    return []
+  }
+}
+
 // Google primaryType/types → Mesa's English cuisine vocabulary
 // (apps/mobile/src/lib/display.ts's CUISINE_ES keys — the same target
 // packages/db/src/import-foursquare.ts's FSQ_TO_MESA_CUISINE maps into).
