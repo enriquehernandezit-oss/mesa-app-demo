@@ -39,8 +39,8 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import type { SearchBarCommands } from 'react-native-screens'
 
@@ -89,30 +89,43 @@ export default function ExploreScreen() {
   const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
   // Imperative focus for the native search bar (Feed's search field hands
   // off here — see the Stack.Screen options below for why this can't be the
-  // declarative `autoFocus` prop on iOS). A short retry loop, not a single
-  // call: right after this screen mounts, react-native-screens' native
-  // header (and the UISearchBar inside it) is still being constructed on the
-  // native side, so calling .focus() on the very first effect tick can land
-  // before the view exists and silently do nothing.
+  // declarative `autoFocus` prop on iOS). `useFocusEffect`, not a plain
+  // `useEffect`: Explore is a tab, so it can already be mounted from an
+  // earlier visit this session — a plain effect keyed on `params.focus` only
+  // fires on a genuine mount or a value change, neither of which is
+  // guaranteed to happen again on a same-tab re-navigation, which is exactly
+  // when this was silently doing nothing. `useFocusEffect` instead fires on
+  // every tab-focus event and reads the current param fresh each time.
+  // Delayed + retried, not a single immediate call: right when this screen
+  // gains focus, react-native-screens' native header (and the UISearchBar
+  // inside it) is often still mid-transition, and calling .focus() on a
+  // UISearchBar that hasn't finished becoming the key view can silently do
+  // nothing. `router.setParams` clears the flag once acted on, so revisiting
+  // Explore later (via the tab bar, not Feed's search field) doesn't refocus
+  // it again on a stale param.
   const searchBarRef = useRef<SearchBarCommands>(null)
-  useEffect(() => {
-    if (params.focus !== '1') return
-    let cancelled = false
-    let attempts = 0
-    const tryFocus = () => {
-      if (cancelled) return
-      if (searchBarRef.current) {
-        searchBarRef.current.focus()
-        return
+  useFocusEffect(
+    useCallback(() => {
+      if (params.focus !== '1') return
+      let cancelled = false
+      let attempts = 0
+      const tryFocus = () => {
+        if (cancelled) return
+        if (searchBarRef.current) {
+          searchBarRef.current.focus()
+          router.setParams({ focus: '' })
+          return
+        }
+        attempts++
+        if (attempts < 15) setTimeout(tryFocus, 80)
       }
-      attempts++
-      if (attempts < 10) setTimeout(tryFocus, 50)
-    }
-    tryFocus()
-    return () => {
-      cancelled = true
-    }
-  }, [params.focus])
+      const kickoff = setTimeout(tryFocus, 100)
+      return () => {
+        cancelled = true
+        clearTimeout(kickoff)
+      }
+    }, [params.focus, router]),
+  )
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [occasion, setOccasion] = useState<string | null>(null)
