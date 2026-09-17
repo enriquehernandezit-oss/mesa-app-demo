@@ -4,6 +4,7 @@ import {
   Button,
   Caption,
   Chip,
+  ChipRail,
   EmptyState,
   ErrorState,
   Eyebrow,
@@ -12,9 +13,9 @@ import {
 } from '@/components/ui'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { showSheet } from '@/components/ui/Sheet'
+import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { ShareIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, FilterGroup, ScoreBadge, Stat } from '@/components/ui/patterns'
+import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -44,7 +45,7 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { type ReactNode, useMemo, useRef, useState } from 'react'
+import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
   Pressable,
@@ -74,18 +75,43 @@ export default function RankingsTab() {
   )
   const [sort, setSort] = useState<SortKey>('position')
   const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
-  const [filterOpen, setFilterOpen] = useState(false)
   const me = useProfile(true, 300_000)
   const accent = useColor('accent')
+
+  // Animate a row's position ONLY when it's genuinely removed (swipe-to-
+  // remove), not on every sort/filter change (M14) — SwipeToRemove's layout
+  // transition used to fire unconditionally, so picking a new filter animated
+  // every remaining row sliding into its new spot, which looks like a janky
+  // shuffle on a real-size list instead of an instant re-sort. Set to true
+  // right before a filter/sort setter runs (read by RankingRow/SwipeToRemove
+  // during THAT render, passed down as a prop — not read from the ref
+  // directly, since only the parent's own render can see the ref's current
+  // value synchronously); the no-deps effect below resets it right after
+  // that render commits, so it's back to normal (animated) by the time any
+  // later, genuine removal happens.
+  const skipLayoutAnimRef = useRef(false)
+  useEffect(() => {
+    skipLayoutAnimRef.current = false
+  })
+  const setSortAnimated: typeof setSort = (next) => {
+    skipLayoutAnimRef.current = true
+    setSort(next)
+  }
+  const setFiltersAnimated: typeof setFilters = (next) => {
+    skipLayoutAnimRef.current = true
+    setFilters(next)
+  }
 
   const mine = useQuery({
     queryKey: ['rankings'],
     queryFn: () => api.get<{ rankings: Ranking[] }>('/rankings'),
   })
+  // Prefetched alongside `mine`/`stats` (M14) — no `enabled: tab === 'saved'`
+  // gate — so switching to that tab never shows a loading flicker for data
+  // that was cheap to have ready already.
   const saved = useQuery({
     queryKey: ['saved'],
     queryFn: () => api.get<{ saved: SavedPlace[] }>('/saved'),
-    enabled: tab === 'saved',
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
   const { refreshing, onRefresh } = usePullToRefresh(mine.refetch)
@@ -109,7 +135,41 @@ export default function RankingsTab() {
       options: options.map((o) => ({ label: o.label })),
       selectedIndex: options.findIndex((o) => o.key === sort),
     })
-    if (idx != null) setSort(options[idx].key)
+    if (idx != null) setSortAnimated(options[idx].key)
+  }
+
+  // One dedicated dropdown pill per dimension (M14), same pattern as
+  // Explore's — replaces the old single "Filtros (N)" trigger + inline
+  // FilterGroup panel. pickOne is shared (components/ui/Sheet.tsx).
+  async function pickSector() {
+    const v = await pickOne(t('rank.sector'), filterOptions.sectors, filters.sector, (s) => s)
+    if (v !== undefined) setFiltersAnimated((f) => ({ ...f, sector: v }))
+  }
+  async function pickOccasion() {
+    const v = await pickOne(
+      t('rankings.occasion_label'),
+      filterOptions.occasions,
+      filters.occasion,
+      (tag) => tagLabel(tag),
+    )
+    if (v !== undefined) setFiltersAnimated((f) => ({ ...f, occasion: v }))
+  }
+  async function pickPrice() {
+    const v = await pickOne(t('rankings.price_label'), filterOptions.prices, filters.price, (p) => {
+      return priceLabel(p) ?? String(p)
+    })
+    if (v !== undefined) setFiltersAnimated((f) => ({ ...f, price: v }))
+  }
+  async function pickCuisine() {
+    const v = await pickOne(
+      t('rankings.cuisine_label'),
+      filterOptions.cuisines,
+      filters.cuisine,
+      (c) => {
+        return cuisineLabel(c) ?? c
+      },
+    )
+    if (v !== undefined) setFiltersAnimated((f) => ({ ...f, cuisine: v }))
   }
 
   // The share-my-list story card (the growth loop): the top 5, over the top
@@ -188,195 +248,164 @@ export default function RankingsTab() {
     </>
   )
 
-  // Sort + filter — the "mine" tab only, and only once there's a list to act on.
+  // Sort + filter — the "mine" tab only, and only once there's a list to act
+  // on. One dedicated dropdown pill per dimension (M14) instead of a single
+  // "Filtros (N)" trigger + inline panel — a set filter shows its own value
+  // directly on the pill ("Piantini ▾").
   const mineControls = ranked.length > 0 && (
-    <View className="mb-4 gap-2">
-      <View className="flex-row flex-wrap items-center gap-2">
-        <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
-          {sortLabel(sort)}
-        </Chip>
-        <Chip
-          size="sm"
-          state={filterOpen ? 'active' : activeCount > 0 ? 'selected' : 'default'}
-          chevron
-          onPress={() => setFilterOpen((v) => !v)}
+    <ChipRail className="mb-4">
+      <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
+        {sortLabel(sort)}
+      </Chip>
+      <Chip size="sm" chevron state={filters.sector ? 'selected' : 'default'} onPress={pickSector}>
+        {filters.sector ? filterChipLabel('sector', filters.sector) : t('rank.sector')}
+      </Chip>
+      <Chip
+        size="sm"
+        chevron
+        state={filters.occasion ? 'selected' : 'default'}
+        onPress={pickOccasion}
+      >
+        {filters.occasion
+          ? filterChipLabel('occasion', filters.occasion)
+          : t('rankings.occasion_label')}
+      </Chip>
+      <Chip
+        size="sm"
+        chevron
+        state={filters.price != null ? 'selected' : 'default'}
+        onPress={pickPrice}
+      >
+        {filters.price != null
+          ? filterChipLabel('price', filters.price)
+          : t('rankings.price_label')}
+      </Chip>
+      <Chip
+        size="sm"
+        chevron
+        state={filters.cuisine ? 'selected' : 'default'}
+        onPress={pickCuisine}
+      >
+        {filters.cuisine
+          ? filterChipLabel('cuisine', filters.cuisine)
+          : t('rankings.cuisine_label')}
+      </Chip>
+      {activeCount > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setFiltersAnimated(NO_FILTERS)}
+          className="min-h-[36px] justify-center px-1 active:opacity-60"
         >
-          {activeCount > 0
-            ? t('rankings.filters_count', { n: activeCount })
-            : t('rankings.filters')}
-        </Chip>
-        {filters.sector && (
-          <Chip
-            size="sm"
-            state="selected"
-            onPress={() => setFilters((f) => ({ ...f, sector: null }))}
-          >
-            {filterChipLabel('sector', filters.sector)} ✕
-          </Chip>
-        )}
-        {filters.occasion && (
-          <Chip
-            size="sm"
-            state="selected"
-            onPress={() => setFilters((f) => ({ ...f, occasion: null }))}
-          >
-            {filterChipLabel('occasion', filters.occasion)} ✕
-          </Chip>
-        )}
-        {filters.price != null && (
-          <Chip
-            size="sm"
-            state="selected"
-            onPress={() => setFilters((f) => ({ ...f, price: null }))}
-          >
-            {filterChipLabel('price', filters.price)} ✕
-          </Chip>
-        )}
-        {filters.cuisine && (
-          <Chip
-            size="sm"
-            state="selected"
-            onPress={() => setFilters((f) => ({ ...f, cuisine: null }))}
-          >
-            {filterChipLabel('cuisine', filters.cuisine)} ✕
-          </Chip>
-        )}
-        {activeCount > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setFilters(NO_FILTERS)}
-            className="min-h-[36px] justify-center px-1 active:opacity-60"
-          >
-            <Caption className="font-ui-semibold text-accent-strong">{t('rankings.clear')}</Caption>
-          </Pressable>
-        )}
-      </View>
-
-      {filterOpen && (
-        <View className="gap-3 rounded border border-line bg-surface p-3">
-          <FilterGroup
-            label={t('rank.sector')}
-            values={filterOptions.sectors}
-            selected={filters.sector}
-            render={(v) => String(v)}
-            onToggle={(v) =>
-              setFilters((f) => ({ ...f, sector: f.sector === v ? null : String(v) }))
-            }
-          />
-          <FilterGroup
-            label={t('rankings.occasion_label')}
-            values={filterOptions.occasions}
-            selected={filters.occasion}
-            render={(v) => tagLabel(String(v))}
-            onToggle={(v) =>
-              setFilters((f) => ({ ...f, occasion: f.occasion === v ? null : String(v) }))
-            }
-          />
-          <FilterGroup
-            label={t('rankings.price_label')}
-            values={filterOptions.prices}
-            selected={filters.price}
-            render={(v) => priceLabel(Number(v)) ?? String(v)}
-            onToggle={(v) => setFilters((f) => ({ ...f, price: f.price === v ? null : Number(v) }))}
-          />
-          <FilterGroup
-            label={t('rankings.cuisine_label')}
-            values={filterOptions.cuisines}
-            selected={filters.cuisine}
-            render={(v) => cuisineLabel(String(v)) ?? String(v)}
-            onToggle={(v) =>
-              setFilters((f) => ({ ...f, cuisine: f.cuisine === v ? null : String(v) }))
-            }
-          />
-        </View>
+          <Caption className="font-ui-semibold text-accent-strong">{t('rankings.clear')}</Caption>
+        </Pressable>
       )}
-    </View>
+    </ChipRail>
+  )
+
+  // Stable across renders (M14) — a NEW renderItem function on every render
+  // of this screen used to make FlatList treat every currently-mounted cell
+  // as changed, re-rendering all of them regardless of whether RankingRow
+  // itself (wrapped in memo, below) would have bailed out. skipLayoutAnimRef
+  // is a stable ref object, so its live .current value is still read fresh
+  // on every actual invocation even though the callback itself never changes
+  // identity.
+  const renderRankingRow = useCallback(
+    ({ item }: { item: Ranking }) => (
+      <RankingRow ranking={item} skipAnim={skipLayoutAnimRef.current} />
+    ),
+    [],
+  )
+  const renderSavedRow = useCallback(
+    ({ item }: { item: SavedPlace }) => <SavedRow saved={item} />,
+    [],
   )
 
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
-      {/* The "mine" tab is the one genuinely unbounded list, and every row mounts
-          a gesture handler — so it's the one that earns a FlatList. saved and
-          barrios stay ScrollViews (bounded / an aggregate). */}
-      {tab === 'mine' ? (
-        <FlatList
-          data={processed}
-          keyExtractor={(r) => r.id}
-          renderItem={({ item }) => <RankingRow ranking={item} />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
-          }
-          ListHeaderComponent={
-            <>
-              {topMatter}
-              {mineControls}
-            </>
-          }
-          ListEmptyComponent={
-            mine.isPending ? (
-              <View className="gap-3">
-                <Skeleton height={72} />
-                <Skeleton height={72} />
-                <Skeleton height={72} />
-              </View>
-            ) : mine.isError ? (
-              <ErrorState onRetry={() => mine.refetch()}>{t('rankings.load_error')}</ErrorState>
-            ) : activeCount > 0 ? (
-              <EmptyState
-                body={t('rankings.no_filter_matches')}
-                action={
-                  <Button size="sm" variant="secondary" onPress={() => setFilters(NO_FILTERS)}>
-                    {t('rankings.clear_filters')}
-                  </Button>
-                }
-              >
-                {t('rankings.nothing_matches')}
-              </EmptyState>
-            ) : (
-              <EmptyState
-                body={t('rankings.empty_body')}
-                action={
-                  <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
-                    {t('rankings.rank_a_spot')}
-                  </Button>
-                }
-              >
-                {t('rankings.empty_title')}
-              </EmptyState>
-            )
-          }
-          indicatorStyle={indicator}
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
-        />
-      ) : (
-        <ScrollView
-          indicatorStyle={indicator}
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-        >
-          {topMatter}
-          {tab === 'barrios' ? (
-            <BarriosView
-              rankings={ranked}
-              onSelectSector={(sector) => {
-                setFilters({ ...NO_FILTERS, sector })
-                setTab('mine')
-              }}
-            />
-          ) : saved.isPending ? (
+      {/* Three persistent containers, shown/hidden via style.display instead
+          of a `tab === X ? <A/> : <B/>` ternary (M14) — the ternary used to
+          swap FlatList for ScrollView on every tab switch, which is a
+          different element TYPE each side, so React unmounted and remounted
+          the whole thing (losing scroll position, re-flickering
+          ListEmptyComponent) on every single Mía/Quiero probar/Sectores tap.
+          All three stay mounted now; only the active one is visible. */}
+      <FlatList
+        style={{ display: tab === 'mine' ? 'flex' : 'none' }}
+        data={processed}
+        keyExtractor={(r) => r.id}
+        renderItem={renderRankingRow}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
+        }
+        ListHeaderComponent={
+          <>
+            {topMatter}
+            {mineControls}
+          </>
+        }
+        ListEmptyComponent={
+          mine.isPending ? (
+            <View className="gap-3">
+              <Skeleton height={72} />
+              <Skeleton height={72} />
+              <Skeleton height={72} />
+            </View>
+          ) : mine.isError ? (
+            <ErrorState onRetry={() => mine.refetch()}>{t('rankings.load_error')}</ErrorState>
+          ) : activeCount > 0 ? (
+            <EmptyState
+              body={t('rankings.no_filter_matches')}
+              action={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => setFiltersAnimated(NO_FILTERS)}
+                >
+                  {t('rankings.clear_filters')}
+                </Button>
+              }
+            >
+              {t('rankings.nothing_matches')}
+            </EmptyState>
+          ) : (
+            <EmptyState
+              body={t('rankings.empty_body')}
+              action={
+                <Button size="sm" variant="primary" onPress={() => router.push('/rank')}>
+                  {t('rankings.rank_a_spot')}
+                </Button>
+              }
+            >
+              {t('rankings.empty_title')}
+            </EmptyState>
+          )
+        }
+        indicatorStyle={indicator}
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      />
+      {/* Saved — prefetched alongside `mine`/`stats` (no `enabled: tab ===
+          'saved'` gate) so it's already there the instant this tab becomes
+          visible, and virtualized (a real FlatList, not a ScrollView.map)
+          now that a save-heavy member's list can run long. */}
+      <FlatList
+        style={{ display: tab === 'saved' ? 'flex' : 'none' }}
+        data={saved.data?.saved ?? []}
+        keyExtractor={(s) => s.restaurant.id}
+        renderItem={renderSavedRow}
+        ListHeaderComponent={topMatter}
+        ListEmptyComponent={
+          saved.isPending ? (
             <Skeleton height={64} />
           ) : saved.isError ? (
             <ErrorState onRetry={() => saved.refetch()}>
               {t('rankings.saved_load_error')}
             </ErrorState>
-          ) : saved.data && saved.data.saved.length > 0 ? (
-            saved.data.saved.map((s) => <SavedRow key={s.restaurant.id} saved={s} />)
           ) : (
             <EmptyState
               body={t('rankings.saved_empty_body')}
@@ -388,19 +417,48 @@ export default function RankingsTab() {
             >
               {t('rankings.saved_empty_title')}
             </EmptyState>
-          )}
-        </ScrollView>
-      )}
+          )
+        }
+        indicatorStyle={indicator}
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      />
+      <ScrollView
+        style={{ display: tab === 'barrios' ? 'flex' : 'none' }}
+        indicatorStyle={indicator}
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+      >
+        {topMatter}
+        <BarriosView
+          rankings={ranked}
+          onSelectSector={(sector) => {
+            setFiltersAnimated({ ...NO_FILTERS, sector })
+            setTab('mine')
+          }}
+        />
+      </ScrollView>
     </View>
   )
 }
+
+// Hoisted (M14), not built fresh on every row's every render — a
+// LinearTransition config is a plain object either way, but re-creating it
+// per row per render is needless churn on a list that can run long.
+const ROW_LAYOUT_TRANSITION = LinearTransition.springify().damping(18)
 
 // A row that reveals a single "Quitar" action on a left swipe — the iOS gesture
 // for removing something from a list. It's additive: the inline text actions
 // stay, because they also carry note-editing and are the discoverable path.
 // Removal itself is unchanged (the existing undo-toast machinery owns the
 // optimistic remove + restore); the swipe is a second trigger for it.
-function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children: ReactNode }) {
+function SwipeToRemove({
+  onRemove,
+  skipAnim,
+  children,
+}: { onRemove: () => void; skipAnim?: boolean; children: ReactNode }) {
   const ref = useRef<SwipeableMethods>(null)
   const t = useT()
   return (
@@ -408,6 +466,8 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
     // them — it matters right after a swipe, and again when undo puts the row back.
     // layout= makes a removal slide its neighbours up instead of teleporting
     // them — which matters most right after a swipe, and again on undo.
+    // Skipped (M14) when the caller says this render is a filter/sort change,
+    // not a removal — see skipLayoutAnimRef's comment above for why.
     <ReanimatedSwipeable
       ref={ref}
       friction={2}
@@ -429,12 +489,17 @@ function SwipeToRemove({ onRemove, children }: { onRemove: () => void; children:
         </Pressable>
       )}
     >
-      <Animated.View layout={LinearTransition.springify().damping(18)}>{children}</Animated.View>
+      <Animated.View layout={skipAnim ? undefined : ROW_LAYOUT_TRANSITION}>
+        {children}
+      </Animated.View>
     </ReanimatedSwipeable>
   )
 }
 
-function RankingRow({ ranking }: { ranking: Ranking }) {
+const RankingRow = memo(function RankingRow({
+  ranking,
+  skipAnim,
+}: { ranking: Ranking; skipAnim?: boolean }) {
   const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
   const t = useT()
@@ -457,7 +522,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
   })
 
   return (
-    <SwipeToRemove onRemove={() => removeRankingWithUndo(ranking)}>
+    <SwipeToRemove onRemove={() => removeRankingWithUndo(ranking)} skipAnim={skipAnim}>
       <View className="flex-row gap-3 border-b border-line py-3">
         <Text className="font-serif text-serif-lg text-accent" style={{ width: 28 }}>
           {ranking.position}
@@ -560,7 +625,7 @@ function RankingRow({ ranking }: { ranking: Ranking }) {
       </View>
     </SwipeToRemove>
   )
-}
+})
 
 function SerifNote({ children }: { children: React.ReactNode }) {
   return <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">“{children}”</Text>
@@ -598,20 +663,25 @@ function BarriosView({
   // filter system (lib/rankingSort.ts) matches `filters.sector` against
   // `r.neighborhood` directly, so a bar's tap payload has to be that same raw
   // value. The one bucket with no real neighborhood ("Santo Domingo") stays
-  // inert: there's no filter value that means "unset."
-  const byHood = new Map<string | null, { count: number; sum: number }>()
-  for (const r of rankings) {
-    const cur = byHood.get(r.neighborhood) ?? { count: 0, sum: 0 }
-    byHood.set(r.neighborhood, { count: cur.count + 1, sum: cur.sum + r.score })
-  }
-  const hoods = [...byHood.entries()]
-    .map(([neighborhood, v]) => ({
-      neighborhood,
-      name: neighborhood ?? 'Santo Domingo',
-      count: v.count,
-      avg: v.sum / v.count,
-    }))
-    .sort((a, b) => b.count - a.count)
+  // inert: there's no filter value that means "unset." Memoized (M14): this
+  // screen re-renders on every filter/sort/tab change, none of which touch
+  // `rankings` itself, so recomputing the aggregate from scratch each time
+  // was pure waste.
+  const hoods = useMemo(() => {
+    const byHood = new Map<string | null, { count: number; sum: number }>()
+    for (const r of rankings) {
+      const cur = byHood.get(r.neighborhood) ?? { count: 0, sum: 0 }
+      byHood.set(r.neighborhood, { count: cur.count + 1, sum: cur.sum + r.score })
+    }
+    return [...byHood.entries()]
+      .map(([neighborhood, v]) => ({
+        neighborhood,
+        name: neighborhood ?? 'Santo Domingo',
+        count: v.count,
+        avg: v.sum / v.count,
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [rankings])
   const max = hoods[0]?.count ?? 1
   if (hoods.length === 0)
     return (
@@ -663,7 +733,7 @@ function BarriosView({
   )
 }
 
-function SavedRow({ saved }: { saved: SavedPlace }) {
+const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useT()
@@ -705,4 +775,4 @@ function SavedRow({ saved }: { saved: SavedPlace }) {
       </View>
     </SwipeToRemove>
   )
-}
+})
