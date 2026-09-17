@@ -575,6 +575,12 @@
       "name": "Trattoria Angiolino",
       "cuisineRaw": null,
       "area": null
+    },
+    {
+      "rank": null,
+      "name": "Punto & Corcho",
+      "cuisineRaw": "Spanish / Tapas",
+      "area": "Santo Domingo"
     }
   ],
   "menus": {
@@ -31824,6 +31830,578 @@
         "sourceRef": "User-provided menu photo: Trattoria Angiolino (1 image)",
         "verifiedAt": "2026-09-10",
         "position": 43
+      }
+    ],
+    "Punto & Corcho": [
+      {
+        "section": "Entradas - Frías",
+        "name": "Ceviche de Guatapaná",
+        "description": "Leche de Tigre / Trocitos de Sweet Potatoes",
+        "price": 850,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 0
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Tuna Tartar",
+        "description": "Salsa de Soya / Aceite de Sésamo / Aguacate / Mango / Siracha Mayo",
+        "price": 975,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 1
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Burrata de Pesto y Pistacho",
+        "description": "Reducción de Balsámico / Focaccia",
+        "price": 900,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 2
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Carpaccio de Res",
+        "description": "Rúcula / Piñones / Parmesan Shavings / Aceite Extra Virgen / Cítrico",
+        "price": 895,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 3
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Carpaccio de Guatapaná",
+        "description": "Alfalfa / Limón / Alcaparrita / Aceite de Oliva Extra Virgen / Rábano / Crema Agria",
+        "price": 750,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 4
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Carpaccio de Pulpo",
+        "description": "Aceite de Oliva Extra Virgen / Granada / Mandarina",
+        "price": 750,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 5
+      },
+      {
+        "section": "Entradas - Frías",
+        "name": "Artisanal Bread",
+        "description": "Focaccia / Stracciatella de Burrata / Mortadela / Pistachio / Miel Trufada",
+        "price": 625,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 6
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Croquetas de Prosciutto",
+        "description": null,
+        "price": 700,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 7
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Tortilla de Papas y Chistorra",
+        "description": null,
+        "price": 625,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 8
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Gambas al Ajillo",
+        "description": "Ajo / Peperoncino / Aceite de Oliva Extra Virgen / Perejil",
+        "price": 1300,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 9
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Morcilla Burgalesa",
+        "description": "Mermelada de Higos",
+        "price": 750,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 10
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Taquitos de Pollo al Chipotle",
+        "description": "Guacamole / Pico de Gallo / Queso Cheddar / Sour Cream",
+        "price": 800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 11
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Mongolian Beef Tacos",
+        "description": "Glaseado Oriental / Semillas de Ajonjolí / Puerro Fresco",
+        "price": 800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 12
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Sliders Angus y Porkbelly",
+        "description": "Queso de Cabra / Rúcula / Cebolla Caramelizada / Honey Mustard",
+        "price": 925,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 13
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Choripancitos",
+        "description": "Pan artesanal / Salchicha argentina / Salsa Chimichurri",
+        "price": 825,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 14
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Mini Chimis",
+        "description": "Pan de Agua / Salchicha Chimi Clásica / Repollo Morado / Salsa Rosada",
+        "price": 800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 15
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Chorizo Cantimpalo a la Sidra Sichera",
+        "description": null,
+        "price": 700,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 16
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Pulpo a la Brasa",
+        "description": "Rúcula / Papas Rústicas",
+        "price": 1600,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 17
+      },
+      {
+        "section": "Entradas - Calientes",
+        "name": "Envoltinis de Berenjena",
+        "description": "Berenjena / Mozzarella / Philadelphia / Salsa Pomodoro / Pesto de Albahaca",
+        "price": 650,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 18
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Striploin Tagliata",
+        "description": "Con ensalada César o ensalada de rúcula, parmesano y tomaticos cherry / Papas salteadas al romero / Salsa de hongos champiñones",
+        "price": 2950,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 19
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Tenderloin Angus a la Parrilla – A la Pimienta",
+        "description": "Con Vegetales al Grill",
+        "price": 2800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 20
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Tenderloin Angus a la Parrilla – Salsa de Hongos Champiñones, Vino Tinto y Shallots",
+        "description": "Con Vegetales al Grill",
+        "price": 2900,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 21
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Tenderloin Angus a la Parrilla – Salsa Chimichurri",
+        "description": "Con Vegetales al Grill",
+        "price": 2700,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 22
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Tenderloin Angus a la Parrilla – Salsa Bordalesa",
+        "description": "Con Vegetales al Grill",
+        "price": 2950,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 23
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Chuleticas de Cordero",
+        "description": "Rack de Cordero de New Zealand / Reducción de Vino Tinto / Papas al Romero y Tomillo",
+        "price": 3600,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 24
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Wild Salmon Crujiente en Salsa de Naranja",
+        "description": "Con vegetales al grill",
+        "price": 1600,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 25
+      },
+      {
+        "section": "Platos Principales",
+        "name": "Lubina al Horno",
+        "description": "Filete de lubina con mantequilla, limón, vino blanco y perejil / Papines",
+        "price": 2800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 26
+      },
+      {
+        "section": "Tablas",
+        "name": "Quesos Artesanales",
+        "description": "Grana Padano / Manchego / Cabra Añejado / Bellarouvina / Aceitunas / Focaccia / Miel de Trufa",
+        "price": 1050,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 27
+      },
+      {
+        "section": "Tablas",
+        "name": "Charcutería",
+        "description": "Prosciutto San Danielle / Salame y Pimienta / Bresaola / Aceitunas / Focaccia / Miel de Trufa",
+        "price": 1100,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 28
+      },
+      {
+        "section": "Tablas",
+        "name": "La Grande",
+        "description": "Manchego / Grana Padano / Provolone Dolce / Prosciutto San Danielle / Salame y Pimienta / Bresaola / Aceite de Oliva y Parmesano / Aceitunas / Focaccia / Miel de Trufa",
+        "price": 1450,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 29
+      },
+      {
+        "section": "Tablas",
+        "name": "La Española",
+        "description": "Manchego / Chistorra a la Parrilla / Morcilla Burgalesa / Focaccia",
+        "price": 1400,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 30
+      },
+      {
+        "section": "Pizzas",
+        "name": "Prosciutto / Burrata / Rúcula",
+        "description": null,
+        "price": 650,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 31
+      },
+      {
+        "section": "Pizzas",
+        "name": "Queso de Cabra / Miel / Aceite de Trufas",
+        "description": null,
+        "price": 695,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 32
+      },
+      {
+        "section": "Pizzas",
+        "name": "Salamino Picante / Mozzarella",
+        "description": null,
+        "price": 695,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 33
+      },
+      {
+        "section": "Pizzas",
+        "name": "Focaccia Artesanal",
+        "description": "Aceite de Oliva Extra Virgen / Parmesano Rallado",
+        "price": 300,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 34
+      },
+      {
+        "section": "Pastas",
+        "name": "Penne al Vodka",
+        "description": null,
+        "price": 1000,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 35
+      },
+      {
+        "section": "Pastas",
+        "name": "Penne al Pesto de Albahaca y Pistacho",
+        "description": null,
+        "price": 850,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 36
+      },
+      {
+        "section": "Pastas",
+        "name": "Penne al Pesto de Albahaca y Pistacho con Camarones",
+        "description": null,
+        "price": 1100,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 37
+      },
+      {
+        "section": "Pastas",
+        "name": "Pasta Carbonara",
+        "description": null,
+        "price": 800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 38
+      },
+      {
+        "section": "Pastas",
+        "name": "Linguine Aglio Olio e Peperoncino",
+        "description": null,
+        "price": 750,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 39
+      },
+      {
+        "section": "Pastas",
+        "name": "Linguine Aglio Olio e Peperoncino con Camarones",
+        "description": null,
+        "price": 1050,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 40
+      },
+      {
+        "section": "Pastas",
+        "name": "Paccheri con Ragú de Salchicha Siciliana",
+        "description": "Hinojo Selvático / Salsa Alfredo",
+        "price": 850,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 41
+      },
+      {
+        "section": "Pastas",
+        "name": "Ravioli Caprese con Pomodoro y Basílico",
+        "description": null,
+        "price": 800,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 42
+      },
+      {
+        "section": "Pastas",
+        "name": "Linguinis a la Trufa con Mantequilla y Parmesano",
+        "description": null,
+        "price": 1350,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 43
+      },
+      {
+        "section": "Risottos",
+        "name": "Risotto de Hongos Porcini",
+        "description": null,
+        "price": 900,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 44
+      },
+      {
+        "section": "Risottos",
+        "name": "Risotto de Zucchini y/o Espárragos",
+        "description": null,
+        "price": 900,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 45
+      },
+      {
+        "section": "Risottos",
+        "name": "Risotto de Camarones Frescos a la Parrilla",
+        "description": null,
+        "price": 1100,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 46
+      },
+      {
+        "section": "Risottos",
+        "name": "Risotto Caprese",
+        "description": "Tomate Cherry / Mozzarella / Albahaca",
+        "price": 900,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 47
+      },
+      {
+        "section": "Risottos",
+        "name": "Risotto Parmesano",
+        "description": null,
+        "price": 850,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 48
+      },
+      {
+        "section": "Sides",
+        "name": "Muselina de Cepa de Apio",
+        "description": null,
+        "price": 425,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 49
+      },
+      {
+        "section": "Sides",
+        "name": "Papines Rústicos",
+        "description": null,
+        "price": 300,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 50
+      },
+      {
+        "section": "Sides",
+        "name": "Ensalada de Rúcula y Parmesano",
+        "description": null,
+        "price": 350,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 51
+      },
+      {
+        "section": "Sides",
+        "name": "Ensalada César con Anchoas y Crutones",
+        "description": null,
+        "price": 375,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 52
+      },
+      {
+        "section": "Sides",
+        "name": "Pasta Aglio Olio",
+        "description": null,
+        "price": 550,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 53
+      },
+      {
+        "section": "The Sweets",
+        "name": "Macorix Crêpe Suzette",
+        "description": "Con salsa de naranja natural flameado al momento",
+        "price": 600,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 54
+      },
+      {
+        "section": "The Sweets",
+        "name": "Brownie de Nutella y Helado de Vainilla",
+        "description": null,
+        "price": 550,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 55
+      },
+      {
+        "section": "The Sweets",
+        "name": "Tarta Vasca",
+        "description": null,
+        "price": 550,
+        "currency": "DOP",
+        "sourceRef": "User-provided menu screenshot: Punto & Corcho (1 image)",
+        "verifiedAt": "2026-09-17",
+        "position": 56
       }
     ]
   }

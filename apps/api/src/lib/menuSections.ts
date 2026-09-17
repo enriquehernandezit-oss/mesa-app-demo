@@ -242,6 +242,7 @@ export const MENU_SECTION_LABELS: Record<string, { es: string; en: string }> = {
   Snacks: { es: 'Piqueos', en: 'Snacks' },
 
   Postres: { es: 'Postres', en: 'Desserts' },
+  'The Sweets': { es: 'Postres', en: 'The Sweets' },
   'Postre, Café y Té': { es: 'Postre, Café y Té', en: 'Dessert, Coffee & Tea' },
   Dessert: { es: 'Postre', en: 'Dessert' },
   Sweet: { es: 'Dulce', en: 'Sweet' },

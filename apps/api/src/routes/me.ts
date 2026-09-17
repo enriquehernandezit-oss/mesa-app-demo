@@ -1,4 +1,4 @@
-import { db, schema } from '@mesa/db'
+import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
 import { and, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -43,6 +43,15 @@ const linkEmailSchema = z.object({
   password: z.string().min(8).max(128),
 })
 
+const phoneSchema = z.object({ phone: z.string().trim().min(1).max(32) })
+
+// Unset -> the contacts find-friends feature is dark: PUT refuses rather than
+// hashing with no secret (an empty/undefined HMAC key would be a real
+// security bug, not a soft-disable), matching the codebase's
+// GOOGLE_PLACES_API_KEY/EXPO_ACCESS_TOKEN convention for "founder hasn't set
+// this up yet."
+const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
+
 export const meRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
   .get('/', async (c) => {
@@ -64,6 +73,9 @@ export const meRoutes = new Hono<AuthedEnv>()
         // Gates the in-app moderation queue. Flipped directly in the DB —
         // there is no way to grant it from the product, on purpose.
         isModerator: true,
+        // Only ever reduced to a boolean below — the raw hash never leaves
+        // this route.
+        phoneHash: true,
       },
       with: {
         neighborhood: { columns: { slug: true, name: true } },
@@ -73,14 +85,19 @@ export const meRoutes = new Hono<AuthedEnv>()
     })
     if (!row) return c.json({ error: 'not_found' }, 404)
 
-    const { rankings, eulaAcceptedAt, neighborhoodId, ...profile } = row
+    const { rankings, eulaAcceptedAt, neighborhoodId, phoneHash, ...profile } = row
     // Handle (Instagram) is optional, so it's no longer part of the gate —
     // a neighborhood, an accepted EULA, and at least one ranking complete it.
     const onboardingComplete =
       Boolean(neighborhoodId) && Boolean(eulaAcceptedAt) && rankings.length > 0
 
     return c.json({
-      profile: { ...profile, neighborhood: row.neighborhood },
+      profile: {
+        ...profile,
+        neighborhood: row.neighborhood,
+        // Contacts find-friends opt-in state (M18) — never the hash itself.
+        phoneMatchEnabled: Boolean(phoneHash),
+      },
       onboardingComplete,
     })
   })
@@ -266,6 +283,37 @@ export const meRoutes = new Hono<AuthedEnv>()
       .where(eq(schema.user.id, current.id))
     return c.json({ ok: true })
   })
+
+  // Opt in to contacts find-friends (M18): "let your contacts find you."
+  // Stores only HMAC(PHONE_MATCH_SECRET, E.164) — see phone.ts's own header
+  // for why this is a separate column from Better Auth's `phoneNumber`
+  // sign-in identity, never the plaintext number itself.
+  .put('/phone', async (c) => {
+    if (!PHONE_MATCH_SECRET) return c.json({ error: 'not_available' }, 503)
+    const current = c.get('user')
+    const parsed = phoneSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+
+    const e164 = normalizePhone(parsed.data.phone)
+    if (!e164) return c.json({ error: 'invalid_phone' }, 400)
+
+    await db
+      .update(schema.user)
+      .set({ phoneHash: hashPhone(e164, PHONE_MATCH_SECRET), updatedAt: new Date() })
+      .where(eq(schema.user.id, current.id))
+    return c.json({ ok: true })
+  })
+
+  // Opt back out — a no-op if never opted in.
+  .delete('/phone', async (c) => {
+    const current = c.get('user')
+    await db
+      .update(schema.user)
+      .set({ phoneHash: null, updatedAt: new Date() })
+      .where(eq(schema.user.id, current.id))
+    return c.json({ ok: true })
+  })
+
   // In-app account deletion (App Store 5.1.1). Deleting the user row cascades
   // across everything they own — rankings, vibe notes, follows, blocks, saved
   // places, reports, and Better Auth's own sessions + accounts (every child FK

@@ -28,6 +28,13 @@ export const user = pgTable('user', {
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id, {
     onDelete: 'set null',
   }),
+  // Opt-in contacts find-friends (M18) — HMAC(PHONE_MATCH_SECRET, E.164) of a
+  // number the member deliberately submitted via PUT /me/phone, NOT
+  // `phoneNumber` above (that one's Better Auth's own sign-in identity, and
+  // matching would leak who has phone sign-in enabled). Never the plaintext
+  // number — see packages/db/src/phone.ts's own header. Unique so a hash
+  // collision can't silently point two accounts at the same contact match.
+  phoneHash: text('phone_hash').unique(),
   // EULA acceptance is required at signup for a UGC app (App Store 1.2).
   eulaAcceptedAt: timestamp('eula_accepted_at'),
 
