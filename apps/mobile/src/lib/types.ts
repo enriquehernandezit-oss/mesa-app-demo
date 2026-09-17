@@ -383,6 +383,49 @@ export interface UserRankingsResponse {
   sharedCount: number
 }
 
+// GET /rankings/user/:userId/match — the pair page (M16).
+export interface MatchPlace {
+  restaurantId: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  mine: { position: number; score: number }
+  theirs: { position: number; score: number }
+  gap: number
+  agree: boolean
+}
+
+export interface MatchPerson {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+}
+
+export interface MatchNotTried {
+  restaurantId: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  neighborhood: string | null
+  position: number
+  score: number
+}
+
+export interface UserMatchResponse {
+  me: MatchPerson
+  them: MatchPerson
+  matchPercent: number | null
+  sharedCount: number
+  myListSize: number
+  theirListSize: number
+  places: MatchPlace[]
+  sharedCuisines: string[]
+  sharedNeighborhoods: string[]
+  notTried: MatchNotTried[]
+}
+
 export interface BlockedUser {
   id: string
   name: string

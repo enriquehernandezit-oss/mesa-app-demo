@@ -10,7 +10,8 @@ export * as schema from './schema'
 export { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 // The one ranking-score formula — see score.ts's header for why this used to
 // have a silent second copy.
-export { scoreFor } from './score'
+export { scoreFor, SCORE_TOP, SCORE_BOTTOM } from './score'
+export { tasteMatch, isAgreement, MIN_SHARED_FOR_MATCH } from './tasteMatch'
 // The closed dish-category taxonomy + keyword guesser (M11) — shared by the
 // API's validation/GET /categories/backfill and, as a mirrored matcher only
 // (Metro can't import this workspace), apps/mobile/src/lib/dishCategories.ts.

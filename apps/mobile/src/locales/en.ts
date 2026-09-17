@@ -544,6 +544,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'passport.someone_fallback': 'this person',
   'passport.match_percent': '+{n}% taste match',
   'passport.shared_spots': 'across {n} shared spots',
+  'passport.match_need_more': {
+    one: 'Rank 1 more shared spot to see your match',
+    other: 'Rank {n} more shared spots to see your match',
+  },
   'passport.following_button': 'Following',
   'passport.follow_button': 'Follow',
   'passport.report': 'Report',
@@ -554,6 +558,22 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'passport.no_rankings': 'No rankings yet.',
   'passport.show_all': 'All {n}',
   'passport.their_favorites': "{name}'s favorites",
+
+  // app/match/[userId].tsx
+  'match.you_and': 'You and {name}',
+  'match.how_it_works_label': 'How this is calculated',
+  'match.how_it_works_body':
+    "We compare your score with {name}'s on every spot you've both ranked. More shared spots and closer scores mean a higher match.",
+  'match.shared_count': {
+    one: 'Based on 1 shared spot',
+    other: 'Based on {n} shared spots',
+  },
+  'match.where_you_agree': 'Where you agree',
+  'match.where_you_dont': "Where you don't",
+  'match.shared_taste': 'Shared taste',
+  'match.not_tried_title': "{name}'s spots you haven't tried yet",
+  'match.not_available': "This match isn't available.",
+  'match.load_error': "Couldn't load this match.",
 
   'map.title': 'The map',
   'map.friends_ranked_count': {

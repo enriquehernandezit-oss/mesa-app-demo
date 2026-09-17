@@ -147,11 +147,13 @@ export default function UserRankings() {
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
           {user.handle ? <Text className="mt-2 text-label text-text-2">@{user.handle}</Text> : null}
           {barrio ? <Caption>{barrio}</Caption> : null}
-          {matchPercent != null && (
-            <View className="mt-2 items-center gap-1">
-              {/* Styled like a selected Chip but isn't one — a match % names a
-                  fact about this pair, it doesn't open or toggle anything, and
-                  a Chip everywhere else in the app IS a control. */}
+          {matchPercent != null ? (
+            <Pressable
+              accessibilityRole="button"
+              className="mt-2 items-center gap-1"
+              onPress={() => router.push(`/match/${userId}`)}
+            >
+              {/* A match % IS a control here — it opens the pair page. */}
               <View className="min-h-[36px] justify-center rounded-pill bg-accent-fill px-3">
                 <Text className="font-ui-medium text-label text-on-accent">
                   {t('passport.match_percent', { n: matchPercent })}
@@ -162,8 +164,14 @@ export default function UserRankings() {
               <Caption className="text-micro">
                 {t('passport.shared_spots', { n: sharedCount })}
               </Caption>
-            </View>
-          )}
+            </Pressable>
+          ) : sharedCount > 0 ? (
+            // 1-2 shared spots: below tasteMatch's MIN_SHARED_FOR_MATCH, so
+            // there's no honest percentage yet — say what's missing instead.
+            <Caption className="mt-2 text-micro">
+              {t('passport.match_need_more', { n: 3 - sharedCount })}
+            </Caption>
+          ) : null}
 
           {/* Same trio as your own profile — the passport is the same object. */}
           <View className="mt-4 flex-row justify-around self-stretch">

@@ -594,6 +594,10 @@ export const es = {
   'passport.someone_fallback': 'esta persona',
   'passport.match_percent': '+{n}% de gustos en común',
   'passport.shared_spots': 'sobre {n} spots en común',
+  'passport.match_need_more': {
+    one: 'Rankea 1 spot más en común para ver su match',
+    other: 'Rankea {n} spots más en común para ver su match',
+  },
   'passport.following_button': 'Siguiendo',
   'passport.follow_button': 'Seguir',
   'passport.report': 'Reportar',
@@ -604,6 +608,22 @@ export const es = {
   'passport.no_rankings': 'Todavía no hay rankings.',
   'passport.show_all': 'Todos {n}',
   'passport.their_favorites': 'Los favoritos de {name}',
+
+  // app/match/[userId].tsx
+  'match.you_and': 'Tú y {name}',
+  'match.how_it_works_label': 'Cómo se calcula',
+  'match.how_it_works_body':
+    'Comparamos tu puntuación con la de {name} en cada spot que ambos han rankeado. Entre más spots en común y más parecidas sus puntuaciones, más alto el match.',
+  'match.shared_count': {
+    one: 'Basado en 1 spot en común',
+    other: 'Basado en {n} spots en común',
+  },
+  'match.where_you_agree': 'Donde coinciden',
+  'match.where_you_dont': 'Donde no',
+  'match.shared_taste': 'Gustos en común',
+  'match.not_tried_title': 'Spots de {name} que aún no has probado',
+  'match.not_available': 'Este match no está disponible.',
+  'match.load_error': 'No se pudo cargar el match.',
 
   // app/map.tsx
   'map.title': 'El mapa',

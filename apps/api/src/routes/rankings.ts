@@ -1,4 +1,4 @@
-import { db, schema } from '@mesa/db'
+import { db, isAgreement, schema, tasteMatch } from '@mesa/db'
 import { type SQL, and, asc, eq, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { aliasedTable } from 'drizzle-orm'
 import { Hono } from 'hono'
@@ -221,8 +221,8 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
     const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
 
-    // Match % (Beli-style taste compatibility): over restaurants we've both
-    // ranked, 100 minus the average score gap. Needs ≥2 shared spots.
+    // Match % (taste compatibility) — see tasteMatch.ts for the formula.
+    // One query: count + avg gap over restaurants we've both ranked.
     const mine = aliasedTable(rankings, 'mine')
     const [match] = await db
       .select({
@@ -235,10 +235,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         and(eq(rankings.restaurantId, mine.restaurantId), eq(rankings.userId, targetId)),
       )
       .where(eq(mine.userId, me.id))
-    const matchPercent =
-      match && match.shared >= 2
-        ? Math.max(0, Math.min(100, Math.round(100 - match.avgDiff)))
-        : null
+    const matchPercent = match ? tasteMatch(match.avgDiff, match.shared) : null
 
     const { bannedAt: _drop, ...profile } = target
     return c.json({
@@ -249,6 +246,134 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       followingCount,
       matchPercent,
       sharedCount: match?.shared ?? 0,
+    })
+  })
+
+  // The pair page (M16) — everything /match/[userId].tsx needs about a single
+  // pair: both people, the score, and place-by-place agreement. `places` is one
+  // join query (also where matchPercent's avgGap/sharedCount come from, so the
+  // number on this page always matches the list under it); shared cuisines and
+  // sectors come from those same shared places, not each person's full list —
+  // it's the honest "what you actually overlap on", not a broader inference.
+  .get('/user/:userId/match', async (c) => {
+    const me = c.get('user')
+    const targetId = c.req.param('userId')
+
+    const [meProfile, target] = await Promise.all([
+      db.query.user.findFirst({
+        where: eq(user.id, me.id),
+        columns: { id: true, name: true, handle: true, image: true },
+      }),
+      db.query.user.findFirst({
+        where: eq(user.id, targetId),
+        columns: { id: true, name: true, handle: true, image: true, bannedAt: true },
+      }),
+    ])
+    if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
+
+    const block = await db
+      .select({ b: userBlocks.blockerId })
+      .from(userBlocks)
+      .where(
+        or(
+          and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, targetId)),
+          and(eq(userBlocks.blockerId, targetId), eq(userBlocks.blockedId, me.id)),
+        ),
+      )
+      .limit(1)
+    if (block.length > 0) return c.json({ error: 'not_found' }, 404)
+
+    const mine = aliasedTable(rankings, 'mine')
+    const sharedRows = await db
+      .select({
+        restaurantId: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
+        neighborhood: neighborhoods.name,
+        myPosition: mine.position,
+        myScore: mine.score,
+        theirPosition: rankings.position,
+        theirScore: rankings.score,
+      })
+      .from(mine)
+      .innerJoin(
+        rankings,
+        and(eq(rankings.restaurantId, mine.restaurantId), eq(rankings.userId, targetId)),
+      )
+      .innerJoin(restaurants, eq(restaurants.id, mine.restaurantId))
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .where(eq(mine.userId, me.id))
+      .orderBy(asc(sql`abs(${mine.score} - ${rankings.score})`))
+
+    const sharedCount = sharedRows.length
+    const avgGap =
+      sharedCount > 0
+        ? sharedRows.reduce((s, r) => s + Math.abs(r.myScore - r.theirScore), 0) / sharedCount
+        : 0
+    const matchPercent = tasteMatch(avgGap, sharedCount)
+
+    const [myListSize, theirListSize] = await Promise.all([
+      db.$count(rankings, eq(rankings.userId, me.id)),
+      db.$count(rankings, eq(rankings.userId, targetId)),
+    ])
+
+    const sharedRestaurantIds = sharedRows.map((r) => r.restaurantId)
+    const notTried = await db
+      .select({
+        restaurantId: restaurants.id,
+        name: restaurants.name,
+        cuisine: restaurants.cuisine,
+        coverImageId: restaurants.coverImageId,
+        neighborhood: neighborhoods.name,
+        position: rankings.position,
+        score: rankings.score,
+      })
+      .from(rankings)
+      .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .where(
+        and(
+          eq(rankings.userId, targetId),
+          sharedRestaurantIds.length > 0
+            ? notInArray(rankings.restaurantId, sharedRestaurantIds)
+            : undefined,
+        ),
+      )
+      .orderBy(asc(rankings.position))
+      .limit(6)
+
+    const sharedCuisines = [
+      ...new Set(sharedRows.map((r) => r.cuisine).filter((c): c is string => Boolean(c))),
+    ]
+    const sharedNeighborhoods = [
+      ...new Set(sharedRows.map((r) => r.neighborhood).filter((n): n is string => Boolean(n))),
+    ]
+
+    return c.json({
+      me: meProfile,
+      them: target,
+      matchPercent,
+      sharedCount,
+      myListSize,
+      theirListSize,
+      places: sharedRows.map((r) => {
+        const gap = Math.abs(r.myScore - r.theirScore)
+        return {
+          restaurantId: r.restaurantId,
+          name: r.name,
+          cuisine: r.cuisine,
+          coverImageId: r.coverImageId,
+          neighborhood: r.neighborhood,
+          mine: { position: r.myPosition, score: r.myScore },
+          theirs: { position: r.theirPosition, score: r.theirScore },
+          gap,
+          agree: isAgreement(gap),
+        }
+      }),
+      sharedCuisines,
+      sharedNeighborhoods,
+      notTried,
     })
   })
 

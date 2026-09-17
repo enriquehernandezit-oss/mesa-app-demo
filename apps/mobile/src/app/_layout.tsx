@@ -179,6 +179,9 @@ function MesaStack() {
           gesture, so no override is needed here. */}
       <Stack.Screen name="r/[restaurantId]" />
       <Stack.Screen name="u/[userId]" />
+      {/* The taste-match pair page (M16), reached from u/[userId]'s match
+          pill — same custom ScreenHeader idiom, no native title. */}
+      <Stack.Screen name="match/[userId]" />
       <Stack.Screen
         name="menu/[restaurantId]"
         options={{ ...utility, headerLargeTitle: false, title: t('restaurant.menu_title') }}

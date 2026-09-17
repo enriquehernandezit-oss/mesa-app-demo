@@ -6,9 +6,13 @@
 // divergent copy of this formula in seed-data.ts previously scored seeded
 // rankings 95→62 while the API scored 96→72 — same shape, different numbers,
 // which skewed every cross-user average).
+// Exported (M16) so tasteMatch.ts's "how far apart can two scores be" span
+// derives from these instead of guessing its own number — the two formulas
+// must never drift on what the score scale even means.
+export const SCORE_TOP = 96
+export const SCORE_BOTTOM = 72
+
 export function scoreFor(index: number, total: number): number {
   if (total <= 1) return 95
-  const top = 96
-  const bottom = 72
-  return Math.round(top - (index * (top - bottom)) / (total - 1))
+  return Math.round(SCORE_TOP - (index * (SCORE_TOP - SCORE_BOTTOM)) / (total - 1))
 }
