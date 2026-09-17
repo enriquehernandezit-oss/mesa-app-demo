@@ -2,6 +2,7 @@ import { CheersButton } from '@/components/CheersButton'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { PersonRow } from '@/components/PersonRow'
 import { pickReportReason } from '@/components/ReportControl'
+import { SaveButton } from '@/components/SaveButton'
 import { TopBar } from '@/components/TopBar'
 import {
   Body,
@@ -388,12 +389,20 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
                 transition={120}
               />
             </View>
-            <CheersButton
-              className="mt-2"
-              rankingId={item.rankingId}
-              count={item.cheersCount ?? 0}
-              cheered={item.cheeredByMe ?? false}
-            />
+            <View className="mt-2 flex-row items-center gap-1">
+              <CheersButton
+                rankingId={item.rankingId}
+                count={item.cheersCount ?? 0}
+                cheered={item.cheeredByMe ?? false}
+              />
+              {item.dishId ? (
+                <SaveButton
+                  target={{ kind: 'dish', id: item.dishId }}
+                  initial={item.dishSaved ?? false}
+                  name={item.dishName || item.restaurant.name}
+                />
+              ) : null}
+            </View>
           </View>
         </Animated.View>
       </Pressable>
@@ -473,12 +482,18 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
               “{item.note}”
             </Text>
           ) : null}
-          <CheersButton
-            className="mt-2"
-            rankingId={item.rankingId}
-            count={item.cheersCount ?? 0}
-            cheered={item.cheeredByMe ?? false}
-          />
+          <View className="mt-2 flex-row items-center gap-1">
+            <CheersButton
+              rankingId={item.rankingId}
+              count={item.cheersCount ?? 0}
+              cheered={item.cheeredByMe ?? false}
+            />
+            <SaveButton
+              target={{ kind: 'restaurant', id: item.restaurant.id }}
+              initial={item.restaurantSaved ?? false}
+              name={item.restaurant.name}
+            />
+          </View>
         </View>
       </Animated.View>
     </Pressable>

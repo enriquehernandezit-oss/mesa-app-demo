@@ -485,13 +485,44 @@ export const es = {
   'cheers.give': 'Brindar',
   'cheers.remove': 'Quitar brindis',
 
+  // components/SaveButton.tsx (M19)
+  'save.save': 'Guardar',
+  'save.remove': 'Quitar de guardados',
+  'save.saved_toast': 'Guardaste «{name}»',
+  'save.add_to_list': 'Agregar a lista',
+  'save.error': 'No se pudo guardar. Intenta de nuevo.',
+  'save.unsave_error': 'No se pudo quitar. Intenta de nuevo.',
+
+  // app/guardar.tsx (M19)
+  'guardar.title': 'Agregar a una lista',
+  'guardar.new_list': '+ Nueva lista',
+  'guardar.new_list_title': 'Nombre de la lista',
+  'guardar.create_button': 'Crear',
+  'guardar.creating': 'Creando…',
+  'guardar.name_taken': 'Ya tienes una lista con ese nombre.',
+  'guardar.create_error': 'No se pudo crear la lista. Intenta de nuevo.',
+  'guardar.toggle_error': 'No se pudo actualizar la lista. Intenta de nuevo.',
+  'guardar.load_error': 'No se pudieron cargar tus listas.',
+  'guardar.no_lists': 'Todavía no tienes listas.',
+  'guardar.item_count': { one: '1 guardado', other: '{n} guardados' },
+
+  // app/guardados/[collectionId].tsx (M19)
+  'guardados.delete_list': 'Eliminar lista',
+  'guardados.delete_confirm_title':
+    '¿Eliminar esta lista? Esto no elimina tus lugares y platos guardados.',
+  'guardados.delete_button': 'Eliminar lista',
+  'guardados.delete_error': 'No se pudo eliminar la lista. Intenta de nuevo.',
+  'guardados.not_found': 'Esta lista no está disponible.',
+  'guardados.load_error': 'No se pudo cargar la lista.',
+  'guardados.empty_list': 'Esta lista está vacía.',
+  'guardados.already_went': 'Ya fuiste · #{n}',
+
   // components/TopBar.tsx
   'nav.activity_unseen': 'Actividad, {n} sin ver',
   'nav.share_profile': 'Compartir perfil',
   'nav.share_profile_no_handle': 'Ponte un @usuario para compartir tu perfil.',
 
   // app/r/[restaurantId].tsx
-  'restaurant.save_error': 'No se pudo guardar.',
   'restaurant.unsave_error': 'No se pudo quitar de tu lista.',
   'restaurant.not_found': 'Spot no encontrado.',
   'restaurant.load_error': 'No se pudo cargar el spot.',
@@ -578,6 +609,15 @@ export const es = {
   'rankings.share_my_list': 'Compartir mi lista',
   'rankings.places': 'lugares',
   'rankings.want_to_try_stat': 'quiero probar',
+  // The saved tab's own name (M19) — "Quiero probar" (above) still labels
+  // the save-toggle ACTION itself elsewhere; this is the destination tab,
+  // which now holds lists + saved places + saved dishes, not just places.
+  'rankings.saved_tab': 'Guardados',
+  'rankings.lists_section': 'Tus listas',
+  'rankings.new_list': '+ Nueva',
+  'rankings.places_section': 'Lugares guardados',
+  'rankings.dishes_section': 'Platos guardados',
+  'rankings.no_saved_dishes': 'Todavía no has guardado ningún plato.',
   'rankings.streak_weeks': 'sem. de racha',
   'rankings.mine_tab': 'Mía',
   'rankings.sectors_tab': 'Sectores',

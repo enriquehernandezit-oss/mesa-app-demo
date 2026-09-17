@@ -172,6 +172,17 @@ function MesaStack() {
       <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
+      {/* The list picker (M19) — a real half-height sheet, not a full modal:
+          it's a short checklist, and formSheet lets the rest of the screen
+          stay visible/dismissible by swipe. */}
+      <Stack.Screen
+        name="guardar"
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: [0.5, 1],
+          sheetGrabberVisible: true,
+        }}
+      />
 
       {/* r/[restaurantId] has a horizontal similar-spots rail near the screen
           edge; react-native-screens' iOS full-screen swipe already lets a
@@ -236,6 +247,10 @@ function MesaStack() {
       {/* Titles for these two are set by the screens themselves once the data
           (a list's name, a legal doc's name) is known. */}
       <Stack.Screen name="lists/[slug]" options={utility} />
+      {/* A named list's contents (M19) — custom ScreenHeader, same idiom as
+          u/[userId] and match/[userId]; the native Stack.Screen title is set
+          once the list's name loads. */}
+      <Stack.Screen name="guardados/[collectionId]" />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

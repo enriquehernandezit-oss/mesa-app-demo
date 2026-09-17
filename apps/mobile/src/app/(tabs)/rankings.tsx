@@ -18,7 +18,8 @@ import { ShareIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
-import { api } from '@/lib/api'
+import { track } from '@/lib/analytics'
+import { ApiError, api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
@@ -38,7 +39,7 @@ import {
 } from '@/lib/rankingSort'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
-import type { MeStats, Ranking, SavedPlace } from '@/lib/types'
+import type { CollectionSummary, MeStats, Ranking, SavedDish, SavedPlace } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -47,6 +48,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -77,6 +79,7 @@ export default function RankingsTab() {
   const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
   const me = useProfile(true, 300_000)
   const accent = useColor('accent')
+  const queryClient = useQueryClient()
 
   // Animate a row's position ONLY when it's genuinely removed (swipe-to-
   // remove), not on every sort/filter change (M14) — SwipeToRemove's layout
@@ -112,6 +115,16 @@ export default function RankingsTab() {
   const saved = useQuery({
     queryKey: ['saved'],
     queryFn: () => api.get<{ saved: SavedPlace[] }>('/saved'),
+  })
+  // Guardados (M19) — the "saved" tab's other two sections, same prefetch-
+  // always posture as `saved` above.
+  const collections = useQuery({
+    queryKey: ['collections'],
+    queryFn: () => api.get<{ collections: CollectionSummary[] }>('/collections'),
+  })
+  const savedDishesQuery = useQuery({
+    queryKey: ['saved-dishes'],
+    queryFn: () => api.get<{ saved: SavedDish[] }>('/saved/dishes'),
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
   const { refreshing, onRefresh } = usePullToRefresh(mine.refetch)
@@ -172,6 +185,40 @@ export default function RankingsTab() {
     if (v !== undefined) setFiltersAnimated((f) => ({ ...f, cuisine: v }))
   }
 
+  // Guardados' "+ Nueva" list card (M19) — a bare create with no item
+  // attached, unlike guardar.tsx's create-and-add-to-it. Same native prompt.
+  const createList = useMutation({
+    mutationFn: (newName: string) => api.post<{ id: string }>('/collections', { name: newName }),
+    onSuccess: () => {
+      track('collection_created')
+      queryClient.invalidateQueries({ queryKey: ['collections'] })
+    },
+    onError: (err) => {
+      const code = err instanceof ApiError ? err.code : ''
+      toast({
+        variant: 'error',
+        message: code === 'name_taken' ? t('guardar.name_taken') : t('guardar.create_error'),
+      })
+    },
+  })
+  function promptNewList() {
+    Alert.prompt(
+      t('guardar.new_list_title'),
+      undefined,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('guardar.create_button'),
+          onPress: (typed?: string) => {
+            const trimmed = typed?.trim()
+            if (trimmed) createList.mutate(trimmed)
+          },
+        },
+      ],
+      'plain-text',
+    )
+  }
+
   // The share-my-list story card (the growth loop): the top 5, over the top
   // spot's photo, captioned with the public profile link.
   const profile = me.data?.profile
@@ -223,7 +270,7 @@ export default function RankingsTab() {
           />
           <Stat
             n={stats.data ? String(stats.data.saved) : '—'}
-            l={t('rankings.want_to_try_stat')}
+            l={t('rankings.saved_tab')}
             onPress={() => setTab('saved')}
           />
           <Stat
@@ -239,7 +286,7 @@ export default function RankingsTab() {
           {t('rankings.mine_tab')}
         </Chip>
         <Chip state={tab === 'saved' ? 'selected' : 'default'} onPress={() => setTab('saved')}>
-          {t('restaurant.want_to_try_label')}
+          {t('rankings.saved_tab')}
         </Chip>
         <Chip state={tab === 'barrios' ? 'selected' : 'default'} onPress={() => setTab('barrios')}>
           {t('rankings.sectors_tab')}
@@ -319,6 +366,7 @@ export default function RankingsTab() {
     ({ item }: { item: SavedPlace }) => <SavedRow saved={item} />,
     [],
   )
+  const savedDishes = savedDishesQuery.data?.saved ?? []
 
   return (
     <View className="flex-1 bg-bg">
@@ -398,7 +446,13 @@ export default function RankingsTab() {
         data={saved.data?.saved ?? []}
         keyExtractor={(s) => s.restaurant.id}
         renderItem={renderSavedRow}
-        ListHeaderComponent={topMatter}
+        ListHeaderComponent={
+          <>
+            {topMatter}
+            <ListsRail lists={collections.data?.collections ?? []} onCreate={promptNewList} />
+            <Eyebrow className="mt-6 mb-1">{t('rankings.places_section')}</Eyebrow>
+          </>
+        }
         ListEmptyComponent={
           saved.isPending ? (
             <Skeleton height={64} />
@@ -418,6 +472,18 @@ export default function RankingsTab() {
               {t('rankings.saved_empty_title')}
             </EmptyState>
           )
+        }
+        ListFooterComponent={
+          <View className="mt-2">
+            <Eyebrow className="mt-5 mb-1">{t('rankings.dishes_section')}</Eyebrow>
+            {savedDishesQuery.isPending ? (
+              <Skeleton height={56} />
+            ) : savedDishes.length === 0 ? (
+              <Caption>{t('rankings.no_saved_dishes')}</Caption>
+            ) : (
+              savedDishes.map((d) => <SavedDishRow key={d.dish.id} saved={d} />)
+            )}
+          </View>
         }
         indicatorStyle={indicator}
         contentContainerClassName="px-5"
@@ -772,6 +838,79 @@ const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
             {remove.isPending ? t('rankings.removing') : t('rankings.remove')}
           </ActionText>
         </View>
+      </View>
+    </SwipeToRemove>
+  )
+})
+
+// The named-lists rail (M19) — the top of Guardados. A plain horizontal
+// ScrollView, not a FlatList: this is a handful of cards, never a long
+// virtualization-worthy list the way saved places/dishes below can be.
+function ListsRail({
+  lists,
+  onCreate,
+}: {
+  lists: CollectionSummary[]
+  onCreate: () => void
+}) {
+  const t = useT()
+  return (
+    <View className="mt-2">
+      <Eyebrow className="mb-2">{t('rankings.lists_section')}</Eyebrow>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2"
+      >
+        <Pressable
+          accessibilityRole="button"
+          onPress={onCreate}
+          className="w-28 items-center justify-center rounded border border-dashed border-line-strong py-4 active:opacity-70"
+        >
+          <Text className="font-ui-medium text-label text-accent-strong">
+            {t('rankings.new_list')}
+          </Text>
+        </Pressable>
+        {lists.map((list) => (
+          <Link key={list.id} href={`/guardados/${list.id}`} asChild>
+            <Pressable className="w-28 justify-center rounded border border-line bg-surface p-3 active:opacity-80">
+              <Text className="font-serif text-serif-sm text-text" numberOfLines={2}>
+                {list.name}
+              </Text>
+              <Caption className="mt-1">{t('guardar.item_count', { n: list.itemCount })}</Caption>
+            </Pressable>
+          </Link>
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
+const SavedDishRow = memo(function SavedDishRow({ saved }: { saved: SavedDish }) {
+  const queryClient = useQueryClient()
+  const t = useT()
+  const remove = useMutation({
+    mutationFn: () => api.del(`/saved/dishes/${saved.dish.id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-dishes'] }),
+    onError: () =>
+      toast({
+        variant: 'error',
+        message: t('save.unsave_error'),
+        action: { label: t('common.retry'), onClick: () => remove.mutate() },
+      }),
+  })
+  return (
+    <SwipeToRemove onRemove={() => remove.mutate()}>
+      <View className="flex-row items-center justify-between border-b border-line py-3">
+        <Link href={`/dish/${saved.dish.id}`} asChild>
+          <Pressable accessibilityRole="button" className="flex-1 pr-3 active:opacity-80">
+            <Text className="font-serif text-serif-md text-text">{saved.dish.name}</Text>
+            <Caption className="mt-[2px]">{saved.restaurant.name}</Caption>
+          </Pressable>
+        </Link>
+        <ActionText danger disabled={remove.isPending} onPress={() => remove.mutate()}>
+          {remove.isPending ? t('rankings.removing') : t('rankings.remove')}
+        </ActionText>
       </View>
     </SwipeToRemove>
   )

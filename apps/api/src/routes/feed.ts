@@ -8,7 +8,17 @@ import { requireAuth } from '../middleware/session'
 // The discovery feed (M4) — the payoff of the core loop: what the people you
 // follow ranked, and their vibe notes, most recent first. One round trip; the
 // same block/ban visibility rules as the rest of the app. Cached client-side.
-const { rankings, vibeNotes, restaurants, neighborhoods, user, cheers, dishes } = schema
+const {
+  rankings,
+  vibeNotes,
+  restaurants,
+  neighborhoods,
+  user,
+  cheers,
+  dishes,
+  savedPlaces,
+  savedDishes,
+} = schema
 
 const PAGE = 20
 
@@ -92,6 +102,11 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
       dishImage: latestDish.imageId,
       dishName: latestDish.name,
       dishGrain: latestDish.grain,
+      // Save state (M19) — SaveButton's initial state on a dish post (dish)
+      // or a ranking post (restaurant) reads straight off the feed row, no
+      // second query per card.
+      restaurantSaved: sql<boolean>`${savedPlaces.userId} is not null`,
+      dishSaved: sql<boolean>`${savedDishes.userId} is not null`,
     })
     .from(rankings)
     .innerJoin(user, eq(user.id, rankings.userId))
@@ -105,6 +120,14 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
         eq(vibeNotes.restaurantId, rankings.restaurantId),
         isNull(vibeNotes.removedAt),
       ),
+    )
+    .leftJoin(
+      savedPlaces,
+      and(eq(savedPlaces.restaurantId, restaurants.id), eq(savedPlaces.userId, me.id)),
+    )
+    .leftJoin(
+      savedDishes,
+      and(eq(savedDishes.dishId, latestDish.id), eq(savedDishes.userId, me.id)),
     )
     .where(
       and(

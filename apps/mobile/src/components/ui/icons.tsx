@@ -138,6 +138,11 @@ export const BookmarkIcon = (p: IconProps) => (
     <Path d="M6 4h12v16l-6-4-6 4Z" />
   </Icon>
 )
+export const BookmarkFilledIcon = (p: IconProps) => (
+  <FilledIcon {...p}>
+    <Path d="M6 4h12v16l-6-4-6 4Z" />
+  </FilledIcon>
+)
 export const HeartIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M12 20.5s-7.5-4.6-9.7-9A5.3 5.3 0 0 1 12 6.3 5.3 5.3 0 0 1 21.7 11.5c-2.2 4.4-9.7 9-9.7 9Z" />

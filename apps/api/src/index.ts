@@ -10,6 +10,7 @@ import { sessionMiddleware } from './middleware/session'
 import { activityRoutes } from './routes/activity'
 import { authPagesRoutes } from './routes/auth-pages'
 import { cheersRoutes } from './routes/cheers'
+import { collectionsRoutes } from './routes/collections'
 import { dishesRoutes } from './routes/dishes'
 import { feedRoutes } from './routes/feed'
 import { inviteRoutes } from './routes/invites'
@@ -168,6 +169,7 @@ app.route('/onboarding', onboardingRoutes)
 app.route('/social', socialRoutes)
 app.route('/rankings', rankingsRoutes)
 app.route('/saved', savedRoutes)
+app.route('/collections', collectionsRoutes)
 app.route('/moderation', moderationRoutes)
 app.route('/feed', feedRoutes)
 app.route('/restaurants', restaurantRoutes)

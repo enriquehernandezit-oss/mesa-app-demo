@@ -1,4 +1,5 @@
 import { ReportControl } from '@/components/ReportControl'
+import { SaveButton } from '@/components/SaveButton'
 import { Body, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { GlassCircle } from '@/components/ui/GlassCircle'
@@ -167,7 +168,14 @@ export default function DishDetail() {
               </Text>
             </Pressable>
           </Link>
-          <Text className="mt-2 font-serif-semibold text-title text-text">{dish.name}</Text>
+          <View className="mt-2 flex-row items-start justify-between gap-3">
+            <Text className="flex-1 font-serif-semibold text-title text-text">{dish.name}</Text>
+            <SaveButton
+              target={{ kind: 'dish', id: dishId }}
+              initial={dish.saved}
+              name={dish.name}
+            />
+          </View>
           {dish.categoryId ? <Caption className="mt-0.5">{categoryText}</Caption> : null}
           {dish.caption ? (
             <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">

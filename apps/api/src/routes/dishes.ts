@@ -12,7 +12,7 @@ import { requireAuth } from '../middleware/session'
 // is a client-resized data URL in dev (no Cloudinary); in prod this endpoint
 // would instead take a Cloudinary public id from a signed direct upload.
 // Soft-removal + reporting (via 'dish' report target) satisfy App Store 1.2.
-const { dishes, rankings, user, follows, userBlocks } = schema
+const { dishes, rankings, user, follows, userBlocks, savedDishes } = schema
 
 // ~700 KB cap on the inline data URL (a resized ~1280px JPEG lands well under).
 const MAX_IMAGE_CHARS = 700_000
@@ -315,8 +315,15 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       if (blocked) return c.json({ error: 'not_found' }, 404)
     }
 
+    // Save state (M19) — SaveButton's initial state on this page.
+    const [savedRow] = await db
+      .select({ dishId: savedDishes.dishId })
+      .from(savedDishes)
+      .where(and(eq(savedDishes.dishId, id), eq(savedDishes.userId, me.id)))
+      .limit(1)
+
     const { visibility: _v, ...dish } = row
-    return c.json({ dish: { ...dish, posterIsMe } })
+    return c.json({ dish: { ...dish, posterIsMe, saved: Boolean(savedRow) } })
   })
 
   // Soft-remove my own dish, and clear it as the ranking's favorite pick if

@@ -34,6 +34,10 @@ export type MesaEvent =
   | 'place_saved'
   | 'place_unsaved'
   | 'dish_posted'
+  | 'dish_saved'
+  | 'dish_unsaved'
+  | 'collection_created'
+  | 'collection_item_added'
   // social
   | 'follow_added'
   | 'follow_removed'

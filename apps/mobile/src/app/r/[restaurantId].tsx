@@ -1,4 +1,5 @@
 import { pickReportReason } from '@/components/ReportControl'
+import { SaveButton } from '@/components/SaveButton'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
   Body,
@@ -16,7 +17,6 @@ import { GlassCircle } from '@/components/ui/GlassCircle'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import {
   BackIcon,
-  CheckIcon,
   DirectionsIcon,
   ListIcon,
   MenuIcon,
@@ -33,7 +33,6 @@ import {
   UtilityPill,
 } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
-import { track } from '@/lib/analytics'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
@@ -93,25 +92,6 @@ export default function RestaurantProfile() {
     queryKey: ['restaurant', restaurantId],
     queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${restaurantId}`),
     retry: false,
-  })
-
-  const toggleSave = useMutation({
-    mutationFn: (save: boolean) =>
-      save ? api.post('/saved', { restaurantId }) : api.del(`/saved/${restaurantId}`),
-    onSuccess: (_d, save) => {
-      track(save ? 'place_saved' : 'place_unsaved')
-      queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
-      queryClient.invalidateQueries({ queryKey: ['saved'] })
-    },
-    // Not optimistic — the button reflects `q.data.saved`, which only moves
-    // once the invalidated query refetches — so a failure needs no rollback,
-    // just a message: today it silently re-enables the button with nothing
-    // else telling the tap didn't land.
-    onError: (_err, save) =>
-      toast({
-        variant: 'error',
-        message: save ? t('restaurant.save_error') : t('restaurant.unsave_error'),
-      }),
   })
 
   if (q.isPending) {
@@ -312,18 +292,12 @@ export default function RestaurantProfile() {
               <Title className="flex-1">{restaurant.name}</Title>
               {/* The fixed bottom bar is the one ranking CTA; this is only the
                   save (want-to-try) toggle, so no re-rank action lives here. */}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: saved }}
-                accessibilityLabel={
-                  saved ? t('restaurant.saved_tap_remove') : t('restaurant.want_to_try_label')
-                }
-                onPress={() => toggleSave.mutate(!saved)}
-                disabled={toggleSave.isPending}
-                className={`h-10 w-10 items-center justify-center rounded-pill border ${saved ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-80`}
-              >
-                <CheckIcon size={17} color={saved ? 'on-accent' : 'text-muted'} />
-              </Pressable>
+              <SaveButton
+                variant="pill"
+                target={{ kind: 'restaurant', id: restaurant.id }}
+                initial={saved}
+                name={restaurant.name}
+              />
             </View>
             {allMesa.avg != null && showMesa && (
               <View className="mt-1 items-start">

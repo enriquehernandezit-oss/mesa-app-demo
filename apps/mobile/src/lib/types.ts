@@ -178,6 +178,7 @@ export interface DishDetail {
   user: { id: string; name: string; handle: string | null; image: string | null }
   score: number // the poster's own score for the linked place (0–100)
   posterIsMe: boolean
+  saved: boolean // SaveButton's initial state (M19)
   restaurant: {
     id: string
     name: string
@@ -379,6 +380,46 @@ export interface SavedPlace {
   savedAt: string
 }
 
+// GET /saved/dishes (M19).
+export interface SavedDish {
+  dish: { id: string; name: string; imageId: string | null }
+  restaurant: { id: string; name: string }
+  savedAt: string
+}
+
+// GET /collections — a list row, optionally carrying the calling screen's
+// own item-membership check (guardar.tsx's ?restaurantId=/?dishId= filter);
+// itemId is the collection_items row when it contains that item, else null.
+export interface CollectionSummary {
+  id: string
+  name: string
+  createdAt: string
+  itemCount: number
+  itemId: string | null
+}
+
+// GET /collections/:id — a list's full contents.
+export interface CollectionItem {
+  itemId: string
+  addedAt: string
+  restaurant:
+    | (RestaurantRef & {
+        coverImageId: string | null
+        neighborhood: string | null
+        // Set once I've ranked this place since adding it to the list —
+        // "Ya fuiste · #N" instead of the normal saved-place row.
+        myRanking: { position: number; score: number } | null
+      })
+    | null
+  dish: { id: string; name: string; imageId: string | null; restaurantId: string | null } | null
+}
+
+export interface CollectionDetail {
+  id: string
+  name: string
+  items: CollectionItem[]
+}
+
 // The ranking row shape on someone ELSE's passport — narrower than Ranking
 // (no createdAt, restaurant is a RestaurantRef) because rankings.ts's
 // /user/:userId select genuinely sends less than the owner's own /rankings
@@ -481,6 +522,10 @@ export interface FeedItem {
   dishImage?: string | null
   dishName?: string | null
   dishGrain?: string | null
+  // SaveButton's initial state (M19) — a dish post saves the dish, a
+  // ranking post saves the restaurant.
+  restaurantSaved?: boolean
+  dishSaved?: boolean
 }
 
 export interface FriendRanking {
