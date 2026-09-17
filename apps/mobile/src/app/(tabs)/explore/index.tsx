@@ -40,8 +40,9 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import type { SearchBarCommands } from 'react-native-screens'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
@@ -86,6 +87,32 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string; focus?: string }>()
   const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
   const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
+  // Imperative focus for the native search bar (Feed's search field hands
+  // off here — see the Stack.Screen options below for why this can't be the
+  // declarative `autoFocus` prop on iOS). A short retry loop, not a single
+  // call: right after this screen mounts, react-native-screens' native
+  // header (and the UISearchBar inside it) is still being constructed on the
+  // native side, so calling .focus() on the very first effect tick can land
+  // before the view exists and silently do nothing.
+  const searchBarRef = useRef<SearchBarCommands>(null)
+  useEffect(() => {
+    if (params.focus !== '1') return
+    let cancelled = false
+    let attempts = 0
+    const tryFocus = () => {
+      if (cancelled) return
+      if (searchBarRef.current) {
+        searchBarRef.current.focus()
+        return
+      }
+      attempts++
+      if (attempts < 10) setTimeout(tryFocus, 50)
+    }
+    tryFocus()
+    return () => {
+      cancelled = true
+    }
+  }, [params.focus])
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [occasion, setOccasion] = useState<string | null>(null)
@@ -192,14 +219,19 @@ export default function ExploreScreen() {
       <Stack.Screen
         options={{
           headerSearchBarOptions: {
+            ref: searchBarRef,
             placeholder: t('explore.search_placeholder'),
             cancelButtonText: t('common.cancel'),
             hideWhenScrolling: false,
             autoCapitalize: 'none',
             // Feed's own search field (FeedHeader in discover.tsx) is just a
-            // Pressable that hands off here — without this, tapping it used
-            // to just land on Explore's plain browse view with no keyboard
-            // up, reading as a dead-end redirect instead of "go search".
+            // Pressable that hands off here with `?focus=1` — the actual
+            // focus is done imperatively below (searchBarRef.effect), not via
+            // this `autoFocus` prop: react-native-screens 4.26's iOS native
+            // module (RNSSearchBar.mm) never reads an autoFocus prop at all,
+            // only exposes an imperative `focus` command — it's Android-only
+            // there, so on iOS this was a silent no-op. Kept here anyway in
+            // case Android ever ships; costs nothing.
             autoFocus: params.focus === '1',
             tintColor: c.accent,
             textColor: c.text,
