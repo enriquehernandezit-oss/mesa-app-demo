@@ -193,20 +193,27 @@ export default function PlanDetailScreen() {
 
         {canRespond && (
           <View className="mt-5 flex-row gap-2">
+            {/* Guarded on reply.isPending (also shared by the vote row below) —
+                unguarded, a fast double-tap fired two overlapping requests with
+                no feedback in between, which read as "nothing happened, tap
+                again." */}
             <Chip
               state={plan.myReply === 'going' ? 'selected' : 'default'}
+              disabled={reply.isPending}
               onPress={() => reply.mutate({ reply: 'going' })}
             >
               {t('plans.reply_going')}
             </Chip>
             <Chip
               state={plan.myReply === 'maybe' ? 'selected' : 'default'}
+              disabled={reply.isPending}
               onPress={() => reply.mutate({ reply: 'maybe' })}
             >
               {t('plans.reply_maybe')}
             </Chip>
             <Chip
               state={plan.myReply === 'declined' ? 'selected' : 'default'}
+              disabled={reply.isPending}
               onPress={() => reply.mutate({ reply: 'declined' })}
             >
               {t('plans.reply_declined')}
@@ -225,7 +232,7 @@ export default function PlanDetailScreen() {
                 <Pressable
                   key={o.id}
                   accessibilityRole="button"
-                  disabled={!voting || plan.isHost}
+                  disabled={!voting || plan.isHost || reply.isPending}
                   onPress={() => reply.mutate({ voteRestaurantId: o.id })}
                   className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
                 >

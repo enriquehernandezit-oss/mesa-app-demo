@@ -36,7 +36,7 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import type { SearchBarCommands } from 'react-native-screens'
 
@@ -479,7 +479,13 @@ export default function ExploreScreen() {
   )
 }
 
-function HitRow({ r, index }: { r: ExploreHit; index: number }) {
+// Wrapped in memo() (perf pass): Explore's results render via a plain
+// `.map()`, not a virtualized list, so every mounted HitRow re-renders on
+// every keystroke in the search bar otherwise — `setQ` (native search bar's
+// onChangeText) updates this screen's state immediately, well before the
+// debounced query itself refires, and with results already on screen that's
+// real JS-thread work landing exactly while a finger is still on the glass.
+const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number }) {
   const t = useT()
   return (
     <Link href={`/r/${r.id}`} asChild>
@@ -520,7 +526,7 @@ function HitRow({ r, index }: { r: ExploreHit; index: number }) {
       </Pressable>
     </Link>
   )
-}
+})
 
 // A member result row — links to their passport.
 // What Santo Domingo is cheering this fortnight — a genuinely different signal
@@ -564,7 +570,8 @@ function TrendingRail() {
   )
 }
 
-function MemberRow({ m }: { m: ExploreMember }) {
+// Wrapped in memo() (perf pass) — same reasoning as HitRow just above.
+const MemberRow = memo(function MemberRow({ m }: { m: ExploreMember }) {
   const t = useT()
   return (
     <Link href={`/u/${m.id}`} asChild>
@@ -587,4 +594,4 @@ function MemberRow({ m }: { m: ExploreMember }) {
       </Pressable>
     </Link>
   )
-}
+})

@@ -108,6 +108,7 @@ export default function CollectionDetailScreen() {
             <CollectionItemRow
               key={item.itemId}
               item={item}
+              removing={removeItem.isPending}
               onRemove={() => removeItem.mutate(item.itemId)}
             />
           ))
@@ -117,7 +118,19 @@ export default function CollectionDetailScreen() {
   )
 }
 
-function CollectionItemRow({ item, onRemove }: { item: CollectionItem; onRemove: () => void }) {
+function CollectionItemRow({
+  item,
+  removing,
+  onRemove,
+}: {
+  item: CollectionItem
+  // Guards the "Quitar" Pressable below — removeItem is one shared mutation
+  // for the whole list, so this goes true for every row while ANY of them is
+  // mid-delete. A fast double-tap otherwise fired two overlapping DELETEs
+  // with no feedback in between, reading as "nothing happened, tap again."
+  removing: boolean
+  onRemove: () => void
+}) {
   const t = useT()
   if (item.restaurant) {
     const r = item.restaurant
@@ -152,6 +165,7 @@ function CollectionItemRow({ item, onRemove }: { item: CollectionItem; onRemove:
             <Pressable
               accessibilityRole="button"
               hitSlop={8}
+              disabled={removing}
               onPress={onRemove}
               className="min-h-[36px] justify-center px-2 active:opacity-60"
             >
@@ -175,6 +189,7 @@ function CollectionItemRow({ item, onRemove }: { item: CollectionItem; onRemove:
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
+            disabled={removing}
             onPress={onRemove}
             className="min-h-[36px] justify-center px-2 active:opacity-60"
           >

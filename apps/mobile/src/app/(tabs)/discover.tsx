@@ -31,6 +31,7 @@ import { useColor } from '@/theme/useColor'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, useRouter } from 'expo-router'
+import { memo, useCallback } from 'react'
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
@@ -69,6 +70,15 @@ export default function DiscoverTab() {
   // either way, not a workaround for a specific known gap.
   const items = uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? [])
   const { refreshing, onRefresh } = usePullToRefresh(feed.refetch)
+  // Stable across renders (perf pass, same reasoning as rankings.tsx's M14
+  // comment on renderRankingRow) — a fresh renderItem function every render
+  // of this screen made FlatList treat every mounted cell as changed on
+  // every pull-to-refresh/fetchNextPage/cheers tap, even with FeedCard now
+  // wrapped in memo() above.
+  const renderFeedItem = useCallback(
+    ({ item, index }: { item: FeedItem; index: number }) => <FeedCard item={item} index={index} />,
+    [],
+  )
 
   return (
     <View className="flex-1 bg-bg">
@@ -107,7 +117,7 @@ export default function DiscoverTab() {
         <FlatList
           data={items}
           keyExtractor={(item) => item.rankingId}
-          renderItem={({ item, index }) => <FeedCard item={item} index={index} />}
+          renderItem={renderFeedItem}
           ListHeaderComponent={
             <>
               <FeedHeader />
@@ -329,7 +339,13 @@ function FeedSkeleton() {
 // row with an inline badged score circle (attributed to the friend — never the
 // place's own rating). A hairline (`border-line border-b`) inset to the text
 // column is the only separator, matching Threads/X/Beli-style density.
-function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
+//
+// Wrapped in memo() (perf pass): paired with the hoisted `renderFeedItem`
+// below, so a screen-level re-render (pull-to-refresh, fetchNextPage, a
+// single CheersButton tap) doesn't force every currently-mounted row to
+// re-render too — same fix rankings.tsx's own M14 comment already documents
+// for RankingRow.
+const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const t = useT()
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
@@ -536,4 +552,4 @@ function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
       </Animated.View>
     </Pressable>
   )
-}
+})
