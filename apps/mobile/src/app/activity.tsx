@@ -22,7 +22,7 @@ import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type Href, Link, useFocusEffect, useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The screen behind the bell (mock F2): cheers, new followers, friends ranking
@@ -162,7 +162,13 @@ export default function ActivityScreen() {
   )
 }
 
-function ActivityRow({ a }: { a: ActivityItem }) {
+// Wrapped in memo() (responsiveness audit): this screen renders every row
+// through a plain ScrollView + .map(), not a virtualized list, and each row
+// runs its own useFollow() hook — so every filter-chip tap (setFilter) used
+// to re-render every currently-mounted row even though `a` itself hadn't
+// changed. Same fix already applied to discover.tsx's FeedCard and
+// explore.tsx's HitRow/MemberRow.
+const ActivityRow = memo(function ActivityRow({ a }: { a: ActivityItem }) {
   const t = useT()
   const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
@@ -310,4 +316,4 @@ function ActivityRow({ a }: { a: ActivityItem }) {
       </View>
     </Pressable>
   )
-}
+})

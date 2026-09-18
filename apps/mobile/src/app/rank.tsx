@@ -365,6 +365,18 @@ export default function RankAPlace() {
   // session — the list itself lives on in Profile's "Tus platos" regardless.
   const [dishCounts, setDishCounts] = useState<Map<string, number>>(new Map())
   const [dishNudge, setDishNudge] = useState<DishNudge | null>(null)
+  // Synchronous re-entrancy guard for addDish/removeDish (responsiveness
+  // audit) — both handlers derive their decision from `selectedDishes`,
+  // which is React state, so two taps landing before the next render both
+  // see the SAME stale array: addDish's `.some()` duplicate check couldn't
+  // tell the second tap the first one already happened. Two fast taps on
+  // the same suggested-dish chip used to add TWO entries with a colliding
+  // React key (`{d.nameKey}`) and fire two POST /dishes calls for the same
+  // dish. Keyed on nameKey, cleared once that dish's own queued operation
+  // settles — this only blocks a genuine double-tap on the SAME dish;
+  // acting on a different dish, or toggling sentiment on one already
+  // settled, is unaffected.
+  const pendingDishActionRef = useRef<Set<string>>(new Set())
 
   function enqueueDish(fn: () => Promise<void>) {
     dishSyncCountRef.current++
@@ -419,14 +431,18 @@ export default function RankAPlace() {
   }
 
   function addDish(candidate: SelectedDish) {
+    if (pendingDishActionRef.current.has(candidate.nameKey)) return
     if (selectedDishes.some((d) => d.nameKey === candidate.nameKey)) return
     if (selectedDishes.length >= 3) {
       toast({ message: t('rank.dish_max') })
       return
     }
+    pendingDishActionRef.current.add(candidate.nameKey)
     const isFirst = selectedDishes.length === 0
     setSelectedDishes((cur) => [...cur, candidate])
-    enqueueDish(() => postDish(candidate, { isFirst }))
+    enqueueDish(() => postDish(candidate, { isFirst })).finally(() => {
+      pendingDishActionRef.current.delete(candidate.nameKey)
+    })
   }
 
   // Removing the favorite (index 0) dish re-syncs the new first dish (if any)
@@ -435,11 +451,15 @@ export default function RankAPlace() {
   // this re-post picks a new one. The deleted dish's own photo doesn't carry
   // over: it belonged to that row, which is now gone.
   function removeDish(nameKey: string) {
+    if (pendingDishActionRef.current.has(nameKey)) return
     const wasFirst = selectedDishes[0]?.nameKey === nameKey
     const newFirst = selectedDishes.find((d) => d.nameKey !== nameKey)
+    pendingDishActionRef.current.add(nameKey)
     setSelectedDishes((cur) => cur.filter((d) => d.nameKey !== nameKey))
     if (wasFirst) setDishImage(null)
-    enqueueDish(() => deleteDish(nameKey))
+    enqueueDish(() => deleteDish(nameKey)).finally(() => {
+      pendingDishActionRef.current.delete(nameKey)
+    })
     if (wasFirst && newFirst) enqueueDish(() => postDish(newFirst, { isFirst: true }))
   }
 
