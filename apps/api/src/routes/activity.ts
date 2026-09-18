@@ -19,12 +19,21 @@ const {
   plans,
   planOptions,
   planInvites,
+  events,
+  eventRsvps,
 } = schema
 
 // NOTE: duplicated by hand in apps/mobile/src/lib/types.ts (that app can't
 // import this — see that file's own note on why). Keep the two in sync.
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked' | 'plan_invite' | 'plan_reply'
+  type:
+    | 'cheers'
+    | 'follow'
+    | 'saved_ranked'
+    | 'friend_ranked'
+    | 'plan_invite'
+    | 'plan_reply'
+    | 'event_going'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
   restaurant?: { id: string; name: string; coverImageId: string | null } | null
@@ -34,8 +43,10 @@ export interface ActivityItem {
   yourScore?: number | null
   followsBack?: boolean // follow rows: do I already follow them back?
   planId?: string // plan_invite / plan_reply
-  startsAt?: string // plan_invite — when the plan is
+  startsAt?: string // plan_invite / event_going — when the thing is
   reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
+  eventId?: string // event_going
+  eventTitle?: string // event_going
 }
 
 export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
@@ -211,6 +222,41 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
     .orderBy(desc(planInvites.repliedAt))
     .limit(15)
 
+  // 7) Friends going to an event (M21) — mirrors friend_ranked's "worth
+  // telling your followers" bar: only 'going' is activity-worthy, an
+  // 'interested' RSVP is a private-ish soft signal, not something to
+  // broadcast. `updatedAt`, not `createdAt` — toggling interested→going
+  // later should surface then, not back-date to whenever the row first
+  // appeared.
+  const eventGoing = await db
+    .select({
+      at: eventRsvps.updatedAt,
+      user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+      restaurant: {
+        id: restaurants.id,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      },
+      eventId: events.id,
+      eventTitle: events.title,
+      startsAt: events.startsAt,
+    })
+    .from(eventRsvps)
+    .innerJoin(events, eq(events.id, eventRsvps.eventId))
+    .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
+    .innerJoin(user, eq(user.id, eventRsvps.userId))
+    .where(
+      and(
+        eq(eventRsvps.status, 'going'),
+        inArray(eventRsvps.userId, following),
+        isNull(events.cancelledAt),
+        isNull(user.bannedAt),
+        notBlocked,
+      ),
+    )
+    .orderBy(desc(eventRsvps.updatedAt))
+    .limit(15)
+
   const items: ActivityItem[] = [
     ...cheered.map((x) => ({
       type: 'cheers' as const,
@@ -265,6 +311,15 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
           ]
         : [],
     ),
+    ...eventGoing.map((x) => ({
+      type: 'event_going' as const,
+      at: x.at.toISOString(),
+      user: x.user,
+      restaurant: x.restaurant,
+      eventId: x.eventId,
+      eventTitle: x.eventTitle,
+      startsAt: x.startsAt.toISOString(),
+    })),
   ]
     .sort((a, b) => (a.at < b.at ? 1 : -1))
     .slice(0, 40)

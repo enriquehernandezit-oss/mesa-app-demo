@@ -35,12 +35,12 @@ import {
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
-import { cuisineLabel, priceLabel } from '@/lib/display'
+import { cuisineLabel, eventWhenLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
-import type { Dish, FriendRanking, RestaurantProfileResponse } from '@/lib/types'
+import type { Dish, EventSummary, FriendRanking, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -92,6 +92,14 @@ export default function RestaurantProfile() {
     queryKey: ['restaurant', restaurantId],
     queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${restaurantId}`),
     retry: false,
+  })
+  // "Próximos eventos" (M21) — its own query, not part of the restaurant
+  // response above: events are Mesa-curated and change on their own
+  // schedule, unrelated to anything about the restaurant row itself.
+  const eventsQ = useQuery({
+    queryKey: ['events', 'restaurant', restaurantId],
+    queryFn: () => api.get<{ events: EventSummary[] }>(`/events/restaurant/${restaurantId}`),
+    enabled: Boolean(restaurantId),
   })
 
   if (q.isPending) {
@@ -483,6 +491,28 @@ export default function RestaurantProfile() {
               Google (M9) — the official logo asset swaps in before a real launch. */}
           {restaurant.google && (
             <Caption className="mt-4 text-text-faint">Powered by Google</Caption>
+          )}
+
+          {/* Próximos eventos rail (M21) — ahead of Similar spots: a
+              time-sensitive "happening here soon" beats a discovery rail. */}
+          {(eventsQ.data?.events.length ?? 0) > 0 && (
+            <SpotRail title={t('restaurant.upcoming_events')}>
+              {(eventsQ.data?.events ?? []).map((e) => (
+                <SpotCard
+                  key={e.id}
+                  variant="wide"
+                  href={`/eventos/${e.id}`}
+                  seed={e.id}
+                  name={e.title}
+                  coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
+                  caption={
+                    <Caption className="text-micro" numberOfLines={1}>
+                      {eventWhenLabel(e.startsAt)}
+                    </Caption>
+                  }
+                />
+              ))}
+            </SpotRail>
           )}
 
           {/* Similar spots rail. */}

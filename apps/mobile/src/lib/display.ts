@@ -1,4 +1,4 @@
-import { getLanguage } from './i18n'
+import { dateLocale, getLanguage } from './i18n'
 
 // Score display: stored 0–100, shown Beli-style as 0–10 with one decimal
 // ("8.7"). One place so every screen and share card agrees.
@@ -34,6 +34,25 @@ export function ordinal(n: number): string {
     default:
       return `${n}th`
   }
+}
+
+// M21 — a compact "Vie 18 sep · 7:00 PM" label for an event's start time.
+// `startsAt` is a real UTC instant (same shape as a plan's own startsAt), so
+// this just renders it in the viewer's own device locale/timezone like any
+// other date — never Santo Domingo's, unlike the SERVER-side window math in
+// routes/events.ts, which is a different concern (which events count as
+// "tonight") from how one gets displayed to whoever's looking at it.
+export function eventWhenLabel(startsAt: string): string {
+  const d = new Date(startsAt)
+  const day = new Intl.DateTimeFormat(dateLocale(), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(d)
+  const time = new Intl.DateTimeFormat(dateLocale(), { hour: 'numeric', minute: '2-digit' }).format(
+    d,
+  )
+  return `${day} · ${time}`
 }
 
 // Price tier (1–4) as $ signs.

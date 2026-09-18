@@ -148,6 +148,13 @@
       "when": 1789676062947,
       "tag": "0020_loving_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789688055524,
+      "tag": "0021_wooden_blindfold",
+      "breakpoints": true
     }
   ]
 }

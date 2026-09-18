@@ -1,0 +1,74 @@
+{
+  "events": [
+    {
+      "slug": "pura-tasca-noche-de-jazz-2026-09-17",
+      "restaurantName": "Pura Tasca",
+      "title": "Noche de Jazz en Vivo",
+      "description": "Trío de jazz en vivo acompañando la carta de tapas — mesas limitadas, se recomienda reservar.",
+      "startsAt": "2026-09-17T20:30:00-04:00",
+      "endsAt": "2026-09-17T23:00:00-04:00",
+      "category": "Música en vivo",
+      "priceLabel": "Entrada libre"
+    },
+    {
+      "slug": "lulu-tasting-bar-happy-hour-2026-09-17",
+      "restaurantName": "Lulú Tasting Bar",
+      "title": "Happy Hour",
+      "description": "2x1 en cócteles de autor y una selección de tapas a mitad de precio.",
+      "startsAt": "2026-09-17T18:00:00-04:00",
+      "endsAt": "2026-09-17T20:00:00-04:00",
+      "category": "Happy hour",
+      "priceLabel": "2x1 en cócteles"
+    },
+    {
+      "slug": "pura-tasca-cata-tapas-vino-2026-09-18",
+      "restaurantName": "Pura Tasca",
+      "title": "Noche de Tapas y Vino",
+      "description": "Cata guiada de 5 vinos españoles maridados con una selección de tapas de la carta.",
+      "startsAt": "2026-09-18T19:00:00-04:00",
+      "endsAt": "2026-09-18T22:00:00-04:00",
+      "category": "Cata",
+      "priceLabel": "RD$1,500 por persona"
+    },
+    {
+      "slug": "zola-brunch-dj-2026-09-19",
+      "restaurantName": "ZOLA",
+      "title": "Brunch + DJ Set",
+      "description": "Brunch mediterráneo con DJ en vivo desde el mediodía.",
+      "startsAt": "2026-09-19T12:00:00-04:00",
+      "endsAt": "2026-09-19T16:00:00-04:00",
+      "category": "Brunch",
+      "priceLabel": "Cover RD$800"
+    },
+    {
+      "slug": "segundo-muelle-rooftop-domingo-2026-09-20",
+      "restaurantName": "Segundo Muelle",
+      "title": "Sunday Sessions: Rooftop DJ",
+      "description": "Atardecer + música en vivo en la terraza, cierre de fin de semana.",
+      "startsAt": "2026-09-20T17:00:00-04:00",
+      "endsAt": "2026-09-20T21:00:00-04:00",
+      "category": "Música en vivo",
+      "priceLabel": "Gratis con reservación"
+    },
+    {
+      "slug": "casa-gazcue-karaoke-2026-09-24",
+      "restaurantName": "Casa Gazcue",
+      "title": "Noche de Karaoke",
+      "description": "Karaoke abierto todo el barrio — lista de canciones en la barra.",
+      "startsAt": "2026-09-24T21:00:00-04:00",
+      "endsAt": "2026-09-25T01:00:00-04:00",
+      "category": "Karaoke",
+      "priceLabel": "Entrada libre"
+    },
+    {
+      "slug": "samurai-aniversario-omakase-2026-10-02",
+      "restaurantName": "Samurai",
+      "title": "Aniversario: Omakase Especial",
+      "description": "Menú omakase de edición limitada para celebrar el aniversario del restaurante — cupos muy limitados.",
+      "startsAt": "2026-10-02T19:00:00-04:00",
+      "endsAt": "2026-10-02T23:00:00-04:00",
+      "category": "Especial",
+      "priceLabel": "Menú fijo RD$3,500"
+    }
+  ]
+}

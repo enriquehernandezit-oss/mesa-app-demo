@@ -362,7 +362,14 @@ export interface LeaderboardRow {
 }
 
 export interface ActivityItem {
-  type: 'cheers' | 'follow' | 'saved_ranked' | 'friend_ranked' | 'plan_invite' | 'plan_reply'
+  type:
+    | 'cheers'
+    | 'follow'
+    | 'saved_ranked'
+    | 'friend_ranked'
+    | 'plan_invite'
+    | 'plan_reply'
+    | 'event_going'
   at: string
   user: { id: string; name: string; handle: string | null; image: string | null }
   restaurant?: { id: string; name: string; coverImageId: string | null } | null
@@ -370,8 +377,10 @@ export interface ActivityItem {
   yourScore?: number | null // friend_ranked: mine, for "— above your 8.8"
   followsBack?: boolean // follow rows: do I already follow them back?
   planId?: string // plan_invite / plan_reply
-  startsAt?: string // plan_invite — when the plan is
+  startsAt?: string // plan_invite / event_going — when the thing is
   reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
+  eventId?: string // event_going
+  eventTitle?: string // event_going
 }
 
 export interface SavedPlace {
@@ -667,4 +676,26 @@ export interface PlanMember {
 
 export interface PlanDetail extends Omit<Plan, 'counts'> {
   members: PlanMember[]
+}
+
+// Mesa-curated events in Explore (M21). GET /events, GET /events/restaurant/:id
+// and GET /events/:id all return this same shape — the list endpoints as
+// { events: EventSummary[] }, the detail one as { event: EventSummary } (its
+// `description`/`ticketUrl` are always present on every response, just
+// usually null; there's no separate "detail-only" type).
+export interface EventSummary {
+  id: string
+  slug: string
+  title: string
+  description: string | null
+  startsAt: string
+  endsAt: string | null
+  category: string | null
+  priceLabel: string | null
+  ticketUrl: string | null
+  coverImageId: string | null
+  restaurant: RestaurantRef & { coverImageId: string | null; neighborhood: string | null }
+  myRsvp: 'going' | 'interested' | null
+  goingCount: number
+  friendsGoing: { id: string; name: string; image: string | null }[]
 }

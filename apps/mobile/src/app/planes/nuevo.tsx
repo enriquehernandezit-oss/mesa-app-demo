@@ -30,7 +30,7 @@ import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigation, useRouter } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -93,15 +93,50 @@ export default function NuevaMesa() {
   const queryClient = useQueryClient()
   const insets = useSafeAreaInsets()
 
-  const [step, setStep] = useState<Step>('spots')
-  const [spots, setSpots] = useState<PlanSpot[]>([])
+  // Prefilled from "Armar un plan" on an event's detail page (M21) — a
+  // restaurant arriving this way means the venue is already decided, so the
+  // flow skips straight past the spot-search step (spots' one entry already
+  // IS the venue) and seeds the date/time from the event's own startsAt.
+  // Nothing here is a special "event plan" mode: once seeded, this is a
+  // completely ordinary plan the member can still edit at every step,
+  // including dropping the spot entirely and picking a different one.
+  const params = useLocalSearchParams<{
+    restaurantId?: string
+    restaurantName?: string
+    cuisine?: string
+    coverImageId?: string
+    neighborhood?: string
+    priceTier?: string
+    startsAt?: string
+    note?: string
+  }>()
+  const prefillSpot: PlanSpot | null = params.restaurantId
+    ? {
+        id: params.restaurantId,
+        name: params.restaurantName ?? '',
+        cuisine: params.cuisine || null,
+        coverImageId: params.coverImageId || null,
+        neighborhood: params.neighborhood || null,
+        priceTier: params.priceTier ? Number(params.priceTier) : null,
+      }
+    : null
+  const prefillDate = params.startsAt ? new Date(params.startsAt) : null
+
+  const [step, setStep] = useState<Step>(prefillSpot ? 'when' : 'spots')
+  const [spots, setSpots] = useState<PlanSpot[]>(prefillSpot ? [prefillSpot] : [])
   const [query, setQuery] = useState('')
   const today = useMemo(() => new Date(), [])
-  const [day, setDay] = useState<Date>(today)
-  const [time, setTime] = useState<TimeSlot | null>(null)
+  const [day, setDay] = useState<Date>(prefillDate ?? today)
+  // `nextDay: false` — day and time are read from the SAME prefillDate, so
+  // there's no rollover to express (see resolvedDate below for how the two
+  // recombine; nextDay only matters for a chip like "1:00 AM" picked
+  // relative to a separately-chosen day).
+  const [time, setTime] = useState<TimeSlot | null>(
+    prefillDate ? { h: prefillDate.getHours(), m: prefillDate.getMinutes(), nextDay: false } : null,
+  )
   const [showExtraTimes, setShowExtraTimes] = useState(false)
   const [invitees, setInvitees] = useState<Map<string, FollowUser>>(new Map())
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState(params.note ?? '')
 
   const goBack = () => {
     if (step === 'spots') {

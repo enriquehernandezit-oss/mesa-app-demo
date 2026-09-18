@@ -259,6 +259,10 @@ function MesaStack() {
           own title internally the same way that screen does. */}
       <Stack.Screen name="platos/index" />
       <Stack.Screen name="platos/[listId]" />
+      {/* One curated event's detail (M21) — same bare custom-header idiom as
+          platos/[listId] above; no dynamic title to seed since ScreenHeader
+          here has no native title at all. */}
+      <Stack.Screen name="eventos/[eventId]" />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

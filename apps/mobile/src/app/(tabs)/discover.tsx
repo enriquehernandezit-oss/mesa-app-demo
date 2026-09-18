@@ -24,7 +24,7 @@ import { cuisineLabel, listAuthorLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
-import type { FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
+import type { EventSummary, FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -112,6 +112,7 @@ export default function DiscoverTab() {
             <>
               <FeedHeader />
               <ListsRail />
+              <EventsRail />
             </>
           }
           contentContainerClassName="px-5"
@@ -243,6 +244,43 @@ function ListsRail() {
                   {listAuthorLabel(l)}
                 </Caption>
               </View>
+            }
+          />
+        ))}
+      </SpotRail>
+    </View>
+  )
+}
+
+// "Este finde" (M21) — same SpotRail/wide-SpotCard idiom as ListsRail right
+// above, one row down. Always the weekend window, never tonight/upcoming —
+// the feed is a single glance, not a place to pick a date range; Explore's
+// Eventos tab is where that lives. Hidden entirely when nothing's on this
+// weekend, same "just disappear" gate as ListsRail.
+function EventsRail() {
+  const t = useT()
+  const q = useQuery({
+    queryKey: ['events', 'weekend'],
+    queryFn: () => api.get<{ events: EventSummary[] }>('/events?when=weekend'),
+    staleTime: 120_000,
+  })
+  const list = q.data?.events ?? []
+  if (list.length === 0) return null
+  return (
+    <View className="mb-2">
+      <SpotRail title={t('discover.this_weekend')}>
+        {list.map((e) => (
+          <SpotCard
+            key={e.id}
+            variant="wide"
+            href={`/eventos/${e.id}`}
+            seed={e.id}
+            name={e.title}
+            coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
+            caption={
+              <Caption className="text-micro" numberOfLines={1}>
+                {e.restaurant.name}
+              </Caption>
             }
           />
         ))}

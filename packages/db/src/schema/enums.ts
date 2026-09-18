@@ -44,3 +44,9 @@ export const planReply = pgEnum('plan_reply', ['pending', 'going', 'maybe', 'dec
 // seeded lists' mock creators are fictional (never a real influencer's name)
 // per the founder's own instruction.
 export const listAuthorKind = pgEnum('list_author_kind', ['mesa', 'creator', 'venue'])
+
+// A member's RSVP on a Mesa-curated event (M21). Only two states, not plans'
+// four-way reply — an event has no host to notify of a decline, so "not
+// interested" is just the absence of a row (DELETE /events/:id/rsvp), same
+// bookmark-on/off shape as saved_places rather than plans' pending/declined.
+export const eventRsvpStatus = pgEnum('event_rsvp_status', ['going', 'interested'])

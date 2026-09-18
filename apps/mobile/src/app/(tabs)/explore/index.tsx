@@ -1,5 +1,6 @@
 import { ExternalResults } from '@/components/ExternalResults'
 import { useTabBarClearance } from '@/components/MesaTabBar'
+import { EventsBrowse } from '@/components/events/EventsBrowse'
 import {
   Body,
   Button,
@@ -79,6 +80,13 @@ export default function ExploreScreen() {
   const c = themeColors[theme]
   const accent = useColor('accent')
   const [q, setQ] = useState('')
+  // Lugares/Eventos (M21) — a plain view-switcher, same shape as Rankings'
+  // Mine/Saved/Sectores chips (a control living inside a scrolling page is
+  // content, not chrome, per CLAUDE.md — that's why this is Chips, not a
+  // segmented control). Eventos swaps out everything below it: the filter
+  // pills, the trending rail and the Google gap-filler are all Lugares-only
+  // concepts with no events equivalent.
+  const [view, setView] = useState<'lugares' | 'eventos'>('lugares')
   // Seeds the filter panel from a deep link — the restaurant profile's
   // neighborhood tap lands here with `?neighborhood=<slug>` already applied,
   // for instance. Read once on mount; the filter chips own the state after
@@ -325,113 +333,147 @@ export default function ExploreScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
       >
-        {/* One dedicated dropdown pill per dimension (M14), replacing the old
-            single "Filtros (N)" trigger + inline FilterGroup panel — a set
-            filter shows its OWN value right on the pill ("Piantini ▾"), so
-            reading what's active doesn't need opening anything. */}
-        <ChipRail className="mt-3 mb-2">
-          <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
-            {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
-          </Chip>
-          <Chip size="sm" chevron state={hood ? 'selected' : 'default'} onPress={pickSector}>
-            {hood
-              ? (neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood)
-              : t('explore.sector')}
-          </Chip>
-          <Chip size="sm" chevron state={cuisine ? 'selected' : 'default'} onPress={pickCuisine}>
-            {cuisine ? (cuisineLabel(cuisine) ?? cuisine) : t('explore.cuisine')}
+        <View className="mt-3 flex-row gap-2">
+          <Chip
+            state={view === 'lugares' ? 'selected' : 'default'}
+            onPress={() => setView('lugares')}
+          >
+            {t('explore.view_places')}
           </Chip>
           <Chip
-            size="sm"
-            chevron
-            state={price != null ? 'selected' : 'default'}
-            onPress={pickPrice}
+            state={view === 'eventos' ? 'selected' : 'default'}
+            onPress={() => setView('eventos')}
           >
-            {price != null ? '$'.repeat(price) : t('explore.price')}
+            {t('explore.view_events')}
           </Chip>
-          <Chip size="sm" chevron state={occasion ? 'selected' : 'default'} onPress={pickOccasion}>
-            {occasion ? tagLabel(occasion) : t('explore.occasion')}
-          </Chip>
-          <Chip
-            size="sm"
-            chevron
-            state={minScore != null ? 'selected' : 'default'}
-            onPress={pickMinScore}
-          >
-            {minScore != null
-              ? (SCORE_BANDS.find((b) => b.value === minScore)?.label ?? minScore)
-              : t('explore.sort_score')}
-          </Chip>
-          {showOpenChip && (
-            <Chip
-              size="sm"
-              state={openNow ? 'selected' : 'default'}
-              onPress={() => setOpenNow((v) => !v)}
-            >
-              {t('explore.open_now')}
-            </Chip>
-          )}
-          {activeCount > 0 && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={clearFilters}
-              className="min-h-[36px] justify-center px-1 active:opacity-60"
-            >
-              <Caption className="font-ui-semibold text-accent-strong">
-                {t('explore.clear')}
-              </Caption>
-            </Pressable>
-          )}
-        </ChipRail>
+        </View>
 
-        <View className="mt-4">
-          {/* Trending rides above the results, but only in the default browse
+        {view === 'eventos' ? (
+          <EventsBrowse />
+        ) : (
+          <>
+            {/* One dedicated dropdown pill per dimension (M14), replacing the
+                old single "Filtros (N)" trigger + inline FilterGroup panel —
+                a set filter shows its OWN value right on the pill
+                ("Piantini ▾"), so reading what's active doesn't need opening
+                anything. */}
+            <ChipRail className="mt-3 mb-2">
+              <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
+                {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
+              </Chip>
+              <Chip size="sm" chevron state={hood ? 'selected' : 'default'} onPress={pickSector}>
+                {hood
+                  ? (neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood)
+                  : t('explore.sector')}
+              </Chip>
+              <Chip
+                size="sm"
+                chevron
+                state={cuisine ? 'selected' : 'default'}
+                onPress={pickCuisine}
+              >
+                {cuisine ? (cuisineLabel(cuisine) ?? cuisine) : t('explore.cuisine')}
+              </Chip>
+              <Chip
+                size="sm"
+                chevron
+                state={price != null ? 'selected' : 'default'}
+                onPress={pickPrice}
+              >
+                {price != null ? '$'.repeat(price) : t('explore.price')}
+              </Chip>
+              <Chip
+                size="sm"
+                chevron
+                state={occasion ? 'selected' : 'default'}
+                onPress={pickOccasion}
+              >
+                {occasion ? tagLabel(occasion) : t('explore.occasion')}
+              </Chip>
+              <Chip
+                size="sm"
+                chevron
+                state={minScore != null ? 'selected' : 'default'}
+                onPress={pickMinScore}
+              >
+                {minScore != null
+                  ? (SCORE_BANDS.find((b) => b.value === minScore)?.label ?? minScore)
+                  : t('explore.sort_score')}
+              </Chip>
+              {showOpenChip && (
+                <Chip
+                  size="sm"
+                  state={openNow ? 'selected' : 'default'}
+                  onPress={() => setOpenNow((v) => !v)}
+                >
+                  {t('explore.open_now')}
+                </Chip>
+              )}
+              {activeCount > 0 && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={clearFilters}
+                  className="min-h-[36px] justify-center px-1 active:opacity-60"
+                >
+                  <Caption className="font-ui-semibold text-accent-strong">
+                    {t('explore.clear')}
+                  </Caption>
+                </Pressable>
+              )}
+            </ChipRail>
+
+            <View className="mt-4">
+              {/* Trending rides above the results, but only in the default browse
               state — once you've typed or filtered, the results ARE the answer
               and a heat rail is noise. */}
-          {!browsing ? null : <TrendingRail />}
+              {!browsing ? null : <TrendingRail />}
 
-          {members.length > 0 && (
-            <>
-              <SectionHeader>{t('explore.members')}</SectionHeader>
-              {members.map((m) => (
-                <MemberRow key={m.id} m={m} />
-              ))}
-            </>
-          )}
-
-          {results.isPending ? (
-            <RowsSkeleton rows={3} thumb={48} />
-          ) : results.isError ? (
-            <ErrorState onRetry={() => results.refetch()}>{t('explore.search_error')}</ErrorState>
-          ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
-            <EmptyState
-              action={
-                activeCount > 0 ? (
-                  <Button size="sm" variant="secondary" onPress={clearFilters}>
-                    {t('explore.clear_filters')}
-                  </Button>
-                ) : undefined
-              }
-            >
-              {t('explore.no_match')}
-            </EmptyState>
-          ) : (
-            <>
-              {members.length > 0 && hits.length > 0 && (
-                <SectionHeader>{t('explore.spots')}</SectionHeader>
+              {members.length > 0 && (
+                <>
+                  <SectionHeader>{t('explore.members')}</SectionHeader>
+                  {members.map((m) => (
+                    <MemberRow key={m.id} m={m} />
+                  ))}
+                </>
               )}
-              {hits.map((r, i) => (
-                <HitRow key={r.id} r={r} index={i} />
-              ))}
-            </>
-          )}
 
-          <ExternalResults
-            suggestions={suggestions}
-            creatingId={creatingId}
-            onPick={createFromGoogle}
-          />
-        </View>
+              {results.isPending ? (
+                <RowsSkeleton rows={3} thumb={48} />
+              ) : results.isError ? (
+                <ErrorState onRetry={() => results.refetch()}>
+                  {t('explore.search_error')}
+                </ErrorState>
+              ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
+                <EmptyState
+                  action={
+                    activeCount > 0 ? (
+                      <Button size="sm" variant="secondary" onPress={clearFilters}>
+                        {t('explore.clear_filters')}
+                      </Button>
+                    ) : undefined
+                  }
+                >
+                  {t('explore.no_match')}
+                </EmptyState>
+              ) : (
+                <>
+                  {members.length > 0 && hits.length > 0 && (
+                    <SectionHeader>{t('explore.spots')}</SectionHeader>
+                  )}
+                  {hits.map((r, i) => (
+                    <HitRow key={r.id} r={r} index={i} />
+                  ))}
+                </>
+              )}
+
+              <ExternalResults
+                suggestions={suggestions}
+                creatingId={creatingId}
+                onPick={createFromGoogle}
+              />
+            </View>
+          </>
+        )}
       </ScrollView>
     </View>
   )
