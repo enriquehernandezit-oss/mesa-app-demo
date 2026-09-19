@@ -15,7 +15,8 @@
     "backfill:dishes": "bun run src/backfill-dishes.ts",
     "tags:normalize": "bun run src/tags-normalize.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "restaurant:close": "bun run src/close-restaurant.ts"
   },
   "dependencies": {
     "@mesa/db": "workspace:*",

@@ -50,19 +50,19 @@ const afternoon = {
   '--avatar-ink': '#2a1512',
   '--overlay-scrim': 'rgba(15, 1, 2, 0.4)',
   // Event categories (Eventos only — docs/DESIGN.md "Where color is allowed
-  // to live"): one warm hue per kind of night out, so a tasting, a DJ set and
+  // to live"): one hue per kind of night out, so a tasting, a DJ set and
   // a brunch read differently at a glance. Solid for fills/labels, -soft for
   // washes; text on a solid fill is --on-cat.
-  '--cat-cata': '#8e2c45',
-  '--cat-cata-soft': 'rgba(142, 44, 69, 0.10)',
-  '--cat-musica': '#3d4a8f',
-  '--cat-musica-soft': 'rgba(61, 74, 143, 0.10)',
-  '--cat-brunch': '#9c6708',
-  '--cat-brunch-soft': 'rgba(201, 138, 18, 0.14)',
-  '--cat-food': '#b04a26',
-  '--cat-food-soft': 'rgba(176, 74, 38, 0.10)',
-  '--cat-happy': '#1d756c',
-  '--cat-happy-soft': 'rgba(29, 117, 108, 0.10)',
+  '--cat-cata': '#c2185b',
+  '--cat-cata-soft': 'rgba(194, 24, 91, 0.10)',
+  '--cat-musica': '#2f4fd6',
+  '--cat-musica-soft': 'rgba(47, 79, 214, 0.10)',
+  '--cat-brunch': '#b26a00',
+  '--cat-brunch-soft': 'rgba(178, 106, 0, 0.12)',
+  '--cat-food': '#d84315',
+  '--cat-food-soft': 'rgba(216, 67, 21, 0.10)',
+  '--cat-happy': '#00838f',
+  '--cat-happy-soft': 'rgba(0, 131, 143, 0.10)',
   '--on-cat': '#fdf7ec',
   // The dark end of the gradient under text set on a photograph —
   // theme-invariant, like --on-photo (a photo is its own dark island).
@@ -99,20 +99,19 @@ const candlelit = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#fdf7ec',
   '--overlay-scrim': 'rgba(8, 0, 1, 0.55)',
-  // Jewel tones by candlelight: more saturated than a pastel lift of the
-  // Afternoon hues (which read muddy on oxblood), stronger washes so the
-  // ticket stubs glow, and five clearly separate hues — tasting rosé, music
-  // violet, brunch saffron, food ember, happy-hour aqua.
-  '--cat-cata': '#f0728c',
-  '--cat-cata-soft': 'rgba(240, 114, 140, 0.20)',
-  '--cat-musica': '#a08fff',
-  '--cat-musica-soft': 'rgba(160, 143, 255, 0.20)',
-  '--cat-brunch': '#f5c24c',
-  '--cat-brunch-soft': 'rgba(245, 194, 76, 0.18)',
-  '--cat-food': '#ff8a52',
-  '--cat-food-soft': 'rgba(255, 138, 82, 0.18)',
-  '--cat-happy': '#4fd3c4',
-  '--cat-happy-soft': 'rgba(79, 211, 196, 0.18)',
+  // "Noche neón" (founder's pick): vivid nightlife hues that pop on oxblood —
+  // tasting magenta, music electric blue, brunch gold, food orange, happy-hour
+  // cyan. Afternoon carries the same five hues, deepened for contrast on paper.
+  '--cat-cata': '#ff4d9d',
+  '--cat-cata-soft': 'rgba(255, 77, 157, 0.20)',
+  '--cat-musica': '#5b8cff',
+  '--cat-musica-soft': 'rgba(91, 140, 255, 0.20)',
+  '--cat-brunch': '#ffc24a',
+  '--cat-brunch-soft': 'rgba(255, 194, 74, 0.18)',
+  '--cat-food': '#ff7a1a',
+  '--cat-food-soft': 'rgba(255, 122, 26, 0.18)',
+  '--cat-happy': '#22d3ee',
+  '--cat-happy-soft': 'rgba(34, 211, 238, 0.18)',
   '--on-cat': '#210104',
   '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
 } as const

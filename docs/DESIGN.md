@@ -121,16 +121,15 @@ own hue so a tasting, a DJ set and a brunch read apart at a glance.
 
 | Token | Kind | Afternoon | Candlelit |
 |---|---|---|---|
-| `--cat-cata` | tastings (wine, whisky, cocktails) | `#8e2c45` wine | `#f0728c` rosé |
-| `--cat-musica` | live music, DJ, karaoke | `#3d4a8f` indigo | `#a08fff` violet |
-| `--cat-brunch` | brunch | `#9c6708` saffron | `#f5c24c` saffron |
-| `--cat-food` | food tastings, omakase, chef nights | `#b04a26` terracotta | `#ff8a52` ember |
-| `--cat-happy` | happy hour | `#1d756c` teal | `#4fd3c4` aqua |
+| `--cat-cata` | tastings (wine, whisky, cocktails) | `#c2185b` magenta | `#ff4d9d` magenta |
+| `--cat-musica` | live music, DJ, karaoke | `#2f4fd6` electric blue | `#5b8cff` electric blue |
+| `--cat-brunch` | brunch | `#b26a00` gold | `#ffc24a` gold |
+| `--cat-food` | food tastings, omakase, chef nights | `#d84315` orange | `#ff7a1a` orange |
+| `--cat-happy` | happy hour | `#00838f` cyan | `#22d3ee` cyan |
 
-Candlelit uses "jewel tones by candlelight" — saturated, not a pastel lift of
-the Afternoon hues (those read muddy on oxblood) — and stronger washes. Happy
-hour is the one cool hue on purpose: a second rose/wine read as the same
-category as tastings.
+"Noche neón" (founder's pick, Sept 2026): vivid nightlife hues — they're what
+makes Eventos read as a night out. Afternoon uses the same five hues deepened
+for contrast on paper; Candlelit uses them bright, with stronger washes.
 
 Each has a `-soft` wash; text on a solid fill is `--on-cat`. The free-text
 `events.category` maps to a key in `apps/mobile/src/lib/eventCategory.ts`
