@@ -8,12 +8,13 @@ import {
 } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
-import { useT } from '@/lib/i18n'
+import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import { isPastPlan, isPendingInvite } from '@/lib/plans'
 import { formatPlanDate } from '@/lib/time'
 import type { Plan, PlanReply } from '@/lib/types'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useRouter } from 'expo-router'
+import { useMemo } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Planes (M3): the entry point for group dinners, reached from Profile's
@@ -22,11 +23,34 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // on the calendar, then the record of what happened.
 export default function PlanesScreen() {
   const t = useT()
+  const lang = useLanguage()
   const router = useRouter()
   const q = useQuery({
     queryKey: ['plans'],
     queryFn: () => api.get<{ plans: Plan[] }>('/plans'),
   })
+  // Memoized (responsiveness audit): useT()'s bound function is a new
+  // identity every render, so writing this inline handed Stack.Screen a new
+  // headerRight on every refetch — memoizing on `lang` instead is what
+  // actually holds it stable.
+  const headerOptions = useMemo(
+    () => ({
+      title: translate(lang, 'plans.title'),
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={translate(lang, 'plans.new_label')}
+          onPress={() => router.push('/planes/nuevo')}
+          className="min-h-[44px] justify-center active:opacity-70"
+        >
+          <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
+            {translate(lang, 'plans.new_short')}
+          </Text>
+        </Pressable>
+      ),
+    }),
+    [lang, router],
+  )
 
   const items = q.data?.plans ?? []
   const pending = items.filter(isPendingInvite).sort((a, b) => a.startsAt.localeCompare(b.startsAt))
@@ -39,23 +63,7 @@ export default function PlanesScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen
-        options={{
-          title: t('plans.title'),
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('plans.new_label')}
-              onPress={() => router.push('/planes/nuevo')}
-              className="min-h-[44px] justify-center active:opacity-70"
-            >
-              <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
-                {t('plans.new_short')}
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+      <Stack.Screen options={headerOptions} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5 pb-10"

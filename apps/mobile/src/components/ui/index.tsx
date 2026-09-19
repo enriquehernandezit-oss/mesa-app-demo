@@ -282,6 +282,11 @@ export const ChipRail = ({ children, className }: { children: ReactNode; classNa
   <ScrollView
     horizontal
     showsHorizontalScrollIndicator={false}
+    // A rail placed under a focused TextInput (rank.tsx's search step) ate the
+    // first tap as a keyboard-dismiss otherwise — RN checks each nested
+    // scroll view outer-to-inner, so this default ('never') wins even when a
+    // parent ScrollView is already 'handled'.
+    keyboardShouldPersistTaps="handled"
     className={`-mx-5 ${className ?? ''}`}
     contentContainerClassName="gap-2 px-5"
   >

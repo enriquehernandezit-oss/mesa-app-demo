@@ -20,7 +20,7 @@ import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
-import { useT } from '@/lib/i18n'
+import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import type {
   ExploreHit,
   ExploreMember,
@@ -36,7 +36,7 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import type { SearchBarCommands } from 'react-native-screens'
 
@@ -70,6 +70,7 @@ type SortKey = 'score' | 'name'
 
 export default function ExploreScreen() {
   const t = useT()
+  const lang = useLanguage()
   const router = useRouter()
   const tabBarClearance = useTabBarClearance()
   const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -279,49 +280,57 @@ export default function ExploreScreen() {
     onCreated: (restaurant) => router.push(`/r/${restaurant.id}`),
   })
 
+  // Memoized (responsiveness audit): written inline, this object got a brand
+  // new `headerRight` function on every render — including every keystroke
+  // via `onChangeText`/setQ and every query refetch — and react-native-
+  // screens rebuilding the native header button mid-press could drop that
+  // tap. Now it only changes when something it actually reads does.
+  const headerOptions = useMemo(
+    () => ({
+      headerSearchBarOptions: {
+        ref: searchBarRef,
+        placeholder: translate(lang, 'explore.search_placeholder'),
+        cancelButtonText: translate(lang, 'common.cancel'),
+        hideWhenScrolling: false,
+        autoCapitalize: 'none' as const,
+        // Feed's own search field (FeedHeader in discover.tsx) is just a
+        // Pressable that hands off here with `?focus=1` — the actual
+        // focus is done imperatively below (searchBarRef.effect), not via
+        // this `autoFocus` prop: react-native-screens 4.26's iOS native
+        // module (RNSSearchBar.mm) never reads an autoFocus prop at all,
+        // only exposes an imperative `focus` command — it's Android-only
+        // there, so on iOS this was a silent no-op. Kept here anyway in
+        // case Android ever ships; costs nothing.
+        autoFocus: params.focus === '1',
+        tintColor: c.accent,
+        textColor: c.text,
+        hintTextColor: c['text-muted'],
+        headerIconColor: c['text-muted'],
+        onChangeText: (e: { nativeEvent: { text: string } }) => setQ(e.nativeEvent.text),
+      },
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={translate(lang, 'explore.map_label')}
+          onPress={() => router.push('/map')}
+          className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
+        >
+          <PinIcon size={15} />
+          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
+            {translate(lang, 'explore.map_chip')}
+          </Text>
+        </Pressable>
+      ),
+    }),
+    [lang, c, params.focus, router],
+  )
+
   return (
     <View className="flex-1 bg-bg">
       {/* Search lives in the navigation bar, not the page: UIKit owns the field,
           its focus/cancel behavior, and the keyboard. The map entry is the bar's
           right action. */}
-      <Stack.Screen
-        options={{
-          headerSearchBarOptions: {
-            ref: searchBarRef,
-            placeholder: t('explore.search_placeholder'),
-            cancelButtonText: t('common.cancel'),
-            hideWhenScrolling: false,
-            autoCapitalize: 'none',
-            // Feed's own search field (FeedHeader in discover.tsx) is just a
-            // Pressable that hands off here with `?focus=1` — the actual
-            // focus is done imperatively below (searchBarRef.effect), not via
-            // this `autoFocus` prop: react-native-screens 4.26's iOS native
-            // module (RNSSearchBar.mm) never reads an autoFocus prop at all,
-            // only exposes an imperative `focus` command — it's Android-only
-            // there, so on iOS this was a silent no-op. Kept here anyway in
-            // case Android ever ships; costs nothing.
-            autoFocus: params.focus === '1',
-            tintColor: c.accent,
-            textColor: c.text,
-            hintTextColor: c['text-muted'],
-            headerIconColor: c['text-muted'],
-            onChangeText: (e) => setQ(e.nativeEvent.text),
-          },
-          headerRight: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('explore.map_label')}
-              onPress={() => router.push('/map')}
-              className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
-            >
-              <PinIcon size={15} />
-              <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                {t('explore.map_chip')}
-              </Text>
-            </Pressable>
-          ),
-        }}
-      />
+      <Stack.Screen options={headerOptions} />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"

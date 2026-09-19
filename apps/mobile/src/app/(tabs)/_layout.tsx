@@ -161,7 +161,13 @@ function CustomShell() {
     <View className="flex-1 bg-bg">
       <Tabs
         tabBar={(props) => <MesaTabBar {...props} />}
-        screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: 'transparent' } }}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: 'transparent' },
+          // A backgrounded tab stops re-rendering on theme/language changes
+          // instead of re-styling its whole (possibly still-mounted) tree.
+          freezeOnBlur: true,
+        }}
       >
         <Tabs.Screen name="discover" />
         <Tabs.Screen name="explore" />

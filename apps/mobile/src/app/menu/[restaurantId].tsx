@@ -1,10 +1,11 @@
-import { Caption, Chip, EmptyState, ErrorState, Eyebrow, RowsSkeleton } from '@/components/ui'
+import { ScreenHeader } from '@/components/ScreenHeader'
+import { Caption, Chip, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
 import { api } from '@/lib/api'
 import { dateLocale, useLanguage, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
@@ -16,12 +17,14 @@ import { ScrollView, Text, View } from 'react-native'
 export default function RestaurantMenuScreen() {
   const t = useT()
   const lang = useLanguage()
+  const router = useRouter()
   const { restaurantId, name } = useLocalSearchParams<{ restaurantId: string; name?: string }>()
   const queryClient = useQueryClient()
   const restaurantName =
     name ??
     queryClient.getQueryData<{ restaurant: { name: string } }>(['restaurant', restaurantId])
       ?.restaurant.name
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace(`/r/${restaurantId}`))
 
   const bg = useColor('bg')
   const line = useColor('line')
@@ -88,10 +91,47 @@ export default function RestaurantMenuScreen() {
     setActiveIndex(idx)
   }
 
-  if (q.isPending) return <RowsSkeleton />
-  if (q.isError)
-    return <ErrorState onRetry={() => q.refetch()}>{t('restaurant.menu_load_error')}</ErrorState>
-  if (sections.length === 0) return <EmptyState>{t('restaurant.menu_empty')}</EmptyState>
+  if (q.isPending) {
+    return (
+      <View className="flex-1 bg-bg">
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+        {/* Shaped like the loaded screen (padded text rows under a name), not
+            the generic avatar-row skeleton — that one only ever matched a
+            list of people, and swapping it for the real menu on arrival
+            produced its own layout jump (padding and a chip rail appearing
+            at once) on top of the transition this is fixing. */}
+        <View className="px-5">
+          <Skeleton height={11} width={140} className="mt-4" />
+          <Skeleton height={16} width={200} className="mt-5" />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View key={i} className="border-line border-b py-2.5">
+              <Skeleton height={15} width={`${70 - i * 6}%`} />
+            </View>
+          ))}
+        </View>
+      </View>
+    )
+  }
+  if (q.isError) {
+    return (
+      <View className="flex-1 bg-bg">
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+        <View className="px-5">
+          <ErrorState onRetry={() => q.refetch()}>{t('restaurant.menu_load_error')}</ErrorState>
+        </View>
+      </View>
+    )
+  }
+  if (sections.length === 0) {
+    return (
+      <View className="flex-1 bg-bg">
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+        <View className="px-5">
+          <EmptyState>{t('restaurant.menu_empty')}</EmptyState>
+        </View>
+      </View>
+    )
+  }
 
   // Leading, non-sticky children (name + verified caption) shift every
   // section header's index in the ScrollView's own children array —
@@ -102,6 +142,7 @@ export default function RestaurantMenuScreen() {
 
   return (
     <View className="flex-1 bg-bg">
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       {sections.length > 1 ? (
         // Not the shared ChipRail here: as the first child above the flex-1
         // content ScrollView (no sibling to size against), its row-direction

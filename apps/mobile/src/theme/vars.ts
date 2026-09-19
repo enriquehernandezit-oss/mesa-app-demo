@@ -15,11 +15,13 @@ const afternoon = {
   '--bg': '#f5efe4',
   '--bg-sunk': '#e7dccb',
   // A real 4-step depth ladder in light, mirroring what dark already has:
-  // bg-sunk < bg < surface < surface-raised. `surface` sits just above `bg`;
-  // `surface-raised` stays the near-white extreme DESIGN.md names, so "raised"
-  // is only reachable by moving `surface` down off it.
-  '--surface': '#faf4e9',
-  '--surface-raised': '#fffdf8',
+  // bg-sunk < bg < surface = surface-raised. Both card tokens are pure white:
+  // Enrique wants cards to read as distinct objects against the cream ground,
+  // not the same warm-paper tint (surface was previously a step above bg, not
+  // a real jump). `--line` moved up 0.12 -> 0.14 alpha to keep card edges from
+  // washing out on the brighter white.
+  '--surface': '#ffffff',
+  '--surface-raised': '#ffffff',
   '--text': '#2a1512',
   '--text-2': '#4a3b32',
   '--text-muted': '#746253',
@@ -31,8 +33,8 @@ const afternoon = {
   '--accent-fill': '#8a5f24',
   '--on-accent': '#fdf7ec',
   '--tab-inactive': '#786a5b',
-  '--line': 'rgba(120, 80, 60, 0.12)',
-  '--line-strong': 'rgba(120, 80, 60, 0.16)',
+  '--line': 'rgba(120, 80, 60, 0.14)',
+  '--line-strong': 'rgba(120, 80, 60, 0.18)',
   '--status-packed': '#b0512e',
   '--status-good': '#9a6a28',
   '--status-building': '#97794f',

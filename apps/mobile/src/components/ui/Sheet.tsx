@@ -4,7 +4,7 @@ import { getLanguage, t } from '@/lib/i18n'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { useSyncExternalStore } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated'
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Mesa's own themed bottom sheet — the same imperative-promise shape as
@@ -150,7 +150,12 @@ export function SheetHost() {
     // non-modal screen, which covers the other three call sites.
     <AnimatedPressable
       entering={FadeIn.duration(180)}
-      exiting={FadeOut.duration(150)}
+      // No exiting animation on the full-screen touch target: Reanimated keeps
+      // an "exiting" view alive in the native tree for the whole fade, and
+      // this one covers the entire screen — for ~150ms after picking an
+      // option, the next tap anywhere landed on the ghost scrim instead of
+      // real content. The dismiss itself is instant (no exiting effect on it),
+      // which is a fine trade for a sheet that's only up a second or two.
       accessibilityViewIsModal
       onPress={() => resolveCurrent(null)}
       className="absolute inset-0 justify-end bg-overlay-scrim"

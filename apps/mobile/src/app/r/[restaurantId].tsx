@@ -40,13 +40,19 @@ import { useT } from '@/lib/i18n'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
-import type { Dish, EventSummary, FriendRanking, RestaurantProfileResponse } from '@/lib/types'
+import type {
+  Dish,
+  EventSummary,
+  FriendRanking,
+  RestaurantMenu as RestaurantMenuData,
+  RestaurantProfileResponse,
+} from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -101,6 +107,17 @@ export default function RestaurantProfile() {
     queryFn: () => api.get<{ events: EventSummary[] }>(`/events/restaurant/${restaurantId}`),
     enabled: Boolean(restaurantId),
   })
+
+  // Warms the menu screen's own query before the "Menú" pill is ever tapped
+  // (fires the moment `hasMenu` is known), so the push usually opens straight
+  // to the loaded list instead of fetching mid-transition.
+  useEffect(() => {
+    if (!q.data?.restaurant.hasMenu) return
+    queryClient.prefetchQuery({
+      queryKey: ['menu', restaurantId],
+      queryFn: () => api.get<RestaurantMenuData>(`/restaurants/${restaurantId}/menu`),
+    })
+  }, [q.data?.restaurant.hasMenu, restaurantId, queryClient])
 
   if (q.isPending) {
     // Skeleton, not a spinner: this screen's geometry is known, so holding the

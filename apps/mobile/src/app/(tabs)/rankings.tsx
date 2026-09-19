@@ -860,6 +860,7 @@ function ListsRail({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerClassName="gap-2"
       >
         <Pressable

@@ -88,26 +88,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // first frame is already the right theme.
   const [choice, setChoiceState] = useState<ThemeChoice>(cachedChoice)
 
-  // Fire-and-forget persistence: the in-memory choice is what renders, and a
-  // failed write must never break the tap that made it.
+  const [resolved, setResolved] = useState<ThemeName>(() => resolve(cachedChoice))
+
+  // Resolves in the same update as the choice, not in an effect after it: a
+  // re-theme restyles every mounted View, and doing it as two back-to-back
+  // renders (choice, then resolved) blocked the first paint long enough that
+  // the picker read as needing 2–3 taps. Fire-and-forget persistence: the
+  // in-memory choice is what renders, and a failed write must never break the
+  // tap that made it.
   const setChoice = useMemo(
     () => (c: ThemeChoice) => {
+      const next = resolve(c)
+      currentResolved = next
       setChoiceState(c)
+      setResolved(next)
       void SecureStore.setItemAsync(CHOICE_KEY, c).catch(() => {})
     },
     [],
   )
-  const [resolved, setResolved] = useState<ThemeName>(() => resolve(cachedChoice))
 
-  // Re-resolve whenever the choice changes, the OS scheme flips, the app returns
-  // to the foreground, or the clock crosses 6am/6pm — but only the last two
-  // matter while Auto is active, matching the web's "track system + clock only
-  // while Auto" behavior.
+  // While Auto is active, re-resolve when the OS scheme flips, the app returns
+  // to the foreground, or the clock crosses 6am/6pm — matching the web's
+  // "track system + clock only while Auto" behavior.
   useEffect(() => {
-    const next = resolve(choice)
-    currentResolved = next
-    setResolved(next)
     if (choice !== 'auto') return
+    const now = resolve('auto')
+    currentResolved = now
+    setResolved(now)
 
     const reresolve = () => {
       const n = resolve('auto')

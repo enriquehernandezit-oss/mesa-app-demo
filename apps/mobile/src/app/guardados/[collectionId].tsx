@@ -164,10 +164,17 @@ function CollectionItemRow({
           ) : (
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ disabled: removing }}
               hitSlop={8}
-              disabled={removing}
-              onPress={onRemove}
-              className="min-h-[36px] justify-center px-2 active:opacity-60"
+              // Not RN's `disabled` prop: this Pressable is nested inside a
+              // `Link asChild` Pressable, and a `disabled` inner one lets the
+              // tap fall through to the outer Link — which then navigated to
+              // the restaurant instead of doing nothing, right as the row was
+              // mid-delete. Guarding inside the handler keeps the tap here.
+              onPress={() => {
+                if (!removing) onRemove()
+              }}
+              className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
             >
               <Caption className="text-status-packed">{t('rankings.remove')}</Caption>
             </Pressable>
@@ -188,10 +195,12 @@ function CollectionItemRow({
           </View>
           <Pressable
             accessibilityRole="button"
+            accessibilityState={{ disabled: removing }}
             hitSlop={8}
-            disabled={removing}
-            onPress={onRemove}
-            className="min-h-[36px] justify-center px-2 active:opacity-60"
+            onPress={() => {
+              if (!removing) onRemove()
+            }}
+            className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
           >
             <Caption className="text-status-packed">{t('rankings.remove')}</Caption>
           </Pressable>

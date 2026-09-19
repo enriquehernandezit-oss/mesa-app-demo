@@ -28,6 +28,7 @@ export function SpotRail({ title, children }: { title: string; children: ReactNo
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         className="-mx-5"
         contentContainerClassName="gap-3 px-5 pt-2"
       >

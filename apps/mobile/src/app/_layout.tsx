@@ -27,7 +27,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { useFonts } from 'expo-font'
 import { Stack, usePathname } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -140,21 +140,28 @@ function MesaStack() {
   const theme = useResolvedTheme()
   const c = themeColors[theme]
   const t = useT()
-  const utility = {
-    headerShown: true,
-    headerLargeTitle: true,
-    headerTintColor: c.accent,
-    headerStyle: { backgroundColor: c.bg },
-    headerLargeStyle: { backgroundColor: c.bg },
-    headerBlurEffect:
-      theme === 'candlelit'
-        ? ('systemChromeMaterialDark' as const)
-        : ('systemChromeMaterialLight' as const),
-    headerShadowVisible: false,
-    headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-    headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-    headerBackTitle: t('nav.back'),
-  }
+  // Rebuilt only when the theme or language actually changes, not on every
+  // render MesaStack happens to take — a theme/language flip already re-runs
+  // this component, and an inline object literal here used to hand every
+  // Stack.Screen a brand-new `options` reference on unrelated re-renders too.
+  const utility = useMemo(
+    () => ({
+      headerShown: true,
+      headerLargeTitle: true,
+      headerTintColor: c.accent,
+      headerStyle: { backgroundColor: c.bg },
+      headerLargeStyle: { backgroundColor: c.bg },
+      headerBlurEffect:
+        theme === 'candlelit'
+          ? ('systemChromeMaterialDark' as const)
+          : ('systemChromeMaterialLight' as const),
+      headerShadowVisible: false,
+      headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+      headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+      headerBackTitle: t('nav.back'),
+    }),
+    [theme, c, t],
+  )
   return (
     <Stack
       screenOptions={{
@@ -162,6 +169,10 @@ function MesaStack() {
         contentStyle: { backgroundColor: 'transparent' },
         // Back-swipe from anywhere on the screen, not just the left edge.
         fullScreenGestureEnabled: true,
+        // A screen off-stack (a background tab, a screen under others in this
+        // stack) stops re-rendering entirely instead of re-rendering every
+        // time a theme/language change restyles the active one.
+        freezeOnBlur: true,
       }}
     >
       {/* The compose flows present as sheets — the iOS pattern for "make
@@ -196,10 +207,11 @@ function MesaStack() {
       {/* The taste-match pair page (M16), reached from u/[userId]'s match
           pill — same custom ScreenHeader idiom, no native title. */}
       <Stack.Screen name="match/[userId]" />
-      <Stack.Screen
-        name="menu/[restaurantId]"
-        options={{ ...utility, headerLargeTitle: false, title: t('restaurant.menu_title') }}
-      />
+      {/* Menu (M12 hotfix): switched off the native utility bar to a custom
+          ScreenHeader, same idiom as u/[userId] and match/[userId] just
+          above — the restaurant page it's pushed from has no nav bar either,
+          so a bar no longer animates in/out mid-push. */}
+      <Stack.Screen name="menu/[restaurantId]" />
 
       {/* Settings (M15): a hub + Tu cuenta/Privacidad/Preferencias/Acerca de/
           Cuentas bloqueadas sub-screens, all on this same stack so each gets

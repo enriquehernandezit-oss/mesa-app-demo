@@ -56,8 +56,8 @@ Afternoon values are the **exact Phase 6 handoff palette** (see `docs/DESIGN-PHA
 |---|---|---|---|
 | `--bg` | screen ground (`--screen`) | `#f5efe4` | `#210104` |
 | `--bg-sunk` | app bg / behind cards / photo fallback (`--paper`) | `#e7dccb` | `#180b0b` |
-| `--surface` | cards, sheets, tab bar (`--card`) | `#fffdf8` | `#2c1516` |
-| `--surface-raised` | raised elements (one card color in Phase 6) | `#fffdf8` | `#391c1d` |
+| `--surface` | cards, sheets, tab bar (`--card`) | `#ffffff` | `#2c1516` |
+| `--surface-raised` | raised elements (one card color) | `#ffffff` | `#391c1d` |
 | `--text` | primary text, FAB fill, dark badges (`--ink`) | `#2a1512` | `#ebe4d6` |
 | `--text-2` | body copy where `--ink` is too heavy (`--body`) | `#4a3b32` | `#dcccbb` |
 | `--text-muted` | captions, metadata, inactive (`--muted`) | `#a2917f` | `#a3867a` |
@@ -67,7 +67,7 @@ Afternoon values are the **exact Phase 6 handoff palette** (see `docs/DESIGN-PHA
 | `--accent-fill` | solid brass fill (the one filled CTA / chips) | `#9a6a28` | `#c09050` |
 | `--on-accent` | text/icon **on** a brass or ink fill | `#fdf7ec` | `#210104` |
 | `--tab-inactive` | inactive tab-bar item | `#8a7b6c` | `#8a7166` |
-| `--line` / `--line-strong` | warm hairlines — **never flat grey** | `rgba(120,80,60,.12/.16)` | `rgba(235,228,214,.10/.16)` |
+| `--line` / `--line-strong` | warm hairlines — **never flat grey** | `rgba(120,80,60,.14/.18)` | `rgba(235,228,214,.10/.16)` |
 | `--brass-line` / `--brass-line-soft` / `--brass-wash` | outlined pills, active chips, filled chips | `rgba(154,106,40,.4/.28/.1)` | `rgba(226,193,121,.4/.28/.12)` |
 | `--on-photo*` / photo scrims | text/scrims over photography — **theme-invariant** | light / dark | light / dark |
 | `--shadow-card` / `--glow-*` | elevation & emphasis | warm brown, never black | warm black / brass bloom |
@@ -82,9 +82,11 @@ Notes that are load-bearing, not stylistic:
   "brass" name — it would lie on paper.
 - **`--accent-fill` is now per-theme** (`#9a6a28` on paper, `#c09050` on oxblood);
   the text on it flips via `--on-accent` (cream on paper's ink/brass fills).
-- **One card color in Phase 6.** `--surface`/`--surface-raised` are both `#fffdf8`
-  on paper; the skeleton shimmer no longer depends on the two differing — it
-  shimmers across `--bg-sunk → #f0e7d8 → --bg-sunk`.
+- **One card color.** `--surface`/`--surface-raised` are both `#ffffff` on
+  paper (raised to pure white from Phase 6's `#fffdf8` at the founder's
+  request, so cards read as distinct objects against the cream `--bg`); the
+  skeleton shimmer doesn't depend on the two differing — it shimmers across
+  `--bg-sunk → #f0e7d8 → --bg-sunk`.
 - **One UI family.** Plus Jakarta Sans carries all metadata, eyebrows, and pill
   labels. Theme-invariant. (JetBrains Mono held this role until it was retired on
   2026-09-15 at the founder's request — see Type & spacing below.)

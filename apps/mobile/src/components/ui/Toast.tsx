@@ -1,9 +1,9 @@
+import { useTabBarClearance } from '@/components/MesaTabBar'
 import { tapError } from '@/lib/haptics'
 import { BRASS_SHADOW } from '@/theme/vars'
 import { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { type Toast, dismiss, useToasts } from './toast-store'
 
 // Mounted once (root layout). Renders whatever toast-store holds, stacked above
@@ -11,7 +11,12 @@ import { type Toast, dismiss, useToasts } from './toast-store'
 // the web's CSS transitions.
 export function Toaster() {
   const toasts = useToasts()
-  const insets = useSafeAreaInsets()
+  // Cleared the tab bar's own height, not just the safe area — at bottom:
+  // insets.bottom + 16 a toast sat directly on top of MesaTabBar (and any
+  // screen's fixed bottom CTA, like the restaurant page's "Rankear") for the
+  // whole 3-5s it's shown, and ToastItem below has no pointerEvents of its
+  // own, so it ate every tap underneath it.
+  const bottom = useTabBarClearance()
   if (toasts.length === 0) return null
   return (
     <View
@@ -20,7 +25,7 @@ export function Toaster() {
         position: 'absolute',
         left: 0,
         right: 0,
-        bottom: insets.bottom + 16,
+        bottom,
         gap: 8,
         paddingHorizontal: 16,
       }}
@@ -43,6 +48,7 @@ function ToastItem({ toast }: { toast: Toast }) {
     <Animated.View
       entering={FadeInDown.duration(200)}
       exiting={FadeOutDown.duration(200)}
+      pointerEvents="box-none"
       accessibilityLiveRegion="polite"
       className={`flex-row items-center gap-3 rounded border px-4 py-3 ${error ? 'border-status-packed bg-surface' : 'border-line bg-surface-raised'}`}
       style={{

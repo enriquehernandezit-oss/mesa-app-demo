@@ -148,31 +148,20 @@ export default function DiscoverTab() {
   )
 }
 
-// The tab-header — eyebrow + title + a search field that hands off to
-// Explore's real (native) search bar. Search itself doesn't live here — this
-// is just the entry point — but `?focus=1` tells Explore to open with its
-// search bar already focused and the keyboard up, so tapping this reads as
-// "go search" rather than a dead-end redirect to Explore's plain browse view.
-// No horizontal padding of its own: the parent FlatList's contentContainer
-// already applies px-5, and this used to add a SECOND px-5 on top of it —
-// the header sat ~24pt further right than "Listas destacadas" and the
-// carousel just below it, with no shared left edge on the page.
+// The tab-header — eyebrow + title. Used to also carry a search field that
+// handed off to Explore's real (native) search bar with `?focus=1`; removed
+// at the founder's request — Explore's own search bar (in its nav bar) is
+// the one search entry point now. No horizontal padding of its own: the
+// parent FlatList's contentContainer already applies px-5, and this used to
+// add a SECOND px-5 on top of it — the header sat ~24pt further right than
+// "Listas destacadas" and the carousel just below it, with no shared left
+// edge on the page.
 function FeedHeader() {
   const t = useT()
-  const router = useRouter()
   return (
     <View className="pt-2 pb-1">
       <Eyebrow>{t('discover.eyebrow')}</Eyebrow>
       <Title className="mt-1 mb-3">{t('discover.title')}</Title>
-      <Pressable
-        accessibilityRole="search"
-        onPress={() => router.push('/explore?focus=1')}
-        className="min-h-[44px] justify-center rounded border border-line bg-surface px-4 active:opacity-80"
-      >
-        <Text className="font-ui text-body text-text-muted">
-          {t('discover.search_placeholder')}
-        </Text>
-      </Pressable>
     </View>
   )
 }

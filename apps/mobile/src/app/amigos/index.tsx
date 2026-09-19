@@ -221,6 +221,7 @@ export default function AmigosScreen() {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
       contentContainerClassName="px-5 pb-10"
       contentInsetAdjustmentBehavior="automatic"
     >

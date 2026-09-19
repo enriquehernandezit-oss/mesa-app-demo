@@ -1,5 +1,6 @@
 import { Caption } from '@/components/ui'
 import { type ThemeChoice, useTheme } from '@/theme/ThemeProvider'
+import { startTransition, useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 // Three appearance swatches — Afternoon (paper) / Candlelit (oxblood) / Auto.
@@ -17,16 +18,29 @@ const OPTIONS: { value: ThemeChoice; label: string; chip: string; border: string
 
 export function ThemePicker() {
   const { choice, setChoice } = useTheme()
+  // The highlight moves on the tap itself; the re-theme (which restyles every
+  // mounted View in the app) follows as a transition. Doing both in one
+  // urgent update held the first paint long enough that the tap looked dead
+  // and people tapped again.
+  const [pending, setPending] = useState<ThemeChoice | null>(null)
+  const shown = pending ?? choice
+  useEffect(() => {
+    if (pending === choice) setPending(null)
+  }, [pending, choice])
   return (
     <View className="flex-row gap-2" accessibilityLabel="Apariencia">
       {OPTIONS.map((o) => {
-        const on = choice === o.value
+        const on = shown === o.value
         return (
           <Pressable
             key={o.value}
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
-            onPress={() => setChoice(o.value)}
+            onPress={() => {
+              if (o.value === shown) return
+              setPending(o.value)
+              startTransition(() => setChoice(o.value))
+            }}
             className={`min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded border px-3 ${on ? 'border-accent bg-accent-fill' : 'border-line bg-surface'} active:opacity-80`}
           >
             <View
