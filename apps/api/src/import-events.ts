@@ -16,7 +16,7 @@
 //
 // Source: apps/api/data/events.json, `{ events: [{ slug, restaurantName,
 // title, description, startsAt, endsAt, category, priceLabel, ticketUrl,
-// coverImageId }] }` — startsAt/endsAt are ISO strings with an explicit
+// coverImageId, capacity, bookingWhatsapp }] }` — startsAt/endsAt are ISO strings with an explicit
 // offset (e.g. "2026-09-17T20:30:00-04:00") so they parse the same instant
 // regardless of the machine running this script.
 //
@@ -39,6 +39,34 @@ interface EventInput {
   priceLabel?: string
   ticketUrl?: string
   coverImageId?: string
+  capacity?: number
+  bookingWhatsapp?: string
+}
+
+// Validates and normalizes the two optional booking fields — `null` for an
+// omitted one (an update then clears it, same as every other optional field
+// here). A number is accepted with spaces/dashes/'+' ("+1 809-555-1234") and
+// stored as bare digits, the form a wa.me link takes.
+export function bookingFields(
+  e: Pick<EventInput, 'capacity' | 'bookingWhatsapp'>,
+): { capacity: number | null; bookingWhatsapp: string | null } | { error: string } {
+  const { capacity, bookingWhatsapp } = e
+  if (
+    capacity !== undefined &&
+    !(Number.isInteger(capacity) && capacity > 0 && capacity <= 10000)
+  ) {
+    return { error: `capacity must be an integer 1–10000 (got ${JSON.stringify(capacity)})` }
+  }
+  let digits: string | null = null
+  if (bookingWhatsapp !== undefined) {
+    digits = typeof bookingWhatsapp === 'string' ? bookingWhatsapp.replace(/[\s\-+]/g, '') : ''
+    if (!/^\d{8,15}$/.test(digits)) {
+      return {
+        error: `bookingWhatsapp must be 8–15 digits, E.164 without '+' (got ${JSON.stringify(bookingWhatsapp)})`,
+      }
+    }
+  }
+  return { capacity: capacity ?? null, bookingWhatsapp: digits }
 }
 
 async function run() {
@@ -54,26 +82,42 @@ async function run() {
   const existingSlugs = new Set(existing.map((e) => e.slug))
 
   const unmatched: string[] = []
-  const toInsert: (EventInput & { restaurantId: string })[] = []
-  const toUpdate: (EventInput & { restaurantId: string })[] = []
+  const invalid: string[] = []
+  type Row = Omit<EventInput, 'capacity' | 'bookingWhatsapp'> & {
+    restaurantId: string
+    capacity: number | null
+    bookingWhatsapp: string | null
+  }
+  const toInsert: Row[] = []
+  const toUpdate: Row[] = []
 
   for (const e of data.events) {
+    const booking = bookingFields(e)
+    if ('error' in booking) {
+      invalid.push(`${e.slug} → ${booking.error}`)
+      continue
+    }
     const restaurantId = restaurantIdByName.get(e.restaurantName)
     if (!restaurantId) {
       unmatched.push(`${e.slug} → "${e.restaurantName}" (no exact match in catalog)`)
       continue
     }
-    ;(existingSlugs.has(e.slug) ? toUpdate : toInsert).push({ ...e, restaurantId })
+    ;(existingSlugs.has(e.slug) ? toUpdate : toInsert).push({ ...e, ...booking, restaurantId })
   }
 
   console.log(
     `events import ${dryRun ? '(DRY RUN)' : ''}: ` +
       `${data.events.length} in source · ${toInsert.length} new · ` +
-      `${toUpdate.length} matched (update) · ${unmatched.length} unmatched restaurant`,
+      `${toUpdate.length} matched (update) · ${unmatched.length} unmatched restaurant · ` +
+      `${invalid.length} invalid`,
   )
   if (unmatched.length) {
     console.log('  unmatched:')
     for (const line of unmatched) console.log(`    ${line}`)
+  }
+  if (invalid.length) {
+    console.log('  invalid (skipped):')
+    for (const line of invalid) console.log(`    ${line}`)
   }
 
   if (dryRun) {
@@ -94,6 +138,8 @@ async function run() {
       priceLabel: e.priceLabel ?? null,
       ticketUrl: e.ticketUrl ?? null,
       coverImageId: e.coverImageId ?? null,
+      capacity: e.capacity,
+      bookingWhatsapp: e.bookingWhatsapp,
     })
   }
   for (const e of toUpdate) {
@@ -109,6 +155,8 @@ async function run() {
         priceLabel: e.priceLabel ?? null,
         ticketUrl: e.ticketUrl ?? null,
         coverImageId: e.coverImageId ?? null,
+        capacity: e.capacity,
+        bookingWhatsapp: e.bookingWhatsapp,
         updatedAt: new Date(),
       })
       .where(eq(events.slug, e.slug))
@@ -118,10 +166,8 @@ async function run() {
   await pool.end()
 }
 
-// Guarded the same way import-top100.ts is — this module also being
-// importable without a live run matters less here (no pure helpers worth
-// unit-testing on their own), but the guard costs nothing and keeps every
-// importer in this file family consistent.
+// Guarded the same way import-top100.ts is, so import-events.test.ts can
+// import bookingFields without a live run.
 if (import.meta.main) {
   run().catch(async (err) => {
     console.error(err)

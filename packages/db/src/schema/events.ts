@@ -1,4 +1,4 @@
-import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { restaurants } from './discovery'
 import { eventRsvpStatus } from './enums'
@@ -32,6 +32,12 @@ export const events = pgTable(
     // purchase, so this is a plain outbound URL, not a purchase flow.
     ticketUrl: text('ticket_url'),
     coverImageId: text('cover_image_id'), // Cloudinary public id; falls back to the restaurant's own cover when null
+    // Total spots; null = open/unlimited. The API derives spotsLeft from it
+    // and the live going-count — never stored, so it can't drift.
+    capacity: integer('capacity'),
+    // Booking by WhatsApp — digits only, E.164 without the '+'
+    // ("18095551234"), the exact form a wa.me link takes. null = no booking.
+    bookingWhatsapp: text('booking_whatsapp'),
     cancelledAt: timestamp('cancelled_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

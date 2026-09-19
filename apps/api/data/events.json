@@ -8,7 +8,8 @@
       "startsAt": "2026-09-17T20:30:00-04:00",
       "endsAt": "2026-09-17T23:00:00-04:00",
       "category": "Música en vivo",
-      "priceLabel": "Entrada libre"
+      "priceLabel": "Entrada libre",
+      "capacity": 40
     },
     {
       "slug": "lulu-tasting-bar-happy-hour-2026-09-17",
@@ -28,7 +29,8 @@
       "startsAt": "2026-09-18T19:00:00-04:00",
       "endsAt": "2026-09-18T22:00:00-04:00",
       "category": "Cata",
-      "priceLabel": "RD$1,500 por persona"
+      "priceLabel": "RD$1,500 por persona",
+      "capacity": 24
     },
     {
       "slug": "zola-brunch-dj-2026-09-19",
@@ -38,7 +40,8 @@
       "startsAt": "2026-09-19T12:00:00-04:00",
       "endsAt": "2026-09-19T16:00:00-04:00",
       "category": "Brunch",
-      "priceLabel": "Cover RD$800"
+      "priceLabel": "Cover RD$800",
+      "capacity": 60
     },
     {
       "slug": "segundo-muelle-rooftop-domingo-2026-09-20",
@@ -48,7 +51,8 @@
       "startsAt": "2026-09-20T17:00:00-04:00",
       "endsAt": "2026-09-20T21:00:00-04:00",
       "category": "Música en vivo",
-      "priceLabel": "Gratis con reservación"
+      "priceLabel": "Gratis con reservación",
+      "capacity": 80
     },
     {
       "slug": "casa-gazcue-karaoke-2026-09-24",
@@ -68,7 +72,8 @@
       "startsAt": "2026-10-02T19:00:00-04:00",
       "endsAt": "2026-10-02T23:00:00-04:00",
       "category": "Especial",
-      "priceLabel": "Menú fijo RD$3,500"
+      "priceLabel": "Menú fijo RD$3,500",
+      "capacity": 30
     },
     {
       "slug": "sophias-cata-whisky-japones-2026-09-20",
@@ -78,7 +83,8 @@
       "startsAt": "2026-09-20T19:30:00-04:00",
       "endsAt": "2026-09-20T21:30:00-04:00",
       "category": "Cata de cócteles",
-      "priceLabel": "RD$3,200 por persona"
+      "priceLabel": "RD$3,200 por persona",
+      "capacity": 16
     },
     {
       "slug": "sophias-omakase-2026-09-25",
@@ -88,7 +94,8 @@
       "startsAt": "2026-09-25T19:00:00-04:00",
       "endsAt": "2026-09-25T22:30:00-04:00",
       "category": "Food tasting",
-      "priceLabel": "RD$4,800 por persona · sake incluido"
+      "priceLabel": "RD$4,800 por persona · sake incluido",
+      "capacity": 10
     }
   ]
 }

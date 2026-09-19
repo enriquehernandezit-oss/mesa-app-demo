@@ -74,6 +74,8 @@ const eventCols = {
   priceLabel: events.priceLabel,
   ticketUrl: events.ticketUrl,
   coverImageId: events.coverImageId,
+  capacity: events.capacity,
+  bookingWhatsapp: events.bookingWhatsapp,
   restaurant: {
     id: restaurants.id,
     name: restaurants.name,
@@ -83,14 +85,14 @@ const eventCols = {
   },
 }
 
-// Shared shaping for every list of events this file returns (browse, one
-// restaurant's rail): the base rows plus, in exactly two more queries
-// regardless of how many events came back, each one's going-count and up to
-// 3 friend faces going — never a per-event query (CLAUDE.md rule 3).
-async function withFriendsGoing<T extends { id: string; myStatus: 'going' | 'interested' | null }>(
-  me: { id: string },
-  rows: T[],
-): Promise<(Omit<T, 'myStatus'> & FriendsGoingFields)[]> {
+// Shared shaping for every event this file returns (browse, one restaurant's
+// rail, detail): the base rows plus, in exactly two more queries regardless
+// of how many events came back, each one's going-count and up to 3 friend
+// faces going — never a per-event query (CLAUDE.md rule 3). spotsLeft is
+// derived here from that same going-count, never stored.
+async function withFriendsGoing<
+  T extends { id: string; capacity: number | null; myStatus: 'going' | 'interested' | null },
+>(me: { id: string }, rows: T[]): Promise<(Omit<T, 'myStatus'> & FriendsGoingFields)[]> {
   const ids = rows.map((r) => r.id)
   if (ids.length === 0) return []
 
@@ -129,16 +131,21 @@ async function withFriendsGoing<T extends { id: string; myStatus: 'going' | 'int
     facesByEvent.set(f.eventId, list)
   }
 
-  return rows.map(({ myStatus, ...r }) => ({
-    ...r,
-    myRsvp: myStatus,
-    goingCount: countByEvent.get(r.id) ?? 0,
-    friendsGoing: facesByEvent.get(r.id) ?? [],
-  }))
+  return rows.map(({ myStatus, ...r }) => {
+    const goingCount = countByEvent.get(r.id) ?? 0
+    return {
+      ...r,
+      myRsvp: myStatus,
+      goingCount,
+      spotsLeft: r.capacity === null ? null : Math.max(0, r.capacity - goingCount),
+      friendsGoing: facesByEvent.get(r.id) ?? [],
+    }
+  })
 }
 type FriendsGoingFields = {
   myRsvp: 'going' | 'interested' | null
   goingCount: number
+  spotsLeft: number | null
   friendsGoing: { id: string; name: string; image: string | null }[]
 }
 
