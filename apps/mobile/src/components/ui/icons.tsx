@@ -218,3 +218,39 @@ export const ForkKnifeIcon = (p: IconProps) => (
     <Path d="M6 3v6M8.5 3v6M11 3v6M8.5 9v12M17 3c-2 0-2.5 2.3-2.5 4.5S15 12 17 12v9" />
   </Icon>
 )
+// A feed post's comments — a round speech bubble with a small tail.
+export const CommentIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5Z" />
+  </Icon>
+)
+export const ArrowUpIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 19V5M6 11l6-6 6 6" />
+  </Icon>
+)
+export const CloseIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M6 6l12 12M18 6 6 18" />
+  </Icon>
+)
+// "···" — a row's overflow menu (Rankings cards).
+export const MoreIcon = (p: IconProps) => (
+  <FilledIcon {...p}>
+    <Circle cx="5.5" cy="12" r="1.4" />
+    <Circle cx="12" cy="12" r="1.4" />
+    <Circle cx="18.5" cy="12" r="1.4" />
+  </FilledIcon>
+)
+// Appearance switcher: Afternoon (sun) and Candlelit (crescent moon).
+export const SunIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="4" />
+    <Path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+  </Icon>
+)
+export const MoonIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+  </Icon>
+)

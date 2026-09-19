@@ -22,17 +22,19 @@ type PersonRowUser = {
 // follow pill here, M3's invite checkbox there) so this stays a pure list row
 // with no follow logic of its own. `subtitle` defaults to "@handle · sector"
 // but takes an override — the empty feed's row shows "N rankeados · sector"
-// instead, a stronger follow-motivator there than a bare handle.
+// instead, a stronger follow-motivator there than a bare handle. `last` drops
+// the hairline for the final row inside a grouped white card.
 export function PersonRow({
   user,
   subtitle,
   right,
-}: { user: PersonRowUser; subtitle?: string; right?: ReactNode }) {
+  last,
+}: { user: PersonRowUser; subtitle?: string; right?: ReactNode; last?: boolean }) {
   const caption =
     subtitle ??
     [user.handle ? `@${user.handle}` : null, user.neighborhood].filter(Boolean).join(' · ')
   return (
-    <View className="flex-row items-center gap-3 border-line border-b py-3">
+    <View className={`flex-row items-center gap-3 py-3 ${last ? '' : 'border-line border-b'}`}>
       <Link href={`/u/${user.id}`} asChild>
         <Pressable
           accessibilityRole="button"

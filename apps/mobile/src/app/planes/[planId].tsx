@@ -226,35 +226,37 @@ export default function PlanDetailScreen() {
             <SectionHeader>
               {voting ? t('plans.voting_section') : t('plans.options_section')}
             </SectionHeader>
-            {plan.options.map((o) => {
-              const mine = plan.myVote === o.id
-              return (
-                <Pressable
-                  key={o.id}
-                  accessibilityRole="button"
-                  disabled={!voting || plan.isHost || reply.isPending}
-                  onPress={() => reply.mutate({ voteRestaurantId: o.id })}
-                  className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
-                >
-                  <PlaceCover
-                    seed={o.id}
-                    name={o.name}
-                    coverImageId={o.coverImageId}
-                    size={{ w: 160, h: 160 }}
-                    className="h-12 w-12"
-                  />
-                  <View className="min-w-0 flex-1">
-                    <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-                      {o.name}
-                    </Text>
-                    <Caption className="text-micro">
-                      {t('plans.votes_count', { n: o.votes ?? 0 })}
-                    </Caption>
-                  </View>
-                  {mine ? <CheckIcon size={16} color="accent" /> : null}
-                </Pressable>
-              )
-            })}
+            <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+              {plan.options.map((o, i) => {
+                const mine = plan.myVote === o.id
+                return (
+                  <Pressable
+                    key={o.id}
+                    accessibilityRole="button"
+                    disabled={!voting || plan.isHost || reply.isPending}
+                    onPress={() => reply.mutate({ voteRestaurantId: o.id })}
+                    className={`flex-row items-center gap-3 py-3 active:opacity-80 ${i === plan.options.length - 1 ? '' : 'border-line border-b'}`}
+                  >
+                    <PlaceCover
+                      seed={o.id}
+                      name={o.name}
+                      coverImageId={o.coverImageId}
+                      size={{ w: 160, h: 160 }}
+                      className="h-12 w-12"
+                    />
+                    <View className="min-w-0 flex-1">
+                      <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                        {o.name}
+                      </Text>
+                      <Caption className="text-micro">
+                        {t('plans.votes_count', { n: o.votes ?? 0 })}
+                      </Caption>
+                    </View>
+                    {mine ? <CheckIcon size={16} color="accent" /> : null}
+                  </Pressable>
+                )
+              })}
+            </View>
             {plan.isHost && voting && (
               <Button
                 className="mt-3"
@@ -375,21 +377,25 @@ function MemberGroup({
 }) {
   return (
     <View>
-      <Body className="mt-4 mb-1 font-ui-semibold text-text">{label}</Body>
-      {rows.map((m) => (
-        <Link key={m.id} href={`/u/${m.id}`} asChild>
-          <Pressable
-            accessibilityRole="button"
-            className="flex-row items-center gap-3 border-line border-b py-2.5 active:opacity-80"
-          >
-            <Avatar name={m.name || m.handle || 'm'} src={m.image} size={32} />
-            <Text className="flex-1 font-ui text-body text-text" numberOfLines={1}>
-              {m.name || m.handle}
-            </Text>
-            {m.badge ? <Caption className="font-ui-semibold text-micro">{m.badge}</Caption> : null}
-          </Pressable>
-        </Link>
-      ))}
+      <Body className="mt-4 mb-2 font-ui-semibold text-text">{label}</Body>
+      <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+        {rows.map((m, i) => (
+          <Link key={m.id} href={`/u/${m.id}`} asChild>
+            <Pressable
+              accessibilityRole="button"
+              className={`flex-row items-center gap-3 py-2.5 active:opacity-80 ${i === rows.length - 1 ? '' : 'border-line border-b'}`}
+            >
+              <Avatar name={m.name || m.handle || 'm'} src={m.image} size={32} />
+              <Text className="flex-1 font-ui text-body text-text" numberOfLines={1}>
+                {m.name || m.handle}
+              </Text>
+              {m.badge ? (
+                <Caption className="font-ui-semibold text-micro">{m.badge}</Caption>
+              ) : null}
+            </Pressable>
+          </Link>
+        ))}
+      </View>
     </View>
   )
 }

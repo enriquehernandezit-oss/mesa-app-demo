@@ -54,7 +54,7 @@ export default function DishListDetailScreen() {
         options={{ title: t('platos.your_best', { label }), headerLargeTitle: false }}
       />
       <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-3">
         {ranked.length === 0 ? (
           <EmptyState>{t('platos.not_ranked_yet')}</EmptyState>
         ) : (
@@ -63,11 +63,11 @@ export default function DishListDetailScreen() {
 
         {unranked.length > 0 && (
           <View className="mt-6">
-            <Caption>{t('platos.unranked_count', { n: unranked.length })}</Caption>
+            <Caption className="mb-2">{t('platos.unranked_count', { n: unranked.length })}</Caption>
             {unranked.map((entry) => (
               <View
                 key={entry.restaurant.id}
-                className="flex-row items-center gap-3 border-line border-b py-3"
+                className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5"
               >
                 <PlaceCover
                   seed={entry.restaurant.id}
@@ -88,7 +88,7 @@ export default function DishListDetailScreen() {
                 </View>
               </View>
             ))}
-            <View className="mt-4">
+            <View className="mt-2">
               <Button onPress={() => router.push(`/platos/rankear?listId=${listId}`)}>
                 {t('platos.rank_more_button', { n: unranked.length })}
               </Button>
@@ -104,7 +104,7 @@ function RankedRow({ entry }: { entry: DishListEntry & { position: number } }) {
   const { restaurant, dish, position } = entry
   return (
     <Link href={`/r/${restaurant.id}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
         <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-md text-text-muted">
           {position}
         </Text>

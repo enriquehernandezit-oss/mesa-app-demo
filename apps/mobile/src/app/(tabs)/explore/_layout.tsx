@@ -28,7 +28,8 @@ export default function ExploreLayout() {
         headerShadowVisible: false,
         headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
         headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-        contentStyle: { backgroundColor: 'transparent' },
+        // Opaque, same reason as the root stack's contentStyle.
+        contentStyle: { backgroundColor: c.bg },
         freezeOnBlur: true,
       }}
     />

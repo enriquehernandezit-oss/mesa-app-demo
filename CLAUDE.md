@@ -130,5 +130,7 @@ any native surface must
 be told Mesa's *resolved* theme explicitly (`getResolvedTheme()`), because Auto
 turns Candlelit at 6pm on a light-mode phone and the system's own guess would be
 wrong. A control that lives inside a scrolling page is content, not chrome — that
-is why the view-switchers stay Mesa's Chips rather than becoming segmented
-controls.
+is why the view-switchers are Mesa's own tokened `Segmented` (components/ui: a
+sunk track with a white sliding thumb), not the native UISegmentedControl.
+Content objects (feed posts, ranking rows, rails, profile stats) are white
+`bg-surface` cards (`rounded-card`) on the cream ground.

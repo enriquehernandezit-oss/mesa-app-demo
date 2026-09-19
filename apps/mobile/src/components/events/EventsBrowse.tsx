@@ -1,4 +1,4 @@
-import { Caption, Chip, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import { Caption, EmptyState, ErrorState, RowsSkeleton, Segmented } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
@@ -13,9 +13,8 @@ import { Pressable, Text, View } from 'react-native'
 type When = 'tonight' | 'weekend' | 'upcoming'
 
 // Explore's "Eventos" view (M21) — its own tonight/weekend/upcoming
-// sub-switcher, same plain-Chip-row idiom as the Lugares/Eventos switcher one
-// level up (see explore/index.tsx's own comment on why this is a bare row of
-// Chips, not a segmented control). Everything else Explore normally shows
+// sub-switcher, the same Segmented control as the Lugares/Eventos switcher one
+// level up. Everything else Explore normally shows
 // (filters, the trending rail, the Google gap-filler) is Lugares-only —
 // there's no equivalent concept for a curated events calendar.
 export function EventsBrowse() {
@@ -29,29 +28,15 @@ export function EventsBrowse() {
 
   return (
     <View className="mt-4">
-      <View className="flex-row gap-2">
-        <Chip
-          size="sm"
-          state={when === 'tonight' ? 'selected' : 'default'}
-          onPress={() => setWhen('tonight')}
-        >
-          {t('events.tonight')}
-        </Chip>
-        <Chip
-          size="sm"
-          state={when === 'weekend' ? 'selected' : 'default'}
-          onPress={() => setWhen('weekend')}
-        >
-          {t('events.weekend')}
-        </Chip>
-        <Chip
-          size="sm"
-          state={when === 'upcoming' ? 'selected' : 'default'}
-          onPress={() => setWhen('upcoming')}
-        >
-          {t('events.upcoming')}
-        </Chip>
-      </View>
+      <Segmented
+        value={when}
+        onChange={setWhen}
+        options={[
+          { value: 'tonight', label: t('events.tonight') },
+          { value: 'weekend', label: t('events.weekend') },
+          { value: 'upcoming', label: t('events.upcoming') },
+        ]}
+      />
       <View className="mt-3">
         {q.isPending ? (
           <RowsSkeleton rows={3} thumb={56} />
@@ -71,7 +56,7 @@ export function EventRow({ e }: { e: EventSummary }) {
   const t = useT()
   return (
     <Link href={`/eventos/${e.id}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
         <PlaceCover
           seed={e.id}
           name={e.title}

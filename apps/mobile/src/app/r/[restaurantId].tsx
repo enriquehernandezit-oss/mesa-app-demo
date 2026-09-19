@@ -665,7 +665,7 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
     <Link href={`/u/${fr.user.id}`} asChild>
       <Pressable
         onLongPress={onLongPress}
-        className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+        className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
       >
         <Avatar name={fr.user.name || fr.user.handle || 'm'} src={fr.user.image} size={34} />
         <View className="flex-1">

@@ -1,6 +1,7 @@
 import { Caption } from '@/components/ui'
 import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
+import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
 import { getLanguage, t, useT } from '@/lib/i18n'
 import { useMutation } from '@tanstack/react-query'
@@ -18,12 +19,13 @@ const REASON_KEYS = [
   'report.reason_other',
 ] as const
 
-export type ReportTarget = 'dish' | 'vibe_note' | 'user'
+export type ReportTarget = 'dish' | 'vibe_note' | 'user' | 'comment'
 
 const PROMPT_KEYS: Record<
   ReportTarget,
-  'report.prompt_dish' | 'report.prompt_vibe_note' | 'report.prompt_user'
+  'report.prompt_dish' | 'report.prompt_vibe_note' | 'report.prompt_user' | 'report.prompt_comment'
 > = {
+  comment: 'report.prompt_comment',
   dish: 'report.prompt_dish',
   vibe_note: 'report.prompt_vibe_note',
   user: 'report.prompt_user',
@@ -37,6 +39,19 @@ export async function pickReportReason(targetType: ReportTarget): Promise<string
   const lang = getLanguage()
   const reasons = REASON_KEYS.map((key) => t(lang, key))
   const i = await showSheet({
+    title: t(lang, PROMPT_KEYS[targetType]),
+    options: reasons.map((label) => ({ label })),
+  })
+  return i === null ? null : (reasons[i] ?? null)
+}
+
+// The same reasons through the NATIVE action sheet — for callers inside a
+// `presentation: 'modal'` screen (the comments sheet), where Mesa's own
+// root-mounted Sheet can't present over the native modal (see Sheet.tsx).
+export async function pickReportReasonNative(targetType: ReportTarget): Promise<string | null> {
+  const lang = getLanguage()
+  const reasons = REASON_KEYS.map((key) => t(lang, key))
+  const i = await showActionSheet({
     title: t(lang, PROMPT_KEYS[targetType]),
     options: reasons.map((label) => ({ label })),
   })

@@ -8,18 +8,19 @@ import {
   EmptyState,
   ErrorState,
   Eyebrow,
+  MAX_SCALE,
+  Segmented,
   Skeleton,
   Title,
 } from '@/components/ui'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { pickOne, showSheet } from '@/components/ui/Sheet'
-import { ShareIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
+import { ListIcon, MoreIcon, ShareIcon, SortIcon } from '@/components/ui/icons'
+import { Characteristics, Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
-import { track } from '@/lib/analytics'
-import { ApiError, api } from '@/lib/api'
+import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
@@ -45,10 +46,10 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -185,39 +186,10 @@ export default function RankingsTab() {
     if (v !== undefined) setFiltersAnimated((f) => ({ ...f, cuisine: v }))
   }
 
-  // Guardados' "+ Nueva" list card (M19) — a bare create with no item
-  // attached, unlike guardar.tsx's create-and-add-to-it. Same native prompt.
-  const createList = useMutation({
-    mutationFn: (newName: string) => api.post<{ id: string }>('/collections', { name: newName }),
-    onSuccess: () => {
-      track('collection_created')
-      queryClient.invalidateQueries({ queryKey: ['collections'] })
-    },
-    onError: (err) => {
-      const code = err instanceof ApiError ? err.code : ''
-      toast({
-        variant: 'error',
-        message: code === 'name_taken' ? t('guardar.name_taken') : t('guardar.create_error'),
-      })
-    },
-  })
-  function promptNewList() {
-    Alert.prompt(
-      t('guardar.new_list_title'),
-      undefined,
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('guardar.create_button'),
-          onPress: (typed?: string) => {
-            const trimmed = typed?.trim()
-            if (trimmed) createList.mutate(trimmed)
-          },
-        },
-      ],
-      'plain-text',
-    )
-  }
+  // Guardados' "+ Nueva" list card (M19) — the same branded create screen
+  // SaveButton's "Agregar a lista" opens (app/guardar.tsx, no item attached),
+  // not the iOS text-prompt alert it used to be.
+  const promptNewList = () => router.push('/guardar')
 
   // The share-my-list story card (the growth loop): the top 5, over the top
   // spot's photo, captioned with the public profile link.
@@ -281,17 +253,16 @@ export default function RankingsTab() {
         </View>
       )}
 
-      <View className="mb-4 flex-row gap-2">
-        <Chip state={tab === 'mine' ? 'selected' : 'default'} onPress={() => setTab('mine')}>
-          {t('rankings.mine_tab')}
-        </Chip>
-        <Chip state={tab === 'saved' ? 'selected' : 'default'} onPress={() => setTab('saved')}>
-          {t('rankings.saved_tab')}
-        </Chip>
-        <Chip state={tab === 'barrios' ? 'selected' : 'default'} onPress={() => setTab('barrios')}>
-          {t('rankings.sectors_tab')}
-        </Chip>
-      </View>
+      <Segmented
+        className="mb-4"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'mine', label: t('rankings.mine_tab') },
+          { value: 'saved', label: t('rankings.saved_tab') },
+          { value: 'barrios', label: t('rankings.sectors_tab') },
+        ]}
+      />
     </>
   )
 
@@ -536,6 +507,10 @@ function SwipeToRemove({
     // not a removal — see skipLayoutAnimRef's comment above for why.
     <ReanimatedSwipeable
       ref={ref}
+      // Rows are separate white cards now (not hairline-divided), so the gap
+      // between them lives here — on the swipeable itself, so the red action
+      // revealed behind a card is exactly that card's height.
+      containerStyle={{ marginBottom: 8 }}
       friction={2}
       rightThreshold={40}
       overshootRight={false}
@@ -549,7 +524,7 @@ function SwipeToRemove({
             ref.current?.close()
             onRemove()
           }}
-          className="w-[88px] items-center justify-center bg-status-packed active:opacity-80"
+          className="ml-2 w-[88px] items-center justify-center rounded-card bg-status-packed active:opacity-80"
         >
           <Text className="font-ui-medium text-label text-on-accent">{t('rankings.remove')}</Text>
         </Pressable>
@@ -567,6 +542,7 @@ const RankingRow = memo(function RankingRow({
   skipAnim,
 }: { ranking: Ranking; skipAnim?: boolean }) {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const placeholder = useColor('text-muted')
   const t = useT()
   const [editing, setEditing] = useState(false)
@@ -587,115 +563,144 @@ const RankingRow = memo(function RankingRow({
       }),
   })
 
+  // One line of meta (cuisine · neighborhood · price) and one accent line
+  // (what you ordered, else your first occasion tag) — the founder's mock.
+  // Characteristics' two stacked lines plus a permanent "Agregar nota" row
+  // made every card ~130pt tall; this keeps it to the photo's height.
+  const meta = [
+    cuisineLabel(ranking.restaurant.cuisine),
+    ranking.neighborhood,
+    priceLabel(ranking.restaurant.priceTier),
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const accentLine = ranking.favoriteDish
+    ? t('rankings.order_this', { dish: ranking.favoriteDish })
+    : ranking.tags?.[0]
+      ? tagLabel(ranking.tags[0])
+      : null
+
+  // The "···" menu — note editing, re-rank and remove, which used to be a
+  // permanent text-action row under every card (and a swipe, which stays).
+  async function openMenu() {
+    const i = await showSheet({
+      title: ranking.restaurant.name,
+      options: [
+        { label: ranking.note ? t('rankings.edit_note') : t('rankings.add_note') },
+        { label: t('restaurant.rank_again_label') },
+        { label: t('rankings.remove'), destructive: true },
+      ],
+    })
+    if (i === 0) setEditing(true)
+    else if (i === 1) router.push(`/rank?restaurant=${ranking.restaurant.id}`)
+    else if (i === 2) removeRankingWithUndo(ranking)
+  }
+
   return (
     <SwipeToRemove onRemove={() => removeRankingWithUndo(ranking)} skipAnim={skipAnim}>
-      <View className="flex-row gap-3 border-b border-line py-3">
-        <Text className="font-serif text-serif-lg text-accent" style={{ width: 28 }}>
-          {ranking.position}
-        </Text>
-        <Link href={`/r/${ranking.restaurant.id}`}>
-          <PlaceCover
-            seed={ranking.restaurant.id}
-            name={ranking.restaurant.name}
-            coverImageId={ranking.restaurant.coverImageId}
-            size={{ w: 160, h: 160 }}
-            className="h-14 w-14"
-          />
-        </Link>
-        <View className="flex-1">
-          {/* Name + characteristics + Pide/tags is one tap target now — it
-              used to be three islands (a Link around just the name, then
-              dead space over Characteristics and the Pide/tags line) with no
-              visible seam telling you where the tappable part stopped. */}
+      <View className="rounded-card border border-line bg-surface py-2.5 pr-1 pl-2">
+        <View className="flex-row items-center gap-2.5">
+          {/* Wide enough for "100", never wraps: a 20pt column stacked
+              "1" over "0" for every position past 9. */}
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            maxFontSizeMultiplier={1.1}
+            style={[DATA_FIGURES, { width: 26 }]}
+            className={`text-center font-serif text-serif-md ${ranking.position <= 3 ? 'text-text' : 'text-text-faint'}`}
+          >
+            {ranking.position}
+          </Text>
           <Link href={`/r/${ranking.restaurant.id}`} asChild>
-            <Pressable accessibilityRole="button" className="active:opacity-80">
-              <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
-              <Characteristics
-                priceTier={ranking.restaurant.priceTier}
-                cuisine={ranking.restaurant.cuisine}
-                neighborhood={ranking.neighborhood}
+            <Pressable
+              accessibilityRole="button"
+              className="flex-1 flex-row items-center gap-2.5 active:opacity-80"
+            >
+              <PlaceCover
+                seed={ranking.restaurant.id}
+                name={ranking.restaurant.name}
+                coverImageId={ranking.restaurant.coverImageId}
+                size={{ w: 160, h: 160 }}
+                className="h-12 w-12 rounded-sm"
               />
-              {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && !editing && (
-                <View className="mt-1 flex-row flex-wrap items-center gap-2">
-                  {ranking.favoriteDish && (
-                    <Caption className="text-text-2">
-                      {t('rankings.order_this', { dish: ranking.favoriteDish })}
-                    </Caption>
-                  )}
-                  {(ranking.tags ?? []).map((t) => (
-                    <Caption key={t} className="text-micro">
-                      {tagLabel(t)}
-                    </Caption>
-                  ))}
-                </View>
-              )}
+              <View className="flex-1 justify-center">
+                <Text
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-subhead text-text"
+                >
+                  {ranking.restaurant.name}
+                </Text>
+                {meta ? (
+                  <Caption numberOfLines={1} className="mt-[1px]">
+                    {meta}
+                  </Caption>
+                ) : null}
+                {accentLine ? (
+                  <Caption
+                    numberOfLines={1}
+                    className="mt-[1px] font-ui-semibold text-accent-strong"
+                  >
+                    {accentLine}
+                  </Caption>
+                ) : null}
+              </View>
             </Pressable>
           </Link>
-          {editing ? (
-            <View className="mt-2 gap-2">
-              <TextInput
-                className="min-h-[64px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
-                placeholderTextColor={placeholder}
-                placeholder={t('rankings.note_placeholder')}
-                maxLength={140}
-                multiline
-                inputAccessoryViewID="ranking-note"
-                value={draft}
-                onChangeText={setDraft}
-              />
-              <View className="flex-row gap-4">
-                <ActionText disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>
-                  {t('rankings.save')}
-                </ActionText>
-                <ActionText
-                  onPress={() => {
-                    setDraft(ranking.note ?? '')
-                    setEditing(false)
-                  }}
-                >
-                  {t('common.cancel')}
-                </ActionText>
-              </View>
-            </View>
-          ) : (
-            <>
-              {ranking.note ? (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setEditing(true)}
-                  className="active:opacity-70"
-                >
-                  <SerifNote>{ranking.note}</SerifNote>
-                </Pressable>
-              ) : null}
-              {/* "Quitar" used to sit here too, permanently equal-billed with
-                  the primary action — a destructive action doesn't need a
-                  second entry point when the row already swipes to remove
-                  (SwipeToRemove, above). */}
-              <View className="mt-2">
-                <ActionText onPress={() => setEditing(true)}>
-                  {ranking.note ? t('rankings.edit_note') : t('rankings.add_note')}
-                </ActionText>
-              </View>
-            </>
-          )}
-        </View>
-        <Link href={`/rank?restaurant=${ranking.restaurant.id}`} asChild>
+          {/* The score — a solid brass circle, the one filled shape in the
+              row, so it's the first thing the eye lands on. */}
+          <View className="h-11 w-11 items-center justify-center rounded-pill bg-accent-fill">
+            <Text
+              style={DATA_FIGURES}
+              maxFontSizeMultiplier={1.1}
+              className="font-serif text-serif-sm text-on-accent"
+            >
+              {displayScore(ranking.score)}
+            </Text>
+          </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('restaurant.rank_again_label')}
+            accessibilityLabel={t('rankings.more_actions')}
+            onPress={openMenu}
+            hitSlop={8}
+            className="h-11 w-7 items-center justify-center active:opacity-60"
           >
-            <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+            <MoreIcon size={18} color="text-muted" />
           </Pressable>
-        </Link>
+        </View>
+        {editing ? (
+          <View className="mt-2 gap-1 pr-2 pl-8">
+            <TextInput
+              autoFocus
+              className="min-h-[64px] rounded border border-line bg-bg p-3 font-ui text-body text-text"
+              placeholderTextColor={placeholder}
+              placeholder={t('rankings.note_placeholder')}
+              maxLength={140}
+              multiline
+              inputAccessoryViewID="ranking-note"
+              value={draft}
+              onChangeText={setDraft}
+            />
+            <View className="flex-row gap-4">
+              <ActionText disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>
+                {t('rankings.save')}
+              </ActionText>
+              <ActionText
+                onPress={() => {
+                  setDraft(ranking.note ?? '')
+                  setEditing(false)
+                }}
+              >
+                {t('common.cancel')}
+              </ActionText>
+            </View>
+          </View>
+        ) : null}
       </View>
     </SwipeToRemove>
   )
 })
-
-function SerifNote({ children }: { children: React.ReactNode }) {
-  return <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">“{children}”</Text>
-}
 
 function ActionText({
   children,
@@ -815,10 +820,12 @@ const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
   })
   return (
     <SwipeToRemove onRemove={() => remove.mutate()}>
-      <View className="flex-row items-center justify-between border-b border-line py-3">
+      <View className="flex-row items-center justify-between rounded-card border border-line bg-surface px-4 py-3">
         <Link href={`/r/${saved.restaurant.id}`} asChild>
           <Pressable accessibilityRole="button" className="flex-1 pr-3 active:opacity-80">
-            <Text className="font-serif text-serif-md text-text">{saved.restaurant.name}</Text>
+            <Text numberOfLines={1} className="font-serif text-serif-md text-text">
+              {saved.restaurant.name}
+            </Text>
             <Characteristics
               priceTier={saved.restaurant.priceTier}
               cuisine={saved.restaurant.cuisine}
@@ -866,22 +873,40 @@ function ListsRail({
         <Pressable
           accessibilityRole="button"
           onPress={onCreate}
-          className="w-28 items-center justify-center rounded border border-dashed border-line-strong py-4 active:opacity-70"
+          className="w-32 items-center justify-center gap-1 rounded-card border border-dashed border-line-strong active:opacity-70"
         >
           <Text className="font-ui-medium text-label text-accent-strong">
             {t('rankings.new_list')}
           </Text>
         </Pressable>
-        {lists.map((list) => (
-          <Link key={list.id} href={`/guardados/${list.id}`} asChild>
-            <Pressable className="w-28 justify-center rounded border border-line bg-surface p-3 active:opacity-80">
-              <Text className="font-serif text-serif-sm text-text" numberOfLines={2}>
-                {list.name}
-              </Text>
-              <Caption className="mt-1">{t('guardar.item_count', { n: list.itemCount })}</Caption>
-            </Pressable>
-          </Link>
-        ))}
+        {lists.map((list) => {
+          const img = cloudinaryUrl(list.coverImageId ?? list.previewImageId, { w: 280, h: 200 })
+          return (
+            <Link key={list.id} href={`/guardados/${list.id}`} asChild>
+              <Pressable className="w-32 overflow-hidden rounded-card border border-line bg-surface active:opacity-80">
+                <View className="h-20 w-full items-center justify-center bg-bg-sunk">
+                  {img ? (
+                    <Image
+                      source={{ uri: img }}
+                      style={{ width: '100%', height: '100%' }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <ListIcon size={20} color="text-muted" />
+                  )}
+                </View>
+                <View className="px-3 pt-2 pb-3">
+                  <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                    {list.name}
+                  </Text>
+                  <Caption className="mt-0.5 text-micro">
+                    {t('guardar.item_count', { n: list.itemCount })}
+                  </Caption>
+                </View>
+              </Pressable>
+            </Link>
+          )
+        })}
       </ScrollView>
     </View>
   )

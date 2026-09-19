@@ -2,12 +2,17 @@ import { Eyebrow } from '@/components/ui'
 import { CheckIcon } from '@/components/ui/icons'
 import { getLanguage, t } from '@/lib/i18n'
 import { BRASS_SHADOW } from '@/theme/vars'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 
-// Mesa's own themed bottom sheet — the same imperative-promise shape as
+// Mesa's own themed chooser (a centered pop-up since Sept 2026; was a bottom sheet) — the same imperative-promise shape as
 // lib/actionSheet.ts's showActionSheet, so a call site swaps by changing one
 // import (and, where useful, adding selectedIndex). Reserved for the app's
 // genuine CHOOSERS (sort, maps app, report reason); the three single-
@@ -31,11 +36,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 // showSheet(...)` from anywhere — a plain lib file, a mutation's callback —
 // with no provider and no context.
 //
-// Rendering follows the app's own existing overlay, RankCoachmark
-// (app/rank.tsx): a full-screen scrim Pressable dismisses on tap; the panel
-// claims the touch responder itself (onStartShouldSetResponder) so a tap
-// inside it doesn't bubble up and close the sheet. No drag-to-dismiss in v1 —
-// tap-scrim plus a Cancel row is enough. The options list itself DOES scroll
+// Rendering: a full-screen scrim Pressable dismisses on tap; the card claims
+// the touch responder itself (onStartShouldSetResponder) so a tap inside it
+// doesn't bubble up and close it. Tap-scrim plus a Cancel row. The options list itself DOES scroll
 // (capped at 60% of the window height, title/Cancel stay fixed outside it) —
 // a sort menu is 2-4 fixed rows, but a filter dimension like cuisine or
 // sector can run well past that on the real catalog (M14).
@@ -128,14 +131,41 @@ function useSheetRequest(): SheetRequest | null {
   )
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+// Centered, not a bottom sheet (founder's call, Sept 2026): a chooser pops up
+// in the middle of the screen — a white card over the scrim, easing in from
+// 94% scale — and eases back out the same way. The animation is driven by one
+// shared value rather than Reanimated's entering/exiting: an `exiting` view
+// stays alive in the native tree for the whole fade and kept catching taps
+// meant for the screen behind it. Here the root flips to pointerEvents="none"
+// the instant a choice is made, so the fade-out is purely visual.
+const EASE = Easing.out(Easing.cubic)
 
 export function SheetHost() {
   const req = useSheetRequest()
-  const insets = useSafeAreaInsets()
   const { height: windowHeight } = useWindowDimensions()
-  if (!req) return null
-  const showCheckSlot = req.selectedIndex != null
+  // The last request, kept on screen through the fade-out after `req` clears.
+  const [shown, setShown] = useState<SheetRequest | null>(null)
+  const progress = useSharedValue(0)
+
+  useEffect(() => {
+    if (req) {
+      setShown(req)
+      progress.value = withTiming(1, { duration: 200, easing: EASE })
+    } else {
+      progress.value = withTiming(0, { duration: 150, easing: EASE }, (finished) => {
+        if (finished) runOnJS(setShown)(null)
+      })
+    }
+  }, [req, progress])
+
+  const scrimStyle = useAnimatedStyle(() => ({ opacity: progress.value }))
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.94 + progress.value * 0.06 }, { translateY: (1 - progress.value) * 8 }],
+  }))
+
+  if (!shown) return null
+  const showCheckSlot = shown.selectedIndex != null
   return (
     // A plain root-mounted overlay, same shape as <Toaster/> — NOT wrapped in
     // RN's own <Modal>. Tried that first: it does not help. `rank` and
@@ -147,55 +177,58 @@ export function SheetHost() {
     // call site whose only two callers (the dish composer, the rank flow's
     // photo step) are BOTH modals — stays on the native showActionSheet
     // instead of this Sheet. This component works correctly from any
-    // non-modal screen, which covers the other three call sites.
-    <AnimatedPressable
-      entering={FadeIn.duration(180)}
-      // No exiting animation on the full-screen touch target: Reanimated keeps
-      // an "exiting" view alive in the native tree for the whole fade, and
-      // this one covers the entire screen — for ~150ms after picking an
-      // option, the next tap anywhere landed on the ghost scrim instead of
-      // real content. The dismiss itself is instant (no exiting effect on it),
-      // which is a fine trade for a sheet that's only up a second or two.
+    // non-modal screen, which covers the other call sites.
+    <View
+      pointerEvents={req ? 'auto' : 'none'}
       accessibilityViewIsModal
-      onPress={() => resolveCurrent(null)}
-      className="absolute inset-0 justify-end bg-overlay-scrim"
+      className="absolute inset-0 items-center justify-center px-8"
     >
+      <Animated.View style={scrimStyle} className="absolute inset-0 bg-overlay-scrim">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={shown.cancelLabel}
+          onPress={() => resolveCurrent(null)}
+          className="flex-1"
+        />
+      </Animated.View>
       <Animated.View
-        entering={FadeInDown.springify().damping(16)}
         onStartShouldSetResponder={() => true}
-        className="w-full rounded-t border-t border-line bg-surface-raised"
-        style={{
-          paddingBottom: insets.bottom + 12,
-          shadowColor: BRASS_SHADOW,
-          shadowOpacity: 0.25,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: -4 },
-        }}
+        className="w-full overflow-hidden rounded-card border border-line bg-surface-raised"
+        style={[
+          {
+            maxWidth: 380,
+            shadowColor: BRASS_SHADOW,
+            shadowOpacity: 0.25,
+            shadowRadius: 24,
+            shadowOffset: { width: 0, height: 8 },
+          },
+          cardStyle,
+        ]}
       >
-        {req.title ? (
+        {shown.title ? (
           <View className="border-line border-b px-5 pt-4 pb-3">
-            <Eyebrow>{req.title}</Eyebrow>
-            {req.message ? (
-              <Text className="mt-1 font-ui text-label text-text-muted">{req.message}</Text>
+            <Eyebrow>{shown.title}</Eyebrow>
+            {shown.message ? (
+              <Text className="mt-1 font-ui text-label text-text-muted">{shown.message}</Text>
             ) : null}
           </View>
         ) : (
           <View className="pt-2" />
         )}
         <ScrollView
-          style={{ maxHeight: windowHeight * 0.6 }}
+          style={{ maxHeight: windowHeight * 0.55 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {req.options.map((o, i) => {
-            const active = i === req.selectedIndex
+          {shown.options.map((o, i) => {
+            const active = i === shown.selectedIndex
             return (
               <Pressable
                 key={`${i}:${o.label}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 onPress={() => resolveCurrent(i)}
-                className="min-h-[52px] flex-row items-center gap-3 px-5 active:opacity-70"
+                className="min-h-[50px] flex-row items-center gap-3 px-5 active:bg-bg-sunk"
               >
                 <Text
                   className={`flex-1 font-ui text-body ${
@@ -215,16 +248,16 @@ export function SheetHost() {
             )
           })}
         </ScrollView>
-        <View className="mt-1 border-line border-t">
+        <View className="border-line border-t">
           <Pressable
             accessibilityRole="button"
             onPress={() => resolveCurrent(null)}
-            className="min-h-[52px] items-center justify-center px-5 active:opacity-70"
+            className="min-h-[50px] items-center justify-center px-5 active:bg-bg-sunk"
           >
-            <Text className="font-ui-medium text-body text-text-muted">{req.cancelLabel}</Text>
+            <Text className="font-ui-medium text-body text-text-muted">{shown.cancelLabel}</Text>
           </Pressable>
         </View>
       </Animated.View>
-    </AnimatedPressable>
+    </View>
   )
 }

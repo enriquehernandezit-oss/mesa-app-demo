@@ -3,6 +3,7 @@ import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
 import {
   BookmarkIcon,
@@ -11,19 +12,18 @@ import {
   ChevronIcon,
   CompassIcon,
   ForkKnifeIcon,
-  PeopleIcon,
   PlusIcon,
 } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
-import { cuisineLabel } from '@/lib/display'
+import { cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { dateLocale, useT } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
 import { isPendingInvite } from '@/lib/plans'
-import type { MeStats, Neighborhood, Plan } from '@/lib/types'
+import type { MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -141,6 +141,14 @@ export default function ProfileTab() {
   const avatarPicker = useAvatarPicker()
 
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
+  // Same key/endpoint as the Rankings tab, so it's usually already cached.
+  const rankings = useQuery({
+    queryKey: ['rankings'],
+    queryFn: () => api.get<{ rankings: Ranking[] }>('/rankings'),
+  })
+  const top3 = [...(rankings.data?.rankings ?? [])]
+    .sort((a, b) => a.position - b.position)
+    .slice(0, 3)
   // Same ['plans'] cache key planes/index.tsx reads — the pending-invite
   // count here and the app's own list never disagree, and a visit to either
   // screen warms the other's cache.
@@ -240,35 +248,120 @@ export default function ProfileTab() {
             Rendered with — placeholders while `stats` is still loading (instead
             of only once it lands) so the trio reserves its space rather than
             the whole header shifting down; hidden only on a genuine error. */}
+        {/* Stats in one white card on the cream ground (founder's mock) —
+            ranked · followers · following · streak, hairline-divided.
+            Rendered with — placeholders while loading so it reserves its
+            space; hidden only on a genuine error. */}
         {!stats.isError && (
-          <View className="mt-5 flex-row justify-around">
-            <Stat
-              n={stats.data ? String(stats.data.followers) : '—'}
-              l={t('profile.followers')}
-              onPress={() => router.push(`/people/${p?.id}?tab=followers`)}
-            />
-            <Stat
-              n={stats.data ? String(stats.data.following) : '—'}
-              l={t('profile.following')}
-              onPress={() => router.push(`/people/${p?.id}?tab=following`)}
-            />
-            <Stat
-              n={stats.data ? String(stats.data.places) : '—'}
-              l={t('profile.ranked')}
-              onPress={() => router.push('/rankings')}
-            />
+          <View className="mt-5 flex-row rounded-card border border-line bg-surface py-2">
+            {[
+              {
+                n: stats.data ? String(stats.data.places) : '—',
+                l: t('profile.ranked'),
+                go: () => router.push('/rankings'),
+              },
+              {
+                n: stats.data ? String(stats.data.followers) : '—',
+                l: t('profile.followers'),
+                go: () => router.push(`/people/${p?.id}?tab=followers`),
+              },
+              {
+                n: stats.data ? String(stats.data.following) : '—',
+                l: t('profile.following'),
+                go: () => router.push(`/people/${p?.id}?tab=following`),
+              },
+              {
+                n: stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—',
+                l: t('profile.streak_short'),
+                go: () => router.push('/leaderboard'),
+              },
+            ].map((s, i) => (
+              <View key={s.l} className={`flex-1 ${i > 0 ? 'border-line border-l' : ''}`}>
+                <Stat n={s.n} l={s.l} onPress={s.go} />
+              </View>
+            ))}
           </View>
         )}
 
         {/* Share lives in TopBar only now — it used to also duplicate here,
             same handler, two entry points for one action. */}
-        <View className="mt-5">
-          <Button variant="secondary" onPress={() => setEditing(true)}>
-            {t('profile.edit_profile')}
-          </Button>
+        <View className="mt-4 flex-row gap-3">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setEditing(true)}
+            className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
+          >
+            <Text className="font-ui-semibold text-label text-accent-strong">
+              {t('profile.edit_profile')}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/amigos')}
+            className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
+          >
+            <Text className="font-ui-semibold text-label text-accent-strong">
+              {t('amigos.title')}
+            </Text>
+          </Pressable>
         </View>
 
-        <View className="mt-6">
+        {/* Tu top 3 — the first three of your list, as white cards. */}
+        {top3.length > 0 ? (
+          <View className="mt-6">
+            <View className="mb-3 flex-row items-baseline justify-between">
+              <Text className="font-ui-semibold text-subhead text-text">{t('profile.top3')}</Text>
+              <Pressable
+                onPress={() => router.push('/rankings')}
+                hitSlop={8}
+                className="active:opacity-60"
+              >
+                <Text className="font-ui-semibold text-label text-accent-strong">
+                  {t('profile.see_your_list')} ›
+                </Text>
+              </Pressable>
+            </View>
+            <View className="gap-2">
+              {top3.map((r) => (
+                <Pressable
+                  key={r.id}
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/r/${r.restaurant.id}`)}
+                  className="flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
+                >
+                  <Text
+                    style={[DATA_FIGURES, { width: 22 }]}
+                    className="text-center font-serif text-serif-md text-text"
+                  >
+                    {r.position}
+                  </Text>
+                  <PlaceCover
+                    seed={r.restaurant.id}
+                    name={r.restaurant.name}
+                    coverImageId={r.restaurant.coverImageId}
+                    size={{ w: 160, h: 160 }}
+                    className="h-14 w-14 rounded-sm"
+                  />
+                  <View className="flex-1">
+                    <Text numberOfLines={1} className="font-ui-semibold text-subhead text-text">
+                      {r.restaurant.name}
+                    </Text>
+                    <Caption numberOfLines={1}>
+                      {[cuisineLabel(r.restaurant.cuisine), r.neighborhood]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Caption>
+                  </View>
+                  <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
+                    {displayScore(r.score)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
+
+        <View className="mt-6 overflow-hidden rounded-card border border-line bg-surface px-4">
           {/* No count here — the trio above already carries it. */}
           <NavRow
             icon={<CheckIcon size={15} />}
@@ -298,32 +391,18 @@ export default function ProfileTab() {
             icon={<CompassIcon size={15} />}
             label={t('rankings.explore_spots')}
             onPress={() => router.push('/explore')}
-          />
-          <NavRow
-            icon={<PeopleIcon size={15} />}
-            label={t('amigos.title')}
-            onPress={() => router.push('/amigos')}
+            last
           />
         </View>
 
         {!stats.isError && (
-          <View className="mt-6 flex-row gap-3">
+          <View className="mt-4 flex-row gap-3">
             <StatCard
               label={t('profile.rank_in_dr')}
               value={
                 stats.data ? (stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—') : '—'
               }
               onPress={() => router.push('/leaderboard')}
-            />
-            <StatCard
-              label={t('profile.current_streak')}
-              value={
-                stats.data
-                  ? stats.data.streakWeeks > 0
-                    ? t('profile.streak_weeks_count', { n: stats.data.streakWeeks })
-                    : t('profile.no_streak_yet')
-                  : '—'
-              }
             />
           </View>
         )}
@@ -337,12 +416,13 @@ function NavRow({
   label,
   meta,
   onPress,
-}: { icon: ReactNode; label: string; meta?: string; onPress: () => void }) {
+  last,
+}: { icon: ReactNode; label: string; meta?: string; onPress: () => void; last?: boolean }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="flex-row items-center justify-between border-line border-b py-4 active:opacity-70"
+      className={`flex-row items-center justify-between py-4 active:opacity-70 ${last ? '' : 'border-line border-b'}`}
     >
       <View className="flex-row items-center gap-2">
         {icon}

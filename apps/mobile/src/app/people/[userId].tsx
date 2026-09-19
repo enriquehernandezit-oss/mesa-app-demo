@@ -1,5 +1,5 @@
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Button, Chip, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import { Button, EmptyState, ErrorState, RowsSkeleton, Segmented } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
@@ -45,21 +45,15 @@ export default function PeopleScreen() {
           headerLargeTitle: false,
         }}
       />
-      <View className="flex-row gap-2 px-5 pb-2 pt-3">
-        <Chip
-          size="sm"
-          state={tab === 'followers' ? 'selected' : 'default'}
-          onPress={() => setTab('followers')}
-        >
-          {t('people.followers_title')}
-        </Chip>
-        <Chip
-          size="sm"
-          state={tab === 'following' ? 'selected' : 'default'}
-          onPress={() => setTab('following')}
-        >
-          {t('people.following_title')}
-        </Chip>
+      <View className="px-5 pt-3 pb-2">
+        <Segmented
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'followers', label: t('people.followers_title') },
+            { value: 'following', label: t('people.following_title') },
+          ]}
+        />
       </View>
 
       {q.isPending ? (
@@ -74,14 +68,25 @@ export default function PeopleScreen() {
         <FlatList
           data={q.data?.users ?? []}
           keyExtractor={(u) => u.id}
-          renderItem={({ item }) => (
-            <PersonRow
-              user={item}
-              right={
-                <FollowPill userId={item.id} initial={item.isFollowing} from="people_screen" />
-              }
-            />
-          )}
+          renderItem={({ item, index }) => {
+            // A virtualized list can't wrap its rows in one View, so each row
+            // carries its slice of the grouped white card: side borders always,
+            // top edge + rounding on the first, bottom edge + rounding on the last.
+            const last = index === (q.data?.users.length ?? 0) - 1
+            return (
+              <View
+                className={`border-line border-x bg-surface px-3 ${index === 0 ? 'rounded-t-card border-t' : ''} ${last ? 'rounded-b-card border-b' : ''}`}
+              >
+                <PersonRow
+                  user={item}
+                  last={last}
+                  right={
+                    <FollowPill userId={item.id} initial={item.isFollowing} from="people_screen" />
+                  }
+                />
+              </View>
+            )
+          }}
           contentContainerClassName="px-5 pb-10"
           ListEmptyComponent={
             <EmptyState

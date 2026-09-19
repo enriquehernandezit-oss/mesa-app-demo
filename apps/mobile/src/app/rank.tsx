@@ -17,6 +17,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { CheckIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
@@ -1172,6 +1173,18 @@ function RevealStep({
               <Text className="flex-1 font-serif text-serif-sm text-text" numberOfLines={1}>
                 {d.name}
               </Text>
+              {/* Every tap here saves on its own (the parent's queue) — this
+                  says so, instead of leaving "did that stick?" to guesswork. */}
+              {d.dishId ? (
+                <View className="flex-row items-center gap-1">
+                  <CheckIcon size={13} color="accent" />
+                  <Caption className="font-ui-semibold text-micro text-accent-strong">
+                    {t('rank.dish_saved')}
+                  </Caption>
+                </View>
+              ) : (
+                <Caption className="text-micro">{t('common.saving')}</Caption>
+              )}
               <Pressable
                 accessibilityRole="button"
                 onPress={() => {
@@ -1332,9 +1345,24 @@ function RevealStep({
         <Body className="mt-6 text-center text-text-muted">
           {t('rank.your_answer_moved', { name: picked.name })}
         </Body>
-        <View className="mt-4">
-          <Button variant="primary" disabled={dishSyncPending} onPress={onAddNote}>
-            {dishSyncPending ? t('common.saving') : t('rank.add_a_note')}
+        {/* Two clear ways out: finish now (everything above is already
+            saved), or keep going to a note. "Agregar una nota" used to be the
+            only button, so logging dishes WITHOUT a note meant finding the
+            small "Listo" up top or swiping the sheet away. */}
+        <View className="mt-4 gap-3">
+          {selectedDishes.length > 0 && !dishSyncPending ? (
+            <View className="flex-row items-center justify-center gap-1.5">
+              <CheckIcon size={14} color="accent" />
+              <Caption className="font-ui-medium text-accent-strong">
+                {t('rank.dishes_saved', { n: selectedDishes.length })}
+              </Caption>
+            </View>
+          ) : null}
+          <Button variant="primary" disabled={listoBlocked} onPress={onDone}>
+            {commitPending || dishSyncPending ? t('common.saving') : t('rank.finish')}
+          </Button>
+          <Button variant="secondary" disabled={dishSyncPending} onPress={onAddNote}>
+            {t('rank.add_a_note')}
           </Button>
         </View>
       </ScrollView>

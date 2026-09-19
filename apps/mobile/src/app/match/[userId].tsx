@@ -148,7 +148,7 @@ export default function MatchScreen() {
             <SectionHeader>{t('match.not_tried_title', { name: theirName })}</SectionHeader>
             {notTried.map((r) => (
               <Link key={r.restaurantId} href={`/r/${r.restaurantId}`} asChild>
-                <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+                <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
                   <PlaceCover
                     seed={r.restaurantId}
                     name={r.name}
@@ -186,7 +186,7 @@ function MatchPlaceRow({
 }) {
   return (
     <Link href={`/r/${place.restaurantId}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
         <PlaceCover
           seed={place.restaurantId}
           name={place.name}

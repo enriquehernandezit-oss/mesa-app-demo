@@ -141,19 +141,23 @@ export default function ActivityScreen() {
           sections.map((s) => (
             <View key={s.key}>
               <SectionHeader>{s.label}</SectionHeader>
-              {s.items.map((a) => (
-                // type + user + at isn't always unique on its own — the same
-                // friend can rank two different restaurants (or reply to two
-                // different plans) with the exact same updatedAt/createdAt
-                // timestamp (a bulk backfill sharing one `now()` is the most
-                // common real cause), which produced a real "two children
-                // with the same key" crash. restaurant/plan close the gap;
-                // together with type+user+at they're unique per real event.
-                <ActivityRow
-                  key={`${a.type}-${a.user.id}-${a.restaurant?.id ?? ''}-${a.planId ?? ''}-${a.at}`}
-                  a={a}
-                />
-              ))}
+              {/* One white grouped card per section, on the cream ground. */}
+              <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+                {s.items.map((a, i) => (
+                  // type + user + at isn't always unique on its own — the same
+                  // friend can rank two different restaurants (or reply to two
+                  // different plans) with the exact same updatedAt/createdAt
+                  // timestamp (a bulk backfill sharing one `now()` is the most
+                  // common real cause), which produced a real "two children
+                  // with the same key" crash. restaurant/plan close the gap;
+                  // together with type+user+at they're unique per real event.
+                  <ActivityRow
+                    key={`${a.type}-${a.user.id}-${a.restaurant?.id ?? ''}-${a.planId ?? ''}-${a.at}`}
+                    a={a}
+                    last={i === s.items.length - 1}
+                  />
+                ))}
+              </View>
             </View>
           ))
         )}
@@ -168,7 +172,7 @@ export default function ActivityScreen() {
 // to re-render every currently-mounted row even though `a` itself hadn't
 // changed. Same fix already applied to discover.tsx's FeedCard and
 // explore.tsx's HitRow/MemberRow.
-const ActivityRow = memo(function ActivityRow({ a }: { a: ActivityItem }) {
+const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; last?: boolean }) {
   const t = useT()
   const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
@@ -209,7 +213,9 @@ const ActivityRow = memo(function ActivityRow({ a }: { a: ActivityItem }) {
           <Avatar name={a.user.name || a.user.handle || 'm'} src={a.user.image} size={36} />
         </Pressable>
       </Link>
-      <View className="flex-1 flex-row items-start gap-3 border-line border-b py-3">
+      <View
+        className={`flex-1 flex-row items-start gap-3 py-3 ${last ? '' : 'border-line border-b'}`}
+      >
         <View className="flex-1">
           <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
             <Text

@@ -402,6 +402,12 @@ export interface SavedDish {
 export interface CollectionSummary {
   id: string
   name: string
+  // Optional playlist-style bio + cover (Sept 2026). A cover is a data URL,
+  // an https URL or a seed path — render through cloudinaryUrl().
+  description: string | null
+  coverImageId: string | null
+  // When there's no cover: the photo of the most recently added item.
+  previewImageId: string | null
   createdAt: string
   itemCount: number
   itemId: string | null
@@ -426,6 +432,8 @@ export interface CollectionItem {
 export interface CollectionDetail {
   id: string
   name: string
+  description: string | null
+  coverImageId: string | null
   items: CollectionItem[]
 }
 
@@ -578,6 +586,30 @@ export interface FeedItem {
   // ranking post saves the restaurant.
   restaurantSaved?: boolean
   dishSaved?: boolean
+  // Comments on the post (the ranking) — the count, plus the latest visible
+  // one previewed under the note, Instagram-style.
+  commentCount?: number
+  lastComment?: { user: { id: string; name: string; handle: string | null }; body: string } | null
+}
+
+export interface RankingComment {
+  id: string
+  body: string
+  createdAt: string
+  user: { id: string; name: string; handle: string | null; image: string | null }
+  // The author, or the owner of the ranking it sits on.
+  canDelete: boolean
+}
+
+export interface RankingCommentsResponse {
+  ranking: {
+    id: string
+    score: number
+    note: string | null
+    user: { id: string; name: string; handle: string | null; image: string | null }
+    restaurant: { id: string; name: string }
+  }
+  comments: RankingComment[]
 }
 
 export interface FriendRanking {

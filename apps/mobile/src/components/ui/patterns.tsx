@@ -57,20 +57,27 @@ export function SpotCard({
   variant?: 'wide' | 'tall'
 }) {
   const wide = variant === 'wide'
+  // A white card with a hairline border — photo on top, name and caption
+  // inside the card (founder's call: every content object is white on the
+  // cream ground, the featured lists included).
   return (
     <Link href={href} asChild>
-      <Pressable className={wide ? 'w-40 active:opacity-80' : 'w-36 active:opacity-80'}>
+      <Pressable
+        className={`overflow-hidden rounded-card border border-line bg-surface active:opacity-80 ${wide ? 'w-44' : 'w-36'}`}
+      >
         <PlaceCover
           seed={seed}
           name={name}
           coverImageId={coverImageId}
-          size={wide ? { w: 320, h: 300 } : { w: 320, h: 400 }}
-          className={wide ? 'h-24 w-40' : 'h-44 w-36'}
+          size={wide ? { w: 360, h: 220 } : { w: 320, h: 360 }}
+          className={`rounded-none ${wide ? 'h-24 w-44' : 'h-36 w-36'}`}
         />
-        <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
-          {name}
-        </Text>
-        {caption}
+        <View className="px-3 pt-2 pb-3">
+          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+            {name}
+          </Text>
+          {caption}
+        </View>
       </Pressable>
     </Link>
   )
@@ -91,7 +98,11 @@ export function Stat({ n, l, onPress }: { n: string; l: string; onPress?: () => 
       <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
         {n}
       </Text>
-      <Caption>{l}</Caption>
+      {/* One line, shrinking to fit — a four-up card left "Semanas racha"
+          wrapping under its neighbours. */}
+      <Caption numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} className="px-1">
+        {l}
+      </Caption>
     </>
   )
   if (!onPress) {

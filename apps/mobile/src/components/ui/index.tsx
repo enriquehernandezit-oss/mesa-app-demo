@@ -2,7 +2,7 @@ import { ChevronIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
-import { type ReactNode, useEffect } from 'react'
+import { type ReactNode, startTransition, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -15,6 +15,8 @@ import {
   type ViewProps,
 } from 'react-native'
 import Animated, {
+  Easing,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -269,6 +271,134 @@ export const Chip = ({
     </Pressable>
   )
 }
+
+/* --- Segmented --- one sunk track, the selected option a raised white thumb
+   that SLIDES to the tapped option. For mutually exclusive VIEW switches
+   (Rankeados/Quiero probar/Barrios, Lugares/Eventos, Afternoon/Candlelit/
+   Auto) — the founder's call to read these as one control instead of a row
+   of separate pills. Filters that can stack (Barrio ▾, Ocasión ▾) stay
+   Chips: they're not exclusive. The thumb is `surface-raised`, pure white on
+   Afternoon, so it pops the same way the cards do against the cream ground.
+   The thumb is one absolutely positioned view animated on the UI thread
+   (translateX), so it glides even while the screen below is busy
+   re-rendering for the new view. */
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+  onClear,
+  className,
+  accessibilityLabel,
+}: {
+  // null = nothing selected (no thumb) — only meaningful with `onClear`.
+  value: T | null
+  options: { value: T; label: string; icon?: ReactNode }[]
+  onChange: (v: T) => void
+  // When set, tapping the selected option clears it (a filter row's "any").
+  onClear?: () => void
+  className?: string
+  accessibilityLabel?: string
+}) {
+  // A tap slides the thumb FIRST and commits (onChange) when the slide lands:
+  // the slide gets the frames to itself, then the caller's (possibly heavy)
+  // re-render for the new view runs. A value change from outside (the prop)
+  // JUMPS the thumb instead — Rankings renders one of these per list, and the
+  // copy that becomes visible after a switch must already sit on the new
+  // option, not start a second slide of its own.
+  const [local, setLocal] = useState(value)
+  const [segW, setSegW] = useState(0)
+  const x = useSharedValue(0)
+  const found = options.findIndex((o) => o.value === local)
+  const index = Math.max(0, found)
+  const propIndex = options.findIndex((o) => o.value === value)
+  useEffect(() => {
+    setLocal(value)
+    if (segW > 0 && propIndex >= 0) x.value = propIndex * segW
+  }, [value, propIndex, segW, x])
+  const thumbOpacity = useSharedValue(found >= 0 ? 1 : 0)
+  useEffect(() => {
+    thumbOpacity.value = withTiming(found >= 0 ? 1 : 0, { duration: 160 })
+  }, [found, thumbOpacity])
+  const thumbStyle = useAnimatedStyle(() => ({
+    opacity: thumbOpacity.value,
+    transform: [{ translateX: x.value }],
+  }))
+  return (
+    <View
+      accessibilityRole="tablist"
+      accessibilityLabel={accessibilityLabel}
+      onLayout={(e) => {
+        const w = (e.nativeEvent.layout.width - SEG_PAD * 2) / options.length
+        // First measure: place the thumb without animating from the left.
+        if (segW === 0) x.value = index * w
+        setSegW(w)
+      }}
+      className={`flex-row rounded-pill bg-bg-sunk ${className ?? ''}`}
+      style={{ padding: SEG_PAD }}
+    >
+      {segW > 0 ? (
+        <Animated.View
+          pointerEvents="none"
+          className="absolute rounded-pill bg-surface-raised"
+          style={[
+            {
+              top: SEG_PAD,
+              bottom: SEG_PAD,
+              left: SEG_PAD,
+              width: segW,
+              shadowColor: BRASS_SHADOW,
+              shadowOpacity: 0.18,
+              shadowRadius: 6,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            },
+            thumbStyle,
+          ]}
+        />
+      ) : null}
+      {options.map((o, i) => {
+        const on = o.value === local
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            onPress={() => {
+              if (on) {
+                if (onClear) {
+                  setLocal(null)
+                  startTransition(onClear)
+                }
+                return
+              }
+              setLocal(o.value)
+              const commit = () => startTransition(() => onChange(o.value))
+              if (segW > 0) {
+                x.value = withTiming(i * segW, { duration: 220, easing: SEG_EASE }, (done) => {
+                  if (done) runOnJS(commit)()
+                })
+              } else commit()
+            }}
+            className="min-h-[40px] flex-1 flex-row items-center justify-center gap-1.5 px-2"
+          >
+            {o.icon}
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+              className={`text-label ${on ? 'font-ui-semibold text-text' : 'font-ui-medium text-text-muted'}`}
+            >
+              {o.label}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+const SEG_PAD = 4
+const SEG_EASE = Easing.out(Easing.cubic)
 
 /* Horizontal scrolling row of chips. Full-bleed: every caller already sits
    inside a px-5-padded screen, which used to double up here and cap the

@@ -83,6 +83,9 @@ module.exports = {
       borderRadius: {
         DEFAULT: 14,
         sm: 10,
+        // The white content cards on the cream ground (feed posts, ranking
+        // rows, profile stats, featured lists) — softer than DEFAULT's 14.
+        card: 20,
         pill: 999,
       },
       lineHeight: {

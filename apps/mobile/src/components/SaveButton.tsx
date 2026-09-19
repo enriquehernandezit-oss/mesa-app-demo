@@ -1,10 +1,11 @@
+import { MAX_SCALE } from '@/components/ui'
 import { BookmarkFilledIcon, BookmarkIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { type SaveTarget, useSave } from '@/hooks/useSave'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { useRouter } from 'expo-router'
-import { Pressable } from 'react-native'
+import { Pressable, Text } from 'react-native'
 
 // The one save/unsave control (M19) — next to CheersButton in the feed (a
 // dish post saves the dish, a ranking post saves the restaurant), and on the
@@ -23,6 +24,7 @@ export function SaveButton({
   // hand-rolled CheckIcon toggle, now going through the shared save state
   // and list-picker instead of a page-local mutation.
   variant = 'icon',
+  text,
   className,
 }: {
   target: SaveTarget
@@ -31,6 +33,8 @@ export function SaveButton({
   name: string
   size?: number
   variant?: 'icon' | 'pill'
+  // 'icon' only: a label beside the glyph (the feed card's "Quiero probar").
+  text?: string
   className?: string
 }) {
   const t = useT()
@@ -84,9 +88,17 @@ export function SaveButton({
       onPress={onTap}
       onLongPress={openListPicker}
       hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
-      className={`min-w-[44px] items-center justify-center active:opacity-70 ${className ?? ''}`}
+      className={`min-w-[44px] flex-row items-center justify-center gap-1.5 active:opacity-70 ${className ?? ''}`}
     >
       {saved ? <BookmarkFilledIcon size={size} /> : <BookmarkIcon size={size} color="text-muted" />}
+      {text ? (
+        <Text
+          maxFontSizeMultiplier={MAX_SCALE}
+          className={`font-ui-semibold text-label ${saved ? 'text-accent-strong' : 'text-text-muted'}`}
+        >
+          {text}
+        </Text>
+      ) : null}
     </Pressable>
   )
 }

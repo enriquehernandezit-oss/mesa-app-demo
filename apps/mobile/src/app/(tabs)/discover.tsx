@@ -16,6 +16,8 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { ChevronIcon, CommentIcon } from '@/components/ui/icons'
 import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
@@ -28,6 +30,7 @@ import type { EventSummary, FeaturedList, FeedItem, SuggestedUser } from '@/lib/
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, useRouter } from 'expo-router'
@@ -159,9 +162,13 @@ export default function DiscoverTab() {
 function FeedHeader() {
   const t = useT()
   return (
-    <View className="pt-2 pb-1">
+    // Tight to the first rail below (SpotRail's header adds its own mt-5):
+    // a bottom margin here on top of that left a ~32pt dead band between the
+    // title and "Listas destacadas".
+    <View className="pt-2 -mb-2">
       <Eyebrow>{t('discover.eyebrow')}</Eyebrow>
-      <Title className="mt-1 mb-3">{t('discover.title')}</Title>
+      <Title className="mt-1">{t('discover.title')}</Title>
+      <Caption className="mt-0.5">{t('discover.subtitle')}</Caption>
     </View>
   )
 }
@@ -323,24 +330,24 @@ function FeedSkeleton() {
   )
 }
 
-// Phase 6 (M9 flat-row pass): two flat, borderless row types instead of boxed
-// cards — a dish post carries a photo; a ranking is a dense sentence-plus-note
-// row with an inline badged score circle (attributed to the friend — never the
-// place's own rating). A hairline (`border-line border-b`) inset to the text
-// column is the only separator, matching Threads/X/Beli-style density.
+// Each post is a white card on the cream ground (founder's mock, Sept 2026 —
+// replacing M9's flat hairline rows): who did it and when, the place with its
+// photo and the friend's score, the note, a preview of the latest comment,
+// then the action bar (cheers · comments · Quiero probar). A dish post leads
+// with its photo instead. The whole card taps through to the place (or the
+// dish); the avatar, the comment row and each action keep their own targets —
+// nested plain Pressables, where RN gives the innermost one the touch.
 //
 // Wrapped in memo() (perf pass): paired with the hoisted `renderFeedItem`
-// below, so a screen-level re-render (pull-to-refresh, fetchNextPage, a
-// single CheersButton tap) doesn't force every currently-mounted row to
-// re-render too — same fix rankings.tsx's own M14 comment already documents
-// for RankingRow.
+// above, so a screen-level re-render (pull-to-refresh, fetchNextPage, a
+// single CheersButton tap) doesn't force every mounted card to re-render.
 const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
   const t = useT()
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
-  // Long-press on the note itself reports it (App Store 1.2) — the row is one
+  // Long-press on the note itself reports it (App Store 1.2) — the card is one
   // big tap target to the restaurant, so this rides a different gesture rather
-  // than adding a permanent "Reportar" line to every row in the feed.
+  // than adding a permanent "Reportar" line to every post.
   const reportNote = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
@@ -355,43 +362,45 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
           if (reason) reportNote.mutate({ reason, noteId })
         }
       : undefined
-  // One line — price|cuisine and neighborhood collapsed into a single row,
-  // truncated rather than ever wrapping to a second.
-  const priceCuisine = [
+  const meta = [
     priceLabel(item.restaurant.priceTier),
     cuisineLabel(item.restaurant.cuisine),
+    item.neighborhood,
   ]
     .filter(Boolean)
-    .join(' | ')
-  const oneLineMeta = [priceCuisine, item.neighborhood].filter(Boolean).join(' · ')
+    .join(' · ')
+  const isDish = Boolean(item.dishImage)
+  const href: Href = isDish && item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
+  const openComments = () => router.push(`/comentarios/${item.rankingId}`)
+  const commentCount = item.commentCount ?? 0
 
-  if (item.dishImage) {
-    const href: Href = item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
-    return (
+  return (
+    <Animated.View
+      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
+      className="mb-3"
+    >
       <Pressable
         accessibilityRole="button"
         onPress={() => router.push(href)}
-        className="active:opacity-90"
+        className="rounded-card border border-line bg-surface p-4 active:opacity-90"
       >
-        <Animated.View
-          entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-          className="flex-row items-start gap-3"
-        >
+        {/* Who + when */}
+        <View className="flex-row items-center gap-3">
           <Pressable
             accessibilityRole="button"
             hitSlop={8}
             onPress={() => router.push(`/u/${item.user.id}`)}
-            className="mt-3 active:opacity-70"
+            className="active:opacity-70"
           >
             <Avatar
               name={item.user.name || item.user.handle || 'm'}
               src={item.user.image}
-              size={36}
+              size={40}
             />
           </Pressable>
-          <View className="flex-1 border-line border-b py-3">
+          <View className="flex-1">
             <Text
-              numberOfLines={2}
+              numberOfLines={1}
               maxFontSizeMultiplier={MAX_SCALE}
               className="font-ui text-subhead text-text"
             >
@@ -402,143 +411,138 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
               >
                 {firstName}
               </Text>{' '}
-              {t('discover.posted_dish')}
-              {/* A non-breaking space glues "·" to the time so a wrap moves
-                  "· 3w" together instead of stranding "3w" alone on its own
-                  line. */}
-              <Text className="text-text-muted">
-                {' · '}
-                {timeAgo(item.rankedAt)}
-              </Text>
+              {isDish ? t('discover.posted_dish') : t('discover.ranked_verb')}
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(`/r/${item.restaurant.id}`)}
-              className="active:opacity-70"
-            >
-              <Caption className="mt-[2px]" numberOfLines={1}>
-                <Text className="font-ui-semibold text-text">
-                  {item.dishName || item.restaurant.name}
-                </Text>
-                {' · '}
-                {item.restaurant.name}
-              </Caption>
-            </Pressable>
-            <View className="mt-2 h-44 overflow-hidden rounded-sm bg-bg-sunk">
-              <Image
-                source={{ uri: cloudinaryUrl(item.dishImage, { w: 800, h: 600 }) ?? undefined }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-                transition={120}
-              />
-            </View>
-            <View className="mt-2 flex-row items-center gap-1">
-              <CheersButton
-                rankingId={item.rankingId}
-                count={item.cheersCount ?? 0}
-                cheered={item.cheeredByMe ?? false}
-              />
-              {item.dishId ? (
-                <SaveButton
-                  target={{ kind: 'dish', id: item.dishId }}
-                  initial={item.dishSaved ?? false}
-                  name={item.dishName || item.restaurant.name}
-                />
-              ) : null}
-            </View>
+            <Caption>{timeAgo(item.rankedAt)}</Caption>
           </View>
-        </Animated.View>
-      </Pressable>
-    )
-  }
+        </View>
 
-  return (
-    // The whole row is one tap target to the restaurant — it used to be
-    // tappable only at the avatar, the two name spans, and the score, which
-    // looked tappable everywhere and mostly wasn't (a self-inflicted D4 fix:
-    // this traded a nested-<Link>-in-<Link> gesture bug for an under-tappable
-    // card; a plain Pressable nested inside a plain Pressable, as used here,
-    // doesn't have that problem — only <Link>'s own gesture machinery did).
-    // The avatar keeps its OWN destination (the person, not the place) as the
-    // one nested exception; CheersButton keeps working the same way it always
-    // has, as the second nested exception.
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push(`/r/${item.restaurant.id}`)}
-      className="active:opacity-90"
-    >
-      <Animated.View
-        entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-        className="flex-row items-start gap-3"
-      >
+        {isDish ? (
+          <View className="mt-3 h-56 overflow-hidden rounded-sm bg-bg-sunk">
+            <Image
+              source={{ uri: cloudinaryUrl(item.dishImage, { w: 900, h: 700 }) ?? undefined }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              transition={120}
+            />
+          </View>
+        ) : null}
+
+        {/* The place — photo, name, one line of meta, the friend's score */}
         <Pressable
           accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => router.push(`/u/${item.user.id}`)}
-          className="mt-3 active:opacity-70"
+          onPress={() => router.push(`/r/${item.restaurant.id}`)}
+          className="mt-3 flex-row items-center gap-3 active:opacity-70"
         >
-          <Avatar
-            name={item.user.name || item.user.handle || 'm'}
-            src={item.user.image}
-            size={36}
+          <PlaceCover
+            seed={item.restaurant.id}
+            name={item.restaurant.name}
+            coverImageId={item.restaurant.coverImageId}
+            size={{ w: 160, h: 160 }}
+            className="h-14 w-14 rounded-sm"
           />
-        </Pressable>
-        <View className="flex-1 border-line border-b py-3">
-          <View className="flex-row items-start gap-3">
-            <View className="flex-1">
-              <Text
-                numberOfLines={2}
-                maxFontSizeMultiplier={MAX_SCALE}
-                className="font-ui text-subhead text-text"
-              >
-                <Text
-                  className="font-ui-semibold"
-                  onPress={() => router.push(`/u/${item.user.id}`)}
-                  suppressHighlighting
-                >
-                  {firstName}
-                </Text>{' '}
-                {t('discover.ranked_verb')}{' '}
-                <Text className="font-ui-semibold">{item.restaurant.name}</Text>
-                {/* Non-breaking space between "·" and the time so a wrap
-                    moves "· 3w" together rather than stranding "3w" alone. */}
-                <Text className="text-text-muted">
-                  {' · '}
-                  {timeAgo(item.rankedAt)}
-                </Text>
-              </Text>
-              {oneLineMeta ? (
-                <Caption className="mt-[2px]" numberOfLines={1}>
-                  {oneLineMeta}
-                </Caption>
-              ) : null}
-            </View>
-            <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
-          </View>
-          {item.note ? (
+          <View className="flex-1">
             <Text
-              selectable
-              numberOfLines={2}
-              onLongPress={onLongPressNote}
-              className="mt-1 font-serif-italic text-serif-sm text-text-2"
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-subhead text-text"
             >
-              “{item.note}”
+              {isDish && item.dishName
+                ? `${item.dishName} · ${item.restaurant.name}`
+                : item.restaurant.name}
             </Text>
-          ) : null}
-          <View className="mt-2 flex-row items-center gap-1">
-            <CheersButton
-              rankingId={item.rankingId}
-              count={item.cheersCount ?? 0}
-              cheered={item.cheeredByMe ?? false}
+            {meta ? (
+              <Caption className="mt-[2px]" numberOfLines={1}>
+                {meta}
+              </Caption>
+            ) : null}
+          </View>
+          {isDish ? (
+            <ChevronIcon size={14} color="text-muted" />
+          ) : (
+            <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
+          )}
+        </Pressable>
+
+        {item.note ? (
+          <Text
+            selectable
+            numberOfLines={3}
+            onLongPress={onLongPressNote}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-3 font-serif-italic text-serif-md text-text-2"
+          >
+            “{item.note}”
+          </Text>
+        ) : null}
+
+        {/* Latest comment + "Ver los N comentarios" */}
+        {item.lastComment ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('comments.open')}
+            onPress={openComments}
+            className="mt-3 active:opacity-70"
+          >
+            <Text
+              numberOfLines={2}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui text-label text-text-2"
+            >
+              <Text className="font-ui-semibold text-text">
+                {(item.lastComment.user.name || item.lastComment.user.handle || '').split(' ')[0]}
+              </Text>{' '}
+              {item.lastComment.body}
+            </Text>
+            {commentCount > 1 ? (
+              <Caption className="mt-1">{t('comments.view_all', { n: commentCount })}</Caption>
+            ) : null}
+          </Pressable>
+        ) : null}
+
+        {/* Action bar */}
+        <View className="mt-3 flex-row items-center gap-4">
+          <CheersButton
+            rankingId={item.rankingId}
+            count={item.cheersCount ?? 0}
+            cheered={item.cheeredByMe ?? false}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('comments.open')}
+            onPress={openComments}
+            hitSlop={{ top: 12, bottom: 12 }}
+            className="min-w-[44px] flex-row items-center gap-1.5 active:opacity-70"
+          >
+            <CommentIcon size={20} color="text-muted" />
+            {commentCount > 0 ? (
+              <Text
+                style={DATA_FIGURES}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-medium text-label text-text-muted"
+              >
+                {commentCount}
+              </Text>
+            ) : null}
+          </Pressable>
+          <View className="flex-1" />
+          {isDish && item.dishId ? (
+            <SaveButton
+              target={{ kind: 'dish', id: item.dishId }}
+              initial={item.dishSaved ?? false}
+              name={item.dishName || item.restaurant.name}
+              text={t('feed.want_to_try')}
             />
+          ) : (
             <SaveButton
               target={{ kind: 'restaurant', id: item.restaurant.id }}
               initial={item.restaurantSaved ?? false}
               name={item.restaurant.name}
+              text={t('feed.want_to_try')}
             />
-          </View>
+          )}
         </View>
-      </Animated.View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   )
 })

@@ -166,7 +166,11 @@ function MesaStack() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: 'transparent' },
+        // The resolved theme's own ground, never transparent: a pushed
+        // screen whose root has no background of its own (amigos, menu) used
+        // to slide in SEE-THROUGH, the screen underneath showing through it
+        // for the whole push — the "wonky" Ajustes → Encuentra amigos.
+        contentStyle: { backgroundColor: c.bg },
         // Back-swipe from anywhere on the screen, not just the left edge.
         fullScreenGestureEnabled: true,
         // A screen off-stack (a background tab, a screen under others in this
@@ -185,18 +189,14 @@ function MesaStack() {
           rank.tsx's own PlaceStep, so it gets the same modal presentation. */}
       <Stack.Screen name="platos/rankear" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
+      {/* A feed post's comments — a page sheet over the feed, like the mock:
+          the post stays visible behind it, drag down to dismiss. */}
+      <Stack.Screen name="comentarios/[rankingId]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
-      {/* The list picker (M19) — a real half-height sheet, not a full modal:
-          it's a short checklist, and formSheet lets the rest of the screen
-          stay visible/dismissible by swipe. */}
-      <Stack.Screen
-        name="guardar"
-        options={{
-          presentation: 'formSheet',
-          sheetAllowedDetents: [0.5, 1],
-          sheetGrabberVisible: true,
-        }}
-      />
+      {/* The list picker (M19) + the one "Nueva lista" create flow — a page
+          sheet. Was a formSheet at a 0.5 detent, whose flex-1 content mis-laid
+          itself out on device (rows shifted off the edge, title clipped). */}
+      <Stack.Screen name="guardar" options={{ presentation: 'modal' }} />
 
       {/* r/[restaurantId] has a horizontal similar-spots rail near the screen
           edge; react-native-screens' iOS full-screen swipe already lets a

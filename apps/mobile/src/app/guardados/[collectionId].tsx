@@ -1,16 +1,22 @@
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { Body, Button, Caption, EmptyState, ErrorState, Skeleton, Title } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { ListIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
+import { pickDishPhoto } from '@/lib/dishPhoto'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
+import { cloudinaryUrl } from '@/lib/media'
 import type { CollectionDetail, CollectionItem } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // One named list's full contents (M19). Restaurant items show "Ya fuiste ·
 // #N" once ranked since being added — see routes/collections.ts's own
@@ -33,6 +39,19 @@ export default function CollectionDetailScreen() {
     mutationFn: (itemId: string) => api.del(`/collections/${collectionId}/items/${itemId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['collection', collectionId] }),
     onError: () => toast({ variant: 'error', message: t('guardar.toggle_error') }),
+  })
+
+  const placeholder = useColor('text-muted')
+  const [editingBio, setEditingBio] = useState(false)
+  const [bio, setBio] = useState('')
+  const update = useMutation({
+    mutationFn: (patch: { description?: string | null; coverImageId?: string | null }) =>
+      api.patch(`/collections/${collectionId}`, patch),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collection', collectionId] })
+      queryClient.invalidateQueries({ queryKey: ['collections'] })
+    },
+    onError: () => toast({ variant: 'error', message: t('guardados.update_error') }),
   })
 
   const deleteList = useMutation({
@@ -80,7 +99,11 @@ export default function CollectionDetailScreen() {
     )
   }
 
-  const { name, items } = q.data
+  const { name, items, description, coverImageId } = q.data
+  // Cover: the list's own photo, else its first item's — same fallback the
+  // lists rail uses (the API's previewImageId).
+  const firstImage = items.find((i) => i.restaurant?.coverImageId)?.restaurant?.coverImageId ?? null
+  const cover = cloudinaryUrl(coverImageId ?? firstImage, { w: 480, h: 480 })
 
   return (
     <View className="flex-1 bg-bg">
@@ -100,7 +123,99 @@ export default function CollectionDetailScreen() {
           </Pressable>
         }
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="px-5 pb-10"
+      >
+        {/* Playlist-style header: a big cover (tap to change it), the name,
+            and an optional description edited in place. */}
+        <View className="mb-4 items-center">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('guardar.cover_label')}
+            onPress={async () => {
+              const uri = await pickDishPhoto()
+              if (uri) update.mutate({ coverImageId: uri })
+            }}
+            className="h-40 w-40 items-center justify-center overflow-hidden rounded-card border border-line bg-bg-sunk active:opacity-80"
+          >
+            {cover ? (
+              <Image
+                source={{ uri: cover }}
+                style={{ width: '100%', height: '100%' }}
+                contentFit="cover"
+              />
+            ) : (
+              <>
+                <ListIcon size={28} color="text-muted" />
+                <Caption className="mt-2">{t('guardar.cover_add')}</Caption>
+              </>
+            )}
+          </Pressable>
+          <Title className="mt-4 text-center">{name}</Title>
+          <Caption className="mt-1">{t('guardar.item_count', { n: items.length })}</Caption>
+          {editingBio ? (
+            <View className="mt-3 w-full">
+              <TextInput
+                autoFocus
+                value={bio}
+                onChangeText={setBio}
+                multiline
+                maxLength={300}
+                placeholder={t('guardar.description_placeholder')}
+                placeholderTextColor={placeholder}
+                className="min-h-[72px] w-full rounded-sm border border-line bg-surface px-3 py-3 font-ui text-body text-text"
+              />
+              {/* Explicit Save / Cancel — it used to save silently on blur,
+                  with nothing on screen saying how to commit the edit. */}
+              <View className="mt-3 flex-row gap-3">
+                <Button
+                  variant="secondary"
+                  className="w-auto flex-1"
+                  onPress={() => setEditingBio(false)}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  className="w-auto flex-1"
+                  loading={update.isPending}
+                  onPress={() =>
+                    update.mutate(
+                      { description: bio.trim() || null },
+                      { onSuccess: () => setEditingBio(false) },
+                    )
+                  }
+                >
+                  {t('rankings.save')}
+                </Button>
+              </View>
+            </View>
+          ) : description ? (
+            <Pressable
+              onPress={() => {
+                setBio(description)
+                setEditingBio(true)
+              }}
+              className="active:opacity-70"
+            >
+              <Body className="mt-3 text-center">{description}</Body>
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setBio('')
+                setEditingBio(true)
+              }}
+              className="mt-2 min-h-[36px] justify-center active:opacity-60"
+            >
+              <Caption className="font-ui-semibold text-accent-strong">
+                {t('guardados.add_description')}
+              </Caption>
+            </Pressable>
+          )}
+        </View>
         {items.length === 0 ? (
           <EmptyState>{t('guardados.empty_list')}</EmptyState>
         ) : (
@@ -136,7 +251,7 @@ function CollectionItemRow({
     const r = item.restaurant
     return (
       <Link href={`/r/${r.id}`} asChild>
-        <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+        <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
           <PlaceCover
             seed={r.id}
             name={r.name}
@@ -187,7 +302,7 @@ function CollectionItemRow({
     const d = item.dish
     return (
       <Link href={`/dish/${d.id}`} asChild>
-        <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+        <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
           <View className="flex-1">
             <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
               {d.name}

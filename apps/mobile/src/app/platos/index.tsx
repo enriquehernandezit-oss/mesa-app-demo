@@ -38,31 +38,35 @@ export default function PlatosScreen() {
         ) : (q.data?.lists.length ?? 0) === 0 ? (
           <EmptyState body={t('platos.empty_body')}>{t('platos.empty_title')}</EmptyState>
         ) : (
-          q.data?.lists.map((list) => (
-            <Link key={list.id} href={`/platos/${list.id}`} asChild>
-              <Pressable className="flex-row items-center justify-between border-line border-b py-3 active:opacity-80">
-                <View className="flex-1 pr-3">
-                  <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-                    {list.label}
-                  </Text>
-                  <Caption className="mt-1">
-                    {list.rankedAt
-                      ? t('platos.ranked_count', { n: list.restaurantCount })
-                      : t('platos.not_ranked_yet')}
-                  </Caption>
-                </View>
-                {!list.rankedAt && (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push(`/platos/rankear?listId=${list.id}`)}
-                    className="min-h-[36px] justify-center px-2 active:opacity-60"
-                  >
-                    <Caption className="text-accent">{t('platos.rank_button')}</Caption>
-                  </Pressable>
-                )}
-              </Pressable>
-            </Link>
-          ))
+          <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+            {q.data?.lists.map((list, i, all) => (
+              <Link key={list.id} href={`/platos/${list.id}`} asChild>
+                <Pressable
+                  className={`flex-row items-center justify-between py-3 active:opacity-80 ${i === all.length - 1 ? '' : 'border-line border-b'}`}
+                >
+                  <View className="flex-1 pr-3">
+                    <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+                      {list.label}
+                    </Text>
+                    <Caption className="mt-1">
+                      {list.rankedAt
+                        ? t('platos.ranked_count', { n: list.restaurantCount })
+                        : t('platos.not_ranked_yet')}
+                    </Caption>
+                  </View>
+                  {!list.rankedAt && (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => router.push(`/platos/rankear?listId=${list.id}`)}
+                      className="min-h-[36px] justify-center px-2 active:opacity-60"
+                    >
+                      <Caption className="text-accent">{t('platos.rank_button')}</Caption>
+                    </Pressable>
+                  )}
+                </Pressable>
+              </Link>
+            ))}
+          </View>
         )}
       </ScrollView>
     </View>

@@ -1,4 +1,4 @@
-import { Body, Caption, Chip, ErrorState, Eyebrow, RowsSkeleton } from '@/components/ui'
+import { Body, Caption, ErrorState, Eyebrow, RowsSkeleton, Segmented } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
 import { displayScore } from '@/lib/display'
@@ -29,6 +29,7 @@ export default function LeaderboardScreen() {
   // and the tap just scrolls there.
   const scrollRef = useRef<ScrollView>(null)
   const rowY = useRef<number[]>([])
+  const cardY = useRef(0)
 
   return (
     <View className="flex-1 bg-bg">
@@ -40,24 +41,22 @@ export default function LeaderboardScreen() {
       >
         <Eyebrow className="mb-4">Santo Domingo</Eyebrow>
 
-        <View className="mb-4 flex-row gap-2">
-          <Chip
-            state={period === 'month' ? 'selected' : 'default'}
-            onPress={() => setPeriod('month')}
-          >
-            {t('leaderboard.period_month')}
-          </Chip>
-          <Chip state={period === 'all' ? 'selected' : 'default'} onPress={() => setPeriod('all')}>
-            {t('leaderboard.period_all')}
-          </Chip>
-        </View>
+        <Segmented
+          className="mb-4"
+          value={period}
+          onChange={setPeriod}
+          options={[
+            { value: 'month', label: t('leaderboard.period_month') },
+            { value: 'all', label: t('leaderboard.period_all') },
+          ]}
+        />
 
         {q.data?.myRank ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => {
               const y = rowY.current[(q.data?.myRank ?? 1) - 1]
-              if (y != null) scrollRef.current?.scrollTo({ y, animated: true })
+              if (y != null) scrollRef.current?.scrollTo({ y: cardY.current + y, animated: true })
             }}
             className="mb-4 self-start active:opacity-70"
           >
@@ -70,42 +69,54 @@ export default function LeaderboardScreen() {
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>{t('leaderboard.load_error')}</ErrorState>
         ) : (
-          rows.map((r, i) => (
-            <Link key={r.id} href={`/u/${r.id}`} asChild>
-              <Pressable
-                onLayout={(e) => {
-                  rowY.current[i] = e.nativeEvent.layout.y
-                }}
-                className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
-              >
-                <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-lg text-accent">
-                  {i + 1}
-                </Text>
-                <Avatar name={r.name || r.handle || 'm'} src={r.image} size={38} />
-                <View className="flex-1">
-                  <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-                    {r.name || r.handle}
+          // One white grouped card on the cream ground. Row offsets are
+          // relative to the card, so the card's own y is added back for the
+          // "you're #N" jump.
+          <View
+            onLayout={(e) => {
+              cardY.current = e.nativeEvent.layout.y
+            }}
+            className="overflow-hidden rounded-card border border-line bg-surface px-3"
+          >
+            {rows.map((r, i) => (
+              <Link key={r.id} href={`/u/${r.id}`} asChild>
+                <Pressable
+                  onLayout={(e) => {
+                    rowY.current[i] = e.nativeEvent.layout.y
+                  }}
+                  className={`flex-row items-center gap-3 py-3 active:opacity-80 ${i === rows.length - 1 ? '' : 'border-line border-b'}`}
+                >
+                  <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-lg text-accent">
+                    {i + 1}
                   </Text>
-                  <Caption numberOfLines={1}>
-                    {[r.handle ? `@${r.handle}` : null, r.neighborhood].filter(Boolean).join(' · ')}
-                  </Caption>
-                </View>
-                <View className="items-end">
-                  {/* A COUNT, not a score — sans metadata, not the brass serif
-                      a rating gets, so it can't be read as one. */}
-                  <Text style={DATA_FIGURES} className="font-ui-semibold text-label text-text">
-                    {r.count}
-                  </Text>
-                  <Caption>
-                    {t('leaderboard.spots_avg')}{' '}
-                    <Text style={DATA_FIGURES} className="text-accent">
-                      {displayScore(r.avgScore)}
+                  <Avatar name={r.name || r.handle || 'm'} src={r.image} size={38} />
+                  <View className="flex-1">
+                    <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                      {r.name || r.handle}
                     </Text>
-                  </Caption>
-                </View>
-              </Pressable>
-            </Link>
-          ))
+                    <Caption numberOfLines={1}>
+                      {[r.handle ? `@${r.handle}` : null, r.neighborhood]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Caption>
+                  </View>
+                  <View className="items-end">
+                    {/* A COUNT, not a score — sans metadata, not the brass serif
+                      a rating gets, so it can't be read as one. */}
+                    <Text style={DATA_FIGURES} className="font-ui-semibold text-label text-text">
+                      {r.count}
+                    </Text>
+                    <Caption>
+                      {t('leaderboard.spots_avg')}{' '}
+                      <Text style={DATA_FIGURES} className="text-accent">
+                        {displayScore(r.avgScore)}
+                      </Text>
+                    </Caption>
+                  </View>
+                </Pressable>
+              </Link>
+            ))}
+          </View>
         )}
       </ScrollView>
     </View>

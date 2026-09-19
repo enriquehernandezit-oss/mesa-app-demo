@@ -280,7 +280,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
     <Link href={`/r/${ranking.restaurant.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        className="flex-row gap-3 border-line border-b py-3 active:opacity-80"
+        className="mb-2 flex-row gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
       >
         <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
           {ranking.position}

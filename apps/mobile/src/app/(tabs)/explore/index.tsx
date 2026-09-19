@@ -1,3 +1,4 @@
+import { type ExploreFilterValues, ExploreFilters } from '@/components/ExploreFilters'
 import { ExternalResults } from '@/components/ExternalResults'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { EventsBrowse } from '@/components/events/EventsBrowse'
@@ -11,15 +12,16 @@ import {
   ErrorState,
   RowsSkeleton,
   SectionHeader,
+  Segmented,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { pickOne, showSheet } from '@/components/ui/Sheet'
-import { PinIcon, SortIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { showSheet } from '@/components/ui/Sheet'
+import { CloseIcon, PinIcon, SortIcon } from '@/components/ui/icons'
+import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
-import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
+import { cuisineLabel, tagLabel } from '@/lib/display'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import type {
   ExploreHit,
@@ -53,20 +55,48 @@ import type { SearchBarCommands } from 'react-native-screens'
 // + inline panel; M14 replaced THAT with one dedicated dropdown pill per
 // dimension (Sector ▾, Cocina ▾, ...), each showing its own value directly
 // once set — Rankings' mineControls mirrors this same pill pattern.
-const PRICES = [1, 2, 3, 4]
-// Score bands (A1, expanded M14) — a small cacheable set instead of a free
-// slider, cut against the real catalog distribution (p75 ≈ 8.8): "9.5+" is a
-// deliberately tiny elite set, "8+" roughly the top quartile. Stored scale
-// (0–100), same units as rankings.score; the API already takes any number.
-const SCORE_BANDS: { value: number; label: string }[] = [
-  { value: 70, label: '7+' },
-  { value: 75, label: '7.5+' },
-  { value: 80, label: '8+' },
-  { value: 85, label: '8.5+' },
-  { value: 90, label: '9+' },
-  { value: 95, label: '9.5+' },
-]
 type SortKey = 'score' | 'name'
+
+// One key + fetch for the screen's results AND the filter panel's live
+// count, so the panel's "Ver N lugares" warms exactly the cache entry the
+// screen reads once those filters are applied.
+function exploreKey(q: string, f: ExploreFilterValues, openNow: boolean, sort: SortKey) {
+  return ['explore', q, f.hood, f.cuisine, f.price, openNow, f.occasion, f.minScore, sort]
+}
+function fetchExplore(q: string, f: ExploreFilterValues, openNow: boolean, sort: SortKey) {
+  const params = new URLSearchParams()
+  if (q.length >= 2) params.set('q', q)
+  if (f.hood) params.set('neighborhood', f.hood)
+  if (f.cuisine) params.set('cuisine', f.cuisine)
+  if (f.price) params.set('price', String(f.price))
+  if (openNow) params.set('open', '1')
+  if (f.occasion) params.set('occasion', f.occasion)
+  if (f.minScore) params.set('minScore', String(f.minScore))
+  params.set('sort', sort)
+  return api.get<ExploreResponse>(`/restaurants?${params}`)
+}
+
+// An applied filter, shown on its own in the rail with a small × badge on
+// its top-right corner — tapping the pill drops just that filter.
+function RemovablePill({ label, onRemove }: { label: string; onRemove: () => void }) {
+  const t = useT()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${t('explore.remove_filter')}: ${label}`}
+      onPress={onRemove}
+      hitSlop={4}
+      className="active:scale-[0.97] active:opacity-80"
+    >
+      <View className="min-h-[36px] justify-center rounded-pill border border-accent bg-accent-fill px-3">
+        <Text className="font-ui-medium text-micro text-on-accent">{label}</Text>
+      </View>
+      <View className="absolute -top-1.5 -right-1.5 h-[18px] w-[18px] items-center justify-center rounded-pill border border-bg bg-text">
+        <CloseIcon size={10} color="bg" strokeWidth={2.4} />
+      </View>
+    </Pressable>
+  )
+}
 
 export default function ExploreScreen() {
   const t = useT()
@@ -81,13 +111,15 @@ export default function ExploreScreen() {
   const c = themeColors[theme]
   const accent = useColor('accent')
   const [q, setQ] = useState('')
-  // Lugares/Eventos (M21) — a plain view-switcher, same shape as Rankings'
-  // Mine/Saved/Sectores chips (a control living inside a scrolling page is
-  // content, not chrome, per CLAUDE.md — that's why this is Chips, not a
-  // segmented control). Eventos swaps out everything below it: the filter
+  // Lugares/Eventos (M21) — a view-switcher, the same Segmented control as
+  // Rankings' Mine/Saved/Sectores (Mesa's own tokened control, not the
+  // native UISegmentedControl: it lives inside a scrolling page, so it's
+  // content, not chrome, per CLAUDE.md). Eventos swaps out everything below it: the filter
   // pills, the trending rail and the Google gap-filler are all Lugares-only
   // concepts with no events equivalent.
   const [view, setView] = useState<'lugares' | 'eventos'>('lugares')
+  const [eventsVisited, setEventsVisited] = useState(false)
+  if (view === 'eventos' && !eventsVisited) setEventsVisited(true)
   // Seeds the filter panel from a deep link — the restaurant profile's
   // neighborhood tap lands here with `?neighborhood=<slug>` already applied,
   // for instance. Read once on mount; the filter chips own the state after
@@ -175,41 +207,9 @@ export default function ExploreScreen() {
     if (idx != null) setSort(SORT_OPTIONS[idx].key)
   }
 
-  // Replaces the old single "Filtros (N)" trigger + inline FilterGroup panel
-  // — one dedicated pill per dimension, each showing its own set value
-  // directly ("Piantini ▾"), reads faster than one generic trigger hiding
-  // five mixed dimensions. pickOne (components/ui/Sheet.tsx) is shared with
-  // Rankings' identical pill pattern.
-  async function pickSector() {
-    const values = neighborhoods.data?.neighborhoods.map((n) => n.slug) ?? []
-    const v = await pickOne(t('explore.sector'), values, hood, (slug) => {
-      return neighborhoods.data?.neighborhoods.find((n) => n.slug === slug)?.name ?? slug
-    })
-    if (v !== undefined) setHood(v)
-  }
-  async function pickCuisine() {
-    const values = cuisines.data?.cuisines ?? []
-    const v = await pickOne(t('explore.cuisine'), values, cuisine, (c) => cuisineLabel(c) ?? c)
-    if (v !== undefined) setCuisine(v)
-  }
-  async function pickPrice() {
-    const v = await pickOne(t('explore.price'), PRICES, price, (p) => '$'.repeat(p))
-    if (v !== undefined) setPrice(v)
-  }
-  async function pickOccasion() {
-    const v = await pickOne(t('explore.occasion'), OCCASION_TAGS, occasion, (tag) => tagLabel(tag))
-    if (v !== undefined) setOccasion(v)
-  }
-  async function pickMinScore() {
-    const values = SCORE_BANDS.map((b) => b.value)
-    const v = await pickOne(t('explore.sort_score'), values, minScore, (val) => {
-      return SCORE_BANDS.find((b) => b.value === val)?.label ?? String(val)
-    })
-    if (v !== undefined) setMinScore(v)
-  }
-
-  const activeCount =
-    [hood, cuisine, price, occasion, minScore].filter((v) => v != null).length + (openNow ? 1 : 0)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const panelCount = [hood, cuisine, price, occasion, minScore].filter((v) => v != null).length
+  const activeCount = panelCount + (openNow ? 1 : 0)
   const clearFilters = () => {
     setHood(null)
     setCuisine(null)
@@ -232,20 +232,10 @@ export default function ExploreScreen() {
 
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
+  const filterValues = { hood, cuisine, price, occasion, minScore }
   const results = useQuery({
-    queryKey: ['explore', debouncedQ, hood, cuisine, price, openNow, occasion, minScore, sort],
-    queryFn: () => {
-      const params = new URLSearchParams()
-      if (debouncedQ.length >= 2) params.set('q', debouncedQ)
-      if (hood) params.set('neighborhood', hood)
-      if (cuisine) params.set('cuisine', cuisine)
-      if (price) params.set('price', String(price))
-      if (openNow) params.set('open', '1')
-      if (occasion) params.set('occasion', occasion)
-      if (minScore) params.set('minScore', String(minScore))
-      params.set('sort', sort)
-      return api.get<ExploreResponse>(`/restaurants?${params}`)
-    },
+    queryKey: exploreKey(debouncedQ, filterValues, openNow, sort),
+    queryFn: () => fetchExplore(debouncedQ, filterValues, openNow, sort),
   })
 
   const { refreshing, onRefresh } = usePullToRefresh(results.refetch)
@@ -342,72 +332,44 @@ export default function ExploreScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
       >
-        <View className="mt-3 flex-row gap-2">
-          <Chip
-            state={view === 'lugares' ? 'selected' : 'default'}
-            onPress={() => setView('lugares')}
-          >
-            {t('explore.view_places')}
-          </Chip>
-          <Chip
-            state={view === 'eventos' ? 'selected' : 'default'}
-            onPress={() => setView('eventos')}
-          >
-            {t('explore.view_events')}
-          </Chip>
-        </View>
+        <Segmented
+          className="mt-3"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'lugares', label: t('explore.view_places') },
+            { value: 'eventos', label: t('explore.view_events') },
+          ]}
+        />
 
-        {view === 'eventos' ? (
-          <EventsBrowse />
-        ) : (
+        {/* Both views stay mounted once visited, toggled by display — the
+            old ternary unmounted Lugares' whole result list on every switch
+            to Eventos and rebuilt it from scratch on the way back, which is
+            exactly the lag switching back to Places had. */}
+        {eventsVisited ? (
+          <View style={{ display: view === 'eventos' ? 'flex' : 'none' }}>
+            <EventsBrowse />
+          </View>
+        ) : null}
+        <View style={{ display: view === 'lugares' ? 'flex' : 'none' }}>
           <>
-            {/* One dedicated dropdown pill per dimension (M14), replacing the
-                old single "Filtros (N)" trigger + inline FilterGroup panel —
-                a set filter shows its OWN value right on the pill
-                ("Piantini ▾"), so reading what's active doesn't need opening
-                anything. */}
-            <ChipRail className="mt-3 mb-2">
+            {/* Sort, one "Filtros" pill that opens the combined panel
+                (ExploreFilters), Abierto ahora, then one pill per ACTIVE
+                filter with a small × in its corner to drop just that one,
+                and "Limpiar todo" once anything is set. */}
+            <ChipRail className="mt-2 mb-2 pt-2">
               <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
                 {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
               </Chip>
-              <Chip size="sm" chevron state={hood ? 'selected' : 'default'} onPress={pickSector}>
-                {hood
-                  ? (neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood)
-                  : t('explore.sector')}
-              </Chip>
               <Chip
                 size="sm"
                 chevron
-                state={cuisine ? 'selected' : 'default'}
-                onPress={pickCuisine}
+                state={panelCount > 0 ? 'active' : 'default'}
+                onPress={() => setFiltersOpen(true)}
               >
-                {cuisine ? (cuisineLabel(cuisine) ?? cuisine) : t('explore.cuisine')}
-              </Chip>
-              <Chip
-                size="sm"
-                chevron
-                state={price != null ? 'selected' : 'default'}
-                onPress={pickPrice}
-              >
-                {price != null ? '$'.repeat(price) : t('explore.price')}
-              </Chip>
-              <Chip
-                size="sm"
-                chevron
-                state={occasion ? 'selected' : 'default'}
-                onPress={pickOccasion}
-              >
-                {occasion ? tagLabel(occasion) : t('explore.occasion')}
-              </Chip>
-              <Chip
-                size="sm"
-                chevron
-                state={minScore != null ? 'selected' : 'default'}
-                onPress={pickMinScore}
-              >
-                {minScore != null
-                  ? (SCORE_BANDS.find((b) => b.value === minScore)?.label ?? minScore)
-                  : t('explore.sort_score')}
+                {panelCount > 0
+                  ? `${t('explore.filters_chip')} · ${panelCount}`
+                  : t('explore.filters_chip')}
               </Chip>
               {showOpenChip && (
                 <Chip
@@ -418,6 +380,29 @@ export default function ExploreScreen() {
                   {t('explore.open_now')}
                 </Chip>
               )}
+              {hood ? (
+                <RemovablePill
+                  label={
+                    neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood
+                  }
+                  onRemove={() => setHood(null)}
+                />
+              ) : null}
+              {cuisine ? (
+                <RemovablePill
+                  label={cuisineLabel(cuisine) ?? cuisine}
+                  onRemove={() => setCuisine(null)}
+                />
+              ) : null}
+              {price != null ? (
+                <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
+              ) : null}
+              {occasion ? (
+                <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
+              ) : null}
+              {minScore != null ? (
+                <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
+              ) : null}
               {activeCount > 0 && (
                 <Pressable
                   accessibilityRole="button"
@@ -425,11 +410,29 @@ export default function ExploreScreen() {
                   className="min-h-[36px] justify-center px-1 active:opacity-60"
                 >
                   <Caption className="font-ui-semibold text-accent-strong">
-                    {t('explore.clear')}
+                    {t('explore.clear_all')}
                   </Caption>
                 </Pressable>
               )}
             </ChipRail>
+            <ExploreFilters
+              visible={filtersOpen}
+              onClose={() => setFiltersOpen(false)}
+              value={{ hood, cuisine, price, occasion, minScore }}
+              onApply={(f) => {
+                setHood(f.hood)
+                setCuisine(f.cuisine)
+                setPrice(f.price)
+                setOccasion(f.occasion)
+                setMinScore(f.minScore)
+              }}
+              neighborhoods={neighborhoods.data?.neighborhoods ?? []}
+              cuisines={cuisines.data?.cuisines ?? []}
+              countQuery={(d) => ({
+                queryKey: exploreKey(debouncedQ, d, openNow, sort),
+                queryFn: () => fetchExplore(debouncedQ, d, openNow, sort),
+              })}
+            />
 
             <View className="mt-4">
               {/* Trending rides above the results, but only in the default browse
@@ -482,7 +485,7 @@ export default function ExploreScreen() {
               />
             </View>
           </>
-        )}
+        </View>
       </ScrollView>
     </View>
   )
@@ -494,12 +497,20 @@ export default function ExploreScreen() {
 // onChangeText) updates this screen's state immediately, well before the
 // debounced query itself refires, and with results already on screen that's
 // real JS-thread work landing exactly while a finger is still on the glass.
+//
+// A white card on the cream ground, same row shape as Rankings' cards: one
+// line of meta instead of Characteristics' two stacked lines.
 const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number }) {
   const t = useT()
   return (
     <Link href={`/r/${r.id}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
-        <Text style={DATA_FIGURES} className="w-5 font-ui-medium text-eyebrow text-text-muted">
+      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface py-2.5 pr-3 pl-2 active:opacity-80">
+        <Text
+          style={[DATA_FIGURES, { width: 22 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          className="text-center font-ui-medium text-label text-text-muted"
+        >
           {index + 1}
         </Text>
         <PlaceCover
@@ -507,19 +518,23 @@ const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number
           name={r.name}
           coverImageId={r.coverImageId}
           size={{ w: 200, h: 200 }}
-          className="h-12 w-12"
+          className="h-12 w-12 rounded-sm"
         />
         <View className="flex-1">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+          <Text className="font-ui-semibold text-subhead text-text" numberOfLines={1}>
             {r.name}
           </Text>
-          <Characteristics
-            priceTier={r.priceTier}
-            cuisine={r.cuisine}
-            // Imported rows often carry an address but no mapped sector — fall
-            // back so the row still says where the place is.
-            neighborhood={r.neighborhood ?? r.address ?? null}
-          />
+          <Caption numberOfLines={1} className="mt-[1px]">
+            {[
+              cuisineLabel(r.cuisine),
+              // Imported rows often carry an address but no mapped sector —
+              // fall back so the row still says where the place is.
+              r.neighborhood ?? r.address,
+              r.priceTier ? '$'.repeat(r.priceTier) : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </Caption>
         </View>
         {r.friendCount > 0 && r.friendAvg != null ? (
           <ScoreBadge
@@ -584,7 +599,7 @@ const MemberRow = memo(function MemberRow({ m }: { m: ExploreMember }) {
   const t = useT()
   return (
     <Link href={`/u/${m.id}`} asChild>
-      <Pressable className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80">
+      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
         <Avatar name={m.name || m.handle || 'm'} src={m.image} size={44} />
         <View className="flex-1">
           <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>

@@ -173,12 +173,14 @@ function ContactsCard() {
 
       {matches && matches.length > 0 ? (
         <View className="mt-2">
-          {matches.map(({ user, contactName }) => (
+          {/* Already inside the white Card — only the trailing hairline goes. */}
+          {matches.map(({ user, contactName }, i) => (
             <PersonRow
               key={user.id}
               user={user}
               subtitle={t('amigos.contact_match_subtitle', { name: contactName })}
               right={<FollowPill userId={user.id} initial={false} from="find_friends" />}
+              last={i === matches.length - 1}
             />
           ))}
         </View>
@@ -255,14 +257,17 @@ export default function AmigosScreen() {
       ) : users.length === 0 ? (
         <Body>{t('amigos.no_suggestions')}</Body>
       ) : (
-        users.map((u) => (
-          <PersonRow
-            key={u.id}
-            user={u}
-            subtitle={reasonLine(t, u.reason)}
-            right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
-          />
-        ))
+        <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+          {users.map((u, i) => (
+            <PersonRow
+              key={u.id}
+              user={u}
+              subtitle={reasonLine(t, u.reason)}
+              right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
+              last={i === users.length - 1}
+            />
+          ))}
+        </View>
       )}
     </ScrollView>
   )
