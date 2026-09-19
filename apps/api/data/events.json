@@ -69,6 +69,26 @@
       "endsAt": "2026-10-02T23:00:00-04:00",
       "category": "Especial",
       "priceLabel": "Menú fijo RD$3,500"
+    },
+    {
+      "slug": "sophias-cata-whisky-japones-2026-09-20",
+      "restaurantName": "Sophia's Bar & Grill",
+      "title": "Cata de Whisky Japonés",
+      "description": "Cinco expresiones de whisky japonés — de Hibiki y Nikka a destilerías pequeñas de Hokkaido — servidas solas y en un highball clásico, con bocados de la cocina para acompañar. Guiada por el bar manager: cómo se hace, cómo se nota la madera y cómo pedirlo la próxima vez. 16 cupos. Reserva directo con el restaurante; mayores de 18.",
+      "startsAt": "2026-09-20T19:30:00-04:00",
+      "endsAt": "2026-09-20T21:30:00-04:00",
+      "category": "Cata de cócteles",
+      "priceLabel": "RD$3,200 por persona"
+    },
+    {
+      "slug": "sophias-omakase-2026-09-25",
+      "restaurantName": "Sophia's Bar & Grill",
+      "title": "Omakase de Chef — 12 Tiempos",
+      "description": "Una noche de omakase en la barra: 12 tiempos que el chef decide sobre la marcha con la pesca del día — nigiri, sashimi y dos platos calientes — y un sake para maridar. Solo 10 asientos en barra, dos turnos (7:00 y 9:00 PM). Avísale al restaurante de cualquier alergia al reservar.",
+      "startsAt": "2026-09-25T19:00:00-04:00",
+      "endsAt": "2026-09-25T22:30:00-04:00",
+      "category": "Food tasting",
+      "priceLabel": "RD$4,800 por persona · sake incluido"
     }
   ]
 }
