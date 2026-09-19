@@ -176,6 +176,13 @@
       "when": 1789821392546,
       "tag": "0024_lethal_abomination",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789828193445,
+      "tag": "0025_stormy_war_machine",
+      "breakpoints": true
     }
   ]
 }

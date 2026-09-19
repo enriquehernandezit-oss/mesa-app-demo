@@ -320,6 +320,17 @@ function FeedSkeleton() {
   )
 }
 
+// Only the first screenful rises in, and each post only ever once: FlatList
+// re-mounts cells as they scroll back into view and mounts new pages near the
+// viewport, which used to replay a delayed fade on screen — cards popping in
+// late, blank gaps on a fast scroll.
+const animatedPosts = new Set<string>()
+function feedEntering(id: string, index: number) {
+  if (index >= 6 || animatedPosts.has(id)) return undefined
+  animatedPosts.add(id)
+  return FadeInDown.duration(280).delay(index * 60)
+}
+
 // Each post is a white card on the cream ground (founder's mock, Sept 2026 —
 // replacing M9's flat hairline rows): who did it and when, the place with its
 // photo and the friend's score, the note, a preview of the latest comment,
@@ -365,10 +376,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
   const commentCount = item.commentCount ?? 0
 
   return (
-    <Animated.View
-      entering={FadeInDown.duration(280).delay(Math.min(index, 6) * 60)}
-      className="mb-3"
-    >
+    <Animated.View entering={feedEntering(item.rankingId, index)} className="mb-3">
       <Pressable
         accessibilityRole="button"
         onPress={() => router.push(href)}

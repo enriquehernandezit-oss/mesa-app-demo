@@ -44,6 +44,17 @@
       "capacity": 60
     },
     {
+      "slug": "lulu-tasting-bar-brunch-domingo-2026-09-20",
+      "restaurantName": "Lulú Tasting Bar",
+      "title": "Brunch de Domingo",
+      "description": "Brunch criollo con mimosas y música suave en la terraza.",
+      "startsAt": "2026-09-20T11:00:00-04:00",
+      "endsAt": "2026-09-20T15:00:00-04:00",
+      "category": "Brunch",
+      "priceLabel": "RD$1,200 por persona",
+      "capacity": 40
+    },
+    {
       "slug": "segundo-muelle-rooftop-domingo-2026-09-20",
       "restaurantName": "Segundo Muelle",
       "title": "Sunday Sessions: Rooftop DJ",

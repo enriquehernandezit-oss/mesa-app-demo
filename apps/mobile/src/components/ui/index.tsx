@@ -2,7 +2,7 @@ import { ChevronIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
 import { BRASS_SHADOW } from '@/theme/vars'
-import { type ReactNode, startTransition, useEffect, useState } from 'react'
+import { type ReactNode, startTransition, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -16,7 +16,6 @@ import {
 } from 'react-native'
 import Animated, {
   Easing,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -50,7 +49,7 @@ export const MAX_SCALE = 1.35
 // but aren't colors) so the primitive can omit its default color whenever the
 // caller already specified one.
 const TEXT_COLOR_KEYS =
-  /\btext-(cat-cata-soft|cat-musica-soft|cat-brunch-soft|cat-food-soft|cat-happy-soft|cat-cata|cat-musica|cat-brunch|cat-food|cat-happy|on-cat|bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
+  /\btext-(live-soft|on-live|live|cat-cata-soft|cat-musica-soft|cat-brunch-soft|cat-food-soft|cat-happy-soft|cat-cata|cat-musica|cat-brunch|cat-food|cat-happy|on-cat|bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
 function hasTextColor(className?: string): boolean {
   return Boolean(className && TEXT_COLOR_KEYS.test(className))
 }
@@ -299,13 +298,17 @@ export function Segmented<T extends string>({
   className?: string
   accessibilityLabel?: string
 }) {
-  // A tap slides the thumb FIRST and commits (onChange) when the slide lands:
-  // the slide gets the frames to itself, then the caller's (possibly heavy)
-  // re-render for the new view runs. A value change from outside (the prop)
-  // JUMPS the thumb instead — Rankings renders one of these per list, and the
-  // copy that becomes visible after a switch must already sit on the new
-  // option, not start a second slide of its own.
+  // A tap starts the thumb's slide on the UI thread and commits at once, inside
+  // a transition — the slide keeps its frames while the caller re-renders, and
+  // the new view is never held back (committing only after the slide landed
+  // made every switch wait 220ms, and let ExploreFilters' "Apply" run before a
+  // just-tapped price reached its draft). A value change from outside (the
+  // prop) JUMPS the thumb instead — Rankings renders one of these per list, and
+  // the copy that becomes visible after a switch must already sit on the new
+  // option, not start a second slide of its own. The copy that was tapped
+  // skips that jump for its own value, so its slide isn't cut short.
   const [local, setLocal] = useState(value)
+  const tapped = useRef<T | null>(null)
   const [segW, setSegW] = useState(0)
   const x = useSharedValue(0)
   const found = options.findIndex((o) => o.value === local)
@@ -313,6 +316,10 @@ export function Segmented<T extends string>({
   const propIndex = options.findIndex((o) => o.value === value)
   useEffect(() => {
     setLocal(value)
+    if (value !== null && value === tapped.current) {
+      tapped.current = null
+      return
+    }
     if (segW > 0 && propIndex >= 0) x.value = propIndex * segW
   }, [value, propIndex, segW, x])
   const thumbOpacity = useSharedValue(found >= 0 ? 1 : 0)
@@ -372,12 +379,9 @@ export function Segmented<T extends string>({
                 return
               }
               setLocal(o.value)
-              const commit = () => startTransition(() => onChange(o.value))
-              if (segW > 0) {
-                x.value = withTiming(i * segW, { duration: 220, easing: SEG_EASE }, (done) => {
-                  if (done) runOnJS(commit)()
-                })
-              } else commit()
+              tapped.current = o.value
+              if (segW > 0) x.value = withTiming(i * segW, { duration: 220, easing: SEG_EASE })
+              startTransition(() => onChange(o.value))
             }}
             className="min-h-[40px] flex-1 flex-row items-center justify-center gap-1.5 px-2"
           >

@@ -370,7 +370,7 @@ export default function ProfileTab() {
           />
           <NavRow
             icon={<BookmarkIcon size={15} />}
-            label={t('restaurant.want_to_try_label')}
+            label={t('rankings.saved_tab')}
             onPress={() => router.push('/rankings?tab=saved')}
           />
           <NavRow

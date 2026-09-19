@@ -71,6 +71,7 @@ import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
 import {
   type UseMutationResult,
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -198,12 +199,17 @@ export default function RankAPlace() {
   const myHood = me.data?.profile.neighborhood?.name ?? null
 
   // Query-driven, mirroring Explore: the server searches (mesa_norm + trigram)
-  // and bounds the result. No debounce — every keystroke past 2 chars refetches.
+  // and bounds the result. Debounced, and the previous results stay on screen
+  // while the next ones load — a fresh key per keystroke used to go "pending"
+  // and swap the whole step (search field included) for a skeleton, closing
+  // the keyboard on every letter.
+  const searchQ = useDebounced(pickQuery.trim(), 250)
   const candidates = useQuery({
-    queryKey: ['rankings', 'candidates', pickQuery.trim(), openNow],
+    queryKey: ['rankings', 'candidates', searchQ, openNow],
+    placeholderData: keepPreviousData,
     queryFn: () => {
       const p = new URLSearchParams()
-      if (pickQuery.trim().length >= 2) p.set('q', pickQuery.trim())
+      if (searchQ.length >= 2) p.set('q', searchQ)
       if (openNow) p.set('open', '1')
       return api.get<{ restaurants: Item[] }>(`/rankings/candidates?${p}`)
     },
@@ -1028,7 +1034,24 @@ function RevealStep({
     setDishQuery('')
   }
 
-  const listoBlocked = commitPending || commitError || dishSyncPending
+  // A tap on "Listo" while the ranking/dishes are still saving is remembered,
+  // not ignored — it finishes the moment the save lands (it used to be
+  // disabled, so a quick tap right after the reveal simply did nothing).
+  // Only a failed commit truly blocks it.
+  const saving = commitPending || dishSyncPending
+  const listoBlocked = commitError
+  const [wantsDone, setWantsDone] = useState(false)
+  const finish = () => {
+    if (commitError) return
+    if (saving) setWantsDone(true)
+    else onDone()
+  }
+  useEffect(() => {
+    if (wantsDone && !saving && !commitError) {
+      setWantsDone(false)
+      onDone()
+    }
+  }, [wantsDone, saving, commitError, onDone])
   return (
     <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
       <View className="flex-row items-center justify-between">
@@ -1041,12 +1064,12 @@ function RevealStep({
             for a ranking that then silently failed to persist. */}
         <Pressable
           accessibilityRole="button"
-          onPress={onDone}
+          onPress={finish}
           disabled={listoBlocked}
           className={`min-h-[44px] justify-center active:opacity-60 ${listoBlocked ? 'opacity-40' : ''}`}
         >
           <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {commitPending || dishSyncPending ? t('common.saving') : t('common.done')}
+            {saving ? t('common.saving') : t('common.done')}
           </Text>
         </Pressable>
       </View>
@@ -1358,8 +1381,8 @@ function RevealStep({
               </Caption>
             </View>
           ) : null}
-          <Button variant="primary" disabled={listoBlocked} onPress={onDone}>
-            {commitPending || dishSyncPending ? t('common.saving') : t('rank.finish')}
+          <Button variant="primary" disabled={listoBlocked} onPress={finish}>
+            {saving ? t('common.saving') : t('rank.finish')}
           </Button>
           <Button variant="secondary" disabled={dishSyncPending} onPress={onAddNote}>
             {t('rank.add_a_note')}

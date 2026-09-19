@@ -48,6 +48,8 @@ async function request<T>(path: string, init?: RequestInit & { json?: unknown })
     // A default, not a forced value: ...rest below can still override it if a
     // caller ever needs its own signal (none do today).
     signal: timeoutSignal(REQUEST_TIMEOUT_MS),
+    // Bearer only; keep the iOS cookie jar out of it (see auth-client.ts).
+    credentials: 'omit',
     headers: {
       ...(json !== undefined ? { 'content-type': 'application/json' } : {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),

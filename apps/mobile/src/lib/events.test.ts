@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { categoryKey } from './eventCategory'
+import { categoryKey, eventCategoryText, eventPriceText } from './eventCategory'
 import { countdown, nextDays, sdDayKey } from './eventTime'
 
 describe('categoryKey', () => {
@@ -50,5 +50,25 @@ describe('eventTime', () => {
     expect(countdown('2026-09-18T19:00:00-04:00', '2026-09-18T22:00:00-04:00', now)).toEqual({
       kind: 'ended',
     })
+  })
+})
+
+describe('event copy in English', () => {
+  test('category', () => {
+    expect(eventCategoryText('Música en vivo', 'en')).toBe('Live music')
+    expect(eventCategoryText('Cata de cócteles', 'en')).toBe('Cocktail tasting')
+    expect(eventCategoryText('Happy hour', 'en')).toBe('Happy hour')
+    expect(eventCategoryText('Música en vivo', 'es')).toBe('Música en vivo')
+  })
+  test('price line', () => {
+    expect(eventPriceText('Entrada libre', 'en')).toBe('Free entry')
+    expect(eventPriceText('Gratis con reservación', 'en')).toBe('Free with reservation')
+    expect(eventPriceText('2x1 en cócteles', 'en')).toBe('2-for-1 cocktails')
+    expect(eventPriceText('RD$4,800 por persona · sake incluido', 'en')).toBe(
+      'RD$4,800 per person · sake included',
+    )
+    expect(eventPriceText('Menú fijo RD$3,500', 'en')).toBe('Set menu RD$3,500')
+    expect(eventPriceText('Cover RD$800', 'en')).toBe('Cover RD$800')
+    expect(eventPriceText('Entrada libre', 'es')).toBe('Entrada libre')
   })
 })

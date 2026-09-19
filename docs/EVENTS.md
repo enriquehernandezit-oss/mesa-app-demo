@@ -27,6 +27,20 @@ event" flow, by design (M21).
 (event, user) — `PUT /events/:id/rsvp` upserts it, `DELETE` clears it
 outright.
 
+`saved_events` is a member's **Save** (the bookmark), one row per
+(event, user), row present = saved. It is **independent of the RSVP** — a
+member can be going *and* have it saved, and clearing one never touches the
+other. Events only ever go to the general Saved area; they can't be added to
+a custom collection (no `collection_items` hook, by design).
+`PUT /events/:id/save` / `DELETE /events/:id/save` are idempotent
+(`{ saved: true | false }`; saving a cancelled or missing event 404s), every
+event shape carries `savedByMe`, and `GET /events/saved` lists my saved
+events that aren't cancelled or over, by `startsAt`.
+
+"Over" is one rule everywhere in `routes/events.ts` (browse, restaurant rail,
+saved): `endsAt` has passed or, with no `endsAt`, 3h after `startsAt`. An
+event that's happening right now still shows.
+
 ## The one rule that matters most
 
 **Never delete an `events` row.** An RSVP, an Activity feed entry, or a

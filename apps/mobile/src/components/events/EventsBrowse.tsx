@@ -5,12 +5,12 @@ import { nextDays, sdDayKey } from '@/lib/eventTime'
 import { tapSelect } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
 import type { EventSummary } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useRef, useState } from 'react'
+import { memo, startTransition, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
   Extrapolation,
-  FadeIn,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -23,8 +23,8 @@ import { CategoryIcon, EventHeroCard, EventTicket, useNow } from './EventTicket'
 import { EASE } from './motion'
 
 // Explore's "Eventos" (M21, redesigned for color + motion): a day strip
-// (Todo · Hoy · Mañana · Dom 20 …) whose filled pill slides to the tapped
-// day, category chips with their own hue, a "Destacados" carousel of the next
+// (Todo · Hoy · Mañana · Dom 20 …) whose selected circle slides to the
+// tapped day, category chips with their own hue, a "Destacados" carousel of the next
 // few events as full-bleed photo cards, then ticket-stub cards for everything
 // that matches. One `upcoming` fetch; day/category filtering is client-side.
 
@@ -41,7 +41,10 @@ export function EventsBrowse() {
   })
   const all = q.data?.events ?? []
 
-  const days = useMemo(() => nextDays(14, now), [now])
+  // Keyed on the SD calendar day, not on `now` — useNow ticks every minute,
+  // and a fresh array each tick re-rendered the whole strip for nothing.
+  const today = sdDayKey(now)
+  const days = useMemo(() => nextDays(14, new Date(`${today}T16:00:00Z`)), [today])
   // Which categories fall on each day — the little colored dots in the strip.
   const catsByDay = useMemo(() => {
     const m = new Map<string, CatKey[]>()
@@ -66,7 +69,7 @@ export function EventsBrowse() {
 
   return (
     <View className="mt-3">
-      <DayStrip days={days} value={day} onChange={setDay} catsByDay={catsByDay} now={now} />
+      <DayStrip days={days} value={day} onChange={setDay} catsByDay={catsByDay} today={today} />
 
       {/* Category chips — each one wears its own hue */}
       <ScrollView
@@ -137,52 +140,68 @@ export function EventsBrowse() {
   )
 }
 
-// ── Day strip with a sliding selected fill ──────────────────────────────────
-function DayStrip({
+// ── Day strip: a light calendar row ─────────────────────────────────────────
+// Weekday over a serif date, like iOS Calendar's week header — no boxes, so it
+// reads as Mesa's editorial type rather than a row of chunky buttons. Every
+// item has the same fixed width, so the selected circle's position is plain
+// arithmetic (index × STEP): nothing is measured, and nothing ever scrolls the
+// strip except a tap — the old per-pill onLayout → scrollTo could yank the
+// strip back to the selected day mid-swipe, which is what felt "frozen".
+const ITEM_W = 46
+const ITEM_GAP = 2
+const STEP = ITEM_W + ITEM_GAP
+const DOT = 36
+const STRIP_PAD = 20
+
+const DayStrip = memo(function DayStrip({
   days,
   value,
   onChange,
   catsByDay,
-  now,
+  today,
 }: {
   days: string[]
   value: Day
   onChange: (d: Day) => void
   catsByDay: Map<string, CatKey[]>
-  now: Date
+  today: string
 }) {
   const t = useT()
   const reduced = useReducedMotion()
   const scrollRef = useRef<ScrollView>(null)
-  const layouts = useRef<Record<string, { x: number; w: number }>>({})
-  const x = useSharedValue(0)
-  const w = useSharedValue(0)
-  const [stripW, setStripW] = useState(0)
-  const today = sdDayKey(now)
+  const stripW = useRef(0)
+  const items = useMemo(() => ['all', ...days] as Day[], [days])
+  const indexOf = (d: Day) => Math.max(0, items.indexOf(d))
+  const x = useSharedValue(indexOf(value) * STEP)
+  const target = useRef(value)
 
-  const moveTo = (key: Day, animate: boolean) => {
-    const l = layouts.current[key]
-    if (!l) return
-    const cfg = { duration: reduced || !animate ? 0 : 260, easing: EASE }
-    x.value = withTiming(l.x, cfg)
-    w.value = withTiming(l.w, cfg)
-    if (stripW > 0)
-      scrollRef.current?.scrollTo({ x: Math.max(0, l.x - stripW / 2 + l.w / 2), animated: animate })
-  }
-  const fill = useAnimatedStyle(() => ({ width: w.value, transform: [{ translateX: x.value }] }))
+  const offset = useRef(0)
 
-  const label = (d: string) => {
-    if (d === today) return { top: t('events.today'), bottom: '' }
-    const date = new Date(`${d}T16:00:00Z`)
-    const dow = new Intl.DateTimeFormat(dateLocale(), { weekday: 'short', timeZone: 'UTC' })
-      .format(date)
-      .replace('.', '')
-    const num = new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', timeZone: 'UTC' }).format(
-      date,
-    )
-    const tomorrow = nextDays(2, now)[1]
-    return { top: d === tomorrow ? t('events.tomorrow') : dow, bottom: num }
+  const slideTo = (d: Day) => {
+    target.current = d
+    const i = indexOf(d)
+    x.value = withTiming(i * STEP, { duration: reduced ? 0 : 240, easing: EASE })
+    // Scroll only when the day sits off (or half off) the visible strip — a
+    // tap on a day you can already see must never move the row under you.
+    const w = stripW.current
+    const left = STRIP_PAD + i * STEP
+    if (w > 0 && (left < offset.current || left + ITEM_W > offset.current + w)) {
+      scrollRef.current?.scrollTo({
+        x: Math.max(0, left + ITEM_W / 2 - w / 2),
+        animated: !reduced,
+      })
+    }
   }
+  // A change from outside (the empty day's "jump to next" button).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: slideTo only reads refs + shared values
+  useEffect(() => {
+    if (value !== target.current) slideTo(value)
+  }, [value])
+
+  const ring = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }))
+  const month = new Intl.DateTimeFormat(dateLocale(), { month: 'short', timeZone: 'UTC' })
+    .format(new Date(`${today}T16:00:00Z`))
+    .replace('.', '')
 
   return (
     <ScrollView
@@ -190,57 +209,82 @@ function DayStrip({
       horizontal
       showsHorizontalScrollIndicator={false}
       className="-mx-5"
-      contentContainerClassName="px-5"
-      onLayout={(e) => setStripW(e.nativeEvent.layout.width)}
+      contentContainerStyle={{ paddingHorizontal: STRIP_PAD }}
+      decelerationRate="normal"
+      scrollEventThrottle={32}
+      onScroll={(e) => {
+        offset.current = e.nativeEvent.contentOffset.x
+      }}
+      onLayout={(e) => {
+        stripW.current = e.nativeEvent.layout.width
+      }}
     >
-      <View className="flex-row gap-1.5">
+      <View className="flex-row" style={{ gap: ITEM_GAP }}>
+        {/* The selected circle — slides between dates on the UI thread */}
         <Animated.View
           pointerEvents="none"
-          className="absolute top-0 bottom-0 rounded-card bg-btn-primary-bg"
-          style={fill}
+          className="absolute rounded-pill bg-btn-primary-bg"
+          style={[{ left: (ITEM_W - DOT) / 2, top: 18, width: DOT, height: DOT }, ring]}
         />
-        {(['all', ...days] as Day[]).map((d) => {
+        {items.map((d) => {
           const on = d === value
-          const l = d === 'all' ? { top: t('events.all_days'), bottom: '' } : label(d)
+          const date = d === 'all' ? null : new Date(`${d}T16:00:00Z`)
+          const top =
+            d === 'all'
+              ? month
+              : d === today
+                ? t('events.today')
+                : new Intl.DateTimeFormat(dateLocale(), { weekday: 'short', timeZone: 'UTC' })
+                    .format(date as Date)
+                    .replace('.', '')
+          const num =
+            d === 'all'
+              ? t('events.all_days')
+              : new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', timeZone: 'UTC' }).format(
+                  date as Date,
+                )
           const dots = d === 'all' ? [] : (catsByDay.get(d) ?? []).slice(0, 3)
           return (
             <Pressable
               key={d}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
-              onLayout={(e) => {
-                layouts.current[d] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width }
-                if (d === value) moveTo(d, false)
-              }}
+              accessibilityLabel={d === 'all' ? t('events.all_days') : `${top} ${num}`}
               onPress={() => {
                 if (on) return
                 tapSelect()
-                moveTo(d, true)
-                onChange(d)
+                slideTo(d)
+                startTransition(() => onChange(d))
               }}
-              className={`min-h-[60px] min-w-[52px] items-center justify-center rounded-card px-3 py-2 ${on ? '' : 'bg-surface border border-line'}`}
+              style={{ width: ITEM_W }}
+              className="items-center pb-1"
             >
               <Text
-                maxFontSizeMultiplier={MAX_SCALE}
-                className={`font-ui-semibold text-micro uppercase ${on ? 'text-btn-primary-fg' : 'text-text-muted'}`}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                maxFontSizeMultiplier={1.1}
+                className={`h-[18px] font-ui-semibold text-[10px] uppercase tracking-eyebrow ${d === today ? 'text-accent-strong' : 'text-text-faint'}`}
               >
-                {l.top}
+                {top}
               </Text>
-              {l.bottom ? (
+              <View style={{ width: DOT, height: DOT }} className="items-center justify-center">
                 <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                   maxFontSizeMultiplier={1.1}
-                  className={`font-serif-semibold text-serif-md ${on ? 'text-btn-primary-fg' : 'text-text'}`}
+                  style={d === 'all' ? undefined : DATA_FIGURES}
+                  className={
+                    d === 'all'
+                      ? `font-ui-semibold text-micro ${on ? 'text-btn-primary-fg' : 'text-text'}`
+                      : `font-serif-semibold text-serif-sm ${on ? 'text-btn-primary-fg' : 'text-text'}`
+                  }
                 >
-                  {l.bottom}
+                  {num}
                 </Text>
-              ) : null}
-              <View className="mt-0.5 h-1.5 flex-row gap-0.5">
+              </View>
+              <View className="mt-1 h-1 flex-row gap-0.5">
                 {dots.map((c) => (
-                  <Animated.View
-                    key={c}
-                    entering={FadeIn.duration(220)}
-                    className={`h-1.5 w-1.5 rounded-pill ${CAT_CLASSES[c].bg}`}
-                  />
+                  <View key={c} className={`h-1 w-1 rounded-pill ${CAT_CLASSES[c].bg}`} />
                 ))}
               </View>
             </Pressable>
@@ -249,7 +293,7 @@ function DayStrip({
       </View>
     </ScrollView>
   )
-}
+})
 
 function CatChip({
   cat,
@@ -304,10 +348,14 @@ function Featured({ events, now }: { events: EventSummary[]; now: Date }) {
         showsHorizontalScrollIndicator={false}
         snapToInterval={step}
         decelerationRate="fast"
+        // One card per swipe, and a trailing pad so the LAST card can reach
+        // its snap point too — without it the final offset was shorter than
+        // 2 × step, so the carousel fought the finger at the end.
+        disableIntervalMomentum
         onScroll={onScroll}
         scrollEventThrottle={16}
         className="-mx-5"
-        contentContainerStyle={{ paddingHorizontal: 20, gap }}
+        contentContainerStyle={{ paddingLeft: 20, paddingRight: width - cardW - 20, gap }}
       >
         {events.map((e, i) => (
           <FeaturedSlot key={e.id} index={i} step={step} scrollX={scrollX}>

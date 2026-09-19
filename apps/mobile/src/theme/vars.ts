@@ -64,6 +64,11 @@ const afternoon = {
   '--cat-happy': '#00838f',
   '--cat-happy-soft': 'rgba(0, 131, 143, 0.10)',
   '--on-cat': '#fdf7ec',
+  // "Live now" — an event happening at this moment (Eventos only). Green is
+  // the universal on-air signal; it's reserved for that one state.
+  '--live': '#15803d',
+  '--live-soft': 'rgba(21, 128, 61, 0.12)',
+  '--on-live': '#fdf7ec',
   // The dark end of the gradient under text set on a photograph —
   // theme-invariant, like --on-photo (a photo is its own dark island).
   '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
@@ -113,6 +118,9 @@ const candlelit = {
   '--cat-happy': '#22d3ee',
   '--cat-happy-soft': 'rgba(34, 211, 238, 0.18)',
   '--on-cat': '#210104',
+  '--live': '#34d399',
+  '--live-soft': 'rgba(52, 211, 153, 0.18)',
+  '--on-live': '#210104',
   '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
 } as const
 

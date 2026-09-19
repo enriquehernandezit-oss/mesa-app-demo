@@ -86,7 +86,15 @@ export default function LeaderboardScreen() {
                   }}
                   className={`flex-row items-center gap-3 py-3 active:opacity-80 ${i === rows.length - 1 ? '' : 'border-line border-b'}`}
                 >
-                  <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-lg text-accent">
+                  {/* The position is a quiet marker, not the headline: the row
+                      size of the name beside it, brass only for the podium. */}
+                  <Text
+                    style={DATA_FIGURES}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    maxFontSizeMultiplier={1.1}
+                    className={`w-6 text-center font-serif-semibold text-serif-sm ${i < 3 ? 'text-accent-strong' : 'text-text-faint'}`}
+                  >
                     {i + 1}
                   </Text>
                   <Avatar name={r.name || r.handle || 'm'} src={r.image} size={38} />

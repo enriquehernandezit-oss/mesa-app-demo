@@ -87,3 +87,48 @@ export const CAT_TOKEN = {
 
 // Filter order for the chips row.
 export const CAT_ORDER: Exclude<CatKey, 'default'>[] = ['cata', 'food', 'musica', 'brunch', 'happy']
+
+// Events are curated in Spanish (`events.category`, `events.price_label` are
+// free text in apps/api/data/events.json). Titles stay as the venue named
+// them, but the category and the price line are Mesa's own descriptors, so in
+// English they're translated — known phrases first, then the recurring
+// fragments ("por persona", "incluido"). Anything unrecognized passes
+// through unchanged rather than guessing.
+const CATEGORY_EN: Record<string, string> = {
+  'musica en vivo': 'Live music',
+  musica: 'Music',
+  cata: 'Tasting',
+  'cata de cocteles': 'Cocktail tasting',
+  'cata de vinos': 'Wine tasting',
+  especial: 'Special',
+  desayuno: 'Breakfast',
+  cena: 'Dinner',
+  'noche de karaoke': 'Karaoke night',
+  degustacion: 'Tasting menu',
+  'menu degustacion': 'Tasting menu',
+}
+
+export function eventCategoryText(category: string | null, lang: 'es' | 'en'): string | null {
+  if (!category || lang === 'es') return category
+  return CATEGORY_EN[norm(category.trim())] ?? category
+}
+
+const PRICE_EN: [RegExp, string][] = [
+  [/^entrada libre$/i, 'Free entry'],
+  [/^gratis con reservaci[oó]n$/i, 'Free with reservation'],
+  [/^gratis$/i, 'Free'],
+  [/2x1 en c[oó]cteles/i, '2-for-1 cocktails'],
+  [/2x1 en/i, '2-for-1'],
+  [/men[uú] fijo/i, 'Set menu'],
+  [/por persona/i, 'per person'],
+  [/\bincluid[oa]s?\b/i, 'included'],
+  [/con reservaci[oó]n/i, 'with reservation'],
+  [/entrada/i, 'Entry'],
+]
+
+export function eventPriceText(label: string | null, lang: 'es' | 'en'): string | null {
+  if (!label || lang === 'es') return label
+  let out = label
+  for (const [re, en] of PRICE_EN) out = out.replace(re, en)
+  return out
+}

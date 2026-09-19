@@ -27,6 +27,14 @@ export const authClient = createAuthClient({
   baseURL,
   plugins: [phoneNumberClient(), genericOAuthClient()],
   fetchOptions: {
+    // Bearer only — never the iOS cookie jar. Better Auth defaults to
+    // `credentials: 'include'`, and RN's fetch then lets NSURLSession store
+    // the session cookie from sign-in and replay it on every request. That
+    // silently broke sign-out: the replayed cookie (with no Origin header)
+    // made POST /sign-out fail Better Auth's CSRF check, so the server
+    // session survived, and the very next get-session authenticated through
+    // the leftover cookie — straight back into the app.
+    credentials: 'omit',
     // Attach the stored token to every auth request, and capture a fresh one
     // whenever the server issues it. This is the whole auth mechanism on native
     // (no cookie): the token lives in the Keychain via auth-token.ts.
@@ -38,23 +46,25 @@ export const authClient = createAuthClient({
   },
 })
 
-export const signOut = () =>
-  // Unregister this device's push token FIRST — it needs the still-valid
-  // Bearer token to authenticate, so it has to run before clearToken() below.
-  // Best-effort: unregisterPush already swallows its own failures, so a
-  // flaky network never blocks signing out.
-  unregisterPush()
+// Signing out is local-first: the device forgets the session at once, so the
+// tap always works, even offline. The server calls then run with the token
+// captured beforehand, bounded so a slow network can't hold the screen.
+export async function signOut(): Promise<void> {
+  const token = getToken()
+  const server = unregisterPush()
     .catch(() => {})
-    .then(() => authClient.signOut())
-    .finally(() => {
-      track('signed_out')
-      // Drop the local token regardless of the network result, so the app can't
-      // reauthenticate with a stale token after sign-out — then clear the cache so
-      // the ['session'] query re-resolves to null and the route guards send the
-      // user back to sign-in (no hard reload exists on native).
-      clearToken()
-      queryClient.clear()
-    })
+    .then(() =>
+      authClient.signOut({ fetchOptions: { auth: { type: 'Bearer', token: () => token } } }),
+    )
+    .catch(() => {})
+  await Promise.race([server, new Promise((resolve) => setTimeout(resolve, 2500))])
+  track('signed_out')
+  // Drop the token, then the cache, and pin the session to "signed out" so
+  // every route guard flips immediately instead of waiting on a refetch.
+  clearToken()
+  queryClient.clear()
+  queryClient.setQueryData(['session'], null)
+}
 
 // Session state via a cached TanStack Query rather than Better Auth's reactive
 // useSession — same reason as the web app: under React 19 that hook's snapshot

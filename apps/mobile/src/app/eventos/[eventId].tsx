@@ -24,7 +24,7 @@ import {
 import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
-import { eventWhenLabel } from '@/lib/display'
+import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
 import { CAT_CLASSES, CAT_TOKEN, categoryKey } from '@/lib/eventCategory'
 import { countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
@@ -106,6 +106,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
   const cls = CAT_CLASSES[cat]
   const rsvpState = useEventRsvp(e)
   const cd = countdown(e.startsAt, e.endsAt, now)
+  const live = cd.kind === 'live'
   const when = eventWhenLabel(e.startsAt)
 
   // Scroll-driven hero: stretches on overscroll, drifts up at half speed,
@@ -191,18 +192,20 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
               <View className={`flex-row items-center gap-1.5 rounded-pill px-2.5 py-1 ${cls.bg}`}>
                 <CategoryIcon cat={cat} size={12} color="on-cat" />
                 <Text className="font-ui-semibold text-micro text-on-cat">
-                  {e.category ?? t('events.cat_default')}
+                  {eventCategoryLabel(e.category) ?? t('events.cat_default')}
                 </Text>
               </View>
               {e.priceLabel ? (
                 <View className="rounded-pill bg-photo-scrim px-2.5 py-1">
-                  <Text className="font-ui-semibold text-micro text-on-photo">{e.priceLabel}</Text>
+                  <Text className="font-ui-semibold text-micro text-on-photo">
+                    {eventPriceLabel(e.priceLabel)}
+                  </Text>
                 </View>
               ) : null}
             </View>
             <Text
               maxFontSizeMultiplier={MAX_SCALE}
-              className="mt-2 font-serif-semibold text-display leading-[42px] text-on-photo"
+              className="mt-2 font-serif-semibold text-display leading-[46px] text-on-photo"
             >
               {e.title}
             </Text>
@@ -218,21 +221,34 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           {/* Countdown banner */}
           <Animated.View
             entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
-            className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${isImminent(cd) ? cls.bg : 'border border-line bg-surface'}`}
+            className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live ? 'bg-live' : isImminent(cd) ? cls.bg : 'border border-line bg-surface'}`}
           >
-            {isImminent(cd) ? (
+            {live ? (
+              <PulseDot color="on-live" size={9} />
+            ) : isImminent(cd) ? (
               <PulseDot color="on-cat" size={8} />
             ) : (
               <ClockIcon size={18} color={CAT_TOKEN[cat]} />
             )}
             <View className="flex-1">
-              <Caption className={isImminent(cd) ? 'text-on-cat' : undefined}>
-                {t('events.starts_in')}
+              <Caption
+                className={live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : undefined}
+              >
+                {live ? t('events.live_now') : t('events.starts_in')}
               </Caption>
               <Text
-                className={`font-ui-semibold text-body ${isImminent(cd) ? 'text-on-cat' : cls.text}`}
+                className={`font-ui-semibold text-body ${live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : cls.text}`}
               >
-                {countdownLabel(t, cd)}
+                {live
+                  ? e.endsAt
+                    ? t('events.live_until', {
+                        time: new Intl.DateTimeFormat(dateLocale(), {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        }).format(new Date(e.endsAt)),
+                      })
+                    : t('events.cd_live')
+                  : countdownLabel(t, cd)}
               </Text>
             </View>
           </Animated.View>
@@ -343,6 +359,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
 
       {/* Floating back / share */}
       <View
+        pointerEvents="box-none"
         className="absolute inset-x-0 flex-row justify-between px-4"
         style={{ top: insets.top + 4 }}
       >

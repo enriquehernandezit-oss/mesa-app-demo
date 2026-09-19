@@ -4,17 +4,17 @@ import { Avatar } from '@/components/ui/Avatar'
 import { ChevronIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
-import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { signOut } from '@/lib/auth-client'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { MeStats } from '@/lib/types'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useColor } from '@/theme/useColor'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 // Settings hub (M15) — a shallow index of a few grouped destinations instead
 // of the one long flat scroll app/settings.tsx used to be (521 lines, every
@@ -53,12 +53,13 @@ export default function SettingsHub() {
     }
   }
 
-  const queryClient = useQueryClient()
+  const [signingOut, setSigningOut] = useState(false)
+  const accent = useColor('accent')
   async function handleSignOut() {
-    track('signed_out')
+    if (signingOut) return
+    setSigningOut(true)
     await signOut()
-    queryClient.clear()
-    router.replace('/')
+    router.replace('/sign-in')
   }
 
   // No real support inbox is wired up yet — TODO(founder): replace with the
@@ -170,10 +171,11 @@ export default function SettingsHub() {
         ) : null}
 
         <View className="mt-6 rounded border border-line bg-surface px-4">
-          <RowButton onPress={handleSignOut} last>
+          <RowButton onPress={handleSignOut} disabled={signingOut} last>
             <Text className="flex-1 font-ui-medium text-body text-accent-strong">
               {t('settings.sign_out')}
             </Text>
+            {signingOut ? <ActivityIndicator size="small" color={accent} /> : null}
           </RowButton>
         </View>
       </ScrollView>

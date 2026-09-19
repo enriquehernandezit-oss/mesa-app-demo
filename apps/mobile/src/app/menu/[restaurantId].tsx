@@ -60,9 +60,17 @@ export default function RestaurantMenuScreen() {
   // Keeps the active chip on-screen in the horizontal rail — it used to only
   // ever move the PAGE, so a chip near the end of a long rail could highlight
   // while sitting off the edge of the visible strip.
+  // Never while the member's own finger is on the rail (that yanked it back
+  // mid-drag), and clamped to the rail's real scroll range so it can't
+  // overshoot and bounce at the end.
+  const railDragging = useRef(false)
+  const railContentW = useRef(0)
+  const railW = useRef(0)
   useEffect(() => {
     const x = chipOffsets.current[activeIndex]
-    if (x != null) railRef.current?.scrollTo({ x: Math.max(0, x - 24), animated: true })
+    if (x == null || railDragging.current) return
+    const max = Math.max(0, railContentW.current - railW.current)
+    railRef.current?.scrollTo({ x: Math.min(max, Math.max(0, x - 24)), animated: true })
   }, [activeIndex])
 
   const jumpTo = (i: number) => {
@@ -158,6 +166,22 @@ export default function RestaurantMenuScreen() {
             ref={railRef}
             horizontal
             showsHorizontalScrollIndicator={false}
+            onLayout={(e) => {
+              railW.current = e.nativeEvent.layout.width
+            }}
+            onContentSizeChange={(w) => {
+              railContentW.current = w
+            }}
+            onScrollBeginDrag={() => {
+              railDragging.current = true
+            }}
+            onScrollEndDrag={(e) => {
+              // No fling → no momentum events; release right away.
+              if (!e.nativeEvent.velocity?.x) railDragging.current = false
+            }}
+            onMomentumScrollEnd={() => {
+              railDragging.current = false
+            }}
             style={{
               backgroundColor: bg,
               borderBottomWidth: 1,

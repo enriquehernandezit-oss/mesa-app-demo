@@ -59,7 +59,13 @@ function ToastItem({ toast }: { toast: Toast }) {
         elevation: 6,
       }}
     >
-      <Text className={`flex-1 font-ui text-label ${error ? 'text-status-packed' : 'text-text'}`}>
+      {/* pointerEvents none: box-none on the container doesn't stop this
+          Text from being the touch target, which ate taps on the card under
+          the toast for its whole 3–5s. */}
+      <Text
+        pointerEvents="none"
+        className={`flex-1 font-ui text-label ${error ? 'text-status-packed' : 'text-text'}`}
+      >
         {toast.message}
       </Text>
       {toast.action && (

@@ -728,6 +728,10 @@ export interface EventSummary {
   coverImageId: string | null
   restaurant: RestaurantRef & { coverImageId: string | null; neighborhood: string | null }
   myRsvp: 'going' | 'interested' | null
+  // Bookmarked into the member's Saved → Events (independent of going; an
+  // event can't go into a custom list). Optional until every API in the wild
+  // returns it.
+  savedByMe?: boolean
   goingCount: number
   friendsGoing: { id: string; name: string; image: string | null }[]
   // Optional capacity ("12 de 16 cupos") and a WhatsApp booking number

@@ -1,3 +1,4 @@
+import { eventCategoryText, eventPriceText } from './eventCategory'
 import { dateLocale, getLanguage } from './i18n'
 
 // Score display: stored 0–100, shown Beli-style as 0–10 with one decimal
@@ -211,4 +212,13 @@ export function grainOptions(): { value: Grain; label: string }[] {
     { value: 'daylight', label: grainLabel('daylight') },
     { value: 'none', label: grainLabel('none') },
   ]
+}
+
+// Events' curated Spanish descriptors (category, price line), in the app's
+// language — see lib/eventCategory.ts. Titles are left as the venue wrote them.
+export function eventCategoryLabel(category: string | null): string | null {
+  return eventCategoryText(category, getLanguage())
+}
+export function eventPriceLabel(label: string | null): string | null {
+  return eventPriceText(label, getLanguage())
 }

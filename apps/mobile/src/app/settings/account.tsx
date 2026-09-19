@@ -101,8 +101,7 @@ export default function AccountSettings() {
     mutationFn: () => api.del('/me', { password: deletePassword || undefined }),
     onSuccess: async () => {
       await signOut().catch(() => {})
-      queryClient.clear()
-      router.replace('/')
+      router.replace('/sign-in')
     },
     onError: (err) => {
       const code = err instanceof ApiError ? err.code : ''

@@ -67,6 +67,9 @@ module.exports = {
         'cat-happy': 'var(--cat-happy)',
         'cat-happy-soft': 'var(--cat-happy-soft)',
         'on-cat': 'var(--on-cat)',
+        live: 'var(--live)',
+        'live-soft': 'var(--live-soft)',
+        'on-live': 'var(--on-live)',
         'photo-scrim': 'var(--photo-scrim)',
       },
       fontFamily: {

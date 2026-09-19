@@ -2,17 +2,19 @@ import { Caption, MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import {
+  BookmarkFilledIcon,
+  BookmarkIcon,
   CheckIcon,
   CocktailIcon,
   ForkKnifeIcon,
-  HeartFilledIcon,
-  HeartIcon,
   MusicIcon,
   SparkleIcon,
   SunIcon,
   WineGlassIcon,
 } from '@/components/ui/icons'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
+import { useEventSave } from '@/hooks/useEventSave'
+import { eventCategoryLabel, eventPriceLabel } from '@/lib/display'
 import { CAT_CLASSES, CAT_TOKEN, type CatKey, categoryKey } from '@/lib/eventCategory'
 import { type Countdown, countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
@@ -76,7 +78,9 @@ export function countdownLabel(t: ReturnType<typeof useT>, c: Countdown): string
   return t('events.cd_days', { n: c.n })
 }
 
-// "¡Hoy · en 3 h!" pill. Pulsing dot when it's imminent.
+// "¡Hoy · en 3 h!" pill. Pulsing dot when it's imminent; while the event is
+// actually happening it turns the "live" green with an on-air dot and says
+// until when ("Live · until 4:00 PM").
 export function CountdownChip({
   e,
   now,
@@ -89,20 +93,35 @@ export function CountdownChip({
   const t = useT()
   const cat = categoryKey(e.category, e.title)
   const c = countdown(e.startsAt, e.endsAt, now)
+  const live = c.kind === 'live'
   const hot = isImminent(c)
+  const label = live ? liveLabel(t, e) : countdownLabel(t, c)
   return (
     <View
-      className={`flex-row items-center gap-1.5 self-start rounded-pill px-2.5 py-1 ${hot ? CAT_CLASSES[cat].bg : onPhoto ? 'bg-photo-scrim' : CAT_CLASSES[cat].soft}`}
+      className={`flex-row items-center gap-1.5 self-start rounded-pill px-2.5 py-1 ${live ? 'bg-live' : hot ? CAT_CLASSES[cat].bg : onPhoto ? 'bg-photo-scrim' : CAT_CLASSES[cat].soft}`}
     >
-      {hot ? <PulseDot color="on-cat" size={6} /> : null}
+      {live ? (
+        <PulseDot color="on-live" size={6} />
+      ) : hot ? (
+        <PulseDot color="on-cat" size={6} />
+      ) : null}
       <Text
         maxFontSizeMultiplier={MAX_SCALE}
-        className={`font-ui-semibold text-micro ${hot ? 'text-on-cat' : onPhoto ? 'text-on-photo' : CAT_CLASSES[cat].text}`}
+        className={`font-ui-semibold text-micro ${live ? 'text-on-live' : hot ? 'text-on-cat' : onPhoto ? 'text-on-photo' : CAT_CLASSES[cat].text}`}
       >
-        {countdownLabel(t, c)}
+        {label}
       </Text>
     </View>
   )
+}
+
+// "Live · until 4:00 PM" (or just "Live now" when there's no end time).
+export function liveLabel(t: ReturnType<typeof useT>, e: EventSummary): string {
+  if (!e.endsAt) return t('events.live_now')
+  const time = new Intl.DateTimeFormat(dateLocale(), { hour: 'numeric', minute: '2-digit' }).format(
+    new Date(e.endsAt),
+  )
+  return t('events.live_chip', { time })
 }
 
 function stubParts(iso: string) {
@@ -203,29 +222,32 @@ export function RsvpButtons({
   const cat = categoryKey(e.category, e.title)
   const { rsvp, toggle } = rsvpState
   const going = rsvp === 'going'
-  const interested = rsvp === 'interested'
+  const save = useEventSave(e)
   const goingPop = usePop()
   const heartPop = usePop()
   const [burst, setBurst] = useState(0)
   const md = size === 'md'
   return (
     <View className="flex-row items-center gap-2">
+      {/* Save (bookmark) — into Saved → Events. Replaced the "Me interesa"
+          heart: a save is independent of going, and it's how an event gets
+          kept (events never go into custom lists). */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={t('events.interested_cta')}
-        accessibilityState={{ selected: interested }}
+        accessibilityLabel={save.saved ? t('events.unsave_cta') : t('events.save_cta')}
+        accessibilityState={{ selected: save.saved }}
         hitSlop={6}
         onPress={() => {
           heartPop.pop()
-          toggle('interested')
+          save.toggle()
         }}
-        className={`items-center justify-center rounded-pill border ${md ? 'h-12 w-12' : 'h-9 w-9'} ${interested ? `${CAT_CLASSES[cat].border} ${CAT_CLASSES[cat].soft}` : 'border-line-strong'}`}
+        className={`items-center justify-center rounded-pill border ${md ? 'h-12 w-12' : 'h-9 w-9'} ${save.saved ? `${CAT_CLASSES[cat].border} ${CAT_CLASSES[cat].soft}` : 'border-line-strong'}`}
       >
         <Animated.View style={heartPop.style}>
-          {interested ? (
-            <HeartFilledIcon size={md ? 20 : 16} color={CAT_TOKEN[cat]} />
+          {save.saved ? (
+            <BookmarkFilledIcon size={md ? 20 : 16} color={CAT_TOKEN[cat]} />
           ) : (
-            <HeartIcon size={md ? 20 : 16} color="text-muted" />
+            <BookmarkIcon size={md ? 20 : 16} color="text-muted" />
           )}
         </Animated.View>
       </Pressable>
@@ -276,7 +298,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
             <Text
               style={DATA_FIGURES}
               maxFontSizeMultiplier={1.1}
-              className={`font-serif-semibold text-rank leading-[42px] ${cls.text}`}
+              className={`font-serif-semibold text-rank leading-[48px] ${cls.text}`}
             >
               {s.day}
             </Text>
@@ -295,12 +317,13 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
           />
           <View className="flex-1 p-3">
             <View className="flex-row items-center justify-between gap-2">
-              <View className="flex-row items-center gap-1.5">
+              <View className="flex-1 flex-row items-center gap-1.5">
                 <CategoryIcon cat={cat} size={13} />
                 <Text
-                  className={`font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}
+                  numberOfLines={1}
+                  className={`shrink font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}
                 >
-                  {e.category ?? t('events.cat_default')}
+                  {eventCategoryLabel(e.category) ?? t('events.cat_default')}
                 </Text>
               </View>
               <CountdownChip e={e} now={now} />
@@ -313,7 +336,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
               {e.title}
             </Text>
             <Caption numberOfLines={1}>
-              {[e.restaurant.name, e.restaurant.neighborhood, e.priceLabel]
+              {[e.restaurant.name, e.restaurant.neighborhood, eventPriceLabel(e.priceLabel)]
                 .filter(Boolean)
                 .join(' · ')}
             </Caption>
@@ -359,19 +382,23 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
           style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
         />
         {/* Date block top-left, category chip top-right */}
-        <View className={`absolute top-3 left-3 items-center rounded-sm px-2.5 py-1.5 ${cls.bg}`}>
+        <View
+          className={`absolute top-3 left-3 min-w-[48px] items-center rounded-sm px-2.5 pt-0.5 pb-1.5 ${cls.bg}`}
+        >
           <Text
             style={DATA_FIGURES}
             maxFontSizeMultiplier={1.1}
-            className="font-serif-semibold text-serif-lg leading-[26px] text-on-cat"
+            className="font-serif-semibold text-serif-lg leading-[34px] text-on-cat"
           >
             {s.day}
           </Text>
           <Text className="font-ui-semibold text-micro uppercase text-on-cat">{s.month}</Text>
         </View>
-        <View className="absolute top-3 right-3 flex-row items-center gap-1.5 rounded-pill bg-photo-scrim px-2.5 py-1">
+        <View className="absolute top-3 right-3 max-w-[60%] flex-row items-center gap-1.5 rounded-pill bg-photo-scrim px-2.5 py-1">
           <CategoryIcon cat={cat} size={12} color="on-photo" />
-          <Text className="font-ui-semibold text-micro text-on-photo">{e.category}</Text>
+          <Text numberOfLines={1} className="shrink font-ui-semibold text-micro text-on-photo">
+            {eventCategoryLabel(e.category)}
+          </Text>
         </View>
         <View className="absolute right-3 bottom-3 left-3">
           <CountdownChip e={e} now={now} onPhoto />
@@ -427,10 +454,15 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
           </View>
         </View>
         <View className="px-3 pt-2 pb-3">
-          <View className="flex-row items-center gap-1">
+          <View className="flex-row items-center gap-1 pr-1">
             <CategoryIcon cat={cat} size={11} />
-            <Text className={`font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}>
-              {e.category}
+            {/* One line, ellipsized — "COCKTAIL TASTING" in letter-spaced caps
+                ran into the card's edge. */}
+            <Text
+              numberOfLines={1}
+              className={`shrink font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}
+            >
+              {eventCategoryLabel(e.category)}
             </Text>
           </View>
           <Text numberOfLines={1} className="mt-0.5 font-serif-semibold text-serif-sm text-text">

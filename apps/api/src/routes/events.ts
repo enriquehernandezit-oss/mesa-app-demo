@@ -9,9 +9,10 @@ import { requireAuth } from '../middleware/session'
 
 // Mesa-curated events in Explore (M21) — never member-created; see
 // docs/EVENTS.md for how a new one gets added. This file is browse (tonight/
-// weekend/upcoming), one event's detail, and RSVP — schema-level rules
+// weekend/upcoming), one event's detail, RSVP, and Save (the bookmark,
+// independent of RSVP; see GET /saved) — schema-level rules
 // (never delete a row, soft-cancel instead) live in schema/events.ts.
-const { events, eventRsvps, restaurants, neighborhoods, user } = schema
+const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user } = schema
 
 // Santo Domingo has no DST (fixed UTC-4) — same fixed-offset trick as
 // lib/push.ts's dish-nudge sweep, kept independent rather than shared since
@@ -40,26 +41,33 @@ function sdMidnight(sdLocal: Date, addDays: number): Date {
 }
 
 // The three Explore browse windows, each as [start, end) in real UTC
-// instants — `end: null` means no upper bound (upcoming). `start` is always
-// clamped to "now" so a Friday-afternoon query for "weekend" never includes
-// Friday morning's already-passed events.
-function eventsWindow(when: string): { start: Date; end: Date | null } {
-  const now = new Date()
-  const local = sdLocalNow()
+// instants over startsAt — `start: null` / `end: null` mean no bound. `start`
+// is the window's first SD-local midnight (today for tonight, Friday for
+// weekend), NOT clamped to now: "still on" is notEnded's job below, so an
+// event that started at noon and runs till 4pm still shows at 1pm, while
+// tonight/weekend still never reach back into an earlier day.
+function eventsWindow(when: string): { start: Date | null; end: Date | null } {
+  const sdLocal = sdLocalNow()
   if (when === 'tonight') {
-    return { start: now, end: sdMidnight(local, 1) }
+    return { start: sdMidnight(sdLocal, 0), end: sdMidnight(sdLocal, 1) }
   }
   if (when === 'weekend') {
-    const dow = local.getUTCDay() // SD-local day of week, 0=Sun..6=Sat
+    const dow = sdLocal.getUTCDay() // SD-local day of week, 0=Sun..6=Sat
     const daysSinceFriday = (dow - 5 + 7) % 7 // Fri=0, Sat=1, Sun=2, Mon=3..Thu=6
     const inWeekend = daysSinceFriday <= 2
     const fridayOffset = inWeekend ? -daysSinceFriday : (5 - dow + 7) % 7
-    const start = sdMidnight(local, fridayOffset)
-    const end = sdMidnight(local, fridayOffset + 3) // the following Monday
-    return { start: now > start ? now : start, end }
+    return {
+      start: sdMidnight(sdLocal, fridayOffset),
+      end: sdMidnight(sdLocal, fridayOffset + 3), // the following Monday
+    }
   }
-  return { start: now, end: null } // 'upcoming' (also the fallback for an unknown value)
+  return { start: null, end: null } // 'upcoming' (also the fallback for an unknown value)
 }
+
+// "Not over yet" — the one definition of ended every list here shares, and
+// the client's countdown rule: over once endsAt has passed or, with no
+// endsAt, 3h after startsAt (an event with no end time is treated as 3h long).
+const notEnded = sql`coalesce(${events.endsAt}, ${events.startsAt} + interval '3 hours') > now()`
 
 const rsvpSchema = z.object({ status: z.enum(['going', 'interested']) })
 
@@ -84,6 +92,11 @@ const eventCols = {
     coverImageId: restaurants.coverImageId,
   },
 }
+
+// My Save bookmark on an event — independent of the RSVP. Every query that
+// selects it joins savedEvents scoped to me (a leftJoin on browse/detail, an
+// innerJoin on /saved), so it rides in the same round trip, never a lookup.
+const savedByMe = sql<boolean>`${savedEvents.userId} is not null`
 
 // Shared shaping for every event this file returns (browse, one restaurant's
 // rail, detail): the base rows plus, in exactly two more queries regardless
@@ -164,15 +177,18 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         ...eventCols,
         neighborhood: neighborhoods.name,
         myStatus: eventRsvps.status,
+        savedByMe,
       })
       .from(events)
       .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
+      .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
       .where(
         and(
           isNull(events.cancelledAt),
-          gte(events.startsAt, start),
+          notEnded,
+          start ? gte(events.startsAt, start) : undefined,
           end ? lt(events.startsAt, end) : undefined,
         ),
       )
@@ -195,20 +211,41 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         ...eventCols,
         neighborhood: neighborhoods.name,
         myStatus: eventRsvps.status,
+        savedByMe,
       })
       .from(events)
       .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
-      .where(
-        and(
-          eq(events.restaurantId, restaurantId),
-          isNull(events.cancelledAt),
-          gte(events.startsAt, new Date()),
-        ),
-      )
+      .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
+      .where(and(eq(events.restaurantId, restaurantId), isNull(events.cancelledAt), notEnded))
       .orderBy(asc(events.startsAt))
       .limit(6)
+
+    return c.json({ events: await withFriendsGoing(me, rows) })
+  })
+
+  // My saved events — the general Saved area (events are never addable to a
+  // custom collection). Only what's still ahead or happening: cancelled
+  // events drop out, and so does anything already over (notEnded above).
+  // Registered before /:id so "saved" is never read as an event id.
+  .get('/saved', async (c) => {
+    const me = c.get('user')
+
+    const rows = await db
+      .select({
+        ...eventCols,
+        neighborhood: neighborhoods.name,
+        myStatus: eventRsvps.status,
+        savedByMe,
+      })
+      .from(savedEvents)
+      .innerJoin(events, eq(events.id, savedEvents.eventId))
+      .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
+      .where(and(eq(savedEvents.userId, me.id), isNull(events.cancelledAt), notEnded))
+      .orderBy(asc(events.startsAt))
 
     return c.json({ events: await withFriendsGoing(me, rows) })
   })
@@ -224,11 +261,13 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         ...eventCols,
         neighborhood: neighborhoods.name,
         myStatus: eventRsvps.status,
+        savedByMe,
       })
       .from(events)
       .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
+      .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
       .where(and(eq(events.id, id), isNull(events.cancelledAt)))
       .limit(1)
     if (!row) return c.json({ error: 'not_found' }, 404)
@@ -305,4 +344,34 @@ export const eventsRoutes = new Hono<AuthedEnv>()
       .delete(eventRsvps)
       .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, me.id)))
     return c.json({ ok: true })
+  })
+
+  // Save an event (the bookmark) — independent of RSVP. Idempotent: saving
+  // an already-saved event is a no-op. Only a live (not cancelled) event can
+  // be saved.
+  .put('/:id/save', async (c) => {
+    const me = c.get('user')
+    const eventId = c.req.param('id')
+    if (!z.string().uuid().safeParse(eventId).success) return c.json({ error: 'not_found' }, 404)
+
+    const found = await db.query.events.findFirst({
+      where: and(eq(events.id, eventId), isNull(events.cancelledAt)),
+      columns: { id: true },
+    })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+
+    await db.insert(savedEvents).values({ eventId, userId: me.id }).onConflictDoNothing()
+    return c.json({ saved: true })
+  })
+
+  // Unsave — a bare row deletion, idempotent (no row is already "unsaved").
+  .delete('/:id/save', async (c) => {
+    const me = c.get('user')
+    const eventId = c.req.param('id')
+    if (!z.string().uuid().safeParse(eventId).success) return c.json({ error: 'not_found' }, 404)
+
+    await db
+      .delete(savedEvents)
+      .where(and(eq(savedEvents.eventId, eventId), eq(savedEvents.userId, me.id)))
+    return c.json({ saved: false })
   })

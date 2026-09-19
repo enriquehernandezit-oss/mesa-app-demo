@@ -74,3 +74,25 @@ export const eventRsvps = pgTable(
     index('event_rsvps_user_idx').on(t.userId),
   ],
 )
+
+// A member's saved event — the Save bookmark, INDEPENDENT of the RSVP above
+// (a member can be going AND have it saved). Row present = saved, same shape
+// as saved_dishes. Events only ever go to the general Saved area, never to a
+// custom collection, so there's no collection column and no collection_items
+// hook — PUT/DELETE /events/:id/save is the whole surface.
+export const savedEvents = pgTable(
+  'saved_events',
+  {
+    eventId: uuid('event_id')
+      .notNull()
+      .references(() => events.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.userId] }),
+    index('saved_events_user_idx').on(t.userId),
+  ],
+)

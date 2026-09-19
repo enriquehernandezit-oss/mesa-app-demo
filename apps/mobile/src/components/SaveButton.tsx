@@ -39,7 +39,7 @@ export function SaveButton({
 }) {
   const t = useT()
   const router = useRouter()
-  const { saved, toggle, pending } = useSave(target, initial)
+  const { saved, toggle } = useSave(target, initial)
 
   function openListPicker() {
     router.push(`/guardar?kind=${target.kind}&id=${target.id}&name=${encodeURIComponent(name)}`)
@@ -65,7 +65,6 @@ export function SaveButton({
         accessibilityRole="button"
         accessibilityState={{ selected: saved }}
         accessibilityLabel={label}
-        disabled={pending}
         onPress={onTap}
         onLongPress={openListPicker}
         className={`h-10 w-10 items-center justify-center rounded-pill border ${saved ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-80 ${className ?? ''}`}
@@ -84,7 +83,6 @@ export function SaveButton({
       accessibilityRole="button"
       accessibilityState={{ selected: saved }}
       accessibilityLabel={label}
-      disabled={pending}
       onPress={onTap}
       onLongPress={openListPicker}
       hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}

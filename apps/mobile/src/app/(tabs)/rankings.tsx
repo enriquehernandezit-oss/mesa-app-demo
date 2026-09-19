@@ -1,5 +1,6 @@
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
+import { EventTicket, useNow } from '@/components/events/EventTicket'
 import {
   Button,
   Caption,
@@ -40,7 +41,14 @@ import {
 } from '@/lib/rankingSort'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
-import type { CollectionSummary, MeStats, Ranking, SavedDish, SavedPlace } from '@/lib/types'
+import type {
+  CollectionSummary,
+  EventSummary,
+  MeStats,
+  Ranking,
+  SavedDish,
+  SavedPlace,
+} from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -63,6 +71,19 @@ import ReanimatedSwipeable, {
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import Animated, { LinearTransition } from 'react-native-reanimated'
 
+type SavedKind = 'restaurants' | 'dishes' | 'events'
+type SavedItem =
+  | { kind: 'place'; key: string; v: SavedPlace }
+  | { kind: 'dish'; key: string; v: SavedDish }
+  | { kind: 'event'; key: string; v: EventSummary; i: number }
+
+// A saved event is the same ticket card as in Explore, so its bookmark and
+// "I'm going" work right here; the countdown keeps its own minute tick.
+function SavedEventTicket({ e, index }: { e: EventSummary; index: number }) {
+  const now = useNow()
+  return <EventTicket e={e} index={index} now={now} />
+}
+
 // The ranked passport (M3) — mine (ordered, serif numerals, brass scores, notes),
 // want-to-try (saved), and by-sector. Ported from apps/app/src/screens/tabs/
 // RankingsTab.tsx. The share-my-list card renders via the native view-shot host
@@ -72,10 +93,24 @@ export default function RankingsTab() {
   const t = useT()
   const tabBarClearance = useTabBarClearance()
   const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
-  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>()
+  const { tab: tabParam, kind: kindParam } = useLocalSearchParams<{ tab?: string; kind?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
   )
+  // Saved is split three ways — the places you want to try, dishes, events —
+  // behind its own sliding switcher. Custom lists sit above it (only places
+  // and dishes can go in a list; an event is only ever just "saved").
+  const [savedKind, setSavedKind] = useState<SavedKind>(
+    kindParam === 'dishes' || kindParam === 'events' ? kindParam : 'restaurants',
+  )
+  // The tab is a persistent screen, so a later `/rankings?tab=saved` (Profile's
+  // "Saved" row) arrives as a param change on an already-mounted screen —
+  // useState's initial value alone never saw it.
+  useEffect(() => {
+    if (tabParam === 'saved' || tabParam === 'barrios' || tabParam === 'mine') setTab(tabParam)
+    if (kindParam === 'restaurants' || kindParam === 'dishes' || kindParam === 'events')
+      setSavedKind(kindParam)
+  }, [tabParam, kindParam])
   const [sort, setSort] = useState<SortKey>('position')
   const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
   const me = useProfile(true, 300_000)
@@ -126,6 +161,11 @@ export default function RankingsTab() {
   const savedDishesQuery = useQuery({
     queryKey: ['saved-dishes'],
     queryFn: () => api.get<{ saved: SavedDish[] }>('/saved/dishes'),
+  })
+  const savedEventsQuery = useQuery({
+    queryKey: ['events', 'saved'],
+    queryFn: () => api.get<{ events: EventSummary[] }>('/events/saved'),
+    enabled: tab === 'saved',
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
   const { refreshing, onRefresh } = usePullToRefresh(mine.refetch)
@@ -333,11 +373,29 @@ export default function RankingsTab() {
     ),
     [],
   )
-  const renderSavedRow = useCallback(
-    ({ item }: { item: SavedPlace }) => <SavedRow saved={item} />,
-    [],
-  )
   const savedDishes = savedDishesQuery.data?.saved ?? []
+  const savedItems: SavedItem[] = useMemo(() => {
+    if (savedKind === 'restaurants')
+      return (saved.data?.saved ?? []).map((v) => ({ kind: 'place', key: v.restaurant.id, v }))
+    if (savedKind === 'dishes') return savedDishes.map((v) => ({ kind: 'dish', key: v.dish.id, v }))
+    return (savedEventsQuery.data?.events ?? []).map((v, i) => ({
+      kind: 'event',
+      key: v.id,
+      v,
+      i,
+    }))
+  }, [savedKind, saved.data, savedDishes, savedEventsQuery.data])
+  const renderSavedItem = useCallback(({ item }: { item: SavedItem }) => {
+    if (item.kind === 'place') return <SavedRow saved={item.v} />
+    if (item.kind === 'dish') return <SavedDishRow saved={item.v} />
+    return <SavedEventTicket e={item.v} index={item.i} />
+  }, [])
+  const activeSaved =
+    savedKind === 'restaurants'
+      ? saved
+      : savedKind === 'dishes'
+        ? savedDishesQuery
+        : savedEventsQuery
 
   return (
     <View className="flex-1 bg-bg">
@@ -414,23 +472,47 @@ export default function RankingsTab() {
           now that a save-heavy member's list can run long. */}
       <FlatList
         style={{ display: tab === 'saved' ? 'flex' : 'none' }}
-        data={saved.data?.saved ?? []}
-        keyExtractor={(s) => s.restaurant.id}
-        renderItem={renderSavedRow}
+        data={savedItems}
+        keyExtractor={(it) => `${it.kind}-${it.key}`}
+        renderItem={renderSavedItem}
         ListHeaderComponent={
           <>
             {topMatter}
             <ListsRail lists={collections.data?.collections ?? []} onCreate={promptNewList} />
-            <Eyebrow className="mt-6 mb-1">{t('rankings.places_section')}</Eyebrow>
+            <Segmented
+              className="mt-6 mb-3"
+              value={savedKind}
+              onChange={setSavedKind}
+              options={[
+                { value: 'restaurants', label: t('rankings.saved_restaurants') },
+                { value: 'dishes', label: t('rankings.saved_dishes_tab') },
+                { value: 'events', label: t('rankings.saved_events_tab') },
+              ]}
+            />
           </>
         }
         ListEmptyComponent={
-          saved.isPending ? (
+          activeSaved.isPending ? (
             <Skeleton height={64} />
-          ) : saved.isError ? (
-            <ErrorState onRetry={() => saved.refetch()}>
-              {t('rankings.saved_load_error')}
+          ) : activeSaved.isError ? (
+            <ErrorState onRetry={() => activeSaved.refetch()}>
+              {savedKind === 'events'
+                ? t('rankings.saved_events_error')
+                : t('rankings.saved_load_error')}
             </ErrorState>
+          ) : savedKind === 'dishes' ? (
+            <EmptyState>{t('rankings.no_saved_dishes')}</EmptyState>
+          ) : savedKind === 'events' ? (
+            <EmptyState
+              body={t('rankings.no_saved_events_body')}
+              action={
+                <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
+                  {t('rankings.browse_events')}
+                </Button>
+              }
+            >
+              {t('rankings.no_saved_events')}
+            </EmptyState>
           ) : (
             <EmptyState
               body={t('rankings.saved_empty_body')}
@@ -443,18 +525,6 @@ export default function RankingsTab() {
               {t('rankings.saved_empty_title')}
             </EmptyState>
           )
-        }
-        ListFooterComponent={
-          <View className="mt-2">
-            <Eyebrow className="mt-5 mb-1">{t('rankings.dishes_section')}</Eyebrow>
-            {savedDishesQuery.isPending ? (
-              <Skeleton height={56} />
-            ) : savedDishes.length === 0 ? (
-              <Caption>{t('rankings.no_saved_dishes')}</Caption>
-            ) : (
-              savedDishes.map((d) => <SavedDishRow key={d.dish.id} saved={d} />)
-            )}
-          </View>
         }
         indicatorStyle={indicator}
         contentContainerClassName="px-5"
@@ -868,7 +938,10 @@ function ListsRail({
         horizontal
         showsHorizontalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="gap-2"
+        // Full-bleed like ChipRail/SpotRail: the rail's viewport reaches the
+        // screen edges, so a swipe that starts near either edge still moves it.
+        className="-mx-5"
+        contentContainerClassName="gap-2 px-5"
       >
         <Pressable
           accessibilityRole="button"

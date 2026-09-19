@@ -91,7 +91,9 @@ export function ExploreFilters({
       setMounted(true)
       progress.value = withTiming(1, { duration: 260, easing: EASE })
     } else {
-      progress.value = withTiming(0, { duration: 200, easing: EASE }, (done) => {
+      // Short: the native Modal keeps covering the screen (and taking its
+      // touches) until this fade finishes and it unmounts.
+      progress.value = withTiming(0, { duration: 140, easing: EASE }, (done) => {
         if (done) runOnJS(setMounted)(false)
       })
     }

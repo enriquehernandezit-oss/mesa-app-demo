@@ -131,6 +131,12 @@ own hue so a tasting, a DJ set and a brunch read apart at a glance.
 makes Eventos read as a night out. Afternoon uses the same five hues deepened
 for contrast on paper; Candlelit uses them bright, with stronger washes.
 
+**Live now** — `--live` (Afternoon `#15803d`, Candlelit `#34d399`) with
+`--live-soft` and `--on-live`: the one green in the app, reserved for an event
+that is happening at this moment (the countdown chip and the event page's
+banner turn green with a pulsing on-air dot: "Live · until 4:00 PM"). Never
+use it for anything else — "open now" and statuses keep their own tokens.
+
 Each has a `-soft` wash; text on a solid fill is `--on-cat`. The free-text
 `events.category` maps to a key in `apps/mobile/src/lib/eventCategory.ts`
 (unknown → brass). **Never use `cat-*` outside event surfaces.** Text set on a

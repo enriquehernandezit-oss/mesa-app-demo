@@ -36,7 +36,7 @@ import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
@@ -236,6 +236,9 @@ export default function ExploreScreen() {
   const results = useQuery({
     queryKey: exploreKey(debouncedQ, filterValues, openNow, sort),
     queryFn: () => fetchExplore(debouncedQ, filterValues, openNow, sort),
+    // Keep the current results up while a new search/filter loads, instead of
+    // collapsing the list to a skeleton (and jumping the page) on every change.
+    placeholderData: keepPreviousData,
   })
 
   const { refreshing, onRefresh } = usePullToRefresh(results.refetch)

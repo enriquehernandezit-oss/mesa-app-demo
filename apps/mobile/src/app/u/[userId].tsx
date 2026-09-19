@@ -282,7 +282,13 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
         accessibilityRole="button"
         className="mb-2 flex-row gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
       >
-        <Text style={DATA_FIGURES} className="w-7 font-serif text-serif-lg text-accent">
+        {/* Same quiet position marker as the member's own Rankings rows. */}
+        <Text
+          style={[DATA_FIGURES, { width: 26 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          className={`text-center font-serif text-serif-md ${ranking.position <= 3 ? 'text-text' : 'text-text-faint'}`}
+        >
           {ranking.position}
         </Text>
         <View className="flex-1">

@@ -53,7 +53,7 @@ import { useColor } from '@/theme/useColor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -81,7 +81,22 @@ export default function RestaurantProfile() {
   // fades in once the hero photo scrolls out of view. scrollY drives the fade;
   // a state flag gates its tap target so the back button isn't hit while hidden.
   const scrollY = useRef(new Animated.Value(0)).current
-  const [condensed, setCondensed] = useState(false)
+  // The flag lives in the small CondensedBar below, not here: flipping it
+  // used to re-render this whole screen (rails included) mid-fling, right as
+  // the photo scrolled away — the hitch. The scroll listener reaches the bar
+  // through this ref, and the event object is built once per hero height
+  // instead of being re-bound natively on every render.
+  const setCondensedRef = useRef<((v: boolean) => void) | null>(null)
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+        listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+          setCondensedRef.current?.(e.nativeEvent.contentOffset.y > heroH - 8)
+        },
+      }),
+    [scrollY, heroH],
+  )
   // Imperative scroll target for two things a plain link can't reach: the
   // condensed header's name (scroll to top) and the score trio's friend/Mesa
   // badges (jump down to "Sus puntuaciones", the section they summarize).
@@ -236,13 +251,7 @@ export default function RestaurantProfile() {
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-          useNativeDriver: true,
-          listener: (e) => {
-            // @ts-expect-error — RN's onScroll event is loosely typed here.
-            setCondensed(e.nativeEvent.contentOffset.y > heroH - 8)
-          },
-        })}
+        onScroll={onScroll}
         contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}
       >
         {/* Film-photo hero — clean image, a floating back control below it. A
@@ -544,8 +553,8 @@ export default function RestaurantProfile() {
       </Animated.ScrollView>
 
       {/* Sticky condensed header — fades in once the hero scrolls away (mock D2). */}
-      <Animated.View
-        pointerEvents={condensed ? 'auto' : 'none'}
+      <CondensedBar
+        setterRef={setCondensedRef}
         style={{ opacity: heroOpacity, paddingTop: insets.top + 8 }}
         className="absolute inset-x-0 top-0 flex-row items-center gap-2 border-line border-b bg-bg px-4 pb-3"
       >
@@ -574,7 +583,7 @@ export default function RestaurantProfile() {
             attribution={{ kind: 'mesa', count: allMesa.count }}
           />
         )}
-      </Animated.View>
+      </CondensedBar>
 
       {/* The one ink CTA — fixed, never leaves (mock D2). Adapts to whether you've
           already ranked here, so nothing else on the screen duplicates it. */}
@@ -587,6 +596,33 @@ export default function RestaurantProfile() {
         </Button>
       </View>
     </View>
+  )
+}
+
+// The sticky condensed header's shell — owns the "is it showing" flag so only
+// this bar re-renders when it flips (it gates the tap targets while hidden).
+function CondensedBar({
+  setterRef,
+  style,
+  className,
+  children,
+}: {
+  setterRef: React.MutableRefObject<((v: boolean) => void) | null>
+  style: React.ComponentProps<typeof Animated.View>['style']
+  className?: string
+  children: React.ReactNode
+}) {
+  const [condensed, setCondensed] = useState(false)
+  useEffect(() => {
+    setterRef.current = setCondensed
+    return () => {
+      setterRef.current = null
+    }
+  }, [setterRef])
+  return (
+    <Animated.View pointerEvents={condensed ? 'auto' : 'none'} style={style} className={className}>
+      {children}
+    </Animated.View>
   )
 }
 
@@ -710,7 +746,8 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-3 pt-2 pr-5"
+          className="-mx-5"
+          contentContainerClassName="gap-3 px-5 pt-2"
         >
           {dishes.map((d) => (
             <Link key={d.id} href={`/dish/${d.id}`} asChild>
