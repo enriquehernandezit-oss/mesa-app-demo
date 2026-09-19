@@ -9,7 +9,15 @@ import { queryClient } from '@/lib/query'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  type TextInput,
+  View,
+} from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -164,123 +172,149 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      {/* This form is centered and doesn't scroll, so the keyboard would sit on
-          top of the password field on a smaller phone. */}
+      {/* Centered form; the KeyboardAvoidingView lifts it so the keyboard never
+          sits on top of the password field on a smaller phone. */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-center gap-5 px-5"
+        className="flex-1"
       >
-        <View className="items-center gap-2">
-          <Wordmark size={84} />
-          <View className="items-center">
-            <Eyebrow className="text-accent-strong">Revolución gastronómica</Eyebrow>
-            <View className="flex-row items-baseline">
-              <SerifItalic className="text-serif-sm text-text">Primer objetivo: SDQ</SerifItalic>
-              <BlinkingCursor />
+        {/* Closing the keyboard: tap anywhere outside the fields, or drag the
+            form down. It used to be a fixed View where only the keyboard's own
+            return key could dismiss it. `handled` keeps a tap on a button or
+            field working on the first try. */}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <Pressable
+            accessible={false}
+            onPress={Keyboard.dismiss}
+            className="flex-grow justify-center gap-5 px-5 py-6"
+          >
+            <View className="items-center gap-2">
+              <Wordmark size={84} />
+              <View className="items-center">
+                <Eyebrow className="text-accent-strong">Revolución gastronómica</Eyebrow>
+                <View className="flex-row items-baseline">
+                  <SerifItalic className="text-serif-sm text-text">
+                    Primer objetivo: SDQ
+                  </SerifItalic>
+                  <BlinkingCursor />
+                </View>
+              </View>
             </View>
-          </View>
-        </View>
 
-        <View className="gap-3">
-          <Eyebrow>
-            {mode === 'signup' ? t('auth.create_account_eyebrow') : t('auth.welcome_back')}
-          </Eyebrow>
-          {/* textContentType is what actually turns on iCloud Keychain: username
+            <View className="gap-3">
+              <Eyebrow>
+                {mode === 'signup' ? t('auth.create_account_eyebrow') : t('auth.welcome_back')}
+              </Eyebrow>
+              {/* textContentType is what actually turns on iCloud Keychain: username
               + newPassword is the pair iOS looks for to offer a strong password
               on sign-up and to save the credential afterwards. */}
-          <Field
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t('auth.email_placeholder')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="email"
-            textContentType="username"
-            inputMode="email"
-            returnKeyType="next"
-            submitBehavior="submit"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-          />
-          <Field
-            ref={passwordRef}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('auth.password_placeholder')}
-            secureTextEntry
-            autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            textContentType={mode === 'signup' ? 'newPassword' : 'password'}
-            // Without this, iOS's suggested-strong-password generator follows
-            // its own default rule and can hand back something shorter than
-            // the server's 8-char minimum — a password iOS itself just
-            // generated then gets rejected by the account it was for.
-            passwordRules={mode === 'signup' ? 'minlength: 8;' : undefined}
-            returnKeyType="go"
-            enablesReturnKeyAutomatically
-            onSubmitEditing={() => {
-              if (canSubmit && !busy) emailAuth()
-            }}
-          />
-          {mode === 'signup' && password.length > 0 && password.length < 8 && (
-            <Caption className="text-status-packed">
-              {t('auth.password_chars_left', { n: 8 - password.length })}
-            </Caption>
-          )}
-          <Button disabled={busy || !canSubmit} onPress={emailAuth}>
-            {busy
-              ? '…'
-              : mode === 'signup'
-                ? t('auth.create_account_button')
-                : t('auth.sign_in_button')}
-          </Button>
-          {error && (
-            <Caption className="text-center text-status-packed" accessibilityLiveRegion="polite">
-              {error}
-            </Caption>
-          )}
-
-          {resetSent ? (
-            <Caption className="text-center text-text-2">{t('auth.reset_sent')}</Caption>
-          ) : (
-            mode === 'signin' && (
-              <Button variant="ghost" disabled={busy || !email.includes('@')} onPress={sendReset}>
-                {t('auth.forgot_password')}
-              </Button>
-            )
-          )}
-
-          <Button
-            variant="ghost"
-            onPress={() => {
-              setMode(mode === 'signup' ? 'signin' : 'signup')
-              setError(null)
-              setResetSent(false)
-            }}
-          >
-            {mode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
-          </Button>
-
-          {Platform.OS === 'ios' && appleAvailable && (
-            <>
-              <View className="my-1 flex-row items-center gap-3">
-                <View className="h-px flex-1 bg-line" />
-                <Caption className="text-micro">{t('auth.or_divider')}</Caption>
-                <View className="h-px flex-1 bg-line" />
-              </View>
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                buttonStyle={
-                  theme === 'candlelit'
-                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={14}
-                style={{ height: 52, width: '100%' }}
-                onPress={appleAuth}
+              <Field
+                value={email}
+                onChangeText={setEmail}
+                placeholder={t('auth.email_placeholder')}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="username"
+                inputMode="email"
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => passwordRef.current?.focus()}
               />
-            </>
-          )}
-        </View>
+              <Field
+                ref={passwordRef}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={t('auth.password_placeholder')}
+                secureTextEntry
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                textContentType={mode === 'signup' ? 'newPassword' : 'password'}
+                // Without this, iOS's suggested-strong-password generator follows
+                // its own default rule and can hand back something shorter than
+                // the server's 8-char minimum — a password iOS itself just
+                // generated then gets rejected by the account it was for.
+                passwordRules={mode === 'signup' ? 'minlength: 8;' : undefined}
+                returnKeyType="go"
+                enablesReturnKeyAutomatically
+                onSubmitEditing={() => {
+                  if (canSubmit && !busy) emailAuth()
+                }}
+              />
+              {mode === 'signup' && password.length > 0 && password.length < 8 && (
+                <Caption className="text-status-packed">
+                  {t('auth.password_chars_left', { n: 8 - password.length })}
+                </Caption>
+              )}
+              <Button disabled={busy || !canSubmit} onPress={emailAuth}>
+                {busy
+                  ? '…'
+                  : mode === 'signup'
+                    ? t('auth.create_account_button')
+                    : t('auth.sign_in_button')}
+              </Button>
+              {error && (
+                <Caption
+                  className="text-center text-status-packed"
+                  accessibilityLiveRegion="polite"
+                >
+                  {error}
+                </Caption>
+              )}
+
+              {resetSent ? (
+                <Caption className="text-center text-text-2">{t('auth.reset_sent')}</Caption>
+              ) : (
+                mode === 'signin' && (
+                  <Button
+                    variant="ghost"
+                    disabled={busy || !email.includes('@')}
+                    onPress={sendReset}
+                  >
+                    {t('auth.forgot_password')}
+                  </Button>
+                )
+              )}
+
+              <Button
+                variant="ghost"
+                onPress={() => {
+                  setMode(mode === 'signup' ? 'signin' : 'signup')
+                  setError(null)
+                  setResetSent(false)
+                }}
+              >
+                {mode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
+              </Button>
+
+              {Platform.OS === 'ios' && appleAvailable && (
+                <>
+                  <View className="my-1 flex-row items-center gap-3">
+                    <View className="h-px flex-1 bg-line" />
+                    <Caption className="text-micro">{t('auth.or_divider')}</Caption>
+                    <View className="h-px flex-1 bg-line" />
+                  </View>
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                    buttonStyle={
+                      theme === 'candlelit'
+                        ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                        : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                    }
+                    cornerRadius={14}
+                    style={{ height: 52, width: '100%' }}
+                    onPress={appleAuth}
+                  />
+                </>
+              )}
+            </View>
+          </Pressable>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )

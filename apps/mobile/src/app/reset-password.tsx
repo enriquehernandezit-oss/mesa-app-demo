@@ -4,7 +4,15 @@ import { authClient } from '@/lib/auth-client'
 import { useT } from '@/lib/i18n'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
-import { KeyboardAvoidingView, Platform, type TextInput, View } from 'react-native'
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  type TextInput,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 // Reached from the password-reset email (a universal link →
@@ -38,72 +46,93 @@ export default function ResetPassword() {
     <SafeAreaView className="flex-1 bg-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        className="flex-1 justify-center gap-5 px-5"
+        className="flex-1"
       >
-        <View className="items-center gap-2">
-          <Wordmark size={56} />
-          <Eyebrow>{t('auth.reset_title')}</Eyebrow>
-        </View>
+        {/* Closing the keyboard: tap anywhere outside the fields, or drag the
+            form down. It used to be a fixed View where only the keyboard's own
+            return key could dismiss it. `handled` keeps a tap on a button or
+            field working on the first try. */}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          <Pressable
+            accessible={false}
+            onPress={Keyboard.dismiss}
+            className="flex-grow justify-center gap-5 px-5 py-6"
+          >
+            <View className="items-center gap-2">
+              <Wordmark size={56} />
+              <Eyebrow>{t('auth.reset_title')}</Eyebrow>
+            </View>
 
-        {!token ? (
-          <View className="gap-3">
-            <SerifItalic className="text-serif-sm text-center">
-              {t('auth.reset_missing_token')}
-            </SerifItalic>
-            <Body className="text-center text-text-2">{t('auth.reset_missing_token_body')}</Body>
-            <Button variant="primary" onPress={goSignIn}>
-              {t('auth.reset_back_to_signin')}
-            </Button>
-          </View>
-        ) : done ? (
-          <View className="gap-3">
-            <SerifItalic className="text-serif-md text-center">{t('auth.reset_done')}</SerifItalic>
-            <Button variant="primary" onPress={goSignIn}>
-              {t('auth.sign_in_button')}
-            </Button>
-          </View>
-        ) : (
-          <View className="gap-3">
-            <Field
-              placeholder={t('auth.reset_new_password_placeholder')}
-              secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              passwordRules="minlength: 8;"
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => confirmRef.current?.focus()}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Field
-              ref={confirmRef}
-              placeholder={t('auth.reset_confirm_placeholder')}
-              secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              passwordRules="minlength: 8;"
-              returnKeyType="go"
-              enablesReturnKeyAutomatically
-              onSubmitEditing={() => {
-                if (!busy && password.length >= 8 && password === confirm) submit()
-              }}
-              value={confirm}
-              onChangeText={setConfirm}
-            />
-            <Button
-              variant="primary"
-              disabled={busy || password.length < 8 || password !== confirm}
-              onPress={submit}
-            >
-              {busy ? '…' : t('auth.reset_save_button')}
-            </Button>
-            {password.length > 0 && confirm.length > 0 && password !== confirm && (
-              <Caption className="text-status-packed">{t('auth.reset_mismatch')}</Caption>
+            {!token ? (
+              <View className="gap-3">
+                <SerifItalic className="text-serif-sm text-center">
+                  {t('auth.reset_missing_token')}
+                </SerifItalic>
+                <Body className="text-center text-text-2">
+                  {t('auth.reset_missing_token_body')}
+                </Body>
+                <Button variant="primary" onPress={goSignIn}>
+                  {t('auth.reset_back_to_signin')}
+                </Button>
+              </View>
+            ) : done ? (
+              <View className="gap-3">
+                <SerifItalic className="text-serif-md text-center">
+                  {t('auth.reset_done')}
+                </SerifItalic>
+                <Button variant="primary" onPress={goSignIn}>
+                  {t('auth.sign_in_button')}
+                </Button>
+              </View>
+            ) : (
+              <View className="gap-3">
+                <Field
+                  placeholder={t('auth.reset_new_password_placeholder')}
+                  secureTextEntry
+                  autoComplete="new-password"
+                  textContentType="newPassword"
+                  passwordRules="minlength: 8;"
+                  returnKeyType="next"
+                  submitBehavior="submit"
+                  onSubmitEditing={() => confirmRef.current?.focus()}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <Field
+                  ref={confirmRef}
+                  placeholder={t('auth.reset_confirm_placeholder')}
+                  secureTextEntry
+                  autoComplete="new-password"
+                  textContentType="newPassword"
+                  passwordRules="minlength: 8;"
+                  returnKeyType="go"
+                  enablesReturnKeyAutomatically
+                  onSubmitEditing={() => {
+                    if (!busy && password.length >= 8 && password === confirm) submit()
+                  }}
+                  value={confirm}
+                  onChangeText={setConfirm}
+                />
+                <Button
+                  variant="primary"
+                  disabled={busy || password.length < 8 || password !== confirm}
+                  onPress={submit}
+                >
+                  {busy ? '…' : t('auth.reset_save_button')}
+                </Button>
+                {password.length > 0 && confirm.length > 0 && password !== confirm && (
+                  <Caption className="text-status-packed">{t('auth.reset_mismatch')}</Caption>
+                )}
+                {error && <Caption className="text-status-packed">{error}</Caption>}
+              </View>
             )}
-            {error && <Caption className="text-status-packed">{error}</Caption>}
-          </View>
-        )}
+          </Pressable>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
