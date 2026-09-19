@@ -62,10 +62,20 @@ export function EventRow({ e }: { e: EventSummary }) {
           name={e.title}
           coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
           size={{ w: 200, h: 200 }}
-          className="h-14 w-14"
+          className="h-16 w-16 rounded-sm"
         />
+        {/* Date on its own brass line ABOVE the title, not a right-hand
+            column: that column took half the row and cut every title short
+            ("Cata de W…"). */}
         <View className="flex-1">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+          <Text
+            className="font-ui-semibold text-eyebrow text-accent-strong uppercase tracking-eyebrow"
+            numberOfLines={1}
+          >
+            {eventWhenLabel(e.startsAt)}
+            {e.myRsvp === 'going' ? ` · ${t('events.going_pill')}` : ''}
+          </Text>
+          <Text className="mt-0.5 font-serif text-serif-sm text-text" numberOfLines={2}>
             {e.title}
           </Text>
           <Caption numberOfLines={1}>
@@ -80,16 +90,6 @@ export function EventRow({ e }: { e: EventSummary }) {
                 {t('events.friends_going_count', { n: e.goingCount })}
               </Caption>
             </View>
-          )}
-        </View>
-        <View className="items-end">
-          <Text className="font-ui-medium text-label text-text-2" numberOfLines={1}>
-            {eventWhenLabel(e.startsAt)}
-          </Text>
-          {e.myRsvp === 'going' && (
-            <Text className="mt-0.5 font-ui-semibold text-eyebrow text-accent-strong uppercase tracking-eyebrow">
-              {t('events.going_pill')}
-            </Text>
           )}
         </View>
       </Pressable>
