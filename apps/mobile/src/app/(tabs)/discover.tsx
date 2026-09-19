@@ -4,6 +4,7 @@ import { PersonRow } from '@/components/PersonRow'
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { TopBar } from '@/components/TopBar'
+import { EventMiniCard, useNow } from '@/components/events/EventTicket'
 import {
   Body,
   Button,
@@ -271,24 +272,13 @@ function EventsRail() {
     staleTime: 120_000,
   })
   const list = q.data?.events ?? []
+  const now = useNow()
   if (list.length === 0) return null
   return (
     <View className="mb-2">
       <SpotRail title={t('discover.this_weekend')}>
         {list.map((e) => (
-          <SpotCard
-            key={e.id}
-            variant="wide"
-            href={`/eventos/${e.id}`}
-            seed={e.id}
-            name={e.title}
-            coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
-            caption={
-              <Caption className="text-micro" numberOfLines={1}>
-                {e.restaurant.name}
-              </Caption>
-            }
-          />
+          <EventMiniCard key={e.id} e={e} now={now} />
         ))}
       </SpotRail>
     </View>

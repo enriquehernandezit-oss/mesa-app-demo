@@ -50,7 +50,7 @@ export const MAX_SCALE = 1.35
 // but aren't colors) so the primitive can omit its default color whenever the
 // caller already specified one.
 const TEXT_COLOR_KEYS =
-  /\btext-(bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
+  /\btext-(cat-cata-soft|cat-musica-soft|cat-brunch-soft|cat-food-soft|cat-happy-soft|cat-cata|cat-musica|cat-brunch|cat-food|cat-happy|on-cat|bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
 function hasTextColor(className?: string): boolean {
   return Boolean(className && TEXT_COLOR_KEYS.test(className))
 }

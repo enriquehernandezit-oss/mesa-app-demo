@@ -1,6 +1,7 @@
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { ScreenHeader } from '@/components/ScreenHeader'
+import { EventMiniCard } from '@/components/events/EventTicket'
 import {
   Body,
   Button,
@@ -515,19 +516,7 @@ export default function RestaurantProfile() {
           {(eventsQ.data?.events.length ?? 0) > 0 && (
             <SpotRail title={t('restaurant.upcoming_events')}>
               {(eventsQ.data?.events ?? []).map((e) => (
-                <SpotCard
-                  key={e.id}
-                  variant="wide"
-                  href={`/eventos/${e.id}`}
-                  seed={e.id}
-                  name={e.title}
-                  coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
-                  caption={
-                    <Caption className="text-micro" numberOfLines={1}>
-                      {eventWhenLabel(e.startsAt)}
-                    </Caption>
-                  }
-                />
+                <EventMiniCard key={e.id} e={e} now={new Date()} />
               ))}
             </SpotRail>
           )}

@@ -254,3 +254,38 @@ export const MoonIcon = (p: IconProps) => (
     <Path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
   </Icon>
 )
+
+// Event categories (Eventos) — same 24/1.6 stroke language.
+export const WineGlassIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M8 3h8l-.6 5.2a3.4 3.4 0 0 1-6.8 0L8 3ZM12 11.6V20M8.5 20.5h7M8.4 7h7.2" />
+  </Icon>
+)
+export const MusicIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M9 18V6l10-2v12" />
+    <Circle cx="6.5" cy="18" r="2.5" />
+    <Circle cx="16.5" cy="16" r="2.5" />
+  </Icon>
+)
+export const CocktailIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 4h16l-8 9-8-9ZM12 13v7M8 20.5h8M15.5 4l2.5-2" />
+  </Icon>
+)
+export const SparkleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3ZM18.5 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z" />
+  </Icon>
+)
+export const ClockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="8.5" />
+    <Path d="M12 7.5V12l3 2" />
+  </Icon>
+)
+export const WhatsAppIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 20l1.2-3.8A8 8 0 1 1 8 19l-4 1ZM9.2 8.6c.2 2.9 2.4 5.3 5.4 6l1-1.3-1.8-1-1 .8a4.6 4.6 0 0 1-2.1-2.1l.8-1-1-1.8-1.3.4" />
+  </Icon>
+)

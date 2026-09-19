@@ -112,6 +112,26 @@ also live in `tokens.css` (`--font-serif`, `--font-ui`, `--text-*`, `--space-*`,
 - **Editorial italic:** the quiz tagline treatment — italic serif for editorial
   moments.
 
+## Event category colors (Eventos only)
+
+Brass remains Mesa's one app-wide accent. The single scoped exception is
+**Eventos** (Explore's events tab, the event page, the feed's "Este finde"
+rail and a restaurant's "Próximos eventos"): each kind of night out wears its
+own warm hue so a tasting, a DJ set and a brunch read apart at a glance.
+
+| Token | Kind | Afternoon | Candlelit |
+|---|---|---|---|
+| `--cat-cata` | tastings (wine, whisky, cocktails) | `#8e2c45` | `#d6708a` |
+| `--cat-musica` | live music, DJ, karaoke | `#3d4a8f` | `#97a3e6` |
+| `--cat-brunch` | brunch | `#9c6708` | `#e6b451` |
+| `--cat-food` | food tastings, omakase, chef nights | `#b04a26` | `#e58a5e` |
+| `--cat-happy` | happy hour | `#a8345f` | `#e183ad` |
+
+Each has a `-soft` wash; text on a solid fill is `--on-cat`. The free-text
+`events.category` maps to a key in `apps/mobile/src/lib/eventCategory.ts`
+(unknown → brass). **Never use `cat-*` outside event surfaces.** Text set on a
+photo uses the theme-invariant `--photo-scrim` gradient + `--on-photo*`.
+
 ## Where color is allowed to live
 
 A token swap in `tokens.css` reaches every CSS file and every inline `style`

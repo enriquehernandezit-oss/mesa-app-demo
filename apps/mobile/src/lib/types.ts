@@ -730,4 +730,9 @@ export interface EventSummary {
   myRsvp: 'going' | 'interested' | null
   goingCount: number
   friendsGoing: { id: string; name: string; image: string | null }[]
+  // Optional capacity ("12 de 16 cupos") and a WhatsApp booking number
+  // (digits, E.164 without "+"). spotsLeft = max(0, capacity − goingCount).
+  capacity: number | null
+  bookingWhatsapp: string | null
+  spotsLeft: number | null
 }

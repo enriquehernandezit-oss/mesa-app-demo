@@ -134,3 +134,5 @@ is why the view-switchers are Mesa's own tokened `Segmented` (components/ui: a
 sunk track with a white sliding thumb), not the native UISegmentedControl.
 Content objects (feed posts, ranking rows, rails, profile stats) are white
 `bg-surface` cards (`rounded-card`) on the cream ground.
+Brass is the one app-wide accent; the only exception is the event category
+hues (`cat-*`, Eventos surfaces only — see docs/DESIGN.md).

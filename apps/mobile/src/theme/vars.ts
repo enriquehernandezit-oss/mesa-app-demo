@@ -49,6 +49,24 @@ const afternoon = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#2a1512',
   '--overlay-scrim': 'rgba(15, 1, 2, 0.4)',
+  // Event categories (Eventos only — docs/DESIGN.md "Where color is allowed
+  // to live"): one warm hue per kind of night out, so a tasting, a DJ set and
+  // a brunch read differently at a glance. Solid for fills/labels, -soft for
+  // washes; text on a solid fill is --on-cat.
+  '--cat-cata': '#8e2c45',
+  '--cat-cata-soft': 'rgba(142, 44, 69, 0.10)',
+  '--cat-musica': '#3d4a8f',
+  '--cat-musica-soft': 'rgba(61, 74, 143, 0.10)',
+  '--cat-brunch': '#9c6708',
+  '--cat-brunch-soft': 'rgba(201, 138, 18, 0.14)',
+  '--cat-food': '#b04a26',
+  '--cat-food-soft': 'rgba(176, 74, 38, 0.10)',
+  '--cat-happy': '#a8345f',
+  '--cat-happy-soft': 'rgba(168, 52, 95, 0.10)',
+  '--on-cat': '#fdf7ec',
+  // The dark end of the gradient under text set on a photograph —
+  // theme-invariant, like --on-photo (a photo is its own dark island).
+  '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
 } as const
 
 const candlelit = {
@@ -81,6 +99,18 @@ const candlelit = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#fdf7ec',
   '--overlay-scrim': 'rgba(8, 0, 1, 0.55)',
+  '--cat-cata': '#d6708a',
+  '--cat-cata-soft': 'rgba(214, 112, 138, 0.16)',
+  '--cat-musica': '#97a3e6',
+  '--cat-musica-soft': 'rgba(151, 163, 230, 0.16)',
+  '--cat-brunch': '#e6b451',
+  '--cat-brunch-soft': 'rgba(230, 180, 81, 0.16)',
+  '--cat-food': '#e58a5e',
+  '--cat-food-soft': 'rgba(229, 138, 94, 0.16)',
+  '--cat-happy': '#e183ad',
+  '--cat-happy-soft': 'rgba(225, 131, 173, 0.16)',
+  '--on-cat': '#210104',
+  '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
 } as const
 
 export const themeVars: Record<ThemeName, ReturnType<typeof vars>> = {
