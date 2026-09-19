@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzl
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
+import { imageRefSchema } from '../lib/imageRef'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -15,27 +16,14 @@ import { requireAuth } from '../middleware/session'
 const { dishes, rankings, user, follows, userBlocks, savedDishes, dishLists, dishListItems } =
   schema
 
-// ~700 KB cap on the inline data URL (a resized ~1280px JPEG lands well under).
-const MAX_IMAGE_CHARS = 700_000
-
 const createSchema = z.object({
   restaurantId: z.string().uuid(),
   name: z.string().trim().min(1).max(60),
   caption: z.string().trim().max(140).optional(),
   // Optional as of M11 — a dish with a name and category but no photo is a
   // first-class row, not a broken one.
-  image: z
-    .string()
-    .max(MAX_IMAGE_CHARS)
-    // A resized data-image URL (dev) or an https URL (prod / Cloudinary).
-    // Plain http and any other scheme are rejected so a stored value can't
-    // smuggle a tracking pixel or a javascript: href into others' feeds.
-    // Tighten to a bare Cloudinary public id once signed uploads are wired.
-    .refine(
-      (s) => s.startsWith('data:image/') || s.startsWith('https://'),
-      'image must be a data URL or https URL',
-    )
-    .optional(),
+  // A data-image URL or https URL — see lib/imageRef.ts.
+  image: imageRefSchema.optional(),
   // A follow-up post (M13's "saved as you tap") that wants to clear a photo
   // set by an earlier one — plain omission of `image` means "leave it as is"
   // (see the upsert doc comment below), so removal needs its own explicit

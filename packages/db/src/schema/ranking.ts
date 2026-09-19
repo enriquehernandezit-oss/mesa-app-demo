@@ -66,6 +66,29 @@ export const cheers = pgTable(
   ],
 )
 
+// A comment on a friend's ranking (a feed post — a dish post is a ranking too,
+// so this covers both). Many per user per ranking, so it has its own id rather
+// than cheers' composite key. UGC: reportable, and soft-removed by moderation
+// like vibe notes (the author or the ranking's owner hard-deletes instead).
+export const rankingComments = pgTable(
+  'ranking_comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    rankingId: uuid('ranking_id')
+      .notNull()
+      .references(() => rankings.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    removedAt: timestamp('removed_at'),
+  },
+  // A thread reads oldest-first within one ranking; the feed's latest-comment
+  // lookup walks the same index backwards.
+  (t) => [index('ranking_comments_ranking_created_idx').on(t.rankingId, t.createdAt)],
+)
+
 // The "why" — one short line attached to a ranking. This is Mesa's identity
 // (vibe-check, not a star rating). One note per user per place. As UGC it is
 // reportable/removable (see moderation.ts).

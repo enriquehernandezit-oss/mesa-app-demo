@@ -11,6 +11,7 @@ import { activityRoutes } from './routes/activity'
 import { authPagesRoutes } from './routes/auth-pages'
 import { cheersRoutes } from './routes/cheers'
 import { collectionsRoutes } from './routes/collections'
+import { commentsRoutes } from './routes/comments'
 import { dishListsRoutes } from './routes/dishLists'
 import { dishesRoutes } from './routes/dishes'
 import { eventsRoutes } from './routes/events'
@@ -176,6 +177,7 @@ app.route('/moderation', moderationRoutes)
 app.route('/feed', feedRoutes)
 app.route('/restaurants', restaurantRoutes)
 app.route('/cheers', cheersRoutes)
+app.route('/comments', commentsRoutes)
 app.route('/leaderboard', leaderboardRoutes)
 app.route('/lists', listsRoutes)
 app.route('/dishes', dishesRoutes)

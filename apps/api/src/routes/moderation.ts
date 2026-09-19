@@ -8,13 +8,13 @@ import { requireAuth, requireModerator } from '../middleware/session'
 // UGC moderation (App Store 1.2). Every user can report content and block
 // abusive accounts; moderators can remove content and eject users. A block hides
 // content both ways; a removed note and a banned user disappear from all reads.
-const { reports, userBlocks, vibeNotes, dishes, follows, user } = schema
+const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, user } = schema
 
 const reportSchema = z.object({
   // Dishes are first-class UGC (photo + name + caption), so they must be
   // reportable like vibe notes and users (App Store 1.2). The enum already
-  // carries 'dish' (schema/enums.ts).
-  targetType: z.enum(['vibe_note', 'user', 'dish']),
+  // carries 'dish' (schema/enums.ts). Ranking comments likewise ('comment').
+  targetType: z.enum(['vibe_note', 'user', 'dish', 'comment']),
   targetId: z.string().min(1),
   reason: z.string().trim().min(1).max(500),
 })
@@ -31,6 +31,18 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const parsed = reportSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    // A comment id must name a real comment — the report path is new enough
+    // that a client bug filing garbage ids would otherwise go unnoticed.
+    if (parsed.data.targetType === 'comment') {
+      const id = parsed.data.targetId
+      const found = z.string().uuid().safeParse(id).success
+        ? await db.query.rankingComments.findFirst({
+            where: eq(rankingComments.id, id),
+            columns: { id: true },
+          })
+        : undefined
+      if (!found) return c.json({ error: 'not_found' }, 404)
+    }
     await db.insert(reports).values({
       reporterId: me.id,
       targetType: parsed.data.targetType,
@@ -92,7 +104,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // Open reports queue.
   // The moderation queue. Returns open reports WITH the reported content
   // attached — a bare targetId is undecidable: nobody can judge "vibe_note
-  // 3f2a… / spam" without seeing the sentence. Batched by type (four queries
+  // 3f2a… / spam" without seeing the sentence. Batched by type (five queries
   // total, whatever the report count) rather than looked up per row.
   .get('/reports', requireModerator, async (c) => {
     const rows = await db
@@ -108,8 +120,11 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     const noteIds = idsOf('vibe_note')
     const dishIds = idsOf('dish')
     const userIds = idsOf('user')
+    // Comment ids are validated as uuids at report time, but filter anyway so
+    // one malformed legacy row can't fail the whole queue's uuid cast.
+    const commentIds = idsOf('comment').filter((id) => z.string().uuid().safeParse(id).success)
 
-    const [notes, dishRows, users] = await Promise.all([
+    const [notes, dishRows, users, commentRows] = await Promise.all([
       noteIds.length
         ? db
             .select({
@@ -144,11 +159,24 @@ export const moderationRoutes = new Hono<AuthedEnv>()
             .from(user)
             .where(inArray(user.id, userIds))
         : [],
+      commentIds.length
+        ? db
+            .select({
+              id: rankingComments.id,
+              body: rankingComments.body,
+              userId: rankingComments.userId,
+              rankingId: rankingComments.rankingId,
+              removedAt: rankingComments.removedAt,
+            })
+            .from(rankingComments)
+            .where(inArray(rankingComments.id, commentIds))
+        : [],
     ])
 
     const noteById = new Map(notes.map((n) => [n.id, n]))
     const dishById = new Map(dishRows.map((d) => [d.id, d]))
     const userById = new Map(users.map((u) => [u.id, u]))
+    const commentById = new Map(commentRows.map((cm) => [cm.id, cm]))
 
     // `target` is null when the row is already gone (deleted account, hard
     // delete) — the queue still shows the report so it can be dismissed.
@@ -175,6 +203,21 @@ export const moderationRoutes = new Hono<AuthedEnv>()
             ? { kind: 'dish' as const, name: d.name, caption: d.caption, imageId: d.imageId }
             : null,
           alreadyHandled: d ? d.removedAt !== null : true,
+        }
+      }
+      if (r.targetType === 'comment') {
+        const cm = commentById.get(r.targetId)
+        return {
+          ...r,
+          target: cm
+            ? {
+                kind: 'comment' as const,
+                body: cm.body,
+                userId: cm.userId,
+                rankingId: cm.rankingId,
+              }
+            : null,
+          alreadyHandled: cm ? cm.removedAt !== null : true,
         }
       }
       const u = userById.get(r.targetId)
@@ -238,6 +281,31 @@ export const moderationRoutes = new Hono<AuthedEnv>()
         .set({ status: 'actioned' })
         .where(
           and(eq(reports.targetType, 'dish'), eq(reports.targetId, id), eq(reports.status, 'open')),
+        )
+    })
+    return c.json({ ok: true })
+  })
+
+  // Remove a ranking comment (soft-delete), mirroring the vibe-note path — it
+  // drops out of the thread and the feed's count/latest line, the row stays for
+  // audit, and matching open reports are marked actioned.
+  .delete('/comments/:id', requireModerator, async (c) => {
+    const id = c.req.param('id')
+    if (!z.string().uuid().safeParse(id).success) return c.json({ error: 'not_found' }, 404)
+    await db.transaction(async (tx) => {
+      await tx
+        .update(rankingComments)
+        .set({ removedAt: new Date() })
+        .where(and(eq(rankingComments.id, id), isNull(rankingComments.removedAt)))
+      await tx
+        .update(reports)
+        .set({ status: 'actioned' })
+        .where(
+          and(
+            eq(reports.targetType, 'comment'),
+            eq(reports.targetId, id),
+            eq(reports.status, 'open'),
+          ),
         )
     })
     return c.json({ ok: true })

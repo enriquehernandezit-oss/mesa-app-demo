@@ -41,6 +41,8 @@ export const savedDishes = pgTable(
 
 // A member's own named list ("Para el cumpleaños de mamá"). Name unique per
 // user so `guardar.tsx`'s "Nueva lista" can't silently create a duplicate.
+// description + coverImageId are the optional playlist-style header; with no
+// cover the list endpoint falls back to its newest item's photo.
 export const collections = pgTable(
   'collections',
   {
@@ -49,6 +51,8 @@ export const collections = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
+    description: text('description'),
+    coverImageId: text('cover_image_id'), // same value shapes as dishes.imageId
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [

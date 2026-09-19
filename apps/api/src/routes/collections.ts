@@ -1,8 +1,10 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import type { AuthedEnv } from '../context'
+import { imageRefSchema } from '../lib/imageRef'
 import { requireAuth } from '../middleware/session'
 
 // Named lists (M19) — user-created folders layered on top of the two master
@@ -22,7 +24,38 @@ const {
 } = schema
 
 const NAME_MAX = 60
-const createSchema = z.object({ name: z.string().trim().min(1).max(NAME_MAX) })
+const DESCRIPTION_MAX = 300
+// Playlist-style header. A blank description is stored as null, never ''; an
+// explicit null (PATCH) clears the description or cover.
+const createSchema = z.object({
+  name: z.string().trim().min(1).max(NAME_MAX),
+  description: z
+    .string()
+    .trim()
+    .max(DESCRIPTION_MAX)
+    .transform((s) => s || null)
+    .nullable()
+    .optional(),
+  coverImageId: imageRefSchema.nullable().optional(),
+})
+const patchSchema = createSchema
+  .partial()
+  .refine((b) => Object.keys(b).length > 0, { message: 'nothing to update' })
+
+// Postgres unique_violation (23505) — the only way a rename can collide with
+// collections_user_name_uq. Checks `cause` too in case the driver wraps it.
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false
+  if ('code' in err && err.code === '23505') return true
+  return 'cause' in err && isUniqueViolation(err.cause)
+}
+
+const headerColumns = {
+  id: collections.id,
+  name: collections.name,
+  description: collections.description,
+  coverImageId: collections.coverImageId,
+}
 const addItemSchema = z
   .object({
     restaurantId: z.string().uuid().optional(),
@@ -64,13 +97,30 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
           >`max(${collectionItems.id}::text) filter (where ${collectionItems.dishId} = ${dishId})`
         : sql<string | null>`null`
 
+    // A list with no cover of its own borrows its newest item's photo (the
+    // restaurant cover, or the dish photo unless that dish was removed).
+    // A correlated subquery — still this one statement, not a query per list.
+    const ci = alias(collectionItems, 'preview_ci')
+    const previewImage = sql`coalesce(${restaurants.coverImageId}, ${dishes.imageId})`
+    const newestImage = db
+      .select({ imageId: previewImage })
+      .from(ci)
+      .leftJoin(restaurants, eq(restaurants.id, ci.restaurantId))
+      .leftJoin(dishes, and(eq(dishes.id, ci.dishId), isNull(dishes.removedAt)))
+      .where(and(eq(ci.collectionId, collections.id), isNotNull(previewImage)))
+      .orderBy(desc(ci.createdAt))
+      .limit(1)
+    const previewImageId = sql<
+      string | null
+    >`case when ${collections.coverImageId} is null then (${newestImage}) end`
+
     const rows = await db
       .select({
-        id: collections.id,
-        name: collections.name,
+        ...headerColumns,
         createdAt: collections.createdAt,
         itemCount: sql<number>`count(${collectionItems.id})::int`,
         itemId: matchedItemId,
+        previewImageId,
       })
       .from(collections)
       .leftJoin(collectionItems, eq(collectionItems.collectionId, collections.id))
@@ -85,13 +135,36 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
 
+    const { name, description = null, coverImageId = null } = parsed.data
     const [row] = await db
       .insert(collections)
-      .values({ userId: me.id, name: parsed.data.name })
+      .values({ userId: me.id, name, description, coverImageId })
       .onConflictDoNothing()
-      .returning({ id: collections.id, name: collections.name })
+      .returning(headerColumns)
     if (!row) return c.json({ error: 'name_taken' }, 409)
     return c.json(row)
+  })
+
+  // Rename / describe / re-cover. Only the fields sent change; null clears
+  // description or cover (name can't be cleared).
+  .patch('/:id', async (c) => {
+    const me = c.get('user')
+    const found = await loadOwnedCollection(c.req.param('id'), me.id)
+    if (!found) return c.json({ error: 'not_found' }, 404)
+    const parsed = patchSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+
+    try {
+      const [row] = await db
+        .update(collections)
+        .set(parsed.data)
+        .where(eq(collections.id, found.id))
+        .returning(headerColumns)
+      return c.json(row)
+    } catch (err) {
+      if (isUniqueViolation(err)) return c.json({ error: 'name_taken' }, 409)
+      throw err
+    }
   })
 
   .delete('/:id', async (c) => {
@@ -141,6 +214,8 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
     return c.json({
       id: found.id,
       name: found.name,
+      description: found.description,
+      coverImageId: found.coverImageId,
       items: rows.map((r) => ({
         itemId: r.itemId,
         addedAt: r.addedAt,

@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, desc, eq, inArray, isNull, lt, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AuthedEnv } from '../context'
-import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, followingIds, visibleComment } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The discovery feed (M4) — the payoff of the core loop: what the people you
@@ -15,6 +15,7 @@ const {
   neighborhoods,
   user,
   cheers,
+  rankingComments,
   dishes,
   savedPlaces,
   savedDishes,
@@ -156,31 +157,59 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
     .orderBy(desc(rankings.createdAt), desc(rankings.id))
     .limit(PAGE)
 
-  // Cheers counts for this page in ONE grouped query (fixed 2 round trips per
-  // page regardless of item count — not N+1).
+  // Cheers counts and comment summaries for this page, one query each, run
+  // together (fixed 3 round trips per page regardless of item count — not
+  // N+1).
   const ids = items.map((i) => i.rankingId)
-  const counts = ids.length
-    ? await db
-        .select({
-          rankingId: cheers.rankingId,
-          count: sql<number>`count(*)::int`,
-          mine: sql<boolean>`bool_or(${cheers.userId} = ${me.id})`,
-        })
-        .from(cheers)
-        .where(inArray(cheers.rankingId, ids))
-        .groupBy(cheers.rankingId)
-    : []
+  const [counts, commentRows] = ids.length
+    ? await Promise.all([
+        db
+          .select({
+            rankingId: cheers.rankingId,
+            count: sql<number>`count(*)::int`,
+            mine: sql<boolean>`bool_or(${cheers.userId} = ${me.id})`,
+          })
+          .from(cheers)
+          .where(inArray(cheers.rankingId, ids))
+          .groupBy(cheers.rankingId),
+        // The newest visible comment per ranking, plus the visible count: the
+        // window count is computed over every filtered row before DISTINCT ON
+        // keeps one per ranking, so both come back in a single pass. Same
+        // visibility as the thread itself (visibleComment).
+        db
+          .selectDistinctOn([rankingComments.rankingId], {
+            rankingId: rankingComments.rankingId,
+            count: sql<number>`(count(*) over (partition by ${rankingComments.rankingId}))::int`,
+            body: rankingComments.body,
+            user: { id: user.id, name: user.name, handle: user.handle },
+          })
+          .from(rankingComments)
+          .innerJoin(user, eq(user.id, rankingComments.userId))
+          .where(and(inArray(rankingComments.rankingId, ids), visibleComment(me.id)))
+          .orderBy(
+            rankingComments.rankingId,
+            desc(rankingComments.createdAt),
+            desc(rankingComments.id),
+          ),
+      ])
+    : [[], []]
   const byRanking = new Map(counts.map((r) => [r.rankingId, r]))
+  const commentsByRanking = new Map(commentRows.map((r) => [r.rankingId, r]))
 
   const last = items[items.length - 1]
   const nextCursor =
     items.length === PAGE && last ? `${last.rankedAt.toISOString()}_${last.rankingId}` : null
   return c.json({
-    feed: items.map((i) => ({
-      ...i,
-      cheersCount: byRanking.get(i.rankingId)?.count ?? 0,
-      cheeredByMe: byRanking.get(i.rankingId)?.mine ?? false,
-    })),
+    feed: items.map((i) => {
+      const comments = commentsByRanking.get(i.rankingId)
+      return {
+        ...i,
+        cheersCount: byRanking.get(i.rankingId)?.count ?? 0,
+        cheeredByMe: byRanking.get(i.rankingId)?.mine ?? false,
+        commentCount: comments?.count ?? 0,
+        lastComment: comments ? { user: comments.user, body: comments.body } : null,
+      }
+    }),
     nextCursor,
   })
 })
