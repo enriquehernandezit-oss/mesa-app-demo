@@ -7,7 +7,6 @@ import {
   Button,
   Caption,
   Chip,
-  ChipRail,
   EmptyState,
   ErrorState,
   RowsSkeleton,
@@ -360,64 +359,79 @@ export default function ExploreScreen() {
                 (ExploreFilters), Abierto ahora, then one pill per ACTIVE
                 filter with a small × in its corner to drop just that one,
                 and "Limpiar todo" once anything is set. */}
-            <ChipRail className="mt-2 mb-2 pt-2">
-              <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
-                {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
-              </Chip>
-              <Chip
-                size="sm"
-                chevron
-                state={panelCount > 0 ? 'active' : 'default'}
-                onPress={() => setFiltersOpen(true)}
+            {/* The chips scroll; "Limpiar todo" is pinned OUTSIDE the scroll at
+                the right edge. As the rail's last item it slid off-screen as
+                soon as a filter pill was added — only "Lim" was left showing. */}
+            <View className="-mx-5 mt-2 mb-2 flex-row items-center pt-2">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                className="flex-1"
+                contentContainerClassName={`gap-2 pl-5 ${activeCount > 0 ? 'pr-3' : 'pr-5'}`}
               >
-                {panelCount > 0
-                  ? `${t('explore.filters_chip')} · ${panelCount}`
-                  : t('explore.filters_chip')}
-              </Chip>
-              {showOpenChip && (
+                <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
+                  {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
+                </Chip>
                 <Chip
                   size="sm"
-                  state={openNow ? 'selected' : 'default'}
-                  onPress={() => setOpenNow((v) => !v)}
+                  chevron
+                  state={panelCount > 0 ? 'active' : 'default'}
+                  onPress={() => setFiltersOpen(true)}
                 >
-                  {t('explore.open_now')}
+                  {panelCount > 0
+                    ? `${t('explore.filters_chip')} · ${panelCount}`
+                    : t('explore.filters_chip')}
                 </Chip>
-              )}
-              {hood ? (
-                <RemovablePill
-                  label={
-                    neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood
-                  }
-                  onRemove={() => setHood(null)}
-                />
-              ) : null}
-              {cuisine ? (
-                <RemovablePill
-                  label={cuisineLabel(cuisine) ?? cuisine}
-                  onRemove={() => setCuisine(null)}
-                />
-              ) : null}
-              {price != null ? (
-                <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
-              ) : null}
-              {occasion ? (
-                <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
-              ) : null}
-              {minScore != null ? (
-                <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
-              ) : null}
+                {showOpenChip && (
+                  <Chip
+                    size="sm"
+                    state={openNow ? 'selected' : 'default'}
+                    onPress={() => setOpenNow((v) => !v)}
+                  >
+                    {t('explore.open_now')}
+                  </Chip>
+                )}
+                {hood ? (
+                  <RemovablePill
+                    label={
+                      neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood
+                    }
+                    onRemove={() => setHood(null)}
+                  />
+                ) : null}
+                {cuisine ? (
+                  <RemovablePill
+                    label={cuisineLabel(cuisine) ?? cuisine}
+                    onRemove={() => setCuisine(null)}
+                  />
+                ) : null}
+                {price != null ? (
+                  <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
+                ) : null}
+                {occasion ? (
+                  <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
+                ) : null}
+                {minScore != null ? (
+                  <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
+                ) : null}
+              </ScrollView>
               {activeCount > 0 && (
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={clearFilters}
-                  className="min-h-[36px] justify-center px-1 active:opacity-60"
-                >
-                  <Caption className="font-ui-semibold text-accent-strong">
-                    {t('explore.clear_all')}
-                  </Caption>
-                </Pressable>
+                <View className="border-line border-l pr-5 pl-2">
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={clearFilters}
+                    hitSlop={6}
+                    className="min-h-[36px] flex-row items-center gap-1 rounded-pill px-2 active:opacity-60"
+                  >
+                    <CloseIcon size={11} color="accent-strong" strokeWidth={2.2} />
+                    <Caption numberOfLines={1} className="font-ui-semibold text-accent-strong">
+                      {t('explore.clear_all')}
+                    </Caption>
+                  </Pressable>
+                </View>
               )}
-            </ChipRail>
+            </View>
             <ExploreFilters
               visible={filtersOpen}
               onClose={() => setFiltersOpen(false)}
