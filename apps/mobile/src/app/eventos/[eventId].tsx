@@ -123,6 +123,11 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
       ],
     }
   })
+  // The photo's big title fades out as it scrolls up toward the status bar,
+  // handing off to the compact bar below instead of sliding under the clock.
+  const titleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(y.value, [0, HERO_H - 170], [1, 0], Extrapolation.CLAMP),
+  }))
   const barStyle = useAnimatedStyle(() => ({
     opacity: interpolate(y.value, [HERO_H - 140, HERO_H - 80], [0, 1], Extrapolation.CLAMP),
   }))
@@ -181,7 +186,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
             locations={[0.35, 1]}
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
           />
-          <View className="absolute right-5 bottom-10 left-5">
+          <Animated.View style={titleStyle} className="absolute right-5 bottom-10 left-5">
             <View className="flex-row items-center gap-2">
               <View className={`flex-row items-center gap-1.5 rounded-pill px-2.5 py-1 ${cls.bg}`}>
                 <CategoryIcon cat={cat} size={12} color="on-cat" />
@@ -204,7 +209,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
             <Text className="mt-1 font-ui-medium text-label text-on-photo-2">
               {e.restaurant.name} · {when}
             </Text>
-          </View>
+          </Animated.View>
         </View>
 
         {/* Solid ground: the hero drifts DOWN as you scroll (parallax), so

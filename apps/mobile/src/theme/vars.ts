@@ -61,8 +61,8 @@ const afternoon = {
   '--cat-brunch-soft': 'rgba(201, 138, 18, 0.14)',
   '--cat-food': '#b04a26',
   '--cat-food-soft': 'rgba(176, 74, 38, 0.10)',
-  '--cat-happy': '#a8345f',
-  '--cat-happy-soft': 'rgba(168, 52, 95, 0.10)',
+  '--cat-happy': '#1d756c',
+  '--cat-happy-soft': 'rgba(29, 117, 108, 0.10)',
   '--on-cat': '#fdf7ec',
   // The dark end of the gradient under text set on a photograph —
   // theme-invariant, like --on-photo (a photo is its own dark island).
@@ -99,16 +99,20 @@ const candlelit = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#fdf7ec',
   '--overlay-scrim': 'rgba(8, 0, 1, 0.55)',
-  '--cat-cata': '#d6708a',
-  '--cat-cata-soft': 'rgba(214, 112, 138, 0.16)',
-  '--cat-musica': '#97a3e6',
-  '--cat-musica-soft': 'rgba(151, 163, 230, 0.16)',
-  '--cat-brunch': '#e6b451',
-  '--cat-brunch-soft': 'rgba(230, 180, 81, 0.16)',
-  '--cat-food': '#e58a5e',
-  '--cat-food-soft': 'rgba(229, 138, 94, 0.16)',
-  '--cat-happy': '#e183ad',
-  '--cat-happy-soft': 'rgba(225, 131, 173, 0.16)',
+  // Jewel tones by candlelight: more saturated than a pastel lift of the
+  // Afternoon hues (which read muddy on oxblood), stronger washes so the
+  // ticket stubs glow, and five clearly separate hues — tasting rosé, music
+  // violet, brunch saffron, food ember, happy-hour aqua.
+  '--cat-cata': '#f0728c',
+  '--cat-cata-soft': 'rgba(240, 114, 140, 0.20)',
+  '--cat-musica': '#a08fff',
+  '--cat-musica-soft': 'rgba(160, 143, 255, 0.20)',
+  '--cat-brunch': '#f5c24c',
+  '--cat-brunch-soft': 'rgba(245, 194, 76, 0.18)',
+  '--cat-food': '#ff8a52',
+  '--cat-food-soft': 'rgba(255, 138, 82, 0.18)',
+  '--cat-happy': '#4fd3c4',
+  '--cat-happy-soft': 'rgba(79, 211, 196, 0.18)',
   '--on-cat': '#210104',
   '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
 } as const

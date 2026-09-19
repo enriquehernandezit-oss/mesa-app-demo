@@ -117,15 +117,20 @@ also live in `tokens.css` (`--font-serif`, `--font-ui`, `--text-*`, `--space-*`,
 Brass remains Mesa's one app-wide accent. The single scoped exception is
 **Eventos** (Explore's events tab, the event page, the feed's "Este finde"
 rail and a restaurant's "Próximos eventos"): each kind of night out wears its
-own warm hue so a tasting, a DJ set and a brunch read apart at a glance.
+own hue so a tasting, a DJ set and a brunch read apart at a glance.
 
 | Token | Kind | Afternoon | Candlelit |
 |---|---|---|---|
-| `--cat-cata` | tastings (wine, whisky, cocktails) | `#8e2c45` | `#d6708a` |
-| `--cat-musica` | live music, DJ, karaoke | `#3d4a8f` | `#97a3e6` |
-| `--cat-brunch` | brunch | `#9c6708` | `#e6b451` |
-| `--cat-food` | food tastings, omakase, chef nights | `#b04a26` | `#e58a5e` |
-| `--cat-happy` | happy hour | `#a8345f` | `#e183ad` |
+| `--cat-cata` | tastings (wine, whisky, cocktails) | `#8e2c45` wine | `#f0728c` rosé |
+| `--cat-musica` | live music, DJ, karaoke | `#3d4a8f` indigo | `#a08fff` violet |
+| `--cat-brunch` | brunch | `#9c6708` saffron | `#f5c24c` saffron |
+| `--cat-food` | food tastings, omakase, chef nights | `#b04a26` terracotta | `#ff8a52` ember |
+| `--cat-happy` | happy hour | `#1d756c` teal | `#4fd3c4` aqua |
+
+Candlelit uses "jewel tones by candlelight" — saturated, not a pastel lift of
+the Afternoon hues (those read muddy on oxblood) — and stronger washes. Happy
+hour is the one cool hue on purpose: a second rose/wine read as the same
+category as tastings.
 
 Each has a `-soft` wash; text on a solid fill is `--on-cat`. The free-text
 `events.category` maps to a key in `apps/mobile/src/lib/eventCategory.ts`
