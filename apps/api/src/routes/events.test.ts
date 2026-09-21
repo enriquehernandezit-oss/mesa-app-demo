@@ -37,7 +37,7 @@ async function loadDeps() {
 const deps = (await localDbReachable()) ? await loadDeps() : null
 
 type Me = AuthedEnv['Variables']['user']
-type EventRow = { id: string; savedByMe: boolean; myRsvp: string | null }
+type EventRow = { id: string; savedByMe: boolean; myRsvp: string | null; venueConfirmed: boolean }
 
 describe.skipIf(!deps)('events routes (local DB)', () => {
   if (!deps) return
@@ -65,12 +65,16 @@ describe.skipIf(!deps)('events routes (local DB)', () => {
     })
     .route('/events', eventsRoutes)
 
-  const ids: Record<'future' | 'inProgress' | 'inProgressNoEnd' | 'ended' | 'cancelled', string> = {
+  const ids: Record<
+    'future' | 'inProgress' | 'inProgressNoEnd' | 'ended' | 'cancelled' | 'confirmed',
+    string
+  > = {
     future: crypto.randomUUID(),
     inProgress: crypto.randomUUID(),
     inProgressNoEnd: crypto.randomUUID(),
     ended: crypto.randomUUID(),
     cancelled: crypto.randomUUID(),
+    confirmed: crypto.randomUUID(),
   }
   let neighborhoodId = ''
   let restaurantId = ''
@@ -110,6 +114,17 @@ describe.skipIf(!deps)('events routes (local DB)', () => {
         slug: `${tag}-cancelled`,
         startsAt: hours(24),
         cancelledAt: new Date(),
+      },
+      // Everything above relies on the default; this one exercises the true
+      // branch explicitly, so a schema/importer regression that stops
+      // writing the column can't hide behind "false" being the only value
+      // ever observed.
+      {
+        ...base,
+        id: ids.confirmed,
+        slug: `${tag}-confirmed`,
+        startsAt: hours(24),
+        venueConfirmed: true,
       },
     ])
   })
@@ -204,5 +219,16 @@ describe.skipIf(!deps)('events routes (local DB)', () => {
     const events = ((await res.json()) as { events: EventRow[] }).events
     expect(events.map((e) => e.id)).toEqual([ids.inProgress, ids.future])
     expect(events.every((e) => e.savedByMe)).toBe(true)
+  })
+
+  test('venueConfirmed defaults false and carries through on list and detail', async () => {
+    const events = await listIds('/events?when=upcoming')
+    expect(events.find((e) => e.id === ids.future)?.venueConfirmed).toBe(false)
+    expect(events.find((e) => e.id === ids.confirmed)?.venueConfirmed).toBe(true)
+
+    const detail = (await (await req('GET', `/events/${ids.confirmed}`)).json()) as {
+      event: EventRow
+    }
+    expect(detail.event.venueConfirmed).toBe(true)
   })
 })

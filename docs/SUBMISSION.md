@@ -1,77 +1,98 @@
-# Mesa — Submission steps (what's left, and what each needs)
+# Mesa — TestFlight & App Store submission
 
-Phase 1 is functionally complete and verified in the browser. The remaining work
-is **accounts, keys, and the native build** — things that can't be done from the
-dev environment. This is the ordered list.
+What is left to get Mesa in front of external testers, in order. This replaces
+the Capacitor-era version of this file: the app is Expo / React Native
+(`apps/mobile`), built with **EAS**, and the API is already live on Railway.
+Anything marked **founder** needs an account, a key or a legal decision that
+can't be done from the dev environment.
 
-## 1. Credentials & keys (unblock features that are env-gated)
+## Where it stands
 
-Each of these is wired and turns on the moment its env vars exist — no code
-change. Set them in the relevant `.env` (see each app's `.env.example`).
+| | |
+|---|---|
+| API | live on Railway, `/health` 200, migrations run on deploy (`railway.json` `preDeployCommand`) |
+| Auth | email+password, Sign in with Apple (configured on prod — the server answers as a live provider), phone OTP |
+| 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped |
+| 5.1.1 | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`) |
+| Builds | `development` and `preview` profiles have built; **`production` has never run** |
+| Checks | tsc, biome and tests green across mobile / api / db |
 
-| What | Where it turns on | Env vars |
-|------|-------------------|----------|
-| **Sign in with Apple** (required, 4.8) | `apps/api/.env` | `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`, `APPLE_APP_BUNDLE_ID` |
-| **Instagram login** (4.5) | `apps/api/.env` | `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET` (+ endpoints if Meta assigns) |
-| **Phone OTP (real SMS)** | `apps/api/.env` | `SMS_PROVIDER_API_KEY` (swap the dev console sender in `auth.ts`) |
-| **MapBox map** | `apps/app/.env` | `VITE_MAPBOX_TOKEN` (public `pk.` token) |
-| **Cloudinary photos** | `apps/app/.env` | `VITE_CLOUDINARY_CLOUD_NAME`, `VITE_CLOUDINARY_UPLOAD_PRESET` |
+## 1. Founder: accounts and keys
 
-Without these the app still runs: phone works via a dev console code, and the map
-/ cover image show a branded fallback.
+| What | Why | How |
+|---|---|---|
+| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId` | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app` |
+| **Sentry DSN** | crash reports from testers; without it `lib/errors.ts` no-ops | `eas env:create production --name EXPO_PUBLIC_SENTRY_DSN --value <dsn>` |
+| **PostHog key** | product analytics; without it `lib/analytics.ts` no-ops | same, `EXPO_PUBLIC_POSTHOG_KEY` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
+| **Sentry org/project** | readable native stack traces (source maps) | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` on the production env |
+| **Domain** (deferred) | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains` | buy, then set the env var and host `apple-app-site-association` |
 
-## 2. Accounts to create (yours, needs your details)
-
-- **Apple Developer Program** — $99/yr. Required for Sign in with Apple and any
-  TestFlight/App Store build. Enroll at developer.apple.com.
-- **Meta app** — for Instagram Login (Instagram Basic Display is retired; use the
-  Instagram Login flow Meta assigns). Configure OAuth redirect to the API.
-- **Railway** — deploy `apps/api` + Postgres (M1 was proven on local Postgres).
-- **Cloudinary** + **MapBox** accounts for the keys above.
-
-## 3. Content to finalize (you / counsel)
-
-- **Privacy Policy + Terms + EULA copy** — in-app drafts live at `/privacy`,
-  `/terms`, `/eula` (`apps/app/src/screens/legal/LegalPage.tsx`). Replace the
-  DRAFT copy with counsel-approved text, or point them at hosted URLs.
-- **Real restaurant WhatsApp numbers** — seed uses demo numbers
-  (`+1809555XXXX`, flagged `isDemo`). Replace with real numbers for launch.
-- **App Privacy nutrition label** — in App Store Connect, declare: account info
-  (identity), contacts (matched server-side, never stored), usage. No cross-app
-  tracking, so no ATT prompt in Phase 1.
-
-## 4. Native build → TestFlight (needs a Mac with Xcode)
-
-Prereqs: **Xcode.app** (full install, not just Command Line Tools) + CocoaPods.
+Set secrets with a shell that does not echo them:
 
 ```bash
-cd apps/app
-bun run cap:add:ios          # generates apps/app/ios/
-# paste the Info.plist purpose strings from docs/NATIVE.md
-bun run cap:sync             # vite build + copy web assets
-bunx cap open ios            # open in Xcode, set team + bundle id, archive
+cd apps/mobile && read -s "DSN?Sentry DSN: " && bunx eas-cli@latest env:create production --name EXPO_PUBLIC_SENTRY_DSN --value "$DSN" --visibility sensitive
 ```
 
-- Enable **Sign in with Apple** capability on the App ID.
-- Archive → upload to **TestFlight**. CI option: a **GitHub Actions macOS runner**
-  or **Codemagic** (Ionic Appflow is winding down — see `docs/NATIVE.md`).
-- Seed the beta with **one dense real friend cluster**, not scattered testers
-  (cold-start is the #1 risk).
+Also delete the stale `RNMAPBOX_DOWNLOAD_TOKEN` variable (wrong name, superseded
+by `RNMAPBOX_MAPS_DOWNLOAD_TOKEN`, which is the one the podspec reads).
 
-## 5. Tag the beta
+## 2. Founder: production data hygiene
 
-Once a TestFlight build is green:
+- **Delete the demo account** (`demo@mesa.test`). Its password has been typed in
+  plain text; it must not exist once outsiders have a build.
+  `apps/api/src/delete-user.ts` (dry-run first).
+- **Invented catalog data**: the seed gives real Santo Domingo restaurants fake
+  phone numbers (`+1809555…`) and guessed homepages. Clear them on prod before
+  strangers start calling: `apps/api/src/clean-catalog-contacts.ts --dry-run`.
+- **Mock events** are fictional events at real venues. Fine while the testers are
+  friends; get the venue's OK before anyone outside that circle installs.
+
+## 3. Build
 
 ```bash
-git tag v0.1.0-beta
-git push --tags
+cd apps/mobile && bunx eas-cli@latest build --profile production --platform ios
 ```
 
-## Definition of done (Phase 1) — status
+`production` is the only profile with `autoIncrement`, and `appVersionSource:
+"remote"` means EAS owns the build number. First run will ask for signing: let
+EAS manage the distribution certificate and provisioning profile, and make sure
+the App ID has **Sign in with Apple** and **Push Notifications** enabled.
 
-Sign in → onboarded with a starting ranking + friends → rank via pairwise with
-vibe notes → follow people → a full feed of friends' rankings → view a restaurant
-→ save it → request a table via WhatsApp handoff. All in the fixed Mesa brand,
-with pooling + no-N+1 + caching from commit #1, and the App Store guardrails
-(Apple sign-in, UGC report/block/remove, in-app account deletion, privacy strings
-+ label) in place. **Remaining: the account/keys/native steps above.**
+Then:
+
+```bash
+bunx eas-cli@latest submit --profile production --platform ios --latest
+```
+
+Fill `eas.json`'s `submit.production` with `appleId`, `ascAppId` and
+`appleTeamId` once the App Store Connect record exists, so this stops prompting.
+
+## 4. App Store Connect, before external testing
+
+External TestFlight goes through **Beta App Review** (lighter than full review,
+but it is a review).
+
+- **Privacy Policy URL**: `https://<api-domain>/legal/privacy` (served by the API).
+- **Terms / EULA URL**: `/legal/terms`, `/legal/eula`.
+- **App Privacy questionnaire**: account info (identity), contacts (matched, not
+  stored), photos, coarse location, usage + diagnostics. No tracking across apps,
+  no IDFA → no ATT prompt.
+- **Beta App Review info**: a contact email (yours is fine, it is not shown to
+  users), plus a **fresh reviewer account** — create one in the app, do not reuse
+  the demo account.
+- **What to test** notes: name the flows (rank a spot, an event RSVP, save,
+  comment), and say the catalog is real Santo Domingo places with sample activity.
+- **Export compliance**: already answered by `ITSAppUsesNonExemptEncryption: false`.
+
+## 5. After the first green build
+
+- Add **`expo-updates`** so JS-only fixes reach testers without a new build.
+- Seed the beta with **one dense friend cluster**, not scattered testers —
+  cold-start is the product risk, not the build.
+- Watch Sentry for the first crash-free-session number before widening.
+
+## Definition of done
+
+A build on TestFlight that a stranger can install, sign in to with Apple or
+email, rank a place, see a friend's ranking, and delete their account from
+inside the app — with the legal pages reachable in-app and on the web.

@@ -62,13 +62,17 @@ export default function SettingsHub() {
     router.replace('/sign-in')
   }
 
-  // No real support inbox is wired up yet — TODO(founder): replace with the
-  // real address before this ships. A wrong/fake one is worse than the row
-  // not existing, so this deliberately uses the RFC 2606 "this isn't real"
-  // domain rather than guessing a plausible-looking one.
+  // The support inbox waits on Mesa's own domain, so the row is env-gated
+  // rather than shipping a mailto nobody reads: set EXPO_PUBLIC_SUPPORT_EMAIL
+  // (EAS env) and the Ayuda section appears, with no code change. A fake or
+  // personal address in a store build is worse than no row — during the beta
+  // support runs through the invite email and TestFlight's own feedback, which
+  // is what the legal pages tell members (lib/legalCopy.ts).
+  const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL
   function reportProblem() {
+    if (!supportEmail) return
     Linking.openURL(
-      `mailto:soporte@example.com?subject=${encodeURIComponent(t('settings.report_subject'))}`,
+      `mailto:${supportEmail}?subject=${encodeURIComponent(t('settings.report_subject'))}`,
     ).catch(() => {})
   }
 
@@ -151,15 +155,19 @@ export default function SettingsHub() {
           </RowButton>
         </View>
 
-        <Eyebrow className="mt-6 mb-2">{t('settings.help')}</Eyebrow>
-        <View className="rounded border border-line bg-surface px-4">
-          <RowButton onPress={reportProblem} last>
-            <Text className="flex-1 font-ui text-body text-text">
-              {t('settings.report_problem')}
-            </Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-        </View>
+        {supportEmail ? (
+          <>
+            <Eyebrow className="mt-6 mb-2">{t('settings.help')}</Eyebrow>
+            <View className="rounded border border-line bg-surface px-4">
+              <RowButton onPress={reportProblem} last>
+                <Text className="flex-1 font-ui text-body text-text">
+                  {t('settings.report_problem')}
+                </Text>
+                <ChevronIcon size={16} color="text-faint" />
+              </RowButton>
+            </View>
+          </>
+        ) : null}
 
         {p?.isModerator ? (
           <View className="mt-6 rounded border border-line bg-surface px-4">

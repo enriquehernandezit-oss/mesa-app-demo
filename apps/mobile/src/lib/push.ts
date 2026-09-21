@@ -1,14 +1,17 @@
+import { requireOptionalNativeModule } from 'expo'
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 import { api } from './api'
+
+export { pushDeepLink } from './pushLinks'
 
 // Push notifications (M17). Permission is asked contextually — never at
 // launch — so every call site below is triggered from a specific moment
 // (the rank finish screen, a new plan, the Activity header), not a splash
 // effect.
 //
-// PUSH_NATIVE_LINKED gates every access to expo-notifications. This is NOT
+// pushNativeLinked() gates every access to expo-notifications. This is NOT
 // cosmetic — it is the only thing standing between this file and a repeat
 // app-wide crash. Two earlier, more clever attempts both failed in
 // production:
@@ -29,12 +32,23 @@ import { api } from './api'
 //      mount) rather than at boot, which is what made it look fixed until
 //      someone actually opened a push-adjacent screen.
 //
-// The only fix that's actually safe against both failure modes: never let
-// any code path resolve the module at all until the founder's EAS rebuild
-// has genuinely linked its native side. Flip this to true only after that's
-// confirmed (a real device build, or a rebuilt simulator dev client, that
-// doesn't crash when a push function is used) — not preemptively.
-const PUSH_NATIVE_LINKED = false
+// The fix that's actually safe against both failure modes: ask the native
+// module registry whether the modules are there BEFORE ever importing the
+// barrel, via requireOptionalNativeModule (from `expo`, not `expo-notifications`
+// — it never touches that package's JS). It returns null instead of throwing
+// when a module isn't linked, which is exactly what a dev client without the
+// native side, or a stale local prebuild, looks like — so this reads as
+// 'unsupported' everywhere below, the same as before, with no crash. Once a
+// real EAS build has linked expo-notifications (app.json's plugin list already
+// names it), the probe starts returning true on its own — nothing here needs
+// touching by hand. Names are the ones this expo-notifications version
+// registers under; re-check them on an SDK bump.
+function pushNativeLinked(): boolean {
+  return (
+    requireOptionalNativeModule<object>('ExpoNotificationPermissionsModule') !== null &&
+    requireOptionalNativeModule<object>('ExpoPushTokenManager') !== null
+  )
+}
 
 const TOKEN_KEY = 'mesa.push_token'
 
@@ -43,7 +57,7 @@ type NotificationsModule = typeof import('expo-notifications')
 let cached: NotificationsModule | null | undefined
 
 async function loadNotifications(): Promise<NotificationsModule | null> {
-  if (!PUSH_NATIVE_LINKED) return null
+  if (!pushNativeLinked()) return null
   if (cached !== undefined) return cached
   try {
     const mod = await import('expo-notifications')
@@ -139,21 +153,6 @@ export async function unregisterPush(): Promise<void> {
   if (!token) return
   await api.del('/notifications/token', { token }).catch(() => {})
   await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {})
-}
-
-// The allow-listed deep links a push's `data` payload can open — matches
-// exactly what apps/api/src/lib/push.ts's triggers send. Anything else is
-// ignored rather than guessed at.
-export function pushDeepLink(data: Record<string, unknown> | undefined): string | null {
-  if (!data) return null
-  const type = data.type
-  if (type === 'user' && typeof data.userId === 'string') return `/u/${data.userId}`
-  if (type === 'restaurant' && typeof data.restaurantId === 'string')
-    return `/r/${data.restaurantId}`
-  if (type === 'plan' && typeof data.planId === 'string') return `/planes/${data.planId}`
-  // The repeat-dish nudge (M20's sweepDishNudges).
-  if (type === 'dish-list' && typeof data.listId === 'string') return `/platos/${data.listId}`
-  return null
 }
 
 // usePushRouting's cold-start check — the data payload of whatever

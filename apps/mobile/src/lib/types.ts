@@ -29,10 +29,13 @@ export interface MeResponse {
 
 // A row in the moderator queue. `target` carries the reported content itself —
 // a bare id can't be judged — and is null when the row is already gone.
+// 'comment' is in the union because the API has accepted and returned comment
+// reports since migration 0022; this copy of the type omitted it, and the queue
+// screen's action then fell through to the eject endpoint (see moderation.tsx).
 export interface ModerationReport {
   id: string
   reporterId: string
-  targetType: 'vibe_note' | 'user' | 'dish'
+  targetType: 'vibe_note' | 'user' | 'dish' | 'comment'
   targetId: string
   reason: string
   status: 'open' | 'reviewing' | 'actioned' | 'dismissed'
@@ -40,6 +43,7 @@ export interface ModerationReport {
   target:
     | { kind: 'vibe_note'; body: string; userId: string }
     | { kind: 'dish'; name: string; caption: string | null; imageId: string | null }
+    | { kind: 'comment'; body: string; userId: string; rankingId: string }
     | { kind: 'user'; name: string; handle: string | null }
     | null
   // True when the content was already removed/banned by someone else — the row
@@ -739,4 +743,9 @@ export interface EventSummary {
   capacity: number | null
   bookingWhatsapp: string | null
   spotsLeft: number | null
+  // False for every mock/seed event until the venue actually agrees to it —
+  // the UI shows a quiet "evento de muestra" mark while this is false. Not
+  // optional like savedByMe: the API ships this column before any client
+  // build reaches testers, so there is no in-the-wild API missing it.
+  venueConfirmed: boolean
 }

@@ -16,9 +16,12 @@
 //
 // Source: apps/api/data/events.json, `{ events: [{ slug, restaurantName,
 // title, description, startsAt, endsAt, category, priceLabel, ticketUrl,
-// coverImageId, capacity, bookingWhatsapp }] }` — startsAt/endsAt are ISO strings with an explicit
-// offset (e.g. "2026-09-17T20:30:00-04:00") so they parse the same instant
-// regardless of the machine running this script.
+// coverImageId, capacity, bookingWhatsapp, venueConfirmed }] }` —
+// startsAt/endsAt are ISO strings with an explicit offset (e.g.
+// "2026-09-17T20:30:00-04:00") so they parse the same instant regardless of
+// the machine running this script. `venueConfirmed` defaults to false — an
+// omitted field must read as "not yet confirmed with the venue," never as
+// true, so a mock event never looks real by accident.
 //
 //   DATABASE_URL="<url>" bun run src/import-events.ts [--dry-run]
 
@@ -41,6 +44,7 @@ interface EventInput {
   coverImageId?: string
   capacity?: number
   bookingWhatsapp?: string
+  venueConfirmed?: boolean
 }
 
 // Validates and normalizes the two optional booking fields — `null` for an
@@ -140,6 +144,7 @@ async function run() {
       coverImageId: e.coverImageId ?? null,
       capacity: e.capacity,
       bookingWhatsapp: e.bookingWhatsapp,
+      venueConfirmed: e.venueConfirmed ?? false,
     })
   }
   for (const e of toUpdate) {
@@ -157,6 +162,10 @@ async function run() {
         coverImageId: e.coverImageId ?? null,
         capacity: e.capacity,
         bookingWhatsapp: e.bookingWhatsapp,
+        // On the update path too, not just insert — this is how a venue that
+        // later confirms an existing mock event actually clears the marker,
+        // by re-running the import with venueConfirmed: true in the source.
+        venueConfirmed: e.venueConfirmed ?? false,
         updatedAt: new Date(),
       })
       .where(eq(events.slug, e.slug))

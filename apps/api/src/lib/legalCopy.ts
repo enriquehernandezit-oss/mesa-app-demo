@@ -1,34 +1,39 @@
-import { Body, Caption, EmptyState, Eyebrow, SectionHeader, Wordmark } from '@/components/ui'
-import { useLanguage, useT } from '@/lib/i18n'
-import { Stack, useLocalSearchParams } from 'expo-router'
-import { ScrollView, View } from 'react-native'
+// The canonical text of Mesa's three legal documents — privacy policy, terms,
+// EULA. App Store Connect wants a hosted Privacy Policy URL and a Terms URL,
+// and App Store 5.1 wants the same documents reachable inside the app, so this
+// text has to exist in two places at once.
+//
+// KEEP IN SYNC WITH apps/mobile/src/app/legal/[doc].tsx, which holds the same
+// prose for the in-app screens. It is duplicated on purpose: Metro cannot
+// resolve workspace packages under Bun's isolated linker (CLAUDE.md says so of
+// lib/types.ts for the same reason), so the app cannot import this module.
+// Change one, change the other in the same commit — a privacy policy that says
+// two different things in two places is worse than one that says neither.
+//
+// This copy is the founder's own writing, checked line by line against what the
+// code actually does. It still wants a lawyer's read before the public App
+// Store release.
 
-// In-app legal pages. Apple requires the Privacy Policy and Terms to be
-// reachable inside the app (App Store 5.1), so these exist and are linked from
-// Ajustes → Acerca de. They render regardless of auth state (top-level route,
-// outside the gate) so a signed-out member can still read them.
-//
-// The copy below is the founder's own, written against what the app actually
-// does — every claim in it (what contacts matching sends, what analytics
-// carries, what deletion erases) was checked against the code. It still wants
-// a lawyer's read before the public App Store release.
-//
-// KEEP IN SYNC WITH apps/api/src/lib/legalCopy.ts, which holds the same prose
-// for the hosted pages at /legal/* (the URLs App Store Connect asks for). The
-// duplication is deliberate: Metro cannot resolve workspace packages under
-// Bun's isolated linker, the same reason lib/types.ts is a copy (CLAUDE.md).
-// Change one, change the other in the same commit.
-//
-// Spanish only, in both app languages: a half-machine-translated legal
-// document would be worse than an untranslated one. The EN-mode note below is
-// the one concession.
-type Doc = 'terms' | 'eula' | 'privacy'
+export type LegalDocId = 'privacy' | 'terms' | 'eula'
 
-type Section = { heading: string; paragraphs: string[] }
+export interface LegalSection {
+  heading: string
+  paragraphs: string[]
+}
+
+export interface LegalDoc {
+  title: string
+  // One line, rendered under the title on every surface.
+  updated: string
+  sections: LegalSection[]
+}
 
 const UPDATED = 'Última actualización: 21 de septiembre de 2026'
 
-const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }> = {
+// Written in Spanish only, like the rest of the documents: the app's default
+// language is Spanish and its members are in Santo Domingo. A half-machine-
+// translated legal text would be worse than an untranslated one.
+export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
   privacy: {
     title: 'Política de Privacidad',
     updated: UPDATED,
@@ -278,43 +283,4 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       },
     ],
   },
-}
-
-export default function LegalPage() {
-  const t = useT()
-  const lang = useLanguage()
-  const { doc } = useLocalSearchParams<{ doc: string }>()
-  const entry = DOCS[doc as Doc]
-
-  return (
-    <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: entry?.title ?? 'Legal' }} />
-      {!entry ? (
-        <EmptyState>{t('legal.not_found')}</EmptyState>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerClassName="px-5 pb-12"
-          contentInsetAdjustmentBehavior="automatic"
-        >
-          <Wordmark size={32} />
-          <Eyebrow className="mt-4">Legal</Eyebrow>
-          <Caption className="mt-2">{entry.updated}</Caption>
-          {lang === 'en' && (
-            <Caption className="mt-3 text-text-muted">{t('legal.spanish_only_note')}</Caption>
-          )}
-          {entry.sections.map((section) => (
-            <View key={section.heading}>
-              <SectionHeader>{section.heading}</SectionHeader>
-              <View className="gap-3">
-                {section.paragraphs.map((paragraph) => (
-                  <Body key={paragraph.slice(0, 24)}>{paragraph}</Body>
-                ))}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  )
 }

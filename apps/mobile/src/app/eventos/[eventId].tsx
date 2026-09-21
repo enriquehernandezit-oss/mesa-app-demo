@@ -253,6 +253,14 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
             </View>
           </Animated.View>
 
+          {/* The fuller sample-event sentence — sits right where the reader has
+              accepted the event as real and is about to act on it. The cards
+              above (EventTicket/EventHeroCard/EventMiniCard) carry the short
+              "Evento de muestra" mark; this is the one place that explains it. */}
+          {!e.venueConfirmed ? (
+            <Caption className="mt-3 text-center">{t('events.sample_note')}</Caption>
+          ) : null}
+
           {/* Info cards */}
           <InfoCard
             index={0}

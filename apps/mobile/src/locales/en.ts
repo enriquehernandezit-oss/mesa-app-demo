@@ -288,9 +288,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'moderation.type_vibe_note': 'Note',
   'moderation.type_dish': 'Dish',
   'moderation.type_user': 'Member',
+  'moderation.type_comment': 'Comment',
   'moderation.dismissed_toast': 'Report dismissed',
   'moderation.removed_toast': 'Content removed',
   'moderation.act_error': "Couldn't complete that. Try again.",
+  'moderation.unknown_type': "This version can't action that report. Update the app.",
   'moderation.title': 'Moderation',
   'moderation.load_error': "Couldn't load the queue.",
   'moderation.empty_body': 'Community reports show up here for review.',
@@ -467,6 +469,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'report.prompt_dish': 'Why are you reporting this dish?',
   'report.prompt_vibe_note': 'Why are you reporting this note?',
   'report.prompt_user': 'Why are you reporting this person?',
+  'report.note_a11y': 'Report this note',
 
   'cheers.give': 'Cheers',
   'cheers.remove': 'Remove cheers',
@@ -800,6 +803,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'notifications.open_settings': 'Open Settings',
   'notifications.permission_prompt': "Turn on notifications so you don't miss anything.",
   'notifications.enable': 'Enable notifications',
+  'notifications.unsupported': "Notifications aren't available in this version of the app.",
   'notifications.footer':
     "You can turn off any category any time — this doesn't affect whether you get system notifications, only which.",
 
@@ -920,6 +924,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'events.going_count': { one: '1 person going', other: '{n} people going' },
   'events.be_first': 'Be the first to go',
   'events.cat_default': 'Event',
+  // e.venueConfirmed === false — a mock/seed event on a real restaurant that
+  // hasn't agreed to it yet. Deliberately plain (no exclamation, no emoji):
+  // an honesty note, not a feature callout.
+  'events.sample_mark': 'Sample event',
+  'events.sample_note': 'Sample event — not yet confirmed with the venue.',
   'events.featured': 'Featured',
   'events.all_days': 'All',
   'events.today': 'Today',

@@ -79,7 +79,7 @@ config/account action that happens at submission (see `docs/SUBMISSION.md`).
 - [x] Report content + block user + remove/eject working — verified end to end (M3)
 - [x] EULA accepted at signup — required checkbox in onboarding; recorded server-side
 - [x] In-app account deletion (cascading) — Profile → Danger zone → DELETE /me, cascade verified (M5)
-- [~] Privacy policy + terms URLs live — in-app pages exist (`/privacy`, `/terms`, `/eula`); **copy is DRAFT — finalize with counsel**, optionally host at public URLs
+- [x] Privacy policy + terms URLs live — real copy, written against what the app actually does, in the app (`/legal/privacy`, `/legal/terms`, `/legal/eula`) and hosted publicly by the API at the same paths (`<API origin>/legal/…`, no auth). Canonical text: `apps/api/src/lib/legalCopy.ts`, mirrored in `apps/mobile/src/app/legal/[doc].tsx`. Still wants a lawyer's read before the public release
 - [ ] App Privacy nutrition label filled in App Store Connect — declare: account info, contacts (matched, not stored), usage
 - [~] All `Info.plist` purpose strings written — drafted in `docs/NATIVE.md`; paste after `cap add ios`
 - [x] App demonstrably more than a WebView — Contacts (live), reserve handoff, MapBox map, camera/photo (staged) satisfy 4.2

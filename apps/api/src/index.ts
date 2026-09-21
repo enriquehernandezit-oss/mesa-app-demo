@@ -18,6 +18,7 @@ import { eventsRoutes } from './routes/events'
 import { feedRoutes } from './routes/feed'
 import { inviteRoutes } from './routes/invites'
 import { leaderboardRoutes } from './routes/leaderboard'
+import { legalPagesRoutes } from './routes/legal-pages'
 import { listsRoutes } from './routes/lists'
 import { meRoutes } from './routes/me'
 import { moderationRoutes } from './routes/moderation'
@@ -103,6 +104,24 @@ app.use(
   }),
 )
 
+// /legal/* is HTML too, but stricter than /p: the pages carry no images and no
+// web fonts, so the only thing they need past the catch-all's "nothing at all"
+// is their own inline <style>. Registered on both paths because '/legal/*'
+// does not match the bare '/legal' index.
+const LEGAL_HEADERS = secureHeaders({
+  ...COMMON_HEADERS,
+  contentSecurityPolicy: {
+    defaultSrc: ["'none'"],
+    scriptSrc: ["'none'"],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+    baseUri: ["'none'"],
+    formAction: ["'none'"],
+    frameAncestors: ["'none'"],
+  },
+})
+app.use('/legal', LEGAL_HEADERS)
+app.use('/legal/*', LEGAL_HEADERS)
+
 app.use(
   '*',
   secureHeaders({
@@ -141,6 +160,11 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // their literal paths are matched before the share pages' /:param routes.
 app.route('/p', authPagesRoutes)
 app.route('/p', sharePagesRoutes)
+
+// PUBLIC legal pages (privacy / terms / EULA) — the hosted URLs App Store
+// Connect asks for, same text as the app's own legal screens. Pre-session for
+// the same reason: a reviewer opening the privacy policy has no account.
+app.route('/legal', legalPagesRoutes)
 
 // Seeded catalog/dish photos. These used to be served by the web app out of its
 // public/ dir, so the seed stores root-relative paths ("/restaurants/x.jpg").

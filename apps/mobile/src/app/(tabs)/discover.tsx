@@ -18,7 +18,7 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { ChevronIcon, CommentIcon } from '@/components/ui/icons'
+import { ChevronIcon, CommentIcon, MoreIcon } from '@/components/ui/icons'
 import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
@@ -346,9 +346,10 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
   const t = useT()
   const router = useRouter()
   const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
-  // Long-press on the note itself reports it (App Store 1.2) — the card is one
-  // big tap target to the restaurant, so this rides a different gesture rather
-  // than adding a permanent "Reportar" line to every post.
+  // Reporting the note (App Store 1.2). Two ways into the same sheet: the
+  // "···" in the card header, because 1.2 wants reporting "clearly available"
+  // and a long-press nobody can see isn't, and the long-press on the note
+  // itself, kept because people already reach for it.
   const reportNote = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
@@ -356,7 +357,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
     onError: () => toast({ variant: 'error', message: t('common.report_error') }),
   })
   const noteId = item.noteId
-  const onLongPressNote =
+  const onReportNote =
     item.note && noteId
       ? async () => {
           const reason = await pickReportReason('vibe_note')
@@ -413,6 +414,23 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
             </Text>
             <Caption>{timeAgo(item.rankedAt)}</Caption>
           </View>
+          {/* The house per-row menu ("···", as on a ranking card). A nested
+              plain Pressable, so RN hands it the touch instead of the card's
+              tap-through to the place. Only on posts that carry a note: a dish
+              post's photo and caption are reportable on the dish page the card
+              opens, and its author from their passport — the note was the one
+              piece of UGC here with no visible path. */}
+          {onReportNote ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('report.note_a11y')}
+              onPress={onReportNote}
+              hitSlop={8}
+              className="-mr-1 h-11 w-8 items-center justify-center active:opacity-60"
+            >
+              <MoreIcon size={18} color="text-faint" />
+            </Pressable>
+          ) : null}
         </View>
 
         {isDish ? (
@@ -466,7 +484,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
           <Text
             selectable
             numberOfLines={3}
-            onLongPress={onLongPressNote}
+            onLongPress={onReportNote}
             maxFontSizeMultiplier={MAX_SCALE}
             className="mt-3 font-serif-italic text-serif-md text-text-2"
           >

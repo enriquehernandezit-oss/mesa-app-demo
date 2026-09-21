@@ -84,6 +84,9 @@ const eventCols = {
   coverImageId: events.coverImageId,
   capacity: events.capacity,
   bookingWhatsapp: events.bookingWhatsapp,
+  // Has the venue actually agreed to this event? Every shape carries it so
+  // the client can show "evento de muestra" until it's true.
+  venueConfirmed: events.venueConfirmed,
   restaurant: {
     id: restaurants.id,
     name: restaurants.name,

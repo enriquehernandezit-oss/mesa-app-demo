@@ -276,6 +276,24 @@ export function RsvpButtons({
   )
 }
 
+// An honesty mark, not a feature badge — the seeded/mock events sit on real
+// Santo Domingo restaurants that haven't confirmed them (e.venueConfirmed),
+// so every card and the detail page say so in plain, quiet text: no pill, no
+// border, no icon, and never a cat-* hue or brass (both would read as
+// promotion, the opposite of the point). `tone="on-photo"` for the two cards
+// that render this over a photo; the plain-card default otherwise.
+function SampleMark({ tone = 'muted' }: { tone?: 'muted' | 'on-photo' }) {
+  const t = useT()
+  return (
+    <Text
+      numberOfLines={1}
+      className={`font-ui text-micro ${tone === 'on-photo' ? 'text-on-photo-2' : 'text-text-muted'}`}
+    >
+      {t('events.sample_mark')}
+    </Text>
+  )
+}
+
 // ── Ticket card (the list) ────────────────────────────────────────────────
 export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: number; now: Date }) {
   const t = useT()
@@ -340,6 +358,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
                 .filter(Boolean)
                 .join(' · ')}
             </Caption>
+            {!e.venueConfirmed ? <SampleMark /> : null}
             {e.capacity != null && spotsLeft != null ? (
               <SpotsLine capacity={e.capacity} spotsLeft={spotsLeft} cat={cat} compact />
             ) : null}
@@ -410,9 +429,12 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
             {e.title}
           </Text>
           <View className="mt-1 flex-row items-end justify-between gap-3">
-            <Text numberOfLines={1} className="flex-1 font-ui text-label text-on-photo-2">
-              {e.restaurant.name} · {s.time}
-            </Text>
+            <View className="flex-1">
+              <Text numberOfLines={1} className="font-ui text-label text-on-photo-2">
+                {e.restaurant.name} · {s.time}
+              </Text>
+              {!e.venueConfirmed ? <SampleMark tone="on-photo" /> : null}
+            </View>
             <RsvpButtons e={e} rsvpState={rsvpState} />
           </View>
         </View>
@@ -471,6 +493,7 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
           <Caption numberOfLines={1} className="text-micro">
             {e.restaurant.name} · {s.time}
           </Caption>
+          {!e.venueConfirmed ? <SampleMark /> : null}
         </View>
       </Pressable>
     </Link>

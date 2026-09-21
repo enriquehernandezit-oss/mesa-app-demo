@@ -1,4 +1,13 @@
-import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { user } from './auth'
 import { restaurants } from './discovery'
 import { eventRsvpStatus } from './enums'
@@ -38,6 +47,12 @@ export const events = pgTable(
     // Booking by WhatsApp — digits only, E.164 without the '+'
     // ("18095551234"), the exact form a wa.me link takes. null = no booking.
     bookingWhatsapp: text('booking_whatsapp'),
+    // Has the venue actually agreed to this event? The importer's mock/seed
+    // events sit on real Santo Domingo restaurants that never confirmed them,
+    // so the honest default is false — a member sees "evento de muestra" on
+    // every card until someone flips this. Never defaults to true: a
+    // forgotten flag must fail toward disclosure, not toward looking real.
+    venueConfirmed: boolean('venue_confirmed').notNull().default(false),
     cancelledAt: timestamp('cancelled_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

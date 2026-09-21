@@ -14,6 +14,10 @@ const appJson = require('./app.json')
 module.exports = () => {
   const config = { ...appJson.expo }
 
+  // Strip the boilerplate purpose strings Expo's prebuild template adds for
+  // permissions Mesa never asks for (see the plugin's own header).
+  config.plugins = [...(config.plugins ?? []), './plugins/withTrimmedPurposeStrings']
+
   // Sentry's config plugin uploads source maps at build time, which needs
   // SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN. Added only when the org and
   // project are present, so a build without Sentry credentials still succeeds —

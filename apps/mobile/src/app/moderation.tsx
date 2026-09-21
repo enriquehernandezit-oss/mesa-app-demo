@@ -24,12 +24,24 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 // grant yourself the flag from inside the product.
 const TYPE_KEYS: Record<
   ModerationReport['targetType'],
-  'moderation.type_vibe_note' | 'moderation.type_dish' | 'moderation.type_user'
+  | 'moderation.type_vibe_note'
+  | 'moderation.type_dish'
+  | 'moderation.type_user'
+  | 'moderation.type_comment'
 > = {
   vibe_note: 'moderation.type_vibe_note',
   dish: 'moderation.type_dish',
+  comment: 'moderation.type_comment',
   user: 'moderation.type_user',
 }
+
+// A report this build has no action for. Thrown rather than falling through to
+// the eject endpoint the way the old if-chain did: every unrecognized type
+// ended at `POST /moderation/users/:targetId/eject`, so acting on a comment
+// report sent the COMMENT's id to the ban endpoint — it matched no user, the
+// queue claimed "retirado", the comment stayed up and the report stayed open.
+// An unknown type now touches nothing and says so.
+class UnknownReportType extends Error {}
 
 export default function ModerationQueue() {
   const t = useT()
@@ -48,10 +60,18 @@ export default function ModerationQueue() {
       action,
     }: { report: ModerationReport; action: 'remove' | 'dismiss' }) => {
       if (action === 'dismiss') return api.post(`/moderation/reports/${report.id}/dismiss`)
-      if (report.targetType === 'vibe_note')
-        return api.del(`/moderation/vibe-notes/${report.targetId}`)
-      if (report.targetType === 'dish') return api.del(`/moderation/dishes/${report.targetId}`)
-      return api.post(`/moderation/users/${report.targetId}/eject`)
+      switch (report.targetType) {
+        case 'vibe_note':
+          return api.del(`/moderation/vibe-notes/${report.targetId}`)
+        case 'dish':
+          return api.del(`/moderation/dishes/${report.targetId}`)
+        case 'comment':
+          return api.del(`/moderation/comments/${report.targetId}`)
+        case 'user':
+          return api.post(`/moderation/users/${report.targetId}/eject`)
+        default:
+          throw new UnknownReportType()
+      }
     },
     onSuccess: (_d, { action }) => {
       queryClient.invalidateQueries({ queryKey: ['moderation-reports'] })
@@ -63,12 +83,19 @@ export default function ModerationQueue() {
       queryClient.invalidateQueries({ queryKey: ['dishes'] })
       queryClient.invalidateQueries({ queryKey: ['dish'] })
       queryClient.invalidateQueries({ queryKey: ['restaurant'] })
+      // A removed comment has to leave its thread and the feed card's
+      // count/latest line, which read from ['comments', rankingId].
+      queryClient.invalidateQueries({ queryKey: ['comments'] })
       toast({
         message:
           action === 'dismiss' ? t('moderation.dismissed_toast') : t('moderation.removed_toast'),
       })
     },
     onError: (err) => {
+      if (err instanceof UnknownReportType) {
+        toast({ variant: 'error', message: t('moderation.unknown_type') })
+        return
+      }
       captureError(err, 'moderation.act')
       toast({ variant: 'error', message: t('moderation.act_error') })
     },
@@ -197,6 +224,19 @@ function ReportRow({
               </Text>
             ) : null}
           </View>
+        </Pressable>
+      ) : target.kind === 'comment' ? (
+        // Same reasoning as the note above — the body is what gets judged, and
+        // the tap goes to whoever wrote it. Plain UI type, not the note's
+        // serif quote: a comment isn't a vibe note.
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/u/${target.userId}`)}
+          className="mt-2 active:opacity-70"
+        >
+          <Text selectable className="font-ui text-body text-text-2">
+            {target.body}
+          </Text>
         </Pressable>
       ) : (
         <Pressable

@@ -62,6 +62,14 @@ export default function NotificationSettings() {
     { key: 'dishes', label: t('notifications.dishes') },
   ]
 
+  // 'unsupported' means expo-notifications isn't linked in this binary (a dev
+  // client, a stale local prebuild, or — before the founder's rebuild — every
+  // build). Nothing here can fix that from inside the app, so unlike denied/
+  // undetermined this card has no button; and the switches below, which would
+  // otherwise look live while being unable to ever deliver anything, are
+  // visibly and functionally disabled rather than silently inert.
+  const unsupported = permission === 'unsupported'
+
   return (
     <View className="flex-1 bg-bg px-5 pt-4">
       {permission === 'denied' ? (
@@ -78,9 +86,16 @@ export default function NotificationSettings() {
             {t('notifications.enable')}
           </Button>
         </View>
+      ) : unsupported ? (
+        <View className="mb-4 gap-2 rounded border border-line bg-surface p-4">
+          <Body>{t('notifications.unsupported')}</Body>
+        </View>
       ) : null}
 
-      <View className="rounded border border-line bg-surface px-4">
+      <View
+        pointerEvents={unsupported ? 'none' : 'auto'}
+        className={`rounded border border-line bg-surface px-4 ${unsupported ? 'opacity-50' : ''}`}
+      >
         {rows.map((row, i) => (
           <Row key={row.key} last={i === rows.length - 1}>
             <Text className="flex-1 font-ui text-body text-text">{row.label}</Text>

@@ -306,9 +306,11 @@ export const es = {
   'moderation.type_vibe_note': 'Nota',
   'moderation.type_dish': 'Plato',
   'moderation.type_user': 'Miembro',
+  'moderation.type_comment': 'Comentario',
   'moderation.dismissed_toast': 'Reporte descartado',
   'moderation.removed_toast': 'Contenido retirado',
   'moderation.act_error': 'No se pudo completar. Intenta de nuevo.',
+  'moderation.unknown_type': 'Esta versión no sabe atender este reporte. Actualiza la app.',
   'moderation.title': 'Moderación',
   'moderation.load_error': 'No se pudo cargar la cola.',
   'moderation.empty_body': 'Los reportes de la comunidad aparecen aquí para revisarlos.',
@@ -432,9 +434,9 @@ export const es = {
   'dish.take_photo': 'Tomar foto',
   'dish.choose_from_library': 'Elegir de la biblioteca',
 
-  // app/legal/[doc].tsx — the prose itself stays Spanish (BORRADOR, pending
-  // counsel) in both languages; only the not-found state and the EN-mode
-  // notice are keyed.
+  // app/legal/[doc].tsx — the prose itself stays Spanish in both languages
+  // (it is the operative text, and the same words the API serves at /legal/*);
+  // only the not-found state and the EN-mode notice are keyed.
   'legal.not_found': 'Documento no encontrado.',
   'legal.spanish_only_note': 'Disponible en español por ahora.',
 
@@ -506,6 +508,7 @@ export const es = {
   'report.prompt_dish': '¿Por qué reportas este plato?',
   'report.prompt_vibe_note': '¿Por qué reportas esta nota?',
   'report.prompt_user': '¿Por qué reportas a esta persona?',
+  'report.note_a11y': 'Reportar esta nota',
 
   // components/CheersButton.tsx
   'cheers.give': 'Brindar',
@@ -857,6 +860,7 @@ export const es = {
   'notifications.open_settings': 'Abrir Ajustes',
   'notifications.permission_prompt': 'Activa las notificaciones para no perderte nada.',
   'notifications.enable': 'Activar notificaciones',
+  'notifications.unsupported': 'Las notificaciones no están disponibles en esta versión de la app.',
   'notifications.footer':
     'Puedes desactivar cualquier categoría cuando quieras — esto no afecta si recibes notificaciones del sistema, solo cuáles.',
 
@@ -981,6 +985,11 @@ export const es = {
   'events.going_count': { one: '1 persona va', other: '{n} personas van' },
   'events.be_first': 'Sé el primero en ir',
   'events.cat_default': 'Evento',
+  // e.venueConfirmed === false — a mock/seed event on a real restaurant that
+  // hasn't agreed to it yet. Deliberately plain (no exclamation, no emoji):
+  // an honesty note, not a feature callout.
+  'events.sample_mark': 'Evento de muestra',
+  'events.sample_note': 'Evento de muestra — todavía no está confirmado con el local.',
   'events.featured': 'Destacados',
   'events.all_days': 'Todo',
   'events.today': 'Hoy',

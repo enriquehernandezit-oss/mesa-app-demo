@@ -145,7 +145,7 @@ photo uses the theme-invariant `--photo-scrim` gradient + `--on-photo*`.
 ## Where color is allowed to live
 
 A token swap in `tokens.css` reaches every CSS file and every inline `style`
-prop in TSX (all of which use `var(--token)`). It does **not** reach four sites,
+prop in TSX (all of which use `var(--token)`). It does **not** reach five sites,
 which are the *only* places a raw color value may appear. If you touch color,
 these are the sites to check — the audit does not need to be redone:
 
@@ -160,6 +160,11 @@ these are the sites to check — the audit does not need to be redone:
 4. **`apps/app/src/screens/map/MapScreen.tsx`** — the inline SVG `<stop>`s use
    the CSS `stop-color` *property* (which accepts `var()`), not the presentation
    attribute. So they follow the tokens; do not hardcode them.
+5. **`apps/api/src/routes/legal-pages.ts`** — a self-contained stylesheet for the
+   hosted privacy/terms/EULA pages, same workspace problem as (2). **Afternoon**,
+   not frozen Candlelit: a legal document is meant to be read like paper, not to
+   look like a Mesa object in someone else's feed. It also loads no web font, so
+   the type is the system serif/sans rather than Cormorant / Plus Jakarta.
 
 **Frozen share surfaces (a deliberate decision):** the story card and the public
 share page are artifacts that *leave* the app and are viewed inside someone

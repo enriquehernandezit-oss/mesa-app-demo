@@ -21,6 +21,7 @@ import {
   DirectionsIcon,
   ListIcon,
   MenuIcon,
+  MoreIcon,
   PhoneIcon,
   PinIcon,
   ShareIcon,
@@ -663,12 +664,12 @@ function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friend
   )
 }
 
-// One friend's score row. Long-press opens the same report sheet ReportControl
-// uses — App Store 1.2 requires report to be reachable everywhere UGC renders,
-// and this note previously had no report path at all outside a member's own
-// passport. Not a visible "Reportar" link: this list is dense (up to a
-// screen's worth of rows), so the action rides the same gesture as a comment
-// row on most social apps rather than adding a permanent extra line to each.
+// One friend's score row. The "···" at the end of the row opens the same report
+// sheet ReportControl uses, and the long-press stays for the people already
+// using it — App Store 1.2 requires reporting to be reachable AND clearly
+// available everywhere UGC renders, and a gesture with no affordance is only
+// the first half. The dot menu rather than a "Reportar" line per row: this list
+// runs up to a screenful, and a row can't afford a second line of text.
 function FriendScoreRow({ fr }: { fr: FriendRanking }) {
   const t = useT()
   const report = useMutation({
@@ -702,6 +703,19 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
           ) : null}
         </View>
         <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />
+        {/* Nested plain Pressable: RN gives it the touch, so the row's own tap
+            through to the passport is untouched. */}
+        {onLongPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('report.note_a11y')}
+            onPress={onLongPress}
+            hitSlop={8}
+            className="-mr-1 h-11 w-7 items-center justify-center active:opacity-60"
+          >
+            <MoreIcon size={18} color="text-faint" />
+          </Pressable>
+        ) : null}
       </Pressable>
     </Link>
   )

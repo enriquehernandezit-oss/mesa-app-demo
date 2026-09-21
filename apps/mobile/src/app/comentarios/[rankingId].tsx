@@ -1,7 +1,7 @@
 import { pickReportReasonNative } from '@/components/ReportControl'
 import { EmptyState, ErrorState, MAX_SCALE, RowsSkeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { ArrowUpIcon, CloseIcon } from '@/components/ui/icons'
+import { ArrowUpIcon, CloseIcon, MoreIcon } from '@/components/ui/icons'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
@@ -30,9 +30,11 @@ type FeedPage = { feed: FeedItem[]; nextCursor: string | null }
 
 // Comments on one feed post (a ranking), presented as a modal sheet: the post
 // itself at the top for context, the thread, and a composer pinned to the
-// bottom. A long-press on a comment deletes it (yours, or any on your own
-// ranking) or reports it (App Store 1.2). Native action sheets, not Mesa's
-// Sheet: this screen IS a native modal, and Sheet can't present over one.
+// bottom. Each comment carries a "···" that deletes it (yours, or any on your
+// own ranking) or reports it (App Store 1.2) — visible, because 1.2 wants
+// reporting clearly available and the long-press this used to be was invisible;
+// the long-press still works. Native action sheets, not Mesa's Sheet: this
+// screen IS a native modal, and Sheet can't present over one.
 export default function CommentsSheet() {
   const t = useT()
   const router = useRouter()
@@ -118,7 +120,7 @@ export default function CommentsSheet() {
     onError: () => Alert.alert(t('common.report_error')),
   })
 
-  async function onLongPress(c: RankingComment) {
+  async function openCommentMenu(c: RankingComment) {
     if (c.canDelete) {
       const i = await showActionSheet({
         options: [{ label: t('comments.delete'), destructive: true }],
@@ -189,7 +191,7 @@ export default function CommentsSheet() {
           ListEmptyComponent={<EmptyState>{t('comments.empty')}</EmptyState>}
           renderItem={({ item: c }) => (
             <Pressable
-              onLongPress={() => onLongPress(c)}
+              onLongPress={() => openCommentMenu(c)}
               delayLongPress={350}
               className="flex-row gap-3 py-3 active:opacity-80"
             >
@@ -210,6 +212,18 @@ export default function CommentsSheet() {
                   {c.body}
                 </Text>
               </View>
+              {/* One action per row, so the label names it outright rather than
+                  saying "more": your own comment deletes, everyone else's
+                  reports. */}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={c.canDelete ? t('comments.delete') : t('comments.report')}
+                onPress={() => openCommentMenu(c)}
+                hitSlop={8}
+                className="h-11 w-7 items-center justify-center self-start active:opacity-60"
+              >
+                <MoreIcon size={18} color="text-faint" />
+              </Pressable>
             </Pressable>
           )}
         />
