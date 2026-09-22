@@ -4,8 +4,8 @@ Social restaurant & nightlife discovery for Santo Domingo. Phase 1 build.
 
 Start here: read `CLAUDE.md`, then `docs/BUILD_PLAN.md`, then `docs/DESIGN.md`.
 
-Stack: Bun · Hono · PostgreSQL · Drizzle · Better Auth · React + Vite wrapped
-with Capacitor (iOS/Android + web) · Cloudinary · MapBox · Railway.
+Stack: Bun · Hono · PostgreSQL · Drizzle · Better Auth · Expo / React Native
+(`apps/mobile`, iOS-first) · Cloudflare R2 · MapBox · Railway.
 TypeScript strict throughout.
 
 ## Local development

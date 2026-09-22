@@ -10,7 +10,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ApiError, api } from '@/lib/api'
 import { listAuthorLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import type { ListDetailResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
@@ -78,7 +78,7 @@ export default function ListScreen() {
             <View className="mt-3 flex-row items-center gap-2">
               <Avatar
                 name={q.data.list.authorName || 'Mesa'}
-                src={cloudinaryUrl(q.data.list.authorAvatarId, { w: 80, h: 80 })}
+                src={imageUrl(q.data.list.authorAvatarId, { w: 80, h: 80 })}
                 size={24}
               />
               <Caption>{listAuthorLabel(q.data.list)}</Caption>

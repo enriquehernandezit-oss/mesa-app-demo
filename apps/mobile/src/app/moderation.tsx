@@ -10,7 +10,7 @@ import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { ModerationReport } from '@/lib/types'
 
@@ -215,7 +215,7 @@ function ReportRow({
         >
           {target.imageId ? (
             <Image
-              source={{ uri: cloudinaryUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
+              source={{ uri: imageUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
               style={{ width: 56, height: 56, borderRadius: 10 }}
               contentFit="cover"
             />

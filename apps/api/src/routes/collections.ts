@@ -78,7 +78,7 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
   // `?restaurantId=` or `?dishId=` adds `itemId` per list (the matching
-  // collection_items row, or null) — app/guardar.tsx's checkmarks AND the id
+  // collection_items row, or null) — app/save-to-list.tsx's checkmarks AND the id
   // it needs to un-check one (DELETE .../items/:itemId), both from this one
   // query. Safe as a MAX(...) FILTER: the unique constraints on
   // collection_items guarantee at most one match per list. Cast to text —

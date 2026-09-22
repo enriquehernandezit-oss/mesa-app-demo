@@ -262,7 +262,8 @@ export const authEvent = pgTable('auth_event', {
 // ── Discovery: restaurants ───────────────────────────────────────────────
 
 // Restaurants are the things people rank. Not user-owned, so no cascade from
-// user. lat/lng feed the MapBox pins; coverImageId is a Cloudinary public id.
+// user. lat/lng feed the MapBox pins; coverImageId is a full R2 URL (or a
+// root-relative seed path for the catalog art this API serves itself).
 export const restaurants = pgTable(
   'restaurants',
   {
@@ -296,7 +297,7 @@ export const restaurants = pgTable(
     // centroid because no geocode exists yet (the map handler jitters these so
     // they don't stack) — see the enum above.
     geoPrecision: geoPrecision('geo_precision').notNull().default('exact'),
-    coverImageId: text('cover_image_id'), // Cloudinary public id
+    coverImageId: text('cover_image_id'), // a full R2 URL, or a seed path
     // E.164 phone for the reserve handoff (WhatsApp deep link / call). Reserve
     // is a handoff, not a booking engine — DR restaurants have no supply behind
     // it yet (BUILD_PLAN M5 / Phase 3).
@@ -678,12 +679,11 @@ export const dishCategories = pgTable('dish_categories', {
 // "popular dishes at this place" is the hot query and this makes it one
 // indexed read instead of a join through rankings.
 //
-// imageId holds either a client-resized data URL (dev / no Cloudinary) or a
-// Cloudinary public id (prod) — nullable as of M11: a dish with a name and
-// category but no photo is a first-class row, not a broken one (this is also
-// what a `rankings.favoriteDish` string becomes once it's backfilled into the
-// dishes table). removedAt is soft-removal, mirroring vibe notes (App Store
-// 1.2 — UGC must be removable).
+// imageId holds a full R2 URL from a signed upload (see apps/api/src/lib/r2.ts)
+// — nullable as of M11: a dish with a name and category but no photo is a
+// first-class row, not a broken one (this is also what a `rankings.favoriteDish`
+// string becomes once it's backfilled into the dishes table). removedAt is
+// soft-removal, mirroring vibe notes (App Store 1.2 — UGC must be removable).
 export const dishes = pgTable(
   'dishes',
   {
@@ -712,7 +712,7 @@ export const dishes = pgTable(
     // raw material for the next milestone's dish ranking, not surfaced in any
     // UI yet beyond the tap itself. loved | fine | disliked.
     sentiment: text('sentiment'),
-    // Capture-time grain treatment (a Cloudinary transform in prod).
+    // Capture-time grain treatment (a delivery-time transform, once one exists).
     grain: text('grain').notNull().default('none'), // candlelit | daylight | none
     visibility: text('visibility').notNull().default('friends'), // friends | public
     removedAt: timestamp('removed_at'),
@@ -826,7 +826,7 @@ export const events = pgTable(
     // An external link — a real-world ticket never needs Apple in-app
     // purchase, so this is a plain outbound URL, not a purchase flow.
     ticketUrl: text('ticket_url'),
-    coverImageId: text('cover_image_id'), // Cloudinary public id; falls back to the restaurant's own cover when null
+    coverImageId: text('cover_image_id'), // a full R2 URL; falls back to the restaurant's own cover when null
     // Total spots; null = open/unlimited. The API derives spotsLeft from it
     // and the live going-count — never stored, so it can't drift.
     capacity: integer('capacity'),
@@ -1041,7 +1041,7 @@ export const pushTokens = pgTable(
   (t) => [index('push_tokens_user_idx').on(t.userId)],
 )
 
-// Per-user category switches, shown as 4 toggles on app/notificaciones.tsx.
+// Per-user category switches, shown as 4 toggles on app/notifications.tsx.
 // All default true — a member who never opens the screen gets everything a
 // signed-up-for push implies. No row yet (never touched the screen) means
 // the same thing: lib/push.ts and GET /notifications/prefs both treat a

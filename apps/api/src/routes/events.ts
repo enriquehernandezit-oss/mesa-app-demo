@@ -254,7 +254,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
     return c.json({ events: await withFriendsGoing(me, rows) })
   })
 
-  // One event's detail — app/eventos/[eventId].tsx.
+  // One event's detail — app/events/[eventId].tsx.
   .get('/:id', async (c) => {
     const me = c.get('user')
     const id = c.req.param('id')

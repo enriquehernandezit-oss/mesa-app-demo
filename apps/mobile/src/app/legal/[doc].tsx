@@ -77,7 +77,7 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
         heading: 'Fotos y cámara',
         paragraphs: [
           'La cámara y la fototeca se piden solo cuando vas a subir una foto de un plato o tu foto de perfil. No leemos tu carrete: solo llega la imagen que elegiste.',
-          'La foto se reduce de tamaño en tu teléfono antes de salir, se guarda junto a esa publicación —en nuestra base de datos o en Cloudinary, el proveedor que usamos para imágenes— y se muestra desde ahí.',
+          'La foto se reduce de tamaño en tu teléfono antes de salir, se sube a Cloudflare R2 —el proveedor que usamos para imágenes— y se muestra desde ahí.',
         ],
       },
       {
@@ -107,7 +107,7 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Con quién compartimos',
         paragraphs: [
-          'Railway aloja el servidor y la base de datos. Cloudinary guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog recibe lo descrito arriba cuando está configurado. Apple e Instagram intervienen solo si eliges entrar con ellos.',
+          'Railway aloja el servidor y la base de datos. Cloudflare R2 guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog recibe lo descrito arriba cuando está configurado. Apple e Instagram intervienen solo si eliges entrar con ellos.',
           'Cada uno recibe únicamente lo que necesita para su parte. También entregaríamos datos si una autoridad competente nos lo exigiera legalmente.',
           'No vendemos tus datos, no los alquilamos y no los cambiamos por publicidad.',
         ],

@@ -37,21 +37,20 @@ const planDateFormatter = new Intl.DateTimeFormat('es-DO', {
 const d10 = (score: number) => (score / 10).toFixed(1)
 
 // Absolute, crawler-reachable cover URL. Same precedence as the client's
-// media.ts: full URLs pass through; a local /restaurants/*.jpg path is resolved
-// against THIS server's own public origin (which serves those files) — via
-// lib/publicPage's publicOrigin(), the same PUBLIC_API_URL → BETTER_AUTH_URL →
-// APP_ORIGINS[0] fallback chain the emailed auth links already use, so a cover
-// doesn't go missing just because only one of those two vars is set. A bare id
-// becomes a Cloudinary delivery URL when a cloud is configured. Null → the
-// page renders imageless.
+// media.ts: a full URL (an R2 upload, or a legacy value) passes through; a
+// local /restaurants/*.jpg path is resolved against THIS server's own public
+// origin (which serves those files) — via lib/publicPage's publicOrigin(),
+// the same PUBLIC_API_URL → BETTER_AUTH_URL → APP_ORIGINS[0] fallback chain
+// the emailed auth links already use, so a cover doesn't go missing just
+// because only one of those two vars is set. Null → the page renders
+// imageless — there's no bare-id branch here the way media.ts has none
+// either: every coverImageId is already a full URL or a seed path by the
+// time it reaches this function.
 function absoluteCover(coverImageId: string | null): string | null {
   if (!coverImageId) return null
   if (coverImageId.startsWith('http')) return coverImageId
   if (coverImageId.startsWith('/')) return `${publicOrigin()}${coverImageId}`
-  const cloud = process.env.CLOUDINARY_CLOUD_NAME
-  return cloud
-    ? `https://res.cloudinary.com/${cloud}/image/upload/c_fill,w_1200,h_630,q_auto,f_auto/${coverImageId}`
-    : null
+  return null
 }
 
 export const sharePagesRoutes = new Hono<AppEnv>()

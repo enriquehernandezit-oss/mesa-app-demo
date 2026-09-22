@@ -407,7 +407,7 @@ export interface CollectionSummary {
   id: string
   name: string
   // Optional playlist-style bio + cover (Sept 2026). A cover is a data URL,
-  // an https URL or a seed path — render through cloudinaryUrl().
+  // an https URL or a seed path — render through imageUrl().
   description: string | null
   coverImageId: string | null
   // When there's no cover: the photo of the most recently added item.

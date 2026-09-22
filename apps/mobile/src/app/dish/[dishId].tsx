@@ -19,15 +19,15 @@ import { categoryLabel, useDishCategories } from '@/lib/dishCategories'
 import { grainLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
 
 // Dish detail (Phase 6 mock C3) — a posted dish standing on its own: the hero
 // photo, its caption, and the linked ranking (the place card carries the poster's
 // attributed score). A dish is never free-floating; the place card is the anchor.
-// Ported from apps/app/src/screens/dish/DishDetail.tsx. The grain treatment is a
-// Cloudinary delivery transform in prod, so the photo shows untreated here (same
-// as the feed) rather than through a CSS filter RN doesn't have.
+// Ported from apps/app/src/screens/dish/DishDetail.tsx. The grain treatment
+// would be a delivery-time transform once one exists, so the photo shows
+// untreated here (same as the feed) rather than through a CSS filter RN doesn't have.
 export default function DishDetail() {
   const t = useT()
   const lang = useLanguage()
@@ -123,7 +123,7 @@ export default function DishDetail() {
         {dish.imageId ? (
           <View className="h-80">
             <Image
-              source={{ uri: cloudinaryUrl(dish.imageId, { w: 1000, h: 1000 }) ?? undefined }}
+              source={{ uri: imageUrl(dish.imageId, { w: 1000, h: 1000 }) ?? undefined }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               transition={120}

@@ -230,11 +230,10 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
   HSTS, `X-Frame-Options: DENY`.
 - **Deploy** — Railway, migrations run automatically before each deploy.
 
-**Env-gated, degrade gracefully:** Mapbox, Cloudinary, Google Places, Apple, Instagram, SMS,
+**Env-gated, degrade gracefully:** Mapbox, R2, Google Places, Apple, Instagram, SMS,
 PostHog. Missing keys mean a missing feature, never a crash.
 
-**Not built yet:** push notifications · signed Cloudinary uploads (images currently post as data
-URLs through the API) · server-side caching · background jobs · route tests (there is exactly
+**Not built yet:** server-side caching · background jobs · route tests (there is exactly
 **one** test file) · a web admin panel (the moderator screen is in-app by design).
 
 ---
@@ -261,7 +260,7 @@ DMs were removed rather than left as dated promises.
 
 - **Runtime** Bun · **API** Hono · **DB** PostgreSQL + Drizzle · **Auth** Better Auth
 - **App** Expo SDK 57 / React Native 0.86, Expo Router, NativeWind, TanStack Query
-- **Images** Cloudinary · **Maps** Mapbox · **Hosting** Railway · **Builds** EAS
+- **Images** Cloudflare R2 · **Maps** Mapbox · **Hosting** Railway · **Builds** EAS
 
 The monorepo exists for one reason: the Drizzle schema and its inferred types live in
 `packages/db` and are imported by the API. `apps/mobile` is **deliberately not** a workspace
@@ -273,11 +272,11 @@ but nothing proves the mirror still matches the server.
 
 ## 14. What's blocking launch
 
-| Blocker                      | Needs                                                   |
-| ---------------------------- | ------------------------------------------------------- |
-| First device build           | Apple Developer approval (enrolled, pending)            |
-| Push notifications           | Apple approval, then build                              |
-| Signed image uploads         | Cloudinary API key + secret                             |
-| Analytics actually reporting | PostHog key (mobile + Railway)                          |
-| Legal pages                  | Founder + counsel review of the drafted copy            |
-| App Store listing            | Screenshots (needs a build), description, privacy label |
+| Blocker                      | Needs                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| First device build           | Apple Developer approval (enrolled, pending)                   |
+| Push notifications           | Apple approval, then build                                     |
+| Signed image uploads         | ✅ shipped — needs R2 credentials in the founder's Railway env |
+| Analytics actually reporting | PostHog key (mobile + Railway)                                 |
+| Legal pages                  | Founder + counsel review of the drafted copy                   |
+| App Store listing            | Screenshots (needs a build), description, privacy label        |

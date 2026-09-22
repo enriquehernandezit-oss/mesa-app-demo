@@ -7,6 +7,7 @@ import { auth } from './auth'
 import type { AppEnv } from './context'
 import { captureApiError } from './lib/errors'
 import { startPushSweep } from './lib/pushSweep'
+import { R2_PUBLIC_BASE_URL } from './lib/r2'
 import { sessionMiddleware } from './middleware/session'
 import { activityRoutes } from './routes/activity'
 import { authPagesRoutes } from './routes/auth-pages'
@@ -31,6 +32,7 @@ import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
 import { sharePagesRoutes } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
+import { uploadsRoutes } from './routes/uploads'
 
 const app = new Hono<AppEnv>()
 
@@ -43,7 +45,7 @@ const app = new Hono<AppEnv>()
 // loose compromise:
 //   - everything else is JSON, never a document -> lock it to nothing at all.
 //   - /p/* is real server-rendered HTML (share pages) -> it needs Google Fonts
-//     and Cloudinary covers, but it ships ZERO javascript, so script-src stays
+//     and R2 covers, but it ships ZERO javascript, so script-src stays
 //     'none'. That is a tighter script policy than the SPA can have.
 //
 // frame-ancestors and HSTS are the reason this exists: they only work as
@@ -58,7 +60,7 @@ const COMMON_HEADERS = {
   xFrameOptions: 'DENY',
   referrerPolicy: 'no-referrer',
   // COEP would require every cross-origin subresource to opt in via CORP —
-  // Cloudinary covers on the share pages don't, and we gain nothing here.
+  // R2 covers on the share pages don't, and we gain nothing here.
   crossOriginEmbedderPolicy: false,
 } as const
 
@@ -71,13 +73,13 @@ app.use(
       scriptSrc: ["'none'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ['https://fonts.gstatic.com'],
-      // Covers resolve two ways in absoluteCover(): a Cloudinary delivery URL,
-      // or — for every seeded row today — a local /restaurants/*.jpg, which
-      // this server now serves itself, hence 'self'. (These used to come from
-      // the separate web origin; that app is retired.) Crawlers don't enforce
+      // Covers resolve two ways in absoluteCover(): an R2 upload URL, or —
+      // for every seeded row today — a local /restaurants/*.jpg, which this
+      // server now serves itself, hence 'self'. (These used to come from the
+      // separate web origin; that app is retired.) Crawlers don't enforce
       // CSP, so getting this wrong fails silently for humans who open the link
       // while the OG unfurl still looks fine — worth being exact about.
-      imgSrc: ["'self'", 'https://res.cloudinary.com', 'data:'],
+      imgSrc: ["'self'", ...(R2_PUBLIC_BASE_URL ? [R2_PUBLIC_BASE_URL] : []), 'data:'],
       baseUri: ["'none'"],
       // 'self', not 'none': /p/reset-password is a real <form> that posts back
       // to this server. Scoped to /p/* — the catch-all block below keeps
@@ -196,6 +198,7 @@ app.route('/invites', inviteRoutes)
 app.route('/plans', plansRoutes)
 app.route('/notifications', notificationsRoutes)
 app.route('/events', eventsRoutes)
+app.route('/uploads', uploadsRoutes)
 
 // Uniform JSON error + 404 handling.
 app.notFound((c) => c.json({ error: 'not_found' }, 404))

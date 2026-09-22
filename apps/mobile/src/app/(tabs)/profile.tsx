@@ -30,6 +30,7 @@ import { dateLocale, useT } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
 import { isPendingInvite } from '@/lib/plans'
 import type { MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
+import { uploadImage } from '@/lib/upload'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // Shared avatar-change pipeline: sheet (camera/library) → permission → launch
@@ -78,13 +79,17 @@ function useAvatarPicker() {
       }
       if (result.status !== 'picked') return
       const { asset } = result
-      setAvatar.mutate(
-        await resizeToJpeg(asset.uri, asset.width, asset.height, {
-          maxEdge: 192,
-          square: true,
-          quality: 0.8,
-        }),
-      )
+      const resized = await resizeToJpeg(asset.uri, asset.width, asset.height, {
+        maxEdge: 192,
+        square: true,
+        quality: 0.8,
+      })
+      const uploaded = await uploadImage(resized)
+      if (!uploaded) {
+        toast({ variant: 'error', message: t('profile.avatar_change_error') })
+        return
+      }
+      setAvatar.mutate(uploaded)
     } catch (err) {
       captureError(err, 'image.pick')
       toast({ variant: 'error', message: t('profile.photo_process_error') })

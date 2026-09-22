@@ -11,8 +11,7 @@ import { requireAuth } from '../middleware/session'
 // Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
 // evidence attached to one of your own rankings — linking to a ranking is
 // required, so you can only post a dish for a place you've ranked. The image
-// is a client-resized data URL in dev (no Cloudinary); in prod this endpoint
-// would instead take a Cloudinary public id from a signed direct upload.
+// is a URL from a signed R2 upload (POST /uploads) — see lib/imageRef.ts.
 // Soft-removal + reporting (via 'dish' report target) satisfy App Store 1.2.
 const { dishes, rankings, user, follows, userBlocks, savedDishes, dishLists, dishListItems } =
   schema
@@ -23,7 +22,6 @@ const createSchema = z.object({
   caption: z.string().trim().max(140).optional(),
   // Optional as of M11 — a dish with a name and category but no photo is a
   // first-class row, not a broken one.
-  // A data-image URL or https URL — see lib/imageRef.ts.
   image: imageRefSchema.optional(),
   // A follow-up post (M13's "saved as you tap") that wants to clear a photo
   // set by an earlier one — plain omission of `image` means "leave it as is"

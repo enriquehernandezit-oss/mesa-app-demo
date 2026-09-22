@@ -43,8 +43,8 @@ const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET)
 
 // Transactional email (password reset + verification), sent through Resend — a
-// plain HTTPS POST, no new dependency (same ethos as the hand-rolled Cloudinary
-// signature). When EMAIL_PROVIDER_API_KEY is set the mail goes out for real;
+// plain HTTPS POST, no new dependency (same ethos as R2 uploads using Bun's
+// built-in S3Client instead of an SDK). When EMAIL_PROVIDER_API_KEY is set the mail goes out for real;
 // with no key, dev prints the link to the console (the exact mirror of the
 // phone-OTP dev path) so the flows stay exercisable locally, while prod fails
 // loud rather than silently dropping a security-critical link. Placeholder phone

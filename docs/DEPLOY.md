@@ -72,7 +72,8 @@ stray space makes the origin silently fail (`403 INVALID_ORIGIN`).
 Leave these unset until you actually have the accounts — the code is env-gated
 and simply keeps those features off:
 `APPLE_*`, `INSTAGRAM_*` (social login), `SMS_PROVIDER_API_KEY`
-(phone-OTP login won't work in prod without it), `CLOUDINARY_*`, `MAPBOX_*`.
+(phone-OTP login won't work in prod without it), `R2_*` (see .env.example —
+photo uploads), `MAPBOX_*`.
 
 ## Step 4 — Get the public URL, then finish auth config
 
@@ -235,7 +236,7 @@ letting anyone but yourself sign in, close the gap in this order:
    cookies for the web build.
 
 Env-gated features that stay safely off until you add their keys — the code
-simply skips them: `APPLE_*`, `INSTAGRAM_*` (social login), `CLOUDINARY_*`
+simply skips them: `APPLE_*`, `INSTAGRAM_*` (social login), `R2_*`
 (image upload), `MAPBOX_*` (maps).
 
 ## What is NOT on Railway (Phase 1)

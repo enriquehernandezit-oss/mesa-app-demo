@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Circle, G, Line, Rect, Svg, Text as SvgText } from 'react-native-svg'
 
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import { useColor } from '@/theme/useColor'
 
 // The cover for a place: its photo, else a deterministic generated mark so the
@@ -11,7 +11,8 @@ import { useColor } from '@/theme/useColor'
 // PlaceCover.tsx. The Mesa-tinted static-map fallback (for geocoded-but-photoless
 // places) lands with maps in N7; without a token mapboxStaticUrl is null anyway,
 // so it correctly falls through to the mark. Sizes to its container — the caller
-// sets width/height via className; `size` is only the Cloudinary fetch size.
+// sets width/height via className; `size` is currently unused (see lib/media.ts's
+// own note — R2 serves whatever was uploaded, no delivery-time resize yet).
 function fnv1a(str: string): number {
   let h = 0x811c9dc5
   for (let i = 0; i < str.length; i++) {
@@ -61,7 +62,7 @@ export function PlaceCover({
   className?: string
 }) {
   const faint = useColor('text-faint')
-  const cover = cloudinaryUrl(coverImageId, size)
+  const cover = imageUrl(coverImageId, size)
   const box = `overflow-hidden rounded bg-bg-sunk ${className ?? ''}`
 
   if (cover) {

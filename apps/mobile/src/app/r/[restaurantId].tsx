@@ -46,7 +46,7 @@ import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
+import { imageUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type {
@@ -231,7 +231,7 @@ export default function RestaurantProfile() {
       position: myRanking?.position ?? null,
       score: myRanking?.score ?? friendsRankings[0]?.score ?? null,
       note: friendsRankings.find((f) => f.note)?.note ?? null,
-      coverUrl: cloudinaryUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
+      coverUrl: imageUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
       text: `${restaurant.name} en Mesa 🥂\n${apiOrigin}/p/spot/${restaurant.id}`,
     })
 

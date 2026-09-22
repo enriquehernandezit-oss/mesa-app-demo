@@ -15,7 +15,7 @@ import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import type { CollectionDetail, CollectionItem } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 
@@ -104,7 +104,7 @@ export default function CollectionDetailScreen() {
   // Cover: the list's own photo, else its first item's — same fallback the
   // lists rail uses (the API's previewImageId).
   const firstImage = items.find((i) => i.restaurant?.coverImageId)?.restaurant?.coverImageId ?? null
-  const cover = cloudinaryUrl(coverImageId ?? firstImage, { w: 480, h: 480 })
+  const cover = imageUrl(coverImageId ?? firstImage, { w: 480, h: 480 })
 
   return (
     <View className="flex-1 bg-bg">

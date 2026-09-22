@@ -1,16 +1,16 @@
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator'
 import * as ImagePicker from 'expo-image-picker'
 
-// Resize a picked image to a JPEG data URL. Shared by the avatar picker (square)
-// and dish posts (fit to max edge). Keeps uploads small for DR mobile networks;
-// the API's /dishes endpoint takes the data URL directly in dev, and in prod the
-// same resized blob is what a signed Cloudinary upload would send. Ported from
-// apps/app/src/lib/image.ts, which used a <canvas>; native uses
-// expo-image-manipulator (the picker gives us width/height so we pick the axis
-// to fit).
+// Resize a picked image to a local JPEG file, ready for both an instant local
+// preview (`<Image source={{ uri }}>` renders a file:// URI directly, no
+// decoding step) and lib/upload.ts's R2 upload. Shared by the avatar picker
+// (square) and dish posts (fit to max edge) — keeps the actual transfer small
+// for DR mobile networks. Ported from apps/app/src/lib/image.ts, which used a
+// <canvas>; native uses expo-image-manipulator (the picker gives us
+// width/height so we pick the axis to fit).
 //
 // The capture-time grain treatment (a CSS filter on web) is NOT applied here —
-// it becomes a Cloudinary delivery transform in prod, so the chosen grain is
+// it becomes a delivery-time transform once one exists, so the chosen grain is
 // sent to the API as a field and the photo shows untreated until then.
 export async function resizeToJpeg(
   uri: string,
@@ -36,12 +36,8 @@ export async function resizeToJpeg(
   } else {
     actions.push({ resize: { height: Math.min(height, maxEdge) } })
   }
-  const res = await manipulateAsync(uri, actions, {
-    compress: quality,
-    format: SaveFormat.JPEG,
-    base64: true,
-  })
-  return `data:image/jpeg;base64,${res.base64}`
+  const res = await manipulateAsync(uri, actions, { compress: quality, format: SaveFormat.JPEG })
+  return res.uri
 }
 
 export type PickedImage =

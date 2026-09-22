@@ -4,7 +4,7 @@ import PostHog from 'posthog-react-native'
 // it none of the growth work can be judged: k-factor, D30 by cohort, whether the
 // rank flow is being abandoned mid-comparison.
 //
-// Env-gated like every other external service here (MapBox, Cloudinary, Google):
+// Env-gated like every other external service here (MapBox, R2, Google):
 // with no key the whole module is a no-op, so the app runs identically and dev
 // sessions never pollute production numbers.
 //

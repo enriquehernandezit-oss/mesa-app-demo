@@ -94,14 +94,13 @@ export const dishes = pgTable(
 `restaurantId` is deliberately denormalized (also reachable via
 `rankingId → rankings.restaurantId`) because "popular dishes at this place" is
 the hot read path and this makes it one indexed query instead of a join.
-`imageId` is a **client-resized data URL today** (no Cloudinary signed uploads
-wired yet — see §7); in production this same field would hold a Cloudinary
-public id. `removedAt` is soft-delete, required for UGC moderation (App Store
-1.2) — a removed dish is retained for audit but filtered out of every read.
-`grain` is a capture-time film-treatment choice the poster makes (`candlelit`
-= warm/oxblood tint, `daylight` = neutral, `none`), a Cloudinary transform in
-production; it is decorative, not a data signal — and meaningless (and
-un-set) when there is no photo.
+`imageId` is a **full R2 URL from a signed upload** (`POST /uploads`, see
+`apps/api/src/lib/r2.ts`). `removedAt` is soft-delete, required for UGC
+moderation (App Store 1.2) — a removed dish is retained for audit but
+filtered out of every read. `grain` is a capture-time film-treatment choice
+the poster makes (`candlelit` = warm/oxblood tint, `daylight` = neutral,
+`none`), a delivery-time transform once one exists; it is decorative, not a
+data signal — and meaningless (and un-set) when there is no photo.
 
 `dishCategories` is a small, migration-seeded, closed list (65 rows, 15
 groups — Dominicano, Español, Mediterráneo, Italiano, Francés, Americano,
@@ -224,10 +223,10 @@ nameKey)` with `count >= 3`, surfaced right after the Nth log), plus a
 - No recommendation engine of any kind, for dishes or otherwise (see
   `docs/ROADMAP.md`'s Pillar 1 for where "taste graph recs" sits on the
   product roadmap — post-launch, not built).
-- No signed Cloudinary uploads — every dish image today is a client-resized
-  data URL round-tripped through Postgres as text. An algorithm that assumes
-  async image processing (embeddings from a photo, OCR on a menu, etc.) needs
-  that pipeline built first; it is explicitly listed as not-yet-built in
+- No delivery-time image transforms — dish photos upload to R2 as-is (see
+  §2's `imageId`). An algorithm that assumes async image processing
+  (embeddings from a photo, OCR on a menu, etc.) needs that pipeline built
+  first; it is explicitly listed as not-yet-built in
   `docs/FEATURES.md` §10.
 
 ## 6. Constraints that apply to whatever gets built here

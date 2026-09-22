@@ -42,7 +42,7 @@ import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import { removeRankingWithUndo } from '@/lib/rankingRemoval'
 import {
   NO_FILTERS,
@@ -246,7 +246,7 @@ export default function RankingsTab() {
       items: ranked
         .slice(0, 5)
         .map((r) => ({ position: r.position, name: r.restaurant.name, score: r.score })),
-      coverUrl: cloudinaryUrl(ranked[0]?.restaurant.coverImageId, { w: 1080, h: 780 }),
+      coverUrl: imageUrl(ranked[0]?.restaurant.coverImageId, { w: 1080, h: 780 }),
       text: profileShareText(profile?.handle),
     })
 
@@ -966,7 +966,7 @@ function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: 
           </Text>
         </Pressable>
         {lists.map((list) => {
-          const img = cloudinaryUrl(list.coverImageId ?? list.previewImageId, { w: 280, h: 200 })
+          const img = imageUrl(list.coverImageId ?? list.previewImageId, { w: 280, h: 200 })
           return (
             <Link key={list.id} href={`/collections/${list.id}`} asChild>
               <Pressable className="w-32 overflow-hidden rounded-card border border-line bg-surface active:opacity-80">

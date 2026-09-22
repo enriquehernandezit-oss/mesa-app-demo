@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
+import { imageRefSchema } from '../lib/imageRef'
 import { requireAuth } from '../middleware/session'
 
 // The authed user's own profile + onboarding gate. The app calls GET /me on
@@ -265,22 +266,18 @@ export const meRoutes = new Hono<AuthedEnv>()
       topNeighborhood: top(mine.map((r) => r.neighborhood)),
     })
   })
-  // Avatar: the client resizes to a small JPEG and sends a data URL (Cloudinary
-  // replaces this path at launch; the column already holds any URL). Size-capped.
+  // Avatar: the client resizes to a small square JPEG, uploads it via
+  // POST /uploads, and sends back the resulting R2 URL — same validation as
+  // every other image field (lib/imageRef.ts), not a hand-rolled check.
   .patch('/avatar', async (c) => {
     const current = c.get('user')
-    const body = (await c.req.json().catch(() => null)) as { image?: string } | null
-    const image = body?.image
-    if (
-      typeof image !== 'string' ||
-      !image.startsWith('data:image/jpeg;base64,') ||
-      image.length > 80_000
-    ) {
-      return c.json({ error: 'invalid_image' }, 400)
-    }
+    const parsed = z
+      .object({ image: imageRefSchema })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_image' }, 400)
     await db
       .update(schema.user)
-      .set({ image, updatedAt: new Date() })
+      .set({ image: parsed.data.image, updatedAt: new Date() })
       .where(eq(schema.user.id, current.id))
     return c.json({ ok: true })
   })

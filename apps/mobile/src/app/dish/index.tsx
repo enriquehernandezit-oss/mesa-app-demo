@@ -41,8 +41,8 @@ import { useColor } from '@/theme/useColor'
 // linked ranking is required and carries the score, so it's never re-entered.
 // Ported from apps/app/src/screens/dish/DishCompose.tsx; the <input type=file> +
 // canvas resize become expo-image-picker + expo-image-manipulator (lib/image).
-// The grain treatment is sent as a field but not previewed (a Cloudinary
-// delivery transform in prod; RN can't apply the CSS filter the web preview used).
+// The grain treatment is sent as a field but not previewed (a delivery-time
+// transform once one exists; RN can't apply the CSS filter the web preview used).
 export default function DishCompose() {
   const t = useT()
   const lang = useLanguage()

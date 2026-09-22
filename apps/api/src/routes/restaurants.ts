@@ -12,7 +12,7 @@ import { requireAuth } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
 // ranked it (with their scores + vibe notes), and your own state — saved or
-// already ranked. The MapBox map and Cloudinary cover image arrive in M5; this
+// already ranked. The MapBox map and cover image arrive in M5; this
 // ships the social substance. Each piece is one indexed read; none loop.
 const { rankings, vibeNotes, restaurants, user, savedPlaces } = schema
 
@@ -60,7 +60,7 @@ function jitter(id: string, lat: number, lng: number): { lat: number; lng: numbe
 // lib/googlePlaces.ts — server-only, NEVER VITE_-prefixed. Unset → every
 // Google-backed feature here is dark: no suggestions, POST /from-google
 // 502s cleanly, no background refresh ever fires. Same graceful-degradation
-// posture as Cloudinary/MapBox/Resend.
+// posture as R2/MapBox/Resend.
 
 // A soft per-user rate limit for the paid Google proxy — a cost guard, not a
 // security boundary (the client already debounces, gates on <3 Mesa results,

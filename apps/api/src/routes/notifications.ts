@@ -6,7 +6,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
-// Push token registration + the 4 category switches on app/notificaciones.tsx
+// Push token registration + the 4 category switches on app/notifications.tsx
 // (M17). See `notificationPrefs` in packages/db/src/schema.ts for why a
 // missing prefs row means "everything on."
 

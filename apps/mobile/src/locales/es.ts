@@ -439,6 +439,7 @@ export const es = {
   // lib/dishPhoto.ts
   'dish.take_photo': 'Tomar foto',
   'dish.choose_from_library': 'Elegir de la biblioteca',
+  'dish.photo_upload_error': 'No se pudo subir la foto. Intenta de nuevo.',
 
   // app/legal/[doc].tsx — the prose itself stays Spanish in both languages
   // (it is the operative text, and the same words the API serves at /legal/*);

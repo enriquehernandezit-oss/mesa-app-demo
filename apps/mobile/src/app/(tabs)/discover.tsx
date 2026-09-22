@@ -32,7 +32,7 @@ import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
 import { cuisineLabel, listAuthorLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { EventSummary, FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
@@ -437,7 +437,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
         {isDish ? (
           <View className="mt-3 h-56 overflow-hidden rounded-sm bg-bg-sunk">
             <Image
-              source={{ uri: cloudinaryUrl(item.dishImage, { w: 900, h: 700 }) ?? undefined }}
+              source={{ uri: imageUrl(item.dishImage, { w: 900, h: 700 }) ?? undefined }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
               transition={120}

@@ -217,10 +217,11 @@ without rewrites — sequenced so we only build each piece when a metric demands
 
 ### 6.1 Media pipeline _(needed the moment users upload photos/video)_
 
-- Cloudinary (already env-wired) for images; **direct-to-storage signed uploads** so
-  the API never proxies bytes; automatic transforms/`f_auto,q_auto`.
-- Video: Mux or Cloudinary video; HLS; thumbnail extraction. This is the biggest new
-  infra when Pillar 2 video ships.
+- ✅ Cloudflare R2 for images, direct-to-storage signed uploads (Bun's built-in
+  S3Client) — the API never proxies bytes. No delivery-time transforms yet
+  (Cloudflare Images or an upload-time thumb, if a real size ever demands it).
+- Video: Mux or Cloudflare Stream; HLS; thumbnail extraction. This is the biggest
+  new infra when Pillar 2 video ships.
 
 ### 6.2 Feed at scale
 

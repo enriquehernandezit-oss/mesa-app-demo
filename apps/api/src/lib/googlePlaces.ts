@@ -1,7 +1,7 @@
 // Google Places API (New) — server-only. GOOGLE_PLACES_API_KEY must never be
 // VITE_-prefixed (Vite inlines every VITE_* into the public client bundle).
 // Unset → both calls below degrade to "nothing found", never throw into the
-// request path — same posture as Cloudinary/MapBox/Resend.
+// request path — same posture as R2/MapBox/Resend.
 //
 // Two calls live here because both need the key + the same error handling,
 // and toMesaFields is the one place Google's vocabulary gets translated into

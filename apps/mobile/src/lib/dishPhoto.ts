@@ -1,7 +1,9 @@
+import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { captureError } from '@/lib/errors'
 import { getLanguage, t } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
+import { uploadImage } from '@/lib/upload'
 
 // The camera-or-library → permission → resize pipeline for a dish photo.
 // Shared by the standalone dish composer (app/dish/index.tsx) and the inline
@@ -26,6 +28,10 @@ import { openImagePicker, resizeToJpeg } from '@/lib/image'
 // dismissing risk the P0 fix addressed for the avatar picker.
 let picking = false
 
+// Returns the uploaded R2 URL, or null if the member cancelled, denied
+// permission, or the upload itself failed (uploadImage() toasts on that last
+// case specifically — a picked photo that silently doesn't attach reads as
+// broken, not as "you cancelled").
 export async function pickDishPhoto(): Promise<string | null> {
   if (picking) return null
   picking = true
@@ -41,10 +47,13 @@ export async function pickDishPhoto(): Promise<string | null> {
     const source = picked === 0 ? 'camera' : 'library'
     const result = await openImagePicker(source)
     if (result.status !== 'picked') return null
-    return await resizeToJpeg(result.asset.uri, result.asset.width, result.asset.height, {
+    const resized = await resizeToJpeg(result.asset.uri, result.asset.width, result.asset.height, {
       maxEdge: 1280,
       quality: 0.72,
     })
+    const uploaded = await uploadImage(resized)
+    if (!uploaded) toast({ variant: 'error', message: t(lang, 'dish.photo_upload_error') })
+    return uploaded
   } catch (err) {
     captureError(err, 'image.pick')
     return null

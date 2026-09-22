@@ -1,29 +1,30 @@
 import { apiOrigin } from '@/lib/api'
-// Cloudinary + MapBox helpers. Both are env-gated: with no key configured they
-// return null and the UI shows a graceful branded fallback, so the app runs
-// fully in the browser during development (same pattern as the auth providers).
+// MapBox helper (image URLs live below too, hence the file name). MapBox is
+// env-gated: with no token configured it returns null and the UI shows a
+// graceful branded fallback, so the app runs fully in the browser during
+// development (same pattern as the auth providers).
 
-const CLOUD = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME as string | undefined
 const MAPBOX = process.env.EXPO_PUBLIC_MAPBOX_TOKEN as string | undefined
 
-// A cover image URL. Full URLs and data URLs pass through; a root-relative seed
-// path is resolved against the API origin; a bare Cloudinary public id is
-// expanded into a delivery URL with auto format/quality + a fill crop.
-export function cloudinaryUrl(
-  publicId: string | null | undefined,
-  opts: { w?: number; h?: number } = {},
+// A cover/dish/avatar image URL. `opts` is accepted for call-site symmetry
+// with the old Cloudinary transform API but unused — R2 serves whatever size
+// was uploaded (lib/upload.ts already resizes client-side before upload); a
+// later Cloudflare Images/transform step could reintroduce `opts` without
+// touching any call site.
+export function imageUrl(
+  ref: string | null | undefined,
+  _opts: { w?: number; h?: number } = {},
 ): string | null {
-  if (!publicId) return null
-  // Full URLs and inline data URLs (a just-picked dish photo) pass through.
-  if (publicId.startsWith('http') || publicId.startsWith('data:')) return publicId
+  if (!ref) return null
+  // A full URL — an R2 upload (the common case now), or any legacy value
+  // already stored — passes through as-is.
+  if (ref.startsWith('http') || ref.startsWith('data:')) return ref
   // Root-relative seed paths ("/restaurants/branzino.jpg") used to resolve
   // against the web app's origin. Native has no origin, so they'd be unloadable
   // URIs — the API serves these files now (see apps/api/src/index.ts), so
   // resolve them against it.
-  if (publicId.startsWith('/')) return `${apiOrigin}${publicId}`
-  if (!CLOUD) return null
-  const { w = 800, h = 460 } = opts
-  return `https://res.cloudinary.com/${CLOUD}/image/upload/c_fill,w_${w},h_${h},q_auto,f_auto/${publicId}`
+  if (ref.startsWith('/')) return `${apiOrigin}${ref}`
+  return null
 }
 
 // The MapBox stock style backing each Mesa theme. Paired with --map-tint in

@@ -71,8 +71,9 @@ that must come from the environment:
   `ios.associatedDomains: ["applinks:<domain>"]` so password-reset and
   verify-email links open the app instead of a browser.
 
-Runtime config is `EXPO_PUBLIC_*` in `.env` (see `.env.example`): the API URL, the
-**public** MapBox token (`pk.…`), and the Cloudinary cloud name.
+Runtime config is `EXPO_PUBLIC_*` in `.env` (see `.env.example`): the API URL and the
+**public** MapBox token (`pk.…`). Photo uploads need no runtime config on the
+client — the app just calls `POST /uploads`; the R2 credentials live on the API.
 
 ## Permission strings (App Store 5.1)
 

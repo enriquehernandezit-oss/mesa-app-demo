@@ -411,6 +411,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'dish.take_photo': 'Take photo',
   'dish.choose_from_library': 'Choose from library',
+  'dish.photo_upload_error': "Couldn't upload the photo. Try again.",
 
   'legal.not_found': 'Document not found.',
   'legal.spanish_only_note':

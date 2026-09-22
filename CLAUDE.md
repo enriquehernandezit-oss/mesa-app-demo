@@ -32,7 +32,7 @@ feature is not load-bearing for that loop, it is not Phase 1.
   access (contacts, location, camera, haptics, secure storage, maps) via Expo
   modules + `@rnmapbox/maps`. There is no web app — the only web surface is the
   API's server-rendered `/p/*` share pages.
-- **Images:** Cloudinary · **Maps/geo:** MapBox
+- **Images:** Cloudflare R2 · **Maps/geo:** MapBox
 - **Hosting:** Railway (API + Postgres)
 - **iOS delivery:** **EAS Build** → TestFlight → App Store. Needs the Apple
   Developer account plus two MapBox tokens: the public runtime one

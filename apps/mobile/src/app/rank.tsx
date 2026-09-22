@@ -54,7 +54,7 @@ import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
-import { cloudinaryUrl } from '@/lib/media'
+import { imageUrl } from '@/lib/media'
 import {
   type PairwiseState,
   type Sentiment,
@@ -689,7 +689,7 @@ export default function RankAPlace() {
           .filter(Boolean)
           .join(' · '),
         items: items.map((it) => ({ position: it.position, name: it.name, score: it.score })),
-        coverUrl: cloudinaryUrl(items[0]?.coverImageId, { w: 1080, h: 780 }),
+        coverUrl: imageUrl(items[0]?.coverImageId, { w: 1080, h: 780 }),
         text: profileShareText(me.data?.profile.handle),
       })
     }
