@@ -9,8 +9,8 @@
 //
 // Matches ONE exact email (case-insensitive) and refuses anything else — there is
 // no pattern mode on purpose. Every row that references the user cascades (see
-// packages/db/src/schema/auth.ts), so this takes their rankings, notes, comments,
-// saves, RSVPs, follows and push tokens with it. It cannot be undone.
+// packages/db/src/schema.ts's `user` table), so this takes their rankings, notes,
+// comments, saves, RSVPs, follows and push tokens with it. It cannot be undone.
 import { db, pool, schema } from '@mesa/db'
 import { eq, sql } from 'drizzle-orm'
 

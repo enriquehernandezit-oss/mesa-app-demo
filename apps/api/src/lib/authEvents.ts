@@ -1,7 +1,7 @@
 import { db, schema } from '@mesa/db'
 
-// Writing the auth audit trail. See packages/db/src/schema/auth.ts for why it
-// exists and what it deliberately does NOT record.
+// Writing the auth audit trail. See `authEvent` in packages/db/src/schema.ts
+// for why it exists and what it deliberately does NOT record.
 const { authEvent } = schema
 
 export type AuthEventType =

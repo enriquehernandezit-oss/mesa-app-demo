@@ -12,7 +12,7 @@ import { requireAuth } from '../middleware/session'
 // docs/EVENTS.md for how a new one gets added. This file is browse (tonight/
 // weekend/upcoming), one event's detail, RSVP, and Save (the bookmark,
 // independent of RSVP; see GET /saved) — schema-level rules
-// (never delete a row, soft-cancel instead) live in schema/events.ts.
+// (never delete a row, soft-cancel instead) live on `events` in schema.ts.
 const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user } = schema
 
 // Santo Domingo has no DST (fixed UTC-4) — same fixed-offset trick as

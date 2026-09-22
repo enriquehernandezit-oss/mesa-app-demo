@@ -86,7 +86,7 @@ export const authThrottleBefore = createAuthMiddleware(async (ctx) => {
 })
 
 // The auth paths worth a permanent record. Kept to the events that answer
-// "what happened to my account?" — see schema/auth.ts.
+// "what happened to my account?" — see `authEvent` in packages/db/src/schema.ts.
 const AUDITED: Record<string, AuthEventType> = {
   '/sign-up/email': 'sign_up',
   '/reset-password': 'password_reset',

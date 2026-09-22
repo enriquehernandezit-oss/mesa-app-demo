@@ -14,7 +14,8 @@ const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, user }
 const reportSchema = z.object({
   // Dishes are first-class UGC (photo + name + caption), so they must be
   // reportable like vibe notes and users (App Store 1.2). The enum already
-  // carries 'dish' (schema/enums.ts). Ranking comments likewise ('comment').
+  // carries 'dish' (reportTargetType in schema.ts). Ranking comments likewise
+  // ('comment').
   targetType: z.enum(['vibe_note', 'user', 'dish', 'comment']),
   targetId: z.string().min(1),
   reason: z.string().trim().min(1).max(500),

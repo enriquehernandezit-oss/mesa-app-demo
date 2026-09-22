@@ -9,7 +9,7 @@ import { requireAuth } from '../middleware/session'
 
 // Invites — the growth loop's measurement, not a gate. Every member has one
 // permanent code, it never runs out, and being invited unlocks nothing that
-// isn't already free. See the schema comment in packages/db/src/schema/growth.ts
+// isn't already free. See the `invites` comment in packages/db/src/schema.ts
 // for why Mesa refuses the scarcity model.
 const { invites, inviteRedemptions } = schema
 

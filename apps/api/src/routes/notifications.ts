@@ -7,7 +7,7 @@ import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'
 
 // Push token registration + the 4 category switches on app/notificaciones.tsx
-// (M17). See packages/db/src/schema/notifications.ts's own header for why a
+// (M17). See `notificationPrefs` in packages/db/src/schema.ts for why a
 // missing prefs row means "everything on."
 
 const { pushTokens, notificationPrefs } = schema

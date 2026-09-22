@@ -10,7 +10,7 @@ import * as SecureStore from 'expo-secure-store'
 //
 // Deliberately best-effort at every step: a lost code costs an attribution
 // datapoint, never an account and never access. Nothing in Mesa is gated on
-// having been invited (see packages/db/src/schema/growth.ts).
+// having been invited (see `invites` in packages/db/src/schema.ts).
 //
 // Known limitation, worth stating plainly: if the app is NOT installed, the tap
 // opens the web page and the code cannot survive the App Store round trip —

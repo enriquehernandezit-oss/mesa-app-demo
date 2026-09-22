@@ -41,9 +41,9 @@ doesn't yet do anything with that fact. That is the explicitly-scoped _next_
 milestone (personal "tu mejor carbonara" lists via pairwise comparison once a
 member has logged the same dish 3+ times) — see §5.
 
-## 2. Schema (`packages/db/src/schema/`)
+## 2. Schema (`packages/db/src/schema.ts`)
 
-### `dishes` (`content.ts`)
+### `dishes`
 
 ```ts
 export const dishCategories = pgTable('dish_categories', {
