@@ -110,15 +110,15 @@ export default function ExploreScreen() {
   const c = themeColors[theme]
   const accent = useColor('accent')
   const [q, setQ] = useState('')
-  // Lugares/Eventos (M21) — a view-switcher, the same Segmented control as
-  // Rankings' Mine/Saved/Sectores (Mesa's own tokened control, not the
+  // Places/Events (M21) — a view-switcher, the same Segmented control as
+  // Rankings' Mine/Saved/Sectors (Mesa's own tokened control, not the
   // native UISegmentedControl: it lives inside a scrolling page, so it's
-  // content, not chrome, per CLAUDE.md). Eventos swaps out everything below it: the filter
-  // pills, the trending rail and the Google gap-filler are all Lugares-only
-  // concepts with no events equivalent.
-  const [view, setView] = useState<'lugares' | 'eventos'>('lugares')
+  // content, not chrome, per CLAUDE.md). Events swaps out everything below it:
+  // the filter pills, the trending rail and the Google gap-filler are all
+  // Places-only concepts with no events equivalent.
+  const [view, setView] = useState<'places' | 'events'>('places')
   const [eventsVisited, setEventsVisited] = useState(false)
-  if (view === 'eventos' && !eventsVisited) setEventsVisited(true)
+  if (view === 'events' && !eventsVisited) setEventsVisited(true)
   // Seeds the filter panel from a deep link — the restaurant profile's
   // neighborhood tap lands here with `?neighborhood=<slug>` already applied,
   // for instance. Read once on mount; the filter chips own the state after
@@ -339,21 +339,21 @@ export default function ExploreScreen() {
           value={view}
           onChange={setView}
           options={[
-            { value: 'lugares', label: t('explore.view_places') },
-            { value: 'eventos', label: t('explore.view_events') },
+            { value: 'places', label: t('explore.view_places') },
+            { value: 'events', label: t('explore.view_events') },
           ]}
         />
 
         {/* Both views stay mounted once visited, toggled by display — the
-            old ternary unmounted Lugares' whole result list on every switch
-            to Eventos and rebuilt it from scratch on the way back, which is
+            old ternary unmounted Places' whole result list on every switch
+            to Events and rebuilt it from scratch on the way back, which is
             exactly the lag switching back to Places had. */}
         {eventsVisited ? (
-          <View style={{ display: view === 'eventos' ? 'flex' : 'none' }}>
+          <View style={{ display: view === 'events' ? 'flex' : 'none' }}>
             <EventsBrowse />
           </View>
         ) : null}
-        <View style={{ display: view === 'lugares' ? 'flex' : 'none' }}>
+        <View style={{ display: view === 'places' ? 'flex' : 'none' }}>
           <>
             {/* Sort, one "Filtros" pill that opens the combined panel
                 (ExploreFilters), Abierto ahora, then one pill per ACTIVE

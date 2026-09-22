@@ -80,14 +80,14 @@ function addDays(d: Date, n: number): Date {
   return copy
 }
 
-// Nueva mesa (M3): create a Planes dinner — up to 3 candidate spots (1 = fixed
+// New plan (M3): create a dinner — up to 3 candidate spots (1 = fixed
 // venue, 2-3 = a vote), a day/time chip picker (no date-picker library is
 // installed, see the M3 plan doc), and an invitee list drawn from the host's
 // own followers. One route on local state, same shape as rank.tsx: `step`
 // walks forward with "Continuar" and backward with beforeRemove, which also
 // guards the drag-to-dismiss / edge-swipe against silently losing a
 // half-built plan.
-export default function NuevaMesa() {
+export default function NewPlanScreen() {
   const t = useT()
   const router = useRouter()
   const navigation = useNavigation()
@@ -225,7 +225,7 @@ export default function NuevaMesa() {
       queryClient.invalidateQueries({ queryKey: ['activity'] })
       // Contextual push-permission prompt (M17) — see rank.tsx's own comment.
       void registerForPush()
-      router.replace(`/planes/${id}`)
+      router.replace(`/plans/${id}`)
     },
     onError: (err) => {
       captureError(err, 'plans.create')

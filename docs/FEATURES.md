@@ -121,7 +121,7 @@ You can **delete your own dish post**; anyone else's is reportable.
 Arm a group dinner and invite the people you follow — the one workflow in the app that isn't a
 solo action.
 
-- **Create** (`planes/nuevo.tsx`, a modal) — pick 1–3 candidate spots (1 = a fixed venue, 2–3 = a
+- **Create** (`plans/new.tsx`, a modal) — pick 1–3 candidate spots (1 = a fixed venue, 2–3 = a
   vote), a day/time via chip pickers (no native date-picker dependency), and invitees from your own
   followers. Up to 50 invitees, up to 90 days out.
 - **Invite = your followers, only.** Nobody else can be added — a decision made up front, so the

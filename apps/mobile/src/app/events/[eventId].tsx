@@ -333,7 +333,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
             accessibilityRole="button"
             onPress={() =>
               router.push({
-                pathname: '/planes/nuevo',
+                pathname: '/plans/new',
                 params: {
                   restaurantId: e.restaurant.id,
                   restaurantName: e.restaurant.name,

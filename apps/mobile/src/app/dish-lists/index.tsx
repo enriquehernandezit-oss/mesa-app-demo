@@ -11,7 +11,7 @@ import type { DishListSummary } from '@/lib/types'
 // "Tus platos" (M20) — every dish the member has posted at 3+ restaurants,
 // ranked or still waiting on them. Reached from Profile; also where a
 // dismissed nudge's list lives on for a manual visit anytime.
-export default function PlatosScreen() {
+export default function DishListsScreen() {
   const t = useT()
   const router = useRouter()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/profile'))
@@ -23,10 +23,10 @@ export default function PlatosScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: t('platos.title'), headerLargeTitle: false }} />
+      <Stack.Screen options={{ title: t('dishLists.title'), headerLargeTitle: false }} />
       <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       <View className="px-5">
-        <Text className="font-serif text-title text-text">{t('platos.title')}</Text>
+        <Text className="font-serif text-title text-text">{t('dishLists.title')}</Text>
       </View>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-3">
         {q.isPending ? (
@@ -35,13 +35,13 @@ export default function PlatosScreen() {
             <Skeleton height={64} />
           </View>
         ) : q.isError ? (
-          <ErrorState onRetry={() => q.refetch()}>{t('platos.load_error')}</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('dishLists.load_error')}</ErrorState>
         ) : (q.data?.lists.length ?? 0) === 0 ? (
-          <EmptyState body={t('platos.empty_body')}>{t('platos.empty_title')}</EmptyState>
+          <EmptyState body={t('dishLists.empty_body')}>{t('dishLists.empty_title')}</EmptyState>
         ) : (
           <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
             {q.data?.lists.map((list, i, all) => (
-              <Link key={list.id} href={`/platos/${list.id}`} asChild>
+              <Link key={list.id} href={`/dish-lists/${list.id}`} asChild>
                 <Pressable
                   className={`flex-row items-center justify-between py-3 active:opacity-80 ${i === all.length - 1 ? '' : 'border-line border-b'}`}
                 >
@@ -51,17 +51,17 @@ export default function PlatosScreen() {
                     </Text>
                     <Caption className="mt-1">
                       {list.rankedAt
-                        ? t('platos.ranked_count', { n: list.restaurantCount })
-                        : t('platos.not_ranked_yet')}
+                        ? t('dishLists.ranked_count', { n: list.restaurantCount })
+                        : t('dishLists.not_ranked_yet')}
                     </Caption>
                   </View>
                   {!list.rankedAt && (
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => router.push(`/platos/rankear?listId=${list.id}`)}
+                      onPress={() => router.push(`/dish-lists/rank?listId=${list.id}`)}
                       className="min-h-[36px] justify-center px-2 active:opacity-60"
                     >
-                      <Caption className="text-accent">{t('platos.rank_button')}</Caption>
+                      <Caption className="text-accent">{t('dishLists.rank_button')}</Caption>
                     </Pressable>
                   )}
                 </Pressable>

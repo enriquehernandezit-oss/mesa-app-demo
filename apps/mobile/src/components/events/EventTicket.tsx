@@ -308,7 +308,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
   const surface = useColor('bg')
   return (
     <Animated.View entering={entering} layout={CAT_LAYOUT} className="mb-3">
-      <Link href={`/eventos/${e.id}`} asChild>
+      <Link href={`/events/${e.id}`} asChild>
         <Pressable className="flex-row overflow-hidden rounded-card border border-line bg-surface active:opacity-90">
           {/* The stub — category wash, the date set like a ticket */}
           <View className={`w-[74px] items-center justify-center py-3 ${cls.soft}`}>
@@ -388,7 +388,7 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
   const scrim = useColor('photo-scrim')
   const rsvpState = useEventRsvp(e)
   return (
-    <Link href={`/eventos/${e.id}`} asChild>
+    <Link href={`/events/${e.id}`} asChild>
       <Pressable style={{ width }} className="h-60 overflow-hidden rounded-card active:opacity-95">
         <PlaceCover
           seed={e.id}
@@ -452,7 +452,7 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
   const s = stubParts(e.startsAt)
   const scrim = useColor('photo-scrim')
   return (
-    <Link href={`/eventos/${e.id}`} asChild>
+    <Link href={`/events/${e.id}`} asChild>
       <Pressable className="w-48 overflow-hidden rounded-card border border-line bg-surface active:opacity-85">
         <View className="h-28 w-full">
           <PlaceCover

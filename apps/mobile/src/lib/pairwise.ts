@@ -64,7 +64,7 @@ export function initInsert<T>(existing: T[], item: T): PairwiseState<T> {
 
 /**
  * initInsert generalized to MULTIPLE new items (M20) — the dish-ranking flow
- * at app/platos/rankear.tsx, where a member can have accumulated more than
+ * at app/dish-lists/rank.tsx, where a member can have accumulated more than
  * one not-yet-placed restaurant for a dish (they ignored an earlier "insert"
  * nudge, or several new posts arrived before they got to it). Each item is
  * inserted one at a time via the same binary search initInsert uses, in

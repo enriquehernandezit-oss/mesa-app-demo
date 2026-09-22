@@ -154,11 +154,11 @@ export default function DishCompose() {
         toast({
           message:
             res.nudge.kind === 'first'
-              ? t('platos.nudge_toast_first', { label: res.nudge.label })
-              : t('platos.nudge_toast_insert', { label: res.nudge.label }),
+              ? t('dishLists.nudge_toast_first', { label: res.nudge.label })
+              : t('dishLists.nudge_toast_insert', { label: res.nudge.label }),
           action: {
-            label: t('platos.rank_button'),
-            onClick: () => router.push(`/platos/rankear?listId=${res.nudge?.listId}`),
+            label: t('dishLists.rank_button'),
+            onClick: () => router.push(`/dish-lists/rank?listId=${res.nudge?.listId}`),
           },
         })
       }

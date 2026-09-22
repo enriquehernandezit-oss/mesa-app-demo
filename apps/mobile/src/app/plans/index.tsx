@@ -18,11 +18,11 @@ import { isPastPlan, isPendingInvite } from '@/lib/plans'
 import { formatPlanDate } from '@/lib/time'
 import type { Plan, PlanReply } from '@/lib/types'
 
-// Planes (M3): the entry point for group dinners, reached from Profile's
+// Plans (M3): the entry point for group dinners, reached from Profile's
 // "Planes" row and Activity's plan rows. Three sections, in the order a
 // member should act on them — what needs a reply first, then what's already
 // on the calendar, then the record of what happened.
-export default function PlanesScreen() {
+export default function PlansScreen() {
   const t = useT()
   const lang = useLanguage()
   const router = useRouter()
@@ -41,7 +41,7 @@ export default function PlanesScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={translate(lang, 'plans.new_label')}
-          onPress={() => router.push('/planes/nuevo')}
+          onPress={() => router.push('/plans/new')}
           className="min-h-[44px] justify-center active:opacity-70"
         >
           <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
@@ -78,7 +78,7 @@ export default function PlanesScreen() {
           <EmptyState
             body={t('plans.empty_body')}
             action={
-              <Button size="sm" variant="secondary" onPress={() => router.push('/planes/nuevo')}>
+              <Button size="sm" variant="secondary" onPress={() => router.push('/plans/new')}>
                 {t('plans.new_label')}
               </Button>
             }
@@ -141,7 +141,7 @@ function PlanRow({ plan }: { plan: Plan }) {
         : replyLabel(t, plan.myReply)
 
   return (
-    <Link href={`/planes/${plan.id}`} asChild>
+    <Link href={`/plans/${plan.id}`} asChild>
       <Pressable
         accessibilityRole="button"
         className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"

@@ -401,7 +401,7 @@ export interface SavedDish {
 }
 
 // GET /collections — a list row, optionally carrying the calling screen's
-// own item-membership check (guardar.tsx's ?restaurantId=/?dishId= filter);
+// own item-membership check (save-to-list.tsx's ?restaurantId=/?dishId= filter);
 // itemId is the collection_items row when it contains that item, else null.
 export interface CollectionSummary {
   id: string

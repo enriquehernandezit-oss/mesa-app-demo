@@ -131,7 +131,7 @@ export default function ActivityScreen() {
           <EmptyState
             body={t('activity.empty_body')}
             action={
-              <Button size="sm" variant="secondary" onPress={() => router.push('/amigos')}>
+              <Button size="sm" variant="secondary" onPress={() => router.push('/friends')}>
                 {t('activity.discover_people')}
               </Button>
             }
@@ -185,7 +185,7 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
   // this is the fallback for everywhere else on the row (the gap around the
   // sentence, the timestamp).
   const primaryHref: Href = isPlan
-    ? `/planes/${a.planId}`
+    ? `/plans/${a.planId}`
     : a.restaurant
       ? `/r/${a.restaurant.id}`
       : `/u/${a.user.id}`
@@ -293,7 +293,7 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
           </Pressable>
         ) : isPlan ? (
           a.planId && (
-            <Link href={`/planes/${a.planId}`} asChild>
+            <Link href={`/plans/${a.planId}`} asChild>
               <Pressable className="active:opacity-80">
                 <PlaceCover
                   seed={a.restaurant?.id ?? a.planId}

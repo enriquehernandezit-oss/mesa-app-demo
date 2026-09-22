@@ -12,8 +12,8 @@ import { useT } from '@/lib/i18n'
 // dish post saves the dish, a ranking post saves the restaurant), and on the
 // restaurant page and dish detail. Tap toggles + (on save only) offers a
 // 3-second "Agregar a lista" toast; long-press jumps straight to the list
-// picker (app/guardar.tsx) without waiting for the tap's own save to matter —
-// guardar.tsx itself guarantees the master save either way (see its own
+// picker (app/save-to-list.tsx) without waiting for the tap's own save to matter —
+// save-to-list.tsx itself guarantees the master save either way (see its own
 // header), so long-pressing an unsaved item still saves it.
 export function SaveButton({
   target,
@@ -43,7 +43,9 @@ export function SaveButton({
   const { saved, toggle } = useSave(target, initial)
 
   function openListPicker() {
-    router.push(`/guardar?kind=${target.kind}&id=${target.id}&name=${encodeURIComponent(name)}`)
+    router.push(
+      `/save-to-list?kind=${target.kind}&id=${target.id}&name=${encodeURIComponent(name)}`,
+    )
   }
 
   function onTap() {

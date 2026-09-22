@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
+import { useT } from '@/lib/i18n'
 
 // The one follow/unfollow implementation. Before this hook existed the same
 // mutation was hand-rolled four times (onboarding's FriendsStep, the empty
@@ -32,6 +33,7 @@ const RELATED_QUERY_KEYS = ['feed', 'activity', 'people', 'me-stats'] as const
 
 export function useFollow(userId: string, initial: boolean, from: FollowSource) {
   const [following, setFollowing] = useState(initial)
+  const t = useT()
   const queryClient = useQueryClient()
   const pendingRef = useRef(false)
 
@@ -50,7 +52,7 @@ export function useFollow(userId: string, initial: boolean, from: FollowSource) 
       setFollowing(!next)
       toast({
         variant: 'error',
-        message: next ? 'No se pudo seguir. Intenta de nuevo.' : 'No se pudo dejar de seguir.',
+        message: next ? t('social.follow_error') : t('social.unfollow_error'),
       })
     },
     onSettled: () => {

@@ -33,7 +33,7 @@ export async function importContactPhones(): Promise<ContactsResult> {
   return { status: 'ok', phoneNumbers: [...numbers] }
 }
 
-// M18's find-friends contacts match (app/amigos) needs the contact's NAME
+// M18's find-friends contacts match (app/friends) needs the contact's NAME
 // too — POST /social/contacts/match returns matches keyed by the phone
 // string it was given, and the app looks the name back up in this list so
 // "Coincide con tu contacto «X»" never has to round-trip through the server.

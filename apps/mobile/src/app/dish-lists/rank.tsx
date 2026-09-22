@@ -24,7 +24,7 @@ import type { DishListDetail, DishListEntry } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // The dish-ranking pairwise flow (M20) — reached from a DishNudgeCard tap or
-// from a "Rankear más" CTA on app/platos/[listId].tsx. Both a first ranking
+// from a "Rankear más" CTA on app/dish-lists/[listId].tsx. Both a first ranking
 // (existing = [], unranked = 3+) and a later insert (existing = the ranked
 // order, unranked = whatever's accumulated since) go through the exact same
 // initInsertMany call — see that function's own header for why one call
@@ -43,12 +43,12 @@ function toItem(entry: DishListEntry): Item {
   }
 }
 
-export default function RankearScreen() {
+export default function RankScreen() {
   const t = useT()
   const router = useRouter()
   const queryClient = useQueryClient()
   const { listId } = useLocalSearchParams<{ listId: string }>()
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/platos'))
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/dish-lists'))
 
   const q = useQuery({
     queryKey: ['dish-list', listId],
@@ -62,16 +62,16 @@ export default function RankearScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dish-list', listId] })
       queryClient.invalidateQueries({ queryKey: ['dish-lists'] })
-      router.replace(`/platos/${listId}`)
+      router.replace(`/dish-lists/${listId}`)
     },
     onError: (err) => {
-      captureError(err, 'platos.saveOrder')
+      captureError(err, 'dishLists.saveOrder')
       // A root toast is fine as a passive signal, but the real recovery
       // affordance is the inline retry on the "done" screen below — this
       // route registers as a modal (see _layout.tsx), and rank.tsx's own
       // M12 header already established that root toasts read as hidden
       // behind a presented modal.
-      toast({ variant: 'error', message: t('platos.save_error') })
+      toast({ variant: 'error', message: t('dishLists.save_error') })
     },
   })
   // `.variables` is TanStack's own record of the args the last mutate() call
@@ -95,7 +95,7 @@ export default function RankearScreen() {
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
-        <ErrorState onRetry={() => q.refetch()}>{t('platos.load_error')}</ErrorState>
+        <ErrorState onRetry={() => q.refetch()}>{t('dishLists.load_error')}</ErrorState>
       </View>
     )
   }
@@ -108,14 +108,14 @@ export default function RankearScreen() {
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         <View className="items-center px-5 pt-10">
-          <Body className="text-center">{t('platos.nothing_to_rank')}</Body>
+          <Body className="text-center">{t('dishLists.nothing_to_rank')}</Body>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.replace(`/platos/${listId}`)}
+            onPress={() => router.replace(`/dish-lists/${listId}`)}
             className="mt-4 min-h-[44px] justify-center active:opacity-70"
           >
             <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
-              {t('platos.view_list')}
+              {t('dishLists.view_list')}
             </Text>
           </Pressable>
         </View>
@@ -181,7 +181,7 @@ function PairwiseFlow({
         </Text>
         {saveError ? (
           <>
-            <Body className="mt-2 text-status-packed">{t('platos.save_error')}</Body>
+            <Body className="mt-2 text-status-packed">{t('dishLists.save_error')}</Body>
             <Pressable
               accessibilityRole="button"
               onPress={onRetry}
@@ -222,7 +222,7 @@ function PairwiseFlow({
           {step} de {total}
         </Text>
         <View className="items-center gap-1">
-          <Title>{t('platos.compare_title', { label })}</Title>
+          <Title>{t('dishLists.compare_title', { label })}</Title>
         </View>
         <View className="gap-3">
           <CompareCard

@@ -374,7 +374,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
     .join(' · ')
   const isDish = Boolean(item.dishImage)
   const href: Href = isDish && item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
-  const openComments = () => router.push(`/comentarios/${item.rankingId}`)
+  const openComments = () => router.push(`/comments/${item.rankingId}`)
   const commentCount = item.commentCount ?? 0
 
   return (

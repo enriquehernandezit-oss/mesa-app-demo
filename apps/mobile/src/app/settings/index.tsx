@@ -19,11 +19,11 @@ import { useColor } from '@/theme/useColor'
 
 // Settings hub (M15) — a shallow index of a few grouped destinations instead
 // of the one long flat scroll app/settings.tsx used to be (521 lines, every
-// control at once). Tu cuenta / Privacidad / Preferencias / Acerca de each
-// got deep enough (3-4 rows apiece) to earn their own screen; Amigos and
-// Ayuda stay right here since they're one or two rows each. Row/RowButton
-// move to components/SettingsRow.tsx so every screen in this directory
-// shares them instead of each redefining its own copy.
+// control at once). Account / Privacy / Preferences / About each got deep
+// enough (3-4 rows apiece) to earn their own screen; Friends and Help stay
+// right here since they're one or two rows each. Row/RowButton move to
+// components/SettingsRow.tsx so every screen in this directory shares them
+// instead of each redefining its own copy.
 export default function SettingsHub() {
   const router = useRouter()
   const t = useT()
@@ -124,7 +124,7 @@ export default function SettingsHub() {
             <Text className="flex-1 font-ui text-body text-text">{t('settings.preferences')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
-          <RowButton onPress={() => router.push('/notificaciones')}>
+          <RowButton onPress={() => router.push('/notifications')}>
             <Text className="flex-1 font-ui text-body text-text">
               {t('settings.notifications')}
             </Text>
@@ -138,7 +138,7 @@ export default function SettingsHub() {
 
         <Eyebrow className="mt-6 mb-2">{t('settings.friends_section')}</Eyebrow>
         <View className="rounded border border-line bg-surface px-4">
-          <RowButton onPress={() => router.push('/amigos')}>
+          <RowButton onPress={() => router.push('/friends')}>
             <Text className="flex-1 font-ui text-body text-text">{t('settings.find_friends')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>

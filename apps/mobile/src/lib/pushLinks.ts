@@ -10,10 +10,10 @@ export function pushDeepLink(data: Record<string, unknown> | undefined): string 
   if (type === 'user' && typeof data.userId === 'string') return `/u/${data.userId}`
   if (type === 'restaurant' && typeof data.restaurantId === 'string')
     return `/r/${data.restaurantId}`
-  if (type === 'plan' && typeof data.planId === 'string') return `/planes/${data.planId}`
+  if (type === 'plan' && typeof data.planId === 'string') return `/plans/${data.planId}`
   // A friend's event RSVP (apps/api/src/routes/events.ts's "friend going" push).
-  if (type === 'event' && typeof data.eventId === 'string') return `/eventos/${data.eventId}`
+  if (type === 'event' && typeof data.eventId === 'string') return `/events/${data.eventId}`
   // The repeat-dish nudge (M20's sweepDishNudges).
-  if (type === 'dish-list' && typeof data.listId === 'string') return `/platos/${data.listId}`
+  if (type === 'dish-list' && typeof data.listId === 'string') return `/dish-lists/${data.listId}`
   return null
 }

@@ -16,7 +16,7 @@ import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useMyLocation } from '@/lib/useMyLocation'
 
-// A barrio map of Santo Domingo — every spot at its real lat/lng, the ones people
+// A neighborhood map of Santo Domingo — every spot at its real lat/lng, the ones people
 // you follow have ranked lit brass. Ported from apps/app/src/screens/map/
 // MapScreen.tsx; the web's mapbox-gl-or-SVG split becomes @rnmapbox/maps (MesaMap)
 // when a token is configured, else a graceful "map unavailable" state (native

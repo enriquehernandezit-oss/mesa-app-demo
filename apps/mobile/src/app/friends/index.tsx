@@ -31,9 +31,9 @@ import { useColor } from '@/theme/useColor'
 
 function reasonLine(t: ReturnType<typeof useT>, reason: SuggestionReason): string {
   if (reason.kind === 'mutual')
-    return t('amigos.reason_mutual', { name: reason.name, n: reason.extraCount })
-  if (reason.kind === 'taste') return t('amigos.reason_taste', { n: reason.percent })
-  return t('amigos.reason_popular')
+    return t('friends.reason_mutual', { name: reason.name, n: reason.extraCount })
+  if (reason.kind === 'taste') return t('friends.reason_taste', { n: reason.percent })
+  return t('friends.reason_popular')
 }
 
 function ContactsCard() {
@@ -55,11 +55,11 @@ function ContactsCard() {
     },
     onError: (err) => {
       const code = err instanceof ApiError ? err.code : ''
-      captureError(err, 'amigos.savePhone')
+      captureError(err, 'friends.savePhone')
       setContactMsg(
         code === 'invalid_phone'
-          ? t('amigos.contacts_phone_invalid')
-          : t('amigos.contacts_phone_error'),
+          ? t('friends.contacts_phone_invalid')
+          : t('friends.contacts_phone_error'),
       )
     },
   })
@@ -82,11 +82,11 @@ function ContactsCard() {
     try {
       const result = await importContactsWithNames()
       if (result.status === 'unsupported') {
-        setContactMsg(t('amigos.contacts_unsupported'))
+        setContactMsg(t('friends.contacts_unsupported'))
         return
       }
       if (result.status === 'denied') {
-        setContactMsg(t('amigos.contacts_denied'))
+        setContactMsg(t('friends.contacts_denied'))
         return
       }
       const nameByPhone = new Map<string, string>()
@@ -98,7 +98,7 @@ function ContactsCard() {
         }
       }
       if (phones.length === 0) {
-        setContactMsg(t('amigos.contacts_none_found'))
+        setContactMsg(t('friends.contacts_none_found'))
         return
       }
       const { matches: found } = await api.post<{
@@ -112,12 +112,12 @@ function ContactsCard() {
       )
       setContactMsg(
         found.length
-          ? t('amigos.contacts_found', { n: found.length })
-          : t('amigos.contacts_none_found'),
+          ? t('friends.contacts_found', { n: found.length })
+          : t('friends.contacts_none_found'),
       )
     } catch (err) {
-      captureError(err, 'amigos.contactsSearch')
-      setContactMsg(t('amigos.contacts_search_error'))
+      captureError(err, 'friends.contactsSearch')
+      setContactMsg(t('friends.contacts_search_error'))
     } finally {
       setSearching(false)
     }
@@ -125,14 +125,14 @@ function ContactsCard() {
 
   return (
     <Card className="mt-4">
-      <Text className="font-ui-semibold text-body text-text">{t('amigos.contacts_title')}</Text>
+      <Text className="font-ui-semibold text-body text-text">{t('friends.contacts_title')}</Text>
 
       <View className="mt-3 flex-row items-center gap-3">
         <View className="min-w-0 flex-1">
           <Text className="font-ui text-body text-text">
-            {t('amigos.contacts_findable_toggle')}
+            {t('friends.contacts_findable_toggle')}
           </Text>
-          <Caption className="mt-0.5">{t('amigos.contacts_findable_body')}</Caption>
+          <Caption className="mt-0.5">{t('friends.contacts_findable_body')}</Caption>
         </View>
         <Toggle
           checked={findable}
@@ -140,7 +140,7 @@ function ContactsCard() {
             if (v) setEditingPhone(true)
             else clearPhone.mutate()
           }}
-          label={t('amigos.contacts_findable_toggle')}
+          label={t('friends.contacts_findable_toggle')}
         />
       </View>
 
@@ -149,7 +149,7 @@ function ContactsCard() {
           <TextInput
             className="min-h-[44px] flex-1 rounded border border-line bg-bg px-3 font-ui text-body text-text"
             placeholderTextColor={placeholderColor}
-            placeholder={t('amigos.contacts_phone_placeholder')}
+            placeholder={t('friends.contacts_phone_placeholder')}
             keyboardType="phone-pad"
             value={phone}
             onChangeText={setPhone}
@@ -160,14 +160,14 @@ function ContactsCard() {
             loading={savePhone.isPending}
             onPress={() => savePhone.mutate()}
           >
-            {t('amigos.contacts_phone_save')}
+            {t('friends.contacts_phone_save')}
           </Button>
         </View>
       ) : null}
 
       <View className="mt-4 border-line border-t pt-4">
         <Button variant="secondary" disabled={searching} onPress={searchContacts}>
-          {searching ? t('rank.searching') : t('amigos.search_contacts')}
+          {searching ? t('rank.searching') : t('friends.search_contacts')}
         </Button>
         {contactMsg ? <Caption className="mt-2">{contactMsg}</Caption> : null}
       </View>
@@ -179,7 +179,7 @@ function ContactsCard() {
             <PersonRow
               key={user.id}
               user={user}
-              subtitle={t('amigos.contact_match_subtitle', { name: contactName })}
+              subtitle={t('friends.contact_match_subtitle', { name: contactName })}
               right={<FollowPill userId={user.id} initial={false} from="find_friends" />}
               last={i === matches.length - 1}
             />
@@ -197,14 +197,14 @@ function InstagramCard() {
     <Card className="mt-4">
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/amigos/instagram')}
+        onPress={() => router.push('/friends/instagram')}
         className="flex-row items-center gap-3 active:opacity-70"
       >
         <View className="min-w-0 flex-1">
           <Text className="font-ui-semibold text-body text-text">
-            {t('amigos.instagram_title')}
+            {t('friends.instagram_title')}
           </Text>
-          <Caption className="mt-0.5">{t('amigos.instagram_body')}</Caption>
+          <Caption className="mt-0.5">{t('friends.instagram_body')}</Caption>
         </View>
         <ChevronIcon size={16} color="text-faint" />
       </Pressable>
@@ -212,7 +212,7 @@ function InstagramCard() {
   )
 }
 
-export default function AmigosScreen() {
+export default function FriendsScreen() {
   const t = useT()
   const invite = useInviteLink()
   const suggested = useQuery({
@@ -238,11 +238,11 @@ export default function AmigosScreen() {
           <ShareIcon size={18} color="on-accent" />
         </View>
         <View className="flex-1">
-          <Text className="font-ui-semibold text-body text-text">{t('amigos.invite_title')}</Text>
+          <Text className="font-ui-semibold text-body text-text">{t('friends.invite_title')}</Text>
           <Caption className="mt-0.5">
             {invite.joined > 0
               ? t('settings.joined_count', { n: invite.joined })
-              : t('amigos.invite_body')}
+              : t('friends.invite_body')}
           </Caption>
         </View>
       </Pressable>
@@ -250,13 +250,13 @@ export default function AmigosScreen() {
       <ContactsCard />
       <InstagramCard />
 
-      <Title className="mt-6 mb-1">{t('amigos.suggestions_title')}</Title>
+      <Title className="mt-6 mb-1">{t('friends.suggestions_title')}</Title>
       {suggested.isPending ? (
         <RowsSkeleton rows={5} thumb={36} />
       ) : suggested.isError ? (
-        <ErrorState onRetry={() => suggested.refetch()}>{t('amigos.load_error')}</ErrorState>
+        <ErrorState onRetry={() => suggested.refetch()}>{t('friends.load_error')}</ErrorState>
       ) : users.length === 0 ? (
-        <Body>{t('amigos.no_suggestions')}</Body>
+        <Body>{t('friends.no_suggestions')}</Body>
       ) : (
         <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
           {users.map((u, i) => (

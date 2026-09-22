@@ -50,7 +50,7 @@ export default function InstagramImportScreen() {
       setMatches(found)
       setUnmatchedCount(handles.length - found.length)
     } catch (err) {
-      captureError(err, 'amigos.instagramImport')
+      captureError(err, 'friends.instagramImport')
       setError(t('instagram.import_error'))
     } finally {
       setPicking(false)
@@ -99,7 +99,7 @@ export default function InstagramImportScreen() {
             <Card className="mt-4 gap-2">
               <Body>{t('instagram.unmatched_count', { n: unmatchedCount })}</Body>
               <Button variant="secondary" disabled={invite.sharing} onPress={invite.share}>
-                {t('amigos.invite_title')}
+                {t('friends.invite_title')}
               </Button>
             </Card>
           ) : null}

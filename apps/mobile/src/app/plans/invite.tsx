@@ -17,7 +17,7 @@ import type { PlanDetail } from '@/lib/types'
 // followers again, minus whoever is already invited. Shares the ['plan', id]
 // query key with the detail screen so a plan opened just before landing here
 // doesn't pay for a second fetch.
-export default function InvitarScreen() {
+export default function InviteScreen() {
   const t = useT()
   const { planId } = useLocalSearchParams<{ planId: string }>()
   const router = useRouter()

@@ -13,10 +13,10 @@ import type { FollowUser } from '@/lib/types'
 // Invite picker for Planes (M3): a follower list with a select/deselect pill —
 // invitees are always the host's own followers (a decision made up front, see
 // the plan doc), so this is the one screen that reads GET /social/followers.
-// Shared by planes/nuevo's "who" step and planes/invitar (inviting more people
+// Shared by plans/new's "who" step and plans/invite (inviting more people
 // to an existing plan): `selected`/`onToggle` are caller-owned so this holds
 // no mutation of its own, and `exclude` drops ids already invited. `onToggle`
-// hands back the whole FollowUser (not just an id) — planes/nuevo's review
+// hands back the whole FollowUser (not just an id) — plans/new's review
 // step needs each invitee's name/avatar, and re-fetching them from an id set
 // after the fact would just be this same list again. Renders its rows plain
 // (no internal ScrollView) — both callers already scroll the step that hosts

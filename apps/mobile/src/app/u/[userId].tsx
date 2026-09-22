@@ -128,7 +128,7 @@ export default function UserRankings() {
   // sync with the server value but flips optimistically on tap.
   const { user, rankings, matchPercent, sharedCount, followerCount, followingCount } = q.data
   const firstName = (user.name || user.handle || '').split(' ')[0] || t('passport.someone_fallback')
-  const barrio = user.neighborhood?.name
+  const neighborhood = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
 
   return (
@@ -145,7 +145,7 @@ export default function UserRankings() {
         <View className="items-center gap-1">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
           {user.handle ? <Text className="mt-2 text-label text-text-2">@{user.handle}</Text> : null}
-          {barrio ? <Caption>{barrio}</Caption> : null}
+          {neighborhood ? <Caption>{neighborhood}</Caption> : null}
           {matchPercent != null ? (
             <Pressable
               accessibilityRole="button"

@@ -39,7 +39,7 @@ export default function CollectionDetailScreen() {
   const removeItem = useMutation({
     mutationFn: (itemId: string) => api.del(`/collections/${collectionId}/items/${itemId}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['collection', collectionId] }),
-    onError: () => toast({ variant: 'error', message: t('guardar.toggle_error') }),
+    onError: () => toast({ variant: 'error', message: t('saveToList.toggle_error') }),
   })
 
   const placeholder = useColor('text-muted')
@@ -52,7 +52,7 @@ export default function CollectionDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['collection', collectionId] })
       queryClient.invalidateQueries({ queryKey: ['collections'] })
     },
-    onError: () => toast({ variant: 'error', message: t('guardados.update_error') }),
+    onError: () => toast({ variant: 'error', message: t('collections.update_error') }),
   })
 
   const deleteList = useMutation({
@@ -62,15 +62,15 @@ export default function CollectionDetailScreen() {
       goBack()
     },
     onError: (err) => {
-      captureError(err, 'guardados.deleteList')
-      toast({ variant: 'error', message: t('guardados.delete_error') })
+      captureError(err, 'collections.deleteList')
+      toast({ variant: 'error', message: t('collections.delete_error') })
     },
   })
 
   async function confirmDeleteList() {
     const picked = await showActionSheet({
-      title: t('guardados.delete_confirm_title'),
-      options: [{ label: t('guardados.delete_button'), destructive: true }],
+      title: t('collections.delete_confirm_title'),
+      options: [{ label: t('collections.delete_button'), destructive: true }],
     })
     if (picked === 0) deleteList.mutate()
   }
@@ -92,9 +92,9 @@ export default function CollectionDetailScreen() {
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         {notFound ? (
-          <EmptyState>{t('guardados.not_found')}</EmptyState>
+          <EmptyState>{t('collections.not_found')}</EmptyState>
         ) : (
-          <ErrorState onRetry={() => q.refetch()}>{t('guardados.load_error')}</ErrorState>
+          <ErrorState onRetry={() => q.refetch()}>{t('collections.load_error')}</ErrorState>
         )}
       </View>
     )
@@ -119,7 +119,7 @@ export default function CollectionDetailScreen() {
             className="min-h-[44px] justify-center active:opacity-60"
           >
             <Text className="font-ui-medium text-label text-status-packed">
-              {t('guardados.delete_list')}
+              {t('collections.delete_list')}
             </Text>
           </Pressable>
         }
@@ -134,7 +134,7 @@ export default function CollectionDetailScreen() {
         <View className="mb-4 items-center">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={t('guardar.cover_label')}
+            accessibilityLabel={t('saveToList.cover_label')}
             onPress={async () => {
               const uri = await pickDishPhoto()
               if (uri) update.mutate({ coverImageId: uri })
@@ -150,12 +150,12 @@ export default function CollectionDetailScreen() {
             ) : (
               <>
                 <ListIcon size={28} color="text-muted" />
-                <Caption className="mt-2">{t('guardar.cover_add')}</Caption>
+                <Caption className="mt-2">{t('saveToList.cover_add')}</Caption>
               </>
             )}
           </Pressable>
           <Title className="mt-4 text-center">{name}</Title>
-          <Caption className="mt-1">{t('guardar.item_count', { n: items.length })}</Caption>
+          <Caption className="mt-1">{t('saveToList.item_count', { n: items.length })}</Caption>
           {editingBio ? (
             <View className="mt-3 w-full">
               <TextInput
@@ -164,7 +164,7 @@ export default function CollectionDetailScreen() {
                 onChangeText={setBio}
                 multiline
                 maxLength={300}
-                placeholder={t('guardar.description_placeholder')}
+                placeholder={t('saveToList.description_placeholder')}
                 placeholderTextColor={placeholder}
                 className="min-h-[72px] w-full rounded-sm border border-line bg-surface px-3 py-3 font-ui text-body text-text"
               />
@@ -212,13 +212,13 @@ export default function CollectionDetailScreen() {
               className="mt-2 min-h-[36px] justify-center active:opacity-60"
             >
               <Caption className="font-ui-semibold text-accent-strong">
-                {t('guardados.add_description')}
+                {t('collections.add_description')}
               </Caption>
             </Pressable>
           )}
         </View>
         {items.length === 0 ? (
-          <EmptyState>{t('guardados.empty_list')}</EmptyState>
+          <EmptyState>{t('collections.empty_list')}</EmptyState>
         ) : (
           items.map((item) => (
             <CollectionItemRow
@@ -275,7 +275,7 @@ function CollectionItemRow({
               size="sm"
               score={r.myRanking.score}
               attribution={{ kind: 'you' }}
-              caption={t('guardados.already_went', { n: r.myRanking.position })}
+              caption={t('collections.already_went', { n: r.myRanking.position })}
             />
           ) : (
             <Pressable

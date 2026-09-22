@@ -7,6 +7,7 @@ import { Caption, Chip, Eyebrow, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { DATA_FIGURES, GROUND, themeColors } from '@/theme/vars'
 
@@ -234,10 +235,10 @@ export function UtilityPill({
   )
 }
 
-function badgeText(a: ScoreAttribution): string | null {
+function badgeText(a: ScoreAttribution, t: ReturnType<typeof useT>): string | null {
   if (a.kind === 'you') return 'Tú'
   if (a.kind === 'user') return a.label
-  if (a.kind === 'friends') return `${a.count} ${a.count === 1 ? 'amigo' : 'amigos'}`
+  if (a.kind === 'friends') return t('friends.count_badge', { n: a.count })
   if (a.kind === 'stated') return null
   return null
 }
@@ -265,7 +266,8 @@ export function ScoreBadge({
   caption?: string
   sub?: string
 }) {
-  const badge = badgeText(attribution)
+  const t = useT()
+  const badge = badgeText(attribution, t)
   const mesa = attribution.kind === 'mesa'
   // min-w (not a fixed w) so the badge hugs a 2-digit "10.0" without
   // clipping while still lining up a column of 1-digit-and-a-decimal scores.

@@ -1,7 +1,7 @@
 import type { Plan, PlanDetail } from './types'
 
-// Shared by planes/index.tsx's sectioning, profile.tsx's pending-invite count,
-// and planes/[planId].tsx's RSVP gating — one definition so the three never
+// Shared by plans/index.tsx's sectioning, profile.tsx's pending-invite count,
+// and plans/[planId].tsx's RSVP gating — one definition so the three never
 // drift on what "pending" means.
 export function isPendingInvite(plan: Plan | PlanDetail): boolean {
   return !plan.isHost && plan.myReply === 'pending' && plan.status !== 'cancelled'

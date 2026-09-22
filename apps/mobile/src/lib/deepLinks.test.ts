@@ -81,13 +81,13 @@ describe('toAppPath', () => {
 
   test('plan link', () => {
     expect(toAppPath('https://mesa.app/p/plan/some-plan-id')).toEqual({
-      path: '/planes/some-plan-id',
+      path: '/plans/some-plan-id',
     })
   })
 
   test('plan link (custom scheme)', () => {
     expect(toAppPath('mesa://p/plan/some-plan-id')).toEqual({
-      path: '/planes/some-plan-id',
+      path: '/plans/some-plan-id',
     })
   })
 

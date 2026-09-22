@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
 import { dedupeExternal } from '@/lib/dedupeExternal'
+import { useT } from '@/lib/i18n'
 import type { ExternalSuggestion, NewRestaurant } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useGoogleSession } from '@/lib/useGoogleSession'
@@ -24,6 +25,7 @@ export function useExternalPlaceSearch(opts: {
   creatingId: string | null
 } {
   const { query, mesaResultCount, catalogNames, onCreated } = opts
+  const t = useT()
   const queryClient = useQueryClient()
   const session = useGoogleSession()
 
@@ -60,10 +62,10 @@ export function useExternalPlaceSearch(opts: {
         variant: 'error',
         message:
           status === 429
-            ? 'Llegaste al límite de lugares por hoy.'
+            ? t('rank.add_place_capped')
             : status === 409
-              ? 'Google dice que este lugar cerró permanentemente.'
-              : 'No se pudo conectar con Google. Intenta de nuevo.',
+              ? t('rank.add_place_closed')
+              : t('rank.add_place_connection_error'),
       })
     },
   })

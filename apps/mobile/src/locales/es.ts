@@ -101,7 +101,7 @@ export const es = {
   'nav.settings': 'Ajustes',
   'nav.activity': 'Actividad',
   'nav.leaderboard': 'Clasificación',
-  'nav.planes': 'Planes',
+  'nav.plans': 'Planes',
   'nav.moderation': 'Moderación',
 
   // app/activity.tsx
@@ -131,41 +131,47 @@ export const es = {
   'activity.following_pill': 'Siguiendo',
   'activity.follow_pill': 'Seguir',
 
-  'amigos.title': 'Encuentra amigos',
-  'amigos.invite_title': 'Invita a tus amigos',
-  'amigos.invite_body': 'Comparte tu link de invitación por WhatsApp.',
-  'amigos.suggestions_title': 'Quizás conoces a',
-  'amigos.load_error': 'No se pudieron cargar las sugerencias.',
-  'amigos.no_suggestions': 'No tenemos sugerencias por ahora.',
-  'amigos.reason_mutual': { one: 'Lo sigue {name}', other: 'Lo siguen {name} y {n} más' },
-  'amigos.reason_taste': '{n}% de gustos en común',
-  'amigos.reason_popular': 'Popular en Mesa',
+  // hooks/useFollow.ts — shared by onboarding, the empty feed, Activity and a
+  // member's passport, not just app/friends.
+  'social.follow_error': 'No se pudo seguir. Intenta de nuevo.',
+  'social.unfollow_error': 'No se pudo dejar de seguir.',
+
+  'friends.count_badge': { one: '{n} amigo', other: '{n} amigos' },
+  'friends.title': 'Encuentra amigos',
+  'friends.invite_title': 'Invita a tus amigos',
+  'friends.invite_body': 'Comparte tu link de invitación por WhatsApp.',
+  'friends.suggestions_title': 'Quizás conoces a',
+  'friends.load_error': 'No se pudieron cargar las sugerencias.',
+  'friends.no_suggestions': 'No tenemos sugerencias por ahora.',
+  'friends.reason_mutual': { one: 'Lo sigue {name}', other: 'Lo siguen {name} y {n} más' },
+  'friends.reason_taste': '{n}% de gustos en común',
+  'friends.reason_popular': 'Popular en Mesa',
 
   // Contactos card (M18)
-  'amigos.contacts_title': 'Contactos',
-  'amigos.contacts_findable_toggle': 'Deja que tus contactos te encuentren',
-  'amigos.contacts_findable_body': 'Guardamos tu número de forma cifrada — nunca lo mostramos.',
-  'amigos.contacts_phone_placeholder': '809-555-1234',
-  'amigos.contacts_phone_save': 'Guardar',
-  'amigos.contacts_phone_invalid': 'Ese número no parece válido.',
-  'amigos.contacts_phone_error': 'No se pudo guardar tu número. Intenta de nuevo.',
-  'amigos.search_contacts': 'Buscar amigos en mis contactos',
-  'amigos.contacts_unsupported': 'Importar contactos funciona en la app del teléfono.',
-  'amigos.contacts_denied': 'Mesa no tiene permiso para ver tus contactos. Actívalo en Ajustes.',
-  'amigos.contacts_found': {
+  'friends.contacts_title': 'Contactos',
+  'friends.contacts_findable_toggle': 'Deja que tus contactos te encuentren',
+  'friends.contacts_findable_body': 'Guardamos tu número de forma cifrada — nunca lo mostramos.',
+  'friends.contacts_phone_placeholder': '809-555-1234',
+  'friends.contacts_phone_save': 'Guardar',
+  'friends.contacts_phone_invalid': 'Ese número no parece válido.',
+  'friends.contacts_phone_error': 'No se pudo guardar tu número. Intenta de nuevo.',
+  'friends.search_contacts': 'Buscar amigos en mis contactos',
+  'friends.contacts_unsupported': 'Importar contactos funciona en la app del teléfono.',
+  'friends.contacts_denied': 'Mesa no tiene permiso para ver tus contactos. Actívalo en Ajustes.',
+  'friends.contacts_found': {
     one: '1 de tus contactos está en Mesa',
     other: '{n} de tus contactos están en Mesa',
   },
-  'amigos.contacts_none_found': 'Ninguno de tus contactos está en Mesa todavía.',
-  'amigos.contacts_search_error': 'No se pudo buscar en tus contactos. Intenta de nuevo.',
-  'amigos.contact_match_subtitle': 'Coincide con tu contacto «{name}»',
+  'friends.contacts_none_found': 'Ninguno de tus contactos está en Mesa todavía.',
+  'friends.contacts_search_error': 'No se pudo buscar en tus contactos. Intenta de nuevo.',
+  'friends.contact_match_subtitle': 'Coincide con tu contacto «{name}»',
 
   // Instagram card (M18)
-  'amigos.instagram_title': 'Instagram',
-  'amigos.instagram_body': 'Encuentra a quienes ya sigues en Instagram.',
-  'amigos.instagram_import_button': 'Importar desde Instagram',
+  'friends.instagram_title': 'Instagram',
+  'friends.instagram_body': 'Encuentra a quienes ya sigues en Instagram.',
+  'friends.instagram_import_button': 'Importar desde Instagram',
 
-  // app/amigos/instagram.tsx
+  // app/friends/instagram.tsx
   'instagram.title': 'Importar de Instagram',
   'instagram.subtitle': 'Encuentra a quienes ya sigues en Instagram, sin conectar tu cuenta.',
   'instagram.how_to_title': 'Cómo descargar tu información',
@@ -354,7 +360,7 @@ export const es = {
   'plans.today': 'Hoy',
   'plans.tomorrow': 'Mañana',
 
-  // app/planes/index.tsx
+  // app/plans/index.tsx
   'plans.title': 'Planes',
   'plans.new_label': 'Nueva mesa',
   'plans.new_short': 'Nueva',
@@ -374,7 +380,7 @@ export const es = {
   'plans.cancelled_badge': 'Cancelada',
   'plans.hosting_badge': 'Organizas',
 
-  // app/planes/nuevo.tsx
+  // app/plans/new.tsx
   'plans.discard_title': '¿Descartar la mesa?',
   'plans.discard_button': 'Descartar',
   'plans.max_spots_toast': 'Máximo tres spots',
@@ -393,7 +399,7 @@ export const es = {
   'plans.when_title': '¿Cuándo?',
   'plans.other_time': 'Otra hora',
 
-  // app/planes/[planId].tsx
+  // app/plans/[planId].tsx
   'plans.reply_save_error': 'No se pudo guardar tu respuesta.',
   'plans.confirm_error': 'No se pudo confirmar el spot.',
   'plans.cancelled_toast': 'Mesa cancelada.',
@@ -424,7 +430,7 @@ export const es = {
   'plans.voting_open_title': 'Votación abierta',
   'plans.cancelled_title': 'Mesa cancelada',
 
-  // app/planes/invitar.tsx
+  // app/plans/invite.tsx
   'plans.invited_count': { one: 'Invitaste a 1 persona.', other: 'Invitaste a {n} personas.' },
   'plans.invite_error': 'No se pudo invitar. Intenta de nuevo.',
   'plans.invite_more_back': '✕ Invitar a más',
@@ -522,38 +528,38 @@ export const es = {
   'save.error': 'No se pudo guardar. Intenta de nuevo.',
   'save.unsave_error': 'No se pudo quitar. Intenta de nuevo.',
 
-  // app/guardar.tsx (M19)
-  'guardar.title': 'Agregar a una lista',
-  'guardar.new_list': '+ Nueva lista',
-  'guardar.subtitle': 'Ya está en Quiero probar. Agrégalo también a una de tus listas.',
-  'guardar.name_placeholder': 'Nombre de la lista',
-  'guardar.description_placeholder': 'Descripción (opcional) — ¿de qué va esta lista?',
-  'guardar.suggestions': 'Ideas',
-  'guardar.new_list_cta': 'Nueva lista',
-  'guardar.cover_label': 'Foto de portada',
-  'guardar.cover_add': 'Portada',
-  'guardar.new_list_title': 'Nueva lista',
-  'guardar.create_button': 'Crear',
-  'guardar.creating': 'Creando…',
-  'guardar.name_taken': 'Ya tienes una lista con ese nombre.',
-  'guardar.create_error': 'No se pudo crear la lista. Intenta de nuevo.',
-  'guardar.toggle_error': 'No se pudo actualizar la lista. Intenta de nuevo.',
-  'guardar.load_error': 'No se pudieron cargar tus listas.',
-  'guardar.no_lists': 'Todavía no tienes listas.',
-  'guardar.item_count': { one: '1 guardado', other: '{n} guardados' },
+  // app/save-to-list.tsx (M19)
+  'saveToList.title': 'Agregar a una lista',
+  'saveToList.new_list': '+ Nueva lista',
+  'saveToList.subtitle': 'Ya está en Quiero probar. Agrégalo también a una de tus listas.',
+  'saveToList.name_placeholder': 'Nombre de la lista',
+  'saveToList.description_placeholder': 'Descripción (opcional) — ¿de qué va esta lista?',
+  'saveToList.suggestions': 'Ideas',
+  'saveToList.new_list_cta': 'Nueva lista',
+  'saveToList.cover_label': 'Foto de portada',
+  'saveToList.cover_add': 'Portada',
+  'saveToList.new_list_title': 'Nueva lista',
+  'saveToList.create_button': 'Crear',
+  'saveToList.creating': 'Creando…',
+  'saveToList.name_taken': 'Ya tienes una lista con ese nombre.',
+  'saveToList.create_error': 'No se pudo crear la lista. Intenta de nuevo.',
+  'saveToList.toggle_error': 'No se pudo actualizar la lista. Intenta de nuevo.',
+  'saveToList.load_error': 'No se pudieron cargar tus listas.',
+  'saveToList.no_lists': 'Todavía no tienes listas.',
+  'saveToList.item_count': { one: '1 guardado', other: '{n} guardados' },
 
-  // app/guardados/[collectionId].tsx (M19)
-  'guardados.add_description': '+ Agregar descripción',
-  'guardados.update_error': 'No se pudo actualizar la lista.',
-  'guardados.delete_list': 'Eliminar lista',
-  'guardados.delete_confirm_title':
+  // app/collections/[collectionId].tsx (M19)
+  'collections.add_description': '+ Agregar descripción',
+  'collections.update_error': 'No se pudo actualizar la lista.',
+  'collections.delete_list': 'Eliminar lista',
+  'collections.delete_confirm_title':
     '¿Eliminar esta lista? Esto no elimina tus lugares y platos guardados.',
-  'guardados.delete_button': 'Eliminar lista',
-  'guardados.delete_error': 'No se pudo eliminar la lista. Intenta de nuevo.',
-  'guardados.not_found': 'Esta lista no está disponible.',
-  'guardados.load_error': 'No se pudo cargar la lista.',
-  'guardados.empty_list': 'Esta lista está vacía.',
-  'guardados.already_went': 'Ya fuiste · #{n}',
+  'collections.delete_button': 'Eliminar lista',
+  'collections.delete_error': 'No se pudo eliminar la lista. Intenta de nuevo.',
+  'collections.not_found': 'Esta lista no está disponible.',
+  'collections.load_error': 'No se pudo cargar la lista.',
+  'collections.empty_list': 'Esta lista está vacía.',
+  'collections.already_went': 'Ya fuiste · #{n}',
 
   // components/TopBar.tsx
   'nav.activity_unseen': 'Actividad, {n} sin ver',
@@ -715,7 +721,7 @@ export const es = {
   'profile.following': 'Siguiendo',
   'profile.ranked': 'Rankeados',
   'profile.edit_profile': 'Editar perfil',
-  'profile.planes': 'Planes',
+  'profile.plans': 'Planes',
   'profile.rank_in_dr': 'Rank en RD',
   'profile.current_streak': 'Racha actual',
   'profile.streak_weeks_count': { one: '1 semana', other: '{n} semanas' },
@@ -850,7 +856,7 @@ export const es = {
     'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar la cuenta.',
   'settings.delete_error': 'No se pudo eliminar la cuenta. Intenta de nuevo.',
 
-  // app/notificaciones.tsx
+  // app/notifications.tsx
   'notifications.social': 'Follows y cheers',
   'notifications.plans': 'Planes',
   'notifications.friends': 'Actividad de amigos',
@@ -878,6 +884,8 @@ export const es = {
   'rank.save_error': 'No se pudo guardar tu nota',
   'rank.add_place_capped': 'Llegaste al límite de lugares por hoy.',
   'rank.add_place_error': 'No se pudo agregar el lugar.',
+  'rank.add_place_closed': 'Google dice que este lugar cerró permanentemente.',
+  'rank.add_place_connection_error': 'No se pudo conectar con Google. Intenta de nuevo.',
   'rank.list_load_error': 'No se pudo cargar tu lista.',
   'rank.added_to_passport': 'añadido a tu pasaporte',
   'rank.share_top5': 'Compartir mi top 5',
@@ -944,26 +952,26 @@ export const es = {
   // M20 — the reveal chip's repeat-dish progress caption, e.g. "Carbonara ·
   // 2ª" (never shown on the very first time).
   'rank.dish_repeat_chip': '{name} · {ordinal}',
-  'platos.title': 'Tus platos',
-  'platos.empty_title': 'Aún no tienes platos para rankear',
-  'platos.empty_body': 'Cuando pidas el mismo plato en 3 lugares, aparecerá aquí.',
-  'platos.load_error': 'No se pudo cargar tus platos.',
-  'platos.not_ranked_yet': 'Sin rankear',
-  'platos.ranked_count': '{n} rankeados',
-  'platos.unranked_count': '{n} por rankear',
-  'platos.rank_button': 'Rankear',
-  'platos.rank_more_button': 'Rankear {n} más',
-  'platos.your_best': 'Tu mejor {label}',
-  'platos.compare_title': '¿Cuál {label} estuvo mejor?',
-  'platos.nothing_to_rank': 'Ya rankeaste todos los lugares de este plato.',
-  'platos.view_list': 'Ver lista',
-  'platos.save_error': 'No se pudo guardar el orden.',
-  'platos.dismiss': 'Cerrar',
-  'platos.nudge_body': 'Tómate un minuto para rankearlas.',
-  'platos.nudge_title_first': 'Has comido {label} en {n} lugares',
-  'platos.nudge_title_insert': 'Un lugar nuevo para tu {label}',
-  'platos.nudge_toast_first': 'Has comido {label} en 3 lugares. ¿Las rankeas?',
-  'platos.nudge_toast_insert': 'Agrega este lugar a tu ranking de {label}.',
+  'dishLists.title': 'Tus platos',
+  'dishLists.empty_title': 'Aún no tienes platos para rankear',
+  'dishLists.empty_body': 'Cuando pidas el mismo plato en 3 lugares, aparecerá aquí.',
+  'dishLists.load_error': 'No se pudo cargar tus platos.',
+  'dishLists.not_ranked_yet': 'Sin rankear',
+  'dishLists.ranked_count': '{n} rankeados',
+  'dishLists.unranked_count': '{n} por rankear',
+  'dishLists.rank_button': 'Rankear',
+  'dishLists.rank_more_button': 'Rankear {n} más',
+  'dishLists.your_best': 'Tu mejor {label}',
+  'dishLists.compare_title': '¿Cuál {label} estuvo mejor?',
+  'dishLists.nothing_to_rank': 'Ya rankeaste todos los lugares de este plato.',
+  'dishLists.view_list': 'Ver lista',
+  'dishLists.save_error': 'No se pudo guardar el orden.',
+  'dishLists.dismiss': 'Cerrar',
+  'dishLists.nudge_body': 'Tómate un minuto para rankearlas.',
+  'dishLists.nudge_title_first': 'Has comido {label} en {n} lugares',
+  'dishLists.nudge_title_insert': 'Un lugar nuevo para tu {label}',
+  'dishLists.nudge_toast_first': 'Has comido {label} en 3 lugares. ¿Las rankeas?',
+  'dishLists.nudge_toast_insert': 'Agrega este lugar a tu ranking de {label}.',
   'events.cd_live': 'Está pasando ahora',
   'events.live_now': 'En vivo ahora',
   'events.live_until': 'Hasta las {time}',

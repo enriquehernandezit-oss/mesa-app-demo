@@ -48,7 +48,7 @@ export type MesaEvent =
   // growth
   | 'share_opened'
   | 'share_card_created'
-  // planes (M3)
+  // plans (M3)
   | 'plan_created'
   | 'plan_replied'
   | 'plan_voted'

@@ -231,9 +231,9 @@ export default function RankingsTab() {
   }
 
   // Guardados' "+ Nueva" list card (M19) — the same branded create screen
-  // SaveButton's "Agregar a lista" opens (app/guardar.tsx, no item attached),
+  // SaveButton's "Agregar a lista" opens (app/save-to-list.tsx, no item attached),
   // not the iOS text-prompt alert it used to be.
-  const promptNewList = () => router.push('/guardar')
+  const promptNewList = () => router.push('/save-to-list')
 
   // The share-my-list story card (the growth loop): the top 5, over the top
   // spot's photo, captioned with the public profile link.
@@ -939,7 +939,7 @@ const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
   )
 })
 
-// The named-lists rail (M19) — the top of Guardados. A plain horizontal
+// The named-lists rail (M19) — the top of Saved. A plain horizontal
 // ScrollView, not a FlatList: this is a handful of cards, never a long
 // virtualization-worthy list the way saved places/dishes below can be.
 function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: () => void }) {
@@ -968,7 +968,7 @@ function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: 
         {lists.map((list) => {
           const img = cloudinaryUrl(list.coverImageId ?? list.previewImageId, { w: 280, h: 200 })
           return (
-            <Link key={list.id} href={`/guardados/${list.id}`} asChild>
+            <Link key={list.id} href={`/collections/${list.id}`} asChild>
               <Pressable className="w-32 overflow-hidden rounded-card border border-line bg-surface active:opacity-80">
                 <View className="h-20 w-full items-center justify-center bg-bg-sunk">
                   {img ? (
@@ -986,7 +986,7 @@ function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: 
                     {list.name}
                   </Text>
                   <Caption className="mt-0.5 text-micro">
-                    {t('guardar.item_count', { n: list.itemCount })}
+                    {t('saveToList.item_count', { n: list.itemCount })}
                   </Caption>
                 </View>
               </Pressable>

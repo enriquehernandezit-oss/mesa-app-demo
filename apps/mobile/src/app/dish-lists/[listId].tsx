@@ -19,7 +19,7 @@ export default function DishListDetailScreen() {
   const t = useT()
   const router = useRouter()
   const { listId } = useLocalSearchParams<{ listId: string }>()
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/platos'))
+  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/dish-lists'))
 
   const q = useQuery({
     queryKey: ['dish-list', listId],
@@ -42,7 +42,7 @@ export default function DishListDetailScreen() {
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
-        <ErrorState onRetry={() => q.refetch()}>{t('platos.load_error')}</ErrorState>
+        <ErrorState onRetry={() => q.refetch()}>{t('dishLists.load_error')}</ErrorState>
       </View>
     )
   }
@@ -52,19 +52,21 @@ export default function DishListDetailScreen() {
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen
-        options={{ title: t('platos.your_best', { label }), headerLargeTitle: false }}
+        options={{ title: t('dishLists.your_best', { label }), headerLargeTitle: false }}
       />
       <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-3">
         {ranked.length === 0 ? (
-          <EmptyState>{t('platos.not_ranked_yet')}</EmptyState>
+          <EmptyState>{t('dishLists.not_ranked_yet')}</EmptyState>
         ) : (
           ranked.map((entry) => <RankedRow key={entry.restaurant.id} entry={entry} />)
         )}
 
         {unranked.length > 0 && (
           <View className="mt-6">
-            <Caption className="mb-2">{t('platos.unranked_count', { n: unranked.length })}</Caption>
+            <Caption className="mb-2">
+              {t('dishLists.unranked_count', { n: unranked.length })}
+            </Caption>
             {unranked.map((entry) => (
               <View
                 key={entry.restaurant.id}
@@ -90,8 +92,8 @@ export default function DishListDetailScreen() {
               </View>
             ))}
             <View className="mt-2">
-              <Button onPress={() => router.push(`/platos/rankear?listId=${listId}`)}>
-                {t('platos.rank_more_button', { n: unranked.length })}
+              <Button onPress={() => router.push(`/dish-lists/rank?listId=${listId}`)}>
+                {t('dishLists.rank_more_button', { n: unranked.length })}
               </Button>
             </View>
           </View>

@@ -13,7 +13,7 @@ import { authErrorMessage } from '@/lib/authErrors'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
 
-// Tu cuenta (M15) — email verification, password, ending other sessions, and
+// Account (M15) — email verification, password, ending other sessions, and
 // account deletion. Moved verbatim out of the old flat app/settings.tsx.
 export default function AccountSettings() {
   const router = useRouter()

@@ -91,7 +91,7 @@ async function cachedToken(): Promise<string | null> {
 
 export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unsupported'
 
-// Read-only — never prompts. Used by app/notificaciones.tsx to decide
+// Read-only — never prompts. Used by app/notifications.tsx to decide
 // between showing the 4 switches and an "Abrir Ajustes" nudge. Also reads
 // 'unsupported' when the native module isn't linked yet (pre-rebuild).
 export async function pushPermissionStatus(): Promise<PushPermission> {
@@ -109,7 +109,7 @@ export async function pushPermissionStatus(): Promise<PushPermission> {
 // granted, this just (re-)registers the token — cheap, safe to call often.
 // If it's undetermined, it prompts. If it was already denied, it does
 // nothing (re-prompting a denied permission is a no-op on iOS anyway; the
-// only way back is Settings, which notificaciones.tsx links to). Silently
+// only way back is Settings, which notifications.tsx links to). Silently
 // returns false, never throws, if expo-notifications isn't linked yet.
 export async function registerForPush(): Promise<boolean> {
   const Notifications = await loadNotifications()

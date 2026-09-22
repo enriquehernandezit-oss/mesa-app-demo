@@ -155,7 +155,7 @@ export default function ProfileTab() {
   const top3 = [...(rankings.data?.rankings ?? [])]
     .sort((a, b) => a.position - b.position)
     .slice(0, 3)
-  // Same ['plans'] cache key planes/index.tsx reads — the pending-invite
+  // Same ['plans'] cache key plans/index.tsx reads — the pending-invite
   // count here and the app's own list never disagree, and a visit to either
   // screen warms the other's cache.
   const plans = useQuery({
@@ -197,7 +197,7 @@ export default function ProfileTab() {
   const memberSince =
     p?.createdAt &&
     new Date(p.createdAt).toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' })
-  const barrio = p?.neighborhood?.name
+  const neighborhood = p?.neighborhood?.name
 
   // One editorial line from the taste stats the API already computes — a read on
   // how you eat, not another number. Elliptical "comida <cuisine>", so the
@@ -236,7 +236,7 @@ export default function ProfileTab() {
           />
           {p?.handle ? <Text className="mt-2 text-label text-text-2">@{p.handle}</Text> : null}
           <Caption className="mt-1">
-            {[memberSince && t('profile.member_since', { date: memberSince }), barrio]
+            {[memberSince && t('profile.member_since', { date: memberSince }), neighborhood]
               .filter(Boolean)
               .join(' · ')}
           </Caption>
@@ -303,11 +303,11 @@ export default function ProfileTab() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            onPress={() => router.push('/amigos')}
+            onPress={() => router.push('/friends')}
             className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
           >
             <Text className="font-ui-semibold text-label text-accent-strong">
-              {t('amigos.title')}
+              {t('friends.title')}
             </Text>
           </Pressable>
         </View>
@@ -381,14 +381,14 @@ export default function ProfileTab() {
           />
           <NavRow
             icon={<ForkKnifeIcon size={15} />}
-            label={t('platos.title')}
-            onPress={() => router.push('/platos')}
+            label={t('dishLists.title')}
+            onPress={() => router.push('/dish-lists')}
           />
           <NavRow
             icon={<CalendarIcon size={15} />}
-            label={t('profile.planes')}
+            label={t('profile.plans')}
             meta={pendingPlans > 0 ? String(pendingPlans) : undefined}
-            onPress={() => router.push('/planes')}
+            onPress={() => router.push('/plans')}
           />
           {/* Was "Recomendados para ti", which promised a personalized list this
               row never opened — it goes to Explore, whose default browse state

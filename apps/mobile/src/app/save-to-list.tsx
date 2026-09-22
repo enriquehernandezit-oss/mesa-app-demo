@@ -32,7 +32,7 @@ const SUGGESTIONS = {
   en: ['Pizza', 'Date night', 'Brunch', 'With friends', 'To impress'],
 } as const
 
-export default function GuardarSheet() {
+export default function SaveToListSheet() {
   const t = useT()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -99,13 +99,13 @@ export default function GuardarSheet() {
       if (!hasItem) router.back()
       else setCreating(false)
     },
-    onError: (err) => captureError(err, 'guardar.create'),
+    onError: (err) => captureError(err, 'saveToList.create'),
   })
   const createError =
     create.error instanceof ApiError && create.error.code === 'name_taken'
-      ? t('guardar.name_taken')
+      ? t('saveToList.name_taken')
       : create.isError
-        ? t('guardar.create_error')
+        ? t('saveToList.create_error')
         : null
 
   const trimmed = draft.trim()
@@ -119,8 +119,8 @@ export default function GuardarSheet() {
               {itemName}
             </Eyebrow>
           ) : null}
-          <Title>{hasItem ? t('guardar.title') : t('guardar.new_list_title')}</Title>
-          {hasItem ? <Caption className="mt-1">{t('guardar.subtitle')}</Caption> : null}
+          <Title>{hasItem ? t('saveToList.title') : t('saveToList.new_list_title')}</Title>
+          {hasItem ? <Caption className="mt-1">{t('saveToList.subtitle')}</Caption> : null}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -142,7 +142,7 @@ export default function GuardarSheet() {
           q.isPending ? (
             <RowsSkeleton rows={3} />
           ) : q.isError ? (
-            <ErrorState onRetry={() => q.refetch()}>{t('guardar.load_error')}</ErrorState>
+            <ErrorState onRetry={() => q.refetch()}>{t('saveToList.load_error')}</ErrorState>
           ) : lists.length > 0 ? (
             <View className="overflow-hidden rounded-card border border-line bg-surface">
               {lists.map((list, i) => {
@@ -161,7 +161,7 @@ export default function GuardarSheet() {
                       <Text numberOfLines={1} className="font-ui-semibold text-body text-text">
                         {list.name}
                       </Text>
-                      <Caption>{t('guardar.item_count', { n: list.itemCount })}</Caption>
+                      <Caption>{t('saveToList.item_count', { n: list.itemCount })}</Caption>
                     </View>
                     <View
                       className={`h-7 w-7 items-center justify-center rounded-pill border ${checked ? 'border-accent bg-accent-fill' : 'border-line-strong'}`}
@@ -173,23 +173,23 @@ export default function GuardarSheet() {
               })}
             </View>
           ) : (
-            <Caption className="mb-1">{t('guardar.no_lists')}</Caption>
+            <Caption className="mb-1">{t('saveToList.no_lists')}</Caption>
           )
         ) : null}
 
         {toggle.isError ? (
-          <Caption className="mt-2 text-status-packed">{t('guardar.toggle_error')}</Caption>
+          <Caption className="mt-2 text-status-packed">{t('saveToList.toggle_error')}</Caption>
         ) : null}
 
         {creating ? (
           <View className="mt-4 rounded-card border border-line bg-surface p-4">
-            {hasItem ? <Eyebrow className="mb-3">{t('guardar.new_list_title')}</Eyebrow> : null}
+            {hasItem ? <Eyebrow className="mb-3">{t('saveToList.new_list_title')}</Eyebrow> : null}
             {/* Cover + name side by side, like a playlist: the photo is
                 optional (a list without one shows its latest spot's photo). */}
             <View className="flex-row items-center gap-4">
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('guardar.cover_label')}
+                accessibilityLabel={t('saveToList.cover_label')}
                 onPress={async () => {
                   const uri = await pickDishPhoto()
                   if (uri) setCover(uri)
@@ -205,7 +205,7 @@ export default function GuardarSheet() {
                 ) : (
                   <>
                     <PlusIcon size={18} color="accent" />
-                    <Caption className="mt-1 text-micro">{t('guardar.cover_add')}</Caption>
+                    <Caption className="mt-1 text-micro">{t('saveToList.cover_add')}</Caption>
                   </>
                 )}
               </Pressable>
@@ -213,7 +213,7 @@ export default function GuardarSheet() {
                 autoFocus
                 value={draft}
                 onChangeText={setDraft}
-                placeholder={t('guardar.name_placeholder')}
+                placeholder={t('saveToList.name_placeholder')}
                 placeholderTextColor={placeholder}
                 maxLength={40}
                 returnKeyType="next"
@@ -223,13 +223,13 @@ export default function GuardarSheet() {
             <TextInput
               value={description}
               onChangeText={setDescription}
-              placeholder={t('guardar.description_placeholder')}
+              placeholder={t('saveToList.description_placeholder')}
               placeholderTextColor={placeholder}
               maxLength={300}
               multiline
               className="mt-4 min-h-[72px] rounded-sm border border-line bg-bg px-3 py-3 font-ui text-body text-text"
             />
-            <Caption className="mt-3 mb-2">{t('guardar.suggestions')}</Caption>
+            <Caption className="mt-3 mb-2">{t('saveToList.suggestions')}</Caption>
             <View className="flex-row flex-wrap gap-2">
               {SUGGESTIONS[lang].map((s) => (
                 <Chip
@@ -251,7 +251,7 @@ export default function GuardarSheet() {
               loading={create.isPending}
               onPress={() => create.mutate(trimmed)}
             >
-              {create.isPending ? t('guardar.creating') : t('guardar.create_button')}
+              {create.isPending ? t('saveToList.creating') : t('saveToList.create_button')}
             </Button>
           </View>
         ) : (
@@ -262,7 +262,7 @@ export default function GuardarSheet() {
           >
             <PlusIcon size={18} color="accent" />
             <Text className="font-ui-semibold text-body text-accent-strong">
-              {t('guardar.new_list_cta')}
+              {t('saveToList.new_list_cta')}
             </Text>
           </Pressable>
         )}

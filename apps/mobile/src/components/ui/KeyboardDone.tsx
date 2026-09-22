@@ -1,5 +1,7 @@
 import { InputAccessoryView, Keyboard, Platform, Pressable, Text, View } from 'react-native'
 
+import { useT } from '@/lib/i18n'
+
 // A "Listo" bar above the keyboard for multiline inputs. Single-line fields get
 // a return key that dismisses; a multiline field's return key inserts a newline,
 // so without this the only way out of Mesa's note editors is tapping some other
@@ -8,6 +10,7 @@ import { InputAccessoryView, Keyboard, Platform, Pressable, Text, View } from 'r
 // Pair by id: give the input `inputAccessoryViewID={id}` and render one of these
 // with the same `id`. iOS-only (Android has its own dismissal affordances).
 export function KeyboardDone({ id }: { id: string }) {
+  const t = useT()
   if (Platform.OS !== 'ios') return null
   return (
     <InputAccessoryView nativeID={id}>
@@ -17,7 +20,7 @@ export function KeyboardDone({ id }: { id: string }) {
           onPress={() => Keyboard.dismiss()}
           className="min-h-[36px] justify-center px-2 active:opacity-60"
         >
-          <Text className="font-ui-semibold text-label text-accent-strong">Listo</Text>
+          <Text className="font-ui-semibold text-label text-accent-strong">{t('common.done')}</Text>
         </Pressable>
       </View>
     </InputAccessoryView>

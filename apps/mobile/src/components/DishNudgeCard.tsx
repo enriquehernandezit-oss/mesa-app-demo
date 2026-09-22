@@ -26,21 +26,21 @@ export function DishNudgeCard({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push(`/platos/rankear?listId=${listId}`)}
+      onPress={() => router.push(`/dish-lists/rank?listId=${listId}`)}
       className="mt-4 flex-row items-start gap-3 rounded border border-accent bg-surface px-4 py-3 active:opacity-90"
     >
       <View className="flex-1">
         <Text className="font-serif text-serif-md text-text">
           {count != null
-            ? t('platos.nudge_title_first', { label, n: count })
-            : t('platos.nudge_title_insert', { label })}
+            ? t('dishLists.nudge_title_first', { label, n: count })
+            : t('dishLists.nudge_title_insert', { label })}
         </Text>
-        <Caption className="mt-1">{t('platos.nudge_body')}</Caption>
+        <Caption className="mt-1">{t('dishLists.nudge_body')}</Caption>
       </View>
       {onDismiss ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('platos.dismiss')}
+          accessibilityLabel={t('dishLists.dismiss')}
           hitSlop={10}
           onPress={(e) => {
             e.stopPropagation()

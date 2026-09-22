@@ -168,7 +168,7 @@ function MesaStack() {
       screenOptions={{
         headerShown: false,
         // The resolved theme's own ground, never transparent: a pushed
-        // screen whose root has no background of its own (amigos, menu) used
+        // screen whose root has no background of its own (friends, menu) used
         // to slide in SEE-THROUGH, the screen underneath showing through it
         // for the whole push — the "wonky" Ajustes → Encuentra amigos.
         contentStyle: { backgroundColor: c.bg },
@@ -188,16 +188,16 @@ function MesaStack() {
       <Stack.Screen name="dish/index" options={{ presentation: 'modal' }} />
       {/* The dish-ranking pairwise flow (M20) — same compare-card idiom as
           rank.tsx's own PlaceStep, so it gets the same modal presentation. */}
-      <Stack.Screen name="platos/rankear" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="planes/nuevo" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="dish-lists/rank" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="plans/new" options={{ presentation: 'modal' }} />
       {/* A feed post's comments — a page sheet over the feed, like the mock:
           the post stays visible behind it, drag down to dismiss. */}
-      <Stack.Screen name="comentarios/[rankingId]" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="planes/invitar" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="comments/[rankingId]" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="plans/invite" options={{ presentation: 'modal' }} />
       {/* The list picker (M19) + the one "Nueva lista" create flow — a page
           sheet. Was a formSheet at a 0.5 detent, whose flex-1 content mis-laid
           itself out on device (rows shifted off the edge, title clipped). */}
-      <Stack.Screen name="guardar" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="save-to-list" options={{ presentation: 'modal' }} />
 
       {/* r/[restaurantId] has a horizontal similar-spots rail near the screen
           edge; react-native-screens' iOS full-screen swipe already lets a
@@ -214,9 +214,9 @@ function MesaStack() {
           so a bar no longer animates in/out mid-push. */}
       <Stack.Screen name="menu/[restaurantId]" />
 
-      {/* Settings (M15): a hub + Tu cuenta/Privacidad/Preferencias/Acerca de/
-          Cuentas bloqueadas sub-screens, all on this same stack so each gets
-          a real back button — was one flat app/settings.tsx route. */}
+      {/* Settings (M15): a hub + Account/Privacy/Preferences/About/Blocked
+          accounts sub-screens, all on this same stack so each gets a real
+          back button — was one flat app/settings.tsx route. */}
       <Stack.Screen name="settings/index" options={{ ...utility, title: t('nav.settings') }} />
       <Stack.Screen
         name="settings/account"
@@ -239,9 +239,9 @@ function MesaStack() {
         options={{ ...utility, headerLargeTitle: false, title: t('settings.blocked_accounts') }}
       />
       {/* Push notification prefs (M17) — reached from Settings' nav card, same
-          utility-header idiom as its Tu cuenta/Privacidad siblings. */}
+          utility-header idiom as its Account/Privacy siblings. */}
       <Stack.Screen
-        name="notificaciones"
+        name="notifications"
         options={{ ...utility, headerLargeTitle: false, title: t('settings.notifications') }}
       />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
@@ -249,15 +249,15 @@ function MesaStack() {
       {/* Title (Seguidores/Siguiendo) is set by the screen itself, same
           pattern as lists/[slug] below. */}
       <Stack.Screen name="people/[userId]" options={utility} />
-      <Stack.Screen name="planes/index" options={{ ...utility, title: t('nav.planes') }} />
-      <Stack.Screen name="amigos/index" options={{ ...utility, title: t('amigos.title') }} />
+      <Stack.Screen name="plans/index" options={{ ...utility, title: t('nav.plans') }} />
+      <Stack.Screen name="friends/index" options={{ ...utility, title: t('friends.title') }} />
       <Stack.Screen
-        name="amigos/instagram"
+        name="friends/instagram"
         options={{ ...utility, headerLargeTitle: false, title: t('instagram.title') }}
       />
       {/* Title (the chosen spot, or "Votación abierta") is set by the screen
           itself once the plan loads — same pattern as people/[userId] above. */}
-      <Stack.Screen name="planes/[planId]" options={{ ...utility, headerLargeTitle: false }} />
+      <Stack.Screen name="plans/[planId]" options={{ ...utility, headerLargeTitle: false }} />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
       <Stack.Screen name="moderation" options={{ ...utility, title: t('nav.moderation') }} />
       {/* Titles for these two are set by the screens themselves once the data
@@ -266,16 +266,16 @@ function MesaStack() {
       {/* A named list's contents (M19) — custom ScreenHeader, same idiom as
           u/[userId] and match/[userId]; the native Stack.Screen title is set
           once the list's name loads. */}
-      <Stack.Screen name="guardados/[collectionId]" />
+      <Stack.Screen name="collections/[collectionId]" />
       {/* Dish ranking (M20) — "Tus platos" and one list's detail, same custom
-          ScreenHeader idiom as guardados/[collectionId] above; each sets its
+          ScreenHeader idiom as collections/[collectionId] above; each sets its
           own title internally the same way that screen does. */}
-      <Stack.Screen name="platos/index" />
-      <Stack.Screen name="platos/[listId]" />
+      <Stack.Screen name="dish-lists/index" />
+      <Stack.Screen name="dish-lists/[listId]" />
       {/* One curated event's detail (M21) — same bare custom-header idiom as
-          platos/[listId] above; no dynamic title to seed since ScreenHeader
+          dish-lists/[listId] above; no dynamic title to seed since ScreenHeader
           here has no native title at all. */}
-      <Stack.Screen name="eventos/[eventId]" />
+      <Stack.Screen name="events/[eventId]" />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

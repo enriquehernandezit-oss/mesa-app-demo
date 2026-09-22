@@ -13,9 +13,9 @@ import { useT } from '@/lib/i18n'
 import { setFriendsOnlyScores, useFriendsOnlyScores } from '@/lib/prefs'
 import type { Ranking } from '@/lib/types'
 
-// Privacidad (M15) — puntuaciones solo de amigos, cuentas bloqueadas (its own
-// screen, settings/blocked.tsx), exportar mis rankings. Moved out of the old
-// flat app/settings.tsx's "Tu lista" section.
+// Privacy (M15) — friends-only scores, blocked accounts (its own screen,
+// settings/blocked.tsx), export my rankings. Moved out of the old flat
+// app/settings.tsx's "Tu lista" section.
 export default function PrivacySettings() {
   const router = useRouter()
   const queryClient = useQueryClient()

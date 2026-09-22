@@ -337,7 +337,7 @@ export default function PlanDetailScreen() {
           {plan.isHost && !cancelled && !past ? (
             <Button
               variant="secondary"
-              onPress={() => router.push(`/planes/invitar?planId=${plan.id}`)}
+              onPress={() => router.push(`/plans/invite?planId=${plan.id}`)}
             >
               {t('plans.invite_more')}
             </Button>
