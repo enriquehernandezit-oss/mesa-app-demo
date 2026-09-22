@@ -70,11 +70,11 @@ interface ExpoTicket {
 
 // Tickets awaiting a receipt check, and which token each belongs to (so a
 // receipt that comes back DeviceNotRegistered knows which row to delete).
-// In-process only — this API is a single small instance (see index.ts's
-// Sentry comment), so there's no second instance to lose track of a ticket,
-// and a ticket dropped by a mid-sweep restart just never gets its dead token
-// cleaned up a little early; the next real send from that token produces a
-// fresh ticket and tries again.
+// In-process only — this API is a single small instance, so there's no
+// second instance to lose track of a ticket, and a ticket dropped by a
+// mid-sweep restart just never gets its dead token cleaned up a little
+// early; the next real send from that token produces a fresh ticket and
+// tries again.
 const pendingTickets: { ticketId: string; token: string }[] = []
 
 async function deleteTokens(tokens: string[]): Promise<void> {

@@ -249,9 +249,9 @@ without rewrites — sequenced so we only build each piece when a metric demands
 ### 6.6 Reliability & ops
 
 - Move off single-instance: managed Postgres w/ replicas, connection pooling ✅ (already
-  centralized), read replicas for feed reads. Observability (Sentry + structured logs +
-  metrics). Rate limiting at the edge. Backups + migration discipline (already using
-  Drizzle migrations ✅).
+  centralized), read replicas for feed reads. Observability (PostHog error tracking +
+  structured logs + metrics). Rate limiting at the edge. Backups + migration discipline
+  (already using Drizzle migrations ✅).
 
 ### 6.7 Moderation at scale
 

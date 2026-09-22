@@ -222,7 +222,7 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
 - **CI** — GitHub Actions on every push: typecheck (API, db, mobile), lint, tests, and an
   `expo export` bundle check that catches what `tsc` can't.
 - **Analytics** — PostHog, 17 typed loop events, screen views, no PII by contract.
-- **Crash reporting** — Sentry on both the app and the API.
+- **Crash reporting** — PostHog on both the app and the API.
 - **Email** — Resend, for verification and password reset. Production refuses to boot without it.
 - **Rate limiting** — Better Auth's limiter (DB-backed), a per-account sign-in throttle, and cost
   guards on the Google proxy and contact matching.
@@ -231,7 +231,7 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
 - **Deploy** — Railway, migrations run automatically before each deploy.
 
 **Env-gated, degrade gracefully:** Mapbox, Cloudinary, Google Places, Apple, Instagram, SMS,
-PostHog, Sentry. Missing keys mean a missing feature, never a crash.
+PostHog. Missing keys mean a missing feature, never a crash.
 
 **Not built yet:** push notifications · signed Cloudinary uploads (images currently post as data
 URLs through the API) · server-side caching · background jobs · route tests (there is exactly
@@ -278,6 +278,6 @@ but nothing proves the mirror still matches the server.
 | First device build           | Apple Developer approval (enrolled, pending)            |
 | Push notifications           | Apple approval, then build                              |
 | Signed image uploads         | Cloudinary API key + secret                             |
-| Analytics actually reporting | PostHog key, Sentry DSNs                                |
+| Analytics actually reporting | PostHog key (mobile + Railway)                          |
 | Legal pages                  | Founder + counsel review of the drafted copy            |
 | App Store listing            | Screenshots (needs a build), description, privacy label |

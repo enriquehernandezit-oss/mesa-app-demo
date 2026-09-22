@@ -62,13 +62,29 @@ type Props = Record<string, string | number | boolean | null>
 
 let client: PostHog | null = null
 
-function getClient(): PostHog | null {
+// Shared by every function below AND by lib/errors.ts's captureError — one
+// client, one PostHog project, whether the call is an analytics event or a
+// caught exception. Exported for that reason alone; nothing outside
+// analytics.ts/errors.ts should need it.
+export function getClient(): PostHog | null {
   if (!KEY) return null
   if (!client) {
     client = new PostHog(KEY, {
       host: HOST,
       // App open/close/update come for free and anchor every session.
       captureAppLifecycleEvents: true,
+      // Crash + error reporting (replaces Sentry, M22). nativeCrashes needs
+      // the @posthog/react-native-plugin native module, linked via the
+      // posthog-react-native/expo config plugin (see app.config.js) — without
+      // it this option is silently inert, same graceful-dark posture as
+      // everything else keyed off EXPO_PUBLIC_POSTHOG_KEY.
+      errorTracking: {
+        autocapture: {
+          uncaughtExceptions: true,
+          unhandledRejections: true,
+          nativeCrashes: true,
+        },
+      },
     })
   }
   return client

@@ -15,22 +15,21 @@ can't be done from the dev environment.
 | 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped                                            |
 | 5.1.1     | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`)                            |
 | Builds    | `development` and `preview` profiles have built; **`production` has never run**                            |
-| Checks    | tsc, biome and tests green across mobile / api / db                                                        |
+| Checks    | tsc, oxlint and tests green across mobile / api / db                                                       |
 
 ## 1. Founder: accounts and keys
 
-| What                             | Why                                                                                 | How                                                                           |
-| -------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId`                                       | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app`         |
-| **Sentry DSN**                   | crash reports from testers; without it `lib/errors.ts` no-ops                       | `eas env:create production --name EXPO_PUBLIC_SENTRY_DSN --value <dsn>`       |
-| **PostHog key**                  | product analytics; without it `lib/analytics.ts` no-ops                             | same, `EXPO_PUBLIC_POSTHOG_KEY` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
-| **Sentry org/project**           | readable native stack traces (source maps)                                          | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` on the production env     |
-| **Domain** (deferred)            | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains` | buy, then set the env var and host `apple-app-site-association`               |
+| What                             | Why                                                                                                                                                                                                                       | How                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId`                                                                                                                                                                             | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app`                                                  |
+| **PostHog key**                  | product analytics AND crash/error reports (`lib/analytics.ts`, `lib/errors.ts`); without it both no-op, and the `posthog-react-native/expo` plugin (native crash capture + readable stack traces) isn't registered either | `eas env:create production --name EXPO_PUBLIC_POSTHOG_KEY --value <key>` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
+| **PostHog key on Railway**       | the API's own error reports (`apps/api/src/lib/errors.ts`); without it the server no-ops the same way                                                                                                                     | set `POSTHOG_API_KEY` on the API service in Railway's dashboard                                                        |
+| **Domain** (deferred)            | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains`                                                                                                                                       | buy, then set the env var and host `apple-app-site-association`                                                        |
 
 Set secrets with a shell that does not echo them:
 
 ```bash
-cd apps/mobile && read -s "DSN?Sentry DSN: " && bunx eas-cli@latest env:create production --name EXPO_PUBLIC_SENTRY_DSN --value "$DSN" --visibility sensitive
+cd apps/mobile && read -s "KEY?PostHog project key: " && bunx eas-cli@latest env:create production --name EXPO_PUBLIC_POSTHOG_KEY --value "$KEY" --visibility sensitive
 ```
 
 Also delete the stale `RNMAPBOX_DOWNLOAD_TOKEN` variable (wrong name, superseded
@@ -89,7 +88,7 @@ but it is a review).
 - Add **`expo-updates`** so JS-only fixes reach testers without a new build.
 - Seed the beta with **one dense friend cluster**, not scattered testers —
   cold-start is the product risk, not the build.
-- Watch Sentry for the first crash-free-session number before widening.
+- Watch PostHog's error tracking for the first crash-free-session number before widening.
 
 ## Definition of done
 

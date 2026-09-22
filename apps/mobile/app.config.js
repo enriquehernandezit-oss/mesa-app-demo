@@ -18,19 +18,14 @@ module.exports = () => {
   // permissions Mesa never asks for (see the plugin's own header).
   config.plugins = [...(config.plugins ?? []), './plugins/withTrimmedPurposeStrings']
 
-  // Sentry's config plugin uploads source maps at build time, which needs
-  // SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN. Added only when the org and
-  // project are present, so a build without Sentry credentials still succeeds —
-  // JS errors are still captured either way (see src/lib/errors.ts); the plugin
-  // is what turns a minified native stack trace into a readable one.
-  if (process.env.SENTRY_ORG && process.env.SENTRY_PROJECT) {
-    config.plugins = [
-      ...(config.plugins ?? []),
-      [
-        '@sentry/react-native/expo',
-        { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
-      ],
-    ]
+  // PostHog's config plugin links the @posthog/react-native-plugin native
+  // module (native crash capture) and wires up source-map upload for
+  // readable stack traces. Added only when EXPO_PUBLIC_POSTHOG_KEY is set —
+  // the same variable that gates the client itself (src/lib/analytics.ts) —
+  // so a build without a PostHog key still succeeds with the plugin simply
+  // absent, same graceful-dark posture as everything else keyed off it.
+  if (process.env.EXPO_PUBLIC_POSTHOG_KEY) {
+    config.plugins = [...(config.plugins ?? []), 'posthog-react-native/expo']
   }
 
   // Universal links so the password-reset / verify-email emails open the app

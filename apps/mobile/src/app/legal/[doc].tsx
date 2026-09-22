@@ -99,15 +99,15 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Analítica y errores',
         paragraphs: [
-          'Usamos PostHog para medir cómo se usa la app y Sentry para enterarnos de los fallos. Los dos están apagados mientras no estén configurados con su clave: sin clave, la app y el servidor no mandan nada.',
-          'Lo que viaja en un evento son identificadores, conteos y nombres de acciones. No van nombres, ni @usuarios, ni correos, ni teléfonos, ni el texto de tus notas o comentarios. Sentry recibe el error y tu identificador de usuario, nada más.',
+          'Usamos PostHog para medir cómo se usa la app y para enterarnos de los fallos. Está apagado mientras no esté configurado con su clave: sin clave, la app y el servidor no mandan nada.',
+          'Lo que viaja en un evento son identificadores, conteos y nombres de acciones. No van nombres, ni @usuarios, ni correos, ni teléfonos, ni el texto de tus notas o comentarios. PostHog recibe el error y tu identificador de usuario, nada más.',
           'Mesa no lleva ningún SDK de publicidad ni de atribución. No te seguimos por otras apps ni por la web, y no hay anuncios.',
         ],
       },
       {
         heading: 'Con quién compartimos',
         paragraphs: [
-          'Railway aloja el servidor y la base de datos. Cloudinary guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog y Sentry reciben lo descrito arriba cuando están configurados. Apple e Instagram intervienen solo si eliges entrar con ellos.',
+          'Railway aloja el servidor y la base de datos. Cloudinary guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog recibe lo descrito arriba cuando está configurado. Apple e Instagram intervienen solo si eliges entrar con ellos.',
           'Cada uno recibe únicamente lo que necesita para su parte. También entregaríamos datos si una autoridad competente nos lo exigiera legalmente.',
           'No vendemos tus datos, no los alquilamos y no los cambiamos por publicidad.',
         ],

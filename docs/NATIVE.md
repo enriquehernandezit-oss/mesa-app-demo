@@ -55,7 +55,7 @@ Verification that works without a Mac toolchain — used throughout the migratio
 ```bash
 bunx tsc --noEmit                      # strict types
 bunx expo export --platform ios        # proves the Metro bundle builds
-cd ../.. && bun run lint               # biome, repo-wide
+cd ../.. && bun run lint               # oxlint, repo-wide
 ```
 
 ## Configuration

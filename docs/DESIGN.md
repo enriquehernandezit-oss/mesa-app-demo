@@ -298,4 +298,4 @@ decision, so it doesn't drift again.
   grep -rn "var(--ink\|var(--cream\|var(--dim\|var(--brass\|var(--surface-2" apps/app/src   # → 0
   grep -rnE "#[0-9a-fA-F]{3,8}|rgba?\(" apps/app/src --include="*.css" | grep -v tokens.css  # → 0
   ```
-  (Biome does not lint CSS, so these greps are the enforcement mechanism.)
+  (oxlint does not lint CSS, so these greps are the enforcement mechanism.)

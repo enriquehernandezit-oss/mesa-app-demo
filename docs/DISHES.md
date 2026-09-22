@@ -236,7 +236,7 @@ From `CLAUDE.md` (send it too if the algorithm needs to know build discipline,
 not just product shape): Bun only, TypeScript strict with no `any`, Drizzle
 relational queries/joins (never a loop of queries — N+1 is a hard no),
 connection pooling already centralized in `packages/db`, TanStack Query owns
-client-side caching, Biome not ESLint, "essential complexity only" (no
+client-side caching, oxlint not ESLint, "essential complexity only" (no
 speculative abstraction), one milestone at a time with a stop for review
 between them, and — the one most likely to matter for a _dishes_ feature
 specifically — **no stars, no bare/global ratings, ever.** Any scoring the new

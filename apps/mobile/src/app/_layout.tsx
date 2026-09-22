@@ -1,7 +1,4 @@
 import '../global.css'
-// Imported for its side effect and kept first: Sentry initializes at module
-// scope, and it has to be in place before anything else can throw.
-import '@/lib/errors'
 import {
   CormorantGaramond_400Regular_Italic,
   CormorantGaramond_500Medium,
