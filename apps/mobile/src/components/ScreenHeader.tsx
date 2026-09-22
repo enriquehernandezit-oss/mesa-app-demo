@@ -10,7 +10,11 @@ export function ScreenHeader({
   onBack,
   backLabel,
   right,
-}: { onBack: () => void; backLabel: string; right?: ReactNode }) {
+}: {
+  onBack: () => void
+  backLabel: string
+  right?: ReactNode
+}) {
   const insets = useSafeAreaInsets()
   return (
     <View

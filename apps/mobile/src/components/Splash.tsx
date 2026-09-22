@@ -1,5 +1,6 @@
-import { Wordmark } from '@/components/ui'
 import { View } from 'react-native'
+
+import { Wordmark } from '@/components/ui'
 
 // Minimal centered wordmark shown while session/profile resolve.
 export function Splash() {

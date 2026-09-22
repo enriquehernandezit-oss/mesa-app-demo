@@ -8,20 +8,21 @@
 ## 0. The one-paragraph thesis
 
 Beli won by turning restaurant-tracking into a **game with a leaderboard**. But Beli
-is still fundamentally a *utility* — a smarter list. The thing that becomes
+is still fundamentally a _utility_ — a smarter list. The thing that becomes
 "the next Instagram" is not a better list; it is a **taste identity network**:
-your profile *is* your palate, your content is where/what you eat, and the feed is
+your profile _is_ your palate, your content is where/what you eat, and the feed is
 social proof you can't get anywhere else. Mesa's wedge to get there is a real
-**aesthetic** (editorial, oxblood, film-photo — a look people *want* to post) plus a
+**aesthetic** (editorial, oxblood, film-photo — a look people _want_ to post) plus a
 **hyper-local beachhead** (Santo Domingo, then LatAm) where Beli is weak. We win the
 city on utility + social, then expand city-by-city, then layer content + creators to
 graduate from "Beli competitor" into "Instagram for going out."
 
 Three things have to be true, in order:
-1. **Utility parity** with Beli so nobody has a reason to keep both. *(mostly DONE)*
-2. **A share loop** strong enough that Mesa spreads without ad spend. *(started)*
-3. **A content + identity layer** that makes Mesa a place you *scroll*, not just log.
-   *(this is the leap Beli hasn't made — our real opportunity)*
+
+1. **Utility parity** with Beli so nobody has a reason to keep both. _(mostly DONE)_
+2. **A share loop** strong enough that Mesa spreads without ad spend. _(started)_
+3. **A content + identity layer** that makes Mesa a place you _scroll_, not just log.
+   _(this is the leap Beli hasn't made — our real opportunity)_
 
 ---
 
@@ -32,8 +33,9 @@ recs sharpen with use; leaderboards/streaks drive habit; strong NYC/US-campus ne
 effects; clean utility.
 
 **Beli's soft spots** (our openings):
+
 - **Look is utilitarian.** It's a productivity app aesthetic. People screenshot their
-  lists but the app itself isn't *beautiful*. Mesa's editorial look is a real moat for
+  lists but the app itself isn't _beautiful_. Mesa's editorial look is a real moat for
   a category where the product is aspiration.
 - **Thin content.** No real photo/video culture, no stories, no creators, no "scroll for
   fun." It's a logging tool you open with intent, not a feed you kill time in. That caps
@@ -55,7 +57,7 @@ and a founder in-market.
 
 - Not Yelp (strangers, stars, reviews). **No stars, ever.**
 - Not Google Maps (transactional).
-- Not Beli (a better list) — Mesa is *where your taste lives and is seen*.
+- Not Beli (a better list) — Mesa is _where your taste lives and is seen_.
 - Closest spiritual sibling: Letterboxd for restaurants — identity + taste + a feed
   people love, with a beautiful editorial skin.
 
@@ -68,28 +70,34 @@ Everything downstream (features, UI, growth) should ladder to that line.
 Virality isn't a feature, it's a loop with a measured coefficient. We build and
 instrument three, in priority order.
 
-### Loop A — The Share Loop (acquisition) — *highest priority*
+### Loop A — The Share Loop (acquisition) — _highest priority_
+
 Create something beautiful → post to IG Story → viewers tap through → new user.
-- **Artifacts:** "My Top 5 in Piantini" card *(DONE)*, single-spot card *(DONE)*,
+
+- **Artifacts:** "My Top 5 in Piantini" card _(DONE)_, single-spot card _(DONE)_,
   next: **year-in-review / "Mesa Wrapped"**, **"we match 92%" cards**, **monthly
   neighborhood report**, **a spot's "friends' average" card the restaurant itself
   reposts.**
 - **The tap-through must land on a real deep link** → a public web preview of that
-  card/profile with an "open in Mesa" CTA. *(NOT built — critical: today share cards
-  point nowhere.)*
+  card/profile with an "open in Mesa" CTA. _(NOT built — critical: today share cards
+  point nowhere.)_
 - **Metric:** invites sent per active user (k-factor). Target k > 0.5 before spend.
 
 ### Loop B — The Social Loop (retention)
+
 Follow people → their rankings fill your feed → you rank back → they see it → repeat.
-- Already have: feed, follow, cheers, activity. *(DONE)*
+
+- Already have: feed, follow, cheers, activity. _(DONE)_
 - Missing: **push notifications** ("Nati ranked a spot you saved"), **contact/IG
   friend-finding at scale**, **DMs / "send a spot to a friend"**, **group plans**
   ("you both saved Vela — go?").
 - **Metric:** D7/D30 retention; % of users following ≥5 people (activation threshold).
 
 ### Loop C — The Local Utility Loop (frequency)
+
 Rank a place → get sharper recs → reserve/go → rank the next one.
-- Have: pairwise, recs, trending, reserve handoff. *(DONE)*
+
+- Have: pairwise, recs, trending, reserve handoff. _(DONE)_
 - Missing: **map view**, **"tonight" live layer**, **reservation depth** (Phase 3 B2B),
   **collections/guides** ("Best terraces in Naco").
 - **Metric:** rankings created per user per month (the core habit).
@@ -101,6 +109,7 @@ Rank a place → get sharper recs → reserve/go → rank the next one.
 Legend: ✅ done · 🔜 next (v3) · 🟡 mid (v4–5) · 🔭 long / moat (v6+)
 
 ### Pillar 1 — Ranking & Taste (the core object)
+
 - ✅ Pairwise 0–10, sentiment buckets, tags, favorite dish, vibe notes, want-to-try
 - ✅ Taste Profile, streaks, match %
 - 🔜 **Re-rank / reorder** existing list by hand; **"why" prompts** that improve recs
@@ -108,7 +117,8 @@ Legend: ✅ done · 🔜 next (v3) · 🟡 mid (v4–5) · 🔭 long / moat (v6+
   friend-average); **"you'll probably rate this 8.9"** predicted scores
 - 🟡 **Occasions** (date night / business / solo) as a ranking dimension
 
-### Pillar 2 — Content & Identity (the Instagram leap) — *the differentiator*
+### Pillar 2 — Content & Identity (the Instagram leap) — _the differentiator_
+
 - ✅ Film-photo covers, avatars (portraits TODO), profiles, editorial look
 - 🔜 **Per-visit photos** (your own shots on a ranking, not just the cover)
 - 🔜 **Stories** — 24h "where I'm eating tonight" (drives the Tonight tab too)
@@ -120,6 +130,7 @@ Legend: ✅ done · 🔜 next (v3) · 🟡 mid (v4–5) · 🔭 long / moat (v6+
   by cuisine, by creator) — this is what turns a utility into a time-sink
 
 ### Pillar 3 — Social Graph & Messaging
+
 - ✅ Follow/followers, feed, cheers, activity, block/report/moderation
 - 🔜 **Push notifications** (the single biggest retention lever we don't have)
 - 🔜 **Friend-finding** (contacts + Instagram) surfaced continuously, not just onboarding
@@ -128,6 +139,7 @@ Legend: ✅ done · 🔜 next (v3) · 🟡 mid (v4–5) · 🔭 long / moat (v6+
 - 🟡 **Comments** on rankings (careful: moderation cost)
 
 ### Pillar 4 — Local & Nightlife
+
 - ✅ Restaurant profiles, friends-who-ranked, reserve-by-WhatsApp handoff, similar spots
 - 🔜 **Map view** (been / want-to-try / friends' picks) — Beli has it, we don't
 - 🟡 **"Tonight"** live layer — who's out, what's busy, resets 6 AM (the original vision)
@@ -135,6 +147,7 @@ Legend: ✅ done · 🔜 next (v3) · 🟡 mid (v4–5) · 🔭 long / moat (v6+
 - 🔭 **Events / tastings + ticketing** (first real monetization + UGC engine)
 
 ### Pillar 5 — Trust, Safety, Scale
+
 - ✅ Report/block/eject, EULA, account deletion, ban gate
 - 🟡 **Moderation queue tooling** + automated first-pass (scales with UGC/photos/video)
 - 🟡 **Rate limiting, abuse prevention, spam detection** on follows/cheers
@@ -149,40 +162,47 @@ format repeats, and there's no defined motion or navigation grammar. We fix that
 a real design system, then every screen inherits it.
 
 ### 5.1 Spatial system
+
 - **8pt grid** already in tokens; enforce it — no magic numbers in components.
 - Define **section rhythm**: screen padding, header block, content gap, rail gap as
   named tokens so every screen breathes identically.
 - **Safe-area + top-bar aware** layout constants (done for TopBar; formalize).
 
 ### 5.2 Type scale (expand from 6 → ~9 steps)
-Editorial needs contrast *and* density. Add steps so a feed can be dense while heroes
+
+Editorial needs contrast _and_ density. Add steps so a feed can be dense while heroes
 stay grand: `display / title / headline / subhead / body / callout / label / caption /
 micro`. Restaurant name in a rail ≠ restaurant name in a hero — today they fight.
 
 ### 5.3 Component library (formalize what exists + fill gaps)
+
 Buttons (primary/secondary/ghost/danger/pill/icon), Chips, Cards (hero/compact/rail),
 Avatar + stack, Score badge, Stat tile, Rail, Sheet/Modal, Toast, Skeleton, Empty
 state, Segmented control, Tab bar, Top bar. Each documented with the tokens it uses.
 A `/kitchen-sink` dev route rendering all of them so regressions are visible.
 
 ### 5.4 Navigation grammar
+
 - Bottom tabs = **destinations** (Discover, Rankings, Tonight, Profile).
 - Top bar = **utilities** (search, activity, leaderboard).
-- Full-screen routes = **focused flows** (rank, restaurant, user, share). *(pattern
-  established)*
+- Full-screen routes = **focused flows** (rank, restaurant, user, share). _(pattern
+  established)_
 - Add: a proper **modal/sheet layer** for quick actions (share, report, reserve) instead
   of inline expansion.
 
 ### 5.5 Motion language
-- One spring easing token *(DONE)*. Formalize: press (scale .96), enter (fade+rise),
+
+- One spring easing token _(DONE)_. Formalize: press (scale .96), enter (fade+rise),
   screen transitions, celebration stamp, cheers pop, count-ups. Everything respects
-  `prefers-reduced-motion`. Motion should feel like *iOS*, not like CSS.
+  `prefers-reduced-motion`. Motion should feel like _iOS_, not like CSS.
 
 ### 5.6 The "moments" (what people screenshot)
+
 Placement finish, streak milestones, match reveals, share cards, "you're #X in the
 city." These are the emotional peaks — they get the most design investment.
 
 ### 5.7 States, a11y, i18n
+
 Every list: loading skeleton, empty, error, offline. Contrast/tap-target audit. And
 **i18n from now** (ES default, EN toggle) — required for worldwide and cheap to add
 early, expensive to retrofit.
@@ -195,39 +215,46 @@ Today: single Bun/Hono API + one Postgres on Railway, Vite/Capacitor client, ima
 from `/public`. Great for a demo/one city. Here's the path to millions across cities
 without rewrites — sequenced so we only build each piece when a metric demands it.
 
-### 6.1 Media pipeline *(needed the moment users upload photos/video)*
+### 6.1 Media pipeline _(needed the moment users upload photos/video)_
+
 - Cloudinary (already env-wired) for images; **direct-to-storage signed uploads** so
   the API never proxies bytes; automatic transforms/`f_auto,q_auto`.
 - Video: Mux or Cloudinary video; HLS; thumbnail extraction. This is the biggest new
   infra when Pillar 2 video ships.
 
 ### 6.2 Feed at scale
+
 - Today: read-time fanout (query friends' rankings). Fine to ~thousands of follows.
 - At scale: **hybrid fanout** — precompute feeds for normal users, read-time for
   celebrities (the classic Twitter split). Add a `feed_entries` table + a worker.
 - **Cursor pagination** already in place ✅. Add caching (Redis) for hot feeds.
 
 ### 6.3 Search & discovery
+
 - Today: Postgres `ILIKE`. Fine for 35 spots, dies at national scale.
 - **Postgres FTS** next; **dedicated search** (Typesense/Meilisearch/OpenSearch) when
   Explore + multi-city land. Geo search (PostGIS) for map + "near me".
 
 ### 6.4 Notifications
+
 - **APNs/FCM via Capacitor Push**; a notifications service + `notifications` table;
-  batching + quiet hours; the activity feed becomes the in-app mirror. *(This is the
-  #1 retention gap and should be early v3.)*
+  batching + quiet hours; the activity feed becomes the in-app mirror. _(This is the
+  #1 retention gap and should be early v3.)_
 
 ### 6.5 Multi-city & i18n
+
 - `cities` as a first-class entity (neighborhoods belong to a city); feeds, leaderboards,
   trending all scoped by city. Content i18n (ES/EN → more). Currency/locale for reserve.
 
 ### 6.6 Reliability & ops
+
 - Move off single-instance: managed Postgres w/ replicas, connection pooling ✅ (already
   centralized), read replicas for feed reads. Observability (Sentry + structured logs +
   metrics). Rate limiting at the edge. Backups + migration discipline (already using
   Drizzle migrations ✅).
 
 ### 6.7 Moderation at scale
+
 - Automated first-pass (image/text classifiers) feeding the human queue we have the
   primitives for; audit trail (already soft-delete + ban) ✅.
 
@@ -236,6 +263,7 @@ without rewrites — sequenced so we only build each piece when a metric demands
 ## 7. The city-launch playbook (how we actually grow, Beli-style)
 
 Beli grew campus-by-campus. We grow **neighborhood-by-neighborhood, city-by-city**:
+
 1. **Seed the map** — pre-load the city's real spots with photos + geo (no empty map).
 2. **Recruit ~20 tastemakers** — local food accounts; give them creator profiles and
    pre-built guides so day-one feels alive (our seed generator is the demo version of
@@ -252,7 +280,7 @@ Beli grew campus-by-campus. We grow **neighborhood-by-neighborhood, city-by-city
 ## 8. Monetization (later, but design for it now)
 
 - **Free forever** for the social/ranking core (network effects > early revenue).
-- **Reservations B2B** — restaurant dashboards, the real DR infrastructure gap. *(Phase 3)*
+- **Reservations B2B** — restaurant dashboards, the real DR infrastructure gap. _(Phase 3)_
 - **Promoted spots / claim-your-restaurant** — native, tasteful, clearly labeled.
 - **Events & tastings + ticketing** — real-world exception lets us use external
   payment; digital unlocks must use Apple IAP (already flagged in APPSTORE.md).
@@ -265,7 +293,7 @@ B2B side can attach later without a migration.
 
 ## 9. Metrics that matter
 
-- **North star:** weekly *active rankers* (people who ranked ≥1 spot this week) — it
+- **North star:** weekly _active rankers_ (people who ranked ≥1 spot this week) — it
   compounds content, recs, and the social loop at once.
 - **Acquisition:** k-factor (invites × conversion). **Activation:** % following ≥5 &
   ranked ≥3 in week 1. **Retention:** D7/D30 by city cohort. **Engagement:** sessions/wk,
@@ -280,6 +308,7 @@ sentiment, match %, leaderboard, streaks, taste profile, tags/dish, recs + trend
 rails, top bar + bell + activity, dense mock world.
 
 **v3 — "Make the loops real"** (highest ROI, ~2–3 milestones)
+
 1. **Push notifications** (retention) + notification settings.
 2. **Public deep-link previews** for share cards/profiles (the share loop currently
    dead-ends) + real invite links.

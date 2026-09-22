@@ -1,7 +1,8 @@
-import { useColor } from '@/theme/useColor'
-import type { ColorToken } from '@/theme/vars'
 import type { ReactNode } from 'react'
 import { Circle, Path, Rect, Svg } from 'react-native-svg'
+
+import { useColor } from '@/theme/useColor'
+import type { ColorToken } from '@/theme/vars'
 
 // One icon language for the whole app, ported from apps/app/src/components/ui/
 // icons.tsx. Same geometry: 24 viewBox, 1.6 stroke, round caps/joins. On the web

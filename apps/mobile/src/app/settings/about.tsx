@@ -1,10 +1,11 @@
+import Constants from 'expo-constants'
+import { useRouter } from 'expo-router'
+import { Text, View } from 'react-native'
+
 import { Row, RowButton } from '@/components/SettingsRow'
 import { Caption } from '@/components/ui'
 import { ChevronIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
-import Constants from 'expo-constants'
-import { useRouter } from 'expo-router'
-import { Text, View } from 'react-native'
 
 // Acerca de (M15) — the three legal doc links plus the app's own version
 // number, split out of the old flat app/settings.tsx.

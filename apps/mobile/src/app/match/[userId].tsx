@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
   Body,
@@ -9,15 +14,11 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ApiError, api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import type { UserMatchResponse } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The taste-match pair page (M16) — why a match % means what it means,
 // personalized to the viewer and the profile owner: reached from the match

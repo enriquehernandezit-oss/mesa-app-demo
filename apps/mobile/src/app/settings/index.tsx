@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+
 import { RowButton } from '@/components/SettingsRow'
 import { Caption, Eyebrow } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -11,10 +16,6 @@ import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { MeStats } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 // Settings hub (M15) — a shallow index of a few grouped destinations instead
 // of the one long flat scroll app/settings.tsx used to be (521 lines, every

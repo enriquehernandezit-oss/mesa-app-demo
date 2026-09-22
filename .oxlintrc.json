@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "react/exhaustive-deps": "error",
+    // These 3 are new oxlint/react-compiler-style checks Biome never had — off
+    // for this tooling swap so the migration stays mechanical, not a fresh
+    // lint sweep. Worth a dedicated follow-up pass, not bundled here.
+    "react/immutability": "off",
+    "react/refs": "off",
+    "react/set-state-in-effect": "off"
+  },
+  "ignorePatterns": ["packages/db/drizzle/**", "apps/mobile/assets/**", ".expo/**"],
+  "env": {
+    "builtin": true
+  }
+}

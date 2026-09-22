@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { MAX_IMAGE_CHARS, isAllowedImageRef } from './imageRef'
 
 describe('isAllowedImageRef', () => {

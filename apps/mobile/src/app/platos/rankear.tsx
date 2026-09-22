@@ -1,3 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, ErrorState, Skeleton, Title } from '@/components/ui'
 import { CompareCard, type CompareCardItem } from '@/components/ui/CompareCard'
@@ -17,10 +22,6 @@ import {
 } from '@/lib/pairwise'
 import type { DishListDetail, DishListEntry } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
 
 // The dish-ranking pairwise flow (M20) — reached from a DishNudgeCard tap or
 // from a "Rankear más" CTA on app/platos/[listId].tsx. Both a first ranking
@@ -165,11 +166,12 @@ function PairwiseFlow({
   // stable once done (no further choose()/tie() calls change it) — the
   // effect's own dependency array already gives us that: it only re-fires if
   // `state.ordered` itself changes identity, which it doesn't once settled.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot on `done`; onDone (save.mutate) is stable enough not to need retriggering this.
+  // oxlint-disable react/exhaustive-deps -- one-shot on `done`; onDone (save.mutate) is stable enough not to need retriggering this.
   useEffect(() => {
     if (!done) return
     onDone(state.ordered.map((i) => i.id))
   }, [done, state.ordered])
+  // oxlint-enable react/exhaustive-deps
 
   if (done) {
     return (

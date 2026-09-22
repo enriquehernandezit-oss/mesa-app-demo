@@ -1,10 +1,14 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import type { ReactNode } from 'react'
+import { useState } from 'react'
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { showSheet } from '@/components/ui/Sheet'
 import {
   BookmarkIcon,
   CalendarIcon,
@@ -15,6 +19,8 @@ import {
   PlusIcon,
 } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -25,11 +31,6 @@ import { openImagePicker, resizeToJpeg } from '@/lib/image'
 import { isPendingInvite } from '@/lib/plans'
 import type { MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 // Shared avatar-change pipeline: sheet (camera/library) → permission → launch
 // → square-crop resize → upload. One implementation for both the main Profile
@@ -100,7 +101,12 @@ function AvatarEditButton({
   src,
   onPress,
   busy,
-}: { name: string; src?: string | null; onPress: () => void; busy: boolean }) {
+}: {
+  name: string
+  src?: string | null
+  onPress: () => void
+  busy: boolean
+}) {
   const t = useT()
   return (
     <View className="items-center">
@@ -417,7 +423,13 @@ function NavRow({
   meta,
   onPress,
   last,
-}: { icon: ReactNode; label: string; meta?: string; onPress: () => void; last?: boolean }) {
+}: {
+  icon: ReactNode
+  label: string
+  meta?: string
+  onPress: () => void
+  last?: boolean
+}) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -440,7 +452,11 @@ function StatCard({
   label,
   value,
   onPress,
-}: { label: string; value: string; onPress?: () => void }) {
+}: {
+  label: string
+  value: string
+  onPress?: () => void
+}) {
   const body = (
     <>
       <Caption className="text-micro">{label}</Caption>

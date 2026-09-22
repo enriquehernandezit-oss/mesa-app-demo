@@ -1,7 +1,8 @@
-import { Caption } from '@/components/ui'
-import { useT } from '@/lib/i18n'
 import { useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
+
+import { Caption } from '@/components/ui'
+import { useT } from '@/lib/i18n'
 
 // The repeat-dish nudge (M20) — shown on the rank reveal (right after
 // posting the dish that crossed the trigger) and on the standalone composer.

@@ -1,4 +1,5 @@
 import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+
 import { restaurants } from './discovery'
 import { listAuthorKind } from './enums'
 

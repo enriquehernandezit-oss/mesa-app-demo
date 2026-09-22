@@ -1,12 +1,3 @@
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
-import { Field } from '@/components/ui/Field'
-import { track } from '@/lib/analytics'
-import { authClient, signOut } from '@/lib/auth-client'
-import { authErrorMessage } from '@/lib/authErrors'
-import { clearAuthLost } from '@/lib/authLost'
-import { useT } from '@/lib/i18n'
-import { queryClient } from '@/lib/query'
-import { useResolvedTheme } from '@/theme/ThemeProvider'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -25,6 +16,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { track } from '@/lib/analytics'
+import { authClient, signOut } from '@/lib/auth-client'
+import { authErrorMessage } from '@/lib/authErrors'
+import { clearAuthLost } from '@/lib/authLost'
+import { useT } from '@/lib/i18n'
+import { queryClient } from '@/lib/query'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 
 // A terminal-style blinking cursor after "objetivo: SDQ" — same opacity-loop
 // shape as components/ui's Skeleton shimmer.
@@ -110,9 +111,10 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
     setError(null)
     setBusy(true)
     const addr = email.trim()
-    const res = await (mode === 'signup'
-      ? authClient.signUp.email({ email: addr, password, name: addr.split('@')[0] ?? addr })
-      : authClient.signIn.email({ email: addr, password })
+    const res = await (
+      mode === 'signup'
+        ? authClient.signUp.email({ email: addr, password, name: addr.split('@')[0] ?? addr })
+        : authClient.signIn.email({ email: addr, password })
     ).catch(() => ({ error: NETWORK_ERROR }))
     setBusy(false)
     if ('error' in res && res.error) {

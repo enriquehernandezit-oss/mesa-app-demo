@@ -1,5 +1,3 @@
-import { useColor } from '@/theme/useColor'
-import type { ColorToken } from '@/theme/vars'
 import { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, {
@@ -14,6 +12,9 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+
+import { useColor } from '@/theme/useColor'
+import type { ColorToken } from '@/theme/vars'
 
 // Eventos' shared motion vocabulary — one easing, short durations (≤320ms),
 // and every effect degrades to a plain fade (or nothing) under iOS Reduce
@@ -85,15 +86,7 @@ export function BurstDots({ trigger, color }: { trigger: number; color: ColorTok
   )
 }
 
-function BurstDot({
-  angle,
-  color,
-  p,
-}: {
-  angle: number
-  color: string
-  p: { value: number }
-}) {
+function BurstDot({ angle, color, p }: { angle: number; color: string; p: { value: number } }) {
   const style = useAnimatedStyle(() => {
     const r = 10 + p.value * 30
     return {

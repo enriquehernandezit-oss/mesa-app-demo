@@ -2,17 +2,6 @@ import '../global.css'
 // Imported for its side effect and kept first: Sentry initializes at module
 // scope, and it has to be in place before anything else can throw.
 import '@/lib/errors'
-import { ShareCardHost } from '@/components/ShareCardHost'
-import { SheetHost } from '@/components/ui/Sheet'
-import { Toaster } from '@/components/ui/Toast'
-import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
-import { useSession } from '@/lib/auth-client'
-import { initToken } from '@/lib/auth-token'
-import { captureError, setErrorUser } from '@/lib/errors'
-import { initLanguage, useT } from '@/lib/i18n'
-import { queryClient } from '@/lib/query'
-import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
-import { themeColors } from '@/theme/vars'
 import {
   CormorantGaramond_400Regular_Italic,
   CormorantGaramond_500Medium,
@@ -30,6 +19,18 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useEffect, useMemo, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+
+import { ShareCardHost } from '@/components/ShareCardHost'
+import { SheetHost } from '@/components/ui/Sheet'
+import { Toaster } from '@/components/ui/Toast'
+import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
+import { useSession } from '@/lib/auth-client'
+import { initToken } from '@/lib/auth-token'
+import { captureError, setErrorUser } from '@/lib/errors'
+import { initLanguage, useT } from '@/lib/i18n'
+import { queryClient } from '@/lib/query'
+import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
+import { themeColors } from '@/theme/vars'
 
 // .catch: a failed call here must never block the splash gate below — worst
 // case the splash is dismissed by the OS on its own timeout instead of by us.

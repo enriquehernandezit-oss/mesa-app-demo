@@ -1,7 +1,3 @@
-import { Eyebrow } from '@/components/ui'
-import { CheckIcon } from '@/components/ui/icons'
-import { getLanguage, t } from '@/lib/i18n'
-import { BRASS_SHADOW } from '@/theme/vars'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import Animated, {
@@ -11,6 +7,11 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+
+import { Eyebrow } from '@/components/ui'
+import { CheckIcon } from '@/components/ui/icons'
+import { getLanguage, t } from '@/lib/i18n'
+import { BRASS_SHADOW } from '@/theme/vars'
 
 // Mesa's own themed chooser (a centered pop-up since Sept 2026; was a bottom sheet) — the same imperative-promise shape as
 // lib/actionSheet.ts's showActionSheet, so a call site swaps by changing one

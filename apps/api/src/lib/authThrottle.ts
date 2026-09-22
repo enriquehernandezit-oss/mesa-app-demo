@@ -1,6 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { APIError, createAuthMiddleware, getIp } from 'better-auth/api'
 import { eq, sql } from 'drizzle-orm'
+
 import { type AuthEventType, recordAuthEvent } from './authEvents'
 
 // Per-account sign-in throttling.

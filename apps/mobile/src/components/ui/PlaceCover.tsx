@@ -1,9 +1,10 @@
-import { cloudinaryUrl } from '@/lib/media'
-import { useColor } from '@/theme/useColor'
 import { Image } from 'expo-image'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Circle, G, Line, Rect, Svg, Text as SvgText } from 'react-native-svg'
+
+import { cloudinaryUrl } from '@/lib/media'
+import { useColor } from '@/theme/useColor'
 
 // The cover for a place: its photo, else a deterministic generated mark so the
 // catalog never shows a blank box. Ported from apps/app/src/components/ui/

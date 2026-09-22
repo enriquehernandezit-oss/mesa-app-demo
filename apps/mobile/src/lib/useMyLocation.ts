@@ -6,6 +6,7 @@
 // "already denied?" check uses expo-location instead of navigator.permissions.
 import * as Location from 'expo-location'
 import { useSyncExternalStore } from 'react'
+
 import { type LatLng, getPosition } from './geo'
 
 // 'denied' is a permission decision — the fix is in the phone's Settings.

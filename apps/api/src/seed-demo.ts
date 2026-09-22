@@ -14,6 +14,7 @@
 
 import { db, pool, schema, scoreFor } from '@mesa/db'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
+
 import { auth } from './auth'
 
 const EMAIL = 'demo@mesa.test'

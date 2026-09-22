@@ -1,12 +1,13 @@
+import { useEffect, useRef } from 'react'
+import { Share, View } from 'react-native'
+import ViewShot, { type ViewShotRef, captureRef } from 'react-native-view-shot'
+
 import { ShareCard } from '@/components/ShareCard'
 import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { finishShareCard, useShareCardRequest } from '@/lib/shareCardStore'
-import { useEffect, useRef } from 'react'
-import { Share, View } from 'react-native'
-import ViewShot, { type ViewShotRef, captureRef } from 'react-native-view-shot'
 
 // Mounted once (in _layout). When a share request is live it renders the card
 // off-screen, waits for the cover image to load (ShareCard fires onReady, with a
@@ -22,7 +23,7 @@ export function ShareCardHost() {
 
   // A language flip mid-capture must not re-toast or restart the 3s fallback
   // timer — req identity alone drives the reset (see below).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  // oxlint-disable react/exhaustive-deps -- see above.
   useEffect(() => {
     done.current = false
     if (!req) return
@@ -36,6 +37,7 @@ export function ShareCardHost() {
     return () => clearTimeout(timer)
     // run is stable enough for this one-shot; req identity drives the reset.
   }, [req])
+  // oxlint-enable react/exhaustive-deps
 
   async function run() {
     if (done.current || !req) return

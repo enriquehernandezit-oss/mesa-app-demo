@@ -1,3 +1,8 @@
+import { Redirect, Tabs, useRouter } from 'expo-router'
+import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { useRef } from 'react'
+import { View } from 'react-native'
+
 import { MesaTabBar } from '@/components/MesaTabBar'
 import { usePushRouting } from '@/hooks/usePushRouting'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
@@ -6,10 +11,6 @@ import { useAuthLost } from '@/lib/authLost'
 import { tapLight } from '@/lib/haptics'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
-import { Redirect, Tabs, useRouter } from 'expo-router'
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
-import { useRef } from 'react'
-import { View } from 'react-native'
 
 // The four-tab shell. Self-guards: if the session is lost or the account is
 // ejected, redirect straight to sign-in (this is what makes sign-out reactive).

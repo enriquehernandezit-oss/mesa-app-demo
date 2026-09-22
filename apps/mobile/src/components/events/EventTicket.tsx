@@ -1,6 +1,16 @@
+import { LinearGradient } from 'expo-linear-gradient'
+import { Link } from 'expo-router'
+import { useEffect, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+import Animated, {
+  FadeIn,
+  FadeInLeft,
+  LinearTransition,
+  useReducedMotion,
+} from 'react-native-reanimated'
+
 import { Caption, MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import {
   BookmarkFilledIcon,
   BookmarkIcon,
@@ -12,6 +22,7 @@ import {
   SunIcon,
   WineGlassIcon,
 } from '@/components/ui/icons'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { useEventSave } from '@/hooks/useEventSave'
 import { eventCategoryLabel, eventPriceLabel } from '@/lib/display'
@@ -21,16 +32,7 @@ import { dateLocale, useT } from '@/lib/i18n'
 import type { EventSummary } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
-import { LinearGradient } from 'expo-linear-gradient'
-import { Link } from 'expo-router'
-import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
-import Animated, {
-  FadeIn,
-  FadeInLeft,
-  LinearTransition,
-  useReducedMotion,
-} from 'react-native-reanimated'
+
 import { AnimatedBar, BurstDots, PulseDot, usePop, useStaggerEntering } from './motion'
 
 // Eventos' building blocks (the redesign — color, motion, one-tap actions):

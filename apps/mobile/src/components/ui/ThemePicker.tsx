@@ -1,9 +1,10 @@
+import { startTransition, useEffect, useState } from 'react'
+import { View } from 'react-native'
+
 import { Caption, Segmented } from '@/components/ui'
 import { MoonIcon, SunIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { type ThemeChoice, useTheme } from '@/theme/ThemeProvider'
-import { startTransition, useEffect, useState } from 'react'
-import { View } from 'react-native'
 
 // Apariencia — Auto / Afternoon / Candlelit as one segmented control (the
 // founder's mock: one sunk track, a white thumb, sun/moon glyphs), replacing

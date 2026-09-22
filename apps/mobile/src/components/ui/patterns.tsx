@@ -1,13 +1,14 @@
+import { type Href, Link } from 'expo-router'
+import * as WebBrowser from 'expo-web-browser'
+import type { ReactNode } from 'react'
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+
 import { Caption, Chip, Eyebrow, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { DATA_FIGURES, GROUND, themeColors } from '@/theme/vars'
-import { type Href, Link } from 'expo-router'
-import * as WebBrowser from 'expo-web-browser'
-import type { ReactNode } from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 // A horizontal rail of cover cards under a section header — the same container
 // three times over (featured lists, similar spots, trending). Only the card

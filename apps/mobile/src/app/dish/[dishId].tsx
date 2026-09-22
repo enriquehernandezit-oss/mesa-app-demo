@@ -1,6 +1,12 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { ReportControl } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
-import { Body, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { GlassCircle } from '@/components/ui/GlassCircle'
 import { BackIcon, DirectionsIcon, PhoneIcon, WebIcon } from '@/components/ui/icons'
@@ -15,11 +21,6 @@ import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import type { DishDetail as DishDetailData } from '@/lib/types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Dish detail (Phase 6 mock C3) — a posted dish standing on its own: the hero
 // photo, its caption, and the linked ranking (the place card carries the poster's

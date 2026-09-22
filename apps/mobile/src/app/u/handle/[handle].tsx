@@ -1,10 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
+import { View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { EmptyState, Skeleton } from '@/components/ui'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
-import { useQuery } from '@tanstack/react-query'
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router'
-import { View } from 'react-native'
 
 // The landing point for a shared profile link (`/p/u/@ana`, rewritten by
 // +native-intent). Share links address people by handle; every in-app profile

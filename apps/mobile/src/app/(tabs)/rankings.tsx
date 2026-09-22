@@ -1,6 +1,24 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
+import ReanimatedSwipeable, {
+  type SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable'
+import Animated, { LinearTransition } from 'react-native-reanimated'
+
+import { EventTicket, useNow } from '@/components/events/EventTicket'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
-import { EventTicket, useNow } from '@/components/events/EventTicket'
 import {
   Button,
   Caption,
@@ -14,11 +32,10 @@ import {
   Skeleton,
   Title,
 } from '@/components/ui'
-import { KeyboardDone } from '@/components/ui/KeyboardDone'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { ListIcon, MoreIcon, ShareIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics, Stat } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -53,23 +70,6 @@ import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FlatList,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
-import ReanimatedSwipeable, {
-  type SwipeableMethods,
-} from 'react-native-gesture-handler/ReanimatedSwipeable'
-import Animated, { LinearTransition } from 'react-native-reanimated'
 
 type SavedKind = 'restaurants' | 'dishes' | 'events'
 type SavedItem =
@@ -83,6 +83,11 @@ function SavedEventTicket({ e, index }: { e: EventSummary; index: number }) {
   const now = useNow()
   return <EventTicket e={e} index={index} now={now} />
 }
+
+// Stable references for the "no data yet" case — `data?.field ?? []` would
+// otherwise hand these a fresh array every render, defeating memos below.
+const EMPTY_RANKINGS: Ranking[] = []
+const EMPTY_SAVED_DISHES: SavedDish[] = []
 
 // The ranked passport (M3) — mine (ordered, serif numerals, brass scores, notes),
 // want-to-try (saved), and by-sector. Ported from apps/app/src/screens/tabs/
@@ -115,7 +120,6 @@ export default function RankingsTab() {
   const [filters, setFilters] = useState<RankingFilters>(NO_FILTERS)
   const me = useProfile(true, 300_000)
   const accent = useColor('accent')
-  const queryClient = useQueryClient()
 
   // Animate a row's position ONLY when it's genuinely removed (swipe-to-
   // remove), not on every sort/filter change (M14) — SwipeToRemove's layout
@@ -170,7 +174,7 @@ export default function RankingsTab() {
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
   const { refreshing, onRefresh } = usePullToRefresh(mine.refetch)
 
-  const ranked = mine.data?.rankings ?? []
+  const ranked = mine.data?.rankings ?? EMPTY_RANKINGS
   // Sort/filter run over the whole in-memory list (see lib/rankingSort.ts and
   // the comment on GET /rankings). shareList and BarriosView still read `ranked`
   // raw — the top-5 card and the sector aggregate are about the real list, not
@@ -373,7 +377,7 @@ export default function RankingsTab() {
     ),
     [],
   )
-  const savedDishes = savedDishesQuery.data?.saved ?? []
+  const savedDishes = savedDishesQuery.data?.saved ?? EMPTY_SAVED_DISHES
   const savedItems: SavedItem[] = useMemo(() => {
     if (savedKind === 'restaurants')
       return (saved.data?.saved ?? []).map((v) => ({ kind: 'place', key: v.restaurant.id, v }))
@@ -565,7 +569,11 @@ function SwipeToRemove({
   onRemove,
   skipAnim,
   children,
-}: { onRemove: () => void; skipAnim?: boolean; children: ReactNode }) {
+}: {
+  onRemove: () => void
+  skipAnim?: boolean
+  children: ReactNode
+}) {
   const ref = useRef<SwipeableMethods>(null)
   const t = useT()
   return (
@@ -610,7 +618,10 @@ function SwipeToRemove({
 const RankingRow = memo(function RankingRow({
   ranking,
   skipAnim,
-}: { ranking: Ranking; skipAnim?: boolean }) {
+}: {
+  ranking: Ranking
+  skipAnim?: boolean
+}) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const placeholder = useColor('text-muted')
@@ -777,7 +788,12 @@ function ActionText({
   onPress,
   danger,
   disabled,
-}: { children: React.ReactNode; onPress: () => void; danger?: boolean; disabled?: boolean }) {
+}: {
+  children: React.ReactNode
+  onPress: () => void
+  danger?: boolean
+  disabled?: boolean
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -797,7 +813,10 @@ function ActionText({
 function BarriosView({
   rankings,
   onSelectSector,
-}: { rankings: Ranking[]; onSelectSector: (sector: string) => void }) {
+}: {
+  rankings: Ranking[]
+  onSelectSector: (sector: string) => void
+}) {
   const router = useRouter()
   const t = useT()
   // Keyed by the RAW neighborhood (nullable), not the display fallback — the
@@ -923,13 +942,7 @@ const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
 // The named-lists rail (M19) — the top of Guardados. A plain horizontal
 // ScrollView, not a FlatList: this is a handful of cards, never a long
 // virtualization-worthy list the way saved places/dishes below can be.
-function ListsRail({
-  lists,
-  onCreate,
-}: {
-  lists: CollectionSummary[]
-  onCreate: () => void
-}) {
+function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: () => void }) {
   const t = useT()
   return (
     <View className="mt-2">

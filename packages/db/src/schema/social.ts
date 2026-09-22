@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { check, index, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 
 // The social graph. follower_id follows following_id. Composite PK prevents

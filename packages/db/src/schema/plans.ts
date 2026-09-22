@@ -1,4 +1,5 @@
 import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { restaurants } from './discovery'
 import { planReply, planStatus } from './enums'

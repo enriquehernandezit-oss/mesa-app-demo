@@ -9,6 +9,7 @@
 // Always --dry-run first and read the report before a real run.
 import { db, pool, schema, scoreFor } from '@mesa/db'
 import { asc, eq } from 'drizzle-orm'
+
 import { lockUserList, rewrite } from './lib/rankingOrder'
 
 const { rankings } = schema

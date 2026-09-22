@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { MIN_SHARED_FOR_MATCH, isAgreement, tasteMatch } from './tasteMatch'
 
 describe('tasteMatch', () => {
@@ -33,9 +34,7 @@ describe('tasteMatch', () => {
     const at20 = tasteMatch(0, 20)
     expect(at3).not.toBeNull()
     expect(at20).not.toBeNull()
-    // biome-ignore lint/style/noNonNullAssertion: both checked non-null above
     expect(at20!).toBeGreaterThan(at3!)
-    // biome-ignore lint/style/noNonNullAssertion: checked non-null above
     expect(at20!).toBeLessThanOrEqual(100)
   })
 
@@ -44,9 +43,7 @@ describe('tasteMatch', () => {
     const at20 = tasteMatch(16, 20)
     expect(at3).not.toBeNull()
     expect(at20).not.toBeNull()
-    // biome-ignore lint/style/noNonNullAssertion: both checked non-null above
     expect(at20!).toBeLessThan(at3!)
-    // biome-ignore lint/style/noNonNullAssertion: checked non-null above
     expect(at20!).toBeGreaterThanOrEqual(0)
   })
 
@@ -55,9 +52,7 @@ describe('tasteMatch', () => {
     for (let gap = 0; gap <= 24; gap += 2) {
       const shown = tasteMatch(gap, 5)
       expect(shown).not.toBeNull()
-      // biome-ignore lint/style/noNonNullAssertion: checked non-null above
       expect(shown!).toBeLessThanOrEqual(prev)
-      // biome-ignore lint/style/noNonNullAssertion: checked non-null above
       prev = shown!
     }
   })
@@ -67,9 +62,7 @@ describe('tasteMatch', () => {
       for (const gap of [0, 4, 8, 12, 16, 24, 40]) {
         const shown = tasteMatch(gap, n)
         expect(shown).not.toBeNull()
-        // biome-ignore lint/style/noNonNullAssertion: checked non-null above
         expect(shown!).toBeGreaterThanOrEqual(0)
-        // biome-ignore lint/style/noNonNullAssertion: checked non-null above
         expect(shown!).toBeLessThanOrEqual(100)
       }
     }
@@ -87,9 +80,7 @@ describe('tasteMatch', () => {
     // avgGap = (1+3+14)/3 = 6.
     const shown = tasteMatch(6, 3)
     expect(shown).not.toBeNull()
-    // biome-ignore lint/style/noNonNullAssertion: checked non-null above
     expect(shown!).toBeGreaterThan(20)
-    // biome-ignore lint/style/noNonNullAssertion: checked non-null above
     expect(shown!).toBeLessThan(80)
   })
 })

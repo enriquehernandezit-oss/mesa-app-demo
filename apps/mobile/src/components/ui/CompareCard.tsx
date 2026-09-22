@@ -1,7 +1,8 @@
-import { Caption } from '@/components/ui'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { Pressable, Text, View } from 'react-native'
+
+import { Caption } from '@/components/ui'
+import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 
 // The photo-topped comparison card shared by the rank flow's "¿Cuál estuvo
 // mejor?" (B2). A photo over paper, the name + characteristics, an optional

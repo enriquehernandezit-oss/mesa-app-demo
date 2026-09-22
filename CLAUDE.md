@@ -113,9 +113,9 @@ ThemePicker swatches (literal previews of each theme). The real wordmark is at
 `assets/brand/mesa-wordmark-burgundy.png`; aesthetic references are in
 `assets/moodboard/`.
 
-**Content is Mesa, chrome is iOS.** The token layer governs every *content*
+**Content is Mesa, chrome is iOS.** The token layer governs every _content_
 surface — cards, rows, sheets' contents, the type ramp, the stroke-icon language.
-System *chrome* is genuinely native and follows the platform instead: navigation
+System _chrome_ is genuinely native and follows the platform instead: navigation
 bars (large titles, blur scroll edge — Mesa's serif rides in via
 `headerTitleStyle`), action sheets and alerts, `Switch`, `SFSafariViewController`,
 and Liquid Glass on controls that float over photos. The tab bar is the one
@@ -127,7 +127,7 @@ chrome only** (native header buttons; NativeShell's tab bar, if `NATIVE_TABS`
 is ever flipped back on) — MesaTabBar and everywhere else use the stroke icons
 in `components/ui/icons.tsx`, the one icon language for tokened surfaces; and
 any native surface must
-be told Mesa's *resolved* theme explicitly (`getResolvedTheme()`), because Auto
+be told Mesa's _resolved_ theme explicitly (`getResolvedTheme()`), because Auto
 turns Candlelit at 6pm on a light-mode phone and the system's own guess would be
 wrong. A control that lives inside a scrolling page is content, not chrome — that
 is why the view-switchers are Mesa's own tokened `Segmented` (components/ui: a

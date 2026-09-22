@@ -1,10 +1,17 @@
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { type Href, useRouter } from 'expo-router'
+import { memo, useCallback } from 'react'
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
+
 import { CheersButton } from '@/components/CheersButton'
+import { EventMiniCard, useNow } from '@/components/events/EventTicket'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { PersonRow } from '@/components/PersonRow'
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { TopBar } from '@/components/TopBar'
-import { EventMiniCard, useNow } from '@/components/events/EventTicket'
 import {
   Body,
   Button,
@@ -17,9 +24,9 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ChevronIcon, CommentIcon, MoreIcon } from '@/components/ui/icons'
 import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { api } from '@/lib/api'
@@ -32,12 +39,6 @@ import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { type Href, useRouter } from 'expo-router'
-import { memo, useCallback } from 'react'
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
-import Animated, { FadeInDown } from 'react-native-reanimated'
 
 // The discovery feed (Phase 6 mocks A1–A3): a featured-lists carousel, then the
 // feed column. Ranking cards are compact paper cards; dish posts carry a photo.

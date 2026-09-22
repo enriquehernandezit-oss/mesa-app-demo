@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+
 import type { AppEnv } from '../context'
 import { LEGAL_DOCS, type LegalDoc, type LegalDocId } from '../lib/legalCopy'
 import { esc } from '../lib/publicPage'

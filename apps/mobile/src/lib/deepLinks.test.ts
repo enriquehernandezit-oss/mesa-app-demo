@@ -6,6 +6,7 @@
 // types). Scoping the reference to this file avoids that risk entirely.
 /// <reference types="bun-types" />
 import { describe, expect, test } from 'bun:test'
+
 import { normalizeToPath, toAppPath } from './deepLinks'
 
 describe('normalizeToPath', () => {

@@ -1,7 +1,8 @@
-import { useResolvedTheme } from '@/theme/ThemeProvider'
-import { useColor } from '@/theme/useColor'
 import type { Ref } from 'react'
 import { Text, TextInput, View } from 'react-native'
+
+import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { useColor } from '@/theme/useColor'
 
 // Every text input in Mesa. The same class string and muted placeholder were
 // copy-pasted across nine files, and two screens had already grown their own

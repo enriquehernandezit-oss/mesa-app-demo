@@ -12,7 +12,7 @@ surface must also resolve in Candlelit. Every new token gets a Candlelit value.
 
 ## Global rules for this phase
 
-1. **Inert-by-design controls.** Reservation/ordering/table actions render *exactly* as
+1. **Inert-by-design controls.** Reservation/ordering/table actions render _exactly_ as
    designed but do nothing — they are "stale". They must NOT look disabled (no dimming, no
    `:disabled`); they look live. A no-op handler + a `data-stale` attribute marks them. This
    covers: Reserve/Order action pills, the restaurant "RESERVE A TABLE" section + time chips,
@@ -40,6 +40,7 @@ pills with a leading glyph — `◉ Reserve` · `▤ Order` · `➤ Nearby`. Res
 Nearby → map.
 
 **A3 full:**
+
 - `FEATURED LISTS` section header + `See all`. Horizontal rail of **light cards**: veiled photo
   on top (radius ~12), then on paper **below** the photo a sans title + mono progress
   ("3 of 10 ranked"). NOT overlay text on the photo.
@@ -155,8 +156,9 @@ Blocked accounts, legal links, **account deletion** (App Store 5.1.1).
 ## 09 · Tonight · Sobremesa — I1 tables · I2 detail
 
 Fed by **in-app typed fixtures** (no schema/API). All join/seat actions **inert**.
+
 - **I1**: serif "Tonight" + mono date pill ("Fri 9 Aug"). Chips `All · Near me · Seats left ·
-  8p+`. Table cards: veiled photo + mono "2 seats left" tag (top-right); serif name + sm score
+8p+`. Table cards: veiled photo + mono "2 seats left" tag (top-right); serif name + sm score
   circle badged with host first-name; chars w/ time; footer avatar stack + "Tomás hosting ·
   Lucía in" + "Join" pill (**inert**). Tab bar visible.
 - **I2**: hero photo (`film · candlelit`); serif name + score circle badged host first-name;

@@ -1,11 +1,12 @@
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
-import { authClient } from '@/lib/auth-client'
-import { authErrorMessage } from '@/lib/authErrors'
-import { useT } from '@/lib/i18n'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { authClient } from '@/lib/auth-client'
+import { authErrorMessage } from '@/lib/authErrors'
+import { useT } from '@/lib/i18n'
 
 // Reached from the verification email. Two ways it arrives on native: the API's
 // verify endpoint verifies the token and 302s to this page's universal link with
@@ -24,7 +25,7 @@ export default function VerifyEmail() {
 
   // A language flip mid-verification must not re-POST the same token to the
   // auth server — this only ever runs the one-shot verifyEmail call.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  // oxlint-disable react/exhaustive-deps -- see above.
   useEffect(() => {
     if (!token) return
     let cancelled = false
@@ -48,6 +49,7 @@ export default function VerifyEmail() {
       cancelled = true
     }
   }, [token])
+  // oxlint-enable react/exhaustive-deps
 
   // A hard reset to '/': verification signs the member in
   // (autoSignInAfterVerification), and this page renders outside the app's gate.

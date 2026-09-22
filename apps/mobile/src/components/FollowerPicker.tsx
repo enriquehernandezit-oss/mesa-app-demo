@@ -1,3 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+
 import { PersonRow } from '@/components/PersonRow'
 import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
@@ -5,9 +9,6 @@ import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import type { FollowUser } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
 
 // Invite picker for Planes (M3): a follower list with a select/deselect pill —
 // invitees are always the host's own followers (a decision made up front, see

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { bookingFields } from './import-events'
 
 // bookingFields gates the two booking columns — a bad capacity would show a

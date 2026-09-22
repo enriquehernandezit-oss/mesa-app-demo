@@ -1,15 +1,3 @@
-import { pickReportReasonNative } from '@/components/ReportControl'
-import { EmptyState, ErrorState, MAX_SCALE, RowsSkeleton } from '@/components/ui'
-import { Avatar } from '@/components/ui/Avatar'
-import { ArrowUpIcon, CloseIcon, MoreIcon } from '@/components/ui/icons'
-import { useProfile } from '@/hooks/useProfile'
-import { showActionSheet } from '@/lib/actionSheet'
-import { api } from '@/lib/api'
-import { displayScore } from '@/lib/display'
-import { useT } from '@/lib/i18n'
-import { timeAgo } from '@/lib/time'
-import type { FeedItem, RankingComment, RankingCommentsResponse } from '@/lib/types'
-import { useColor } from '@/theme/useColor'
 import { type InfiniteData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -23,6 +11,19 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { pickReportReasonNative } from '@/components/ReportControl'
+import { EmptyState, ErrorState, MAX_SCALE, RowsSkeleton } from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
+import { ArrowUpIcon, CloseIcon, MoreIcon } from '@/components/ui/icons'
+import { useProfile } from '@/hooks/useProfile'
+import { showActionSheet } from '@/lib/actionSheet'
+import { api } from '@/lib/api'
+import { displayScore } from '@/lib/display'
+import { useT } from '@/lib/i18n'
+import { timeAgo } from '@/lib/time'
+import type { FeedItem, RankingComment, RankingCommentsResponse } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
 
 const MAX_LEN = 280
 

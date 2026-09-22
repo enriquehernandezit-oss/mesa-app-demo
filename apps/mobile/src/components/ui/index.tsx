@@ -1,7 +1,3 @@
-import { ChevronIcon } from '@/components/ui/icons'
-import { useT } from '@/lib/i18n'
-import { useColor } from '@/theme/useColor'
-import { BRASS_SHADOW } from '@/theme/vars'
 import { type ReactNode, startTransition, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
@@ -21,6 +17,11 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated'
+
+import { ChevronIcon } from '@/components/ui/icons'
+import { useT } from '@/lib/i18n'
+import { useColor } from '@/theme/useColor'
+import { BRASS_SHADOW } from '@/theme/vars'
 
 // Mesa UI primitives, ported from apps/app/src/components/ui. Everything the app
 // renders composes from these so the brand rules (brass-only accent, serif
@@ -433,7 +434,11 @@ export const Skeleton = ({
   height = 16,
   width = '100%',
   className,
-}: { height?: number; width?: number | string; className?: string }) => {
+}: {
+  height?: number
+  width?: number | string
+  className?: string
+}) => {
   const o = useSharedValue(0.5)
   useEffect(() => {
     o.value = withRepeat(withTiming(1, { duration: 700 }), -1, true)
@@ -452,7 +457,11 @@ export const EmptyState = ({
   children,
   body,
   action,
-}: { children: ReactNode; body?: ReactNode; action?: ReactNode }) => (
+}: {
+  children: ReactNode
+  body?: ReactNode
+  action?: ReactNode
+}) => (
   <View className="mt-6 items-center gap-2 px-5">
     <SerifItalic className="text-serif-sm text-center">{children}</SerifItalic>
     {body && <Body className="text-center">{body}</Body>}
@@ -475,7 +484,11 @@ export const RowsSkeleton = ({
   rows = 4,
   thumb = 36,
   className,
-}: { rows?: number; thumb?: number; className?: string }) => (
+}: {
+  rows?: number
+  thumb?: number
+  className?: string
+}) => (
   <View className={`gap-3 pt-2 ${className ?? ''}`}>
     {Array.from({ length: rows }, (_, i) => i).map((i) => (
       <View key={i} className="flex-row items-center gap-3 py-2">
@@ -492,7 +505,10 @@ export const RowsSkeleton = ({
 export const ErrorState = ({
   children,
   onRetry,
-}: { children?: ReactNode; onRetry?: () => void }) => {
+}: {
+  children?: ReactNode
+  onRetry?: () => void
+}) => {
   const t = useT()
   return (
     <View className="mt-6 items-center px-5">
@@ -516,7 +532,10 @@ export const ErrorState = ({
 export const SectionHeader = ({
   children,
   action,
-}: { children: ReactNode; action?: ReactNode }) => (
+}: {
+  children: ReactNode
+  action?: ReactNode
+}) => (
   <View className="mb-3 mt-5 flex-row items-baseline justify-between gap-3">
     <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
       {children}
@@ -530,7 +549,11 @@ export const Toggle = ({
   checked,
   onChange,
   label,
-}: { checked: boolean; onChange?: (next: boolean) => void; label?: string }) => {
+}: {
+  checked: boolean
+  onChange?: (next: boolean) => void
+  label?: string
+}) => {
   // The real UISwitch: it animates, it can be dragged as well as tapped, and it
   // inherits every accessibility behavior iOS gives the control. The hand-rolled
   // pill it replaced only snapped between two positions. Prop API is unchanged,

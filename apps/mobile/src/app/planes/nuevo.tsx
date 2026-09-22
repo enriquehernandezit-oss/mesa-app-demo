@@ -1,3 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { FollowerPicker } from '@/components/FollowerPicker'
 import {
   Body,
@@ -13,9 +19,9 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
 import { Characteristics } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
@@ -29,11 +35,6 @@ import { dayChipLabel, timeChipLabel } from '@/lib/time'
 import type { ExploreResponse, FollowUser } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // A plan's spot: the slice of GET /restaurants' ExploreHit this screen
 // actually renders/sends — kept narrow rather than importing ExploreHit

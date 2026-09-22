@@ -48,13 +48,13 @@ migrate, and start commands, so the API service mostly configures itself.
 
 On the **mesa-api** service → **Variables**, add:
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` — reference the Postgres service |
-| `NODE_ENV` | `production` |
-| `BETTER_AUTH_SECRET` | a long random string — run `openssl rand -base64 32` |
-| `BETTER_AUTH_URL` | the API's public URL (see Step 4 — you'll set this after you have the domain) |
-| `APP_ORIGINS` | the origin(s) that call the API, comma-separated. With no web app this is mainly the marketing/landing origin; the native app sends no Origin header |
+| Variable             | Value                                                                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`       | `${{Postgres.DATABASE_URL}}` — reference the Postgres service                                                                                        |
+| `NODE_ENV`           | `production`                                                                                                                                         |
+| `BETTER_AUTH_SECRET` | a long random string — run `openssl rand -base64 32`                                                                                                 |
+| `BETTER_AUTH_URL`    | the API's public URL (see Step 4 — you'll set this after you have the domain)                                                                        |
+| `APP_ORIGINS`        | the origin(s) that call the API, comma-separated. With no web app this is mainly the marketing/landing origin; the native app sends no Origin header |
 
 **`APP_ORIGINS` is a production trust boundary — put ONLY real deployed origins
 here.** It feeds both the CORS allowlist and Better Auth's `trustedOrigins`, so
@@ -209,7 +209,7 @@ images resolve against — set it, or share pages render without a cover.
 A first deploy runs fine in a **half-dev mode**: with `NODE_ENV` unset and no
 email/SMS providers, the auth code falls back to dev behaviour — OTP codes and
 email links are `console.log`'d to the server instead of delivered. Flows return
-`200` and *look* healthy, but no real user ever receives a code or a link. Before
+`200` and _look_ healthy, but no real user ever receives a code or a link. Before
 letting anyone but yourself sign in, close the gap in this order:
 
 1. **Wire the email provider first.** Set `EMAIL_PROVIDER_API_KEY` (Resend) and
@@ -224,7 +224,7 @@ letting anyone but yourself sign in, close the gap in this order:
    Until it's set, phone `send-otp` returns `200` but only logs the code — it is
    not a working login path for real users.
 3. **Then set `NODE_ENV=production`** on the `mesa-api` service. This turns off
-   the dev fallbacks (no more secrets/links in logs). Do this step *after* #1 so
+   the dev fallbacks (no more secrets/links in logs). Do this step _after_ #1 so
    verification-on-signup has a real sender; the best-effort `sendMail` means a
    missing key won't break signup, but you still want mail actually delivering.
 4. **Lock `APP_ORIGINS`** to real deployed origins only — no `localhost`/LAN (see

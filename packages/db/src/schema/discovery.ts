@@ -11,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { geoPrecision, restaurantSource } from './enums'
 import { neighborhoods } from './reference'

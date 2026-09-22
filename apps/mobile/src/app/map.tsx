@@ -1,8 +1,13 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, EmptyState, ErrorState, Eyebrow, Title } from '@/components/ui'
-import { PlaceCover } from '@/components/ui/PlaceCover'
+import { Body, Caption, EmptyState, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { DirectionsIcon } from '@/components/ui/icons'
 import { ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { cuisineLabel, priceLabel } from '@/lib/display'
@@ -10,10 +15,6 @@ import { useT } from '@/lib/i18n'
 import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
 import { useMyLocation } from '@/lib/useMyLocation'
-import { useQuery } from '@tanstack/react-query'
-import { Link, useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
 
 // A barrio map of Santo Domingo — every spot at its real lat/lng, the ones people
 // you follow have ranked lit brass. Ported from apps/app/src/screens/map/

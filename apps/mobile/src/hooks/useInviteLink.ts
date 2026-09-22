@@ -1,10 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 
 // The invite link, shared by Settings' "Invita a tus amigos" row and the
 // find-friends screen — the code is created server-side on first ask, so an

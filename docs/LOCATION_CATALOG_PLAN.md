@@ -7,16 +7,16 @@ table to see what's actually landed vs. still open.
 
 ## Progress
 
-| # | Milestone | Status |
-|---|---|---|
-| M1 | Swipe, scroll, app-feel | **done** (commit pending push) |
-| M2 | Heart replaces 🥂 | **done** (commit pending push) |
-| M3 | Real location + Waze/Maps handoff | **done** (commit pending push) |
-| M4 | Catalog schema + search rewrite | **done** (commit pending push — see migration note below) |
-| M5 | Generated editorial covers | **done** (commit pending push) |
-| M6 | Foursquare import | **importer built & verified** (commit pending push) — awaiting Stage A data |
-| M7 | Bound map/onboarding/similar for scale | **done & verified** (commit pending push) |
-| M8 | Google typeahead gap-filler | **built & verified** (commit pending push) — awaiting founder's `GOOGLE_PLACES_API_KEY` |
+| #   | Milestone                              | Status                                                                                  |
+| --- | -------------------------------------- | --------------------------------------------------------------------------------------- |
+| M1  | Swipe, scroll, app-feel                | **done** (commit pending push)                                                          |
+| M2  | Heart replaces 🥂                      | **done** (commit pending push)                                                          |
+| M3  | Real location + Waze/Maps handoff      | **done** (commit pending push)                                                          |
+| M4  | Catalog schema + search rewrite        | **done** (commit pending push — see migration note below)                               |
+| M5  | Generated editorial covers             | **done** (commit pending push)                                                          |
+| M6  | Foursquare import                      | **importer built & verified** (commit pending push) — awaiting Stage A data             |
+| M7  | Bound map/onboarding/similar for scale | **done & verified** (commit pending push)                                               |
+| M8  | Google typeahead gap-filler            | **built & verified** (commit pending push) — awaiting founder's `GOOGLE_PLACES_API_KEY` |
 
 Update the status column (`not started` → `in progress` → `done (commit <hash>)`)
 as each milestone lands. If a milestone is only partly done, say what's left in
@@ -32,7 +32,7 @@ fifth is a bug reported mid-session.
 1. **"Cerca" doesn't know where you are.** There is **zero geolocation in the
    app** — no `navigator.geolocation`, no Capacitor plugin, nothing. "Cerca"
    ([QuickActions.tsx:37](../apps/app/src/components/QuickActions.tsx:37)) is a
-   plain `<Link to="/map">`, and the *other* "Cerca" chip in the rank flow
+   plain `<Link to="/map">`, and the _other_ "Cerca" chip in the rank flow
    ([RankAPlace.tsx:793](../apps/app/src/screens/rank/RankAPlace.tsx:793)) only
    re-sorts by the sector you typed during onboarding. Directions already hand
    off to Google Maps; Waze is nowhere.
@@ -45,23 +45,23 @@ fifth is a bug reported mid-session.
    same map pin. The founder wants Beli behaviour: search anything, it's there.
 5. **The "Listas destacadas" rail drags the page down as you swipe it.**
 
-**Root cause of #5, confirmed by reading the code:** it is *not* the rail's CSS.
+**Root cause of #5, confirmed by reading the code:** it is _not_ the rail's CSS.
 [`PullToRefresh.onTouchMove`](../apps/app/src/components/PullToRefresh.tsx:20) reads
 **only `clientY`** and never compares horizontal movement. The rail renders
-*inside* `<PullToRefresh>` near the top of the feed where `window.scrollY <= 0`,
+_inside_ `<PullToRefresh>` near the top of the feed where `window.scrollY <= 0`,
 so a sideways swipe with any downward drift sets `pull` and translates the whole
 feed down. `setPull` also re-renders the entire feed subtree on every touchmove —
-that's the jank. (The rail *also* lacks the momentum/containment that
+that's the jank. (The rail _also_ lacks the momentum/containment that
 `.mesa-chiprail` and `.dish-rail` already have; fix both.)
 
 ### Decisions locked with the founder
 
-| | Decision |
-|---|---|
-| **Map** | Keep Mesa's hand-drawn SVG map. Add **real geolocation** + a Waze / Google Maps / Apple Maps chooser. No Google tiles, no client-side map key. |
-| **Catalog** | **Foursquare OS Places** bulk import (Apache-2.0, permanently storable) as the system of record; **Google Places** typeahead only as a live gap-filler. |
-| **Photos** | **Generated editorial covers only** for now. No third-party photos. Photo capture deferred. |
-| **Heart** | Replaces 🥂 wherever it's a *reaction* (feed button + Activity). Share copy keeps 🥂 (an SVG can't travel in a WhatsApp message). `HeartIcon` currently means "Recomendados para ti" — that gets a new icon. |
+|             | Decision                                                                                                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Map**     | Keep Mesa's hand-drawn SVG map. Add **real geolocation** + a Waze / Google Maps / Apple Maps chooser. No Google tiles, no client-side map key.                                                               |
+| **Catalog** | **Foursquare OS Places** bulk import (Apache-2.0, permanently storable) as the system of record; **Google Places** typeahead only as a live gap-filler.                                                      |
+| **Photos**  | **Generated editorial covers only** for now. No third-party photos. Photo capture deferred.                                                                                                                  |
+| **Heart**   | Replaces 🥂 wherever it's a _reaction_ (feed button + Activity). Share copy keeps 🥂 (an SVG can't travel in a WhatsApp message). `HeartIcon` currently means "Recomendados para ti" — that gets a new icon. |
 
 ### The legal constraint that shapes the whole catalog design
 
@@ -76,12 +76,13 @@ photos**, which is why photos must be Mesa's own answer regardless of provider.
 
 ---
 
-## M1 — Swipe, scroll, and app-feel  *(no external deps; ship first)*
+## M1 — Swipe, scroll, and app-feel _(no external deps; ship first)_
 
 Run under the **`emil-design-eng`**, **`impeccable`**, and **`ui-ux-pro-max`**
 skills, as the founder asked.
 
 **The reported bug:**
+
 - `PullToRefresh` — capture `startX` too; on the first move, if `|dx| > |dy|`,
   abandon the gesture for its duration (set `startY.current = null`). Also
   require a small dead-zone before engaging, add the missing `onTouchCancel`
@@ -96,17 +97,18 @@ skills, as the founder asked.
 
 **The webby tells** (each is small; together they're the whole difference):
 
-| Fix | Where |
-|---|---|
-| `-webkit-tap-highlight-color: transparent` — set **nowhere** today; the loudest single tell | `global.css` |
-| `user-select: none` + `-webkit-touch-callout: none` on controls (only 2 sites have it) | `global.css` |
-| `touch-action: manipulation` on interactive elements — kills the 300ms double-tap delay | `global.css` |
-| **`.search-field` 13px → 16px** — under 16px iOS zooms on focus and never returns | [feed.css:258](../apps/app/src/screens/tabs/feed.css:258) |
-| Momentum on the remaining rails (inconsistent by omission) | `feed.css` |
-| `::selection` + `caret-color` → brass (currently OS blue, the only non-brass chrome) | `global.css` |
-| Haptics on cheers / rank-stamp / FAB — `@capacitor/haptics` + `navigator.vibrate` fallback | new `lib/haptics.ts` |
+| Fix                                                                                         | Where                                                     |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `-webkit-tap-highlight-color: transparent` — set **nowhere** today; the loudest single tell | `global.css`                                              |
+| `user-select: none` + `-webkit-touch-callout: none` on controls (only 2 sites have it)      | `global.css`                                              |
+| `touch-action: manipulation` on interactive elements — kills the 300ms double-tap delay     | `global.css`                                              |
+| **`.search-field` 13px → 16px** — under 16px iOS zooms on focus and never returns           | [feed.css:258](../apps/app/src/screens/tabs/feed.css:258) |
+| Momentum on the remaining rails (inconsistent by omission)                                  | `feed.css`                                                |
+| `::selection` + `caret-color` → brass (currently OS blue, the only non-brass chrome)        | `global.css`                                              |
+| Haptics on cheers / rank-stamp / FAB — `@capacitor/haptics` + `navigator.vibrate` fallback  | new `lib/haptics.ts`                                      |
 
 **Home-screen correctness:**
+
 - `manifest.webmanifest` — `background_color`/`theme_color` are hardcoded to
   Candlelit oxblood `#210104` while Afternoon is the default theme, so an
   install splash flashes dark for a light-theme user. Add a `maskable` icon
@@ -128,7 +130,7 @@ skills, as the founder asked.
   active state; the existing stroke `HeartIcon` becomes the inactive state.
 - `CheersButton.tsx:50` — `<span className="cheers__glass">🥂</span>` → the icon.
   Keep the bespoke `cheers-pop` spring and the `:active` scale(0.9); retarget the
-  keyframe from a rotating glass to a heart *swell* (scale, no rotation — a
+  keyframe from a rotating glass to a heart _swell_ (scale, no rotation — a
   rotating heart reads as a bug). Keep the 450ms CSS/JS pairing in sync.
   Fix the flagged **39px-wide** tap target to ≥44px while here.
 - `ActivityScreen.tsx:157` — drop the trailing 🥂 from the sentence.
@@ -153,7 +155,7 @@ skills, as the founder asked.
   and the `NSLocationWhenInUseUsageDescription` string that `docs/NATIVE.md`
   already documents but no code has ever needed.
 - `useMyLocation()` — permission state machine: `idle → prompting → granted |
-  denied | unavailable`, cached in `sessionStorage`. **Never auto-prompt on
+denied | unavailable`, cached in `sessionStorage`. **Never auto-prompt on
   load**; prompt on the first tap of "Cerca". On denial, fall back silently to
   today's self-declared-sector sort — the feature degrades, it never blocks.
 - **"Cerca" becomes real**: sorts by true distance, shows `"1,2 km"` on rows,
@@ -194,12 +196,12 @@ with `geo_precision='sector'`.
 Piantini locations). Dedupe is name **+ distance**, in `apps/api/src/lib/placeMatch.ts`,
 shared by the importer and `POST /restaurants`:
 
-| # | Rule | Action |
-|---|---|---|
-| 1 | `fsq_place_id` present | update |
-| 2 | normalized name equal **and** ≤250 m | **adopt** (attach id only; keep curated name/coords/cover) |
-| 3 | `similarity ≥ 0.55` **and** ≤150 m | **adopt** |
-| 4 | else | insert |
+| #   | Rule                                 | Action                                                     |
+| --- | ------------------------------------ | ---------------------------------------------------------- |
+| 1   | `fsq_place_id` present               | update                                                     |
+| 2   | normalized name equal **and** ≤250 m | **adopt** (attach id only; keep curated name/coords/cover) |
+| 3   | `similarity ≥ 0.55` **and** ≤150 m   | **adopt**                                                  |
+| 4   | else                                 | insert                                                     |
 
 **Search rewrite** — `GET /restaurants` currently `GROUP BY`s the whole table
 before `LIMIT 30`. Invert it: resolve 30 matching ids first, then join the friend
@@ -244,7 +246,7 @@ can't resolve and DESIGN.md freezes Candlelit hex.
 
 ---
 
-## M6 — Foursquare import  *(the irreversible one — lands on proven ground)*
+## M6 — Foursquare import _(the irreversible one — lands on proven ground)_
 
 **Stage A, offline, once:** DuckDB over the Foursquare HuggingFace mirror →
 `country='DO'`, `date_closed IS NULL`, Santo Domingo bbox, categories under
@@ -263,7 +265,7 @@ that vanishes from a later extract may already be ranked; it's only ever marked
 
 **Guard `bun run db:seed`** in the same commit: `seed.ts:83` is
 `TRUNCATE ... restaurants ... CASCADE`, which after the import destroys the
-catalog *and every ranking pointing at it*. Refuse to run when imported rows
+catalog _and every ranking pointing at it_. Refuse to run when imported rows
 exist unless `MESA_SEED_FORCE=1`.
 
 **STATUS — Stage B built & verified, Stage A is the founder's to run.**
@@ -290,7 +292,7 @@ that write is the founder's call, like seeding.
 
 ## M7 — Bound everything the catalog would break
 
-- **`GET /restaurants/map` is the top risk.** It returns *every* restaurant
+- **`GET /restaurants/map` is the top risk.** It returns _every_ restaurant
   unbounded, and `MapScreen.project()` fits the **bbox of whatever it receives**
   into a fixed viewBox — one imported place near Las Américas rescales the map
   and squashes Piantini to ~20px. Bound it to places with a ranking, saved by me,
@@ -309,14 +311,14 @@ that write is the founder's call, like seeding.
 
 ---
 
-## M8 — Google typeahead gap-filler  *(last: smallest value, only paid dep)*
+## M8 — Google typeahead gap-filler _(last: smallest value, only paid dep)_
 
 `GET /restaurants/search-external?q=` — server-side only.
 **`GOOGLE_PLACES_API_KEY` must never be `VITE_`-prefixed**: Vite inlines every
 `VITE_*` into the client bundle, and that bundle is the public web app.
 
 Calls Places Autocomplete with a field mask of **`placeId` + `structuredFormat`
-only** — which keeps it on the cheapest SKU *and* means we never receive
+only** — which keeps it on the cheapest SKU _and_ means we never receive
 coordinates at all. Fires only when the debounced query is ≥3 chars **and**
 Mesa returned <3 results, with a 5-minute `staleTime` and a per-user rate limit.
 
@@ -345,7 +347,7 @@ guarantee.
 
 ---
 
-## M9 — Tap a Google result → a real, populated profile *(founder decision, reverses two calls above)*
+## M9 — Tap a Google result → a real, populated profile _(founder decision, reverses two calls above)_
 
 Tapping a suggestion now calls Google Place Details (`POST
 /restaurants/from-google`), populates the row from it, and lands the member
@@ -382,13 +384,13 @@ configured, so a profile never ends up mapless.
 
 ## Critical files
 
-| Area | Files |
-|---|---|
-| Swipe/app-feel | `components/PullToRefresh.tsx`, `screens/tabs/feed.css`, `styles/global.css`, `public/manifest.webmanifest` |
-| Heart | `components/ui/icons.tsx`, `screens/tabs/CheersButton.tsx`, `screens/tabs/ProfileTab.tsx`, `docs/DESIGN.md` |
-| Location | new `lib/geo.ts` + `lib/useMyLocation.ts`, `components/QuickActions.tsx`, `screens/map/MapScreen.tsx`, `screens/restaurant/RestaurantProfile.tsx` |
-| Catalog | `packages/db/src/schema/{discovery,reference,enums}.ts`, `apps/api/src/routes/restaurants.ts`, new `apps/api/src/lib/placeMatch.ts`, new `packages/db/src/import-foursquare.ts`, `packages/db/src/seed.ts` |
-| Covers | new `components/ui/PlaceCover.tsx`, `lib/media.ts` (unchanged, called by it) |
+| Area           | Files                                                                                                                                                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Swipe/app-feel | `components/PullToRefresh.tsx`, `screens/tabs/feed.css`, `styles/global.css`, `public/manifest.webmanifest`                                                                                                |
+| Heart          | `components/ui/icons.tsx`, `screens/tabs/CheersButton.tsx`, `screens/tabs/ProfileTab.tsx`, `docs/DESIGN.md`                                                                                                |
+| Location       | new `lib/geo.ts` + `lib/useMyLocation.ts`, `components/QuickActions.tsx`, `screens/map/MapScreen.tsx`, `screens/restaurant/RestaurantProfile.tsx`                                                          |
+| Catalog        | `packages/db/src/schema/{discovery,reference,enums}.ts`, `apps/api/src/routes/restaurants.ts`, new `apps/api/src/lib/placeMatch.ts`, new `packages/db/src/import-foursquare.ts`, `packages/db/src/seed.ts` |
+| Covers         | new `components/ui/PlaceCover.tsx`, `lib/media.ts` (unchanged, called by it)                                                                                                                               |
 
 **Reuse, don't rebuild:** `toast()` + `comingSoon()`, `useBack.ts` (the hook
 convention `useDebounced`/`useMyLocation` should follow), `EmptyState`,

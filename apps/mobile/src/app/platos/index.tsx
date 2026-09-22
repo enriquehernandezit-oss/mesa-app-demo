@@ -1,11 +1,12 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, Stack, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import type { DishListSummary } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // "Tus platos" (M20) — every dish the member has posted at 3+ restaurants,
 // ranked or still waiting on them. Reached from Profile; also where a

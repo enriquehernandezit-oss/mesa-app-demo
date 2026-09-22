@@ -1,7 +1,8 @@
+import { Stack } from 'expo-router'
+
 import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
-import { Stack } from 'expo-router'
 
 // Explore gets its own stack purely so it can own a real UINavigationBar — that
 // is what `headerSearchBarOptions` attaches to, and a search field pinned to the

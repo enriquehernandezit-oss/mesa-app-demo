@@ -2,6 +2,7 @@ import { db, schema } from '@mesa/db'
 import { eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
+
 import type { AuthedEnv } from '../context'
 import { generateInviteCode } from '../lib/inviteCode'
 import { requireAuth } from '../middleware/session'

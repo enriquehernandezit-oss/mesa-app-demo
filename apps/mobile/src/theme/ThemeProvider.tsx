@@ -2,6 +2,7 @@ import * as SecureStore from 'expo-secure-store'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { AppState, Appearance, View } from 'react-native'
+
 import { GROUND, type ThemeName, themeVars } from './vars'
 
 // Theme resolution, ported from apps/app/src/styles/theme.ts. Two themes plus

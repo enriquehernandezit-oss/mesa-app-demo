@@ -1,4 +1,5 @@
 import { date, index, integer, pgTable, text, uuid } from 'drizzle-orm/pg-core'
+
 import { restaurants } from './discovery'
 
 // A restaurant's own published menu (M5) — verified prices/items sourced from

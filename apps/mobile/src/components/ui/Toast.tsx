@@ -1,9 +1,11 @@
-import { useTabBarClearance } from '@/components/MesaTabBar'
-import { tapError } from '@/lib/haptics'
-import { BRASS_SHADOW } from '@/theme/vars'
 import { useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
+
+import { useTabBarClearance } from '@/components/MesaTabBar'
+import { tapError } from '@/lib/haptics'
+import { BRASS_SHADOW } from '@/theme/vars'
+
 import { type Toast, dismiss, useToasts } from './toast-store'
 
 // Mounted once (root layout). Renders whatever toast-store holds, stacked above

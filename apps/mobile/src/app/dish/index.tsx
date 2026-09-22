@@ -1,3 +1,10 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import {
   Body,
   Button,
@@ -28,12 +35,6 @@ import { useLanguage, useT } from '@/lib/i18n'
 import { usePreventRemove } from '@/lib/preventRemove'
 import type { DishNudge, RestaurantProfileResponse } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Post a dish (Phase 6 mocks C1–C2) — a photo attached to a place you've ranked.
 // Two steps: C1 choose the shot + treatment, C2 name/caption/toggles + link. The
@@ -177,13 +178,14 @@ export default function DishCompose() {
   // before goBack() asks the navigator to remove the screen; calling it
   // synchronously in onSuccess would still see the OLD `dirty=true` closure
   // usePreventRemove registered for this render and block its own exit.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot on `posted`; goBack is stable enough (router + a route param) not to need retriggering this.
+  // oxlint-disable react/exhaustive-deps -- one-shot on `posted`; goBack is stable enough (router + a route param) not to need retriggering this.
   useEffect(() => {
     if (posted && !goneRef.current) {
       goneRef.current = true
       goBack()
     }
   }, [posted])
+  // oxlint-enable react/exhaustive-deps
 
   // Swipe-down-to-dismiss (and Android hardware back) closes the composer
   // outright once nothing's been entered.

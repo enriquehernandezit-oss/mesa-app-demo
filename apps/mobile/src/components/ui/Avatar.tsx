@@ -1,8 +1,9 @@
-import { useColor } from '@/theme/useColor'
-import type { ColorToken } from '@/theme/vars'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Text, View } from 'react-native'
+import { Text } from 'react-native'
+
+import { useColor } from '@/theme/useColor'
+import type { ColorToken } from '@/theme/vars'
 
 // One avatar everywhere: a photo when the user has one, else their initial on a
 // warm gradient ringed in brass. Ported from apps/app/src/components/ui/Avatar.
@@ -18,7 +19,11 @@ export function Avatar({
   name,
   src,
   size = 32,
-}: { name: string; src?: string | null; size?: number }) {
+}: {
+  name: string
+  src?: string | null
+  size?: number
+}) {
   const ring = useColor('accent')
   const hue = useColor(hueFor(name))
   const sunk = useColor('bg-sunk')

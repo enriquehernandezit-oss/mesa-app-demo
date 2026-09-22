@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs'
+
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
+
 import { db, pool } from './client'
 import { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 import * as schema from './schema'

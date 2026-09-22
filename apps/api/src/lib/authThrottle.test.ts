@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import {
   FAILURE_DECAY_MS,
   effectiveFailures,

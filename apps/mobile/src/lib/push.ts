@@ -2,6 +2,7 @@ import { requireOptionalNativeModule } from 'expo'
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
+
 import { api } from './api'
 
 export { pushDeepLink } from './pushLinks'

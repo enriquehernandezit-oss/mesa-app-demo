@@ -1,6 +1,8 @@
+import { Linking, Share } from 'react-native'
+
 import { track } from '@/lib/analytics'
 import { getLanguage, t } from '@/lib/i18n'
-import { Linking, Share } from 'react-native'
+
 import { apiOrigin } from './api'
 
 // The public profile link — the growth loop's return path. Falls back to the

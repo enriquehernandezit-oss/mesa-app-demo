@@ -55,7 +55,10 @@ async function run() {
       if (TAG_ES[tag]) distribution.set(tag, (distribution.get(tag) ?? 0) + 1)
     }
     if (!dryRun) {
-      await db.update(rankings).set({ tags: normalized }).where(sql`${rankings.id} = ${r.id}`)
+      await db
+        .update(rankings)
+        .set({ tags: normalized })
+        .where(sql`${rankings.id} = ${r.id}`)
     }
   }
 

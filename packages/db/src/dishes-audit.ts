@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+
 import { guessDishCategory } from './dishCategories'
 
 // Read-only sanity check for the dish-category keyword matcher (M13) — runs

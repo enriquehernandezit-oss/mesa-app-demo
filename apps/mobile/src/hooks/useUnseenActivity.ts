@@ -1,7 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+
 import { useActivitySeen } from '@/lib/activitySeen'
 import { api } from '@/lib/api'
 import type { ActivityItem } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
 
 // How many activity events landed since the member last opened Activity. Shared
 // by the TopBar bell and the tab bar's badge, so both read one query and one

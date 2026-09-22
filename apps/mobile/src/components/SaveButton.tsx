@@ -1,11 +1,12 @@
+import { useRouter } from 'expo-router'
+import { Pressable, Text } from 'react-native'
+
 import { MAX_SCALE } from '@/components/ui'
 import { BookmarkFilledIcon, BookmarkIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { type SaveTarget, useSave } from '@/hooks/useSave'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
-import { useRouter } from 'expo-router'
-import { Pressable, Text } from 'react-native'
 
 // The one save/unsave control (M19) — next to CheersButton in the feed (a
 // dish post saves the dish, a ranking post saves the restaurant), and on the

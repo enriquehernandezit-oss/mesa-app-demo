@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, Stack, useRouter } from 'expo-router'
+import { useMemo } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import {
   Button,
   Caption,
@@ -12,10 +17,6 @@ import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import { isPastPlan, isPendingInvite } from '@/lib/plans'
 import { formatPlanDate } from '@/lib/time'
 import type { Plan, PlanReply } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useRouter } from 'expo-router'
-import { useMemo } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Planes (M3): the entry point for group dinners, reached from Profile's
 // "Planes" row and Activity's plan rows. Three sections, in the order a

@@ -1,6 +1,8 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from 'bun:test'
+
 import { zipSync } from 'fflate'
+
 import { parseInstagramExport, parseInstagramJson } from './instagramImport'
 
 const followersJson = JSON.stringify([

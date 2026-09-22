@@ -1,3 +1,7 @@
+import { File } from 'expo-file-system'
+import { useState } from 'react'
+import { ScrollView, Text, View } from 'react-native'
+
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Body, Button, Caption, Card, Eyebrow, Title } from '@/components/ui'
 import { useInviteLink } from '@/hooks/useInviteLink'
@@ -6,9 +10,6 @@ import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { parseInstagramExport } from '@/lib/instagramImport'
 import type { ContactMatchUser } from '@/lib/types'
-import { File } from 'expo-file-system'
-import { useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
 
 // Instagram find-friends import (M18): a step-by-step guide to Instagram's
 // own "Descarga tu información" export, then a local file pick + parse (no

@@ -46,6 +46,7 @@ from git history if it's ever needed again.
 
 Source docs (both **currently untracked** — `.impeccable/` isn't in git yet;
 decide whether to commit it or add it to `.gitignore`):
+
 - [`.impeccable/critique/2026-08-21T02-57-55Z__apps-app-src.md`](../.impeccable/critique/2026-08-21T02-57-55Z__apps-app-src.md) — original pass, 23/40.
 - [`.impeccable/critique/2026-08-22T18-31-17Z__apps-app-src.md`](../.impeccable/critique/2026-08-22T18-31-17Z__apps-app-src.md) — re-critique after the fixes below, **28/40**, two independent dual-agent assessments (design review + browser evidence), no disagreements between them.
 
@@ -73,7 +74,7 @@ this conversation:
   the same transaction.
 - **The `PlaceStep` React warning** — fixed by a spawned background task,
   merged cleanly.
-- **Language sweep (pass 1)** — Spanish-first, informal *tú*, documented in
+- **Language sweep (pass 1)** — Spanish-first, informal _tú_, documented in
   `docs/DESIGN.md` § "Language & voice", swept across all 33 screen/component
   files plus two `en-US` date-locale leaks (`fixtures/tonight.ts`,
   `ProfileTab.tsx`). This pass covered every UI-chrome file but **stopped at
@@ -104,7 +105,7 @@ this conversation:
 - Updated `packages/db/src/seed-extra.ts`'s `TAGS` constant to the same
   Spanish vocabulary as `RANK_TAGS` in `RankAPlace.tsx`, so any **future**
   reseed writes tags that already match — the display-layer map above is
-  what makes *existing* rows (including whatever's in prod right now) render
+  what makes _existing_ rows (including whatever's in prod right now) render
   correctly without needing that reseed.
 - Verified live in-browser (logged in as demo, via the same
   `vite.verify.config.ts` + local API pattern used throughout this session):
@@ -117,8 +118,9 @@ this conversation:
   "the one place we write in English," a Phase 6 mock decision, not a miss.
 
 ### 4. P2 behavioral fixes (this session, after pass 2 — committed 214e9c2 was
-   pushed at the start of this session; these are on top, **not yet
-   committed** — see the commit block at the end of this file)
+
+pushed at the start of this session; these are on top, **not yet
+committed** — see the commit block at the end of this file)
 
 All three deferred P2 behavioral bugs from the 2026-08-22 re-critique are now
 fixed:
@@ -154,6 +156,7 @@ clean on every file touched.
 While setting up browser verification, `bun run dev` sign-in (any method)
 crashed the client with `BetterAuthError: Invalid base URL: /api-proxy`.
 Root cause, in `apps/app/src/lib/auth-client.ts`:
+
 - `VITE_API_URL=/api-proxy` (relative, dev-only, routes through the
   same-origin proxy in `vite.config.ts` for cookie reasons) — but
   `better-auth` 1.6.25's client requires an **absolute** URL with a protocol
@@ -163,8 +166,8 @@ Root cause, in `apps/app/src/lib/auth-client.ts`:
   against `window.location.origin`) surfaced a **second**, related bug: the
   API mounts Better Auth at `/api/auth/*` (`apps/api/src/index.ts:38`), not
   at the API root that `VITE_API_URL` points at. Once the URL is absolute,
-  `better-auth`'s client only auto-appends `/api/auth` for a *bare origin
-  with no path* — `/api-proxy` already has a path segment, so the
+  `better-auth`'s client only auto-appends `/api/auth` for a _bare origin
+  with no path_ — `/api-proxy` already has a path segment, so the
   auto-append never fired, and requests 404'd one segment short
   (`/api-proxy/sign-in/email` instead of `/api-proxy/api/auth/sign-in/email`).
 

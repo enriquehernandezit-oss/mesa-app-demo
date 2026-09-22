@@ -1,5 +1,6 @@
 /// <reference types="bun-types" />
 import { describe, expect, test } from 'bun:test'
+
 import {
   type PairwiseState,
   choose,
@@ -84,7 +85,7 @@ describe('initInsertMany — multiple new items into an existing order (M20)', (
       const k = 1 + Math.floor(rand() * 10) // 1..10 new, unordered
       const all: P[] = Array.from({ length: n + k }, (_, i) => ({ id: i, truth: i }))
       const shuffledAll = shuffled(all, rand)
-      const existing = [...shuffledAll.slice(0, n)].sort((a, b) => a.truth - b.truth)
+      const existing = shuffledAll.slice(0, n).sort((a, b) => a.truth - b.truth)
       const newItems = shuffledAll.slice(n)
 
       let state = initInsertMany(existing, newItems)

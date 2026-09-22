@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+
 import { Hono } from 'hono'
+
 import type { AppEnv } from '../context'
 import { LEGAL_DOCS, type LegalDocId } from '../lib/legalCopy'
 import { legalPagesRoutes } from './legal-pages'

@@ -1,11 +1,3 @@
-import { MAX_SCALE } from '@/components/ui'
-import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
-import { track } from '@/lib/analytics'
-import { api } from '@/lib/api'
-import { tapLight } from '@/lib/haptics'
-import { useT } from '@/lib/i18n'
-import type { FeedItem } from '@/lib/types'
-import { DATA_FIGURES } from '@/theme/vars'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { Pressable, Text } from 'react-native'
@@ -15,6 +7,15 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+
+import { MAX_SCALE } from '@/components/ui'
+import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
+import { track } from '@/lib/analytics'
+import { api } from '@/lib/api'
+import { tapLight } from '@/lib/haptics'
+import { useT } from '@/lib/i18n'
+import type { FeedItem } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
 
 // The heart — the one-tap reaction on a feed item (mock A1). Optimistic with a
 // scale pop; both API calls are idempotent so a rapid toggle can't drift. Ported

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { hashPhone, hashesEqual, normalizePhone } from './phone'
 
 describe('normalizePhone', () => {

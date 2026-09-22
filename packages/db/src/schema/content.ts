@@ -1,5 +1,6 @@
 import { type SQL, sql } from 'drizzle-orm'
 import { boolean, index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { restaurants } from './discovery'
 import { rankings } from './ranking'

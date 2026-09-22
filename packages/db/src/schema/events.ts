@@ -8,6 +8,7 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { restaurants } from './discovery'
 import { eventRsvpStatus } from './enums'

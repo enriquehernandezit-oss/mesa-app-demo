@@ -1,4 +1,5 @@
 import { boolean, index, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 
 // Push notifications (M17). One row per device — a member signed in on two

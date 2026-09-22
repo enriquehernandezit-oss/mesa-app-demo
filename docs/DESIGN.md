@@ -7,8 +7,8 @@
 > composition is in question, the screen spec wins.
 
 Mesa ships **two themes**, and both are first-class. The look is still fixed —
-you do not invent a style — but "fixed" now means *these two palettes and this
-one semantic token layer*, not a single oxblood ground.
+you do not invent a style — but "fixed" now means _these two palettes and this
+one semantic token layer_, not a single oxblood ground.
 
 - **Afternoon** — the light "paper" theme. Warm ivory grounds, ink-brown text,
   aged-brass accent. The **default**. Editorial daylight: a dining magazine
@@ -36,15 +36,16 @@ and nothing moves but the ground and the ink.
 
 **Never reference a raw brand color** (`--ink`, `--cream`, `--brass`, a hex, or
 an `rgba()`) anywhere in the app. Every color in the app resolves through a
-**semantic** custom property whose *meaning* is stable across both themes; only
+**semantic** custom property whose _meaning_ is stable across both themes; only
 its value changes. This is the whole mechanism that lets one component look
 right on both grounds.
 
 Defined once in `apps/app/src/styles/tokens.css`:
+
 - `:root { … }` — the **Afternoon** values (the default ground).
 - `html[data-theme="candlelit"] { … }` — the **Candlelit** overrides.
 
-`data-theme` is *always* present on `<html>` (Auto is resolved to a concrete
+`data-theme` is _always_ present on `<html>` (Auto is resolved to a concrete
 theme in JS before first paint — see `apps/app/src/styles/theme.ts` and the
 inline boot script in `index.html`). There is no third CSS state.
 
@@ -52,33 +53,33 @@ inline boot script in `index.html`). There is no third CSS state.
 
 Afternoon values are the **exact Phase 6 handoff palette** (see `docs/DESIGN-PHASE6.md`).
 
-| Token | Role | Afternoon | Candlelit |
-|---|---|---|---|
-| `--bg` | screen ground (`--screen`) | `#f5efe4` | `#210104` |
-| `--bg-sunk` | app bg / behind cards / photo fallback (`--paper`) | `#e7dccb` | `#180b0b` |
-| `--surface` | cards, sheets, tab bar (`--card`) | `#ffffff` | `#2c1516` |
-| `--surface-raised` | raised elements (one card color) | `#ffffff` | `#391c1d` |
-| `--text` | primary text, FAB fill, dark badges (`--ink`) | `#2a1512` | `#ebe4d6` |
-| `--text-2` | body copy where `--ink` is too heavy (`--body`) | `#4a3b32` | `#dcccbb` |
-| `--text-muted` | captions, metadata, inactive (`--muted`) | `#a2917f` | `#a3867a` |
-| `--text-faint` | annotation-level text only (`--faint`) | `#b0a08e` | `#7d6459` |
-| `--accent` | brass — active states, scores, primary accent | `#9a6a28` | `#c09050` |
-| `--accent-strong` | brass on small text / eyebrows / pill labels (`--deep`) | `#8a5a2a` | `#e2c179` |
-| `--accent-fill` | solid brass fill (the one filled CTA / chips) | `#9a6a28` | `#c09050` |
-| `--on-accent` | text/icon **on** a brass or ink fill | `#fdf7ec` | `#210104` |
-| `--tab-inactive` | inactive tab-bar item | `#8a7b6c` | `#8a7166` |
-| `--line` / `--line-strong` | warm hairlines — **never flat grey** | `rgba(120,80,60,.14/.18)` | `rgba(235,228,214,.10/.16)` |
-| `--brass-line` / `--brass-line-soft` / `--brass-wash` | outlined pills, active chips, filled chips | `rgba(154,106,40,.4/.28/.1)` | `rgba(226,193,121,.4/.28/.12)` |
-| `--on-photo*` / photo scrims | text/scrims over photography — **theme-invariant** | light / dark | light / dark |
-| `--shadow-card` / `--glow-*` | elevation & emphasis | warm brown, never black | warm black / brass bloom |
-| `--grain-tint` / `--grain-blend` / `--grain-opacity` | film-grain overlay | `multiply`, warm | `soft-light`, black |
-| `--status-packed/good/building/slow` | nightlife status | `#c2603a`/`#9a6a28`/`#97794f`/`#8a7b6c` | per-theme |
+| Token                                                 | Role                                                    | Afternoon                               | Candlelit                      |
+| ----------------------------------------------------- | ------------------------------------------------------- | --------------------------------------- | ------------------------------ |
+| `--bg`                                                | screen ground (`--screen`)                              | `#f5efe4`                               | `#210104`                      |
+| `--bg-sunk`                                           | app bg / behind cards / photo fallback (`--paper`)      | `#e7dccb`                               | `#180b0b`                      |
+| `--surface`                                           | cards, sheets, tab bar (`--card`)                       | `#ffffff`                               | `#2c1516`                      |
+| `--surface-raised`                                    | raised elements (one card color)                        | `#ffffff`                               | `#391c1d`                      |
+| `--text`                                              | primary text, FAB fill, dark badges (`--ink`)           | `#2a1512`                               | `#ebe4d6`                      |
+| `--text-2`                                            | body copy where `--ink` is too heavy (`--body`)         | `#4a3b32`                               | `#dcccbb`                      |
+| `--text-muted`                                        | captions, metadata, inactive (`--muted`)                | `#a2917f`                               | `#a3867a`                      |
+| `--text-faint`                                        | annotation-level text only (`--faint`)                  | `#b0a08e`                               | `#7d6459`                      |
+| `--accent`                                            | brass — active states, scores, primary accent           | `#9a6a28`                               | `#c09050`                      |
+| `--accent-strong`                                     | brass on small text / eyebrows / pill labels (`--deep`) | `#8a5a2a`                               | `#e2c179`                      |
+| `--accent-fill`                                       | solid brass fill (the one filled CTA / chips)           | `#9a6a28`                               | `#c09050`                      |
+| `--on-accent`                                         | text/icon **on** a brass or ink fill                    | `#fdf7ec`                               | `#210104`                      |
+| `--tab-inactive`                                      | inactive tab-bar item                                   | `#8a7b6c`                               | `#8a7166`                      |
+| `--line` / `--line-strong`                            | warm hairlines — **never flat grey**                    | `rgba(120,80,60,.14/.18)`               | `rgba(235,228,214,.10/.16)`    |
+| `--brass-line` / `--brass-line-soft` / `--brass-wash` | outlined pills, active chips, filled chips              | `rgba(154,106,40,.4/.28/.1)`            | `rgba(226,193,121,.4/.28/.12)` |
+| `--on-photo*` / photo scrims                          | text/scrims over photography — **theme-invariant**      | light / dark                            | light / dark                   |
+| `--shadow-card` / `--glow-*`                          | elevation & emphasis                                    | warm brown, never black                 | warm black / brass bloom       |
+| `--grain-tint` / `--grain-blend` / `--grain-opacity`  | film-grain overlay                                      | `multiply`, warm                        | `soft-light`, black            |
+| `--status-packed/good/building/slow`                  | nightlife status                                        | `#c2603a`/`#9a6a28`/`#97794f`/`#8a7b6c` | per-theme                      |
 
 Notes that are load-bearing, not stylistic:
 
 - **Brass darkens on paper.** Afternoon `--accent` is `#9a6a28`, `--accent-strong`
-  (`--deep`) `#8a5a2a` — a *dark* accent on a light field. On Candlelit it inverts
-  (`--accent-strong` is *brighter* than `--accent`). Nothing references a raw
+  (`--deep`) `#8a5a2a` — a _dark_ accent on a light field. On Candlelit it inverts
+  (`--accent-strong` is _brighter_ than `--accent`). Nothing references a raw
   "brass" name — it would lie on paper.
 - **`--accent-fill` is now per-theme** (`#9a6a28` on paper, `#c09050` on oxblood);
   the text on it flips via `--on-accent` (cream on paper's ink/brass fills).
@@ -91,7 +92,7 @@ Notes that are load-bearing, not stylistic:
   labels. Theme-invariant. (JetBrains Mono held this role until it was retired on
   2026-09-15 at the founder's request — see Type & spacing below.)
 - **Photos carry their own dark island.** Text over a photograph is always
-  light-on-a-dark-scrim, in *both* themes. `--on-photo*` and the scrims are
+  light-on-a-dark-scrim, in _both_ themes. `--on-photo*` and the scrims are
   deliberately theme-invariant.
 
 ### Type & spacing
@@ -119,13 +120,13 @@ Brass remains Mesa's one app-wide accent. The single scoped exception is
 rail and a restaurant's "Próximos eventos"): each kind of night out wears its
 own hue so a tasting, a DJ set and a brunch read apart at a glance.
 
-| Token | Kind | Afternoon | Candlelit |
-|---|---|---|---|
-| `--cat-cata` | tastings (wine, whisky, cocktails) | `#c2185b` magenta | `#ff4d9d` magenta |
-| `--cat-musica` | live music, DJ, karaoke | `#2f4fd6` electric blue | `#5b8cff` electric blue |
-| `--cat-brunch` | brunch | `#b26a00` gold | `#ffc24a` gold |
-| `--cat-food` | food tastings, omakase, chef nights | `#d84315` orange | `#ff7a1a` orange |
-| `--cat-happy` | happy hour | `#00838f` cyan | `#22d3ee` cyan |
+| Token          | Kind                                | Afternoon               | Candlelit               |
+| -------------- | ----------------------------------- | ----------------------- | ----------------------- |
+| `--cat-cata`   | tastings (wine, whisky, cocktails)  | `#c2185b` magenta       | `#ff4d9d` magenta       |
+| `--cat-musica` | live music, DJ, karaoke             | `#2f4fd6` electric blue | `#5b8cff` electric blue |
+| `--cat-brunch` | brunch                              | `#b26a00` gold          | `#ffc24a` gold          |
+| `--cat-food`   | food tastings, omakase, chef nights | `#d84315` orange        | `#ff7a1a` orange        |
+| `--cat-happy`  | happy hour                          | `#00838f` cyan          | `#22d3ee` cyan          |
 
 "Noche neón" (founder's pick, Sept 2026): vivid nightlife hues — they're what
 makes Eventos read as a night out. Afternoon uses the same five hues deepened
@@ -146,7 +147,7 @@ photo uses the theme-invariant `--photo-scrim` gradient + `--on-photo*`.
 
 A token swap in `tokens.css` reaches every CSS file and every inline `style`
 prop in TSX (all of which use `var(--token)`). It does **not** reach five sites,
-which are the *only* places a raw color value may appear. If you touch color,
+which are the _only_ places a raw color value may appear. If you touch color,
 these are the sites to check — the audit does not need to be redone:
 
 1. **`apps/app/src/lib/shareCard.ts`** — the 1080×1920 canvas story card. Canvas
@@ -158,7 +159,7 @@ these are the sites to check — the audit does not need to be redone:
    Set to the Afternoon ground (the default); a Candlelit user accepts a
    sub-100ms light flash on cold start.
 4. **`apps/app/src/screens/map/MapScreen.tsx`** — the inline SVG `<stop>`s use
-   the CSS `stop-color` *property* (which accepts `var()`), not the presentation
+   the CSS `stop-color` _property_ (which accepts `var()`), not the presentation
    attribute. So they follow the tokens; do not hardcode them.
 5. **`apps/api/src/routes/legal-pages.ts`** — a self-contained stylesheet for the
    hosted privacy/terms/EULA pages, same workspace problem as (2). **Afternoon**,
@@ -167,7 +168,7 @@ these are the sites to check — the audit does not need to be redone:
    the type is the system serif/sans rather than Cormorant / Plus Jakarta.
 
 **Frozen share surfaces (a deliberate decision):** the story card and the public
-share page are artifacts that *leave* the app and are viewed inside someone
+share page are artifacts that _leave_ the app and are viewed inside someone
 else's feed. They stay Candlelit (oxblood) regardless of the sharer's theme, so
 every shared Mesa card looks the same. Do not "fix" them to follow the theme.
 If that decision is ever reversed, `share-pages.ts` must gain a
@@ -193,10 +194,10 @@ bar's original style: 24 viewBox, 1.6 stroke, round caps/joins, `currentColor`
 - The cheers reaction (feed, Activity) is `HeartIcon`/`HeartFilledIcon` in
   `components/ui/icons.tsx`, not an emoji — a full-colour glyph was the only
   thing in the app breaking "brass is the only accent." **🥂 is the one
-  sanctioned emoji**, kept *only* in outbound share copy (WhatsApp/iMessage
+  sanctioned emoji**, kept _only_ in outbound share copy (WhatsApp/iMessage
   text that leaves the app) as Mesa's brand voice — an SVG can't travel in a
   text message. Nothing else uses emoji.
-- Text-glyph punctuation used *as prose*, matching the mocks' literal copy
+- Text-glyph punctuation used _as prose_, matching the mocks' literal copy
   strings, stays: the `‹`/`›` chevrons in header/link text ("‹ Add a note",
   "2 friends ›") and the `✕` close-glyph in flow headers ("✕ Recents"). These
   render identically everywhere (they're common Latin-1-adjacent punctuation)
@@ -224,8 +225,8 @@ themes:
   eating. Warm and human, never cold luxury.
 - **Editorial restraint.** Big serif, generous negative space, one brass accent
   at a time. A magazine dining editorial.
-- **Candlelit imagery on both grounds.** Afternoon is a *paper* ground under
-  *candlelit* photos — the warmth comes from the imagery and the ivory (never
+- **Candlelit imagery on both grounds.** Afternoon is a _paper_ ground under
+  _candlelit_ photos — the warmth comes from the imagery and the ivory (never
   pure white), not from a dark UI.
 
 When Afternoon feels like a sterile white SaaS app, it's wrong; when it feels
@@ -242,7 +243,7 @@ flow ("¿Cómo estuvo?", "Me encantó") had been written in Spanish — copy tha
 drifted screen to screen instead of being decided once. This section is that
 decision, so it doesn't drift again.
 
-- **Register:** informal *tú*, never *usted*. Direct and a little breezy —
+- **Register:** informal _tú_, never _usted_. Direct and a little breezy —
   "Intenta de nuevo," not "Por favor, inténtelo de nuevo." This was already
   the voice of the existing rank-flow copy; the sweep matched it, not the
   other way around.
@@ -270,17 +271,17 @@ decision, so it doesn't drift again.
 - **A short glossary**, to keep new copy consistent (extend this list
   instead of re-deciding a term per screen):
 
-  | English | Spanish | Notes |
-  |---|---|---|
-  | Rank a place | Rankear un spot | tab-bar action, screen titles |
-  | Tonight (tab) | Esta noche | wraps to 2 lines in the tab bar; that's fine |
-  | You (tab) | Perfil | "Tú" reads wrong as a tab label |
-  | Reserve / Order / Nearby | Reservar / Pedir / Cerca | quick-action pills |
-  | Settings | Ajustes | |
-  | Sign in / Sign out | Iniciar sesión / Cerrar sesión | |
-  | Loading… | Cargando… | |
-  | Something went wrong | Algo salió mal | pair with a concrete retry, not just this line |
-  | Try again | Intentar de nuevo | |
+  | English                  | Spanish                        | Notes                                          |
+  | ------------------------ | ------------------------------ | ---------------------------------------------- |
+  | Rank a place             | Rankear un spot                | tab-bar action, screen titles                  |
+  | Tonight (tab)            | Esta noche                     | wraps to 2 lines in the tab bar; that's fine   |
+  | You (tab)                | Perfil                         | "Tú" reads wrong as a tab label                |
+  | Reserve / Order / Nearby | Reservar / Pedir / Cerca       | quick-action pills                             |
+  | Settings                 | Ajustes                        |                                                |
+  | Sign in / Sign out       | Iniciar sesión / Cerrar sesión |                                                |
+  | Loading…                 | Cargando…                      |                                                |
+  | Something went wrong     | Algo salió mal                 | pair with a concrete retry, not just this line |
+  | Try again                | Intentar de nuevo              |                                                |
 
 ## Hard "don'ts"
 

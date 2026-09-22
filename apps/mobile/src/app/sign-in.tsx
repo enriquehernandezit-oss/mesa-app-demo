@@ -1,3 +1,6 @@
+import { Redirect } from 'expo-router'
+import { View } from 'react-native'
+
 import { Splash } from '@/components/Splash'
 import { ErrorState } from '@/components/ui'
 import { useProfile } from '@/hooks/useProfile'
@@ -5,8 +8,6 @@ import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
 import { useT } from '@/lib/i18n'
 import { AuthFlow } from '@/screens/AuthFlow'
-import { Redirect } from 'expo-router'
-import { View } from 'react-native'
 
 // The unauthenticated surface. If a session becomes valid (after sign-in), the
 // self-guard redirects onward — that's how AuthFlow's invalidate(['session'])

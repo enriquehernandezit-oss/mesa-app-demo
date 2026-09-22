@@ -1,5 +1,6 @@
-import { track } from '@/lib/analytics'
 import { useSyncExternalStore } from 'react'
+
+import { track } from '@/lib/analytics'
 
 // The viral loop's imperative bridge — same external-store shape as toast-store.
 // A screen calls shareSpotCard(...) / shareListCard(...); the single

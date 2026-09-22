@@ -11,16 +11,16 @@ entire job.
 
 `packages/db/src/schema/menu.ts`, table `menu_items`:
 
-| column | meaning |
-|---|---|
-| `restaurantId` | FK to `restaurants`, cascade delete |
-| `section` | e.g. "Appetizers" — section order is each section's first-appearance order, not alphabetical |
-| `name`, `description` | as supplied; never translated, shown exactly as given |
-| `priceCents` | integer — `Math.round(price * 100)`, never a float. Stored but **not displayed** (founder decision: prices drift too fast to keep accurate, a stale price reads worse than no price) — still worth capturing honestly in case that changes |
-| `currency` | `DOP` or `USD`, per item — a single menu can mix currencies (e.g. a US-priced import item next to DOP-priced local dishes) |
-| `sourceRef` | free text or a URL; **never rendered as a link** in the app |
-| `verifiedAt` | the real date the menu was checked — drives the "Menú verificado · {date}" caption. Leave `null` if you don't actually know |
-| `position` | sequential per restaurant, preserving section order then item order within it |
+| column                | meaning                                                                                                                                                                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `restaurantId`        | FK to `restaurants`, cascade delete                                                                                                                                                                                                        |
+| `section`             | e.g. "Appetizers" — section order is each section's first-appearance order, not alphabetical                                                                                                                                               |
+| `name`, `description` | as supplied; never translated, shown exactly as given                                                                                                                                                                                      |
+| `priceCents`          | integer — `Math.round(price * 100)`, never a float. Stored but **not displayed** (founder decision: prices drift too fast to keep accurate, a stale price reads worse than no price) — still worth capturing honestly in case that changes |
+| `currency`            | `DOP` or `USD`, per item — a single menu can mix currencies (e.g. a US-priced import item next to DOP-priced local dishes)                                                                                                                 |
+| `sourceRef`           | free text or a URL; **never rendered as a link** in the app                                                                                                                                                                                |
+| `verifiedAt`          | the real date the menu was checked — drives the "Menú verificado · {date}" caption. Leave `null` if you don't actually know                                                                                                                |
+| `position`            | sequential per restaurant, preserving section order then item order within it                                                                                                                                                              |
 
 `GET /restaurants/:id` reports `hasMenu` (`menu_items` count > 0 for that id,
 via `menu_items_restaurant_idx`) — that's the only thing gating the Menu
@@ -30,8 +30,8 @@ page renders. Both are already built; nothing there needs to change.
 ## The one rule that matters most
 
 **`menu_items` for a restaurant is owned completely by whatever wrote it.** A
-menu update is always *delete every existing row for that `restaurant_id`,
-then insert the fresh set* — never an append. Appending duplicates every item
+menu update is always _delete every existing row for that `restaurant_id`,
+then insert the fresh set_ — never an append. Appending duplicates every item
 that didn't change. This is why `import-top100.ts`'s menu-write step does
 exactly that per restaurant, every run.
 

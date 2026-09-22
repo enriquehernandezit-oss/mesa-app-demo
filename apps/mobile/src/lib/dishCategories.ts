@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+
 // Mirror of packages/db/src/dishCategories.ts's keyword-guess matcher ONLY —
 // Metro can't import a workspace package under Bun's isolated linker (see
 // CLAUDE.md's repo-shape note), so the actual taxonomy data lives on the
@@ -9,7 +11,7 @@
 import type { DishCategory, DishGroup } from '@/lib/types'
 import { en } from '@/locales/en'
 import { es } from '@/locales/es'
-import { useQuery } from '@tanstack/react-query'
+
 import { api } from './api'
 import type { Lang } from './i18n'
 

@@ -1,3 +1,17 @@
+import {
+  type UseMutationResult,
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
 import {
@@ -15,10 +29,10 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
-import { KeyboardDone } from '@/components/ui/KeyboardDone'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
+import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -38,7 +52,7 @@ import {
 import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
-import { useLanguage, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
 import { cloudinaryUrl } from '@/lib/media'
 import {
@@ -69,19 +83,6 @@ import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useMyLocation } from '@/lib/useMyLocation'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
-import {
-  type UseMutationResult,
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Rank-a-place (Phase 6 mocks B1–B4): find the spot (merged ranked + unranked
 // rows, or add one that isn't on Mesa), place it with photo-backed compare cards
@@ -107,6 +108,11 @@ type Item = {
   score?: number // present when it's already on your list
   position?: number // present when it's already on your list
 }
+
+// A stable reference for the "no data yet" case — `data?.restaurants ?? []`
+// would otherwise hand `candList` a fresh array every render, which defeats
+// the `useMemo`s and effects that depend on it.
+const EMPTY_ITEMS: Item[] = []
 
 type AddPlaceMutation = UseMutationResult<
   { restaurant: NewRestaurant },
@@ -248,7 +254,7 @@ export default function RankAPlace() {
       })),
     [mine.data],
   )
-  const candList = candidates.data?.restaurants ?? []
+  const candList = candidates.data?.restaurants ?? EMPTY_ITEMS
   const wantToTryIds = useMemo(
     () =>
       [...(saved.data?.saved ?? [])]
@@ -305,6 +311,10 @@ export default function RankAPlace() {
   // through to the very top FindStep gate, flashing the search screen back
   // over an in-progress reveal.
   const pickedRef = useRef<Item | null>(null)
+  // oxlint-disable react/exhaustive-deps -- commitInitial.mutate is TanStack
+  // Query's stable function reference; the wrapping mutation OBJECT is a new
+  // one every time isPending/isError changes, so depending on the whole
+  // object would re-fire this mid-mutation and could double-submit.
   useEffect(() => {
     if (pickedId && position !== null && committedForId.current !== pickedId) {
       committedForId.current = pickedId
@@ -312,6 +322,7 @@ export default function RankAPlace() {
       commitInitial.mutate(position)
     }
   }, [pickedId, position, picked, commitInitial.mutate])
+  // oxlint-enable react/exhaustive-deps
   const committedPlace = pickedRef.current
 
   // The friend signal for the reveal screen — the same profile data the
@@ -597,7 +608,7 @@ export default function RankAPlace() {
   // flow had actually gotten. Skipped when the flow actually finished
   // (placedStamp true): that's a completion, not a drop-off — the "drop-off
   // we most need to see" this metric exists for.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: one-shot unmount cleanup by design (see above); t is stable enough (only changes on a language toggle) not to need retriggering this.
+  // oxlint-disable react/exhaustive-deps -- one-shot unmount cleanup by design (see above); t is stable enough (only changes on a language toggle) not to need retriggering this.
   useEffect(() => {
     return () => {
       if (stageRef.current && !placedStampRef.current) {
@@ -620,6 +631,7 @@ export default function RankAPlace() {
       }
     }
   }, [])
+  // oxlint-enable react/exhaustive-deps
 
   const addPlace = useMutation({
     mutationFn: (body: { name: string; neighborhoodSlug: string }) =>
@@ -921,7 +933,11 @@ function SentimentButton({
   tone,
   children,
   onPress,
-}: { tone: 'loved' | 'fine' | 'low'; children: React.ReactNode; onPress: () => void }) {
+}: {
+  tone: 'loved' | 'fine' | 'low'
+  children: React.ReactNode
+  onPress: () => void
+}) {
   const border = tone === 'loved' ? 'border-accent' : tone === 'low' ? 'border-line' : 'border-line'
   return (
     <Pressable

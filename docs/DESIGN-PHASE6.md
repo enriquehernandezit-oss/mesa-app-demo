@@ -22,7 +22,7 @@ the safe-area handling, the tab structure, the copy.
 
 The old palette inverted the figure and ground: cream text on oxblood. The new one
 puts near-black warm ink on warm paper, and keeps brass as the only accent. Brass
-now has to work as a *dark* accent on a light field, so it darkens from `#c09050`
+now has to work as a _dark_ accent on a light field, so it darkens from `#c09050`
 to `#9a6a28`.
 
 ---
@@ -35,32 +35,33 @@ else in the app; reference these.
 ```css
 :root {
   /* Ground — three warm neutrals, lightest to darkest surface */
-  --paper: #e7dccb;   /* app background / behind cards / photo fallback */
-  --screen: #f5efe4;  /* screen background inside the frame */
-  --card: #fffdf8;    /* cards, sheets, tab bar, raised elements */
+  --paper: #e7dccb; /* app background / behind cards / photo fallback */
+  --screen: #f5efe4; /* screen background inside the frame */
+  --card: #fffdf8; /* cards, sheets, tab bar, raised elements */
 
   /* Ink & accent */
-  --ink: #2a1512;     /* primary text, FAB fill, dark badges */
-  --accent: #9a6a28;  /* brass — active states, scores, primary accent */
-  --deep: #8a5a2a;    /* brass on small text / eyebrows / pill labels */
-  --muted: #a2917f;   /* captions, metadata, inactive */
-  --body: #4a3b32;    /* body copy where --ink is too heavy */
-  --faint: #b0a08e;   /* annotation-level text only */
+  --ink: #2a1512; /* primary text, FAB fill, dark badges */
+  --accent: #9a6a28; /* brass — active states, scores, primary accent */
+  --deep: #8a5a2a; /* brass on small text / eyebrows / pill labels */
+  --muted: #a2917f; /* captions, metadata, inactive */
+  --body: #4a3b32; /* body copy where --ink is too heavy */
+  --faint: #b0a08e; /* annotation-level text only */
   --tab-inactive: #8a7b6c;
 
   /* Hairlines & washes — always these, never a flat grey */
   --line: rgba(120, 80, 60, 0.12);
   --line-strong: rgba(120, 80, 60, 0.16);
-  --brass-line: rgba(154, 106, 40, 0.4);   /* outlined pills */
+  --brass-line: rgba(154, 106, 40, 0.4); /* outlined pills */
   --brass-line-soft: rgba(154, 106, 40, 0.28);
-  --brass-wash: rgba(154, 106, 40, 0.1);   /* filled chips */
+  --brass-wash: rgba(154, 106, 40, 0.1); /* filled chips */
 
   /* Type — mono is NEW; it carries all metadata, eyebrows and pill labels
      (retired 2026-09-15 — see DESIGN.md › Type) */
-  --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
-  --font-ui: "Plus Jakarta Sans Variable", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace; /* retired 2026-09-15 */
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-ui:
+    'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui,
+    sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace; /* retired 2026-09-15 */
 
   /* Scale unchanged from the current tokens.css — keep --space-*, --radius*,
      --ease-spring, --safe-* exactly as they are. */
@@ -88,6 +89,7 @@ These are the point of Phase 6. Every surface that names a restaurant carries th
 Build each once as a component in `apps/app/src/components/` and use it everywhere.
 
 ### 3.1 Characteristics block
+
 Four lines, always this order, always these treatments. It goes under the
 restaurant name on the profile, and inside every ranking card in the feed and
 every row in the rankings list. (M9, 2026-09-15: the feed itself now renders
@@ -103,6 +105,7 @@ this block's own rules are unchanged everywhere else it appears.)
 Grid, `gap: 3px`, with `margin-top: 5px` on line 4 only.
 
 ### 3.2 Badged score circles
+
 (M9, 2026-09-15: in the feed's flat rows this renders at `size="sm"` beside the
 sentence line, not pinned to a card corner — the badge/attribution rules below
 still hold.)
@@ -117,6 +120,7 @@ Never render a score without its badge. An unlabelled number is the ambiguity th
 pattern exists to remove.
 
 ### 3.3 Outlined utility pills
+
 Menú (only when the place has one) · Llamar · Sitio web · Cómo llegar — up to
 four, `flex: 1` each in a `gap: 8px` row, equal width. **M7:** icon stacked
 ABOVE the label (not beside it — four labels beside their icons no longer fit
@@ -130,12 +134,14 @@ fill. These are always outlined so they never compete with the screen's one
 filled CTA.
 
 ### 3.4 Filter chip rail
+
 Anything that lists gets one. Mono `9px` (retired 2026-09-15 — see DESIGN.md ›
 Type), horizontal scroll, `gap: 6px`.
 Inactive: `--card` fill, `1px solid var(--line-strong)`, `8px` radius, `--ink` text.
 Active: `--brass-wash` fill, `1px solid var(--brass-line-soft)`, `--deep` text.
 
 ### 3.5 The one-CTA rule
+
 Exactly one brass-filled button per screen. Everything else is outlined or plain.
 If a screen seems to need two, one of them is secondary — outline it.
 
@@ -156,16 +162,24 @@ outlined glyph buttons right (`1.5px solid #b7a893`).
 pseudo-elements over every restaurant/dish image:
 
 ```css
-.photo::before { /* warm veil */
-  content: ""; position: absolute; inset: 0; z-index: 1;
+.photo::before {
+  /* warm veil */
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   background:
-    radial-gradient(120% 90% at 72% 18%, rgba(255,250,240,.12), transparent 58%),
-    linear-gradient(160deg, rgba(245,239,228,.26), rgba(227,212,192,.60) 90%);
+    radial-gradient(120% 90% at 72% 18%, rgba(255, 250, 240, 0.12), transparent 58%),
+    linear-gradient(160deg, rgba(245, 239, 228, 0.26), rgba(227, 212, 192, 0.6) 90%);
 }
-.photo::after { /* grain */
-  content: ""; position: absolute; inset: 0; opacity: .32;
+.photo::after {
+  /* grain */
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.32;
   mix-blend-mode: multiply;
-  background-image: radial-gradient(rgba(120,80,60,.5) .5px, transparent .5px);
+  background-image: radial-gradient(rgba(120, 80, 60, 0.5) 0.5px, transparent 0.5px);
   background-size: 3px 3px;
 }
 ```
@@ -186,17 +200,17 @@ Never a dark scrim on a light ground — use `rgba(42,21,18,.28)`.
 
 Nine milestones. Commit and stop after each.
 
-| # | Milestone | Files |
-|---|---|---|
-| 1 | Token layer + fonts + rewrite `docs/DESIGN.md` | `styles/tokens.css`, `styles/global.css`, `styles/fonts.ts`, `index.html`, `docs/DESIGN.md` |
-| 2 | Shared chrome | `components/TopBar.tsx`, `topbar.css`, `screens/tabs/tabs.css`, `components/Splash.tsx`, `styles/screens.css` |
-| 3 | The four patterns as components | new files in `components/` |
-| 4 | Restaurant profile | `screens/restaurant/RestaurantProfile.tsx`, `restaurant.css`, `ReserveSheet.tsx`, `reserve.css` |
-| 5 | Home feed | `screens/tabs/DiscoverTab.tsx`, `feed.css`, `CheersButton.tsx` |
-| 6 | Rankings + leaderboard | `screens/tabs/RankingsTab.tsx`, `rankings.css`, `screens/leaderboard/*` |
-| 7 | Profiles | `screens/tabs/ProfileTab.tsx`, `profile.css`, `screens/user/UserRankings.tsx`, `moderation.css` |
-| 8 | Rank flow + post a dish | `screens/rank/RankAPlace.tsx`, `screens/onboarding/RankStep.tsx`, `rank.css` |
-| 9 | Auth, onboarding, map, activity | `screens/AuthFlow.tsx`, `Onboarding.tsx`, `onboarding/*`, `map/*`, `activity/*` |
+| #   | Milestone                                      | Files                                                                                                         |
+| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 1   | Token layer + fonts + rewrite `docs/DESIGN.md` | `styles/tokens.css`, `styles/global.css`, `styles/fonts.ts`, `index.html`, `docs/DESIGN.md`                   |
+| 2   | Shared chrome                                  | `components/TopBar.tsx`, `topbar.css`, `screens/tabs/tabs.css`, `components/Splash.tsx`, `styles/screens.css` |
+| 3   | The four patterns as components                | new files in `components/`                                                                                    |
+| 4   | Restaurant profile                             | `screens/restaurant/RestaurantProfile.tsx`, `restaurant.css`, `ReserveSheet.tsx`, `reserve.css`               |
+| 5   | Home feed                                      | `screens/tabs/DiscoverTab.tsx`, `feed.css`, `CheersButton.tsx`                                                |
+| 6   | Rankings + leaderboard                         | `screens/tabs/RankingsTab.tsx`, `rankings.css`, `screens/leaderboard/*`                                       |
+| 7   | Profiles                                       | `screens/tabs/ProfileTab.tsx`, `profile.css`, `screens/user/UserRankings.tsx`, `moderation.css`               |
+| 8   | Rank flow + post a dish                        | `screens/rank/RankAPlace.tsx`, `screens/onboarding/RankStep.tsx`, `rank.css`                                  |
+| 9   | Auth, onboarding, map, activity                | `screens/AuthFlow.tsx`, `Onboarding.tsx`, `onboarding/*`, `map/*`, `activity/*`                               |
 
 Milestones 1–3 are load-bearing: 4–9 are mostly consuming what 3 produced. If a
 later screen needs a fifth repeating pattern, add it to §3 rather than styling it

@@ -1,8 +1,19 @@
+import {
+  type UseMutationResult,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+import { Redirect, useRouter } from 'expo-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Title } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { CheckIcon } from '@/components/ui/icons'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
@@ -18,16 +29,6 @@ import { takePendingInvite } from '@/lib/pendingInvite'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
-import {
-  type UseMutationResult,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
-import { Redirect, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 // Cold-start fix — the #1 product risk is an empty first open, so onboarding is
 // first-class. A new profile leaves this flow with an identity, a starter
@@ -363,10 +364,11 @@ function ComparePhase({
   // `submit` closes over `state` and is recreated every render; including it
   // as a dependency would defeat the isIdle guard below by re-running every
   // render instead of once when the order actually finishes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  // oxlint-disable react/exhaustive-deps -- see above.
   useEffect(() => {
     if (finished && save.isIdle) submit()
   }, [finished, save.isIdle])
+  // oxlint-enable react/exhaustive-deps
 
   // Unconditional on `comparison === null` (not just `finished`) so TS keeps
   // narrowing `comparison` to non-null below — `finished` alone can't do that,

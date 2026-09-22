@@ -8,24 +8,24 @@ can't be done from the dev environment.
 
 ## Where it stands
 
-| | |
-|---|---|
-| API | live on Railway, `/health` 200, migrations run on deploy (`railway.json` `preDeployCommand`) |
-| Auth | email+password, Sign in with Apple (configured on prod — the server answers as a live provider), phone OTP |
-| 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped |
-| 5.1.1 | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`) |
-| Builds | `development` and `preview` profiles have built; **`production` has never run** |
-| Checks | tsc, biome and tests green across mobile / api / db |
+|           |                                                                                                            |
+| --------- | ---------------------------------------------------------------------------------------------------------- |
+| API       | live on Railway, `/health` 200, migrations run on deploy (`railway.json` `preDeployCommand`)               |
+| Auth      | email+password, Sign in with Apple (configured on prod — the server answers as a live provider), phone OTP |
+| 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped                                            |
+| 5.1.1     | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`)                            |
+| Builds    | `development` and `preview` profiles have built; **`production` has never run**                            |
+| Checks    | tsc, biome and tests green across mobile / api / db                                                        |
 
 ## 1. Founder: accounts and keys
 
-| What | Why | How |
-|---|---|---|
-| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId` | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app` |
-| **Sentry DSN** | crash reports from testers; without it `lib/errors.ts` no-ops | `eas env:create production --name EXPO_PUBLIC_SENTRY_DSN --value <dsn>` |
-| **PostHog key** | product analytics; without it `lib/analytics.ts` no-ops | same, `EXPO_PUBLIC_POSTHOG_KEY` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
-| **Sentry org/project** | readable native stack traces (source maps) | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` on the production env |
-| **Domain** (deferred) | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains` | buy, then set the env var and host `apple-app-site-association` |
+| What                             | Why                                                                                 | How                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId`                                       | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app`         |
+| **Sentry DSN**                   | crash reports from testers; without it `lib/errors.ts` no-ops                       | `eas env:create production --name EXPO_PUBLIC_SENTRY_DSN --value <dsn>`       |
+| **PostHog key**                  | product analytics; without it `lib/analytics.ts` no-ops                             | same, `EXPO_PUBLIC_POSTHOG_KEY` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
+| **Sentry org/project**           | readable native stack traces (source maps)                                          | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` on the production env     |
+| **Domain** (deferred)            | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains` | buy, then set the env var and host `apple-app-site-association`               |
 
 Set secrets with a shell that does not echo them:
 

@@ -1,9 +1,10 @@
-import type { ShareCardReq } from '@/lib/shareCardStore'
-import { DATA_FIGURES } from '@/theme/vars'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useCallback, useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+
+import type { ShareCardReq } from '@/lib/shareCardStore'
+import { DATA_FIGURES } from '@/theme/vars'
 
 // The 1080×1920 story card (IG Stories size) that leaves the app — the artifact
 // of the viral loop. Rendered off-screen and captured to a PNG by ShareCardHost.

@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'expo-router'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { Body, Caption, ErrorState, Eyebrow, RowsSkeleton, Segmented } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { api } from '@/lib/api'
@@ -5,10 +10,6 @@ import { displayScore } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { LeaderboardRow } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'expo-router'
-import { useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Citywide leaderboard — who's eaten the most of Santo Domingo. Understated by
 // design: brass serif numerals, no badges. Ported from apps/app/src/screens/

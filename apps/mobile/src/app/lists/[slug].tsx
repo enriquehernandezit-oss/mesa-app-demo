@@ -1,17 +1,18 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, Stack, useLocalSearchParams } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ApiError, api } from '@/lib/api'
 import { listAuthorLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import type { ListDetailResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // A curated list's detail — its members in editorial order, each with the
 // friend signal. Reached from the Discover carousel or a restaurant's list

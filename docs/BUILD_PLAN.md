@@ -16,6 +16,7 @@ Everything needed for the core loop to feel alive on day one, and nothing else.
 No payments. Reservations are a handoff, not an engine (see Milestone 5).
 
 ### Milestone 0 — Repo & tooling foundation
+
 - Initialize Bun workspaces monorepo per the shape in `CLAUDE.md`.
 - `apps/api`, `apps/app` (React + Vite), `packages/db` with workspace wiring.
 - Root config: TypeScript strict base config, shared lint/format, `.gitignore`,
@@ -24,7 +25,9 @@ No payments. Reservations are a handoff, not an engine (see Milestone 5).
 - Commit. Stop.
 
 ### Milestone 1 — Backend foundation (API + DB + auth + seed)
+
 Build the whole shared spine before any screen exists.
+
 - **DB (`packages/db`):** Drizzle + Postgres client with **connection pooling**
   configured once and exported. Schema v1 (see "Schema v1" below). Migrations
   via drizzle-kit.
@@ -44,6 +47,7 @@ Build the whole shared spine before any screen exists.
   read-back. Commit. **Stop for review — do not start the app yet.**
 
 ### Milestone 2 — App shell + auth + onboarding
+
 - Scaffold React + Vite app, TanStack Router + TanStack Query provider, Better
   Auth client. **Initialize Capacitor** (iOS + Android platforms) and confirm a
   device build boots the Vite app in the native shell.
@@ -61,12 +65,13 @@ Build the whole shared spine before any screen exists.
 - **Onboarding (cold-start fix, do not skip):**
   1. Rank an initial 5–10 spots via the pairwise flow (Milestone 3 mechanic).
   2. Friend-find: Instagram connections + contact import (Capacitor Contacts).
-  A new profile is never empty and never friendless on first real open.
+     A new profile is never empty and never friendless on first real open.
 - Tab shell: Discover · Rankings · Tonight · Profile.
 - Verify in the browser (Vite dev server) and on device via a Capacitor dev
   build in the iOS Simulator. Commit. Stop.
 
 ### Milestone 3 — The ranking loop (the atomic unit)
+
 - **Rank a place:** pairwise comparison flow ("Vela or Lumbre?") that inserts a
   new place into the user's ordered list and derives a score. No stars anywhere.
 - **Rankings screen:** the personal ordered list, serif rank numerals, score,
@@ -82,6 +87,7 @@ Build the whole shared spine before any screen exists.
   work. Commit. Stop.
 
 ### Milestone 4 — Social graph + discovery
+
 - Follow / followers; friend-find surfaced in-app.
 - **Discovery feed:** what your friends ranked and their vibe notes — the payoff
   of the loop. Feed queries must be single-round-trip (no N+1), cached client-side.
@@ -89,6 +95,7 @@ Build the whole shared spine before any screen exists.
 - Verify feed is full using the seed cluster. Commit. Stop.
 
 ### Milestone 5 — Reserve handoff + polish + TestFlight
+
 - **Reserve = handoff, not engine:** "Request a table" opens a WhatsApp deep
   link / call to the restaurant with prefilled day, time, party size. Do NOT
   build a booking backend — DR restaurants have no supply behind it yet (that's
@@ -112,8 +119,10 @@ Build the whole shared spine before any screen exists.
 - Commit, tag `v0.1.0-beta`.
 
 ### Schema v1 (the spine — implement in `packages/db`)
+
 Core tables (Claude Code fills columns/indexes; these are the entities and the
 relationships that must exist):
+
 - `users` — profile, handle, neighborhood, avatar.
 - `follows` — follower_id → following_id (the social graph).
 - `neighborhoods` — the target zones (reference/enum-like).
@@ -137,6 +146,7 @@ accidental complexity at zero users.
 ---
 
 ## PHASE 2 — Reasons to reopen it (post-launch, NOT NOW)
+
 - Group plans with voting (pick-the-spot).
 - Wishlist-match nudges ("you both saved Vela — tírale un Mesa"). The organic,
   validated replacement for stranger-invites.
@@ -146,6 +156,7 @@ accidental complexity at zero users.
 - Events / tastings + ticketing (first real monetization + UGC engine).
 
 ## PHASE 3 — Moat, money, expansion (2–3 yr horizon, NOT NOW)
+
 - B2B reservation management for restaurants (the real infrastructure play and
   genuine DR first-mover gap).
 - Private dinner invites (mutual-follow, neutral framing); maybe dining-with-
@@ -155,6 +166,7 @@ accidental complexity at zero users.
 ---
 
 ## Definition of done for Phase 1
+
 A user can: sign in, be onboarded with a starting ranking + friends, rank places
 via pairwise comparison with vibe notes, follow people, open a feed that is full
 of friends' rankings, view a restaurant, and save it — all in the fixed Mesa

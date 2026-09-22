@@ -1,3 +1,8 @@
+import { useMutation } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+
 import { Row, RowButton } from '@/components/SettingsRow'
 import { Button, Caption, Eyebrow } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
@@ -7,16 +12,11 @@ import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // Tu cuenta (M15) — email verification, password, ending other sessions, and
 // account deletion. Moved verbatim out of the old flat app/settings.tsx.
 export default function AccountSettings() {
   const router = useRouter()
-  const queryClient = useQueryClient()
   const t = useT()
   const placeholder = useColor('text-muted')
   const { data } = useProfile(true)

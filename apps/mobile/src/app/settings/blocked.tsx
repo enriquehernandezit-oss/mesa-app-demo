@@ -1,11 +1,12 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { Row } from '@/components/SettingsRow'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import type { BlockedUser } from '@/lib/types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Cuentas bloqueadas (M15) — its own screen now (was a conditionally-shown
 // section on the old flat app/settings.tsx, hidden entirely on a fetch

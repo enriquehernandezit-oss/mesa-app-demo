@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { inBounds, mapCuisine, namesAgree } from './import-top100'
 
 // These three gate every write the importer makes — a silent regression here

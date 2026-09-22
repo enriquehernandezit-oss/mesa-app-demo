@@ -1,7 +1,8 @@
-import { useColor } from '@/theme/useColor'
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect'
 import type { ReactNode } from 'react'
 import { Pressable, View } from 'react-native'
+
+import { useColor } from '@/theme/useColor'
 
 // The circular controls that float OVER a photo — a hero's back and share
 // buttons. Glass is the right material precisely here: it's chrome sitting on

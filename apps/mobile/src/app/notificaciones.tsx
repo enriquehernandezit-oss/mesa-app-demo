@@ -1,12 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useFocusEffect } from 'expo-router'
+import { useCallback, useState } from 'react'
+import { Linking, Text, View } from 'react-native'
+
 import { Row } from '@/components/SettingsRow'
 import { Body, Button, Caption, Toggle } from '@/components/ui'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { type PushPermission, pushPermissionStatus, registerForPush } from '@/lib/push'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
-import { Linking, Text, View } from 'react-native'
 
 interface Prefs {
   social: boolean

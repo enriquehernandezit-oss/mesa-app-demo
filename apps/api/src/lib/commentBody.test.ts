@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { COMMENT_MAX, parseCommentBody } from './commentBody'
 
 describe('parseCommentBody', () => {

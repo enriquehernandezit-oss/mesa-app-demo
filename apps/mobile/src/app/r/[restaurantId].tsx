@@ -1,7 +1,14 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { EventMiniCard } from '@/components/events/EventTicket'
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { EventMiniCard } from '@/components/events/EventTicket'
 import {
   Body,
   Button,
@@ -15,7 +22,6 @@ import {
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { GlassCircle } from '@/components/ui/GlassCircle'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import {
   BackIcon,
   DirectionsIcon,
@@ -34,10 +40,11 @@ import {
   SpotRail,
   UtilityPill,
 } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
-import { cuisineLabel, eventWhenLabel, priceLabel } from '@/lib/display'
+import { cuisineLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { cloudinaryUrl, mapboxStaticUrl } from '@/lib/media'
 import { useFriendsOnlyScores } from '@/lib/prefs'
@@ -50,13 +57,6 @@ import type {
   RestaurantProfileResponse,
 } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
-import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Restaurant profile (Phase 6 mocks D1/D2) — the payoff surface: the place, the
 // aggregate + list pills, the attributed score trio, popular dishes, and where

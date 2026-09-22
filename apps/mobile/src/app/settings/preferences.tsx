@@ -1,8 +1,9 @@
+import { ScrollView, View } from 'react-native'
+
 import { Eyebrow } from '@/components/ui'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
 import { ThemePicker } from '@/components/ui/ThemePicker'
 import { useT } from '@/lib/i18n'
-import { ScrollView, View } from 'react-native'
 
 // Preferencias (M15) — Apariencia + Idioma, split out of the old flat
 // app/settings.tsx.

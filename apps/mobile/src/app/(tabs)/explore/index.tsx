@@ -1,9 +1,14 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import type { SearchBarCommands } from 'react-native-screens'
+
+import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { type ExploreFilterValues, ExploreFilters } from '@/components/ExploreFilters'
 import { ExternalResults } from '@/components/ExternalResults'
 import { useTabBarClearance } from '@/components/MesaTabBar'
-import { EventsBrowse } from '@/components/events/EventsBrowse'
 import {
-  Body,
   Button,
   Caption,
   Chip,
@@ -14,10 +19,10 @@ import {
   Segmented,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { showSheet } from '@/components/ui/Sheet'
 import { CloseIcon, PinIcon, SortIcon } from '@/components/ui/icons'
 import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { showSheet } from '@/components/ui/Sheet'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
@@ -35,11 +40,6 @@ import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES, themeColors } from '@/theme/vars'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
-import type { SearchBarCommands } from 'react-native-screens'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and

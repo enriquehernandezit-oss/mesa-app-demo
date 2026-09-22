@@ -1,3 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import {
   Body,
   Button,
@@ -11,9 +15,9 @@ import {
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { CheckIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
-import { CheckIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
@@ -25,9 +29,6 @@ import { isPastPlan } from '@/lib/plans'
 import { sharePlan } from '@/lib/sharePlan'
 import { formatPlanDate } from '@/lib/time'
 import type { PlanDetail, PlanMember, PlanReply } from '@/lib/types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // A single plan — the RSVP/vote/confirm surface every Planes row leads to.
 // `isHost`/`myReply`/`myVote` on the response already carry the viewer's own

@@ -1,7 +1,8 @@
-import { Body, Caption, EmptyState, Eyebrow, SectionHeader, Wordmark } from '@/components/ui'
-import { useLanguage, useT } from '@/lib/i18n'
 import { Stack, useLocalSearchParams } from 'expo-router'
 import { ScrollView, View } from 'react-native'
+
+import { Body, Caption, EmptyState, Eyebrow, SectionHeader, Wordmark } from '@/components/ui'
+import { useLanguage, useT } from '@/lib/i18n'
 
 // In-app legal pages. Apple requires the Privacy Policy and Terms to be
 // reachable inside the app (App Store 5.1), so these exist and are linked from

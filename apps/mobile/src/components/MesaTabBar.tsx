@@ -1,3 +1,5 @@
+import { type Tabs, useRouter } from 'expo-router'
+
 import {
   CompassIcon,
   DiscoverIcon,
@@ -9,7 +11,6 @@ import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { tapLight, tapSelect } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
-import { type Tabs, useRouter } from 'expo-router'
 
 // The exact props expo-router's Tabs passes to a custom tabBar (it re-exports its
 // own BottomTabBarProps, distinct from @react-navigation's).
@@ -75,7 +76,12 @@ function TabItem({
   focused,
   badge,
   onPress,
-}: { routeName: string; focused: boolean; badge?: number; onPress: () => void }) {
+}: {
+  routeName: string
+  focused: boolean
+  badge?: number
+  onPress: () => void
+}) {
   const t = useT()
   const Ico = ICONS[routeName]
   return (

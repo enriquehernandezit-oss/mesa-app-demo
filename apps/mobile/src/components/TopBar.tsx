@@ -1,13 +1,14 @@
+import { Link } from 'expo-router'
+import { Pressable, View } from 'react-native'
+import { Text } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { Wordmark } from '@/components/ui'
 import { BellIcon, SettingsIcon, ShareIcon, TrophyIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { useT } from '@/lib/i18n'
 import { shareProfile } from '@/lib/shareProfile'
-import { Link } from 'expo-router'
-import { Pressable, View } from 'react-native'
-import { Text } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Persistent app bar over the tab shell. Discover variant: wordmark + leaderboard
 // + activity bell (with an unseen badge). Profile variant: the member's name +
@@ -59,7 +60,11 @@ export function TopBar({
   variant = 'discover',
   title,
   shareHandle,
-}: { variant?: 'discover' | 'profile'; title?: string; shareHandle?: string | null }) {
+}: {
+  variant?: 'discover' | 'profile'
+  title?: string
+  shareHandle?: string | null
+}) {
   const t = useT()
   const insets = useSafeAreaInsets()
   return (

@@ -2,6 +2,7 @@ import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
 import { and, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
+
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
 import { requireAuth } from '../middleware/session'

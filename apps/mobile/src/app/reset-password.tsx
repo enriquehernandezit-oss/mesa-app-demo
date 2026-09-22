@@ -1,7 +1,3 @@
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
-import { Field } from '@/components/ui/Field'
-import { authClient } from '@/lib/auth-client'
-import { useT } from '@/lib/i18n'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import {
@@ -14,6 +10,11 @@ import {
   View,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+
+import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { authClient } from '@/lib/auth-client'
+import { useT } from '@/lib/i18n'
 
 // Reached from the password-reset email (a universal link →
 // /reset-password?token=…, or the mesa:// scheme). Renders outside the auth gate

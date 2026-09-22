@@ -1,3 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useMemo, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { FollowerPicker } from '@/components/FollowerPicker'
 import { Button, RowsSkeleton, Title } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
@@ -6,11 +12,6 @@ import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import type { PlanDetail } from '@/lib/types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // Inviting more people to a plan that already exists — the host's own
 // followers again, minus whoever is already invited. Shares the ['plan', id]

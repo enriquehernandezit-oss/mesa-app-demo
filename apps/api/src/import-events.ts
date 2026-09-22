@@ -26,6 +26,7 @@
 //   DATABASE_URL="<url>" bun run src/import-events.ts [--dry-run]
 
 import { readFileSync } from 'node:fs'
+
 import { db, pool, schema } from '@mesa/db'
 import { eq } from 'drizzle-orm'
 

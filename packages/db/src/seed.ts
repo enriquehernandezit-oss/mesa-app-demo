@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
+
 import { eq, sql } from 'drizzle-orm'
+
 import { db, pool } from './client'
 import * as schema from './schema'
 import { scoreFor } from './score'
@@ -350,10 +352,10 @@ async function seed() {
 async function verifyFeedReadBackIsSingleQuery(viewerId: string) {
   let statements = 0
   const originalQuery = pool.query.bind(pool)
-  // biome-ignore lint/suspicious/noExplicitAny: wrapping pg's overloaded query
+  // oxlint-disable-next-line typescript/no-explicit-any -- wrapping pg's overloaded query
   ;(pool as any).query = (...args: any[]) => {
     statements++
-    // biome-ignore lint/suspicious/noExplicitAny: passthrough to original
+    // oxlint-disable-next-line typescript/no-explicit-any -- passthrough to original
     return (originalQuery as any)(...args)
   }
 
@@ -390,7 +392,7 @@ async function verifyFeedReadBackIsSingleQuery(viewerId: string) {
     }
     console.log('no-N+1 verified ✓')
   } finally {
-    // biome-ignore lint/suspicious/noExplicitAny: restore original
+    // oxlint-disable-next-line typescript/no-explicit-any -- restore original
     ;(pool as any).query = originalQuery
   }
 }

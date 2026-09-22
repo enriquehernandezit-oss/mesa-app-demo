@@ -1,3 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
+import { Stack, useLocalSearchParams } from 'expo-router'
+import { useState } from 'react'
+import { FlatList, View } from 'react-native'
+
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Button, EmptyState, ErrorState, RowsSkeleton, Segmented } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
@@ -5,10 +10,6 @@ import { ApiError, api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { FollowUser } from '@/lib/types'
-import { useQuery } from '@tanstack/react-query'
-import { Stack, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
-import { FlatList, View } from 'react-native'
 
 // A member's followers or following list — the destination the profile
 // stats trio (Seguidores / Siguiendo) and a member's own passport point to.

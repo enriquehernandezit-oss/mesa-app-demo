@@ -1,7 +1,8 @@
-import { showSheet } from '@/components/ui/Sheet'
-import { getLanguage, t } from '@/lib/i18n'
 import * as SecureStore from 'expo-secure-store'
 import { Linking } from 'react-native'
+
+import { showSheet } from '@/components/ui/Sheet'
+import { getLanguage, t } from '@/lib/i18n'
 
 // "Cómo llegar" — the chooser the web app had and the first native port dropped
 // (it hardcoded Apple Maps). Picking a maps app is a preference, not a default

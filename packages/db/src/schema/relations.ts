@@ -1,4 +1,5 @@
 import { relations } from 'drizzle-orm'
+
 import { user } from './auth'
 import { restaurants, savedPlaces } from './discovery'
 import { menuItems } from './menu'

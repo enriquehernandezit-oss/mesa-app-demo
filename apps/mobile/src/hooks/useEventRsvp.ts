@@ -1,11 +1,12 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapLight, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import type { EventSummary } from '@/lib/types'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
 
 type Rsvp = EventSummary['myRsvp']
 

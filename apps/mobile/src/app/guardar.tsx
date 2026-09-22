@@ -1,3 +1,9 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+
 import { Button, Caption, Chip, ErrorState, Eyebrow, RowsSkeleton, Title } from '@/components/ui'
 import { CheckIcon, CloseIcon, PlusIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
@@ -7,11 +13,6 @@ import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
 import type { CollectionSummary } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // Save to a named list (M19) — a page sheet reached from SaveButton's
 // post-save toast ("Agregar a lista") or a long-press. Checking a list ALSO

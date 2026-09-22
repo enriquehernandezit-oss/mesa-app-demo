@@ -1,11 +1,12 @@
+import { Redirect } from 'expo-router'
+import { View } from 'react-native'
+
 import { Splash } from '@/components/Splash'
 import { ErrorState } from '@/components/ui'
 import { useProfile } from '@/hooks/useProfile'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
 import { useT } from '@/lib/i18n'
-import { Redirect } from 'expo-router'
-import { View } from 'react-native'
 
 // Top-level gate, ported from apps/app/src/App.tsx. Resolves session + profile
 // once and redirects to exactly one destination; each group also self-guards, so

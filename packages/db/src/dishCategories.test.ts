@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+
 import { DISH_CATEGORIES, DISH_GROUPS, guessDishCategory } from './dishCategories'
 
 describe('taxonomy shape', () => {

@@ -1,3 +1,8 @@
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useMemo } from 'react'
+import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Button, Caption, EmptyState } from '@/components/ui'
 import { DirectionsIcon } from '@/components/ui/icons'
@@ -5,10 +10,6 @@ import { openDirections } from '@/lib/directions'
 import { useT } from '@/lib/i18n'
 import { HAS_MAP_TOKEN } from '@/lib/mapbox'
 import type { MapSpot } from '@/lib/types'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo } from 'react'
-import { Pressable, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 // A single place, full-screen and pannable — the native replacement for the
 // web's PlaceMapSheet (apps/app/src/components/PlaceMapSheet.tsx). Reached from a

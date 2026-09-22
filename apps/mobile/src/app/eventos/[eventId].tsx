@@ -1,36 +1,3 @@
-import { ScreenHeader } from '@/components/ScreenHeader'
-import {
-  CategoryIcon,
-  FacesStack,
-  RsvpButtons,
-  SpotsLine,
-  countdownLabel,
-  useNow,
-} from '@/components/events/EventTicket'
-import { PulseDot, useStaggerEntering } from '@/components/events/motion'
-import { Body, Caption, ErrorState, MAX_SCALE, Skeleton } from '@/components/ui'
-import { GlassCircle } from '@/components/ui/GlassCircle'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import {
-  BackIcon,
-  CalendarIcon,
-  ChevronIcon,
-  ClockIcon,
-  DirectionsIcon,
-  ShareIcon,
-  WebIcon,
-  WhatsAppIcon,
-} from '@/components/ui/icons'
-import { useEventRsvp } from '@/hooks/useEventRsvp'
-import { ApiError, api } from '@/lib/api'
-import { openDirections } from '@/lib/directions'
-import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
-import { CAT_CLASSES, CAT_TOKEN, categoryKey } from '@/lib/eventCategory'
-import { countdown, isImminent } from '@/lib/eventTime'
-import { dateLocale, useT } from '@/lib/i18n'
-import { shareTextWhatsAppFirst } from '@/lib/shareProfile'
-import type { EventSummary, RestaurantProfileResponse } from '@/lib/types'
-import { useColor } from '@/theme/useColor'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -46,6 +13,40 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import {
+  CategoryIcon,
+  FacesStack,
+  RsvpButtons,
+  SpotsLine,
+  countdownLabel,
+  useNow,
+} from '@/components/events/EventTicket'
+import { PulseDot, useStaggerEntering } from '@/components/events/motion'
+import { ScreenHeader } from '@/components/ScreenHeader'
+import { Body, Caption, ErrorState, MAX_SCALE, Skeleton } from '@/components/ui'
+import { GlassCircle } from '@/components/ui/GlassCircle'
+import {
+  BackIcon,
+  CalendarIcon,
+  ChevronIcon,
+  ClockIcon,
+  DirectionsIcon,
+  ShareIcon,
+  WebIcon,
+  WhatsAppIcon,
+} from '@/components/ui/icons'
+import { PlaceCover } from '@/components/ui/PlaceCover'
+import { useEventRsvp } from '@/hooks/useEventRsvp'
+import { ApiError, api } from '@/lib/api'
+import { openDirections } from '@/lib/directions'
+import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
+import { CAT_CLASSES, CAT_TOKEN, categoryKey } from '@/lib/eventCategory'
+import { countdown, isImminent } from '@/lib/eventTime'
+import { dateLocale, useT } from '@/lib/i18n'
+import { shareTextWhatsAppFirst } from '@/lib/shareProfile'
+import type { EventSummary, RestaurantProfileResponse } from '@/lib/types'
+import { useColor } from '@/theme/useColor'
 
 // One Mesa-curated event (M21, redesigned for color + motion). A full-bleed
 // photo hero that stretches on pull and drifts on scroll, the category's hue

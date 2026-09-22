@@ -1,7 +1,9 @@
-import { track } from '@/lib/analytics'
 import { useQuery } from '@tanstack/react-query'
 import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
+
+import { track } from '@/lib/analytics'
+
 import { clearToken, getToken, setToken } from './auth-token'
 import { unregisterPush } from './push'
 import { queryClient } from './query'

@@ -9,19 +9,19 @@ event" flow, by design (M21).
 
 `packages/db/src/schema/events.ts`, table `events`:
 
-| column | meaning |
-|---|---|
-| `slug` | stable, unique, hand-picked (e.g. `pura-tasca-noche-de-jazz-2026-09-17`) — this is what the importer upserts by |
-| `restaurantId` | FK to `restaurants`, required — every event happens at a real catalog venue |
-| `title`, `description` | as written; `description` is optional |
-| `startsAt`, `endsAt` | **timezone-aware** timestamps (`timestamp with time zone`) — a shared future instant every member's client renders, same reasoning as `plans.startsAt`. `endsAt` is optional. |
-| `category` | free text, Mesa's own editorial label ("Música en vivo", "Happy hour", "Brunch") — not a closed taxonomy |
-| `priceLabel` | free text ("Cover RD$500", "Gratis", "2x1 en cócteles") — `null` means unlisted, not free |
-| `ticketUrl` | an external link, optional. A real-world ticket never needs Apple in-app purchase — this is a plain outbound link, not a purchase flow |
-| `coverImageId` | Cloudinary public id, optional — falls back to the restaurant's own cover when null |
-| `capacity` | total spots, optional positive integer (≤ 10000) — `null` means open/unlimited (happy hours, free nights). The API returns a derived `spotsLeft` = max(0, capacity − going count), `null` when capacity is null; it's never stored |
-| `bookingWhatsapp` | the venue's WhatsApp booking number, optional — digits only, E.164 without the `+` (`18095551234`), the form a `wa.me` link takes. The importer accepts `+1 809-555-1234` and strips spaces/dashes/`+`. **Only set a number the venue gave Mesa for bookings** — mock/demo events keep it `null` so they never message a real restaurant |
-| `cancelledAt` | soft-cancel; see "taking an event down" below |
+| column                 | meaning                                                                                                                                                                                                                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `slug`                 | stable, unique, hand-picked (e.g. `pura-tasca-noche-de-jazz-2026-09-17`) — this is what the importer upserts by                                                                                                                                                                                                                          |
+| `restaurantId`         | FK to `restaurants`, required — every event happens at a real catalog venue                                                                                                                                                                                                                                                              |
+| `title`, `description` | as written; `description` is optional                                                                                                                                                                                                                                                                                                    |
+| `startsAt`, `endsAt`   | **timezone-aware** timestamps (`timestamp with time zone`) — a shared future instant every member's client renders, same reasoning as `plans.startsAt`. `endsAt` is optional.                                                                                                                                                            |
+| `category`             | free text, Mesa's own editorial label ("Música en vivo", "Happy hour", "Brunch") — not a closed taxonomy                                                                                                                                                                                                                                 |
+| `priceLabel`           | free text ("Cover RD$500", "Gratis", "2x1 en cócteles") — `null` means unlisted, not free                                                                                                                                                                                                                                                |
+| `ticketUrl`            | an external link, optional. A real-world ticket never needs Apple in-app purchase — this is a plain outbound link, not a purchase flow                                                                                                                                                                                                   |
+| `coverImageId`         | Cloudinary public id, optional — falls back to the restaurant's own cover when null                                                                                                                                                                                                                                                      |
+| `capacity`             | total spots, optional positive integer (≤ 10000) — `null` means open/unlimited (happy hours, free nights). The API returns a derived `spotsLeft` = max(0, capacity − going count), `null` when capacity is null; it's never stored                                                                                                       |
+| `bookingWhatsapp`      | the venue's WhatsApp booking number, optional — digits only, E.164 without the `+` (`18095551234`), the form a `wa.me` link takes. The importer accepts `+1 809-555-1234` and strips spaces/dashes/`+`. **Only set a number the venue gave Mesa for bookings** — mock/demo events keep it `null` so they never message a real restaurant |
+| `cancelledAt`          | soft-cancel; see "taking an event down" below                                                                                                                                                                                                                                                                                            |
 
 `event_rsvps` is a member's RSVP (`going` or `interested`), one row per
 (event, user) — `PUT /events/:id/rsvp` upserts it, `DELETE` clears it
@@ -29,7 +29,7 @@ outright.
 
 `saved_events` is a member's **Save** (the bookmark), one row per
 (event, user), row present = saved. It is **independent of the RSVP** — a
-member can be going *and* have it saved, and clearing one never touches the
+member can be going _and_ have it saved, and clearing one never touches the
 other. Events only ever go to the general Saved area; they can't be added to
 a custom collection (no `collection_items` hook, by design).
 `PUT /events/:id/save` / `DELETE /events/:id/save` are idempotent
@@ -58,8 +58,8 @@ importer since there's no geocoding, just an exact-name match against a
 restaurant that already exists in the catalog.
 
 1. Add entries to `apps/api/data/events.json` (`{ events: [{ slug,
-   restaurantName, title, description, startsAt, endsAt, category,
-   priceLabel, ticketUrl, coverImageId, capacity, bookingWhatsapp }] }`).
+restaurantName, title, description, startsAt, endsAt, category,
+priceLabel, ticketUrl, coverImageId, capacity, bookingWhatsapp }] }`).
    An invalid `capacity` or `bookingWhatsapp` skips that row with a
    per-row error in the report. `restaurantName` must match a
    `restaurants.name` **exactly** — the importer does a plain exact match, on

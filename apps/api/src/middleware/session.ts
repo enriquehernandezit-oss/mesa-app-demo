@@ -1,4 +1,5 @@
 import { createMiddleware } from 'hono/factory'
+
 import { auth } from '../auth'
 import type { AppEnv, AuthedEnv } from '../context'
 

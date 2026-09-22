@@ -32,8 +32,10 @@
 // names that already resolved cleanly.
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+
 import { db, haversineM, mesaNorm, pool, schema, trigramSimilarity } from '@mesa/db'
 import { isNull, sql } from 'drizzle-orm'
+
 import {
   type GooglePlaceDetails,
   type MesaFieldsFromGoogle,

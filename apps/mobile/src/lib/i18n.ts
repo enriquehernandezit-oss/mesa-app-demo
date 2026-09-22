@@ -1,7 +1,8 @@
-import { en } from '@/locales/en'
-import { es } from '@/locales/es'
 import * as SecureStore from 'expo-secure-store'
 import { useSyncExternalStore } from 'react'
+
+import { en } from '@/locales/en'
+import { es } from '@/locales/es'
 
 // EN/ES toggle (M4). Same module-store shape as lib/prefs.ts (SecureStore +
 // useSyncExternalStore, so any screen reading the language re-renders the

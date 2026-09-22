@@ -1,3 +1,8 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { type Href, Link, useFocusEffect, useRouter } from 'expo-router'
+import { memo, useCallback, useEffect, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import {
   Button,
   Caption,
@@ -20,10 +25,6 @@ import { registerForPush } from '@/lib/push'
 import { formatPlanDate, timeAgo } from '@/lib/time'
 import type { ActivityItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { type Href, Link, useFocusEffect, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The screen behind the bell (mock F2): cheers, new followers, friends ranking
 // your saved spots, and friends out-ranking you — every row carries its own

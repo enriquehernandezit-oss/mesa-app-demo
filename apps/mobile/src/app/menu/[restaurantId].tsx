@@ -1,13 +1,14 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
+import { ScrollView, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, Chip, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
 import { api } from '@/lib/api'
 import { dateLocale, useLanguage, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
-import { ScrollView, Text, View } from 'react-native'
 
 // The restaurant's own published menu (M5), pulled out of the profile into
 // its own page (M7) — a long menu (La Locanda has 83 items) was pushing the

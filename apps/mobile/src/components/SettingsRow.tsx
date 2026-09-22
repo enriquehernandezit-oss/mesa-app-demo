@@ -21,7 +21,12 @@ export function RowButton({
   onPress,
   disabled,
   last,
-}: { children: ReactNode; onPress: () => void; disabled?: boolean; last?: boolean }) {
+}: {
+  children: ReactNode
+  onPress: () => void
+  disabled?: boolean
+  last?: boolean
+}) {
   return (
     <Pressable
       accessibilityRole="button"

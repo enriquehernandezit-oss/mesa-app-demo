@@ -13,9 +13,7 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": [
-          "whatsapp"
-        ]
+        "LSApplicationQueriesSchemes": ["whatsapp"]
       }
     },
     "android": {

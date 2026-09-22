@@ -9,6 +9,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { dishes } from './content'
 import { restaurants } from './discovery'

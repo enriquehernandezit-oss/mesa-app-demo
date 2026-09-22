@@ -1,3 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import {
   Body,
@@ -18,10 +23,6 @@ import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import type { ContactMatchUser, FriendSuggestion, SuggestionReason } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // Find friends (M18) — the v1 (M12.5) invite card + suggestions, now joined
 // by contacts (opt-in "let them find you" + search-my-contacts) and an

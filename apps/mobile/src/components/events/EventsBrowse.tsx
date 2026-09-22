@@ -1,11 +1,3 @@
-import { EmptyState, ErrorState, MAX_SCALE, Skeleton } from '@/components/ui'
-import { api } from '@/lib/api'
-import { CAT_CLASSES, CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
-import { nextDays, sdDayKey } from '@/lib/eventTime'
-import { tapSelect } from '@/lib/haptics'
-import { dateLocale, useT } from '@/lib/i18n'
-import type { EventSummary } from '@/lib/types'
-import { DATA_FIGURES } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
@@ -19,6 +11,16 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated'
+
+import { EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { api } from '@/lib/api'
+import { CAT_CLASSES, CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
+import { nextDays, sdDayKey } from '@/lib/eventTime'
+import { tapSelect } from '@/lib/haptics'
+import { dateLocale, useT } from '@/lib/i18n'
+import type { EventSummary } from '@/lib/types'
+import { DATA_FIGURES } from '@/theme/vars'
+
 import { CategoryIcon, EventHeroCard, EventTicket, useNow } from './EventTicket'
 import { EASE } from './motion'
 
@@ -30,6 +32,10 @@ import { EASE } from './motion'
 
 type Day = 'all' | string
 
+// A stable reference for the "no data yet" case — `data?.events ?? []` would
+// otherwise hand `all` a fresh array every render, defeating catsByDay's memo.
+const EMPTY_EVENTS: EventSummary[] = []
+
 export function EventsBrowse() {
   const t = useT()
   const now = useNow()
@@ -39,7 +45,7 @@ export function EventsBrowse() {
     queryKey: ['events', 'upcoming'],
     queryFn: () => api.get<{ events: EventSummary[] }>('/events?when=upcoming'),
   })
-  const all = q.data?.events ?? []
+  const all = q.data?.events ?? EMPTY_EVENTS
 
   // Keyed on the SD calendar day, not on `now` — useNow ticks every minute,
   // and a fresh array each tick re-rendered the whole strip for nothing.
@@ -193,10 +199,11 @@ const DayStrip = memo(function DayStrip({
     }
   }
   // A change from outside (the empty day's "jump to next" button).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: slideTo only reads refs + shared values
+  // oxlint-disable react/exhaustive-deps -- slideTo only reads refs + shared values
   useEffect(() => {
     if (value !== target.current) slideTo(value)
   }, [value])
+  // oxlint-enable react/exhaustive-deps
 
   const ring = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }))
   const month = new Intl.DateTimeFormat(dateLocale(), { month: 'short', timeZone: 'UTC' })

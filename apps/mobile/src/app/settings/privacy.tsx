@@ -1,3 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { File, Paths } from 'expo-file-system'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Share, Text, View } from 'react-native'
+
 import { Row, RowButton } from '@/components/SettingsRow'
 import { Caption, Toggle } from '@/components/ui'
 import { ChevronIcon } from '@/components/ui/icons'
@@ -6,11 +12,6 @@ import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { setFriendsOnlyScores, useFriendsOnlyScores } from '@/lib/prefs'
 import type { Ranking } from '@/lib/types'
-import { useQueryClient } from '@tanstack/react-query'
-import { File, Paths } from 'expo-file-system'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Share, Text, View } from 'react-native'
 
 // Privacidad (M15) — puntuaciones solo de amigos, cuentas bloqueadas (its own
 // screen, settings/blocked.tsx), exportar mis rankings. Moved out of the old

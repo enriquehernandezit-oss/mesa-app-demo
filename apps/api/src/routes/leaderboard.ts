@@ -1,6 +1,7 @@
 import { db, schema } from '@mesa/db'
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
+
 import type { AuthedEnv } from '../context'
 import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'

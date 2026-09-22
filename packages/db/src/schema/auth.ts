@@ -1,4 +1,5 @@
 import { bigint, boolean, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+
 import { neighborhoods } from './reference'
 
 // Identity is owned by Better Auth. These four tables match Better Auth's

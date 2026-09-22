@@ -11,6 +11,7 @@
 // from a plain fetch path with no provider, no context, and — importantly — no
 // import of the query client or the router, which would be a cycle.
 import { useSyncExternalStore } from 'react'
+
 import { clearToken, getToken } from './auth-token'
 import { queryClient } from './query'
 

@@ -1,10 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { useRef, useState } from 'react'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { ReportControl, pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
-  Body,
   Button,
   Caption,
-  Chip,
   EmptyState,
   ErrorState,
   RowsSkeleton,
@@ -21,10 +24,6 @@ import { tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useLocalSearchParams, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // Another person's ranked passport (mock E2) — and the surface where UGC
 // moderation is exercised (App Store 1.2): report a vibe note or the member,

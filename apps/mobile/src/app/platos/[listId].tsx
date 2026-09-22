@@ -1,14 +1,15 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { Characteristics } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import type { DishListDetail, DishListEntry } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
-import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // One dish list's full contents (M20) — "Tu mejor carbonara". Ranked
 // entries show their position; anything in `unranked` (a place that's

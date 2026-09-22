@@ -1,3 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Redirect, Stack, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+
 import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
@@ -8,10 +13,6 @@ import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import { timeAgo } from '@/lib/time'
 import type { ModerationReport } from '@/lib/types'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Redirect, Stack, useRouter } from 'expo-router'
-import { Pressable, ScrollView, Text, View } from 'react-native'
 
 // The moderation queue (App Store 1.2). Until this screen existed, a member
 // could report a note and it went nowhere: the four moderator endpoints had no
@@ -58,7 +59,10 @@ export default function ModerationQueue() {
     mutationFn: ({
       report,
       action,
-    }: { report: ModerationReport; action: 'remove' | 'dismiss' }) => {
+    }: {
+      report: ModerationReport
+      action: 'remove' | 'dismiss'
+    }) => {
       if (action === 'dismiss') return api.post(`/moderation/reports/${report.id}/dismiss`)
       switch (report.targetType) {
         case 'vibe_note':

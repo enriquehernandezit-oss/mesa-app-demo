@@ -1,4 +1,5 @@
 import { index, integer, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+
 import { user } from './auth'
 import { restaurants } from './discovery'
 

@@ -1,9 +1,3 @@
-import { Button, Caption, Chip, MAX_SCALE, Segmented } from '@/components/ui'
-import { CloseIcon } from '@/components/ui/icons'
-import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
-import { useT } from '@/lib/i18n'
-import type { Neighborhood } from '@/lib/types'
-import { BRASS_SHADOW } from '@/theme/vars'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
@@ -15,6 +9,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import { Button, Caption, Chip, MAX_SCALE, Segmented } from '@/components/ui'
+import { CloseIcon } from '@/components/ui/icons'
+import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
+import { useT } from '@/lib/i18n'
+import type { Neighborhood } from '@/lib/types'
+import { BRASS_SHADOW } from '@/theme/vars'
 
 export type ExploreFilterValues = {
   hood: string | null

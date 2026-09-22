@@ -1,6 +1,6 @@
 # Mesa — what the app does today
 
-**Status as of 2026-09-14.** This document describes the product *as built*, not as planned.
+**Status as of 2026-09-14.** This document describes the product _as built_, not as planned.
 Where `docs/BUILD_PLAN.md`, `docs/APPSTORE.md` and `docs/SUBMISSION.md` disagree with this file,
 this file is right — those three still describe the retired Vite/Capacitor stack.
 
@@ -28,21 +28,22 @@ labelled as your circle's.
 **Rank a place → see where your friends ranked theirs.** Everything else exists to serve this.
 
 ### Ranking a place (`rank.tsx`, a modal)
+
 1. **Find the spot** — searches your already-ranked places and the catalog together. If Mesa
    doesn't have it, a Google Places typeahead offers online matches, and picking one creates a
    full profile. You can also add a place by hand.
-2. **How was it?** — three sentiment buckets (*Me encantó · Estuvo bien · No me gustó*), which
+2. **How was it?** — three sentiment buckets (_Me encantó · Estuvo bien · No me gustó_), which
    narrow the comparison range to roughly a third of your list.
-3. **Pairwise comparison** — photo-backed cards, "which do you prefer?", plus *Más o menos igual*
+3. **Pairwise comparison** — photo-backed cards, "which do you prefer?", plus _Más o menos igual_
    for a tie. A binary insertion sort, so a 100-place list settles in ~7 taps.
 4. **The reveal** — your score, derived from the final position (0–100 stored, shown 7.2–9.6).
    **The ranking is committed here**, not at the end, so an interrupted flow never loses it.
 5. **The note step** — a one-line vibe note (140 chars), occasion tags (8 Spanish values), and
-   *Qué pedir*: a chip search over dishes already logged at the place (or "+ Agregar" a new one),
+   _Qué pedir_: a chip search over dishes already logged at the place (or "+ Agregar" a new one),
    up to 3, each with a category (auto-guessed, correctable) and an optional sentiment
-   (*Me encantó · Estuvo bien · No me convenció*). Optionally attach a photo to the first one.
+   (_Me encantó · Estuvo bien · No me convenció_). Optionally attach a photo to the first one.
 
-The back gesture and drag-to-dismiss both step *backward* through the flow rather than throwing
+The back gesture and drag-to-dismiss both step _backward_ through the flow rather than throwing
 away a half-finished ranking.
 
 Ranking-list integrity (dense 1..n positions, one score formula, no lost-update races) is
@@ -50,10 +51,11 @@ verified with `bun run rankings:check` (read-only) and repaired with `bun run ra
 (`apps/api/src/check-rankings.ts` / `renormalize-rankings.ts`).
 
 ### Your list (`(tabs)/rankings.tsx`)
+
 - **Mía** — your ordered passport, brass serif numerals, swipe-to-remove with undo.
 - **Quiero probar** — saved places.
 - **Sectores** — your rankings aggregated by neighbourhood, with a bar per barrio.
-- **Sort** — one chip opening a native action sheet: *Mi orden · Puntuación · Recientes · Nombre*.
+- **Sort** — one chip opening a native action sheet: _Mi orden · Puntuación · Recientes · Nombre_.
 - **Filter** — four dimensions (sector, ocasión, precio, cocina) via active-filter chips plus a
   `Filtros (N)` panel. All client-side, over the whole list in memory.
 - The "mine" tab is virtualized (`FlatList`); saved and barrios are not, deliberately — they're
@@ -64,16 +66,16 @@ verified with `bun run rankings:check` (read-only) and repaired with `bun run ra
 
 ## 3. Discovery
 
-| Screen | What it does |
-|---|---|
-| **Feed** (`discover.tsx`) | Friends' rankings and dish posts, newest first, infinite scroll + pull-to-refresh. Flat, compact rows (M9) — no card box, just a hairline under the text column. Ranking rows carry the attributed score; no `#N en su lista`. Dish posts carry the photo. Cheers on any row. Featured-lists carousel on top. |
-| **Explore** (`explore/index.tsx`) | Searches your circle's rankings — not the open internet. Native search bar in the nav bar. Filters: score/open-now/price, sector, cuisine. Also returns **members** and dish matches. Falls through to Google when Mesa has fewer than 3 hits. |
-| **Trending rail** | "Sonando esta semana" — 14-day cheer velocity, in Explore's default browse state only. Shows **only a cheer count**, never a score. Self-hides under 4 qualifying spots. |
+| Screen                                          | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Feed** (`discover.tsx`)                       | Friends' rankings and dish posts, newest first, infinite scroll + pull-to-refresh. Flat, compact rows (M9) — no card box, just a hairline under the text column. Ranking rows carry the attributed score; no `#N en su lista`. Dish posts carry the photo. Cheers on any row. Featured-lists carousel on top.                                                                                                                                                                                                                                                       |
+| **Explore** (`explore/index.tsx`)               | Searches your circle's rankings — not the open internet. Native search bar in the nav bar. Filters: score/open-now/price, sector, cuisine. Also returns **members** and dish matches. Falls through to Google when Mesa has fewer than 3 hits.                                                                                                                                                                                                                                                                                                                      |
+| **Trending rail**                               | "Sonando esta semana" — 14-day cheer velocity, in Explore's default browse state only. Shows **only a cheer count**, never a score. Self-hides under 4 qualifying spots.                                                                                                                                                                                                                                                                                                                                                                                            |
 | **Restaurant profile** (`r/[restaurantId].tsx`) | The payoff surface: hero photo or tinted map, characteristics, the attributed score trio, occasion tags, popular dishes, friends who ranked it with their notes, similar-spots rail, list membership pills. Sticky condensed header on scroll. Save, share, rank. Action row shows a **Menú** button when the place has one, next to Llamar/Sitio web/Cómo llegar — opens the full menu page (`menu/[restaurantId].tsx`: sticky section headers, a chip rail to jump between them). See `docs/MENUS.md` for how to add a menu to a place that doesn't have one yet. |
-| **Map** (`map.tsx`) | Every spot at real coordinates; friend-ranked places lit brass. Degrades to a message without a Mapbox token. |
-| **Place map** (`place-map.tsx`) | One place, full-screen, pannable, with directions handoff. |
-| **Lists** (`lists/[slug].tsx`) | Editorial lists in curated order, each with the friend signal. |
-| **Leaderboard** | City ranking by places ranked, all-time or monthly. |
+| **Map** (`map.tsx`)                             | Every spot at real coordinates; friend-ranked places lit brass. Degrades to a message without a Mapbox token.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Place map** (`place-map.tsx`)                 | One place, full-screen, pannable, with directions handoff.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **Lists** (`lists/[slug].tsx`)                  | Editorial lists in curated order, each with the friend signal.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| **Leaderboard**                                 | City ranking by places ranked, all-time or monthly.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 **Directions** hand off to Apple Maps, Google Maps or Waze via a chooser that remembers your last
 choice.
@@ -101,11 +103,11 @@ You can **delete your own dish post**; anyone else's is reportable.
 
 - **Follow / unfollow**, with follower and following counts.
 - **A member's passport** (`u/[userId].tsx`) — their avatar, barrio, ranked list with notes,
-  tags and *Pide:*, a **taste-match percentage** with the shared-spot count behind it
+  tags and _Pide:_, a **taste-match percentage** with the shared-spot count behind it
   (`+87% de gustos en común · sobre 12 spots en común`), and the same Seguidores / Siguiendo /
   Rankeados trio as your own profile.
 - **Your profile** (`profile.tsx`) — avatar picker, the same stat trio, an editorial line drawn
-  from your own data (*"Comes sobre todo italiana, casi siempre en Piantini."*), routes into your
+  from your own data (_"Comes sobre todo italiana, casi siempre en Piantini."_), routes into your
   lists, and two stat cards (Rank en RD, racha).
 - **Activity** — cheers, new followers, friends ranking a spot you saved, friends out-ranking you.
   Grouped by day, with a local read watermark that clears the bell badge.
@@ -170,17 +172,17 @@ Complete, both directions:
 
 ## 9. Account
 
-| | |
-|---|---|
-| **Email + password** | Live. 8-char minimum, breach-checked against Have I Been Pwned, Spanish error copy. |
-| **Sign in with Apple** | Built, env-gated — turns on with Apple credentials. |
-| **Instagram OAuth** | Built server-side; no client UI. The Instagram handle is a display string only. |
-| **Phone OTP** | Built, disabled (no SMS provider). |
-| **Email verification** | Sent on signup, not a gate. Resend from Settings. |
-| **Password reset** | Emailed link, opens the app via universal link. |
-| **Sessions** | 30 days. Bearer tokens in the iOS Keychain, not cookies. Change password and "sign out other devices" both available. |
-| **Account deletion** | In-app, cascading, irreversible. Requires your password, or a session younger than 24h. |
-| **Data export** | Your rankings as JSON, via the share sheet. |
+|                        |                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| **Email + password**   | Live. 8-char minimum, breach-checked against Have I Been Pwned, Spanish error copy.                                   |
+| **Sign in with Apple** | Built, env-gated — turns on with Apple credentials.                                                                   |
+| **Instagram OAuth**    | Built server-side; no client UI. The Instagram handle is a display string only.                                       |
+| **Phone OTP**          | Built, disabled (no SMS provider).                                                                                    |
+| **Email verification** | Sent on signup, not a gate. Resend from Settings.                                                                     |
+| **Password reset**     | Emailed link, opens the app via universal link.                                                                       |
+| **Sessions**           | 30 days. Bearer tokens in the iOS Keychain, not cookies. Change password and "sign out other devices" both available. |
+| **Account deletion**   | In-app, cascading, irreversible. Requires your password, or a session younger than 24h.                               |
+| **Data export**        | Your rankings as JSON, via the share sheet.                                                                           |
 
 **Onboarding** is three steps — profile + neighbourhood + EULA, a starter pairwise ranking, then
 finding friends. Nothing is gated behind invites, contacts, or a ranking count.
@@ -194,9 +196,10 @@ which flips at 6pm regardless of the OS setting. Everything resolves through a s
 layer; no raw colour exists outside it.
 
 The governing line is **content is Mesa, chrome is iOS**:
-- *Content* — cards, rows, the type ramp, the stroke-icon language — is Mesa's.
-- *Chrome* — large-title nav bars with blur scroll edges, action sheets, `Switch`, in-app Safari
-  — is the system's, and is always told Mesa's *resolved* theme explicitly. The tab bar is the one
+
+- _Content_ — cards, rows, the type ramp, the stroke-icon language — is Mesa's.
+- _Chrome_ — large-title nav bars with blur scroll edges, action sheets, `Switch`, in-app Safari
+  — is the system's, and is always told Mesa's _resolved_ theme explicitly. The tab bar is the one
   deliberate exception: a real `UITabBar` (SF Symbols, Liquid Glass, minimize-on-scroll) was tried
   first, but it has no way to render one tab's icon larger than its siblings and its scroll-edge
   transparency stayed visible against real content — so the shipped bar (`components/MesaTabBar.tsx`)
@@ -215,6 +218,7 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
 ## 11. Production infrastructure
 
 **Wired:**
+
 - **CI** — GitHub Actions on every push: typecheck (API, db, mobile), lint, tests, and an
   `expo export` bundle check that catches what `tsc` can't.
 - **Analytics** — PostHog, 17 typed loop events, screen views, no PII by contract.
@@ -269,11 +273,11 @@ but nothing proves the mirror still matches the server.
 
 ## 14. What's blocking launch
 
-| Blocker | Needs |
-|---|---|
-| First device build | Apple Developer approval (enrolled, pending) |
-| Push notifications | Apple approval, then build |
-| Signed image uploads | Cloudinary API key + secret |
-| Analytics actually reporting | PostHog key, Sentry DSNs |
-| Legal pages | Founder + counsel review of the drafted copy |
-| App Store listing | Screenshots (needs a build), description, privacy label |
+| Blocker                      | Needs                                                   |
+| ---------------------------- | ------------------------------------------------------- |
+| First device build           | Apple Developer approval (enrolled, pending)            |
+| Push notifications           | Apple approval, then build                              |
+| Signed image uploads         | Cloudinary API key + secret                             |
+| Analytics actually reporting | PostHog key, Sentry DSNs                                |
+| Legal pages                  | Founder + counsel review of the drafted copy            |
+| App Store listing            | Screenshots (needs a build), description, privacy label |

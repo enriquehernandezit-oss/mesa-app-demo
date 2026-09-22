@@ -1,10 +1,11 @@
+import { Link } from 'expo-router'
+import { type ReactNode, useEffect } from 'react'
+import { Pressable, Text, View } from 'react-native'
+
 import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { type FollowSource, useFollow } from '@/hooks/useFollow'
 import { useT } from '@/lib/i18n'
-import { Link } from 'expo-router'
-import { type ReactNode, useEffect } from 'react'
-import { Pressable, Text, View } from 'react-native'
 
 type PersonRowUser = {
   id: string
@@ -29,7 +30,12 @@ export function PersonRow({
   subtitle,
   right,
   last,
-}: { user: PersonRowUser; subtitle?: string; right?: ReactNode; last?: boolean }) {
+}: {
+  user: PersonRowUser
+  subtitle?: string
+  right?: ReactNode
+  last?: boolean
+}) {
   const caption =
     subtitle ??
     [user.handle ? `@${user.handle}` : null, user.neighborhood].filter(Boolean).join(' · ')
@@ -74,10 +80,11 @@ export function FollowPill({
 
   // `onChange` is typically a fresh closure per render (callers building it
   // inline inside a `.map()`); only `following` itself should re-trigger this.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above.
+  // oxlint-disable react/exhaustive-deps -- see above.
   useEffect(() => {
     onChange?.(following)
   }, [following])
+  // oxlint-enable react/exhaustive-deps
 
   return (
     <Pressable

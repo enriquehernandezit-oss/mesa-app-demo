@@ -1,8 +1,3 @@
-import type { LatLng } from '@/lib/geo'
-import { HAS_MAP_TOKEN } from '@/lib/mapbox'
-import type { MapSpot } from '@/lib/types'
-import { useResolvedTheme } from '@/theme/ThemeProvider'
-import { MAP_USER_LOCATION_BLUE } from '@/theme/vars'
 import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps'
 import { useEffect } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
@@ -15,6 +10,12 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated'
+
+import type { LatLng } from '@/lib/geo'
+import { HAS_MAP_TOKEN } from '@/lib/mapbox'
+import type { MapSpot } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { MAP_USER_LOCATION_BLUE } from '@/theme/vars'
 
 // The real, pannable/zoomable street map (@rnmapbox/maps) — the native
 // replacement for the web's mapbox-gl MapGL (apps/app/src/screens/map/MapGL.tsx).

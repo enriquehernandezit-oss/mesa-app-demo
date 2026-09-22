@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react'
+import { Pressable, Text, View } from 'react-native'
+
 import { Caption, SectionHeader } from '@/components/ui'
 import { useT } from '@/lib/i18n'
 import type { ExternalSuggestion } from '@/lib/types'
-import type { ReactNode } from 'react'
-import { Pressable, Text, View } from 'react-native'
 
 // The "En Google" list, shared by Explore and the rank flow's find step. Tapping
 // a row creates the place (the hook owns that); this is purely presentational.

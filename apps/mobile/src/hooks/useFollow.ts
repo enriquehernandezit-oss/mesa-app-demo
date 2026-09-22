@@ -1,8 +1,9 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+
 import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
 
 // The one follow/unfollow implementation. Before this hook existed the same
 // mutation was hand-rolled four times (onboarding's FriendsStep, the empty

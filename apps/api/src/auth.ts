@@ -2,6 +2,7 @@ import { db, schema } from '@mesa/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { bearer, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
+
 import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
 import { resetPasswordUrl, verifyEmailUrl } from './lib/publicPage'
 

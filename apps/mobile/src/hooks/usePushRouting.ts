@@ -1,6 +1,7 @@
-import { lastNotificationDeepLinkData, onNotificationTapped, pushDeepLink } from '@/lib/push'
 import type { useRouter } from 'expo-router'
 import { useEffect } from 'react'
+
+import { lastNotificationDeepLinkData, onNotificationTapped, pushDeepLink } from '@/lib/push'
 
 // Routes a tapped push notification to its allow-listed screen (M17). Mounted
 // once from (tabs)/_layout.tsx, which only renders once there's a session —

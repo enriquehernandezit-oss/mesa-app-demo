@@ -1,8 +1,14 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
+import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Skeleton, Title } from '@/components/ui'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ListIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
@@ -12,11 +18,6 @@ import { useT } from '@/lib/i18n'
 import { cloudinaryUrl } from '@/lib/media'
 import type { CollectionDetail, CollectionItem } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 // One named list's full contents (M19). Restaurant items show "Ya fuiste ·
 // #N" once ranked since being added — see routes/collections.ts's own
