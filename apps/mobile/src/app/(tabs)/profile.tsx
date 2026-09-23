@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useCallback, useRef, useState } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
+import { EventTicket, useNow } from '@/components/events/EventTicket'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
 import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
@@ -32,7 +33,7 @@ import { dateLocale, useT } from '@/lib/i18n'
 import { openImagePicker } from '@/lib/image'
 import { editPhoto } from '@/lib/photoEditor'
 import { isPendingInvite } from '@/lib/plans'
-import type { MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
+import type { EventSummary, MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
 import { uploadImage } from '@/lib/upload'
 import { DATA_FIGURES } from '@/theme/vars'
 
@@ -141,6 +142,13 @@ function AvatarEditButton({
 // bar (name + share + settings) is TopBar's profile variant. Ported from
 // apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
 // expo-image-picker + lib/photoEditor.ts's crop/rotate.
+// The same ticket card Explore shows, so its bookmark and "I'm going" work
+// right here; the countdown keeps its own minute tick.
+function ProfileEventTicket({ e, index }: { e: EventSummary; index: number }) {
+  const now = useNow()
+  return <EventTicket e={e} index={index} now={now} />
+}
+
 export default function ProfileTab() {
   const router = useRouter()
   const t = useT()
@@ -164,6 +172,15 @@ export default function ProfileTab() {
   const top3 = [...(rankings.data?.rankings ?? [])]
     .sort((a, b) => a.position - b.position)
     .slice(0, 3)
+  // Upcoming events this member RSVP'd to. Same ['events','mine'] key
+  // Explore's Eventos view reads, so the two never disagree and a visit to
+  // either warms the other. Lived under Saved in Rankings until it moved out
+  // — plans you've made aren't things you bookmarked.
+  const goingEvents = useQuery({
+    queryKey: ['events', 'mine'],
+    queryFn: () => api.get<{ events: EventSummary[] }>('/events/mine'),
+  })
+  const going = (goingEvents.data?.events ?? []).slice(0, 3)
   // Same ['plans'] cache key plans/index.tsx reads — the pending-invite
   // count here and the app's own list never disagree, and a visit to either
   // screen warms the other's cache.
@@ -389,6 +406,31 @@ export default function ProfileTab() {
                 </Pressable>
               ))}
             </View>
+          </View>
+        ) : null}
+
+        {/* What you've said you're going to — the events half of "my stuff",
+            capped at three the way Tu top 3 is, with the full list a tap away
+            in Explore. */}
+        {going.length > 0 ? (
+          <View className="mt-6">
+            <View className="mb-3 flex-row items-baseline justify-between">
+              <Text className="font-ui-semibold text-subhead text-text">
+                {t('events.going_section')}
+              </Text>
+              <Pressable
+                onPress={() => router.push('/explore')}
+                hitSlop={8}
+                className="active:opacity-60"
+              >
+                <Text className="font-ui-semibold text-label text-accent-strong">
+                  {t('profile.see_all_events')} ›
+                </Text>
+              </Pressable>
+            </View>
+            {going.map((e, i) => (
+              <ProfileEventTicket key={e.id} e={e} index={i} />
+            ))}
           </View>
         ) : null}
 

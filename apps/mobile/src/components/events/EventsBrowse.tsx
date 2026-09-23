@@ -12,7 +12,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated'
 
-import { EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { EmptyState, ErrorState, SectionHeader, Skeleton } from '@/components/ui'
 import { CalendarIcon, CloseIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
 import { CAT_CLASSES, CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
@@ -70,6 +70,15 @@ export function EventsBrowse() {
     queryFn: () => api.get<{ events: EventSummary[] }>('/events?when=upcoming'),
   })
   const all = q.data?.events ?? EMPTY_EVENTS
+  // The member's own RSVPs. This used to be a fourth tab under Saved in
+  // Rankings, which read as a list of places you'd bookmarked rather than
+  // plans you'd made; events belong with events. Shares the ['events']
+  // prefix useEventRsvp already invalidates, so an RSVP anywhere updates it.
+  const mine = useQuery({
+    queryKey: ['events', 'mine'],
+    queryFn: () => api.get<{ events: EventSummary[] }>('/events/mine'),
+  })
+  const going = mine.data?.events ?? EMPTY_EVENTS
 
   // Keyed on the SD calendar day, not on `now` — useNow ticks every minute,
   // and a fresh array each tick re-rendered the whole strip for nothing.
@@ -194,6 +203,18 @@ export function EventsBrowse() {
         <EmptyState>{t('events.empty')}</EmptyState>
       ) : (
         <>
+          {/* Your own RSVPs, pinned above the browse list — but only in the
+              default state, the same rule Featured follows: once a day or a
+              category is picked, the answer on screen should be what was
+              asked for, not a standing list. */}
+          {going.length > 0 && sel === null && cat === 'all' ? (
+            <View className="mt-2">
+              <SectionHeader>{t('events.going_section')}</SectionHeader>
+              {going.map((e, i) => (
+                <EventTicket key={`going-${e.id}`} e={e} index={i} now={now} />
+              ))}
+            </View>
+          ) : null}
           {featured.length > 0 ? <Featured events={featured} now={now} /> : null}
           <View className="mt-4">
             {list.map((e, i) => (

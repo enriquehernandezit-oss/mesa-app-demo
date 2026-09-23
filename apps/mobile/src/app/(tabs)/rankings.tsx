@@ -64,7 +64,7 @@ import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
 
-type SavedKind = 'restaurants' | 'dishes' | 'events' | 'going'
+type SavedKind = 'restaurants' | 'dishes' | 'events'
 type SavedItem =
   | { kind: 'place'; key: string; v: SavedPlace }
   | { kind: 'dish'; key: string; v: SavedDish }
@@ -100,21 +100,14 @@ export default function RankingsTab() {
   // above it in a rail; they have their own screen now (app/collections/
   // index.tsx, reached from Profile) so this tab is only what you saved.
   const [savedKind, setSavedKind] = useState<SavedKind>(
-    kindParam === 'dishes' || kindParam === 'events' || kindParam === 'going'
-      ? kindParam
-      : 'restaurants',
+    kindParam === 'dishes' || kindParam === 'events' ? kindParam : 'restaurants',
   )
   // The tab is a persistent screen, so a later `/rankings?tab=saved` (Profile's
   // "Saved" row) arrives as a param change on an already-mounted screen —
   // useState's initial value alone never saw it.
   useEffect(() => {
     if (tabParam === 'saved' || tabParam === 'barrios' || tabParam === 'mine') setTab(tabParam)
-    if (
-      kindParam === 'restaurants' ||
-      kindParam === 'dishes' ||
-      kindParam === 'events' ||
-      kindParam === 'going'
-    )
+    if (kindParam === 'restaurants' || kindParam === 'dishes' || kindParam === 'events')
       setSavedKind(kindParam)
   }, [tabParam, kindParam])
   const [sort, setSort] = useState<SortKey>('position')
@@ -166,14 +159,6 @@ export default function RankingsTab() {
   const savedEventsQuery = useQuery({
     queryKey: ['events', 'saved'],
     queryFn: () => api.get<{ events: EventSummary[] }>('/events/saved'),
-    enabled: tab === 'saved',
-  })
-  // Going (M22) — a sibling of the bookmark tab above, not the same list:
-  // an RSVP and a Save are independent (see docs/EVENTS.md). Shares the
-  // ['events'] prefix useEventRsvp already invalidates on every RSVP change.
-  const goingEventsQuery = useQuery({
-    queryKey: ['events', 'mine'],
-    queryFn: () => api.get<{ events: EventSummary[] }>('/events/mine'),
     enabled: tab === 'saved',
   })
   const stats = useQuery({ queryKey: ['me-stats'], queryFn: () => api.get<MeStats>('/me/stats') })
@@ -392,14 +377,13 @@ export default function RankingsTab() {
     if (savedKind === 'restaurants')
       return (saved.data?.saved ?? []).map((v) => ({ kind: 'place', key: v.restaurant.id, v }))
     if (savedKind === 'dishes') return savedDishes.map((v) => ({ kind: 'dish', key: v.dish.id, v }))
-    const events = savedKind === 'going' ? goingEventsQuery.data : savedEventsQuery.data
-    return (events?.events ?? []).map((v, i) => ({
+    return (savedEventsQuery.data?.events ?? []).map((v, i) => ({
       kind: 'event',
       key: v.id,
       v,
       i,
     }))
-  }, [savedKind, saved.data, savedDishes, savedEventsQuery.data, goingEventsQuery.data])
+  }, [savedKind, saved.data, savedDishes, savedEventsQuery.data])
   const renderSavedItem = useCallback(({ item }: { item: SavedItem }) => {
     if (item.kind === 'place') return <SavedRow saved={item.v} />
     if (item.kind === 'dish') return <SavedDishRow saved={item.v} />
@@ -410,9 +394,7 @@ export default function RankingsTab() {
       ? saved
       : savedKind === 'dishes'
         ? savedDishesQuery
-        : savedKind === 'going'
-          ? goingEventsQuery
-          : savedEventsQuery
+        : savedEventsQuery
 
   // Three refs, not one (M23) — Mine/Saved/Barrios are three ALWAYS-mounted
   // lists (see the comment above on why), so a tab-bar press has to know
@@ -529,7 +511,6 @@ export default function RankingsTab() {
                 { value: 'restaurants', label: t('rankings.saved_restaurants') },
                 { value: 'dishes', label: t('rankings.saved_dishes_tab') },
                 { value: 'events', label: t('rankings.saved_events_tab') },
-                { value: 'going', label: t('rankings.going_events_tab') },
               ]}
             />
           </>
@@ -539,23 +520,12 @@ export default function RankingsTab() {
             <Skeleton height={64} />
           ) : activeSaved.isError ? (
             <ErrorState onRetry={() => activeSaved.refetch()}>
-              {savedKind === 'events' || savedKind === 'going'
+              {savedKind === 'events'
                 ? t('rankings.saved_events_error')
                 : t('rankings.saved_load_error')}
             </ErrorState>
           ) : savedKind === 'dishes' ? (
             <EmptyState>{t('rankings.no_saved_dishes')}</EmptyState>
-          ) : savedKind === 'going' ? (
-            <EmptyState
-              body={t('rankings.no_going_events_body')}
-              action={
-                <Button size="sm" variant="secondary" onPress={() => router.push('/explore')}>
-                  {t('rankings.browse_events')}
-                </Button>
-              }
-            >
-              {t('rankings.no_going_events')}
-            </EmptyState>
           ) : savedKind === 'events' ? (
             <EmptyState
               body={t('rankings.no_saved_events_body')}
