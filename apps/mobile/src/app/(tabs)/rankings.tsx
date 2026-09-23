@@ -408,10 +408,13 @@ export default function RankingsTab() {
   // lists (see the comment above on why), so a tab-bar press has to know
   // which one is actually visible right now and scroll only that one.
   // Barrios has no query of its own; it's `mine`'s data regrouped, so it
-  // reloads the same source. Mine already has a RefreshControl (onRefresh
-  // below), so it reuses that for the same visible-spinner reason
-  // discover.tsx and explore/index.tsx do; Saved and Barrios have none today,
-  // so their reload is a plain silent refetch.
+  // reloads the same source. All three do a silent refetch, not Mine's own
+  // onRefresh: flipping RefreshControl's `refreshing` on programmatically
+  // (not from an actual pull) shifts the scroll offset down to reveal the
+  // spinner and doesn't reliably restore it (usePullToRefresh's own header),
+  // which raced the scrollToOffset below and left a tab re-press landing
+  // scrolled down instead of at the top. A real pull-to-refresh gesture on
+  // Mine is untouched — only this synthetic trigger skips the spinner.
   const mineListRef = useRef<FlatList<Ranking>>(null)
   const savedListRef = useRef<FlatList<SavedItem>>(null)
   const barriosScrollRef = useRef<ScrollView>(null)
@@ -419,15 +422,15 @@ export default function RankingsTab() {
     useCallback(() => {
       if (tab === 'mine') {
         mineListRef.current?.scrollToOffset({ offset: 0, animated: true })
-        onRefresh()
+        void mine.refetch()
       } else if (tab === 'saved') {
         savedListRef.current?.scrollToOffset({ offset: 0, animated: true })
-        activeSaved.refetch()
+        void activeSaved.refetch()
       } else {
         barriosScrollRef.current?.scrollTo({ y: 0, animated: true })
-        mine.refetch()
+        void mine.refetch()
       }
-    }, [tab, onRefresh, activeSaved, mine]),
+    }, [tab, activeSaved, mine]),
   )
 
   return (

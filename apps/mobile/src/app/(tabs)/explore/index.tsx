@@ -327,8 +327,15 @@ export default function ExploreScreen() {
   useResetOnTabPress(
     useCallback(() => {
       scrollRef.current?.scrollTo({ y: 0, animated: true })
-      onRefresh()
-    }, [onRefresh]),
+      // A silent refetch, not onRefresh(): flipping RefreshControl's
+      // `refreshing` on programmatically (not from an actual pull) shifts
+      // the scroll offset down to reveal the spinner and doesn't reliably
+      // restore it (usePullToRefresh's own header), which raced the
+      // scrollTo above and left a tab re-press landing scrolled down
+      // instead of at the top. A real pull-to-refresh gesture is untouched
+      // — only this synthetic trigger skips the visible spinner.
+      void results.refetch()
+    }, [results]),
     { nested: true },
   )
 

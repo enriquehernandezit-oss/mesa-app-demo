@@ -96,11 +96,15 @@ export default function DiscoverTab() {
   useResetOnTabPress(
     useCallback(() => {
       listRef.current?.scrollToOffset({ offset: 0, animated: true })
-      // onRefresh (not a bare feed.refetch()) so the pull-to-refresh spinner
-      // itself briefly shows — the same visible "it reloaded" cue a manual
-      // pull already gives, not just a silent background refetch.
-      onRefresh()
-    }, [onRefresh]),
+      // A silent refetch, not onRefresh(): flipping RefreshControl's
+      // `refreshing` on programmatically (not from an actual pull) shifts
+      // the scroll offset down to reveal the spinner and doesn't reliably
+      // restore it (usePullToRefresh's own header), which raced the
+      // scrollToOffset above and left a tab re-press landing scrolled down
+      // instead of at the top. A real pull-to-refresh gesture is untouched
+      // — only this synthetic trigger skips the visible spinner.
+      void feed.refetch()
+    }, [feed]),
   )
 
   return (
