@@ -1,5 +1,5 @@
 import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
@@ -19,8 +19,9 @@ import { requireAuth } from '../middleware/session'
 
 const profileSchema = z.object({
   name: z.string().trim().min(1).max(60),
-  // Instagram @handle is optional — membership doesn't require a social identity.
-  // When present it must be well-formed and unique; when omitted it stays null.
+  // Mesa's own unique @username, NOT Instagram (see instagramHandle below) —
+  // it's what /p/u/:handle and the leaderboard's eligibility filter key off.
+  // Optional — membership doesn't require a social identity.
   handle: z
     .string()
     .trim()
@@ -29,7 +30,23 @@ const profileSchema = z.object({
     .optional(),
   neighborhoodSlug: z.string().trim().min(1),
   bio: z.string().trim().max(160).optional(),
-  acceptEula: z.literal(true), // must be explicitly accepted (App Store 1.2)
+  // A real Instagram @ (M23) — display-only, no OAuth verification, not
+  // unique (two members may list the same public account). The leading "@"
+  // (if any) is stripped in the handler below, same as handle's own igUser
+  // convention on the client.
+  instagramHandle: z.string().trim().max(31).optional(),
+  website: z.string().trim().max(200).optional(),
+  favoriteCuisines: z.array(z.string().trim().min(1)).max(10).optional(),
+  favoriteNeighborhoodSlugs: z.array(z.string().trim().min(1)).max(20).optional(),
+  // z.literal(true).optional() — required and true on first-time onboarding
+  // completion (App Store 1.2), OMITTED on every later edit (this endpoint
+  // is reused for both; see the header comment above). Omitting it must
+  // never reject the save or re-stamp eulaAcceptedAt — a routine bio edit
+  // is not a fresh EULA acceptance. Fixed 2026-09 (M23): before this, the
+  // field was required unconditionally, so every edit-profile save 400'd —
+  // apps/mobile/src/app/(tabs)/profile.tsx's EditProfile never sent it,
+  // because it only ever meant to touch the fields it shows.
+  acceptEula: z.literal(true).optional(),
 })
 
 // Matches Better Auth's session.freshAge default (1 day) — the same bar it
@@ -78,6 +95,13 @@ export const meRoutes = new Hono<AuthedEnv>()
         // Only ever reduced to a boolean below — the raw hash never leaves
         // this route.
         phoneHash: true,
+        // Private (M23): this response is the member's OWN profile (GET
+        // /me, never GET /u/:userId's public passport), so returning it
+        // here is fine — just never add it to a public-facing read.
+        birthday: true,
+        instagramHandle: true,
+        website: true,
+        favoriteCuisines: true,
       },
       with: {
         neighborhood: { columns: { slug: true, name: true } },
@@ -86,6 +110,18 @@ export const meRoutes = new Hono<AuthedEnv>()
       },
     })
     if (!row) return c.json({ error: 'not_found' }, 404)
+
+    // A second, plain query rather than threading this through the
+    // relational `with` above — one extra round trip for the one "who am
+    // I" request, not a per-row cost anywhere.
+    const favoriteNeighborhoods = await db
+      .select({ slug: schema.neighborhoods.slug, name: schema.neighborhoods.name })
+      .from(schema.userFavoriteNeighborhoods)
+      .innerJoin(
+        schema.neighborhoods,
+        eq(schema.neighborhoods.id, schema.userFavoriteNeighborhoods.neighborhoodId),
+      )
+      .where(eq(schema.userFavoriteNeighborhoods.userId, current.id))
 
     const { rankings, eulaAcceptedAt, neighborhoodId, phoneHash, ...profile } = row
     // Handle (Instagram) is optional, so it's no longer part of the gate —
@@ -97,14 +133,17 @@ export const meRoutes = new Hono<AuthedEnv>()
       profile: {
         ...profile,
         neighborhood: row.neighborhood,
+        favoriteNeighborhoods,
         // Contacts find-friends opt-in state (M18) — never the hash itself.
         phoneMatchEnabled: Boolean(phoneHash),
       },
       onboardingComplete,
     })
   })
-  // Completes the profile step of onboarding: name, @handle, neighborhood, EULA.
-  // Runs last in the onboarding flow, so its success is what flips the gate.
+  // Completes the profile step of onboarding (name, @handle, neighborhood,
+  // EULA) AND is reused by app/(tabs)/profile.tsx's EditProfile for every
+  // later edit — acceptEula is the only field that behaves differently
+  // between the two calls (see its schema comment above).
   .patch('/profile', async (c) => {
     const current = c.get('user')
 
@@ -112,7 +151,17 @@ export const meRoutes = new Hono<AuthedEnv>()
     if (!parsed.success) {
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     }
-    const { name, handle, neighborhoodSlug, bio } = parsed.data
+    const {
+      name,
+      handle,
+      neighborhoodSlug,
+      bio,
+      instagramHandle,
+      website,
+      favoriteCuisines,
+      favoriteNeighborhoodSlugs,
+      acceptEula,
+    } = parsed.data
 
     const neighborhood = await db.query.neighborhoods.findFirst({
       where: eq(schema.neighborhoods.slug, neighborhoodSlug),
@@ -120,27 +169,109 @@ export const meRoutes = new Hono<AuthedEnv>()
     })
     if (!neighborhood) return c.json({ error: 'unknown_neighborhood' }, 400)
 
+    // Resolved up front, before any write — an unknown slug here should
+    // fail the whole save the same clean way an unknown home neighborhood
+    // does above, not partially apply everything else first.
+    let favoriteNeighborhoodIds: string[] | undefined
+    if (favoriteNeighborhoodSlugs) {
+      const rows = await db.query.neighborhoods.findMany({
+        where: inArray(schema.neighborhoods.slug, favoriteNeighborhoodSlugs),
+        columns: { id: true, slug: true },
+      })
+      if (rows.length !== new Set(favoriteNeighborhoodSlugs).size) {
+        return c.json({ error: 'unknown_neighborhood' }, 400)
+      }
+      favoriteNeighborhoodIds = rows.map((r) => r.id)
+    }
+
     // Handle uniqueness is enforced by the DB unique constraint; catch the
     // collision and return a clean 409 instead of a 500. Handle is only written
     // when provided — an omitted handle leaves the column null (optional).
+    // instagramHandle/website/favoriteCuisines are the same "only touch what
+    // was actually sent" shape — unlike bio below (an original field this
+    // endpoint always clears when omitted, a behavior this change leaves
+    // alone), these three are new enough that a caller not yet sending them
+    // should never silently wipe a value a different caller set.
     try {
-      await db
-        .update(schema.user)
-        .set({
-          name,
-          ...(handle ? { handle } : {}),
-          neighborhoodId: neighborhood.id,
-          bio: bio ?? null,
-          eulaAcceptedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(schema.user.id, current.id))
+      await db.transaction(async (tx) => {
+        await tx
+          .update(schema.user)
+          .set({
+            name,
+            ...(handle ? { handle } : {}),
+            neighborhoodId: neighborhood.id,
+            bio: bio ?? null,
+            ...(instagramHandle !== undefined
+              ? { instagramHandle: instagramHandle.replace(/^@/, '') || null }
+              : {}),
+            ...(website !== undefined ? { website: website || null } : {}),
+            ...(favoriteCuisines ? { favoriteCuisines } : {}),
+            ...(acceptEula ? { eulaAcceptedAt: new Date() } : {}),
+            updatedAt: new Date(),
+          })
+          .where(eq(schema.user.id, current.id))
+
+        if (favoriteNeighborhoodIds) {
+          await tx
+            .delete(schema.userFavoriteNeighborhoods)
+            .where(eq(schema.userFavoriteNeighborhoods.userId, current.id))
+          if (favoriteNeighborhoodIds.length > 0) {
+            await tx.insert(schema.userFavoriteNeighborhoods).values(
+              favoriteNeighborhoodIds.map((neighborhoodId) => ({
+                userId: current.id,
+                neighborhoodId,
+              })),
+            )
+          }
+        }
+      })
     } catch (err) {
       if (err instanceof Error && err.message.includes('user_handle_unique')) {
         return c.json({ error: 'handle_taken' }, 409)
       }
       throw err
     }
+
+    return c.json({ ok: true })
+  })
+  // Birthday (M23) — deliberately its OWN endpoint, not a field on
+  // /me/profile above: it's mandatory at signup but private ever after
+  // (account settings only, never the public profile), so it has nothing to
+  // do with the rest of that form and forcing every profile save to also
+  // carry it would be the wrong coupling. `date` mode is 'string' (see
+  // schema.ts), so this is a plain YYYY-MM-DD round trip, no Date object.
+  .patch('/birthday', async (c) => {
+    const current = c.get('user')
+    const parsed = z
+      .object({
+        birthday: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, 'birthday must be YYYY-MM-DD')
+          .refine((s) => {
+            const d = new Date(`${s}T00:00:00Z`)
+            const [y, m, day] = s.split('-').map(Number)
+            // Rejects a syntactically-valid-but-impossible date (Feb 30) and
+            // anything outside a plausible human lifespan — a light sanity
+            // check, not a real age-verification gate.
+            return (
+              !Number.isNaN(d.getTime()) &&
+              d.getUTCFullYear() === y &&
+              d.getUTCMonth() + 1 === m &&
+              d.getUTCDate() === day &&
+              d.getTime() < Date.now() &&
+              y >= 1900
+            )
+          }, 'birthday is not a valid date'),
+      })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
+    }
+
+    await db
+      .update(schema.user)
+      .set({ birthday: parsed.data.birthday, updatedAt: new Date() })
+      .where(eq(schema.user.id, current.id))
 
     return c.json({ ok: true })
   })

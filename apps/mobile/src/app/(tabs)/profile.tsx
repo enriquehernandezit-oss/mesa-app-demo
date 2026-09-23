@@ -26,7 +26,7 @@ import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
-import { cuisineLabel, displayScore } from '@/lib/display'
+import { ALL_CUISINES, cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { dateLocale, useT } from '@/lib/i18n'
 import { openImagePicker, resizeToJpeg } from '@/lib/image'
@@ -521,8 +521,14 @@ function EditProfile({ onClose }: { onClose: () => void }) {
   const p = data?.profile
   const [name, setName] = useState(p?.name ?? '')
   const [handle, setHandle] = useState(p?.handle ?? '')
+  const [instagramHandle, setInstagramHandle] = useState(p?.instagramHandle ?? '')
+  const [website, setWebsite] = useState(p?.website ?? '')
   const [bio, setBio] = useState(p?.bio ?? '')
   const [slug, setSlug] = useState('')
+  const [cuisines, setCuisines] = useState<Set<string>>(new Set(p?.favoriteCuisines ?? []))
+  const [favoriteSlugs, setFavoriteSlugs] = useState<Set<string>>(
+    new Set((p?.favoriteNeighborhoods ?? []).map((n) => n.slug)),
+  )
   const neighborhoods = useQuery({
     queryKey: ['neighborhoods'],
     queryFn: () => api.get<{ neighborhoods: Neighborhood[] }>('/onboarding/neighborhoods'),
@@ -532,6 +538,20 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     slug ||
     neighborhoods.data?.neighborhoods.find((n) => n.name === p?.neighborhood?.name)?.slug ||
     ''
+  const toggleCuisine = (c: string) =>
+    setCuisines((cur) => {
+      const next = new Set(cur)
+      if (next.has(c)) next.delete(c)
+      else next.add(c)
+      return next
+    })
+  const toggleFavoriteSlug = (s: string) =>
+    setFavoriteSlugs((cur) => {
+      const next = new Set(cur)
+      if (next.has(s)) next.delete(s)
+      else next.add(s)
+      return next
+    })
 
   const save = useMutation({
     mutationFn: () =>
@@ -540,6 +560,10 @@ function EditProfile({ onClose }: { onClose: () => void }) {
         handle: handle.trim().replace(/^@/, '') || undefined,
         neighborhoodSlug: currentSlug,
         bio: bio.trim() || undefined,
+        instagramHandle: instagramHandle.trim(),
+        website: website.trim(),
+        favoriteCuisines: [...cuisines],
+        favoriteNeighborhoodSlugs: [...favoriteSlugs],
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] })
@@ -586,15 +610,35 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             autoComplete="name"
           />
           <Field
-            label={t('profile.instagram_label')}
+            label={t('profile.username_label')}
             value={handle}
             onChangeText={setHandle}
-            placeholder={t('profile.instagram_placeholder')}
+            placeholder={t('profile.username_placeholder')}
             maxLength={30}
             // iOS capitalizes and autocorrects this by default — it's a handle.
             autoCapitalize="none"
             autoCorrect={false}
             error={save.error ? t('profile.handle_error') : undefined}
+          />
+          <Field
+            label={t('profile.instagram_label')}
+            value={instagramHandle}
+            onChangeText={setInstagramHandle}
+            placeholder={t('profile.instagram_placeholder')}
+            maxLength={30}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Field
+            label={t('profile.website_label')}
+            value={website}
+            onChangeText={setWebsite}
+            placeholder={t('profile.website_placeholder')}
+            maxLength={200}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="url"
+            textContentType="URL"
           />
           <View>
             <Eyebrow className="mb-2">{t('rank.sector')}</Eyebrow>
@@ -611,7 +655,37 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               ))}
             </View>
           </View>
-          <Field label={t('profile.bio_label')} value={bio} onChangeText={setBio} maxLength={120} />
+          <View>
+            <Eyebrow className="mb-2">{t('profile.favorite_neighborhoods_label')}</Eyebrow>
+            <View className="flex-row flex-wrap gap-2">
+              {neighborhoods.data?.neighborhoods.map((n) => (
+                <Chip
+                  key={n.slug}
+                  size="sm"
+                  state={favoriteSlugs.has(n.slug) ? 'selected' : 'default'}
+                  onPress={() => toggleFavoriteSlug(n.slug)}
+                >
+                  {n.name}
+                </Chip>
+              ))}
+            </View>
+          </View>
+          <View>
+            <Eyebrow className="mb-2">{t('profile.favorite_cuisines_label')}</Eyebrow>
+            <View className="flex-row flex-wrap gap-2">
+              {ALL_CUISINES.map((c) => (
+                <Chip
+                  key={c}
+                  size="sm"
+                  state={cuisines.has(c) ? 'selected' : 'default'}
+                  onPress={() => toggleCuisine(c)}
+                >
+                  {cuisineLabel(c)}
+                </Chip>
+              ))}
+            </View>
+          </View>
+          <Field label={t('profile.bio_label')} value={bio} onChangeText={setBio} maxLength={160} />
         </View>
 
         <View className="mt-6">

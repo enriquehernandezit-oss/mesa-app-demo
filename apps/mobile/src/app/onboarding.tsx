@@ -26,6 +26,7 @@ import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
+import { parseBirthdayIso } from '@/lib/time'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -101,6 +102,9 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const [handle, setHandle] = useState('')
   const [neighborhoodSlug, setNeighborhood] = useState('')
   const [accepted, setAccepted] = useState(false)
+  const [birthDay, setBirthDay] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthYear, setBirthYear] = useState('')
 
   const {
     data,
@@ -118,21 +122,39 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const handleProvided = igUser.length > 0
   const handleValid = !handleProvided || /^[a-z0-9_.]{2,30}$/.test(igUser)
 
+  // Mandatory at signup (M23, founder's own data collection), private ever
+  // after — see PATCH /me/birthday's header for why it's a separate call,
+  // not a field folded into /me/profile below. A light sanity check only
+  // (catches a typo like Feb 30 or a 2-digit year), not real age
+  // verification — the same posture the server side takes.
+  const birthday = useMemo(
+    () => parseBirthdayIso(birthDay, birthMonth, birthYear),
+    [birthDay, birthMonth, birthYear],
+  )
+
   const save = useMutation({
-    mutationFn: () =>
-      api.patch('/me/profile', {
+    mutationFn: async () => {
+      await api.patch('/me/profile', {
         name: name.trim(),
         ...(handleProvided ? { handle: igUser } : {}),
         neighborhoodSlug,
         acceptEula: true,
-      }),
+      })
+      if (!birthday) return // canSubmit already guards this; defensive only
+      await api.patch('/me/birthday', { birthday })
+    },
     onSuccess: () => {
       tapSuccess()
       onNext()
     },
   })
 
-  const canSubmit = name.trim().length > 0 && handleValid && neighborhoodSlug !== '' && accepted
+  const canSubmit =
+    name.trim().length > 0 &&
+    handleValid &&
+    neighborhoodSlug !== '' &&
+    accepted &&
+    birthday !== null
   const errorText =
     save.error instanceof ApiError && save.error.code === 'handle_taken'
       ? t('onboarding.handle_taken')
@@ -197,6 +219,43 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
             </Chip>
           ))}
         </View>
+      )}
+
+      <Eyebrow className="mt-5 mb-2">{t('onboarding.birthday_label')}</Eyebrow>
+      <View className="flex-row gap-2">
+        <TextInput
+          className="min-h-[52px] w-16 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
+          placeholderTextColor={placeholder}
+          placeholder={t('onboarding.birthday_day')}
+          keyboardType="number-pad"
+          maxLength={2}
+          value={birthDay}
+          onChangeText={(v) => setBirthDay(v.replace(/\D/g, ''))}
+        />
+        <TextInput
+          className="min-h-[52px] w-16 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
+          placeholderTextColor={placeholder}
+          placeholder={t('onboarding.birthday_month')}
+          keyboardType="number-pad"
+          maxLength={2}
+          value={birthMonth}
+          onChangeText={(v) => setBirthMonth(v.replace(/\D/g, ''))}
+        />
+        <TextInput
+          className="min-h-[52px] w-24 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
+          placeholderTextColor={placeholder}
+          placeholder={t('onboarding.birthday_year')}
+          keyboardType="number-pad"
+          maxLength={4}
+          value={birthYear}
+          onChangeText={(v) => setBirthYear(v.replace(/\D/g, ''))}
+        />
+      </View>
+      {/* Sets expectations before anyone wonders why a food app wants this —
+          same reasoning as the handle helper above. */}
+      <Caption className="mt-1">{t('onboarding.birthday_helper')}</Caption>
+      {birthDay.length > 0 && birthMonth.length > 0 && birthYear.length === 4 && !birthday && (
+        <Caption className="mt-1 text-status-packed">{t('onboarding.birthday_invalid')}</Caption>
       )}
 
       <Pressable

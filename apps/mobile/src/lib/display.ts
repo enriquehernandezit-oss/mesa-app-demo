@@ -117,6 +117,10 @@ export function cuisineLabel(cuisine: string | null | undefined): string | null 
   return CUISINE_ES[cuisine] ?? cuisine
 }
 
+// The closed vocabulary itself (M23's favorite-cuisines picker) — every
+// canonical (English) value cuisineLabel above knows how to translate.
+export const ALL_CUISINES = Object.keys(CUISINE_ES)
+
 // Occasion tags: the rank flow's own picker (OCCASION_TAGS below) writes
 // Spanish values directly — that's the DB's write vocabulary, unchanged by
 // this milestone (see OCCASION_TAGS's own comment). Legacy seed rows predate

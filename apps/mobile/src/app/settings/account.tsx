@@ -1,6 +1,6 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 import { Row, RowButton } from '@/components/SettingsRow'
@@ -10,7 +10,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
-import { useT } from '@/lib/i18n'
+import { dateLocale, useT } from '@/lib/i18n'
+import { parseBirthdayIso } from '@/lib/time'
 import { useColor } from '@/theme/useColor'
 
 // Account (M15) — email verification, password, ending other sessions, and
@@ -18,6 +19,7 @@ import { useColor } from '@/theme/useColor'
 export default function AccountSettings() {
   const router = useRouter()
   const t = useT()
+  const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
   const { data } = useProfile(true)
   const p = data?.profile
@@ -25,6 +27,39 @@ export default function AccountSettings() {
   // Real email only — phone-first accounts carry a placeholder inbox we never
   // surface or ask to verify.
   const realEmail = p?.email && !p.email.endsWith('@phone.mesa.local') ? p.email : null
+
+  // Birthday (M23) — private, account settings only, never the public
+  // profile or followers (see PATCH /me/birthday's own header). Mandatory
+  // at signup going forward, but nullable here too: every account that
+  // predates M23 has none yet and can set one for the first time from here.
+  const [editingBirthday, setEditingBirthday] = useState(false)
+  const [birthDay, setBirthDay] = useState('')
+  const [birthMonth, setBirthMonth] = useState('')
+  const [birthYear, setBirthYear] = useState('')
+  const birthdayIso = useMemo(
+    () => parseBirthdayIso(birthDay, birthMonth, birthYear),
+    [birthDay, birthMonth, birthYear],
+  )
+  const birthdayLabel = p?.birthday
+    ? new Intl.DateTimeFormat(dateLocale(), {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC',
+      }).format(new Date(`${p.birthday}T00:00:00Z`))
+    : null
+  const saveBirthday = useMutation({
+    mutationFn: () => api.patch('/me/birthday', { birthday: birthdayIso }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      setEditingBirthday(false)
+      setBirthDay('')
+      setBirthMonth('')
+      setBirthYear('')
+      toast({ message: t('settings.birthday_updated') })
+    },
+    onError: () => toast({ variant: 'error', message: t('settings.birthday_error') }),
+  })
 
   const [verifySent, setVerifySent] = useState(false)
   const [verifying, setVerifying] = useState(false)
@@ -151,6 +186,78 @@ export default function AccountSettings() {
                 </Pressable>
               )}
             </Row>
+          )}
+
+          {/* Birthday (M23) — private, account settings only (see the
+              header comment above and PATCH /me/birthday's own). Mandatory
+              at signup going forward, but every pre-M23 account has none yet
+              and sets it here for the first time. */}
+          {editingBirthday ? (
+            <View className="gap-3 py-4">
+              <View className="flex-row gap-2">
+                <TextInput
+                  className="min-h-[48px] w-16 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
+                  placeholderTextColor={placeholder}
+                  placeholder={t('onboarding.birthday_day')}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={birthDay}
+                  onChangeText={(v) => setBirthDay(v.replace(/\D/g, ''))}
+                />
+                <TextInput
+                  className="min-h-[48px] w-16 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
+                  placeholderTextColor={placeholder}
+                  placeholder={t('onboarding.birthday_month')}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  value={birthMonth}
+                  onChangeText={(v) => setBirthMonth(v.replace(/\D/g, ''))}
+                />
+                <TextInput
+                  className="min-h-[48px] w-24 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
+                  placeholderTextColor={placeholder}
+                  placeholder={t('onboarding.birthday_year')}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  value={birthYear}
+                  onChangeText={(v) => setBirthYear(v.replace(/\D/g, ''))}
+                />
+              </View>
+              {birthDay.length > 0 &&
+                birthMonth.length > 0 &&
+                birthYear.length === 4 &&
+                !birthdayIso && (
+                  <Caption className="text-status-packed">
+                    {t('onboarding.birthday_invalid')}
+                  </Caption>
+                )}
+              <Button
+                variant="primary"
+                loading={saveBirthday.isPending}
+                disabled={!birthdayIso}
+                onPress={() => saveBirthday.mutate()}
+              >
+                {saveBirthday.isPending ? t('common.saving') : t('settings.save_birthday')}
+              </Button>
+              <Button
+                variant="ghost"
+                onPress={() => {
+                  setEditingBirthday(false)
+                  setBirthDay('')
+                  setBirthMonth('')
+                  setBirthYear('')
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+            </View>
+          ) : (
+            <RowButton onPress={() => setEditingBirthday(true)}>
+              <Text className="flex-1 font-ui text-body text-text">
+                {t('onboarding.birthday_label')}
+              </Text>
+              <Caption>{birthdayLabel ?? t('settings.birthday_not_set')}</Caption>
+            </RowButton>
           )}
 
           {/* Change password — only for accounts that HAVE one. An Apple or

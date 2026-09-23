@@ -75,3 +75,22 @@ export function timeChipLabel(hour: number, minute: number): string {
   const h12 = hour % 12 === 0 ? 12 : hour % 12
   return `${h12}:${String(minute).padStart(2, '0')} ${period}`
 }
+
+// Birthday validation (M23) — shared by onboarding's mandatory signup step
+// and account settings' editable copy, so the two don't drift. A light
+// sanity check only (catches a typo like Feb 30 or a 2-digit year), not real
+// age verification — the same posture the server side takes. Returns a
+// validated ISO date string, or null while the fields are incomplete/invalid.
+export function parseBirthdayIso(day: string, month: string, year: string): string | null {
+  const d = Number(day)
+  const m = Number(month)
+  const y = Number(year)
+  if (!d || !m || !y || year.length !== 4) return null
+  if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900) return null
+  const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  const dt = new Date(`${iso}T00:00:00Z`)
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() + 1 !== m || dt.getUTCDate() !== d) {
+    return null
+  }
+  return dt.getTime() < Date.now() ? iso : null
+}

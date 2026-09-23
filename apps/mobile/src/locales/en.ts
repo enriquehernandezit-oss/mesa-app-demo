@@ -576,6 +576,13 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'onboarding.handle_helper': "It's what people tap to share your profile. Can be your Instagram.",
   'onboarding.handle_rules': '2–30 characters: letters, numbers, _ or .',
   'onboarding.neighborhoods_error': "Couldn't load the neighborhoods.",
+  'onboarding.birthday_label': 'Birthday',
+  'onboarding.birthday_day': 'DD',
+  'onboarding.birthday_month': 'MM',
+  'onboarding.birthday_year': 'YYYY',
+  'onboarding.birthday_helper':
+    "Private — only you and Mesa see it, never your profile or followers. We just want to know who's actually using the app.",
+  'onboarding.birthday_invalid': "That date doesn't look right.",
   'onboarding.eula_accept':
     "I accept Mesa's Terms and EULA, and understand that inappropriate content and abusive users can be reported, blocked and removed.",
   'onboarding.handle_taken': "That username's taken — try another.",
@@ -679,8 +686,16 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'profile.streak_weeks_count': { one: '1 week', other: '{n} weeks' },
   'profile.no_streak_yet': 'None yet',
   'profile.edit_back': '‹ Edit profile',
+  // Mesa's own unique @ (handle) — was mislabeled "Instagram" until M23 added
+  // a real, separate Instagram field below.
+  'profile.username_label': 'Username · optional',
+  'profile.username_placeholder': 'yourusername',
   'profile.instagram_label': 'Instagram · optional',
   'profile.instagram_placeholder': 'yourusername',
+  'profile.website_label': 'Website · optional',
+  'profile.website_placeholder': 'yoursite.com',
+  'profile.favorite_neighborhoods_label': 'Go-to neighborhoods',
+  'profile.favorite_cuisines_label': 'Favorite cuisines',
   'profile.handle_error': 'Try another username.',
   'profile.bio_label': 'Bio',
 
@@ -786,6 +801,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.new_password_placeholder': 'New password (8+ characters)',
   'settings.save_password': 'Save password',
   'settings.change_password': 'Change password',
+  'settings.birthday_not_set': 'Not set',
+  'settings.save_birthday': 'Save birthday',
+  'settings.birthday_updated': 'Birthday saved.',
+  'settings.birthday_error': "Couldn't save it. Try again.",
   'settings.signing_out_others': 'Signing out…',
   'settings.sign_out_others': 'Sign out on other devices',
   'settings.danger_zone': 'Danger zone',

@@ -623,6 +623,13 @@ export const es = {
   'onboarding.handle_helper': 'Sirve para compartir tu perfil. Puede ser tu Instagram.',
   'onboarding.handle_rules': '2–30 caracteres: letras, números, _ o .',
   'onboarding.neighborhoods_error': 'No se pudieron cargar los sectores.',
+  'onboarding.birthday_label': 'Fecha de nacimiento',
+  'onboarding.birthday_day': 'DD',
+  'onboarding.birthday_month': 'MM',
+  'onboarding.birthday_year': 'AAAA',
+  'onboarding.birthday_helper':
+    'Privado — solo tú y Mesa lo ven, nunca tu perfil ni tus seguidores. Solo queremos saber quién usa la app de verdad.',
+  'onboarding.birthday_invalid': 'Esa fecha no parece correcta.',
   'onboarding.eula_accept':
     'Acepto los Términos y el EULA de Mesa, y entiendo que el contenido inapropiado y los usuarios abusivos pueden ser reportados, bloqueados y eliminados.',
   'onboarding.handle_taken': 'Ese usuario ya está en uso — prueba con otro.',
@@ -732,8 +739,16 @@ export const es = {
   'profile.streak_weeks_count': { one: '1 semana', other: '{n} semanas' },
   'profile.no_streak_yet': 'Aún ninguna',
   'profile.edit_back': '‹ Editar perfil',
+  // Mesa's propio @ (handle) — estaba mal etiquetado "Instagram" hasta que
+  // M23 agregó un campo real y separado para Instagram, abajo.
+  'profile.username_label': 'Usuario · opcional',
+  'profile.username_placeholder': 'tuusuario',
   'profile.instagram_label': 'Instagram · opcional',
   'profile.instagram_placeholder': 'tuusuario',
+  'profile.website_label': 'Sitio web · opcional',
+  'profile.website_placeholder': 'tusitio.com',
+  'profile.favorite_neighborhoods_label': 'Sectores favoritos',
+  'profile.favorite_cuisines_label': 'Cocinas favoritas',
   'profile.handle_error': 'Prueba con otro usuario.',
   'profile.bio_label': 'Bio',
 
@@ -843,6 +858,10 @@ export const es = {
   'settings.new_password_placeholder': 'Nueva contraseña (8+ caracteres)',
   'settings.save_password': 'Guardar contraseña',
   'settings.change_password': 'Cambiar contraseña',
+  'settings.birthday_not_set': 'Sin definir',
+  'settings.save_birthday': 'Guardar fecha de nacimiento',
+  'settings.birthday_updated': 'Fecha de nacimiento guardada.',
+  'settings.birthday_error': 'No se pudo guardar. Intenta de nuevo.',
   'settings.signing_out_others': 'Cerrando…',
   'settings.sign_out_others': 'Cerrar sesión en otros dispositivos',
   'settings.danger_zone': 'Zona de peligro',

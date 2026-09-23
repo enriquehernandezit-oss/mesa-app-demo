@@ -132,6 +132,26 @@ export const user = pgTable('user', {
   // --- Mesa profile fields ---
   handle: text('handle').unique(), // @handle; set during onboarding
   bio: text('bio'),
+  // A real Instagram @, separate from `handle` above (M23) — `handle` is
+  // Mesa's own unique username (it's what /p/u/:handle and the leaderboard's
+  // eligibility filter key off), which the UI used to just label "Instagram"
+  // for lack of a dedicated field. Display-only, like `handle` — no OAuth
+  // verification, and unlike `handle` it isn't unique (two members can list
+  // the same public account without conflict).
+  instagramHandle: text('instagram_handle'),
+  website: text('website'),
+  // A member's own picks, free text against the same cuisine vocabulary
+  // `restaurants.cuisine` already uses (cuisineLabel() in lib/display.ts) —
+  // no separate cuisines table exists to foreign-key against, matching how
+  // restaurant.cuisine itself is stored. Feeds the taste-match/friend-
+  // suggestion scoring (M23's own milestone) once a member sets it.
+  favoriteCuisines: text('favorite_cuisines').array(),
+  // Private (M23): collected as a mandatory signup step so the founder has
+  // real age-range data, but never shown on the public profile or to
+  // followers — account settings only. Nullable at the column level anyway
+  // (existing members predate this field and can't be retroactively forced
+  // to backfill one), even though onboarding requires it for anyone new.
+  birthday: date('birthday'),
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id, {
     onDelete: 'set null',
   }),
@@ -156,6 +176,25 @@ export const user = pgTable('user', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+// A member's "go-to" neighborhoods (M23) — plural, unlike user.neighborhoodId
+// above (their one home sector from onboarding). A join table, not a uuid[]
+// column, matching how every other many-to-many in this schema is modeled
+// (follows, cheers, saved_dishes, dish_cheers…) rather than introducing a
+// second pattern; a real FK also means a deleted neighborhood can't leave a
+// dangling reference the way an array element would.
+export const userFavoriteNeighborhoods = pgTable(
+  'user_favorite_neighborhoods',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    neighborhoodId: uuid('neighborhood_id')
+      .notNull()
+      .references(() => neighborhoods.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.neighborhoodId] })],
+)
 
 export const session = pgTable('session', {
   id: text('id').primaryKey(),

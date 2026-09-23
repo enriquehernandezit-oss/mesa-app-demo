@@ -23,6 +23,16 @@ export interface MeResponse {
     // Contacts find-friends opt-in (M18) — "let your contacts find you".
     // Never the phone number or its hash, just whether one is on file.
     phoneMatchEnabled: boolean
+    // M23 — a real Instagram @, separate from `handle` (Mesa's own unique
+    // username). Display-only, unverified.
+    instagramHandle: string | null
+    website: string | null
+    favoriteCuisines: string[] | null
+    favoriteNeighborhoods: Neighborhood[]
+    // Private — account settings only, never the public profile. GET /me is
+    // this member's own data, so it's fine here; YYYY-MM-DD, or null until
+    // set (every account that predates M23).
+    birthday: string | null
   }
   onboardingComplete: boolean
 }
