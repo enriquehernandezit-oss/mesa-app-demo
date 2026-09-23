@@ -6,6 +6,12 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "--filter", "@mesa/api", "dev"],
       "port": 3222
+    },
+    {
+      "name": "mobile",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "--cwd", "apps/mobile", "start"],
+      "port": 8081
     }
   ]
 }
