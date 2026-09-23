@@ -40,6 +40,11 @@ const isDevEnv = ['development', 'dev', 'test'].includes(process.env.NODE_ENV ??
 const hasSms = Boolean(process.env.SMS_PROVIDER_API_KEY)
 
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
+// Both GOOGLE_CLIENT_ID (the Web client, paired with the secret) and
+// GOOGLE_CLIENT_ID_IOS (the native app's client, no secret) are accepted as
+// token audiences below — only the Web pair gates the provider, since the
+// iOS app's native sign-in never needs the secret.
+const hasGoogle = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET)
 const hasInstagram = Boolean(process.env.INSTAGRAM_CLIENT_ID && process.env.INSTAGRAM_CLIENT_SECRET)
 
 // Transactional email (password reset + verification), sent through Resend — a
@@ -292,16 +297,59 @@ If you didn't create a Mesa account, you can ignore this email.`,
     },
   },
 
-  // Sign in with Apple — the App Store 4.8 counterpart to Instagram login.
-  socialProviders: hasApple
-    ? {
-        apple: {
-          clientId: process.env.APPLE_CLIENT_ID ?? '',
-          clientSecret: process.env.APPLE_CLIENT_SECRET ?? '',
-          appBundleIdentifier: process.env.APPLE_APP_BUNDLE_ID,
-        },
-      }
-    : undefined,
+  // Account linking: if someone registered with email+password using their
+  // Gmail address and later signs in with Google, that sign-in must NOT
+  // silently take over the account unless the password account's own email is
+  // already verified — otherwise anyone who knows a target's Gmail address
+  // could "sign in with Google" and land inside their unverified Mesa account.
+  // requireLocalEmailVerified is already Better Auth's default (see
+  // oauth2/link-account.ts: `accountLinking?.requireLocalEmailVerified ?? true`),
+  // so this doesn't change behavior — it's set explicitly so the policy stays
+  // true on purpose and can't quietly flip if a future upgrade changes the
+  // default. It applies to both Google and Apple; Apple's shipped without an
+  // email-password account existing yet, so this is the first provider it
+  // actually gates.
+  account: {
+    accountLinking: {
+      enabled: true,
+      requireLocalEmailVerified: true,
+    },
+  },
+
+  // Sign in with Apple (App Store 4.8, required because Instagram login
+  // exists) and Google — offered with equal prominence. A composed object
+  // rather than the old `hasApple ? {...} : undefined` ternary, since a
+  // second provider needs its own independent gate rather than riding on
+  // Apple's.
+  socialProviders: {
+    ...(hasApple
+      ? {
+          apple: {
+            clientId: process.env.APPLE_CLIENT_ID ?? '',
+            clientSecret: process.env.APPLE_CLIENT_SECRET ?? '',
+            appBundleIdentifier: process.env.APPLE_APP_BUNDLE_ID,
+          },
+        }
+      : {}),
+    ...(hasGoogle
+      ? {
+          google: {
+            // Accept a token minted for either client as a valid audience: the
+            // Web client (GOOGLE_CLIENT_ID, paired with the secret below, used
+            // if a redirect-based flow is ever added) and the iOS client the
+            // native SDK requests tokens for (GOOGLE_CLIENT_ID_IOS, no secret —
+            // native apps can't hold one). The mobile app only ever does the
+            // native idToken sign-in, so only the iOS audience is exercised
+            // today, but the Web pair is what gates the provider being on at
+            // all (an iOS client id alone can't do a server-side exchange).
+            clientId: [process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_ID_IOS].filter(
+              (id): id is string => Boolean(id),
+            ),
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+          },
+        }
+      : {}),
+  },
 
   // Phone sign-in is off until an SMS provider exists. disabledPaths keeps the
   // plugin, its schema and the client wiring intact, so this is one env var away
