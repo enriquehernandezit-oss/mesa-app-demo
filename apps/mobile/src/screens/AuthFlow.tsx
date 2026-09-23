@@ -1,4 +1,3 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -65,6 +64,20 @@ const NETWORK_ERROR: AuthClientError = { message: 'network' }
 const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
 const googleAvailable = Boolean(googleIosClientId)
 
+// Resolved on use, not imported at module scope. The SDK reaches for its
+// native module (`RNGoogleSignin`) as soon as it's imported, so ANY binary
+// without it linked — a dev client, or any build predating the module —
+// threw an Invariant Violation the moment this file loaded, which took the
+// whole sign-in route down to a blank screen instead of simply not offering
+// the button. The env gate above already decides whether Google is on;
+// loading the module behind that gate makes the two agree.
+function googleSignin() {
+  // oxlint-disable-next-line typescript/no-require-imports
+  return (
+    require('@react-native-google-signin/google-signin') as typeof import('@react-native-google-signin/google-signin')
+  ).GoogleSignin
+}
+
 export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const t = useT()
   const [email, setEmail] = useState('')
@@ -87,7 +100,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
 
   // Configure once, synchronously — the SDK has no async init to await.
   useEffect(() => {
-    if (googleIosClientId) GoogleSignin.configure({ iosClientId: googleIosClientId })
+    if (googleIosClientId) googleSignin().configure({ iosClientId: googleIosClientId })
   }, [])
 
   async function appleAuth() {
@@ -128,7 +141,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   async function googleAuth() {
     setError(null)
     try {
-      const result = await GoogleSignin.signIn()
+      const result = await googleSignin().signIn()
       // Cancelling the sheet isn't an error — same treatment as Apple's
       // ERR_REQUEST_CANCELED below, just surfaced as a response type here
       // instead of a thrown error.

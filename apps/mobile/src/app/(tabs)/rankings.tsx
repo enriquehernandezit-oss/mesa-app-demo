@@ -250,7 +250,17 @@ export default function RankingsTab() {
       text: profileShareText(profile?.handle),
     })
 
-  // Shared across all three tabs — the title, the stats trio, the tab switcher.
+  // The title, the stats trio and the tab switcher, rendered ONCE above the
+  // three containers rather than inside each one's header. It used to be
+  // injected into all three, which meant three live copies of the switcher
+  // bound to one value — and the two hidden ones sit under `display:'none'`,
+  // so Yoga skips their layout and they measure width 0, which Segmented
+  // reads as "no thumb yet". Tapping therefore slid the copy you touched for
+  // about a frame, hid it, and revealed a never-measured copy that snapped
+  // its thumb into place: the slide was real, you just never saw it. One
+  // continuously-mounted instance is the only way the animation survives a
+  // switch. The trade is that this block no longer scrolls away with the
+  // list — the founder's call, taken knowingly for the smoother switch.
   const topMatter = (
     <>
       <View className="flex-row items-start justify-between">
@@ -436,6 +446,7 @@ export default function RankingsTab() {
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
+      <View className="px-5">{topMatter}</View>
       {/* Three persistent containers, shown/hidden via style.display instead
           of a `tab === X ? <A/> : <B/>` ternary (M14) — the ternary used to
           swap FlatList for ScrollView on every tab switch, which is a
@@ -452,12 +463,7 @@ export default function RankingsTab() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
-        ListHeaderComponent={
-          <>
-            {topMatter}
-            {mineControls}
-          </>
-        }
+        ListHeaderComponent={mineControls || null}
         ListEmptyComponent={
           mine.isPending ? (
             <View className="gap-3">
@@ -515,9 +521,8 @@ export default function RankingsTab() {
         renderItem={renderSavedItem}
         ListHeaderComponent={
           <>
-            {topMatter}
             <Segmented
-              className="mt-6 mb-3"
+              className="mt-2 mb-3"
               value={savedKind}
               onChange={setSavedKind}
               options={[
@@ -588,7 +593,6 @@ export default function RankingsTab() {
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
       >
-        {topMatter}
         <BarriosView
           rankings={ranked}
           onSelectSector={(sector) => {

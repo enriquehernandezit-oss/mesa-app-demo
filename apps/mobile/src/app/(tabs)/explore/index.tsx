@@ -1,7 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
 import type { SearchBarCommands } from 'react-native-screens'
 
 import { EventsBrowse } from '@/components/events/EventsBrowse'
@@ -56,6 +56,9 @@ import { DATA_FIGURES, themeColors } from '@/theme/vars'
 // dimension (Sector ▾, Cocina ▾, ...), each showing its own value directly
 // once set — Rankings' mineControls mirrors this same pill pattern.
 type SortKey = 'score' | 'name'
+
+// Stable identity: a fresh [] every render would churn FlatList's own diffing.
+const NO_HITS: ExploreHit[] = []
 
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
@@ -320,13 +323,13 @@ export default function ExploreScreen() {
 
   // Explore is nested one level inside its own Stack (explore/_layout.tsx),
   // so { nested: true } — see the hook's own header for why a plain
-  // useNavigation() here would never see the tabPress event at all. One
-  // scroll ref covers both Places and Events: they share this same
-  // ScrollView, only toggled by display (see the comment below).
-  const scrollRef = useRef<ScrollView>(null)
+  // useNavigation() here would never see the tabPress event at all. One ref
+  // still covers both views: they share this list, Events riding in its
+  // header and Places as the rows (see the render below).
+  const listRef = useRef<FlatList<ExploreHit>>(null)
   useResetOnTabPress(
     useCallback(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: true })
+      listRef.current?.scrollToOffset({ offset: 0, animated: true })
       // A silent refetch, not onRefresh(): flipping RefreshControl's
       // `refreshing` on programmatically (not from an actual pull) shifts
       // the scroll offset down to reveal the spinner and doesn't reliably
@@ -339,14 +342,200 @@ export default function ExploreScreen() {
     { nested: true },
   )
 
+  const keyExtractor = useCallback((r: ExploreHit) => r.id, [])
+  const renderHit = useCallback(
+    ({ item, index }: { item: ExploreHit; index: number }) => <HitRow r={item} index={index} />,
+    [],
+  )
+
+  // Everything that used to sit above the results inside the ScrollView.
+  // As a list header it mounts once and stays put while the rows below it
+  // virtualize.
+  const listHeader = (
+    <>
+      {/* One switcher instance, riding in the list header so it keeps the
+          scroll view's content inset (hoisting it out put it behind the
+          native large title) and stays the only live copy — two copies bound
+          to one value is the bug Rankings had. */}
+      <Segmented
+        className="mt-3"
+        value={view}
+        onChange={setView}
+        options={[
+          { value: 'places', label: t('explore.view_places') },
+          { value: 'events', label: t('explore.view_events') },
+        ]}
+      />
+
+      {/* Both views stay mounted once visited, toggled by display — the old
+          ternary unmounted Places' whole result list on every switch to
+          Events and rebuilt it from scratch on the way back. Events rides in
+          the header rather than in a scroller of its own, so there's exactly
+          one scroll container on this screen. */}
+      {eventsVisited ? (
+        <View style={{ display: view === 'events' ? 'flex' : 'none' }}>
+          <EventsBrowse />
+        </View>
+      ) : null}
+
+      <View style={{ display: view === 'places' ? 'flex' : 'none' }}>
+        {/* Sort, one "Filtros" pill that opens the combined panel
+          (ExploreFilters), Abierto ahora, then one pill per ACTIVE
+          filter with a small × in its corner to drop just that one,
+          and "Limpiar todo" once anything is set. */}
+        {/* The chips scroll; "Limpiar todo" is pinned OUTSIDE the scroll at
+          the right edge. As the rail's last item it slid off-screen as
+          soon as a filter pill was added — only "Lim" was left showing. */}
+        <View className="-mx-5 mt-2 mb-2 flex-row items-center pt-2">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            className="flex-1"
+            contentContainerClassName={`gap-2 pl-5 ${activeCount > 0 ? 'pr-3' : 'pr-5'}`}
+          >
+            <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
+              {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
+            </Chip>
+            <Chip
+              size="sm"
+              chevron
+              state={panelCount > 0 ? 'active' : 'default'}
+              onPress={() => setFiltersOpen(true)}
+            >
+              {panelCount > 0
+                ? `${t('explore.filters_chip')} · ${panelCount}`
+                : t('explore.filters_chip')}
+            </Chip>
+            {showOpenChip && (
+              <Chip
+                size="sm"
+                state={openNow ? 'selected' : 'default'}
+                onPress={() => setOpenNow((v) => !v)}
+              >
+                {t('explore.open_now')}
+              </Chip>
+            )}
+            {hood ? (
+              <RemovablePill
+                label={neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood}
+                onRemove={() => setHood(null)}
+              />
+            ) : null}
+            {cuisine ? (
+              <RemovablePill
+                label={cuisineLabel(cuisine) ?? cuisine}
+                onRemove={() => setCuisine(null)}
+              />
+            ) : null}
+            {price != null ? (
+              <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
+            ) : null}
+            {occasion ? (
+              <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
+            ) : null}
+            {minScore != null ? (
+              <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
+            ) : null}
+          </ScrollView>
+          {activeCount > 0 && (
+            <View className="border-line border-l pr-5 pl-2">
+              <Pressable
+                accessibilityRole="button"
+                onPress={clearFilters}
+                hitSlop={6}
+                className="min-h-[36px] flex-row items-center gap-1 rounded-pill px-2 active:opacity-60"
+              >
+                <CloseIcon size={11} color="accent-strong" strokeWidth={2.2} />
+                <Caption numberOfLines={1} className="font-ui-semibold text-accent-strong">
+                  {t('explore.clear_all')}
+                </Caption>
+              </Pressable>
+            </View>
+          )}
+        </View>
+
+        <View className="mt-4">
+          {/* Trending rides above the results, but only in the default browse
+            state — once you've typed or filtered, the results ARE the answer
+            and a heat rail is noise. */}
+          {!browsing ? null : <TrendingRail />}
+
+          {members.length > 0 && (
+            <>
+              <SectionHeader>{t('explore.members')}</SectionHeader>
+              {members.map((m) => (
+                <MemberRow key={m.id} m={m} />
+              ))}
+            </>
+          )}
+
+          {members.length > 0 && hits.length > 0 && (
+            <SectionHeader>{t('explore.spots')}</SectionHeader>
+          )}
+        </View>
+      </View>
+    </>
+  )
+
+  // ListEmptyComponent fires whenever `hits` is empty, which includes the
+  // cases where members or Google suggestions DID come back — so the "no
+  // match" copy keeps its original compound condition rather than claiming
+  // nothing was found while rows sit right below it.
+  const placesEmpty = results.isPending ? (
+    <RowsSkeleton rows={3} thumb={48} />
+  ) : results.isError ? (
+    <ErrorState onRetry={() => results.refetch()}>{t('explore.search_error')}</ErrorState>
+  ) : members.length === 0 && suggestions.length === 0 ? (
+    <EmptyState
+      action={
+        activeCount > 0 ? (
+          <Button size="sm" variant="secondary" onPress={clearFilters}>
+            {t('explore.clear_filters')}
+          </Button>
+        ) : undefined
+      }
+    >
+      {t('explore.no_match')}
+    </EmptyState>
+  ) : null
+
   return (
     <View className="flex-1 bg-bg">
       {/* Search lives in the navigation bar, not the page: UIKit owns the field,
           its focus/cancel behavior, and the keyboard. The map entry is the bar's
           right action. */}
       <Stack.Screen options={headerOptions} />
-      <ScrollView
-        ref={scrollRef}
+      {/* Places is a real virtualized list (perf pass). It was a ScrollView
+          with `hits.map()`, so the browse state mounted every row the
+          catalog returned — ~97 of them, around a thousand native views.
+          Pressing enter narrowed that to a handful, which meant React
+          tearing down ~95 rows in ONE commit; on the New Architecture those
+          mount instructions run on the main thread, the same thread that
+          scrolls the list, so the screen stopped answering a swipe for a
+          beat. Virtualizing means only a screenful is ever mounted. Events
+          has no rows of its own — it rides in the header — so `data` empties
+          out on that view rather than the list being swapped for another
+          scroller. */}
+      <FlatList
+        ref={listRef}
+        data={view === 'places' ? hits : NO_HITS}
+        keyExtractor={keyExtractor}
+        renderItem={renderHit}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={view === 'places' ? placesEmpty : null}
+        ListFooterComponent={
+          view === 'places' ? (
+            <ExternalResults
+              suggestions={suggestions}
+              creatingId={creatingId}
+              onPick={createFromGoogle}
+            />
+          ) : null
+        }
+        windowSize={5}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
@@ -354,195 +543,43 @@ export default function ExploreScreen() {
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         // The search field is the native header UISearchBar (see the header
-        // note above), not a TextInput inside this ScrollView — but this
-        // still works (M23): it reacts to the keyboard's own on-screen frame,
-        // not to which view is first responder, so results at the bottom of
-        // a long list are no longer hidden behind the keyboard.
+        // note above), not a TextInput inside this list — but this still
+        // works (M23): it reacts to the keyboard's own on-screen frame, not
+        // to which view is first responder, so results at the bottom of a
+        // long list are no longer hidden behind the keyboard.
         automaticallyAdjustKeyboardInsets
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
-      >
-        <Segmented
-          className="mt-3"
-          value={view}
-          onChange={setView}
-          options={[
-            { value: 'places', label: t('explore.view_places') },
-            { value: 'events', label: t('explore.view_events') },
-          ]}
-        />
-
-        {/* Both views stay mounted once visited, toggled by display — the
-            old ternary unmounted Places' whole result list on every switch
-            to Events and rebuilt it from scratch on the way back, which is
-            exactly the lag switching back to Places had. */}
-        {eventsVisited ? (
-          <View style={{ display: view === 'events' ? 'flex' : 'none' }}>
-            <EventsBrowse />
-          </View>
-        ) : null}
-        <View style={{ display: view === 'places' ? 'flex' : 'none' }}>
-          <>
-            {/* Sort, one "Filtros" pill that opens the combined panel
-                (ExploreFilters), Abierto ahora, then one pill per ACTIVE
-                filter with a small × in its corner to drop just that one,
-                and "Limpiar todo" once anything is set. */}
-            {/* The chips scroll; "Limpiar todo" is pinned OUTSIDE the scroll at
-                the right edge. As the rail's last item it slid off-screen as
-                soon as a filter pill was added — only "Lim" was left showing. */}
-            <View className="-mx-5 mt-2 mb-2 flex-row items-center pt-2">
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                className="flex-1"
-                contentContainerClassName={`gap-2 pl-5 ${activeCount > 0 ? 'pr-3' : 'pr-5'}`}
-              >
-                <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
-                  {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
-                </Chip>
-                <Chip
-                  size="sm"
-                  chevron
-                  state={panelCount > 0 ? 'active' : 'default'}
-                  onPress={() => setFiltersOpen(true)}
-                >
-                  {panelCount > 0
-                    ? `${t('explore.filters_chip')} · ${panelCount}`
-                    : t('explore.filters_chip')}
-                </Chip>
-                {showOpenChip && (
-                  <Chip
-                    size="sm"
-                    state={openNow ? 'selected' : 'default'}
-                    onPress={() => setOpenNow((v) => !v)}
-                  >
-                    {t('explore.open_now')}
-                  </Chip>
-                )}
-                {hood ? (
-                  <RemovablePill
-                    label={
-                      neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood
-                    }
-                    onRemove={() => setHood(null)}
-                  />
-                ) : null}
-                {cuisine ? (
-                  <RemovablePill
-                    label={cuisineLabel(cuisine) ?? cuisine}
-                    onRemove={() => setCuisine(null)}
-                  />
-                ) : null}
-                {price != null ? (
-                  <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
-                ) : null}
-                {occasion ? (
-                  <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
-                ) : null}
-                {minScore != null ? (
-                  <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
-                ) : null}
-              </ScrollView>
-              {activeCount > 0 && (
-                <View className="border-line border-l pr-5 pl-2">
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={clearFilters}
-                    hitSlop={6}
-                    className="min-h-[36px] flex-row items-center gap-1 rounded-pill px-2 active:opacity-60"
-                  >
-                    <CloseIcon size={11} color="accent-strong" strokeWidth={2.2} />
-                    <Caption numberOfLines={1} className="font-ui-semibold text-accent-strong">
-                      {t('explore.clear_all')}
-                    </Caption>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-            <ExploreFilters
-              visible={filtersOpen}
-              onClose={() => setFiltersOpen(false)}
-              value={{ hood, cuisine, price, occasion, minScore }}
-              onApply={(f) => {
-                setHood(f.hood)
-                setCuisine(f.cuisine)
-                setPrice(f.price)
-                setOccasion(f.occasion)
-                setMinScore(f.minScore)
-              }}
-              neighborhoods={neighborhoods.data?.neighborhoods ?? []}
-              cuisines={cuisines.data?.cuisines ?? []}
-              countQuery={(d) => ({
-                queryKey: exploreKey(debouncedQ, d, openNow, sort),
-                queryFn: () => fetchExplore(debouncedQ, d, openNow, sort),
-              })}
-            />
-
-            <View className="mt-4">
-              {/* Trending rides above the results, but only in the default browse
-              state — once you've typed or filtered, the results ARE the answer
-              and a heat rail is noise. */}
-              {!browsing ? null : <TrendingRail />}
-
-              {members.length > 0 && (
-                <>
-                  <SectionHeader>{t('explore.members')}</SectionHeader>
-                  {members.map((m) => (
-                    <MemberRow key={m.id} m={m} />
-                  ))}
-                </>
-              )}
-
-              {results.isPending ? (
-                <RowsSkeleton rows={3} thumb={48} />
-              ) : results.isError ? (
-                <ErrorState onRetry={() => results.refetch()}>
-                  {t('explore.search_error')}
-                </ErrorState>
-              ) : hits.length === 0 && members.length === 0 && suggestions.length === 0 ? (
-                <EmptyState
-                  action={
-                    activeCount > 0 ? (
-                      <Button size="sm" variant="secondary" onPress={clearFilters}>
-                        {t('explore.clear_filters')}
-                      </Button>
-                    ) : undefined
-                  }
-                >
-                  {t('explore.no_match')}
-                </EmptyState>
-              ) : (
-                <>
-                  {members.length > 0 && hits.length > 0 && (
-                    <SectionHeader>{t('explore.spots')}</SectionHeader>
-                  )}
-                  {hits.map((r, i) => (
-                    <HitRow key={r.id} r={r} index={i} />
-                  ))}
-                </>
-              )}
-
-              <ExternalResults
-                suggestions={suggestions}
-                creatingId={creatingId}
-                onPick={createFromGoogle}
-              />
-            </View>
-          </>
-        </View>
-      </ScrollView>
+      />
+      <ExploreFilters
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        value={{ hood, cuisine, price, occasion, minScore }}
+        onApply={(f) => {
+          setHood(f.hood)
+          setCuisine(f.cuisine)
+          setPrice(f.price)
+          setOccasion(f.occasion)
+          setMinScore(f.minScore)
+        }}
+        neighborhoods={neighborhoods.data?.neighborhoods ?? []}
+        cuisines={cuisines.data?.cuisines ?? []}
+        countQuery={(d) => ({
+          queryKey: exploreKey(debouncedQ, d, openNow, sort),
+          queryFn: () => fetchExplore(debouncedQ, d, openNow, sort),
+        })}
+      />
     </View>
   )
 }
 
-// Wrapped in memo() (perf pass): Explore's results render via a plain
-// `.map()`, not a virtualized list, so every mounted HitRow re-renders on
-// every keystroke in the search bar otherwise — `setQ` (native search bar's
-// onChangeText) updates this screen's state immediately, well before the
-// debounced query itself refires, and with results already on screen that's
-// real JS-thread work landing exactly while a finger is still on the glass.
+// Wrapped in memo(): `setQ` (the native search bar's onChangeText) updates
+// this screen's state on every keystroke, well before the debounced query
+// refires, so without this every mounted row re-renders under a finger
+// that's still on the glass. It matters less now that the list virtualizes
+// — only a screenful is mounted — but it's still the difference between
+// re-rendering ~8 rows per keystroke and re-rendering none.
 //
 // A white card on the cream ground, same row shape as Rankings' cards: one
 // line of meta instead of Characteristics' two stacked lines.
@@ -551,10 +588,12 @@ const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number
   return (
     <Link href={`/r/${r.id}`} asChild>
       <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface py-2.5 pr-3 pl-2 active:opacity-80">
+        {/* No adjustsFontSizeToFit: iOS binary-searches a font size on the UI
+            thread for every layout pass it's on, and this column is a fixed
+            22pt holding 1–3 digits, so there was never a size to search for. */}
         <Text
           style={[DATA_FIGURES, { width: 22 }]}
           numberOfLines={1}
-          adjustsFontSizeToFit
           className="text-center font-ui-medium text-label text-text-muted"
         >
           {index + 1}
