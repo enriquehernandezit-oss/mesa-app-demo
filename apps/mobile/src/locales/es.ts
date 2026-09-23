@@ -1040,8 +1040,6 @@ export const es = {
   'events.interested_confirmed': '✓ Te interesa',
   'events.friends_going_title': 'Amigos que van',
   'events.buy_tickets': 'Comprar boletos',
-  'events.make_a_plan': 'Armar un plan',
-  'events.plan_note': 'Armado desde: {title}',
   'dish_category.mofongo': 'Mofongo',
   'dish_category.mangu': 'Mangú y tres golpes',
   'dish_category.guisado': 'Guisados',

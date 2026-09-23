@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -32,7 +31,7 @@ import {
   Skeleton,
   Title,
 } from '@/components/ui'
-import { ListIcon, MoreIcon, ShareIcon, SortIcon } from '@/components/ui/icons'
+import { MoreIcon, ShareIcon, SortIcon } from '@/components/ui/icons'
 import { Characteristics, Stat } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { pickOne, showSheet } from '@/components/ui/Sheet'
@@ -58,14 +57,7 @@ import {
 } from '@/lib/rankingSort'
 import { shareListCard } from '@/lib/shareCardStore'
 import { profileShareText } from '@/lib/shareProfile'
-import type {
-  CollectionSummary,
-  EventSummary,
-  MeStats,
-  Ranking,
-  SavedDish,
-  SavedPlace,
-} from '@/lib/types'
+import type { EventSummary, MeStats, Ranking, SavedDish, SavedPlace } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -103,8 +95,9 @@ export default function RankingsTab() {
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
   )
   // Saved is split three ways — the places you want to try, dishes, events —
-  // behind its own sliding switcher. Custom lists sit above it (only places
-  // and dishes can go in a list; an event is only ever just "saved").
+  // behind its own sliding switcher. The member's named lists used to sit
+  // above it in a rail; they have their own screen now (app/collections/
+  // index.tsx, reached from Profile) so this tab is only what you saved.
   const [savedKind, setSavedKind] = useState<SavedKind>(
     kindParam === 'dishes' || kindParam === 'events' ? kindParam : 'restaurants',
   )
@@ -156,12 +149,8 @@ export default function RankingsTab() {
     queryKey: ['saved'],
     queryFn: () => api.get<{ saved: SavedPlace[] }>('/saved'),
   })
-  // Guardados (M19) — the "saved" tab's other two sections, same prefetch-
+  // Guardados (M19) — the "saved" tab's other sections, same prefetch-
   // always posture as `saved` above.
-  const collections = useQuery({
-    queryKey: ['collections'],
-    queryFn: () => api.get<{ collections: CollectionSummary[] }>('/collections'),
-  })
   const savedDishesQuery = useQuery({
     queryKey: ['saved-dishes'],
     queryFn: () => api.get<{ saved: SavedDish[] }>('/saved/dishes'),
@@ -229,11 +218,6 @@ export default function RankingsTab() {
     )
     if (v !== undefined) setFiltersAnimated((f) => ({ ...f, cuisine: v }))
   }
-
-  // Guardados' "+ Nueva" list card (M19) — the same branded create screen
-  // SaveButton's "Agregar a lista" opens (app/save-to-list.tsx, no item attached),
-  // not the iOS text-prompt alert it used to be.
-  const promptNewList = () => router.push('/save-to-list')
 
   // The share-my-list story card (the growth loop): the top 5, over the top
   // spot's photo, captioned with the public profile link.
@@ -482,7 +466,6 @@ export default function RankingsTab() {
         ListHeaderComponent={
           <>
             {topMatter}
-            <ListsRail lists={collections.data?.collections ?? []} onCreate={promptNewList} />
             <Segmented
               className="mt-6 mb-3"
               value={savedKind}
@@ -938,65 +921,6 @@ const SavedRow = memo(function SavedRow({ saved }: { saved: SavedPlace }) {
     </SwipeToRemove>
   )
 })
-
-// The named-lists rail (M19) — the top of Saved. A plain horizontal
-// ScrollView, not a FlatList: this is a handful of cards, never a long
-// virtualization-worthy list the way saved places/dishes below can be.
-function ListsRail({ lists, onCreate }: { lists: CollectionSummary[]; onCreate: () => void }) {
-  const t = useT()
-  return (
-    <View className="mt-2">
-      <Eyebrow className="mb-2">{t('rankings.lists_section')}</Eyebrow>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        // Full-bleed like ChipRail/SpotRail: the rail's viewport reaches the
-        // screen edges, so a swipe that starts near either edge still moves it.
-        className="-mx-5"
-        contentContainerClassName="gap-2 px-5"
-      >
-        <Pressable
-          accessibilityRole="button"
-          onPress={onCreate}
-          className="w-32 items-center justify-center gap-1 rounded-card border border-dashed border-line-strong active:opacity-70"
-        >
-          <Text className="font-ui-medium text-label text-accent-strong">
-            {t('rankings.new_list')}
-          </Text>
-        </Pressable>
-        {lists.map((list) => {
-          const img = imageUrl(list.coverImageId ?? list.previewImageId, { w: 280, h: 200 })
-          return (
-            <Link key={list.id} href={`/collections/${list.id}`} asChild>
-              <Pressable className="w-32 overflow-hidden rounded-card border border-line bg-surface active:opacity-80">
-                <View className="h-20 w-full items-center justify-center bg-bg-sunk">
-                  {img ? (
-                    <Image
-                      source={{ uri: img }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <ListIcon size={20} color="text-muted" />
-                  )}
-                </View>
-                <View className="px-3 pt-2 pb-3">
-                  <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-                    {list.name}
-                  </Text>
-                  <Caption className="mt-0.5 text-micro">
-                    {t('saveToList.item_count', { n: list.itemCount })}
-                  </Caption>
-                </View>
-              </Pressable>
-            </Link>
-          )
-        })}
-      </ScrollView>
-    </View>
-  )
-}
 
 const SavedDishRow = memo(function SavedDishRow({ saved }: { saved: SavedDish }) {
   const queryClient = useQueryClient()

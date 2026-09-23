@@ -3,7 +3,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
-import { ReportControl, pickReportReason } from '@/components/ReportControl'
+import { pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
   Button,
@@ -15,7 +15,9 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { MoreIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
+import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -29,8 +31,12 @@ import { DATA_FIGURES } from '@/theme/vars'
 // moderation is exercised (App Store 1.2): report a vibe note or the member,
 // block them. Blocking severs the graph and hides their content; the API 404s a
 // blocked user, so this view empties out. Ported from apps/app/src/screens/user/
-// UserRankings.tsx; the ⋯ dropdown (which needed outside-tap/Escape handling on
-// web) becomes an inline actions row — no popover to dismiss.
+// UserRankings.tsx. Both member-level actions live behind the header's "···"
+// (founder's call) rather than as a permanent actions row on the page: visiting
+// someone's passport shouldn't lead with two ways to act against them. 1.2 asks
+// that reporting be reachable and clearly available — a labelled overflow menu
+// one tap from the top of the screen is both; a standing row in the layout was
+// never the requirement.
 export default function UserRankings() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const router = useRouter()
@@ -131,11 +137,45 @@ export default function UserRankings() {
   const neighborhood = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
 
+  // The moderation entry points (App Store 1.2), in the same "···" shape the
+  // Rankings cards use: a chooser in Mesa's own Sheet, then — for block — the
+  // native single-destructive confirm it already had (see lib/actionSheet.ts on
+  // why that one confirm stays a system sheet).
+  async function openMenu() {
+    const i = await showSheet({
+      title: user.name || user.handle || firstName,
+      options: [{ label: t('passport.report') }, { label: t('passport.block'), destructive: true }],
+    })
+    if (i === 0) {
+      const reason = await pickReportReason('user')
+      if (reason) reportUser.mutate(reason)
+    } else if (i === 1) {
+      const picked = await showActionSheet({
+        title: t('passport.block_confirm_title', { name: firstName }),
+        message: t('passport.block_confirm_message'),
+        options: [{ label: t('passport.block'), destructive: true }],
+      })
+      if (picked === 0) block.mutate()
+    }
+  }
+
   return (
     <View className="flex-1 bg-bg">
       <ScreenHeader
         onBack={goBack}
         backLabel={user.name || user.handle || t('common.back_plain')}
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('rankings.more_actions')}
+            disabled={reportUser.isPending}
+            onPress={openMenu}
+            hitSlop={8}
+            className="h-11 w-8 items-center justify-center active:opacity-60"
+          >
+            <MoreIcon size={18} color="text-muted" />
+          </Pressable>
+        }
       />
       <ScrollView
         ref={scrollRef}
@@ -197,39 +237,6 @@ export default function UserRankings() {
               {isFollowing ? t('passport.following_button') : t('passport.follow_button')}
             </Button>
           </View>
-
-          {/* Report / block — the moderation entry points (App Store 1.2). */}
-          <View className="mt-3 flex-row gap-5">
-            <Pressable
-              accessibilityRole="button"
-              disabled={reportUser.isPending}
-              onPress={async () => {
-                const reason = await pickReportReason('user')
-                if (reason) reportUser.mutate(reason)
-              }}
-              className="min-h-[44px] justify-center active:opacity-60"
-            >
-              <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                {t('passport.report')}
-              </Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={async () => {
-                const picked = await showActionSheet({
-                  title: t('passport.block_confirm_title', { name: firstName }),
-                  message: t('passport.block_confirm_message'),
-                  options: [{ label: t('passport.block'), destructive: true }],
-                })
-                if (picked === 0) block.mutate()
-              }}
-              className="min-h-[44px] justify-center active:opacity-60"
-            >
-              <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
-                {t('passport.block')}
-              </Text>
-            </Pressable>
-          </View>
         </View>
 
         {rankings.length === 0 ? (
@@ -273,8 +280,27 @@ export default function UserRankings() {
   )
 }
 
+// Reporting a single vibe note (App Store 1.2) is the row's own "···", the same
+// shape the restaurant page's friend rows use — not the "Reportar" line this
+// used to render under every note. This list runs a screenful, and a row can't
+// afford a second line of text whose only job is to accuse its author.
 function TheirRow({ ranking }: { ranking: TheirRanking }) {
   const t = useT()
+  const report = useMutation({
+    mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
+      api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
+    onSuccess: () => toast({ message: t('common.reported') }),
+    onError: () => toast({ variant: 'error', message: t('common.report_error') }),
+  })
+  const noteId = ranking.noteId
+  const onReportNote =
+    ranking.note && noteId
+      ? async () => {
+          const reason = await pickReportReason('vibe_note')
+          if (reason) report.mutate({ reason, noteId })
+        }
+      : undefined
+
   return (
     <Link href={`/r/${ranking.restaurant.id}`} asChild>
       <Pressable
@@ -316,14 +342,23 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
               “{ranking.note}”
             </Text>
           ) : null}
-          {/* Nested Pressable inside the row's own Link is fine in RN (unlike
-              Link-in-Link, which has its own gesture-machinery bug — see the
-              feed card's comment on the same fix). */}
-          {ranking.note && ranking.noteId ? (
-            <ReportControl targetType="vibe_note" targetId={ranking.noteId} />
-          ) : null}
         </View>
         <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+        {/* Nested Pressable inside the row's own Link is fine in RN (unlike
+            Link-in-Link, which has its own gesture-machinery bug — see the
+            feed card's comment on the same fix): RN hands it the touch, so the
+            row's tap through to the place is untouched. */}
+        {onReportNote ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('report.note_a11y')}
+            onPress={onReportNote}
+            hitSlop={8}
+            className="-mr-1 h-11 w-7 items-center justify-center active:opacity-60"
+          >
+            <MoreIcon size={18} color="text-faint" />
+          </Pressable>
+        ) : null}
       </Pressable>
     </Link>
   )

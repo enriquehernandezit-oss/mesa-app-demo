@@ -44,8 +44,8 @@ event that's happening right now still shows.
 ## The one rule that matters most
 
 **Never delete an `events` row.** An RSVP, an Activity feed entry, or a
-"Armar un plan" deep link from `app/events/[eventId].tsx` can all point at
-one. Taking an event off the calendar — it got cancelled, or it was a mistake
+shared event link can all point at one. Taking an event off the calendar —
+it got cancelled, or it was a mistake
 — is always `UPDATE events SET cancelled_at = now() WHERE slug = '...'`, never
 a `DELETE`. A cancelled event stops showing up in every browse list and
 restaurant rail (`routes/events.ts` filters on `cancelledAt IS NULL`

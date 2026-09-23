@@ -260,9 +260,11 @@ function MesaStack() {
       {/* Titles for these two are set by the screens themselves once the data
           (a list's name, a legal doc's name) is known. */}
       <Stack.Screen name="lists/[slug]" options={utility} />
-      {/* A named list's contents (M19) — custom ScreenHeader, same idiom as
-          u/[userId] and match/[userId]; the native Stack.Screen title is set
+      {/* The member's named lists (M19) — "Tus listas" and one list's
+          contents. Custom ScreenHeader, same idiom as u/[userId] and
+          match/[userId]; the detail screen's native Stack.Screen title is set
           once the list's name loads. */}
+      <Stack.Screen name="collections/index" />
       <Stack.Screen name="collections/[collectionId]" />
       {/* Dish ranking (M20) — "Tus platos" and one list's detail, same custom
           ScreenHeader idiom as collections/[collectionId] above; each sets its

@@ -979,8 +979,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'events.interested_confirmed': "✓ You're interested",
   'events.friends_going_title': 'Friends going',
   'events.buy_tickets': 'Buy tickets',
-  'events.make_a_plan': 'Make a plan',
-  'events.plan_note': 'Built from: {title}',
   'dish_category.mofongo': 'Mofongo',
   'dish_category.mangu': 'Mangú & tres golpes',
   'dish_category.guisado': 'Stews',

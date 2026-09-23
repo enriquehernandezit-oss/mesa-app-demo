@@ -11,10 +11,10 @@ import {
   type ViewProps,
 } from 'react-native'
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 
@@ -302,34 +302,45 @@ export function Segmented<T extends string>({
   // A tap starts the thumb's slide on the UI thread and commits at once, inside
   // a transition — the slide keeps its frames while the caller re-renders, and
   // the new view is never held back (committing only after the slide landed
-  // made every switch wait 220ms, and let ExploreFilters' "Apply" run before a
-  // just-tapped price reached its draft). A value change from outside (the
-  // prop) JUMPS the thumb instead — Rankings renders one of these per list, and
-  // the copy that becomes visible after a switch must already sit on the new
-  // option, not start a second slide of its own. The copy that was tapped
-  // skips that jump for its own value, so its slide isn't cut short.
+  // made every switch wait the animation out, and let ExploreFilters' "Apply"
+  // run before a just-tapped price reached its draft). A value change from
+  // outside (the prop) JUMPS the thumb instead — Rankings renders one of these
+  // per list, and the copy that becomes visible after a switch must already sit
+  // on the new option, not start a second slide of its own.
   const [local, setLocal] = useState(value)
-  const tapped = useRef<T | null>(null)
   const [segW, setSegW] = useState(0)
-  const x = useSharedValue(0)
-  const found = options.findIndex((o) => o.value === local)
-  const index = Math.max(0, found)
   const propIndex = options.findIndex((o) => o.value === value)
+  // The thumb's position is the OPTION INDEX, never a pixel offset, multiplied
+  // by the measured width inside the worklet. A pixel offset is only valid for
+  // the width it was computed against, and that is what read as lag: Rankings
+  // mounts one copy of this per list and hides all but one with
+  // `display: 'none'`, so the copy a switch reveals was laid out at width 0 and
+  // could only place its thumb a frame AFTER it appeared. An index survives
+  // that — the copy is already on the right option the first frame it has a
+  // width, and any later re-measure just re-derives the offset in place.
+  const pos = useSharedValue(Math.max(0, propIndex))
+  // The index this copy is resting on or sliding toward, so the effect can tell
+  // a real outside change from the echo of this copy's own tap. The one-shot
+  // "was tapped" flag this replaces could not: it was spent on the first effect
+  // run, while the effect re-ran again inside the same slide whenever the
+  // switch changed the layout below it — which both callers do — landing a raw
+  // assignment mid-flight that teleported the thumb and cut the slide short.
+  const target = useRef(Math.max(0, propIndex))
+  const found = options.findIndex((o) => o.value === local)
   useEffect(() => {
     setLocal(value)
-    if (value !== null && value === tapped.current) {
-      tapped.current = null
-      return
+    if (propIndex >= 0 && propIndex !== target.current) {
+      target.current = propIndex
+      pos.value = propIndex
     }
-    if (segW > 0 && propIndex >= 0) x.value = propIndex * segW
-  }, [value, propIndex, segW, x])
+  }, [value, propIndex, pos])
   const thumbOpacity = useSharedValue(found >= 0 ? 1 : 0)
   useEffect(() => {
     thumbOpacity.value = withTiming(found >= 0 ? 1 : 0, { duration: 160 })
   }, [found, thumbOpacity])
   const thumbStyle = useAnimatedStyle(() => ({
     opacity: thumbOpacity.value,
-    transform: [{ translateX: x.value }],
+    transform: [{ translateX: pos.value * segW }],
   }))
   return (
     <View
@@ -337,9 +348,7 @@ export function Segmented<T extends string>({
       accessibilityLabel={accessibilityLabel}
       onLayout={(e) => {
         const w = (e.nativeEvent.layout.width - SEG_PAD * 2) / options.length
-        // First measure: place the thumb without animating from the left.
-        if (segW === 0) x.value = index * w
-        setSegW(w)
+        if (w !== segW) setSegW(w)
       }}
       className={`flex-row rounded-pill bg-bg-sunk ${className ?? ''}`}
       style={{ padding: SEG_PAD }}
@@ -380,8 +389,8 @@ export function Segmented<T extends string>({
                 return
               }
               setLocal(o.value)
-              tapped.current = o.value
-              if (segW > 0) x.value = withTiming(i * segW, { duration: 220, easing: SEG_EASE })
+              target.current = i
+              pos.value = withSpring(i, SEG_SPRING)
               startTransition(() => onChange(o.value))
             }}
             className="min-h-[40px] flex-1 flex-row items-center justify-center gap-1.5 px-2"
@@ -403,7 +412,13 @@ export function Segmented<T extends string>({
   )
 }
 const SEG_PAD = 4
-const SEG_EASE = Easing.out(Easing.cubic)
+// Critically damped and quick (~180ms to rest, no overshoot), so the thumb
+// reads as keeping up with the finger rather than easing in behind it. A
+// spring rather than a fixed duration because a second tap mid-slide then
+// retargets from the thumb's current velocity, instead of restarting a whole
+// ramp across a now-shorter distance — which is what made switching back and
+// forth feel progressively slower.
+const SEG_SPRING = { damping: 26, stiffness: 320, mass: 0.6 }
 
 /* Horizontal scrolling row of chips. Full-bleed: every caller already sits
    inside a px-5-padded screen, which used to double up here and cap the

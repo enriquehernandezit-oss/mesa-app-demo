@@ -11,7 +11,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Caption, Chip, MAX_SCALE, Segmented } from '@/components/ui'
-import { CloseIcon } from '@/components/ui/icons'
+import { ChevronIcon, CloseIcon } from '@/components/ui/icons'
 import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { Neighborhood } from '@/lib/types'
@@ -43,12 +43,29 @@ const SCORES = [
 
 const EASE = Easing.out(Easing.cubic)
 
+// A category is open with the sheet exactly when it already carries a
+// selection — an active filter is never hidden behind a collapsed header.
+// Everything else starts closed; that is the whole point of the disclosure.
+type SectionKey = keyof ExploreFilterValues
+const openSections = (v: ExploreFilterValues): Record<SectionKey, boolean> => ({
+  price: v.price != null,
+  minScore: v.minScore != null,
+  hood: v.hood != null,
+  cuisine: v.cuisine != null,
+  occasion: v.occasion != null,
+})
+
 // Explore's filters as ONE panel (founder's mock, Sept 2026): every dimension
-// visible at once — price and minimum score as segmented rows, neighborhood,
+// reachable at once — price and minimum score as segmented rows, neighborhood,
 // cuisine and occasion as wrapping chips — edited as a draft, then applied
 // with "Ver N lugares". The count is live: the panel runs the same
 // ['explore', ...] query the screen will run on apply, so the number is real
 // and applying lands on an already-warm cache (no second load).
+//
+// Each dimension is a DISCLOSURE row, not an always-open block (founder, on
+// device: "each category has to have a drop down so it doesn't look so
+// messy") — five option sets expanded at once read as a wall of chips. The
+// controls and the filter model are untouched; only what's visible changed.
 //
 // A floating card over a scrim, sliding up from the bottom edge. RN's own
 // <Modal> is fine here (Explore is a tab, never itself a native modal); its
@@ -79,6 +96,7 @@ export function ExploreFilters({
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const [draft, setDraft] = useState(value)
+  const [open, setOpen] = useState<Record<SectionKey, boolean>>(() => openSections(value))
   const [mounted, setMounted] = useState(visible)
   const progress = useSharedValue(0)
   // Read only when opening — edits stay a draft until applied, so a change to
@@ -89,6 +107,7 @@ export function ExploreFilters({
   useEffect(() => {
     if (visible) {
       setDraft(valueRef.current)
+      setOpen(openSections(valueRef.current))
       setMounted(true)
       progress.value = withTiming(1, { duration: 260, easing: EASE })
     } else {
@@ -111,6 +130,7 @@ export function ExploreFilters({
 
   const set = <K extends keyof ExploreFilterValues>(k: K, v: ExploreFilterValues[K]) =>
     setDraft((d) => ({ ...d, [k]: v }))
+  const toggle = (k: SectionKey) => setOpen((o) => ({ ...o, [k]: !o[k] }))
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
@@ -157,10 +177,14 @@ export function ExploreFilters({
             </Pressable>
           </View>
 
-          <ScrollView contentContainerClassName="px-5 pb-4" showsVerticalScrollIndicator={false}>
+          <ScrollView contentContainerClassName="px-5 pb-2" showsVerticalScrollIndicator={false}>
             <Group
+              first
               label={t('explore.price')}
               value={draft.price != null ? '$'.repeat(draft.price) : t('common.any')}
+              active={draft.price != null}
+              open={open.price}
+              onToggle={() => toggle('price')}
             >
               <Segmented
                 value={
@@ -177,6 +201,9 @@ export function ExploreFilters({
               value={
                 draft.minScore != null ? `${draft.minScore / 10}+` : t('explore.min_score_all')
               }
+              active={draft.minScore != null}
+              open={open.minScore}
+              onToggle={() => toggle('minScore')}
             >
               <Segmented
                 value={
@@ -199,6 +226,9 @@ export function ExploreFilters({
                   ? (neighborhoods.find((n) => n.slug === draft.hood)?.name ?? draft.hood)
                   : t('common.any')
               }
+              active={draft.hood != null}
+              open={open.hood}
+              onToggle={() => toggle('hood')}
             >
               <ChipWrap>
                 {neighborhoods.map((n) => (
@@ -219,6 +249,9 @@ export function ExploreFilters({
               value={
                 draft.cuisine ? (cuisineLabel(draft.cuisine) ?? draft.cuisine) : t('common.any')
               }
+              active={draft.cuisine != null}
+              open={open.cuisine}
+              onToggle={() => toggle('cuisine')}
             >
               <ChipWrap>
                 {cuisines.map((c) => (
@@ -237,6 +270,9 @@ export function ExploreFilters({
             <Group
               label={t('explore.occasion')}
               value={draft.occasion ? tagLabel(draft.occasion) : t('common.any')}
+              active={draft.occasion != null}
+              open={open.occasion}
+              onToggle={() => toggle('occasion')}
             >
               <ChipWrap>
                 {OCCASION_TAGS.map((tag) => (
@@ -277,18 +313,80 @@ export function ExploreFilters({
   )
 }
 
-function Group({ label, value, children }: { label: string; value: string; children: ReactNode }) {
+// One category: a tappable header row (name · current selection · chevron)
+// over a body that is clipped to a measured height, so open/close is a single
+// height+opacity timing running on the UI thread. The body is measured from an
+// absolutely-positioned child — it must not dictate the row's own height, or
+// there is nothing left to animate.
+function Group({
+  label,
+  value,
+  active,
+  open,
+  onToggle,
+  first,
+  children,
+}: {
+  label: string
+  value: string
+  active: boolean
+  open: boolean
+  onToggle: () => void
+  first?: boolean
+  children: ReactNode
+}) {
+  const [h, setH] = useState(0)
+  const p = useSharedValue(open ? 1 : 0)
+  // The first measure LANDS on the default (no animation) — a category that
+  // opens with the sheet must already be open on its first visible frame.
+  const settled = useRef(false)
+  useEffect(() => {
+    if (h === 0) return
+    if (settled.current) {
+      p.value = withTiming(open ? 1 : 0, { duration: 180, easing: EASE })
+      return
+    }
+    settled.current = true
+    p.value = open ? 1 : 0
+  }, [open, h, p])
+
+  const body = useAnimatedStyle(() => ({ height: h * p.value, opacity: p.value }))
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${p.value * 90}deg` }] }))
+
   return (
-    <View className="mt-4">
-      <View className="mb-2 flex-row items-baseline justify-between">
+    <View className={first ? undefined : 'border-line border-t'}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${label}: ${value}`}
+        onPress={onToggle}
+        className="min-h-[52px] flex-row items-center py-3 active:opacity-60"
+      >
         <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-label text-text-2">
           {label}
         </Text>
-        <Caption numberOfLines={1} className="ml-3 flex-shrink font-ui-semibold text-accent-strong">
+        <Caption
+          numberOfLines={1}
+          className={`ml-3 flex-1 text-right font-ui-semibold ${active ? 'text-accent-strong' : ''}`}
+        >
           {value}
         </Caption>
-      </View>
-      {children}
+        <Animated.View style={chevron} className="ml-2">
+          <ChevronIcon size={16} color="text-muted" />
+        </Animated.View>
+      </Pressable>
+      <Animated.View
+        className="overflow-hidden"
+        style={body}
+        pointerEvents={open ? 'auto' : 'none'}
+      >
+        <View
+          className="absolute top-0 right-0 left-0 pb-4"
+          onLayout={(e) => setH(e.nativeEvent.layout.height)}
+        >
+          {children}
+        </View>
+      </Animated.View>
     </View>
   )
 }

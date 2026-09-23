@@ -16,6 +16,7 @@ import {
   ChevronIcon,
   CompassIcon,
   ForkKnifeIcon,
+  ListIcon,
   PlusIcon,
 } from '@/components/ui/icons'
 import { Stat } from '@/components/ui/patterns'
@@ -342,7 +343,7 @@ export default function ProfileTab() {
                 >
                   <Text
                     style={[DATA_FIGURES, { width: 22 }]}
-                    className="text-center font-serif text-serif-md text-text"
+                    className="text-center font-serif text-serif-sm text-text"
                   >
                     {r.position}
                   </Text>
@@ -383,6 +384,14 @@ export default function ProfileTab() {
             icon={<BookmarkIcon size={15} />}
             label={t('rankings.saved_tab')}
             onPress={() => router.push('/rankings?tab=saved')}
+          />
+          {/* The member's named lists (M19) — they used to be a rail at the
+              top of Guardados, which buried them inside the ranked passport.
+              This is their one entry point now, a peer of "Tus platos". */}
+          <NavRow
+            icon={<ListIcon size={15} />}
+            label={t('rankings.lists_section')}
+            onPress={() => router.push('/collections')}
           />
           <NavRow
             icon={<ForkKnifeIcon size={15} />}

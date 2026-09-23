@@ -328,30 +328,6 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
               </Text>
             </Pressable>
           </InfoCard>
-
-          <Pressable
-            accessibilityRole="button"
-            onPress={() =>
-              router.push({
-                pathname: '/plans/new',
-                params: {
-                  restaurantId: e.restaurant.id,
-                  restaurantName: e.restaurant.name,
-                  cuisine: e.restaurant.cuisine ?? '',
-                  coverImageId: e.restaurant.coverImageId ?? '',
-                  neighborhood: e.restaurant.neighborhood ?? '',
-                  priceTier: e.restaurant.priceTier != null ? String(e.restaurant.priceTier) : '',
-                  startsAt: e.startsAt,
-                  note: t('events.plan_note', { title: e.title }),
-                },
-              })
-            }
-            className="mt-4 min-h-[44px] items-center justify-center active:opacity-60"
-          >
-            <Text className="font-ui-semibold text-label text-accent-strong">
-              {t('events.make_a_plan')} ›
-            </Text>
-          </Pressable>
         </View>
       </Animated.ScrollView>
 
