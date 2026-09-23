@@ -312,6 +312,7 @@ export const es = {
   'lists.film_candlelit': 'film · con velas',
   'lists.featured_count': 'Destacada · {n} spots',
   'lists.how_we_made_it': 'Cómo la armamos',
+  'lists.share_label': 'Compartir lista',
 
   // app/moderation.tsx
   'moderation.type_vibe_note': 'Nota',
@@ -351,6 +352,11 @@ export const es = {
   // lib/shareProfile.ts
   'share.profile_caption': 'Mi ranking en Mesa 🥂',
   'share.invite_text': 'Te invito a Mesa 🥂 — donde comemos y salimos en Santo Domingo.\n{link}',
+
+  // lib/shareList.ts (M8)
+  'share.curated_list_text': '{title} en Mesa 🥂\n{link}',
+  'share.collection_text': '{name} · mi lista en Mesa 🥂\n{link}',
+  'share.dish_list_text': '{label} · mi ranking en Mesa 🥂\n{link}',
 
   // lib/rankingRemoval.ts
   'rankings.remove_error': 'No se pudo quitar de tu lista',
@@ -563,6 +569,7 @@ export const es = {
   'saveToList.item_count': { one: '1 guardado', other: '{n} guardados' },
 
   // app/collections/[collectionId].tsx (M19)
+  'collections.share_label': 'Compartir lista',
   'collections.add_description': '+ Agregar descripción',
   'collections.update_error': 'No se pudo actualizar la lista.',
   'collections.delete_list': 'Eliminar lista',
@@ -989,6 +996,7 @@ export const es = {
   // M20 — the reveal chip's repeat-dish progress caption, e.g. "Carbonara ·
   // 2ª" (never shown on the very first time).
   'rank.dish_repeat_chip': '{name} · {ordinal}',
+  'dishLists.share_label': 'Compartir ranking',
   'dishLists.title': 'Tus platos',
   'dishLists.empty_title': 'Aún no tienes platos para rankear',
   'dishLists.empty_body': 'Cuando pidas el mismo plato en 3 lugares, aparecerá aquí.',

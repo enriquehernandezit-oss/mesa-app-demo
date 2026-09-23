@@ -295,6 +295,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'lists.film_candlelit': 'film · candlelit',
   'lists.featured_count': 'Featured · {n} spots',
   'lists.how_we_made_it': 'How we made it',
+  'lists.share_label': 'Share list',
 
   'moderation.type_vibe_note': 'Note',
   'moderation.type_dish': 'Dish',
@@ -331,6 +332,9 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'share.profile_caption': 'My ranking on Mesa 🥂',
   'share.invite_text':
     "I'm inviting you to Mesa 🥂 — where we eat and go out in Santo Domingo.\n{link}",
+  'share.curated_list_text': '{title} on Mesa 🥂\n{link}',
+  'share.collection_text': '{name} · my list on Mesa 🥂\n{link}',
+  'share.dish_list_text': '{label} · my ranking on Mesa 🥂\n{link}',
 
   'rankings.remove_error': "Couldn't remove it from your list",
   'rankings.removed_toast': 'Removed {name} from your list',
@@ -520,6 +524,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'saveToList.no_lists': "You don't have any lists yet.",
   'saveToList.item_count': { one: '1 saved', other: '{n} saved' },
 
+  'collections.share_label': 'Share list',
   'collections.add_description': '+ Add a description',
   'collections.update_error': "Couldn't update the list.",
   'collections.delete_list': 'Delete list',
@@ -928,6 +933,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   // M20 — the reveal chip's repeat-dish progress caption, e.g. "Carbonara ·
   // 2nd" (never shown on the very first time).
   'rank.dish_repeat_chip': '{name} · {ordinal}',
+  'dishLists.share_label': 'Share ranking',
   'dishLists.title': 'Your dishes',
   'dishLists.empty_title': "You don't have any dishes to rank yet",
   'dishLists.empty_body': "Order the same dish at 3 places and it'll show up here.",

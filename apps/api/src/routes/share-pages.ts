@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../context'
@@ -17,7 +17,21 @@ import { esc, layout, notFound, publicOrigin } from '../lib/publicPage'
 // The branded shell itself (layout/esc/notFound) lives in lib/publicPage.ts —
 // the auth pages served under the same prefix share it.
 
-const { rankings, vibeNotes, restaurants, user, invites, plans } = schema
+const {
+  rankings,
+  vibeNotes,
+  restaurants,
+  user,
+  invites,
+  plans,
+  collections,
+  collectionItems,
+  dishes,
+  dishLists,
+  dishListItems,
+  lists,
+  listItems,
+} = schema
 
 // Santo Domingo has no DST, so a fixed offset TZ is safe to hardcode — every
 // plan date on this page (and everywhere else plans render) is pinned to it
@@ -51,6 +65,23 @@ function absoluteCover(coverImageId: string | null): string | null {
   if (coverImageId.startsWith('http')) return coverImageId
   if (coverImageId.startsWith('/')) return `${publicOrigin()}${coverImageId}`
   return null
+}
+
+// "por Mesa" / "por @handle" / "por Name" — mirrors the app's own
+// listAuthorLabel() (lib/display.ts) so a curated list's card, its in-app
+// detail page, and this public page never disagree. Re-implemented rather
+// than imported: this file renders Spanish-only (see the header comment),
+// while the client version is language-aware.
+function listAuthorByline(l: {
+  authorKind: 'mesa' | 'creator' | 'venue'
+  authorName: string | null
+  authorHandle: string | null
+}): string {
+  if (l.authorKind !== 'mesa') {
+    if (l.authorHandle) return `por @${l.authorHandle}`
+    if (l.authorName) return `por ${l.authorName}`
+  }
+  return 'por Mesa'
 }
 
 export const sharePagesRoutes = new Hono<AppEnv>()
@@ -324,4 +355,246 @@ export const sharePagesRoutes = new Hono<AppEnv>()
       <div class="stat">Organiza ${esc(who)}</div>`
 
     return c.html(layout({ title, description, image: cover, canonical, body }))
+  })
+
+  // A curated list's public preview (M8) — the editorial carousel's detail
+  // page, unauthenticated. Own query rather than routes/lists.ts's handler
+  // (which is requireAuth'd and computes viewer-relative friend/mine scores
+  // that don't exist for an anonymous reader) — same "each page does its own
+  // fixed query" shape as every handler above. No score column: a curated
+  // list has no score of its own, only whatever a signed-in viewer brings to
+  // it, so this renders position + name only (list--noscore).
+  .get('/list/:slug', async (c) => {
+    const canonical = c.req.url
+    c.header('Cache-Control', 'public, max-age=300')
+    const slug = c.req.param('slug')
+
+    const list = await db.query.lists.findFirst({
+      where: eq(lists.slug, slug),
+      columns: {
+        id: true,
+        title: true,
+        subtitle: true,
+        coverImageId: true,
+        authorKind: true,
+        authorName: true,
+        authorHandle: true,
+      },
+    })
+    if (!list) return c.html(notFound(canonical), 404)
+
+    const rows = await db
+      .select({
+        position: listItems.position,
+        name: restaurants.name,
+        coverImageId: restaurants.coverImageId,
+      })
+      .from(listItems)
+      .innerJoin(restaurants, eq(restaurants.id, listItems.restaurantId))
+      .where(eq(listItems.listId, list.id))
+      .orderBy(asc(listItems.position))
+      .limit(20)
+
+    const byline = listAuthorByline(list)
+    const cover = absoluteCover(list.coverImageId) ?? absoluteCover(rows[0]?.coverImageId ?? null)
+    const description = list.subtitle
+      ? `${list.subtitle} — ${byline}.`
+      : rows.length > 0
+        ? `${rows
+            .slice(0, 3)
+            .map((r) => r.name)
+            .join(' · ')} — ${byline}.`
+        : `${byline}.`
+
+    const body = `
+      ${cover ? `<img class="cover" src="${esc(cover)}" alt="" />` : ''}
+      <p class="eyebrow">Lista · ${esc(byline)}</p>
+      <h1>${esc(list.title)}</h1>
+      ${
+        rows.length > 0
+          ? `<ol class="list list--noscore">${rows
+              .map(
+                (r) =>
+                  `<li><span class="pos">${r.position}</span><span class="nm">${esc(
+                    r.name,
+                  )}</span></li>`,
+              )
+              .join('')}</ol>`
+          : ''
+      }`
+
+    return c.html(layout({ title: list.title, description, image: cover, canonical, body }))
+  })
+
+  // A member's named list (M8/M19) — public the same way a profile or a plan
+  // is: gated by an unguessable id, not a real access-control flag (collections
+  // have never had a privacy toggle). A dish item keeps the poster's own
+  // visibility choice, though — a 'friends'-only dish can't be named (or its
+  // photo used) on a page anyone can load with no session, the same rule
+  // GET /dishes/:id enforces for a signed-in stranger.
+  .get('/collection/:id', async (c) => {
+    const canonical = c.req.url
+    c.header('Cache-Control', 'public, max-age=300')
+    const id = c.req.param('id')
+
+    const collection = await db.query.collections.findFirst({
+      where: eq(collections.id, id),
+      columns: { name: true, description: true, coverImageId: true, userId: true },
+    })
+    if (!collection) return c.html(notFound(canonical), 404)
+
+    const owner = await db.query.user.findFirst({
+      where: eq(user.id, collection.userId),
+      columns: { name: true, handle: true, bannedAt: true },
+    })
+    if (!owner || owner.bannedAt) return c.html(notFound(canonical), 404)
+
+    const rawRows = await db
+      .select({
+        restaurantName: restaurants.name,
+        restaurantCover: restaurants.coverImageId,
+        dishName: dishes.name,
+        dishImage: dishes.imageId,
+        dishVisibility: dishes.visibility,
+      })
+      .from(collectionItems)
+      .leftJoin(restaurants, eq(restaurants.id, collectionItems.restaurantId))
+      .leftJoin(dishes, eq(dishes.id, collectionItems.dishId))
+      .where(eq(collectionItems.collectionId, id))
+      .orderBy(desc(collectionItems.createdAt))
+      .limit(20)
+
+    // No stored position (the in-app list orders by createdAt too) — the
+    // display ordinal below is synthetic, same visual language as a real one.
+    const items = rawRows
+      .filter((r) => r.restaurantName || r.dishVisibility === 'public')
+      .map((r, i) => ({
+        position: i + 1,
+        name: (r.restaurantName ?? r.dishName) as string,
+        coverImageId: r.restaurantCover ?? (r.dishVisibility === 'public' ? r.dishImage : null),
+      }))
+
+    const who = owner.name || `@${owner.handle}`
+    const cover =
+      absoluteCover(collection.coverImageId) ?? absoluteCover(items[0]?.coverImageId ?? null)
+    const description =
+      items.length > 0
+        ? `${items
+            .slice(0, 3)
+            .map((i) => i.name)
+            .join(' · ')} — la lista de ${who} en Mesa.`
+        : `La lista de ${who} en Mesa.`
+
+    const body = `
+      ${cover ? `<img class="cover" src="${esc(cover)}" alt="" />` : ''}
+      <p class="eyebrow">Lista · de ${esc(who)}</p>
+      <h1>${esc(collection.name)}</h1>
+      ${collection.description ? `<div class="stat">${esc(collection.description)}</div>` : ''}
+      ${
+        items.length > 0
+          ? `<ol class="list list--noscore">${items
+              .map(
+                (i) =>
+                  `<li><span class="pos">${i.position}</span><span class="nm">${esc(
+                    i.name,
+                  )}</span></li>`,
+              )
+              .join('')}</ol>`
+          : ''
+      }`
+
+    return c.html(
+      layout({
+        title: `${collection.name} · lista de ${who}`,
+        description,
+        image: cover,
+        canonical,
+        body,
+      }),
+    )
+  })
+
+  // A member's dish ranking (M8/M20) — "la mejor carbonara de Camila en la
+  // ciudad." Only once it's actually ranked: an in-progress pairwise session
+  // has no order yet, so a link shared mid-flow (there's no share button
+  // before rankedAt anyway, but the route itself must not assume that) has
+  // nothing here for a stranger to land on.
+  .get('/dish-list/:id', async (c) => {
+    const canonical = c.req.url
+    c.header('Cache-Control', 'public, max-age=300')
+    const id = c.req.param('id')
+
+    const list = await db.query.dishLists.findFirst({
+      where: eq(dishLists.id, id),
+      columns: { label: true, userId: true, nameKey: true, rankedAt: true },
+    })
+    if (!list || !list.rankedAt) return c.html(notFound(canonical), 404)
+
+    const owner = await db.query.user.findFirst({
+      where: eq(user.id, list.userId),
+      columns: { name: true, handle: true, bannedAt: true },
+    })
+    if (!owner || owner.bannedAt) return c.html(notFound(canonical), 404)
+
+    const rows = await db
+      .select({
+        position: dishListItems.position,
+        name: restaurants.name,
+        restaurantCover: restaurants.coverImageId,
+        dishImage: dishes.imageId,
+        dishVisibility: dishes.visibility,
+      })
+      .from(dishListItems)
+      .innerJoin(restaurants, eq(restaurants.id, dishListItems.restaurantId))
+      .leftJoin(
+        dishes,
+        and(
+          eq(dishes.userId, list.userId),
+          eq(dishes.nameKey, list.nameKey),
+          eq(dishes.restaurantId, dishListItems.restaurantId),
+          isNull(dishes.removedAt),
+        ),
+      )
+      .where(eq(dishListItems.listId, id))
+      .orderBy(asc(dishListItems.position))
+      .limit(20)
+
+    const who = owner.name || `@${owner.handle}`
+    const first = rows[0]
+    const firstCover = first
+      ? ((first.dishVisibility === 'public' ? first.dishImage : null) ?? first.restaurantCover)
+      : null
+    const cover = absoluteCover(firstCover)
+    const description =
+      rows.length > 0
+        ? `${rows
+            .slice(0, 3)
+            .map((r) => r.name)
+            .join(' · ')} — el ranking de ${who} en Mesa.`
+        : `El ranking de ${who} en Mesa.`
+
+    const body = `
+      ${cover ? `<img class="cover" src="${esc(cover)}" alt="" />` : ''}
+      <p class="eyebrow">${esc(list.label)} · de ${esc(who)}</p>
+      <h1>${esc(list.label)}</h1>
+      <ol class="list list--noscore">
+        ${rows
+          .map(
+            (r) =>
+              `<li><span class="pos">${r.position}</span><span class="nm">${esc(
+                r.name,
+              )}</span></li>`,
+          )
+          .join('')}
+      </ol>`
+
+    return c.html(
+      layout({
+        title: `${list.label} · el ranking de ${who}`,
+        description,
+        image: cover,
+        canonical,
+        body,
+      }),
+    )
   })

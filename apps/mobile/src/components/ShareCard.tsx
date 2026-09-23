@@ -161,6 +161,17 @@ function SpotBody({ req }: { req: Extract<ShareCardReq, { kind: 'spot' }> }) {
   )
 }
 
+// Exactly 5 row "slots" fit the vertical budget between the header text and
+// the footer (proven by the original design, which hard-capped at 5) — this
+// never grows that budget, it only decides what fills the last slot. Five
+// items or fewer: every row is real, unchanged from before. More than five:
+// the first 4 are real and the 5th becomes a "+N más" summary, so a
+// long list still fits without shrinking type or guessing at new row math.
+const MAX_REAL_ROWS = 5
+const MAX_REAL_ROWS_WHEN_TRUNCATED = 4
+
+type ListRow = { key: string; position: number | null; name: string; score?: number | null }
+
 function ListBody({
   req,
   coverH,
@@ -168,6 +179,24 @@ function ListBody({
   req: Extract<ShareCardReq, { kind: 'list' }>
   coverH: number
 }) {
+  const truncated = req.items.length > MAX_REAL_ROWS
+  const shown = truncated
+    ? req.items.slice(0, MAX_REAL_ROWS_WHEN_TRUNCATED)
+    : req.items.slice(0, MAX_REAL_ROWS)
+  const rows: ListRow[] = shown.map((item) => ({
+    key: `${item.position}-${item.name}`,
+    position: item.position,
+    name: item.name,
+    score: item.score,
+  }))
+  if (truncated) {
+    rows.push({
+      key: 'more',
+      position: null,
+      name: `+ ${req.items.length - MAX_REAL_ROWS_WHEN_TRUNCATED} más`,
+    })
+  }
+
   return (
     <View
       style={{ position: 'absolute', top: coverH + 60, left: 0, right: 0, paddingHorizontal: 90 }}
@@ -196,37 +225,46 @@ function ListBody({
       >
         {req.subtitle.toUpperCase()}
       </Text>
-      {req.items.slice(0, 5).map((item, i) => (
+      {rows.map((row, i) => (
         <View
-          key={`${item.position}-${item.name}`}
+          key={row.key}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
             paddingVertical: 22,
-            borderBottomWidth: i < Math.min(req.items.length, 5) - 1 ? 2 : 0,
+            borderBottomWidth: i < rows.length - 1 ? 2 : 0,
             borderBottomColor: 'rgba(235,228,214,0.12)',
           }}
         >
+          {row.position != null && (
+            <Text
+              style={{
+                fontFamily: SERIF_SB,
+                fontSize: 76,
+                color: BRASS,
+                width: 110,
+                ...DATA_FIGURES,
+              }}
+            >
+              {row.position}
+            </Text>
+          )}
           <Text
             style={{
-              fontFamily: SERIF_SB,
-              fontSize: 76,
-              color: BRASS,
-              width: 110,
-              ...DATA_FIGURES,
+              fontFamily: row.position != null ? SERIF_M : SERIF_IT,
+              fontSize: row.position != null ? 60 : 48,
+              color: row.position != null ? CREAM : CREAM_DIM,
+              flex: 1,
             }}
-          >
-            {item.position}
-          </Text>
-          <Text
-            style={{ fontFamily: SERIF_M, fontSize: 60, color: CREAM, flex: 1 }}
             numberOfLines={1}
           >
-            {item.name}
+            {row.name}
           </Text>
-          <Text style={{ fontFamily: SERIF_M, fontSize: 56, color: BRASS_2, ...DATA_FIGURES }}>
-            {(item.score / 10).toFixed(1)}
-          </Text>
+          {row.score != null && (
+            <Text style={{ fontFamily: SERIF_M, fontSize: 56, color: BRASS_2, ...DATA_FIGURES }}>
+              {(row.score / 10).toFixed(1)}
+            </Text>
+          )}
         </View>
       ))}
     </View>

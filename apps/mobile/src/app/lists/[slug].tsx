@@ -1,16 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, Stack, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { Body, Caption, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { ShareIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { ApiError, api } from '@/lib/api'
 import { listAuthorLabel } from '@/lib/display'
-import { useT } from '@/lib/i18n'
+import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import { imageUrl } from '@/lib/media'
+import { shareListCard } from '@/lib/shareCardStore'
+import { curatedListShareText } from '@/lib/shareList'
 import type { ListDetailResponse } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
@@ -19,6 +22,7 @@ import { DATA_FIGURES } from '@/theme/vars'
 // pills. Ported from apps/app/src/screens/list/ListScreen.tsx.
 export default function ListScreen() {
   const t = useT()
+  const lang = useLanguage()
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const q = useQuery({
     queryKey: ['list', slug],
@@ -27,11 +31,46 @@ export default function ListScreen() {
   })
   const [noteOpen, setNoteOpen] = useState(false)
 
+  // Memoized (same reasoning as plans/index.tsx and explore/index.tsx): an
+  // inline headerRight hands Stack.Screen a new function every render, and
+  // react-native-screens rebuilding the native header button mid-press can
+  // drop the tap. translate(lang, …) rather than useT()'s t is what actually
+  // holds this stable — t's bound function is a new identity every render.
+  const headerOptions = useMemo(
+    () => ({
+      title: q.data?.list.title ?? '',
+      headerLargeTitle: false,
+      headerRight: () =>
+        q.data ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={translate(lang, 'lists.share_label')}
+            onPress={() =>
+              shareListCard({
+                eyebrow: q.data.list.title,
+                subtitle: listAuthorLabel(q.data.list),
+                items: q.data.items.map((r) => ({ position: r.position, name: r.name })),
+                coverUrl: imageUrl(q.data.list.coverImageId ?? q.data.items[0]?.coverImageId, {
+                  w: 1080,
+                  h: 780,
+                }),
+                text: curatedListShareText(q.data.list.title, slug),
+              })
+            }
+            className="min-h-[44px] w-10 items-center justify-center active:opacity-70"
+          >
+            <ShareIcon size={18} />
+          </Pressable>
+        ) : null,
+    }),
+    [q.data, lang, slug],
+  )
+
   return (
     <View className="flex-1 bg-bg">
       {/* Inline title, not large: this screen opens on a hero image, and a
           large title stacked above it just pushes the photo off the fold. */}
-      <Stack.Screen options={{ title: q.data?.list.title ?? '', headerLargeTitle: false }} />
+      <Stack.Screen options={headerOptions} />
       {q.isPending ? (
         <View>
           <Skeleton height={224} />

@@ -7,7 +7,10 @@ import { track } from '@/lib/analytics'
 // <ShareCardHost/> (mounted in _layout) renders the off-screen card, captures it
 // to a PNG with react-native-view-shot, and hands it to the native share sheet.
 // This replaces the web's canvas renderSpotCard/renderListCard in lib/shareCard.ts.
-export type ShareListItem = { position: number; name: string; score: number }
+// score is optional (M8) — a collection or a dish list has no score at the
+// list level the way a ranking does; ShareCard's ListBody omits that column
+// per-row when it's missing rather than requiring every caller to fake one.
+export type ShareListItem = { position: number; name: string; score?: number | null }
 
 export type SpotCardReq = {
   kind: 'spot'

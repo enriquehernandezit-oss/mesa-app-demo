@@ -6,7 +6,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Skeleton, Title } from '@/components/ui'
-import { ListIcon } from '@/components/ui/icons'
+import { ListIcon, ShareIcon } from '@/components/ui/icons'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
@@ -16,6 +16,8 @@ import { pickDishPhoto } from '@/lib/dishPhoto'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { imageUrl } from '@/lib/media'
+import { shareListCard } from '@/lib/shareCardStore'
+import { collectionShareText } from '@/lib/shareList'
 import type { CollectionDetail, CollectionItem } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 
@@ -105,6 +107,18 @@ export default function CollectionDetailScreen() {
   // lists rail uses (the API's previewImageId).
   const firstImage = items.find((i) => i.restaurant?.coverImageId)?.restaurant?.coverImageId ?? null
   const cover = imageUrl(coverImageId ?? firstImage, { w: 480, h: 480 })
+  const shareCollection = () =>
+    shareListCard({
+      eyebrow: name,
+      subtitle: t('saveToList.item_count', { n: items.length }),
+      items: items.map((item, i) => ({
+        position: i + 1,
+        name: item.restaurant?.name ?? item.dish?.name ?? '',
+        score: item.restaurant?.myRanking?.score,
+      })),
+      coverUrl: imageUrl(coverImageId ?? firstImage, { w: 1080, h: 780 }),
+      text: collectionShareText(name, collectionId),
+    })
 
   return (
     <View className="flex-1 bg-bg">
@@ -113,15 +127,27 @@ export default function CollectionDetailScreen() {
         onBack={goBack}
         backLabel={t('common.back_plain')}
         right={
-          <Pressable
-            accessibilityRole="button"
-            onPress={confirmDeleteList}
-            className="min-h-[44px] justify-center active:opacity-60"
-          >
-            <Text className="font-ui-medium text-label text-status-packed">
-              {t('collections.delete_list')}
-            </Text>
-          </Pressable>
+          <View className="flex-row items-center gap-4">
+            {items.length > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('collections.share_label')}
+                onPress={shareCollection}
+                className="min-h-[44px] justify-center active:opacity-60"
+              >
+                <ShareIcon size={18} />
+              </Pressable>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              onPress={confirmDeleteList}
+              className="min-h-[44px] justify-center active:opacity-60"
+            >
+              <Text className="font-ui-medium text-label text-status-packed">
+                {t('collections.delete_list')}
+              </Text>
+            </Pressable>
+          </View>
         }
       />
       <ScrollView

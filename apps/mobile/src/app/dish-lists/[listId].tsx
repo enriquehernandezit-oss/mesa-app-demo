@@ -4,10 +4,14 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Body, Button, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import { ShareIcon } from '@/components/ui/icons'
 import { Characteristics } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import { imageUrl } from '@/lib/media'
+import { shareListCard } from '@/lib/shareCardStore'
+import { dishListShareText } from '@/lib/shareList'
 import type { DishListDetail, DishListEntry } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
@@ -48,13 +52,39 @@ export default function DishListDetailScreen() {
   }
 
   const { label, ranked, unranked } = q.data
+  const shareDishList = () =>
+    shareListCard({
+      eyebrow: t('dishLists.your_best', { label }),
+      subtitle: t('dishLists.ranked_count', { n: ranked.length }),
+      items: ranked.map((entry) => ({ position: entry.position, name: entry.restaurant.name })),
+      coverUrl: imageUrl(ranked[0]?.dish.imageId ?? ranked[0]?.restaurant.coverImageId, {
+        w: 1080,
+        h: 780,
+      }),
+      text: dishListShareText(label, listId),
+    })
 
   return (
     <View className="flex-1 bg-bg">
       <Stack.Screen
         options={{ title: t('dishLists.your_best', { label }), headerLargeTitle: false }}
       />
-      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+      <ScreenHeader
+        onBack={goBack}
+        backLabel={t('common.back_plain')}
+        right={
+          ranked.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('dishLists.share_label')}
+              onPress={shareDishList}
+              className="min-h-[44px] justify-center active:opacity-60"
+            >
+              <ShareIcon size={18} />
+            </Pressable>
+          ) : undefined
+        }
+      />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-3">
         {ranked.length === 0 ? (
           <EmptyState>{t('dishLists.not_ranked_yet')}</EmptyState>

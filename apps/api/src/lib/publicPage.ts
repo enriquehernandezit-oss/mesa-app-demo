@@ -98,6 +98,10 @@ export function layout(opts: {
     ol.list { list-style: none; padding: 0; margin: 24px 0 0; text-align: left; }
     ol.list li { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 16px; padding: 13px 4px; border-bottom: 1px solid rgba(235,228,214,.12); }
     ol.list li:last-child { border-bottom: 0; }
+    /* A list with no per-item score (collections, dish lists, curated lists —
+       none of them carry a score at the list level the way a ranking does):
+       same rows, two columns instead of three. */
+    ol.list.list--noscore li { grid-template-columns: auto 1fr; }
     .pos { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 28px; color: var(--brass); width: 28px; }
     .nm { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 24px; color: var(--cream); }
     .sc { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 24px; color: var(--brass-2); }
