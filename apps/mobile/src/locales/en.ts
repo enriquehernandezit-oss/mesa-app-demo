@@ -414,6 +414,14 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'dish.choose_from_library': 'Choose from library',
   'dish.photo_upload_error': "Couldn't upload the photo. Try again.",
 
+  // Crop/rotate (M6) — app/photo-edit.tsx, shared by the avatar picker and
+  // every dish-photo call site.
+  'photoEdit.title': 'Edit photo',
+  'photoEdit.hint': 'Pinch and drag to frame the photo',
+  'photoEdit.rotate': 'Rotate',
+  'photoEdit.use_photo': 'Use photo',
+  'photoEdit.error': "Couldn't process the photo. Try again.",
+
   'legal.not_found': 'Document not found.',
   'legal.spanish_only_note':
     "Available in Spanish for now — the legal text hasn't been translated yet.",

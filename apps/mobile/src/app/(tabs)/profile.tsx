@@ -29,15 +29,17 @@ import { api } from '@/lib/api'
 import { ALL_CUISINES, cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { dateLocale, useT } from '@/lib/i18n'
-import { openImagePicker, resizeToJpeg } from '@/lib/image'
+import { openImagePicker } from '@/lib/image'
+import { editPhoto } from '@/lib/photoEditor'
 import { isPendingInvite } from '@/lib/plans'
 import type { MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
 import { uploadImage } from '@/lib/upload'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // Shared avatar-change pipeline: sheet (camera/library) → permission → launch
-// → square-crop resize → upload. One implementation for both the main Profile
-// screen and Editar perfil, so the two photo controls (previously: main-screen
+// → crop/rotate (lib/photoEditor.ts, circle preview) → upload. One
+// implementation for both the main Profile screen and Editar perfil, so the
+// two photo controls (previously: main-screen
 // tap opened Editar perfil, which then jumped straight to the library with no
 // camera option) behave identically. `busy` guards the WHOLE pipeline, not
 // just the upload mutation — see dishPhoto.ts's `picking` module guard for the
@@ -70,7 +72,7 @@ function useAvatarPicker() {
       })
       if (picked === null) return
       const source = picked === 0 ? 'camera' : 'library'
-      const result = await openImagePicker(source, { square: true })
+      const result = await openImagePicker(source)
       if (result.status === 'denied') {
         toast({
           variant: 'error',
@@ -80,13 +82,13 @@ function useAvatarPicker() {
         return
       }
       if (result.status !== 'picked') return
-      const { asset } = result
-      const resized = await resizeToJpeg(asset.uri, asset.width, asset.height, {
+      const edited = await editPhoto(result.asset.uri, {
         maxEdge: 192,
-        square: true,
         quality: 0.8,
+        shape: 'circle',
       })
-      const uploaded = await uploadImage(resized)
+      if (!edited) return
+      const uploaded = await uploadImage(edited)
       if (!uploaded) {
         toast({ variant: 'error', message: t('profile.avatar_change_error') })
         return
@@ -138,7 +140,7 @@ function AvatarEditButton({
 // stats trio, edit/share, routes into the lists, and the two stat cards. The top
 // bar (name + share + settings) is TopBar's profile variant. Ported from
 // apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
-// expo-image-picker + resizeToJpeg (square).
+// expo-image-picker + lib/photoEditor.ts's crop/rotate.
 export default function ProfileTab() {
   const router = useRouter()
   const t = useT()

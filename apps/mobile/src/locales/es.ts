@@ -442,6 +442,14 @@ export const es = {
   'dish.choose_from_library': 'Elegir de la biblioteca',
   'dish.photo_upload_error': 'No se pudo subir la foto. Intenta de nuevo.',
 
+  // Recortar/girar (M6) — app/photo-edit.tsx, compartido por el selector de
+  // avatar y cada punto donde se elige una foto de plato.
+  'photoEdit.title': 'Editar foto',
+  'photoEdit.hint': 'Pellizca y arrastra para encuadrar la foto',
+  'photoEdit.rotate': 'Girar',
+  'photoEdit.use_photo': 'Usar foto',
+  'photoEdit.error': 'No se pudo procesar la foto. Intenta de nuevo.',
+
   // app/legal/[doc].tsx — the prose itself stays Spanish in both languages
   // (it is the operative text, and the same words the API serves at /legal/*);
   // only the not-found state and the EN-mode notice are keyed.

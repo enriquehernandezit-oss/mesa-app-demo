@@ -6,7 +6,7 @@ type PresignResponse =
   | { available: false }
   | { available: true; uploadUrl: string; publicUrl: string }
 
-// Uploads a local file (already resized — see lib/image.ts) to R2 via a
+// Uploads a local file (already cropped/resized — see lib/photoEditor.ts) to R2 via a
 // presigned PUT the API hands out (POST /uploads), and returns the resulting
 // public URL — the same value every image field (dish photo, avatar,
 // collection cover) now stores. Never throws: null means "couldn't upload,"

@@ -195,6 +195,11 @@ function MesaStack() {
           sheet. Was a formSheet at a 0.5 detent, whose flex-1 content mis-laid
           itself out on device (rows shifted off the edge, title clipped). */}
       <Stack.Screen name="save-to-list" options={{ presentation: 'modal' }} />
+      {/* Crop/rotate (M6) — pushed by lib/photoEditor.ts's editPhoto() from
+          inside either an already-presented modal (rank, dish/index) or a
+          plain screen (Profile's avatar picker); modal-on-modal stacks fine
+          natively, unlike Sheet.tsx's own root-overlay limitation. */}
+      <Stack.Screen name="photo-edit" options={{ presentation: 'modal' }} />
 
       {/* r/[restaurantId] has a horizontal similar-spots rail near the screen
           edge; react-native-screens' iOS full-screen swipe already lets a

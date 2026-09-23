@@ -2,7 +2,8 @@ import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { captureError } from '@/lib/errors'
 import { getLanguage, t } from '@/lib/i18n'
-import { openImagePicker, resizeToJpeg } from '@/lib/image'
+import { openImagePicker } from '@/lib/image'
+import { editPhoto } from '@/lib/photoEditor'
 import { uploadImage } from '@/lib/upload'
 
 // The camera-or-library → permission → resize pipeline for a dish photo.
@@ -47,11 +48,9 @@ export async function pickDishPhoto(): Promise<string | null> {
     const source = picked === 0 ? 'camera' : 'library'
     const result = await openImagePicker(source)
     if (result.status !== 'picked') return null
-    const resized = await resizeToJpeg(result.asset.uri, result.asset.width, result.asset.height, {
-      maxEdge: 1280,
-      quality: 0.72,
-    })
-    const uploaded = await uploadImage(resized)
+    const edited = await editPhoto(result.asset.uri, { maxEdge: 1280, quality: 0.72 })
+    if (!edited) return null
+    const uploaded = await uploadImage(edited)
     if (!uploaded) toast({ variant: 'error', message: t(lang, 'dish.photo_upload_error') })
     return uploaded
   } catch (err) {

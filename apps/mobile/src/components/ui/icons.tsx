@@ -235,6 +235,14 @@ export const CloseIcon = (p: IconProps) => (
     <Path d="M6 6l12 12M18 6 6 18" />
   </Icon>
 )
+// Photo editor (M6) — an almost-complete ring with a small arrowhead standing
+// in for the missing arc, read as "rotate" the way iOS's own Photos editor draws it.
+export const RotateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 5A7 7 0 1 1 8.5 5.94" />
+    <Path d="M6.3 7.6 8.5 5.9l2.3 1.3" />
+  </Icon>
+)
 // "···" — a row's overflow menu (Rankings cards).
 export const MoreIcon = (p: IconProps) => (
   <FilledIcon {...p}>
