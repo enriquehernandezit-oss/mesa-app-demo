@@ -730,6 +730,29 @@ export const dishes = pgTable(
   ],
 )
 
+// A "cheers" on a dish (M22) — `cheers` above can't be reused for this: it has
+// a hard FK straight to `rankings`, and one ranking can carry up to 3 dishes
+// (this table's own upsert key), so cheering the ranking would be strictly
+// coarser than cheering one dish on it and the counts would be
+// indistinguishable. Same shape as saved_dishes: one row per (user, dish),
+// deleting either side cascades.
+export const dishCheers = pgTable(
+  'dish_cheers',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    dishId: uuid('dish_id')
+      .notNull()
+      .references(() => dishes.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.dishId] }),
+    index('dish_cheers_dish_idx').on(t.dishId),
+  ],
+)
+
 // ── Dish lists: the repeat-dish nudge ────────────────────────────────────
 
 // Dish ranking + the repeat-dish nudge (M20). A dish_lists row is created

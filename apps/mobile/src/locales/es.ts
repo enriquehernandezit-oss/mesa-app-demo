@@ -601,9 +601,10 @@ export const es = {
   'restaurant.show_less': 'Mostrar menos',
   'restaurant.view_all_rankings': 'Ver los {n} rankings ›',
   'restaurant.add_dish': '+ Agregar un plato',
-  'restaurant.popular_dishes': 'Platos populares',
+  'restaurant.popular_dishes': 'Platos',
   'restaurant.dishes_load_error': 'No se pudieron cargar los platos.',
   'restaurant.no_dishes': 'Todavía no hay platos — sé el primero.',
+  'restaurant.see_all_dishes': 'Ver todos los platos',
 
   // components (app/menu/[restaurantId].tsx, M5/M7)
   'restaurant.menu_title': 'Menú',

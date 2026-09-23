@@ -17,17 +17,24 @@ import { useT } from '@/lib/i18n'
 import type { FeedItem } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
-// The heart — the one-tap reaction on a feed item (mock A1). Optimistic with a
-// scale pop; both API calls are idempotent so a rapid toggle can't drift. Ported
-// from apps/app/src/screens/tabs/CheersButton.tsx. The success haptic (tapLight)
-// lands with expo-haptics in N6.
+// What CheersButton is cheering — a ranking (the original, Phase-6 feed
+// reaction) or a dish (M22, a like on a photo). Different endpoint, same
+// button: POST/DELETE /cheers/:id for a ranking, /dishes/:id/cheer for a
+// dish — see dish_cheers' header in schema.ts for why they're separate
+// tables, not one polymorphic one.
+export type CheersTarget = { kind: 'ranking'; id: string } | { kind: 'dish'; id: string }
+
+// The heart — the one-tap reaction on a feed item or a dish photo.
+// Optimistic with a scale pop; both API calls are idempotent so a rapid
+// toggle can't drift. Ported from apps/app/src/screens/tabs/CheersButton.tsx.
+// The success haptic (tapLight) lands with expo-haptics in N6.
 export function CheersButton({
-  rankingId,
+  target,
   count,
   cheered,
   className,
 }: {
-  rankingId: string
+  target: CheersTarget
   count: number
   cheered: boolean
   className?: string
@@ -39,8 +46,10 @@ export function CheersButton({
   const queryClient = useQueryClient()
 
   const toggle = useMutation({
-    mutationFn: (next: boolean) =>
-      next ? api.post(`/cheers/${rankingId}`) : api.del(`/cheers/${rankingId}`),
+    mutationFn: (next: boolean) => {
+      const path = target.kind === 'ranking' ? `/cheers/${target.id}` : `/dishes/${target.id}/cheer`
+      return next ? api.post(path) : api.del(path)
+    },
     // Roll the optimistic state back if the write fails, so the button never
     // shows a cheer the server didn't record.
     onError: (_err, next) => {
@@ -48,6 +57,15 @@ export function CheersButton({
       setN((cur) => cur + (next ? -1 : 1))
     },
     onSuccess: (_data, next) => {
+      if (target.kind === 'dish') {
+        // A dish's count can show in three shapes at once (the restaurant's
+        // rail, "see all", the detail page) — invalidating is simpler and
+        // cheap enough at a restaurant's dish-count scale, unlike the
+        // feed-page patch below.
+        queryClient.invalidateQueries({ queryKey: ['dishes'] })
+        queryClient.invalidateQueries({ queryKey: ['dish', target.id] })
+        return
+      }
       // Patch the cache instead of invalidating: an invalidation here used to
       // refetch the whole feed on every heart tap, which is also what made
       // Feed's pull-to-refresh spinner freeze mid-scroll so often (a
@@ -66,7 +84,7 @@ export function CheersButton({
             pages: data.pages.map((page) => ({
               ...page,
               feed: page.feed.map((item) =>
-                item.rankingId === rankingId
+                item.rankingId === target.id
                   ? { ...item, cheeredByMe: next, cheersCount: n + (next ? 1 : 0) - (on ? 1 : 0) }
                   : item,
               ),

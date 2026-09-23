@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
+import { sendPush } from '../lib/push'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -13,8 +14,142 @@ import { requireAuth } from '../middleware/session'
 // required, so you can only post a dish for a place you've ranked. The image
 // is a URL from a signed R2 upload (POST /uploads) — see lib/imageRef.ts.
 // Soft-removal + reporting (via 'dish' report target) satisfy App Store 1.2.
-const { dishes, rankings, user, follows, userBlocks, savedDishes, dishLists, dishListItems } =
-  schema
+const {
+  dishes,
+  rankings,
+  user,
+  follows,
+  userBlocks,
+  savedDishes,
+  dishCheers,
+  dishLists,
+  dishListItems,
+} = schema
+
+// What "popular" means on a restaurant's dish rail (M22): a like is a
+// stronger, one-tap-per-person signal than a name that just happens to
+// recur, so it's weighted 3x; a small recency bonus keeps a week-old photo
+// from being buried forever under an old dish's accumulated total. Plain
+// constants, not buried in SQL, so the weights are easy to see and retune
+// in one place once real usage data exists.
+export const CHEER_WEIGHT = 3
+export const FREQUENCY_WEIGHT = 1
+export const RECENT_7D_BONUS = 2
+export const RECENT_30D_BONUS = 1
+const DAY_MS = 86_400_000
+
+export function dishScore(cheerCount: number, frequency: number, createdAt: Date): number {
+  const ageMs = Date.now() - createdAt.getTime()
+  const recency = ageMs < 7 * DAY_MS ? RECENT_7D_BONUS : ageMs < 30 * DAY_MS ? RECENT_30D_BONUS : 0
+  return cheerCount * CHEER_WEIGHT + frequency * FREQUENCY_WEIGHT + recency
+}
+
+// Candidate cap before scoring, generously above what a real restaurant's
+// whole dish history runs to (Santo Domingo's catalog, not a global
+// platform) — high enough that it essentially never truncates unfairly, low
+// enough to keep the two aggregate queries below cheap.
+const SCORE_CANDIDATE_CAP = 500
+
+// Shared by the rail (top 5) and the "see all" page (M22) — one filtered
+// base query plus two grouped aggregate queries (cheer counts, name
+// frequency), regardless of how many dishes come back (CLAUDE.md rule 3:
+// never a per-row query). Sorted here, in JS, rather than in SQL: a
+// restaurant's dish count is small enough that this is plenty fast, and it
+// keeps dishScore's weights (above) somewhere a human can actually read.
+async function scoredDishesForRestaurant(me: { id: string }, restaurantId: string) {
+  const rows = await db
+    .select({
+      id: dishes.id,
+      name: dishes.name,
+      nameKey: dishes.nameKey,
+      caption: dishes.caption,
+      imageId: dishes.imageId,
+      categoryId: dishes.categoryId,
+      grain: dishes.grain,
+      createdAt: dishes.createdAt,
+      user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
+    })
+    .from(dishes)
+    .innerJoin(user, eq(user.id, dishes.userId))
+    // Same block filter as every other dish read — in the WHERE, not a JS
+    // post-filter, so a blocked poster in the candidate set can't shrink the
+    // final page below what's actually visible.
+    .where(
+      and(
+        eq(dishes.restaurantId, restaurantId),
+        isNull(dishes.removedAt),
+        sql`${dishes.imageId} is not null`,
+        isNull(user.bannedAt),
+        notInArray(dishes.userId, blockedByMe(me.id)),
+        notInArray(dishes.userId, blockedMe(me.id)),
+        or(
+          eq(dishes.userId, me.id),
+          eq(dishes.visibility, 'public'),
+          inArray(dishes.userId, followingIds(me.id)),
+        ),
+      ),
+    )
+    .orderBy(desc(dishes.createdAt))
+    .limit(SCORE_CANDIDATE_CAP)
+  if (rows.length === 0) return []
+
+  const ids = rows.map((r) => r.id)
+  // nameKey is a generated column (mesaNorm(name), name NOT NULL) so it's
+  // never actually null — Drizzle just can't express that for a generated
+  // column, hence the filter to satisfy inArray's string[] below.
+  const nameKeys = [...new Set(rows.map((r) => r.nameKey).filter((k): k is string => k !== null))]
+
+  const [cheerRows, freqRows] = await Promise.all([
+    db
+      .select({
+        dishId: dishCheers.dishId,
+        count: sql<number>`count(*)::int`,
+        mine: sql<boolean>`bool_or(${dishCheers.userId} = ${me.id})`,
+      })
+      .from(dishCheers)
+      .where(inArray(dishCheers.dishId, ids))
+      .groupBy(dishCheers.dishId),
+    // Every not-removed post of this name at this restaurant, regardless of
+    // who can currently see it — the same "catalog data, not any one
+    // person's content" call GET /restaurant/:id/names already makes above.
+    db
+      .select({ nameKey: dishes.nameKey, count: sql<number>`count(*)::int` })
+      .from(dishes)
+      .innerJoin(user, eq(user.id, dishes.userId))
+      .where(
+        and(
+          eq(dishes.restaurantId, restaurantId),
+          isNull(dishes.removedAt),
+          isNull(user.bannedAt),
+          inArray(dishes.nameKey, nameKeys),
+        ),
+      )
+      .groupBy(dishes.nameKey),
+  ])
+
+  const cheersByDish = new Map(cheerRows.map((r) => [r.dishId, r]))
+  const freqByName = new Map(freqRows.map((r) => [r.nameKey, r.count]))
+
+  return rows
+    .map((r) => {
+      const cheer = cheersByDish.get(r.id)
+      const cheerCount = cheer?.count ?? 0
+      return {
+        id: r.id,
+        name: r.name,
+        caption: r.caption,
+        imageId: r.imageId,
+        categoryId: r.categoryId,
+        grain: r.grain,
+        createdAt: r.createdAt,
+        user: r.user,
+        cheerCount,
+        cheeredByMe: cheer?.mine ?? false,
+        score: dishScore(cheerCount, freqByName.get(r.nameKey) ?? 1, r.createdAt),
+      }
+    })
+    .sort((a, b) => b.score - a.score)
+}
 
 const createSchema = z.object({
   restaurantId: z.string().uuid(),
@@ -226,50 +361,85 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     return c.json({ ok: true, id: dishId, created, myCount, nudge })
   })
 
-  // Popular dishes at a place — visible ones (mine, public, or from people I
-  // follow), newest first. One query with the block/visibility rules. This
-  // rail is photo-led, so a photo-less dish (a bare "Qué pedir" pick with no
-  // image) is excluded rather than rendered with a placeholder.
+  // Dishes at a place — visible ones (mine, public, or from people I
+  // follow), photo-led (a photo-less "Qué pedir" pick is excluded rather
+  // than rendered with a placeholder), ranked by scoredDishesForRestaurant
+  // above: cheers, how often the name recurs here, and recency — not
+  // "newest first" despite the section's old name. Just the top 5, for the
+  // restaurant profile's rail; /restaurant/:id/all below is the same list
+  // unsliced, for "See all dishes".
   .get('/restaurant/:id', async (c) => {
     const me = c.get('user')
     const id = c.req.param('id')
+    if (!z.string().uuid().safeParse(id).success) return c.json({ dishes: [] })
 
-    const rows = await db
-      .select({
-        id: dishes.id,
-        name: dishes.name,
-        caption: dishes.caption,
-        imageId: dishes.imageId,
-        categoryId: dishes.categoryId,
-        grain: dishes.grain,
-        createdAt: dishes.createdAt,
-        user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
-      })
-      .from(dishes)
-      .innerJoin(user, eq(user.id, dishes.userId))
-      // Block filter is in the WHERE, not a JS post-filter: filtering after
-      // .limit(12) returned FEWER than 12 dishes whenever a blocked poster sat
-      // in the top 12, even when more visible dishes existed below. Both
-      // directions, matching the feed — a block is symmetric.
-      .where(
-        and(
-          eq(dishes.restaurantId, id),
-          isNull(dishes.removedAt),
-          sql`${dishes.imageId} is not null`,
-          isNull(user.bannedAt),
-          notInArray(dishes.userId, blockedByMe(me.id)),
-          notInArray(dishes.userId, blockedMe(me.id)),
-          or(
-            eq(dishes.userId, me.id),
-            eq(dishes.visibility, 'public'),
-            inArray(dishes.userId, followingIds(me.id)),
-          ),
+    const scored = await scoredDishesForRestaurant(me, id)
+    return c.json({ dishes: scored.slice(0, 5) })
+  })
+
+  // The rail's "See all dishes" destination — every visible dish at this
+  // place, duplicates included, same order as the rail.
+  .get('/restaurant/:id/all', async (c) => {
+    const me = c.get('user')
+    const id = c.req.param('id')
+    if (!z.string().uuid().safeParse(id).success) return c.json({ dishes: [] })
+
+    return c.json({ dishes: await scoredDishesForRestaurant(me, id) })
+  })
+
+  // Like (or unlike) a dish — the dish equivalent of POST/DELETE
+  // /cheers/:rankingId, same idempotent + symmetric-block shape. Doesn't
+  // touch `cheers` itself; see dish_cheers' own header in schema.ts for why.
+  .post('/:id/cheer', async (c) => {
+    const me = c.get('user')
+    const dishId = c.req.param('id')
+    if (!z.string().uuid().safeParse(dishId).success) return c.json({ error: 'not_found' }, 404)
+
+    const found = await db.query.dishes.findFirst({
+      where: and(eq(dishes.id, dishId), isNull(dishes.removedAt)),
+      columns: { id: true, userId: true, name: true },
+    })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+
+    if (found.userId !== me.id) {
+      const blocked = await db.query.userBlocks.findFirst({
+        where: or(
+          and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, found.userId)),
+          and(eq(userBlocks.blockerId, found.userId), eq(userBlocks.blockedId, me.id)),
         ),
-      )
-      .orderBy(desc(dishes.createdAt))
-      .limit(12)
+        columns: { blockerId: true },
+      })
+      if (blocked) return c.json({ error: 'not_found' }, 404)
+    }
 
-    return c.json({ dishes: rows })
+    await db.insert(dishCheers).values({ userId: me.id, dishId }).onConflictDoNothing()
+
+    if (found.userId !== me.id) {
+      // Hour-bucketed key, same "≤1 push per dish per hour" throttle as the
+      // ranking cheer's trigger.
+      const hourBucket = new Date().toISOString().slice(0, 13)
+      sendPush([
+        {
+          userId: found.userId,
+          key: `dish-cheer:${dishId}:${hourBucket}`,
+          category: 'social',
+          title: 'Mesa',
+          body: `${me.name || 'Alguien'} le dio like a tu ${found.name}`,
+          data: { type: 'dish', dishId },
+        },
+      ])
+    }
+
+    return c.json({ ok: true })
+  })
+
+  .delete('/:id/cheer', async (c) => {
+    const me = c.get('user')
+    const dishId = c.req.param('id')
+    await db
+      .delete(dishCheers)
+      .where(and(eq(dishCheers.userId, me.id), eq(dishCheers.dishId, dishId)))
+    return c.json({ ok: true })
   })
 
   // One dish + its linked ranking summary (Phase 6 dish detail, screen C3).
@@ -360,8 +530,26 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .where(and(eq(savedDishes.dishId, id), eq(savedDishes.userId, me.id)))
       .limit(1)
 
+    // Like state (M22) — CheersButton's initial state on this page, same
+    // one-row-both-aggregates shape as the feed's cheers query.
+    const [cheerRow] = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+        mine: sql<boolean>`bool_or(${dishCheers.userId} = ${me.id})`,
+      })
+      .from(dishCheers)
+      .where(eq(dishCheers.dishId, id))
+
     const { visibility: _v, ...dish } = row
-    return c.json({ dish: { ...dish, posterIsMe, saved: Boolean(savedRow) } })
+    return c.json({
+      dish: {
+        ...dish,
+        posterIsMe,
+        saved: Boolean(savedRow),
+        cheerCount: cheerRow?.count ?? 0,
+        cheeredByMe: cheerRow?.mine ?? false,
+      },
+    })
   })
 
   // Soft-remove my own dish, and clear it as the ranking's favorite pick if

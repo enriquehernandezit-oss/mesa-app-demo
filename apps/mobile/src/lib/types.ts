@@ -168,6 +168,10 @@ export interface Dish {
   grain: string
   createdAt: string
   user: { id: string; name: string; handle: string | null; image: string | null }
+  // CheersButton's props (M22) — every GET that returns a Dish row now
+  // carries these, same as FeedItem's cheersCount/cheeredByMe.
+  cheerCount: number
+  cheeredByMe: boolean
 }
 
 // The dish-detail screen (C3): a dish + its linked ranking/place.
@@ -183,6 +187,8 @@ export interface DishDetail {
   score: number // the poster's own score for the linked place (0–100)
   posterIsMe: boolean
   saved: boolean // SaveButton's initial state (M19)
+  cheerCount: number // CheersButton's initial state (M22)
+  cheeredByMe: boolean
   restaurant: {
     id: string
     name: string

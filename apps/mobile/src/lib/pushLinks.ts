@@ -15,5 +15,7 @@ export function pushDeepLink(data: Record<string, unknown> | undefined): string 
   if (type === 'event' && typeof data.eventId === 'string') return `/events/${data.eventId}`
   // The repeat-dish nudge (M20's sweepDishNudges).
   if (type === 'dish-list' && typeof data.listId === 'string') return `/dish-lists/${data.listId}`
+  // A dish getting cheered (M22's POST /dishes/:id/cheer).
+  if (type === 'dish' && typeof data.dishId === 'string') return `/dish/${data.dishId}`
   return null
 }

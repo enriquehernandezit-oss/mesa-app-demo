@@ -4,6 +4,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { CheersButton } from '@/components/CheersButton'
 import { ReportControl } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
@@ -171,11 +172,18 @@ export default function DishDetail() {
           </Link>
           <View className="mt-2 flex-row items-start justify-between gap-3">
             <Text className="flex-1 font-serif-semibold text-title text-text">{dish.name}</Text>
-            <SaveButton
-              target={{ kind: 'dish', id: dishId }}
-              initial={dish.saved}
-              name={dish.name}
-            />
+            <View className="flex-row items-center gap-3">
+              <CheersButton
+                target={{ kind: 'dish', id: dishId }}
+                count={dish.cheerCount}
+                cheered={dish.cheeredByMe}
+              />
+              <SaveButton
+                target={{ kind: 'dish', id: dishId }}
+                initial={dish.saved}
+                name={dish.name}
+              />
+            </View>
           </View>
           {dish.categoryId ? <Caption className="mt-0.5">{categoryText}</Caption> : null}
           {dish.caption ? (

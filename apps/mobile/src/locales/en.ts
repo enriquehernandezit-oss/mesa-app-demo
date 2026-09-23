@@ -556,9 +556,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.show_less': 'Show less',
   'restaurant.view_all_rankings': 'See all {n} rankings ›',
   'restaurant.add_dish': '+ Add a dish',
-  'restaurant.popular_dishes': 'Popular dishes',
+  'restaurant.popular_dishes': 'Dishes',
   'restaurant.dishes_load_error': "Couldn't load the dishes.",
   'restaurant.no_dishes': 'No dishes yet — be the first.',
+  'restaurant.see_all_dishes': 'See all dishes',
 
   'restaurant.menu_title': 'Menu',
   'restaurant.menu_load_error': "Couldn't load the menu.",

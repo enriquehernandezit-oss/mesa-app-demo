@@ -201,6 +201,9 @@ function MesaStack() {
           horizontal ScrollView claim the drag before starting the back
           gesture, so no override is needed here. */}
       <Stack.Screen name="r/[restaurantId]" />
+      {/* "See all dishes" (M22) — the rail's overflow destination, same
+          ScreenHeader idiom as menu/[restaurantId] below. */}
+      <Stack.Screen name="r/[restaurantId]/dishes" />
       <Stack.Screen name="u/[userId]" />
       {/* The taste-match pair page (M16), reached from u/[userId]'s match
           pill — same custom ScreenHeader idiom, no native title. */}

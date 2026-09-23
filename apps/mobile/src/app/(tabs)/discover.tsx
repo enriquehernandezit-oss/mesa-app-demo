@@ -520,7 +520,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
         {/* Action bar */}
         <View className="mt-3 flex-row items-center gap-4">
           <CheersButton
-            rankingId={item.rankingId}
+            target={{ kind: 'ranking', id: item.rankingId }}
             count={item.cheersCount ?? 0}
             cheered={item.cheeredByMe ?? false}
           />

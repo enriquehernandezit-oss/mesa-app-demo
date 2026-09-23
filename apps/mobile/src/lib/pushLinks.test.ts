@@ -9,6 +9,7 @@ describe('pushDeepLink', () => {
     expect(pushDeepLink({ type: 'plan', planId: 'p1' })).toBe('/plans/p1')
     expect(pushDeepLink({ type: 'event', eventId: 'e1' })).toBe('/events/e1')
     expect(pushDeepLink({ type: 'dish-list', listId: 'l1' })).toBe('/dish-lists/l1')
+    expect(pushDeepLink({ type: 'dish', dishId: 'd1' })).toBe('/dish/d1')
   })
   test('rejects an unknown type', () => {
     expect(pushDeepLink({ type: 'nope', userId: 'u1' })).toBeNull()

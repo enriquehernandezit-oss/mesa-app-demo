@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { CheersButton } from '@/components/CheersButton'
 import { EventMiniCard } from '@/components/events/EventTicket'
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
@@ -721,8 +722,11 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
   )
 }
 
-// Popular dishes — a photo rail of dishes friends posted here, with an entry to
-// post your own (only if you've ranked the place).
+// Dishes at a place (M22) — a photo rail ranked by cheers + how often the
+// name recurs + recency (routes/dishes.ts's scoredDishesForRestaurant), not
+// "popular" in name only anymore, with an entry to post your own (only if
+// you've ranked the place) and — once there's a rail at all — a link to
+// every dish (app/r/[restaurantId]/dishes.tsx).
 function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd: boolean }) {
   const router = useRouter()
   const t = useT()
@@ -757,43 +761,63 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
       ) : dishes.length === 0 ? (
         <Body className="mt-1">{t('restaurant.no_dishes')}</Body>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="-mx-5"
-          contentContainerClassName="gap-3 px-5 pt-2"
-        >
-          {dishes.map((d) => (
-            <Link key={d.id} href={`/dish/${d.id}`} asChild>
-              <Pressable className="w-36 active:opacity-80">
-                <PlaceCover
-                  seed={d.id}
-                  name={d.name}
-                  coverImageId={d.imageId}
-                  size={{ w: 320, h: 320 }}
-                  className="h-36 w-36"
-                />
-                <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
-                  {d.name}
-                </Text>
-                {/* A plain Pressable, not a nested Link — Link-in-Link has its
-                    own gesture-machinery bug (see the feed card's note on the
-                    same fix); a router.push here avoids it. */}
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/u/${d.user.id}`)}
-                  className="self-start active:opacity-70"
-                >
-                  <Caption numberOfLines={1}>
-                    {t('restaurant.by_name', {
-                      name: (d.user.name || d.user.handle || '').split(' ')[0],
-                    })}
-                  </Caption>
-                </Pressable>
-              </Pressable>
-            </Link>
-          ))}
-        </ScrollView>
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="-mx-5"
+            contentContainerClassName="gap-3 px-5 pt-2"
+          >
+            {dishes.map((d) => (
+              <View key={d.id} className="w-36">
+                <Link href={`/dish/${d.id}`} asChild>
+                  <Pressable className="active:opacity-80">
+                    <PlaceCover
+                      seed={d.id}
+                      name={d.name}
+                      coverImageId={d.imageId}
+                      size={{ w: 320, h: 320 }}
+                      className="h-36 w-36"
+                    />
+                    <Text className="mt-2 font-serif text-serif-sm text-text" numberOfLines={1}>
+                      {d.name}
+                    </Text>
+                  </Pressable>
+                </Link>
+                <View className="mt-1 flex-row items-center justify-between">
+                  {/* A plain Pressable, not a nested Link — Link-in-Link has
+                      its own gesture-machinery bug (see the feed card's note
+                      on the same fix); a router.push here avoids it. */}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/u/${d.user.id}`)}
+                    className="flex-1 active:opacity-70"
+                  >
+                    <Caption numberOfLines={1}>
+                      {t('restaurant.by_name', {
+                        name: (d.user.name || d.user.handle || '').split(' ')[0],
+                      })}
+                    </Caption>
+                  </Pressable>
+                  <CheersButton
+                    target={{ kind: 'dish', id: d.id }}
+                    count={d.cheerCount}
+                    cheered={d.cheeredByMe}
+                  />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(`/r/${restaurantId}/dishes`)}
+            className="mt-2 min-h-[44px] items-end justify-center active:opacity-60"
+          >
+            <Text className="font-ui text-eyebrow text-accent-strong uppercase tracking-eyebrow">
+              {t('restaurant.see_all_dishes')}
+            </Text>
+          </Pressable>
+        </>
       )}
     </>
   )
