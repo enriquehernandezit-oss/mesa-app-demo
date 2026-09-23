@@ -14,6 +14,7 @@ interface Prefs {
   plans: boolean
   friends: boolean
   dishes: boolean
+  events: boolean
 }
 
 // The 4 category switches (M17) + the OS-permission gate above them. Reached
@@ -61,6 +62,7 @@ export default function NotificationSettings() {
     { key: 'plans', label: t('notifications.plans') },
     { key: 'friends', label: t('notifications.friends') },
     { key: 'dishes', label: t('notifications.dishes') },
+    { key: 'events', label: t('notifications.events') },
   ]
 
   // 'unsupported' means expo-notifications isn't linked in this binary (a dev

@@ -49,7 +49,10 @@ it got cancelled, or it was a mistake
 — is always `UPDATE events SET cancelled_at = now() WHERE slug = '...'`, never
 a `DELETE`. A cancelled event stops showing up in every browse list and
 restaurant rail (`routes/events.ts` filters on `cancelledAt IS NULL`
-everywhere) but stays reachable by anyone who already RSVP'd or has the link.
+everywhere), but `GET /events/:id` still opens it for anyone who already
+holds an RSVP — the whole point of a soft-cancel, since a member who was
+`going` gets a cancellation push (`lib/push.ts`'s `sweepEventCancellations`)
+that has to land somewhere instead of a 404. Anyone else still gets 404.
 
 ## Adding events
 

@@ -1060,6 +1060,12 @@ export const notificationPrefs = pgTable('notification_prefs', {
   // Repeat-dish nudges (M20) — the pref exists now so this screen doesn't
   // need a second migration once that milestone lands.
   dishes: boolean('dishes').notNull().default(true),
+  // An RSVP'd event's own reminders (24h/3h/2h/at-start) and its
+  // cancellation push — split out from `friends` (M22), which is about a
+  // friend's activity, not your own commitment. The "a friend RSVP'd going"
+  // notification moved here too, since it's about the same event, not about
+  // the friend as a person.
+  events: boolean('events').notNull().default(true),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 

@@ -219,40 +219,57 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
         {/* Solid ground: the hero drifts DOWN as you scroll (parallax), so
             without this it showed through the gaps between the cards. */}
         <View className="bg-bg px-5">
-          {/* Countdown banner */}
-          <Animated.View
-            entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
-            className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live ? 'bg-live' : isImminent(cd) ? cls.bg : 'border border-line bg-surface'}`}
-          >
-            {live ? (
-              <PulseDot color="on-live" size={9} />
-            ) : isImminent(cd) ? (
-              <PulseDot color="on-cat" size={8} />
-            ) : (
-              <ClockIcon size={18} color={CAT_TOKEN[cat]} />
-            )}
-            <View className="flex-1">
-              <Caption
-                className={live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : undefined}
-              >
-                {live ? t('events.live_now') : t('events.starts_in')}
-              </Caption>
-              <Text
-                className={`font-ui-semibold text-body ${live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : cls.text}`}
-              >
-                {live
-                  ? e.endsAt
-                    ? t('events.live_until', {
-                        time: new Intl.DateTimeFormat(dateLocale(), {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        }).format(new Date(e.endsAt)),
-                      })
-                    : t('events.cd_live')
-                  : countdownLabel(t, cd)}
-              </Text>
-            </View>
-          </Animated.View>
+          {/* Countdown banner — a cancelled event replaces it outright
+              rather than showing a countdown to something that isn't
+              happening. */}
+          {e.cancelled ? (
+            <Animated.View
+              entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
+              className="-mt-5 flex-row items-center gap-3 rounded-card border border-line bg-surface px-4 py-3"
+            >
+              <ClockIcon size={18} color="text-muted" />
+              <View className="flex-1">
+                <Text className="font-ui-semibold text-body text-text">
+                  {t('events.cancelled_title')}
+                </Text>
+                <Caption>{t('events.cancelled_body')}</Caption>
+              </View>
+            </Animated.View>
+          ) : (
+            <Animated.View
+              entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
+              className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live ? 'bg-live' : isImminent(cd) ? cls.bg : 'border border-line bg-surface'}`}
+            >
+              {live ? (
+                <PulseDot color="on-live" size={9} />
+              ) : isImminent(cd) ? (
+                <PulseDot color="on-cat" size={8} />
+              ) : (
+                <ClockIcon size={18} color={CAT_TOKEN[cat]} />
+              )}
+              <View className="flex-1">
+                <Caption
+                  className={live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : undefined}
+                >
+                  {live ? t('events.live_now') : t('events.starts_in')}
+                </Caption>
+                <Text
+                  className={`font-ui-semibold text-body ${live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : cls.text}`}
+                >
+                  {live
+                    ? e.endsAt
+                      ? t('events.live_until', {
+                          time: new Intl.DateTimeFormat(dateLocale(), {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          }).format(new Date(e.endsAt)),
+                        })
+                      : t('events.cd_live')
+                    : countdownLabel(t, cd)}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
 
           {/* The fuller sample-event sentence — sits right where the reader has
               accepted the event as real and is about to act on it. The cards
@@ -374,8 +391,16 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
         className="absolute inset-x-0 bottom-0 gap-2 border-line border-t bg-bg px-5 pt-3"
         style={{ paddingBottom: Math.max(insets.bottom, 12) }}
       >
-        <RsvpButtons e={e} rsvpState={rsvpState} size="md" />
-        {whatsapp ? (
+        {e.cancelled ? (
+          <View className="min-h-[44px] items-center justify-center rounded-pill bg-bg-sunk">
+            <Text className="font-ui-semibold text-label text-text-muted">
+              {t('events.cancelled_title')}
+            </Text>
+          </View>
+        ) : (
+          <RsvpButtons e={e} rsvpState={rsvpState} size="md" />
+        )}
+        {!e.cancelled && whatsapp ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => Linking.openURL(whatsapp).catch(() => {})}

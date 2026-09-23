@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, inArray, isNull, lt, sql } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
 
 // Push notifications over Expo's push service (M17). Unset EXPO_ACCESS_TOKEN
 // -> every send is a no-op (same "dark, not broken" convention as
@@ -10,12 +10,12 @@ const SEND_URL = 'https://exp.host/--/api/v2/push/send'
 const RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts'
 // Expo's own hard cap is 100 messages/request for /send (and 1000 ids for
 // /getReceipts, though sendPush's own queue never gets that deep between two
-// 10-minute sweeps in practice).
+// sweeps in practice).
 const BATCH_SIZE = 100
 
-const { pushTokens, notificationPrefs, pushLog, dishLists, dishes } = schema
+const { pushTokens, notificationPrefs, pushLog, dishLists, dishes, events, eventRsvps } = schema
 
-export type PushCategory = 'social' | 'plans' | 'friends' | 'dishes'
+export type PushCategory = 'social' | 'plans' | 'friends' | 'dishes' | 'events'
 
 export interface PushMessage {
   userId: string
@@ -54,6 +54,7 @@ async function enabledUserIds(userIds: string[], category: PushCategory): Promis
       plans: notificationPrefs.plans,
       friends: notificationPrefs.friends,
       dishes: notificationPrefs.dishes,
+      events: notificationPrefs.events,
     })
     .from(notificationPrefs)
     .where(inArray(notificationPrefs.userId, userIds))
@@ -188,7 +189,7 @@ export function sendPush(messages: PushMessage[]): void {
   sendPushInner(messages).catch((err) => console.error('sendPush failed', err))
 }
 
-// lib/pushSweep.ts calls this every 10 minutes. Drains whatever tickets are
+// lib/pushSweep.ts calls this every sweep. Drains whatever tickets are
 // pending, asks Expo which ones failed, and deletes the dead tokens — the
 // other half of dead-token cleanup: errors Expo can only tell you about
 // after delivery was actually attempted (app uninstalled, permission
@@ -285,4 +286,93 @@ export async function sweepDishNudges(): Promise<void> {
         due.map((d) => d.id),
       ),
     )
+}
+
+// Reminders for an event you've RSVP'd 'going' to (M22): 24h, 3h, 2h and at
+// start. Each offset is its own push_log key (`event-reminder:{id}:{ms}`),
+// so all four fire independently and none re-fires on a later tick — unlike
+// sweepDishNudges' single pushedAt column, four columns would be needed for
+// four independent "already sent" flags, so this leans on push_log's
+// (userId, key) dedupe instead, the same tool notifications.ts already uses.
+//
+// Deliberately NO quiet-hours window (contrast sweepDishNudges' 11:00–21:00):
+// "at start" for a 10pm event has to mean 10pm.
+//
+// `startsAt` due within `offsetMs` of now, but not further than
+// REMINDER_GRACE_MS past that threshold — the grace bound keeps a long sweep
+// outage (a crash-looping deploy, say) from blasting out every stale offset
+// at once when the sweep comes back, rather than requiring precise
+// tick-to-tick window math tied to the sweep interval.
+const REMINDER_OFFSETS_MS = [24 * 3600_000, 3 * 3600_000, 2 * 3600_000, 0]
+const REMINDER_GRACE_MS = 30 * 60_000
+
+export async function sweepEventReminders(): Promise<void> {
+  if (!EXPO_ACCESS_TOKEN) return
+  const now = Date.now()
+
+  for (const offsetMs of REMINDER_OFFSETS_MS) {
+    const threshold = new Date(now + offsetMs)
+    const graceFloor = new Date(now + offsetMs - REMINDER_GRACE_MS)
+
+    const due = await db
+      .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
+      .from(eventRsvps)
+      .innerJoin(events, eq(events.id, eventRsvps.eventId))
+      .where(
+        and(
+          eq(eventRsvps.status, 'going'),
+          isNull(events.cancelledAt),
+          lte(events.startsAt, threshold),
+          gt(events.startsAt, graceFloor),
+        ),
+      )
+      .limit(500)
+    if (due.length === 0) continue
+
+    sendPush(
+      due.map((d) => ({
+        userId: d.userId,
+        key: `event-reminder:${d.eventId}:${offsetMs}`,
+        category: 'events',
+        title: 'Mesa',
+        body: reminderBody(d.title, offsetMs),
+        data: { type: 'event', eventId: d.eventId },
+      })),
+    )
+  }
+}
+
+function reminderBody(title: string, offsetMs: number): string {
+  if (offsetMs === 0) return `${title} empieza ahora.`
+  if (offsetMs === 24 * 3600_000) return `${title} es mañana.`
+  return `${title} empieza en ${Math.round(offsetMs / 3600_000)}h.`
+}
+
+// A cancelled event you'd RSVP'd 'going' to, caught by polling rather than a
+// write-time hook — cancelling is a direct SQL UPDATE per docs/EVENTS.md's
+// runbook (there is no API endpoint for it), so this sweep is the only place
+// that can ever notice cancelledAt getting set. One push per (user, event)
+// ever, via push_log's dedupe — the key carries no offset, so it doesn't
+// matter how many ticks see the row as cancelled before it's pruned.
+export async function sweepEventCancellations(): Promise<void> {
+  if (!EXPO_ACCESS_TOKEN) return
+
+  const due = await db
+    .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
+    .from(eventRsvps)
+    .innerJoin(events, eq(events.id, eventRsvps.eventId))
+    .where(and(eq(eventRsvps.status, 'going'), sql`${events.cancelledAt} is not null`))
+    .limit(500)
+  if (due.length === 0) return
+
+  sendPush(
+    due.map((d) => ({
+      userId: d.userId,
+      key: `event-cancelled:${d.eventId}`,
+      category: 'events',
+      title: 'Mesa',
+      body: `${d.title} fue cancelado.`,
+      data: { type: 'event', eventId: d.eventId },
+    })),
+  )
 }

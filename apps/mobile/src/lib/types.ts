@@ -748,4 +748,9 @@ export interface EventSummary {
   // optional like savedByMe: the API ships this column before any client
   // build reaches testers, so there is no in-the-wild API missing it.
   venueConfirmed: boolean
+  // Only GET /events/:id ever sets this (M22) — every list endpoint already
+  // filters cancelled events out of its rows, so it never needs the field.
+  // True means the member holds an RSVP on an event that's since been
+  // cancelled; see docs/EVENTS.md.
+  cancelled?: boolean
 }

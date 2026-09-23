@@ -1,0 +1,1 @@
+ALTER TABLE "notification_prefs" ADD COLUMN "events" boolean DEFAULT true NOT NULL;

@@ -19,10 +19,11 @@ const prefsSchema = z
     plans: z.boolean().optional(),
     friends: z.boolean().optional(),
     dishes: z.boolean().optional(),
+    events: z.boolean().optional(),
   })
   .refine((b) => Object.keys(b).length > 0, { message: 'at least one field required' })
 
-const DEFAULT_PREFS = { social: true, plans: true, friends: true, dishes: true }
+const DEFAULT_PREFS = { social: true, plans: true, friends: true, dishes: true, events: true }
 
 export const notificationsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -64,7 +65,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const row = await db.query.notificationPrefs.findFirst({
       where: eq(notificationPrefs.userId, me.id),
-      columns: { social: true, plans: true, friends: true, dishes: true },
+      columns: { social: true, plans: true, friends: true, dishes: true, events: true },
     })
     return c.json(row ?? DEFAULT_PREFS)
   })
@@ -86,6 +87,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
         plans: notificationPrefs.plans,
         friends: notificationPrefs.friends,
         dishes: notificationPrefs.dishes,
+        events: notificationPrefs.events,
       })
     return c.json(row ?? DEFAULT_PREFS)
   })

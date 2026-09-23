@@ -254,7 +254,45 @@ export const eventsRoutes = new Hono<AuthedEnv>()
     return c.json({ events: await withFriendsGoing(me, rows) })
   })
 
-  // One event's detail — app/events/[eventId].tsx.
+  // My "going" RSVPs — what I've actually committed to, ascending by start
+  // time. 'interested' doesn't appear here: it isn't a commitment, and
+  // event reminders (lib/push.ts's sweepEventReminders) only fire for
+  // 'going' too. Registered before /:id, same reason /saved is.
+  .get('/mine', async (c) => {
+    const me = c.get('user')
+
+    const rows = await db
+      .select({
+        ...eventCols,
+        neighborhood: neighborhoods.name,
+        myStatus: eventRsvps.status,
+        savedByMe,
+      })
+      .from(eventRsvps)
+      .innerJoin(events, eq(events.id, eventRsvps.eventId))
+      .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
+      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+      .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
+      .where(
+        and(
+          eq(eventRsvps.userId, me.id),
+          eq(eventRsvps.status, 'going'),
+          isNull(events.cancelledAt),
+          notEnded,
+        ),
+      )
+      .orderBy(asc(events.startsAt))
+
+    return c.json({ events: await withFriendsGoing(me, rows) })
+  })
+
+  // One event's detail — app/events/[eventId].tsx. Unlike every other read
+  // here, a cancelled event is NOT filtered out at the WHERE clause: it's
+  // filtered per-row below, so a member holding an RSVP can still open the
+  // event a cancellation push sent them to (docs/EVENTS.md's "stays
+  // reachable by anyone who already RSVP'd" — the WHERE-clause version of
+  // this endpoint silently broke that promise). Everyone else still gets a
+  // plain 404, same as before.
   .get('/:id', async (c) => {
     const me = c.get('user')
     const id = c.req.param('id')
@@ -266,18 +304,20 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         neighborhood: neighborhoods.name,
         myStatus: eventRsvps.status,
         savedByMe,
+        cancelledAt: events.cancelledAt,
       })
       .from(events)
       .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
       .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
-      .where(and(eq(events.id, id), isNull(events.cancelledAt)))
+      .where(eq(events.id, id))
       .limit(1)
-    if (!row) return c.json({ error: 'not_found' }, 404)
+    if (!row || (row.cancelledAt && !row.myStatus)) return c.json({ error: 'not_found' }, 404)
 
-    const [shaped] = await withFriendsGoing(me, [row])
-    return c.json({ event: shaped })
+    const { cancelledAt, ...rest } = row
+    const [shaped] = await withFriendsGoing(me, [rest])
+    return c.json({ event: { ...shaped, cancelled: cancelledAt !== null } })
   })
 
   // Set (or change) my RSVP. Idempotent: re-sending the same status is a
@@ -328,7 +368,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         interested.map((i) => ({
           userId: i.userId,
           key: `event-going:${eventId}:${me.id}`,
-          category: 'friends',
+          category: 'events',
           title: 'Mesa',
           body: `${me.name || 'Alguien'} va a ${found.title}`,
           data: { type: 'event', eventId },
@@ -344,6 +384,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
   .delete('/:id/rsvp', async (c) => {
     const me = c.get('user')
     const eventId = c.req.param('id')
+    if (!z.string().uuid().safeParse(eventId).success) return c.json({ error: 'not_found' }, 404)
     await db
       .delete(eventRsvps)
       .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, me.id)))
