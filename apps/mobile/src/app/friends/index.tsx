@@ -37,6 +37,10 @@ function reasonLine(t: ReturnType<typeof useT>, reason: SuggestionReason): strin
   return t('friends.reason_popular')
 }
 
+// Half the route's own 2000 cap — headroom for a long address book without
+// either side having to think about the limit again.
+const CONTACTS_BATCH = 1000
+
 function ContactsCard() {
   const t = useT()
   const queryClient = useQueryClient()
@@ -90,21 +94,36 @@ function ContactsCard() {
         setContactMsg(t('friends.contacts_denied'))
         return
       }
+      // Keyed on the TRIMMED number, because that's what gets sent and what
+      // the route echoes back on each match — keying on the raw string left
+      // every contact whose number had a stray space looked up as ''.
       const nameByPhone = new Map<string, string>()
-      const phones: string[] = []
       for (const contact of result.contacts) {
         for (const p of contact.phoneNumbers) {
-          phones.push(p)
-          if (!nameByPhone.has(p)) nameByPhone.set(p, contact.name)
+          const key = p.trim()
+          if (key && !nameByPhone.has(key)) nameByPhone.set(key, contact.name)
         }
       }
+      // Dedupe across contacts (the same number saved on two people used to
+      // be sent twice) and drop what the route's own validator would refuse,
+      // then send in batches under its 2000 cap. A real address book runs
+      // past both limits, and ONE oversized entry — or one number too many —
+      // 400'd the entire request, which surfaced as "couldn't search your
+      // contacts" with the feature simply dead. That cap exists to bound the
+      // body size, "not to reject anyone's actual address book" (the route's
+      // own words, apps/api/src/routes/social.ts).
+      const phones = [...nameByPhone.keys()].filter((p) => p.length <= 32)
       if (phones.length === 0) {
         setContactMsg(t('friends.contacts_none_found'))
         return
       }
-      const { matches: found } = await api.post<{
-        matches: (ContactMatchUser & { phone: string })[]
-      }>('/social/contacts/match', { phones })
+      const found: (ContactMatchUser & { phone: string })[] = []
+      for (let i = 0; i < phones.length; i += CONTACTS_BATCH) {
+        const res = await api.post<{
+          matches: (ContactMatchUser & { phone: string })[]
+        }>('/social/contacts/match', { phones: phones.slice(i, i + CONTACTS_BATCH) })
+        found.push(...res.matches)
+      }
       setMatches(
         found.map((m) => ({
           user: { id: m.id, name: m.name, handle: m.handle, image: m.image },

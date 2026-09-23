@@ -45,11 +45,14 @@ export async function autocomplete(
       },
       body: JSON.stringify({
         input: q,
-        // No includedRegionCodes (M23) — that's a hard filter, not a bias,
-        // and Mesa's own members travel: someone logging a place they ate at
-        // in Miami or Madrid should find it here too. regionCode below is
-        // just a formatting hint (phone/unit conventions), not a country
-        // restriction, so it stays.
+        // Dominican Republic only (founder's call after testing worldwide on
+        // device). includedRegionCodes IS a hard filter, unlike regionCode
+        // below, which is only a formatting hint (phone/unit conventions).
+        // This deliberately reverses M23's "members travel, let them log a
+        // place from Miami or Madrid" reasoning: Mesa's first objective is
+        // SDQ, and foreign results were mostly noise in the Explore search
+        // bar. Widening it again later is this one line.
+        includedRegionCodes: ['do'],
         includedPrimaryTypes: ['restaurant', 'bar', 'night_club', 'cafe'],
         languageCode: 'es',
         regionCode: 'do',

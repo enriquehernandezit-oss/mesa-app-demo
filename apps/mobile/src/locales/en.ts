@@ -58,6 +58,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.switch_to_signup': 'New here? Create an account',
   'auth.or_divider': 'or',
   'auth.apple_error': "Couldn't sign in with Apple.",
+  'auth.google_button': 'Sign in with Google',
+  'auth.google_error': "Couldn't sign in with Google.",
   'auth.signup_generic_error': "Couldn't create the account.",
 
   'auth.reset_title': 'Reset password',

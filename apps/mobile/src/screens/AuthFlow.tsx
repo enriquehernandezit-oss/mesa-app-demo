@@ -1,3 +1,4 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useEffect, useRef, useState } from 'react'
 import {
@@ -17,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { track } from '@/lib/analytics'
@@ -42,8 +44,11 @@ function BlinkingCursor() {
   )
 }
 
-// Sign-in — email + password (the launch method) plus Sign in with Apple, shown
-// with equal prominence per App Store 4.8. There is no Instagram sign-in button
+// Sign-in — email + password (the launch method) plus Sign in with Apple and
+// Google, Apple shown with equal prominence per App Store 4.8 (both are native
+// id-token flows, so a `false` GoogleSignin.signIn() cancel and Apple's thrown
+// ERR_REQUEST_CANCELED are the same non-error case, just surfaced differently
+// by each SDK). There is no Instagram sign-in button
 // here: Instagram is wired server-side (Better Auth) but never surfaced as a
 // login method in this app — the @usuario field in onboarding is a display
 // handle only, which can be, but doesn't have to be, someone's Instagram
@@ -51,6 +56,14 @@ function BlinkingCursor() {
 // apps/app/src/screens/AuthFlow.tsx.
 type AuthClientError = { code?: string; message?: string; status?: number }
 const NETWORK_ERROR: AuthClientError = { message: 'network' }
+
+// Build-time constant (Metro inlines EXPO_PUBLIC_* at bundle time), not a
+// runtime probe like Apple's isAvailableAsync() — so no state/effect needed
+// just to know whether the button should render. Unset -> the Google button
+// doesn't render and the SDK is never configured, the same graceful-dark
+// posture as PostHog (see app.config.js).
+const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+const googleAvailable = Boolean(googleIosClientId)
 
 export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const t = useT()
@@ -70,6 +83,11 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
     AppleAuthentication.isAvailableAsync()
       .then(setAppleAvailable)
       .catch(() => setAppleAvailable(false))
+  }, [])
+
+  // Configure once, synchronously — the SDK has no async init to await.
+  useEffect(() => {
+    if (googleIosClientId) GoogleSignin.configure({ iosClientId: googleIosClientId })
   }, [])
 
   async function appleAuth() {
@@ -104,6 +122,38 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       if ((e as { code?: string }).code !== 'ERR_REQUEST_CANCELED') {
         setError(t('auth.apple_error'))
       }
+    }
+  }
+
+  async function googleAuth() {
+    setError(null)
+    try {
+      const result = await GoogleSignin.signIn()
+      // Cancelling the sheet isn't an error — same treatment as Apple's
+      // ERR_REQUEST_CANCELED below, just surfaced as a response type here
+      // instead of a thrown error.
+      if (result.type === 'cancelled') return
+      if (!result.data.idToken) {
+        setError(t('auth.google_error'))
+        return
+      }
+      // Native id-token sign-in: the server verifies the token's audience
+      // against auth.ts's `google.clientId` list (this app's iOS client is
+      // one of them) — no web redirect, no deep link, same shape as Apple.
+      setBusy(true)
+      const res = await authClient.signIn
+        .social({ provider: 'google', idToken: { token: result.data.idToken } })
+        .catch(() => ({ error: NETWORK_ERROR }))
+      setBusy(false)
+      if ('error' in res && res.error) {
+        setError(authErrorMessage(res.error, t('auth.google_error')))
+        return
+      }
+      track('signed_in', { method: 'google' })
+      queryClient.invalidateQueries({ queryKey: ['session'] })
+    } catch {
+      setBusy(false)
+      setError(t('auth.google_error'))
     }
   }
 
@@ -294,25 +344,32 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                 {mode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
               </Button>
 
+              {((Platform.OS === 'ios' && appleAvailable) || googleAvailable) && (
+                <View className="my-1 flex-row items-center gap-3">
+                  <View className="h-px flex-1 bg-line" />
+                  <Caption className="text-micro">{t('auth.or_divider')}</Caption>
+                  <View className="h-px flex-1 bg-line" />
+                </View>
+              )}
               {Platform.OS === 'ios' && appleAvailable && (
-                <>
-                  <View className="my-1 flex-row items-center gap-3">
-                    <View className="h-px flex-1 bg-line" />
-                    <Caption className="text-micro">{t('auth.or_divider')}</Caption>
-                    <View className="h-px flex-1 bg-line" />
-                  </View>
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                    buttonStyle={
-                      theme === 'candlelit'
-                        ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                        : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                    }
-                    cornerRadius={14}
-                    style={{ height: 52, width: '100%' }}
-                    onPress={appleAuth}
-                  />
-                </>
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                  buttonStyle={
+                    theme === 'candlelit'
+                      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                  }
+                  cornerRadius={26}
+                  style={{ height: 52, width: '100%' }}
+                  onPress={appleAuth}
+                />
+              )}
+              {googleAvailable && (
+                <GoogleSignInButton
+                  label={t('auth.google_button')}
+                  onPress={googleAuth}
+                  disabled={busy}
+                />
               )}
             </View>
           </Pressable>

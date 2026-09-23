@@ -62,6 +62,8 @@ export const es = {
   'auth.switch_to_signup': '¿Nuevo aquí? Crea una cuenta',
   'auth.or_divider': 'o',
   'auth.apple_error': 'No se pudo iniciar con Apple.',
+  'auth.google_button': 'Continuar con Google',
+  'auth.google_error': 'No se pudo iniciar con Google.',
   'auth.signup_generic_error': 'No se pudo crear la cuenta.',
 
   // app/reset-password.tsx
