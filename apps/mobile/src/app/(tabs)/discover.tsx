@@ -1,8 +1,8 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, useRouter } from 'expo-router'
-import { memo, useCallback } from 'react'
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
+import { memo, useCallback, useRef } from 'react'
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
 import { CheersButton } from '@/components/CheersButton'
@@ -29,6 +29,7 @@ import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
+import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { cuisineLabel, listAuthorLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
@@ -85,70 +86,72 @@ export default function DiscoverTab() {
     [],
   )
 
+  // One persistent FlatList, not a `feed.isPending ? <ScrollView/> : ...`
+  // ternary across FOUR branches (M23) — that swapped element TYPE on every
+  // load-state change, which loses whatever ref/scroll-position a plain
+  // re-render would otherwise have kept, the same failure mode rankings.tsx
+  // already worked around (see its own comment on skipLayoutAnimRef's
+  // neighbor). A stable ref is also what scroll-to-top-on-tab-press needs.
+  const listRef = useRef<FlatList<FeedItem>>(null)
+  useResetOnTabPress(
+    useCallback(() => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true })
+      // onRefresh (not a bare feed.refetch()) so the pull-to-refresh spinner
+      // itself briefly shows — the same visible "it reloaded" cue a manual
+      // pull already gives, not just a silent background refetch.
+      onRefresh()
+    }, [onRefresh]),
+  )
+
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
-      {feed.isPending ? (
-        <ScrollView
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-        >
-          <FeedHeader />
-          <FeedSkeleton />
-        </ScrollView>
-      ) : feed.isError ? (
-        <ScrollView
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
-          }
-        >
-          <FeedHeader />
-          <ErrorState onRetry={() => feed.refetch()}>{t('discover.load_error')}</ErrorState>
-        </ScrollView>
-      ) : items.length === 0 ? (
-        <ScrollView
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
-          }
-        >
-          <FeedHeader />
-          <EmptyFeed />
-        </ScrollView>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(item) => item.rankingId}
-          renderItem={renderFeedItem}
-          ListHeaderComponent={
-            <>
-              <FeedHeader />
-              <ListsRail />
-              <EventsRail />
-            </>
-          }
-          contentContainerClassName="px-5"
-          contentContainerStyle={{ paddingBottom: tabBarClearance }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
-          }
-          // Without this a 2-item feed can't be pulled — there's nothing to
-          // overscroll — so a new member has no way to refresh.
-          alwaysBounceVertical
-          indicatorStyle={indicator}
-          onEndReachedThreshold={0.5}
-          onEndReached={() => {
-            if (feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
-          }}
-          ListFooterComponent={
-            feed.isFetchingNextPage ? <Body className="py-4 text-center">…</Body> : null
-          }
-        />
-      )}
+      <FlatList
+        ref={listRef}
+        data={items}
+        keyExtractor={(item) => item.rankingId}
+        renderItem={renderFeedItem}
+        ListHeaderComponent={
+          <>
+            <FeedHeader />
+            {/* Same condition the old loaded-only branch rendered these
+                under — a rail tied to a still-pending/failed/empty feed
+                isn't worth showing. */}
+            {feed.isSuccess && items.length > 0 ? (
+              <>
+                <ListsRail />
+                <EventsRail />
+              </>
+            ) : null}
+          </>
+        }
+        ListEmptyComponent={
+          feed.isPending ? (
+            <FeedSkeleton />
+          ) : feed.isError ? (
+            <ErrorState onRetry={() => feed.refetch()}>{t('discover.load_error')}</ErrorState>
+          ) : (
+            <EmptyFeed />
+          )
+        }
+        contentContainerClassName="px-5"
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
+        }
+        // Without this a 2-item feed can't be pulled — there's nothing to
+        // overscroll — so a new member has no way to refresh.
+        alwaysBounceVertical
+        indicatorStyle={indicator}
+        onEndReachedThreshold={0.5}
+        onEndReached={() => {
+          if (feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
+        }}
+        ListFooterComponent={
+          feed.isFetchingNextPage ? <Body className="py-4 text-center">…</Body> : null
+        }
+      />
     </View>
   )
 }

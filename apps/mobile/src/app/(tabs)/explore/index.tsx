@@ -23,6 +23,7 @@ import { CloseIcon, PinIcon, SortIcon } from '@/components/ui/icons'
 import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
+import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
@@ -317,6 +318,20 @@ export default function ExploreScreen() {
     [lang, c, params.focus, router],
   )
 
+  // Explore is nested one level inside its own Stack (explore/_layout.tsx),
+  // so { nested: true } — see the hook's own header for why a plain
+  // useNavigation() here would never see the tabPress event at all. One
+  // scroll ref covers both Places and Events: they share this same
+  // ScrollView, only toggled by display (see the comment below).
+  const scrollRef = useRef<ScrollView>(null)
+  useResetOnTabPress(
+    useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: true })
+      onRefresh()
+    }, [onRefresh]),
+    { nested: true },
+  )
+
   return (
     <View className="flex-1 bg-bg">
       {/* Search lives in the navigation bar, not the page: UIKit owns the field,
@@ -324,6 +339,7 @@ export default function ExploreScreen() {
           right action. */}
       <Stack.Screen options={headerOptions} />
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}

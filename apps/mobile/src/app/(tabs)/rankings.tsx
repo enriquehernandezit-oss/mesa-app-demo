@@ -37,6 +37,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { cuisineLabel, displayScore, priceLabel, tagLabel } from '@/lib/display'
 import { tapLight } from '@/lib/haptics'
@@ -403,6 +404,32 @@ export default function RankingsTab() {
           ? goingEventsQuery
           : savedEventsQuery
 
+  // Three refs, not one (M23) — Mine/Saved/Barrios are three ALWAYS-mounted
+  // lists (see the comment above on why), so a tab-bar press has to know
+  // which one is actually visible right now and scroll only that one.
+  // Barrios has no query of its own; it's `mine`'s data regrouped, so it
+  // reloads the same source. Mine already has a RefreshControl (onRefresh
+  // below), so it reuses that for the same visible-spinner reason
+  // discover.tsx and explore/index.tsx do; Saved and Barrios have none today,
+  // so their reload is a plain silent refetch.
+  const mineListRef = useRef<FlatList<Ranking>>(null)
+  const savedListRef = useRef<FlatList<SavedItem>>(null)
+  const barriosScrollRef = useRef<ScrollView>(null)
+  useResetOnTabPress(
+    useCallback(() => {
+      if (tab === 'mine') {
+        mineListRef.current?.scrollToOffset({ offset: 0, animated: true })
+        onRefresh()
+      } else if (tab === 'saved') {
+        savedListRef.current?.scrollToOffset({ offset: 0, animated: true })
+        activeSaved.refetch()
+      } else {
+        barriosScrollRef.current?.scrollTo({ y: 0, animated: true })
+        mine.refetch()
+      }
+    }, [tab, onRefresh, activeSaved, mine]),
+  )
+
   return (
     <View className="flex-1 bg-bg">
       <TopBar variant="discover" />
@@ -414,6 +441,7 @@ export default function RankingsTab() {
           ListEmptyComponent) on every single Mía/Quiero probar/Sectores tap.
           All three stay mounted now; only the active one is visible. */}
       <FlatList
+        ref={mineListRef}
         style={{ display: tab === 'mine' ? 'flex' : 'none' }}
         data={processed}
         keyExtractor={(r) => r.id}
@@ -477,6 +505,7 @@ export default function RankingsTab() {
           visible, and virtualized (a real FlatList, not a ScrollView.map)
           now that a save-heavy member's list can run long. */}
       <FlatList
+        ref={savedListRef}
         style={{ display: tab === 'saved' ? 'flex' : 'none' }}
         data={savedItems}
         keyExtractor={(it) => `${it.kind}-${it.key}`}
@@ -550,6 +579,7 @@ export default function RankingsTab() {
         showsVerticalScrollIndicator={false}
       />
       <ScrollView
+        ref={barriosScrollRef}
         style={{ display: tab === 'barrios' ? 'flex' : 'none' }}
         indicatorStyle={indicator}
         contentContainerClassName="px-5"

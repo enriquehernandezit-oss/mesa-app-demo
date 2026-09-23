@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 import { useTabBarClearance } from '@/components/MesaTabBar'
@@ -24,6 +24,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
+import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
@@ -170,6 +171,21 @@ export default function ProfileTab() {
   })
   const pendingPlans = (plans.data?.plans ?? []).filter(isPendingInvite).length
 
+  // Called before the `editing` branch below so the hook itself is always
+  // registered (rules of hooks) — while actually editing, viewScrollRef is
+  // unmounted, so the scroll call is a harmless no-op and only the
+  // background refetch fires. No RefreshControl exists on this screen
+  // today, so unlike discover.tsx/explore's onRefresh reuse, this is a
+  // silent refetch — same posture as rankings.tsx's Saved/Barrios tabs.
+  const viewScrollRef = useRef<ScrollView>(null)
+  useResetOnTabPress(
+    useCallback(() => {
+      viewScrollRef.current?.scrollTo({ y: 0, animated: true })
+      stats.refetch()
+      rankings.refetch()
+    }, [stats, rankings]),
+  )
+
   if (editing) {
     return <EditProfile onClose={() => setEditing(false)} />
   }
@@ -225,6 +241,7 @@ export default function ProfileTab() {
     <View className="flex-1 bg-bg">
       <TopBar variant="profile" title={p?.name || t('common.you')} shareHandle={p?.handle} />
       <ScrollView
+        ref={viewScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
