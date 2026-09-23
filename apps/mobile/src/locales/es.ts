@@ -146,6 +146,8 @@ export const es = {
   'friends.reason_mutual': { one: 'Lo sigue {name}', other: 'Lo siguen {name} y {n} más' },
   'friends.reason_taste': '{n}% de gustos en común',
   'friends.reason_popular': 'Popular en Mesa',
+  'friends.not_interested_label': 'No me interesa',
+  'friends.dismiss_error': 'No se pudo descartar. Intenta de nuevo.',
 
   // Contactos card (M18)
   'friends.contacts_title': 'Contactos',

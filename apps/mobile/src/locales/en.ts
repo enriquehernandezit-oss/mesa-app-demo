@@ -135,6 +135,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'friends.reason_mutual': { one: '{name} follows them', other: '{name} and {n} more follow them' },
   'friends.reason_taste': '{n}% taste match',
   'friends.reason_popular': 'Popular on Mesa',
+  'friends.not_interested_label': 'Not interested',
+  'friends.dismiss_error': "Couldn't dismiss. Try again.",
 
   // Contacts card (M18)
   'friends.contacts_title': 'Contacts',

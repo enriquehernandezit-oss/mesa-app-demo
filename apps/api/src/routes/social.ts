@@ -288,21 +288,36 @@ export const socialRoutes = new Hono<AuthedEnv>()
     return c.json({ users })
   })
 
-  // Find-friends suggestions (M18) — richer than /onboarding/suggested-
-  // friends (which stays as-is for onboarding and the empty feed): every row
-  // here carries a `reason` the client renders as the subtitle. Three fixed
-  // queries, each already excluding me/who I follow/banned/blocked, merged
-  // in priority order (mutuals > similar taste > popular) with a JS-side
-  // dedup — a person who'd qualify for more than one reason only shows once,
-  // under the most specific one.
+  // Find-friends suggestions (M18, rescored M9) — richer than /onboarding/
+  // suggested-friends (which stays as-is for onboarding and the empty feed):
+  // every row here carries a `reason` the client renders as the subtitle.
+  // Three fixed queries, each already excluding me/who I follow/dismissed/
+  // banned/blocked — but unlike the old version, they're not disjoint
+  // LIMITed tiers concatenated and deduped; each pulls a wide-ish candidate
+  // POOL, and a candidate who shows up in more than one gets every signal it
+  // qualified for. One real ranking falls out of that: mutual-follower count
+  // first (Instagram's actual signal — friends-of-friends overlap), taste
+  // match as a tie-break, then whether they have any followers at all as the
+  // last tail fallback. `reason` on the response is just whichever of those
+  // three is the *strongest* one this candidate has, so the copy is
+  // unchanged from before — only the ranking underneath it is real now.
   .get('/suggestions', async (c) => {
     const me = c.get('user')
     const myFollows = followingIds(me.id)
+    const dismissed = db
+      .select({ id: schema.friendSuggestionDismissals.dismissedUserId })
+      .from(schema.friendSuggestionDismissals)
+      .where(eq(schema.friendSuggestionDismissals.userId, me.id))
     const notBanned = isNull(schema.user.bannedAt)
     const notBlocked = [
       notInArray(schema.user.id, blockedByMe(me.id)),
       notInArray(schema.user.id, blockedMe(me.id)),
     ]
+    // Wider than the old per-tier 8/8/10 LIMITs on purpose: a candidate with
+    // a so-so mutual count but a great taste match (or vice versa) has to
+    // appear in BOTH pools for their combined score to reflect that. Still
+    // bounded — not a full-table scan — since each is its own ORDER BY LIMIT.
+    const POOL = 30
 
     // Mutuals: people followed by people I follow.
     const mutualRows = await db
@@ -322,17 +337,18 @@ export const socialRoutes = new Hono<AuthedEnv>()
           inArray(schema.follows.followerId, myFollows),
           ne(schema.follows.followingId, me.id),
           notInArray(schema.follows.followingId, myFollows),
+          notInArray(schema.follows.followingId, dismissed),
           notBanned,
           ...notBlocked,
         ),
       )
       .groupBy(schema.user.id, schema.neighborhoods.name)
       .orderBy(sql`count(distinct ${schema.follows.followerId}) desc`)
-      .limit(8)
+      .limit(POOL)
 
     // One sample mutual-friend name per candidate above, for "Lo sigue(n) X
-    // (y N más)" — a single extra query over all 8 candidates at once, not
-    // one per candidate.
+    // (y N más)" — a single extra query over the whole pool at once, not one
+    // per candidate.
     const mutualIds = mutualRows.map((r) => r.id)
     const sampleMutualFriend = new Map<string, string>()
     if (mutualIds.length > 0) {
@@ -381,6 +397,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
           eq(mine.userId, me.id),
           ne(schema.rankings.userId, me.id),
           notInArray(schema.rankings.userId, myFollows),
+          notInArray(schema.rankings.userId, dismissed),
           notBanned,
           ...notBlocked,
         ),
@@ -388,10 +405,12 @@ export const socialRoutes = new Hono<AuthedEnv>()
       .groupBy(schema.user.id, schema.neighborhoods.name)
       .having(sql`count(*) >= 3`)
       .orderBy(sql`avg(abs(${mine.score} - ${schema.rankings.score})) asc`)
-      .limit(8)
+      .limit(POOL)
 
-    // Popular: same shape as /onboarding/suggested-friends, as a fallback
-    // once mutuals and taste run out.
+    // Popular: the tail fallback once mutuals and taste run out. No longer
+    // requires a handle (M9) — mutual/taste never did either, and a null
+    // handle doesn't stop `name` from rendering, so the filter was just an
+    // inconsistency, not a real eligibility rule.
     const popularRows = await db
       .select({
         id: schema.user.id,
@@ -399,6 +418,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
         handle: schema.user.handle,
         image: schema.user.image,
         neighborhood: schema.neighborhoods.name,
+        followerCount: sql<number>`count(${schema.follows.followerId})::int`,
       })
       .from(schema.user)
       .leftJoin(schema.neighborhoods, eq(schema.neighborhoods.id, schema.user.neighborhoodId))
@@ -406,71 +426,118 @@ export const socialRoutes = new Hono<AuthedEnv>()
       .where(
         and(
           ne(schema.user.id, me.id),
-          sql`${schema.user.handle} is not null`,
           notInArray(schema.user.id, myFollows),
+          notInArray(schema.user.id, dismissed),
           notBanned,
           ...notBlocked,
         ),
       )
       .groupBy(schema.user.id, schema.neighborhoods.name)
       .orderBy(sql`count(${schema.follows.followerId}) desc`)
-      .limit(10)
+      .limit(POOL)
 
-    const seen = new Set<string>()
-    const suggestions: {
+    type Candidate = {
       id: string
       name: string
       handle: string | null
       image: string | null
       neighborhood: string | null
-      reason:
-        | { kind: 'mutual'; name: string; extraCount: number }
-        | { kind: 'taste'; percent: number }
-        | { kind: 'popular' }
-    }[] = []
+      mutualCount: number
+      mutualFriendName: string | null
+      tasteScore: number | null
+      followerCount: number
+    }
+    const byId = new Map<string, Candidate>()
+    function candidate(r: {
+      id: string
+      name: string
+      handle: string | null
+      image: string | null
+      neighborhood: string | null
+    }): Candidate {
+      const existing = byId.get(r.id)
+      if (existing) return existing
+      const fresh: Candidate = {
+        id: r.id,
+        name: r.name,
+        handle: r.handle,
+        image: r.image,
+        neighborhood: r.neighborhood,
+        mutualCount: 0,
+        mutualFriendName: null,
+        tasteScore: null,
+        followerCount: 0,
+      }
+      byId.set(r.id, fresh)
+      return fresh
+    }
 
     for (const r of mutualRows) {
-      if (seen.has(r.id)) continue
       const name = sampleMutualFriend.get(r.id)
       if (!name) continue // no follow row survived the block filter above
-      seen.add(r.id)
-      suggestions.push({
-        id: r.id,
-        name: r.name,
-        handle: r.handle,
-        image: r.image,
-        neighborhood: r.neighborhood,
-        reason: { kind: 'mutual', name, extraCount: Math.max(0, r.mutualCount - 1) },
-      })
+      const cand = candidate(r)
+      cand.mutualCount = r.mutualCount
+      cand.mutualFriendName = name
     }
     for (const r of tasteRows) {
-      if (seen.has(r.id)) continue
       const percent = tasteMatch(r.avgGap, r.shared)
       if (percent == null) continue
-      seen.add(r.id)
-      suggestions.push({
-        id: r.id,
-        name: r.name,
-        handle: r.handle,
-        image: r.image,
-        neighborhood: r.neighborhood,
-        reason: { kind: 'taste', percent },
-      })
+      candidate(r).tasteScore = percent
     }
     for (const r of popularRows) {
-      if (seen.has(r.id)) continue
-      seen.add(r.id)
-      suggestions.push({
-        id: r.id,
-        name: r.name,
-        handle: r.handle,
-        image: r.image,
-        neighborhood: r.neighborhood,
-        reason: { kind: 'popular' },
-      })
+      candidate(r).followerCount = r.followerCount
     }
 
-    return c.json({ users: suggestions.slice(0, 20) })
+    const suggestions = [...byId.values()]
+      .sort(
+        (a, b) =>
+          b.mutualCount - a.mutualCount ||
+          (b.tasteScore ?? -1) - (a.tasteScore ?? -1) ||
+          b.followerCount - a.followerCount,
+      )
+      .slice(0, 20)
+      .map((cand) => ({
+        id: cand.id,
+        name: cand.name,
+        handle: cand.handle,
+        image: cand.image,
+        neighborhood: cand.neighborhood,
+        reason:
+          cand.mutualCount > 0
+            ? {
+                kind: 'mutual' as const,
+                name: cand.mutualFriendName as string,
+                extraCount: Math.max(0, cand.mutualCount - 1),
+              }
+            : cand.tasteScore != null
+              ? { kind: 'taste' as const, percent: cand.tasteScore }
+              : { kind: 'popular' as const },
+      }))
+
+    return c.json({ users: suggestions })
+  })
+
+  // "Not interested" (M9) — the one thing the old three-tier version had no
+  // way to express: a rejected suggestion returned forever. Permanent, no
+  // undo surfaced anywhere. Idempotent, same onConflictDoNothing shape as
+  // POST /follow.
+  .post('/suggestions/:userId/dismiss', async (c) => {
+    const me = c.get('user')
+    const dismissedUserId = c.req.param('userId')
+    if (dismissedUserId === me.id) return c.json({ error: 'invalid_target' }, 400)
+
+    const target = await db.query.user.findFirst({
+      where: eq(schema.user.id, dismissedUserId),
+      columns: { id: true },
+    })
+    if (!target) return c.json({ error: 'not_found' }, 404)
+
+    await db
+      .insert(schema.friendSuggestionDismissals)
+      .values({ userId: me.id, dismissedUserId })
+      .onConflictDoNothing()
+
+    return c.json({ ok: true })
   })
 
   // Who the target follows (me by default, or ?userId=). The mirror of

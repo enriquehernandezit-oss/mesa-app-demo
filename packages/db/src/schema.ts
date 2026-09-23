@@ -1004,6 +1004,29 @@ export const userBlocks = pgTable(
   ],
 )
 
+// "Not interested" on a friend suggestion (M9) — suggestions are computed on
+// the fly and never persisted, so there's no owned row to hang a dismissedAt
+// column on the way dish_lists does; this follows follows/user_blocks' own
+// junction shape instead. GET /social/suggestions excludes anyone in here;
+// permanent, no undo surfaced anywhere.
+export const friendSuggestionDismissals = pgTable(
+  'friend_suggestion_dismissals',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    dismissedUserId: text('dismissed_user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.dismissedUserId] }),
+    index('friend_suggestion_dismissals_dismissed_idx').on(t.dismissedUserId),
+    check('friend_suggestion_dismissals_no_self', sql`${t.userId} <> ${t.dismissedUserId}`),
+  ],
+)
+
 // ── Growth: invites ──────────────────────────────────────────────────────
 
 // Invites. Deliberately NOT scarce: one permanent, reusable code per member,

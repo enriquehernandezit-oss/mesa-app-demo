@@ -15,6 +15,7 @@ import {
   Toggle,
 } from '@/components/ui'
 import { ChevronIcon, ShareIcon } from '@/components/ui/icons'
+import { toast } from '@/components/ui/toast-store'
 import { useInviteLink } from '@/hooks/useInviteLink'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
@@ -214,12 +215,25 @@ function InstagramCard() {
 
 export default function FriendsScreen() {
   const t = useT()
+  const queryClient = useQueryClient()
   const invite = useInviteLink()
   const suggested = useQuery({
     queryKey: ['suggestions'],
     queryFn: () => api.get<{ users: FriendSuggestion[] }>('/social/suggestions'),
   })
   const users = suggested.data?.users ?? []
+  // "Not interested" (M9) — one shared mutation for the whole list, same
+  // reasoning as collections/[collectionId].tsx's removeItem: disables every
+  // row's ✕ while ANY is mid-request rather than tracking per-row pending
+  // state, so a fast double-tap can't fire two overlapping dismisses.
+  const dismiss = useMutation({
+    mutationFn: (userId: string) => api.post(`/social/suggestions/${userId}/dismiss`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
+    onError: (err) => {
+      captureError(err, 'friends.dismissSuggestion')
+      toast({ variant: 'error', message: t('friends.dismiss_error') })
+    },
+  })
 
   return (
     <ScrollView
@@ -264,7 +278,23 @@ export default function FriendsScreen() {
               key={u.id}
               user={u}
               subtitle={reasonLine(t, u.reason)}
-              right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
+              right={
+                <View className="flex-row items-center gap-2">
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('friends.not_interested_label')}
+                    accessibilityState={{ disabled: dismiss.isPending }}
+                    hitSlop={10}
+                    onPress={() => {
+                      if (!dismiss.isPending) dismiss.mutate(u.id)
+                    }}
+                    className="min-h-[32px] min-w-[32px] items-center justify-center"
+                  >
+                    <Text className="font-ui text-body text-text-muted">✕</Text>
+                  </Pressable>
+                  <FollowPill userId={u.id} initial={false} from="find_friends" />
+                </View>
+              }
               last={i === users.length - 1}
             />
           ))}
