@@ -227,6 +227,7 @@ export const es = {
   'dish.publishing': 'Publicando…',
   'dish.publish_button': 'Publicar plato',
   'dish.post_error': 'No se pudo publicar el plato.',
+  'dish.posted_toast': 'Plato publicado',
   'dish.discard_title': '¿Descartar este plato?',
   'dish.discard_button': 'Descartar',
 

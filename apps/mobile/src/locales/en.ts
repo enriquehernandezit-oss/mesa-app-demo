@@ -215,6 +215,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'dish.publishing': 'Posting…',
   'dish.publish_button': 'Post dish',
   'dish.post_error': "Couldn't post the dish.",
+  'dish.posted_toast': 'Dish posted',
   'dish.discard_title': 'Discard this dish?',
   'dish.discard_button': 'Discard',
 

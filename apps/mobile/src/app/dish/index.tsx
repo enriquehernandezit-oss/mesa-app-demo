@@ -147,9 +147,11 @@ export default function DishCompose() {
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
-      // Repeat-dish nudge (M20) — the composer closes right after this, so a
-      // toast (not an inline card) is the only affordance that survives the
-      // screen going away; its action is the entire path into the flow.
+      // The composer closes right after this (see the effect below), so a
+      // toast is the only confirmation that survives the screen going away —
+      // without it, publishing reads as "a haptic, then nothing," which is
+      // indistinguishable from a mistap. The repeat-dish nudge (M20) doubles
+      // as that confirmation when it fires; otherwise a plain one does.
       if (res.nudge) {
         toast({
           message:
@@ -161,6 +163,8 @@ export default function DishCompose() {
             onClick: () => router.push(`/dish-lists/rank?listId=${res.nudge?.listId}`),
           },
         })
+      } else {
+        toast({ message: t('dish.posted_toast') })
       }
     },
     onError: (err) => {

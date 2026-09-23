@@ -437,6 +437,10 @@ export default function RankAPlace() {
     setDishCounts((cur) => new Map(cur).set(dish.nameKey, res.myCount))
     if (res.nudge) setDishNudge(res.nudge)
     queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
+    // The restaurant profile's "Popular dishes" rail (['dishes', id]) reads
+    // this same table — without this, a dish (or photo) posted here never
+    // shows up there until something else happens to invalidate that key.
+    queryClient.invalidateQueries({ queryKey: ['dishes', pickedId] })
   }
 
   async function deleteDish(nameKey: string) {
@@ -445,6 +449,7 @@ export default function RankAPlace() {
     if (id) {
       await api.del(`/dishes/${id}`)
       queryClient.invalidateQueries({ queryKey: ['dish-names', pickedId] })
+      queryClient.invalidateQueries({ queryKey: ['dishes', pickedId] })
     }
   }
 
