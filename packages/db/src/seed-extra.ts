@@ -512,6 +512,39 @@ export interface GeneratedUser {
   followsHandles: string[]
 }
 
+// What a friend actually types under someone's ranking — short, reactive,
+// and about the person as much as the place. Two shapes: a plain line, and
+// one that takes the place's own {name} so a thread doesn't read as generic
+// filler. Kept deliberately shorter than a vibe note: a note is the "why" you
+// ranked something, a comment is someone answering it.
+export const COMMENT_TEMPLATES = [
+  'Coincido totalmente.',
+  'Ya lo tengo en la lista.',
+  'Fuiste sin mí 👀',
+  'La próxima vamos juntos.',
+  '¿Reservaste o llegaste así?',
+  'Justo estaba buscando dónde ir el sábado.',
+  'Demasiado alto, pero lo dejo pasar.',
+  'Lo tenía más abajo, me hiciste dudar.',
+  'Ese sitio nunca falla.',
+  'El servicio la última vez estuvo flojo, ¿mejoró?',
+  'Confirmo. Y la barra es lo mejor.',
+  'Me lo apunto para el cumpleaños.',
+  'Llevo meses queriendo ir.',
+  '¿A esa hora hay mucha gente?',
+  'Buenísimo. ¿Qué pediste?',
+  'Estuve el finde y sigo pensando en eso.',
+  'Ya era hora de que lo rankearas.',
+  'Mejor que {name}, sin duda.',
+  '¿En serio por encima de {name}?',
+  'Después de {name}, esto tenía que subir.',
+  'Lo mismo me pasó en {name}.',
+  'Se lo mando a mi hermana ahora mismo.',
+  'Terraza llena siempre, pero vale la espera.',
+  'Fui por tu recomendación y quedé.',
+  'Un clásico que no se cae.',
+]
+
 const ALL_HOODS = [
   'piantini',
   'naco',
@@ -541,7 +574,7 @@ export function generateUsers(
   const users: GeneratedUser[] = []
   const usedHandles = new Set(curatedHandles)
 
-  for (let u = 0; u < 32; u++) {
+  for (let u = 0; u < 44; u++) {
     const first = FIRST[u % FIRST.length] as string
     const last = LAST[(u * 7 + 3) % LAST.length] as string
     let handle = first
@@ -552,7 +585,7 @@ export function generateUsers(
     if (usedHandles.has(handle)) handle = `${handle}${(u % 97) + 2}`
     usedHandles.add(handle)
 
-    const count = 8 + Math.floor(rand() * 15) // 8–22 rankings
+    const count = 14 + Math.floor(rand() * 19) // 14–32 rankings
     const keys = shuffle(allKeys).slice(0, count)
     const ranked = keys.map((k, i) => {
       const dishes = DISHES[k.cuisine] ?? ['plato de la casa']

@@ -12,6 +12,9 @@ export { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 // have a silent second copy.
 export { scoreFor, SCORE_TOP, SCORE_BOTTOM } from './score'
 export { tasteMatch, isAgreement, MIN_SHARED_FOR_MATCH } from './tasteMatch'
+// Demo comment lines, shared by the world seed and the additive
+// seed:comments script so both write threads in the same voice.
+export { COMMENT_TEMPLATES } from './seed-extra'
 // Contacts find-friends (M18) — see phone.ts's own header.
 export { normalizePhone, hashPhone, hashesEqual } from './phone'
 // The closed dish-category taxonomy + keyword guesser (M11) — shared by the

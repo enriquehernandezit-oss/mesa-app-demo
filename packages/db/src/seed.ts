@@ -8,6 +8,7 @@ import { scoreFor } from './score'
 import { seedCuration } from './seed-curation'
 import { dishPosts, friends, neighborhoods, restaurants, waitlist } from './seed-data'
 import {
+  COMMENT_TEMPLATES,
   COVER_BY_CUISINE,
   extraNeighborhoods,
   extraRestaurants,
@@ -317,6 +318,45 @@ async function seed() {
   }
   if (cheerRows.length) await db.insert(schema.cheers).values(cheerRows)
 
+  // --- comments: 0–3 per ranking, from the owner's followers ---
+  // Same follower pool the cheers above draw from: a comment from someone
+  // who can't see the post would be a thread nobody could have written.
+  // Timestamped BETWEEN the ranking and now, never before it, so a feed
+  // sorted by recency doesn't show a reply that predates what it replies to.
+  const commentRand = mulberry32(2024)
+  const commentRows: (typeof schema.rankingComments.$inferInsert)[] = []
+  const rankedAt = new Map(rankingRows.map((r) => [`${r.userId}:${r.restaurantId}`, r.createdAt]))
+  for (const r of insertedRankings) {
+    const followers = followersOf.get(r.userId) ?? []
+    if (followers.length === 0) continue
+    // Most posts get nothing — a thread on every single one reads as noise,
+    // not as a place people actually talk about.
+    if (commentRand() > 0.45) continue
+    const howMany = 1 + Math.floor(commentRand() * 3)
+    const postedAt = rankedAt.get(`${r.userId}:${r.restaurantId}`) ?? new Date(now)
+    const seenCommenter = new Set<string>()
+    for (let k = 0; k < howMany; k++) {
+      const author = followers[Math.floor(commentRand() * followers.length)]
+      if (!author || seenCommenter.has(author)) continue
+      seenCommenter.add(author)
+      const template = COMMENT_TEMPLATES[
+        Math.floor(commentRand() * COMMENT_TEMPLATES.length)
+      ] as string
+      // {name} points at ANOTHER place, not this one — the templates that use
+      // it are comparisons ("Mejor que X"), so filling it with the post's own
+      // restaurant would read as nonsense.
+      const other = rRows[Math.floor(commentRand() * rRows.length)]?.name ?? 'Mesa'
+      const gap = new Date(postedAt as Date).getTime()
+      commentRows.push({
+        rankingId: r.id,
+        userId: author,
+        body: template.replace('{name}', other),
+        createdAt: new Date(gap + (0.5 + commentRand() * 6) * 60 * 60 * 1000),
+      })
+    }
+  }
+  if (commentRows.length) await db.insert(schema.rankingComments).values(commentRows)
+
   // --- saved places (want-to-try) ---
   const savedRows = [
     ...friends.flatMap((f) =>
@@ -340,7 +380,8 @@ async function seed() {
       `${friends.length + generated.length} users, ${followRows.length} follows, ` +
       `${rankingRows.length} rankings, ${noteRows.length} vibe notes, ` +
       `${dishRows.length} dishes, ` +
-      `${cheerRows.length} cheers, ${savedRows.length} saved, ${waitlist.length} waitlist`,
+      `${cheerRows.length} cheers, ${commentRows.length} comments, ` +
+      `${savedRows.length} saved, ${waitlist.length} waitlist`,
   )
 
   return uid('caro') // the viewer for the read-back check

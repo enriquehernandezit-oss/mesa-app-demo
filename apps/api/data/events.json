@@ -107,6 +107,179 @@
       "category": "Food tasting",
       "priceLabel": "RD$4,800 por persona · sake incluido",
       "capacity": 10
+    },
+    {
+      "slug": "caruso-cata-de-barolo-2026-09-24",
+      "restaurantName": "Caruso",
+      "title": "Cata de Barolo",
+      "description": "Cinco etiquetas del Piamonte con tabla de quesos y embutidos. Cupo limitado a 24 personas.",
+      "startsAt": "2026-09-24T19:30:00-04:00",
+      "endsAt": "2026-09-24T22:00:00-04:00",
+      "category": "Cata",
+      "priceLabel": "RD$2,500",
+      "capacity": 24
+    },
+    {
+      "slug": "cava-alta-happy-hour-prolongado-2026-09-25",
+      "restaurantName": "Cava Alta",
+      "title": "Happy hour prolongado",
+      "description": "2x1 en cócteles de autor y tapas a mitad de precio hasta las 8pm.",
+      "startsAt": "2026-09-25T17:00:00-04:00",
+      "endsAt": "2026-09-25T20:00:00-04:00",
+      "category": "Happy hour",
+      "priceLabel": "Sin cover"
+    },
+    {
+      "slug": "el-meson-de-la-cava-noche-de-boleros-2026-09-26",
+      "restaurantName": "El Mesón de la Cava",
+      "title": "Noche de boleros",
+      "description": "Trío en vivo en la cueva, entre las estalagmitas. Se recomienda reservar.",
+      "startsAt": "2026-09-26T21:00:00-04:00",
+      "endsAt": "2026-09-26T23:30:00-04:00",
+      "category": "Música en vivo",
+      "priceLabel": "Entrada libre",
+      "capacity": 60
+    },
+    {
+      "slug": "jalao-merengue-en-vivo-2026-09-26",
+      "restaurantName": "Jalao",
+      "title": "Merengue en vivo",
+      "description": "Orquesta completa en el patio de la Zona. La pista abre a las 10.",
+      "startsAt": "2026-09-26T22:00:00-04:00",
+      "endsAt": "2026-09-27T01:30:00-04:00",
+      "category": "Música en vivo",
+      "priceLabel": "RD$500",
+      "capacity": 120
+    },
+    {
+      "slug": "bottega-fratelli-brunch-de-domingo-2026-09-27",
+      "restaurantName": "Bottega Fratelli",
+      "title": "Brunch de domingo",
+      "description": "Menú de brunch con mimosas ilimitadas durante la primera hora.",
+      "startsAt": "2026-09-27T11:00:00-04:00",
+      "endsAt": "2026-09-27T15:00:00-04:00",
+      "category": "Brunch",
+      "priceLabel": "RD$1,800",
+      "capacity": 50
+    },
+    {
+      "slug": "ajuala-sancocho-de-domingo-2026-09-27",
+      "restaurantName": "Ajuala",
+      "title": "Sancocho de domingo",
+      "description": "El sancocho de siete carnes, servido hasta agotar la olla.",
+      "startsAt": "2026-09-27T12:00:00-04:00",
+      "endsAt": "2026-09-27T17:00:00-04:00",
+      "category": "Especial",
+      "priceLabel": "RD$950"
+    },
+    {
+      "slug": "pura-tasca-cata-de-vinos-de-rioja-2026-09-30",
+      "restaurantName": "Pura Tasca",
+      "title": "Cata de vinos de Rioja",
+      "description": "Seis tintos con maridaje de tapas. La dirige el sommelier de la casa.",
+      "startsAt": "2026-09-30T19:00:00-04:00",
+      "endsAt": "2026-09-30T21:30:00-04:00",
+      "category": "Cata",
+      "priceLabel": "RD$2,200",
+      "capacity": 20
+    },
+    {
+      "slug": "sophia-s-bar-grill-cocteles-de-otono-2026-10-01",
+      "restaurantName": "Sophia's Bar & Grill",
+      "title": "Cócteles de otoño",
+      "description": "Presentación de la carta nueva: seis tragos de temporada, cada uno con su bocado.",
+      "startsAt": "2026-10-01T19:00:00-04:00",
+      "endsAt": "2026-10-01T22:00:00-04:00",
+      "category": "Cata de cócteles",
+      "priceLabel": "RD$1,500",
+      "capacity": 30
+    },
+    {
+      "slug": "lulu-tasting-bar-menu-degustacion-a-ciegas-2026-10-03",
+      "restaurantName": "Lulú Tasting Bar",
+      "title": "Menú degustación a ciegas",
+      "description": "Siete tiempos sin carta: se sabe lo que es después de comerlo.",
+      "startsAt": "2026-10-03T20:00:00-04:00",
+      "endsAt": "2026-10-03T23:00:00-04:00",
+      "category": "Food tasting",
+      "priceLabel": "RD$3,900",
+      "capacity": 16
+    },
+    {
+      "slug": "casa-gazcue-karaoke-de-los-viernes-2026-10-03",
+      "restaurantName": "Casa Gazcue",
+      "title": "Karaoke de los viernes",
+      "description": "Cabina abierta desde las 9. Cocina hasta medianoche.",
+      "startsAt": "2026-10-03T21:00:00-04:00",
+      "endsAt": "2026-10-04T01:00:00-04:00",
+      "category": "Karaoke",
+      "priceLabel": "Entrada libre"
+    },
+    {
+      "slug": "segundo-muelle-noche-de-ceviches-2026-10-04",
+      "restaurantName": "Segundo Muelle",
+      "title": "Noche de ceviches",
+      "description": "Cinco ceviches de la costa peruana, servidos en barra.",
+      "startsAt": "2026-10-04T19:00:00-04:00",
+      "endsAt": "2026-10-04T22:30:00-04:00",
+      "category": "Food tasting",
+      "priceLabel": "RD$2,100",
+      "capacity": 28
+    },
+    {
+      "slug": "boga-boga-parrilla-vasca-al-aire-libre-2026-10-08",
+      "restaurantName": "Boga Boga",
+      "title": "Parrilla vasca al aire libre",
+      "description": "Chuletón a la brasa y sidra escanciada en la terraza.",
+      "startsAt": "2026-10-08T19:30:00-04:00",
+      "endsAt": "2026-10-08T23:00:00-04:00",
+      "category": "Especial",
+      "priceLabel": "RD$3,200",
+      "capacity": 40
+    },
+    {
+      "slug": "zola-dj-set-en-la-terraza-2026-10-10",
+      "restaurantName": "ZOLA",
+      "title": "DJ set en la terraza",
+      "description": "Casa y disco en vinilo, con vista a la ciudad.",
+      "startsAt": "2026-10-10T21:00:00-04:00",
+      "endsAt": "2026-10-11T02:00:00-04:00",
+      "category": "Música en vivo",
+      "priceLabel": "RD$800",
+      "capacity": 150
+    },
+    {
+      "slug": "samurai-omakase-de-temporada-2026-10-11",
+      "restaurantName": "Samurai",
+      "title": "Omakase de temporada",
+      "description": "Doce piezas frente al itamae. Dos turnos por noche.",
+      "startsAt": "2026-10-11T19:00:00-04:00",
+      "endsAt": "2026-10-11T21:00:00-04:00",
+      "category": "Food tasting",
+      "priceLabel": "RD$4,500",
+      "capacity": 12
+    },
+    {
+      "slug": "mitre-maridaje-de-quesos-y-vinos-2026-10-15",
+      "restaurantName": "Mitre",
+      "title": "Maridaje de quesos y vinos",
+      "description": "Ocho quesos europeos con cuatro copas. De pie, en la barra del vino.",
+      "startsAt": "2026-10-15T19:30:00-04:00",
+      "endsAt": "2026-10-15T22:00:00-04:00",
+      "category": "Cata",
+      "priceLabel": "RD$2,400",
+      "capacity": 22
+    },
+    {
+      "slug": "fellini-noche-de-pasta-fresca-2026-10-17",
+      "restaurantName": "Fellini",
+      "title": "Noche de pasta fresca",
+      "description": "La pasta se estira a la vista y se sirve en cuatro tiempos.",
+      "startsAt": "2026-10-17T19:00:00-04:00",
+      "endsAt": "2026-10-17T22:30:00-04:00",
+      "category": "Especial",
+      "priceLabel": "RD$2,600",
+      "capacity": 35
     }
   ]
 }

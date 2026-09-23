@@ -18,7 +18,8 @@
     "tags:normalize": "bun run src/tags-normalize.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "user:delete": "bun run src/delete-user.ts"
+    "user:delete": "bun run src/delete-user.ts",
+    "seed:comments": "bun run src/seed-comments.ts"
   },
   "dependencies": {
     "@mesa/db": "workspace:*",
