@@ -28,6 +28,37 @@ module.exports = () => {
     config.plugins = [...(config.plugins ?? []), 'posthog-react-native/expo']
   }
 
+  // Google Sign-In (M10) needs its iOS URL scheme registered in Info.plist so
+  // the OAuth redirect can return to the app. That scheme is always the iOS
+  // client id with its ".apps.googleusercontent.com" suffix swapped for a
+  // "com.googleusercontent.apps." prefix (Google's fixed, documented
+  // REVERSED_CLIENT_ID format) — derived here so there's one source of truth
+  // (EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) instead of two env vars that could
+  // drift out of sync. Added only when the client id is set, same graceful-
+  // dark posture as the PostHog plugin above: no key, no plugin, and the
+  // Google button in AuthFlow.tsx doesn't render either.
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+  if (iosClientId) {
+    // Google's client id is a bare identifier, never a URL — a stray
+    // "http://" pasted in front of it (easy to do copying from a browser bar)
+    // still satisfies a plain endsWith(".apps.googleusercontent.com") check,
+    // so it slipped through here silently once and produced a broken URL
+    // scheme plus a cryptic 400 from Google at sign-in time instead of a
+    // build-time error. Validate the *whole* shape now, not just the suffix.
+    if (!/^\d+-[a-z0-9]+\.apps\.googleusercontent\.com$/.test(iosClientId)) {
+      throw new Error(
+        `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID doesn't look like a Google iOS client id ` +
+          `(expected "<digits>-<hash>.apps.googleusercontent.com", got "${iosClientId}"). ` +
+          `Copy it again from Google Cloud Console -> Credentials -> the iOS client.`,
+      )
+    }
+    const iosUrlScheme = `com.googleusercontent.apps.${iosClientId.replace(/\.apps\.googleusercontent\.com$/, '')}`
+    config.plugins = [
+      ...(config.plugins ?? []),
+      ['@react-native-google-signin/google-signin', { iosUrlScheme }],
+    ]
+  }
+
   // Universal links so the password-reset / verify-email emails open the app
   // instead of a browser. The domain is where APP_ORIGINS points and where the
   // apple-app-site-association file is hosted (the API can serve it beside /p/*);
