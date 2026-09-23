@@ -74,7 +74,13 @@ export default function Onboarding() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="px-5 pt-2">
+      {/* Opaque and above the step below it. Each step owns a ScrollView, and
+          its content was passing THROUGH this bar once scrolled — the
+          subtitle rendered straight across "Step 1 of 3", two lines of text
+          on the same pixels. A transparent, un-layered bar over a sibling
+          scroller has nothing to hide content behind it; this gives it both
+          a ground of its own and a place in the stacking order. */}
+      <View className="bg-bg px-5 pt-2 pb-2" style={{ zIndex: 1 }}>
         <View className="h-1 overflow-hidden rounded-pill bg-bg-sunk">
           <View
             className="h-1 rounded-pill bg-accent-fill"
