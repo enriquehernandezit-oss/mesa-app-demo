@@ -528,7 +528,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.not_found': 'Spot not found.',
   'restaurant.load_error': "Couldn't load the spot.",
   'restaurant.view_on_map': 'View {name} on the map',
-  'restaurant.map_attribution': '© Mapbox © OpenStreetMap',
   'restaurant.film_note': 'film · candlelit',
   'restaurant.saved_tap_remove': 'Saved — tap to remove',
   'restaurant.want_to_try_label': 'Want to try',

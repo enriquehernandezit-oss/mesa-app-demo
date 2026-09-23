@@ -330,6 +330,12 @@ export default function ExploreScreen() {
         contentInsetAdjustmentBehavior="automatic"
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
+        // The search field is the native header UISearchBar (see the header
+        // note above), not a TextInput inside this ScrollView — but this
+        // still works (M23): it reacts to the keyboard's own on-screen frame,
+        // not to which view is first responder, so results at the bottom of
+        // a long list are no longer hidden behind the keyboard.
+        automaticallyAdjustKeyboardInsets
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }

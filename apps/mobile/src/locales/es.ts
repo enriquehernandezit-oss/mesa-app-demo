@@ -573,7 +573,6 @@ export const es = {
   'restaurant.not_found': 'Spot no encontrado.',
   'restaurant.load_error': 'No se pudo cargar el spot.',
   'restaurant.view_on_map': 'Ver {name} en el mapa',
-  'restaurant.map_attribution': '© Mapbox © OpenStreetMap',
   'restaurant.film_note': 'film · con velas',
   'restaurant.saved_tap_remove': 'Guardado — toca para quitar',
   'restaurant.want_to_try_label': 'Quiero probar',

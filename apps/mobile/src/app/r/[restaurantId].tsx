@@ -198,17 +198,12 @@ export default function RestaurantProfile() {
   // only see your circle. Client-side because it's purely a display filter.
   const showMesa = !friendsOnly
 
-  // The place's static map (needs a MapBox token). A Google-created place with no
-  // photo but an exact geocode gets a tinted map as its hero instead of the
-  // generated mark (M9) — the picture "of" a photoless place is where it is. The
-  // lower locator is then redundant (one map per profile), so it's hidden.
+  // The locator map below (needs a MapBox token) — the hero itself is
+  // always PlaceCover now (M23): a photoless place used to get a tinted map
+  // as its hero (mapCover, M9), but a map isn't a picture "of" the place,
+  // it's a picture of where it is — the same generated letter mark every
+  // other photoless spot already shows reads as consistent, not broken.
   const mapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng, { w: 700, h: 260, theme })
-  const heroMapUrl = mapboxStaticUrl(restaurant.lat, restaurant.lng, { w: 1000, h: 750, theme })
-  const mapCover =
-    Boolean(heroMapUrl) &&
-    !restaurant.coverImageId &&
-    restaurant.geoPrecision === 'exact' &&
-    restaurant.google
   const openPlaceMap = () =>
     router.push({
       pathname: '/place-map',
@@ -256,32 +251,17 @@ export default function RestaurantProfile() {
         onScroll={onScroll}
         contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}
       >
-        {/* Film-photo hero — clean image, a floating back control below it. A
-            photoless Google place with an exact geocode gets a tinted map hero
-            (mapCover, M9), tappable into the full map. */}
+        {/* Film-photo hero — clean image, a floating back control below it.
+            Always PlaceCover, photo or generated letter mark (M23) — see the
+            mapUrl comment above for why a map no longer stands in here. */}
         <View style={{ height: heroH }}>
-          {mapCover && heroMapUrl ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('restaurant.view_on_map', { name: restaurant.name })}
-              onPress={openPlaceMap}
-              className="h-full w-full"
-            >
-              <Image
-                source={{ uri: heroMapUrl }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-            </Pressable>
-          ) : (
-            <PlaceCover
-              seed={restaurant.id}
-              name={restaurant.name}
-              coverImageId={restaurant.coverImageId}
-              size={{ w: 1000, h: 750 }}
-              className="h-full w-full"
-            />
-          )}
+          <PlaceCover
+            seed={restaurant.id}
+            name={restaurant.name}
+            coverImageId={restaurant.coverImageId}
+            size={{ w: 1000, h: 750 }}
+            className="h-full w-full"
+          />
           <View style={{ position: 'absolute', top: insets.top + 8, left: 16 }}>
             <GlassCircle accessibilityLabel={t('common.back_plain')} onPress={goBack}>
               <BackIcon size={20} />
@@ -296,11 +276,7 @@ export default function RestaurantProfile() {
             className="absolute left-4 rounded-pill bg-surface px-2 py-1"
             style={{ bottom: 10 }}
           >
-            {/* MapBox burns its attribution into the static image's corner, which
-                cover-crop then hides — so it's stated here when the hero is a map. */}
-            <Caption className="text-micro">
-              {mapCover ? t('restaurant.map_attribution') : t('restaurant.film_note')}
-            </Caption>
+            <Caption className="text-micro">{t('restaurant.film_note')}</Caption>
           </View>
         </View>
 
@@ -494,10 +470,11 @@ export default function RestaurantProfile() {
             <TheirScores rankings={friendsRankings} />
           </View>
 
-          {/* Locator map — a static MapBox tile that opens the full pannable map
-              (place-map). Hidden when the hero itself is the map (one map per
-              profile), and when no token is configured (no SVG fallback on native). */}
-          {!mapCover && mapUrl && (
+          {/* Locator map — a static MapBox tile that opens the full pannable
+              map (place-map). Hidden only when no token is configured (no
+              SVG fallback on native) — the hero is never a map now (M23), so
+              this is the one place a photoless profile's real location shows. */}
+          {mapUrl && (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('restaurant.view_on_map', { name: restaurant.name })}

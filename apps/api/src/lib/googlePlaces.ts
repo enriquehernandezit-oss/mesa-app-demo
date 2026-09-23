@@ -45,7 +45,11 @@ export async function autocomplete(
       },
       body: JSON.stringify({
         input: q,
-        includedRegionCodes: ['do'],
+        // No includedRegionCodes (M23) — that's a hard filter, not a bias,
+        // and Mesa's own members travel: someone logging a place they ate at
+        // in Miami or Madrid should find it here too. regionCode below is
+        // just a formatting hint (phone/unit conventions), not a country
+        // restriction, so it stays.
         includedPrimaryTypes: ['restaurant', 'bar', 'night_club', 'cafe'],
         languageCode: 'es',
         regionCode: 'do',
