@@ -1,11 +1,12 @@
 import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
+import { citywideRank } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The authed user's own profile + onboarding gate. The app calls GET /me on
@@ -371,19 +372,10 @@ export const meRoutes = new Hono<AuthedEnv>()
       return best
     }
 
-    // City rank (same ordering as the leaderboard): how many people have ranked
-    // more places than me, + 1. Null until I've ranked anything.
-    let rankInDr: number | null = null
-    if (mine.length > 0) {
-      const rankRes = await db.execute(sql`
-        SELECT count(*)::int AS ahead
-        FROM (
-          SELECT user_id FROM rankings GROUP BY user_id HAVING count(*) > ${mine.length}
-        ) t
-      `)
-      const ahead = Number((rankRes.rows[0] as { ahead: number } | undefined)?.ahead ?? 0)
-      rankInDr = ahead + 1
-    }
+    // City rank: same query GET /leaderboard's myRank now uses (all-time,
+    // citywide) — see citywideRank's own header for why that match matters.
+    // Null until I've ranked anything.
+    const rankInDr = mine.length > 0 ? await citywideRank(current.id, mine.length) : null
 
     return c.json({
       places: mine.length,

@@ -282,7 +282,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'leaderboard.period_month': 'This month',
   'leaderboard.period_all': 'All time',
+  'leaderboard.scope_city': 'City',
+  'leaderboard.scope_friends': 'Friends',
   'leaderboard.my_rank': "You're #{n} in the city.",
+  'leaderboard.my_rank_friends': "You're #{n} among your friends.",
+  'leaderboard.empty_friends': 'Follow some friends to see how you compare.',
   'leaderboard.load_error': "Couldn't load the leaderboard.",
   'leaderboard.spots_avg': 'spots · avg.',
 

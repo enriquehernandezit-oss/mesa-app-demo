@@ -14,20 +14,34 @@ import { DATA_FIGURES } from '@/theme/vars'
 // Citywide leaderboard — who's eaten the most of Santo Domingo. Understated by
 // design: brass serif numerals, no badges. Ported from apps/app/src/screens/
 // leaderboard/LeaderboardScreen.tsx.
+//
+// scope (M7): city (everyone) or friends (followingIds ∪ followerIds ∪ me,
+// server-side). myRank only ever exceeds the visible rows in city+all-time —
+// see leaderboard.ts's own comment — so that's the one case the "jump to my
+// row" affordance below has to treat as unreachable rather than broken.
 export default function LeaderboardScreen() {
   const t = useT()
   const [period, setPeriod] = useState<'all' | 'month'>('month')
+  const [scope, setScope] = useState<'all' | 'friends'>('all')
   const q = useQuery({
-    queryKey: ['leaderboard', period],
+    queryKey: ['leaderboard', period, scope],
     queryFn: () =>
       api.get<{ leaderboard: LeaderboardRow[]; myRank: number | null }>(
-        `/leaderboard?period=${period}`,
+        `/leaderboard?period=${period}&scope=${scope}`,
       ),
   })
   const rows = q.data?.leaderboard ?? []
+  const myRankVisible = q.data?.myRank != null && q.data.myRank <= rows.length
+  const myRankLabel = q.data?.myRank
+    ? t(scope === 'friends' ? 'leaderboard.my_rank_friends' : 'leaderboard.my_rank', {
+        n: q.data.myRank,
+      })
+    : null
   // "Eres #N" jumps straight to that row — rows are all mounted (a plain
   // ScrollView, not virtualized), so each records its own offset on layout
-  // and the tap just scrolls there.
+  // and the tap just scrolls there. Only meaningful when myRank is actually
+  // one of the rendered rows (myRankVisible) — city+all-time can now report a
+  // true rank past the top 50, and there's nothing on screen to scroll to.
   const scrollRef = useRef<ScrollView>(null)
   const rowY = useRef<number[]>([])
   const cardY = useRef(0)
@@ -40,35 +54,56 @@ export default function LeaderboardScreen() {
         contentContainerClassName="px-5 pb-10"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Eyebrow className="mb-4">Santo Domingo</Eyebrow>
+        <Eyebrow className="mb-4">
+          {scope === 'friends' ? t('leaderboard.scope_friends') : 'Santo Domingo'}
+        </Eyebrow>
 
-        <Segmented
-          className="mb-4"
-          value={period}
-          onChange={setPeriod}
-          options={[
-            { value: 'month', label: t('leaderboard.period_month') },
-            { value: 'all', label: t('leaderboard.period_all') },
-          ]}
-        />
+        <View className="mb-4 flex-row gap-2">
+          <Segmented
+            className="flex-1"
+            value={period}
+            onChange={setPeriod}
+            options={[
+              { value: 'month', label: t('leaderboard.period_month') },
+              { value: 'all', label: t('leaderboard.period_all') },
+            ]}
+          />
+          <Segmented
+            className="flex-1"
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'all', label: t('leaderboard.scope_city') },
+              { value: 'friends', label: t('leaderboard.scope_friends') },
+            ]}
+          />
+        </View>
 
-        {q.data?.myRank ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              const y = rowY.current[(q.data?.myRank ?? 1) - 1]
-              if (y != null) scrollRef.current?.scrollTo({ y: cardY.current + y, animated: true })
-            }}
-            className="mb-4 self-start active:opacity-70"
-          >
-            <Body className="text-accent">{t('leaderboard.my_rank', { n: q.data.myRank })}</Body>
-          </Pressable>
+        {myRankLabel ? (
+          myRankVisible ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                const y = rowY.current[(q.data?.myRank ?? 1) - 1]
+                if (y != null) {
+                  scrollRef.current?.scrollTo({ y: cardY.current + y, animated: true })
+                }
+              }}
+              className="mb-4 self-start active:opacity-70"
+            >
+              <Body className="text-accent">{myRankLabel}</Body>
+            </Pressable>
+          ) : (
+            <Body className="mb-4 text-accent">{myRankLabel}</Body>
+          )
         ) : null}
 
         {q.isPending ? (
           <RowsSkeleton rows={6} thumb={38} />
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>{t('leaderboard.load_error')}</ErrorState>
+        ) : rows.length === 0 && scope === 'friends' ? (
+          <Body className="text-text-muted">{t('leaderboard.empty_friends')}</Body>
         ) : (
           // One white grouped card on the cream ground. Row offsets are
           // relative to the card, so the card's own y is added back for the

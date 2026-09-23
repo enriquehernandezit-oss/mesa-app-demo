@@ -298,7 +298,11 @@ export const es = {
   // app/leaderboard.tsx
   'leaderboard.period_month': 'Este mes',
   'leaderboard.period_all': 'Todo el tiempo',
+  'leaderboard.scope_city': 'Ciudad',
+  'leaderboard.scope_friends': 'Amigos',
   'leaderboard.my_rank': 'Eres #{n} en la ciudad.',
+  'leaderboard.my_rank_friends': 'Eres #{n} entre tus amigos.',
+  'leaderboard.empty_friends': 'Sigue a algunos amigos para ver cómo te comparas.',
   'leaderboard.load_error': 'No se pudo cargar la clasificación.',
   'leaderboard.spots_avg': 'spots · prom.',
 
