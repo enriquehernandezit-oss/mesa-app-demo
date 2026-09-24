@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { type Href, useRouter } from 'expo-router'
-import { memo, useCallback, useRef } from 'react'
+import { memo, useCallback, useMemo, useRef } from 'react'
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
@@ -74,7 +74,13 @@ export default function DiscoverTab() {
   // duplicate across pages, but a ranking never appears twice in one person's
   // feed anyway (one row per ranking) — deduping by id is a cheap guarantee
   // either way, not a workaround for a specific known gap.
-  const items = uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? [])
+  // Memoized: this is FlatList's `data`. Unmemoized it was a brand new array
+  // identity every render, so the list re-diffed its whole window each time
+  // regardless of whether the feed had actually changed.
+  const items = useMemo(
+    () => uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? []),
+    [feed.data],
+  )
   const { refreshing, onRefresh } = usePullToRefresh(feed.refetch)
   // Stable across renders (perf pass, same reasoning as rankings.tsx's M14
   // comment on renderRankingRow) — a fresh renderItem function every render

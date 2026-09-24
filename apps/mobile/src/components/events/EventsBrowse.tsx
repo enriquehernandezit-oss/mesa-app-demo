@@ -59,7 +59,12 @@ const STRIP_MAX_DAYS = 120
 // otherwise hand `all` a fresh array every render, defeating catsByDay's memo.
 const EMPTY_EVENTS: EventSummary[] = []
 
-export function EventsBrowse() {
+// memo'd: it stays mounted inside Explore's list header once visited, so
+// every keystroke in the search bar (setQ updates that screen's state on each
+// one, well before the debounced query fires) re-rendered this whole tree —
+// day strip, category rail, featured carousel — for a query it doesn't read.
+// It takes no props, so memo makes those re-renders free.
+export const EventsBrowse = memo(function EventsBrowse() {
   const t = useT()
   const now = useNow()
   const [sel, setSel] = useState<DayRange>(null)
@@ -254,7 +259,7 @@ export function EventsBrowse() {
       )}
     </View>
   )
-}
+})
 
 // ── Day strip: a light calendar row ─────────────────────────────────────────
 // Weekday over a serif date, like iOS Calendar's week header — no boxes, so it

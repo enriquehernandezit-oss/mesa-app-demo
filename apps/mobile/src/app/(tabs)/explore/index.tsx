@@ -57,8 +57,10 @@ import { DATA_FIGURES, themeColors } from '@/theme/vars'
 // once set — Rankings' mineControls mirrors this same pill pattern.
 type SortKey = 'score' | 'name'
 
-// Stable identity: a fresh [] every render would churn FlatList's own diffing.
+// Stable identities: a fresh [] every render would churn FlatList's own
+// diffing and defeat the memos keyed on these.
 const NO_HITS: ExploreHit[] = []
+const NO_MEMBERS: ExploreMember[] = []
 
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
@@ -245,8 +247,11 @@ export default function ExploreScreen() {
   })
 
   const { refreshing, onRefresh } = usePullToRefresh(results.refetch)
-  const hits = results.data?.restaurants ?? []
-  const members = results.data?.members ?? []
+  // The `?? []` fallbacks reuse stable constants rather than minting a fresh
+  // array each render — these feed FlatList's data and the external-search
+  // dedupe, both of which key off identity.
+  const hits = results.data?.restaurants ?? NO_HITS
+  const members = results.data?.members ?? NO_MEMBERS
   // The default browse state: no query, no filters. Anything else is a search,
   // and the trending rail steps out of the way.
   const browsing =
@@ -265,6 +270,10 @@ export default function ExploreScreen() {
 
   // Google gap-filler — when Mesa's catalog comes up short (<3) for a real query,
   // offer online matches; tapping one creates a full profile and lands on it.
+  // Memoized: the hook normalizes every one of these names to dedupe Google's
+  // results against the catalog, and a fresh array each render made it redo
+  // the whole pass on every keystroke.
+  const catalogNames = useMemo(() => hits.map((h) => h.name), [hits])
   const {
     suggestions,
     create: createFromGoogle,
@@ -272,7 +281,7 @@ export default function ExploreScreen() {
   } = useExternalPlaceSearch({
     query: q,
     mesaResultCount: hits.length + members.length,
-    catalogNames: hits.map((h) => h.name),
+    catalogNames: catalogNames,
     onCreated: (restaurant) => router.push(`/r/${restaurant.id}`),
   })
 

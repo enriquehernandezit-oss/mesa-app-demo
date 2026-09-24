@@ -442,6 +442,15 @@ export default function RankingsTab() {
         data={processed}
         keyExtractor={(r) => r.id}
         renderItem={renderRankingRow}
+        // Bounded windows (perf pass). These lists stay mounted while
+        // hidden, so a hidden one renders only its initial batch and then
+        // expands to the default 21-screenful window the moment it's
+        // revealed — a burst of ReanimatedSwipeable rows landing on the main
+        // thread exactly during the switch. A screenful of buffer either side
+        // is enough for a list this size.
+        windowSize={5}
+        maxToRenderPerBatch={5}
+        initialNumToRender={8}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
@@ -501,6 +510,10 @@ export default function RankingsTab() {
         data={savedItems}
         keyExtractor={(it) => `${it.kind}-${it.key}`}
         renderItem={renderSavedItem}
+        // Same bounded window as the list above, same reason.
+        windowSize={5}
+        maxToRenderPerBatch={5}
+        initialNumToRender={8}
         ListHeaderComponent={
           <>
             <Segmented

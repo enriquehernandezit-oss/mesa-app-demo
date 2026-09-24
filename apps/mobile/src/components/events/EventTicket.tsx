@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient'
 import { Link } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import Animated, {
   FadeIn,
@@ -61,13 +61,37 @@ export function CategoryIcon({
 }
 
 // Re-render once a minute so countdowns stay honest while a screen is open.
-export function useNow(intervalMs = 60_000): Date {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs)
-    return () => clearInterval(id)
-  }, [intervalMs])
-  return now
+// ONE ticker for the whole app, not one per caller. This used to open its own
+// setInterval inside every component that called it — and two of those callers
+// are per-ROW ticket cards (Rankings' saved events, Profile's "you're going"),
+// so a long list ran a timer per row, each waking the JS thread on its own
+// schedule for a label that changes once a minute. A shared subscription also
+// means the interval stops entirely when nothing is mounted that needs it.
+let sharedNow = new Date()
+let ticker: ReturnType<typeof setInterval> | null = null
+const tickListeners = new Set<() => void>()
+
+function subscribeToNow(onTick: () => void): () => void {
+  tickListeners.add(onTick)
+  if (!ticker) {
+    ticker = setInterval(() => {
+      sharedNow = new Date()
+      for (const listener of tickListeners) listener()
+    }, 60_000)
+  }
+  return () => {
+    tickListeners.delete(onTick)
+    if (tickListeners.size === 0 && ticker) {
+      clearInterval(ticker)
+      ticker = null
+    }
+  }
+}
+
+export function useNow(): Date {
+  // The snapshot is the same Date object between ticks, which is what keeps
+  // useSyncExternalStore from re-rendering on every commit.
+  return useSyncExternalStore(subscribeToNow, () => sharedNow)
 }
 
 export function countdownLabel(t: ReturnType<typeof useT>, c: Countdown): string {
