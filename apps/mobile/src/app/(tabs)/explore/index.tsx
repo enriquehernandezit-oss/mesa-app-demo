@@ -268,11 +268,11 @@ export default function ExploreScreen() {
   const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
   const showOpenChip = openNow || hoursCoverage >= 0.4
 
-  // Google gap-filler — when Mesa's catalog comes up short (<3) for a real query,
-  // offer online matches; tapping one creates a full profile and lands on it.
-  // Memoized: the hook normalizes every one of these names to dedupe Google's
-  // results against the catalog, and a fresh array each render made it redo
-  // the whole pass on every keystroke.
+  // Google — any restaurant in the DR, for every real query, not just the ones
+  // Mesa's own catalog misses; tapping one creates a full profile and lands on
+  // it. Memoized: the hook normalizes every one of these names to dedupe
+  // Google's results against the catalog, and a fresh array each render made it
+  // redo the whole pass on every keystroke.
   const catalogNames = useMemo(() => hits.map((h) => h.name), [hits])
   const {
     suggestions,
@@ -280,7 +280,6 @@ export default function ExploreScreen() {
     creatingId,
   } = useExternalPlaceSearch({
     query: q,
-    mesaResultCount: hits.length + members.length,
     catalogNames: catalogNames,
     onCreated: (restaurant) => router.push(`/r/${restaurant.id}`),
   })

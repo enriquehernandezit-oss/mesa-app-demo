@@ -1761,16 +1761,18 @@ function FindStep({
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
-  // Google gap-filler — only when Mesa came up short. Deduped against results +
-  // lead group so a spot you already have isn't re-offered; tapping continues
-  // the rank flow with the new place. Shared with Explore (useExternalPlaceSearch).
+  // Google — any restaurant in the DR, for every real query. Deduped against
+  // results + lead group so a spot you already have isn't re-offered; tapping
+  // continues the rank flow with the new place. Shared with Explore
+  // (useExternalPlaceSearch), which is where the always-on rationale lives —
+  // it applies doubly here, since a place Mesa doesn't carry is precisely the
+  // one you can't rank without Google.
   const {
     suggestions,
     create: createFromGoogle,
     creatingId,
   } = useExternalPlaceSearch({
     query,
-    mesaResultCount: results.length + leadGroup.length,
     catalogNames: [...results.map((r) => r.name), ...leadGroup.map((r) => r.name)],
     onCreated: onGoogleCreated,
   })

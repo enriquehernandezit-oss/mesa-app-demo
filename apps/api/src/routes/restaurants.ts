@@ -63,12 +63,19 @@ function jitter(id: string, lat: number, lng: number): { lat: number; lng: numbe
 // posture as R2/MapBox/Resend.
 
 // A soft per-user rate limit for the paid Google proxy — a cost guard, not a
-// security boundary (the client already debounces, gates on <3 Mesa results,
-// and caches 5min). In-memory sliding window; timestamps older than the window
-// are pruned on each call so the map can't grow unbounded. Single API instance
-// on Railway, so a per-process map is sufficient.
+// security boundary (the client still debounces 300ms and caches 5min). In-
+// memory sliding window; timestamps older than the window are pruned on each
+// call so the map can't grow unbounded. Single API instance on Railway, so a
+// per-process map is sufficient.
+//
+// Raised 20 -> 40 when the client's "<3 Mesa results" gate was dropped and
+// every query started reaching Google (see useExternalPlaceSearch.ts). The
+// ceiling matters more than it reads: a 429 makes the hook fall back to an
+// empty suggestion list, which looks *identical* to the bug that gate caused —
+// Google silently returning nothing. A ceiling no real session approaches is
+// the point; this still stops a runaway client cold.
 const EXT_WINDOW_MS = 60_000
-const EXT_MAX_PER_WINDOW = 20
+const EXT_MAX_PER_WINDOW = 40
 const extHits = new Map<string, number[]>()
 function extRateLimited(userId: string, now: number): boolean {
   const recent = (extHits.get(userId) ?? []).filter((t) => now - t < EXT_WINDOW_MS)
@@ -494,7 +501,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     )
     return c.json({ spots })
   })
-  // Google Places typeahead gap-filler (M8) — a server-side proxy so the paid
+  // Google Places typeahead (M8) — a server-side proxy so the paid
   // key never reaches the client. Returns ONLY placeId + main/secondary text
   // (field-masked): autocomplete carries no coordinates, so nothing Google-
   // derived beyond the id can land here. Registered before '/:id' so the param

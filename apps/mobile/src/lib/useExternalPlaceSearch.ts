@@ -8,15 +8,25 @@ import type { ExternalSuggestion, NewRestaurant } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useGoogleSession } from '@/lib/useGoogleSession'
 
-// The Google gap-filler, once — shared by Explore and the rank flow's find step
+// Google place search, once — shared by Explore and the rank flow's find step
 // (the two copies had drifted, hiding the "search a place you already ranked,
-// get its Google copy" bug). Owns the debounce, the <3-Mesa-results gate, the
-// session token, the catalog dedupe, and the create-on-tap mutation. Only what
-// happens after a place is created differs per screen, so `onCreated` stays with
-// the caller. Ported from apps/app/src/lib/useExternalPlaceSearch.ts.
+// get its Google copy" bug). Owns the debounce, the session token, the catalog
+// dedupe, and the create-on-tap mutation. Only what happens after a place is
+// created differs per screen, so `onCreated` stays with the caller. Ported from
+// apps/app/src/lib/useExternalPlaceSearch.ts.
+//
+// Every query of 3+ characters asks Google, by founder's call: the search bar
+// is meant to find ANY restaurant in the DR, not to fill gaps in Mesa's own
+// catalog. That replaces a `mesaResultCount < 3` gate which made Google results
+// nearly unreachable in practice — Explore counted matching *members* toward
+// the threshold too, so three people matching your query suppressed every
+// restaurant Google would have returned. Spend stays bounded by the 300ms
+// debounce and 5-minute cache below, the server's per-user rate limit
+// (extRateLimited in routes/restaurants.ts), and the fact that autocomplete is
+// on Google's cheapest field-masked SKU — Details is still only ever fetched
+// when someone actually taps a suggestion.
 export function useExternalPlaceSearch(opts: {
   query: string
-  mesaResultCount: number
   catalogNames: string[]
   onCreated: (restaurant: NewRestaurant) => void
 }): {
@@ -24,13 +34,13 @@ export function useExternalPlaceSearch(opts: {
   create: (placeId: string) => void
   creatingId: string | null
 } {
-  const { query, mesaResultCount, catalogNames, onCreated } = opts
+  const { query, catalogNames, onCreated } = opts
   const t = useT()
   const queryClient = useQueryClient()
   const session = useGoogleSession()
 
   const debounced = useDebounced(query.trim(), 300)
-  const wantExternal = debounced.length >= 3 && mesaResultCount < 3
+  const wantExternal = debounced.length >= 3
 
   const external = useQuery({
     queryKey: ['search-external', debounced],
