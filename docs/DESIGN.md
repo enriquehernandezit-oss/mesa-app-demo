@@ -395,7 +395,17 @@ the app and are viewed inside someone else's feed, so they look the same for eve
 - **The app icon is a capital serif `M`** — cream `#f1e8da` on an oxblood radial gradient
   (`#4d0b17` → `#2e0309` at 42% → `#210104`, centred at 30% / 18%), a full-bleed 1024 square (iOS
   applies its own ~22% corner mask). It exists on the home screen and nowhere else.
-- Files: `assets/brand/` (wordmarks), `apps/mobile/assets/images/` (icon, splash).
+- **The native splash is the same word, at the same size and place as the in-app `Splash`** (56, the line box
+  centred), so launch → app is one still frame: `splash-icon.png` is `mesa` in `#210104` on `#f3ede4`,
+  `splash-icon-dark.png` is cream `#f4ede2` on `#0b0809` (the phone's appearance picks; Auto's 6 pm flip only
+  happens once JS is up). `imageWidth` in `app.json` is that word's width in points (99 = "mesa" at 56); the
+  image carries a little top padding so the x-height-only word sits where React Native's line box puts it.
+  If the in-app `Splash` size ever changes, redraw the image and change `imageWidth` in the same commit.
+- Files: `assets/brand/` (`mesa-wordmark-oxblood.png`, `mesa-wordmark-cream.png` — transparent, 1663 wide),
+  `apps/mobile/assets/images/` (`icon.png`; `splash-icon.png`, `splash-icon-dark.png`; the Android adaptive
+  layers). They are drawn from the Instrument Serif TTF (`@expo-google-fonts/instrument-serif`) by a throwaway
+  script that is deliberately not in the repo: to redraw, follow the recipe in this section (font, colours,
+  gradient, the sizes above) rather than hand-editing pixels.
 
 ## Iconography
 
