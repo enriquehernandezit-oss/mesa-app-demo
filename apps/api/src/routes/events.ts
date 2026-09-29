@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { sendPush } from '../lib/push'
+import { sdLocalNow, sdMidnight, tonightLateWindow } from '../lib/sdTime'
 import { blockedByMe, blockedMe, followerIds, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -14,32 +15,6 @@ import { requireAuth } from '../middleware/session'
 // independent of RSVP; see GET /saved) — schema-level rules
 // (never delete a row, soft-cancel instead) live on `events` in schema.ts.
 const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user } = schema
-
-// Santo Domingo has no DST (fixed UTC-4) — same fixed-offset trick as
-// lib/push.ts's dish-nudge sweep, kept independent rather than shared since
-// the two live in different windows of "what counts as SD-local now" (an
-// hour-of-day check there, a calendar-date window here).
-const SD_UTC_OFFSET_HOURS = 4
-
-// A Date whose UTC getters read as Santo Domingo wall-clock fields — NOT a
-// real instant, just a convenient way to read local Y/M/D/day-of-week with
-// no timezone library.
-function sdLocalNow(): Date {
-  return new Date(Date.now() - SD_UTC_OFFSET_HOURS * 3600_000)
-}
-
-// The real UTC instant of SD-local midnight, `addDays` after `sdLocal`'s own
-// date. `sdLocal`'s UTC Y/M/D fields (from sdLocalNow above) ARE Santo
-// Domingo's wall-clock Y/M/D, so Date.UTC(...) on them gives "midnight as if
-// SD were UTC" — adding the offset back converts that to the real instant.
-function sdMidnight(sdLocal: Date, addDays: number): Date {
-  const ms = Date.UTC(
-    sdLocal.getUTCFullYear(),
-    sdLocal.getUTCMonth(),
-    sdLocal.getUTCDate() + addDays,
-  )
-  return new Date(ms + SD_UTC_OFFSET_HOURS * 3600_000)
-}
 
 // The three Explore browse windows, each as [start, end) in real UTC
 // instants over startsAt — `start: null` / `end: null` mean no bound. `start`
@@ -166,6 +141,43 @@ type FriendsGoingFields = {
   friendsGoing: { id: string; name: string; image: string | null }[]
 }
 
+// The events that haven't ended and start inside [start, end) (either bound may be
+// null), soonest first, shaped for the client — the browse list, and the Feed's
+// "Tonight" card (GET /home) both read through this.
+async function browseEvents(
+  me: { id: string },
+  { start, end }: { start: Date | null; end: Date | null },
+  limit: number,
+) {
+  const rows = await db
+    .select({
+      ...eventCols,
+      neighborhood: neighborhoods.name,
+      myStatus: eventRsvps.status,
+      savedByMe,
+    })
+    .from(events)
+    .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
+    .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+    .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
+    .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
+    .where(
+      and(
+        isNull(events.cancelledAt),
+        notEnded,
+        start ? gte(events.startsAt, start) : undefined,
+        end ? lt(events.startsAt, end) : undefined,
+      ),
+    )
+    .orderBy(asc(events.startsAt))
+    .limit(limit)
+  return withFriendsGoing(me, rows)
+}
+
+// Everything on tonight (now → 4 AM Santo Domingo — lib/sdTime.ts), for GET /home.
+// A pool, not the final five: lib/home.ts's selectTonight orders and trims it.
+export const tonightEvents = (me: { id: string }) => browseEvents(me, tonightLateWindow(), 30)
+
 export const eventsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
@@ -174,32 +186,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
   .get('/', async (c) => {
     const me = c.get('user')
     const when = c.req.query('when') ?? 'upcoming'
-    const { start, end } = eventsWindow(when)
-
-    const rows = await db
-      .select({
-        ...eventCols,
-        neighborhood: neighborhoods.name,
-        myStatus: eventRsvps.status,
-        savedByMe,
-      })
-      .from(events)
-      .innerJoin(restaurants, eq(restaurants.id, events.restaurantId))
-      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .leftJoin(eventRsvps, and(eq(eventRsvps.eventId, events.id), eq(eventRsvps.userId, me.id)))
-      .leftJoin(savedEvents, and(eq(savedEvents.eventId, events.id), eq(savedEvents.userId, me.id)))
-      .where(
-        and(
-          isNull(events.cancelledAt),
-          notEnded,
-          start ? gte(events.startsAt, start) : undefined,
-          end ? lt(events.startsAt, end) : undefined,
-        ),
-      )
-      .orderBy(asc(events.startsAt))
-      .limit(50)
-
-    return c.json({ events: await withFriendsGoing(me, rows) })
+    return c.json({ events: await browseEvents(me, eventsWindow(when), 50) })
   })
 
   // One restaurant's own upcoming events — the "Próximos eventos" rail on

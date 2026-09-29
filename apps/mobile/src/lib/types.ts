@@ -770,3 +770,40 @@ export interface EventSummary {
   // cancelled; see docs/EVENTS.md.
   cancelled?: boolean
 }
+
+// GET /home — the top of the Feed in one round trip: "Your six", tonight's card, and
+// "New near you". The rules live in apps/api/src/lib/home.ts; the client only words
+// the reasons and draws the cards. Mirrors the API response.
+export interface HomeRestaurant {
+  id: string
+  name: string
+  cuisine: string | null
+  coverImageId: string | null
+  priceTier: number | null
+  neighborhood: string | null
+}
+
+// Why a place is in the six, as data (the client words it, in both languages).
+export type SixReason =
+  | { kind: 'friend'; name: string; score: number; more: number } // "Diego · 9.6"
+  | { kind: 'saved_friends'; count: number } // "Saved · 2 friends"
+  | { kind: 'saved' } // "You saved it"
+  | { kind: 'trending' } // the city's own ranking, filling a short list
+
+export interface HomeResponse {
+  six: { restaurant: HomeRestaurant; reason: SixReason }[]
+  // Events on tonight (now → 4 AM Santo Domingo), up to five; else tonight's pick — the
+  // place still open late that friends ranked highest; else nothing.
+  tonight:
+    | { kind: 'events'; events: EventSummary[] }
+    | {
+        kind: 'pick'
+        restaurant: HomeRestaurant
+        friend: { name: string }
+        // The friend's stored score, 0–100.
+        score: number
+        friendCount: number
+      }
+    | null
+  newNearYou: HomeRestaurant[]
+}

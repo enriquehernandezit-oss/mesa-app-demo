@@ -18,6 +18,7 @@ import { dishesRoutes } from './routes/dishes'
 import { dishListsRoutes } from './routes/dishLists'
 import { eventsRoutes } from './routes/events'
 import { feedRoutes } from './routes/feed'
+import { homeRoutes } from './routes/home'
 import { inviteRoutes } from './routes/invites'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { legalPagesRoutes } from './routes/legal-pages'
@@ -186,6 +187,7 @@ app.route('/saved', savedRoutes)
 app.route('/collections', collectionsRoutes)
 app.route('/moderation', moderationRoutes)
 app.route('/feed', feedRoutes)
+app.route('/home', homeRoutes)
 app.route('/restaurants', restaurantRoutes)
 app.route('/cheers', cheersRoutes)
 app.route('/comments', commentsRoutes)
