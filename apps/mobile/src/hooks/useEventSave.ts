@@ -49,6 +49,7 @@ export function useEventSave(e: EventSummary) {
       pendingRef.current = false
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['event', e.id] })
+      queryClient.invalidateQueries({ queryKey: ['home'] })
     },
   })
 

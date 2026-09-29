@@ -37,6 +37,8 @@ export function useEventRsvp(e: EventSummary) {
       pendingRef.current = false
       queryClient.invalidateQueries({ queryKey: ['events'] })
       queryClient.invalidateQueries({ queryKey: ['event', e.id] })
+      // Tonight's card on the Feed carries the member's own RSVP.
+      queryClient.invalidateQueries({ queryKey: ['home'] })
     },
   })
 

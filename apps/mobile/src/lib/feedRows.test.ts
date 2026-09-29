@@ -80,6 +80,49 @@ describe('buildFeedRows', () => {
     const rows = buildFeedRows({ items: items(4), people: [], seenAt: null, shelves: true })
     expect(rows.some((r) => r.type === 'caught_up')).toBe(false)
   })
+
+  test('"New near you" follows the first six cards, after the People shelf', () => {
+    const rows = buildFeedRows({
+      items: items(8),
+      people: people(3),
+      seenAt: null,
+      shelves: true,
+      nearYou: true,
+    })
+    expect(types(rows)).toEqual([...Array(6).fill('card'), 'shelf', 'new_near_you', 'card', 'card'])
+  })
+
+  test('"New near you" goes at the end of a feed shorter than six, and never on an empty one', () => {
+    const short = buildFeedRows({
+      items: items(3),
+      people: [],
+      seenAt: null,
+      shelves: true,
+      nearYou: true,
+    })
+    expect(types(short)).toEqual(['card', 'card', 'card', 'new_near_you'])
+    const none = buildFeedRows({
+      items: [],
+      people: [],
+      seenAt: null,
+      shelves: true,
+      nearYou: true,
+    })
+    expect(none).toEqual([])
+  })
+
+  test('"New near you" shows once, and only when asked for', () => {
+    const long = buildFeedRows({
+      items: items(14),
+      people: [],
+      seenAt: null,
+      shelves: true,
+      nearYou: true,
+    })
+    expect(long.filter((r) => r.type === 'new_near_you')).toHaveLength(1)
+    const off = buildFeedRows({ items: items(8), people: [], seenAt: null, shelves: true })
+    expect(off.some((r) => r.type === 'new_near_you')).toBe(false)
+  })
 })
 
 describe('dayPart', () => {

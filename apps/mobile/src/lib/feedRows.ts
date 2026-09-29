@@ -1,5 +1,6 @@
 // The Feed's flat row list, built from the pages the server sent: a friend card per
-// ranking, a "People you may know" shelf after every SHELF_EVERY cards, and one
+// ranking, a "People you may know" shelf after every SHELF_EVERY cards, one "New near
+// you" shelf after the first SHELF_EVERY (or at the end of a shorter feed), and one
 // "You're caught up · older below" divider where what you've already seen begins.
 // Pure (no React Native imports) so it is unit-tested with the other lib/*.test.ts.
 
@@ -9,6 +10,7 @@ export const SHELF_SIZE = 3
 export type FeedRow<Card, Person> =
   | { type: 'card'; key: string; item: Card }
   | { type: 'shelf'; key: string; people: Person[] }
+  | { type: 'new_near_you'; key: 'new_near_you' }
   | { type: 'caught_up'; key: 'caught_up' }
 
 export function buildFeedRows<Card extends { rankingId: string; rankedAt: string }, Person>({
@@ -16,6 +18,7 @@ export function buildFeedRows<Card extends { rankingId: string; rankedAt: string
   people,
   seenAt,
   shelves,
+  nearYou = false,
 }: {
   items: Card[]
   // Suggested people, best first. Shelf k shows people[k*SHELF_SIZE ...] and there is
@@ -26,6 +29,9 @@ export function buildFeedRows<Card extends { rankingId: string; rankedAt: string
   seenAt: string | null
   // False on the Friends view: nothing but friends' rankings there.
   shelves: boolean
+  // Whether there are new places to show. They sit after the first six cards — after the
+  // People shelf when one follows them — or at the end of a feed shorter than that.
+  nearYou?: boolean
 }): FeedRow<Card, Person>[] {
   const seen = seenAt ? new Date(seenAt).getTime() : null
   const rows: FeedRow<Card, Person>[] = []
@@ -43,6 +49,9 @@ export function buildFeedRows<Card extends { rankingId: string; rankedAt: string
       const batch = people.slice(k * SHELF_SIZE, (k + 1) * SHELF_SIZE)
       if (batch.length >= 2) rows.push({ type: 'shelf', key: `shelf:${k}`, people: batch })
     }
+    if (nearYou && i + 1 === SHELF_EVERY) rows.push({ type: 'new_near_you', key: 'new_near_you' })
   })
+  if (nearYou && items.length > 0 && items.length < SHELF_EVERY)
+    rows.push({ type: 'new_near_you', key: 'new_near_you' })
   return rows
 }

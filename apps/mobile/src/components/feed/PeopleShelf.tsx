@@ -23,6 +23,7 @@ export function PeopleShelf({ people }: { people: FriendSuggestion[] }) {
             <Text
               accessibilityRole="button"
               onPress={() => router.push('/friends')}
+              maxFontSizeMultiplier={MAX_SCALE}
               className="font-ui-medium text-pill text-text-muted"
             >
               {t('feed.see_all')}

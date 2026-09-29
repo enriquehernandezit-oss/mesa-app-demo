@@ -72,6 +72,8 @@ export function useSave(target: SaveTarget, initial: boolean) {
       )
       patchFeed(next)
       for (const key of RELATED_QUERY_KEYS) queryClient.invalidateQueries({ queryKey: [key] })
+      // A saved place counts toward Your six.
+      if (target.kind === 'restaurant') queryClient.invalidateQueries({ queryKey: ['home'] })
       queryClient.invalidateQueries({ queryKey: ['restaurant', target.id] })
       queryClient.invalidateQueries({ queryKey: ['dish', target.id] })
     },

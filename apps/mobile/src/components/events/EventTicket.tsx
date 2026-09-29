@@ -150,7 +150,7 @@ export function liveLabel(t: ReturnType<typeof useT>, e: EventSummary): string {
   return t('events.live_chip', { time })
 }
 
-function stubParts(iso: string) {
+export function stubParts(iso: string) {
   const d = new Date(iso)
   const loc = dateLocale()
   return {

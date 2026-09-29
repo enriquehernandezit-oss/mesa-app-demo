@@ -19,7 +19,11 @@ import { FeedHeader } from '@/components/feed/FeedHeader'
 import { type FeedView, FeedPills } from '@/components/feed/FeedPills'
 import { FriendCard } from '@/components/feed/FriendCard'
 import { ListCovers } from '@/components/feed/ListCovers'
+import { NewNearYou } from '@/components/feed/NewNearYou'
 import { PeopleShelf } from '@/components/feed/PeopleShelf'
+import { TonightHero } from '@/components/feed/TonightHero'
+import { TonightPick } from '@/components/feed/TonightPick'
+import { YourSix } from '@/components/feed/YourSix'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { PersonRow } from '@/components/PersonRow'
 import { Group } from '@/components/SettingsRow'
@@ -40,15 +44,17 @@ import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { type FeedRow, buildFeedRows } from '@/lib/feedRows'
 import { readFeedSeen, writeFeedSeen } from '@/lib/feedSeen'
+import { msUntilHomeRefresh } from '@/lib/homeCache'
 import { useT } from '@/lib/i18n'
-import type { FeedItem, FriendSuggestion, SuggestedUser } from '@/lib/types'
+import type { FeedItem, FriendSuggestion, HomeResponse, SuggestedUser } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 
 // The Feed (Redesign 2): a greeting, then four pills — For you, Friends, Events, Lists.
-// "For you" and "Friends" are friends' rankings as cards (For you also has the "People
-// you may know" shelf between them); "Events" and "Lists" host what used to be rails.
+// "For you" and "Friends" are friends' rankings as cards; "Events" and "Lists" host what
+// used to be rails. For you also opens with "Your six" and "Tonight" (GET /home, cached
+// until 5 AM) and, among the cards, the "People you may know" and "New near you" shelves.
 // Once the inline pills scroll away, a glass bar pins them to the top.
 //
 // One persistent FlatList, not a ternary across load states: that swapped the element
@@ -103,6 +109,16 @@ export default function DiscoverTab() {
     enabled: view === 'for_you' && feed.isSuccess && items.length > 0,
   })
 
+  // The top of For you — your six, tonight, new near you — in one request, the same all
+  // day (lib/homeCache.ts). A failure just leaves it out: the friends' feed is the page.
+  const home = useQuery({
+    queryKey: ['home'],
+    queryFn: () => api.get<HomeResponse>('/home'),
+    staleTime: (q) => msUntilHomeRefresh(new Date(q.state.dataUpdatedAt)),
+    enabled: view === 'for_you',
+  })
+  const newNearYou = home.data?.newNearYou
+
   // How far the member had read last time — read ONCE, so the "caught up" divider
   // stays where it was while they scroll and only moves on the next visit.
   const [seenAt, setSeenAt] = useState<string | null | undefined>(undefined)
@@ -135,9 +151,10 @@ export default function DiscoverTab() {
             people: suggestions.data?.users ?? [],
             seenAt,
             shelves: view === 'for_you',
+            nearYou: view === 'for_you' && (newNearYou?.length ?? 0) > 0,
           })
         : [],
-    [friendsView, view, items, suggestions.data, seenAt],
+    [friendsView, view, items, suggestions.data, seenAt, newNearYou],
   )
 
   const refetchCurrent = useCallback(
@@ -146,18 +163,24 @@ export default function DiscoverTab() {
         ? queryClient.invalidateQueries({ queryKey: ['events'] })
         : view === 'lists'
           ? queryClient.invalidateQueries({ queryKey: ['lists'] })
-          : feed.refetch(),
-    [view, queryClient, feed],
+          : view === 'for_you'
+            ? Promise.all([feed.refetch(), home.refetch()])
+            : feed.refetch(),
+    [view, queryClient, feed, home],
   )
   const { refreshing, onRefresh } = usePullToRefresh(refetchCurrent)
 
   // Stable across renders, so a screen-level re-render (pull-to-refresh, the next page,
   // one cheers tap) doesn't make FlatList treat every mounted cell as changed.
-  const renderRow = useCallback(({ item: row, index }: { item: Row; index: number }) => {
-    if (row.type === 'card') return <FriendCard item={row.item} index={index} />
-    if (row.type === 'shelf') return <PeopleShelf people={row.people} />
-    return <CaughtUp />
-  }, [])
+  const renderRow = useCallback(
+    ({ item: row, index }: { item: Row; index: number }) => {
+      if (row.type === 'card') return <FriendCard item={row.item} index={index} />
+      if (row.type === 'shelf') return <PeopleShelf people={row.people} />
+      if (row.type === 'new_near_you') return <NewNearYou places={newNearYou ?? []} />
+      return <CaughtUp />
+    },
+    [newNearYou],
+  )
 
   const listRef = useRef<FlatList<Row>>(null)
   useResetOnTabPress(
@@ -168,7 +191,8 @@ export default function DiscoverTab() {
       // doesn't reliably restore it (usePullToRefresh's own header), which raced the
       // scrollToOffset above. A real pull-to-refresh gesture is untouched.
       void feed.refetch()
-    }, [feed]),
+      if (view === 'for_you') void home.refetch()
+    }, [feed, home, view]),
   )
 
   // The pinned pill bar: once the inline pills have scrolled up under the status bar.
@@ -210,13 +234,31 @@ export default function DiscoverTab() {
               </View>
             ) : view === 'lists' ? (
               <ListCovers />
-            ) : items.length > 0 ? (
-              <View className="px-5">
-                <SectionHeader action={<Caption>{t('feed.newest_first')}</Caption>}>
-                  {t('feed.from_friends')}
-                </SectionHeader>
-              </View>
-            ) : null}
+            ) : (
+              <>
+                {view === 'for_you' ? (
+                  home.isPending ? (
+                    <SixSkeleton />
+                  ) : home.data ? (
+                    <>
+                      <YourSix six={home.data.six} />
+                      {home.data.tonight?.kind === 'events' ? (
+                        <TonightHero events={home.data.tonight.events} />
+                      ) : home.data.tonight?.kind === 'pick' ? (
+                        <TonightPick pick={home.data.tonight} />
+                      ) : null}
+                    </>
+                  ) : null
+                ) : null}
+                {items.length > 0 ? (
+                  <View className="px-5">
+                    <SectionHeader action={<Caption>{t('feed.newest_first')}</Caption>}>
+                      {t('feed.from_friends')}
+                    </SectionHeader>
+                  </View>
+                ) : null}
+              </>
+            )}
           </>
         }
         ListEmptyComponent={
@@ -345,6 +387,26 @@ function SuggestedRow({ user: u, last }: { user: SuggestedUser; last: boolean })
         </Button>
       }
     />
+  )
+}
+
+// "Your six" while it loads: the section title's height and three rows of two tiles, so
+// the friend cards don't jump when the real thing arrives.
+function SixSkeleton() {
+  return (
+    <View className="pb-1 pt-[60px]">
+      <View className="gap-2 px-4">
+        {[0, 1, 2].map((i) => (
+          <View key={i} className="flex-row gap-2">
+            {[0, 1].map((j) => (
+              <View key={j} className="flex-1 overflow-hidden rounded">
+                <Skeleton height={62} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
   )
 }
 

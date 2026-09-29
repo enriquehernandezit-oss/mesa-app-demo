@@ -30,7 +30,7 @@ export type FollowSource =
   | 'find_friends'
   | 'feed_shelf'
 
-const RELATED_QUERY_KEYS = ['feed', 'activity', 'people', 'me-stats'] as const
+const RELATED_QUERY_KEYS = ['feed', 'home', 'activity', 'people', 'me-stats'] as const
 
 export function useFollow(userId: string, initial: boolean, from: FollowSource) {
   const [following, setFollowing] = useState(initial)

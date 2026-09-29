@@ -170,11 +170,19 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'
   notes; dishes; info; map).
 - **Feed:** a greeting header (avatar, search chip, bell; no wordmark) and pills **For you / Friends /
-  Events / Lists** (**Popular** joins with its API, D10; "Your six" and the **Tonight** hero with theirs,
-  D8–D9). Friend cards come in three shapes by the picture rule; a "People you may know" shelf follows
-  every 6th card; "You're caught up · older below" marks where you'd stopped (SecureStore
-  `mesa.feed_seen`, read once per visit); the end card offers Explore and Find friends. Once the inline
-  pills scroll away, a solid bar pins them to the top.
+  Events / Lists** (**Popular** joins with its API, D10). **For you** opens with **Your six** (a 2-column
+  grid of 62pt tiles: picture, serif name, and _why_ in one muted line — "Diego · 9.6", "Saved · 2 friends",
+  "You saved it"; hidden under two places, an odd count drops its last) and **Tonight** (a 372pt r32 photo card
+  per event, swiped with a peek of the next and pager dots: glass time chip and save on the photo, a frosted
+  panel with the title, place · price, faces, and **I'm going**; on a night with no events, **Tonight's pick**
+  — 300pt, the place still open late that a friend ranked highest). Both come from one `GET /home`, cached
+  until 5 AM Santo Domingo. Then friend cards in three shapes by the picture rule; a "People you may know"
+  shelf and a **New near you** shelf (150-wide cards with a "New" pill) follow the first six; "You're caught
+  up · older below" marks where you'd stopped (SecureStore `mesa.feed_seen`, read once per visit); the end
+  card offers Explore and Find friends. Once the inline pills scroll away, a solid bar pins them to the top.
+- **Chips on a picture:** over a **photo** a chip is dark glass (`Glass variant="photo"`, a photo being its own
+  dark island); over a **name card** — pale by day — it is a solid `ink` chip instead, because dark glass goes
+  muddy grey-brown there (`components/feed/PhotoChip.tsx`). The bottom scrim is drawn only over real photos.
 - **Your list:** a podium — #1 a large photo card with a giant serif numeral, #2/#3 as halves.
 - **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
 - **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.

@@ -12,7 +12,8 @@ import { useColor } from '@/theme/useColor'
 // only asks the image host for a delivery size (see lib/media.ts).
 //
 // The name scales with the box (a thumbnail sets it small, a hero large) and shrinks to
-// fit rather than clip, up to three lines.
+// fit rather than clip, up to three lines. Its line height leaves room for a capital's
+// accent ("KIJÁ"), which a tight 1.1 clipped.
 export function PlaceCover({
   name,
   coverImageId,
@@ -54,10 +55,12 @@ function NameCard({ name, className }: { name: string; className?: string }) {
       {box ? (
         <Text
           numberOfLines={3}
+          // A picture, not a paragraph: its size follows the box, not the text-size setting.
+          allowFontScaling={false}
           adjustsFontSizeToFit
           minimumFontScale={0.6}
           className="text-center font-serif text-text"
-          style={{ fontSize, lineHeight: Math.round(fontSize * 1.1) }}
+          style={{ fontSize, lineHeight: Math.round(fontSize * 1.25) }}
         >
           {name}
         </Text>
