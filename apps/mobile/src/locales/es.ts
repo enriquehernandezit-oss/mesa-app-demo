@@ -294,7 +294,6 @@ export const es = {
   'explore.trending_title': 'Sonando esta semana',
   'explore.cheers_this_week': { one: '{n} cheer esta semana', other: '{n} cheers esta semana' },
   'explore.map_label': 'Ver el mapa',
-  'explore.map_chip': 'Mapa',
   'explore.search_placeholder': 'Busca un spot, plato o miembro',
 
   // app/leaderboard.tsx
@@ -889,8 +888,8 @@ export const es = {
   // app/map.tsx
   'map.title': 'El mapa',
   'map.friends_ranked_count': {
-    one: '1 spot que tus amigos han rankeado.',
-    other: '{n} spots que tus amigos han rankeado.',
+    one: '1 spot que rankearon tus amigos',
+    other: '{n} spots que rankearon tus amigos',
   },
   'map.locate_me': 'Ubícame en el mapa',
   'map.locating': 'Buscando tu ubicación…',
@@ -903,7 +902,6 @@ export const es = {
   'map.coming_soon_body': 'El mapa llega con la próxima versión.',
   'map.unavailable': 'El mapa no está disponible.',
   'map.nobody_ranked': 'Nadie que sigues lo ha rankeado aún.',
-  'map.view_arrow': 'Ver ›',
 
   // app/settings.tsx
   'settings.unblock_error': 'No se pudo desbloquear. Intenta de nuevo.',

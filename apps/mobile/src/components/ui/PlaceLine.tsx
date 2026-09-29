@@ -17,6 +17,7 @@ export function PlaceLine({
   priceTier,
   extra,
   note,
+  sub,
   picture = 52,
   nameClass = 'text-serif-sm',
   right,
@@ -29,6 +30,8 @@ export function PlaceLine({
   // Appended to the meta line (e.g. the distance).
   extra?: string | null
   note?: string | null
+  // A quiet third line ("3 friends").
+  sub?: string | null
   picture?: number
   nameClass?: string
   right?: ReactNode
@@ -61,6 +64,15 @@ export function PlaceLine({
             className="mt-0.5 font-ui text-meta text-text-muted"
           >
             {meta}
+          </Text>
+        ) : null}
+        {sub ? (
+          <Text
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-0.5 font-ui text-micro text-text-2"
+          >
+            {sub}
           </Text>
         ) : null}
         {note ? (

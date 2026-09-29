@@ -341,6 +341,18 @@ export const LocateIcon = (p: IconProps) => (
     <Path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22" />
   </Icon>
 )
+// A folded map — the entry to the map screen.
+export const MapIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M9 4 3 6.5V20l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4ZM9 4v13.5M15 6.5V20" />
+  </Icon>
+)
+// A flame — "trending" (what people are cheering this week).
+export const FlameIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 21a7 7 0 0 0 7-7c0-4-3-6-4-9-1 2.5-2.5 3.5-4 4 0-2-1-3.5-2-4.5C7 8 5 10.5 5 14a7 7 0 0 0 7 7Z" />
+  </Icon>
+)
 // Form-field glyphs (sign-in, reset password).
 export const MailIcon = (p: IconProps) => (
   <Icon {...p}>

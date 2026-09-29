@@ -26,39 +26,40 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { useEventSave } from '@/hooks/useEventSave'
 import { eventCategoryLabel, eventPriceLabel } from '@/lib/display'
-import { CAT_CLASSES, CAT_TOKEN, type CatKey, categoryKey } from '@/lib/eventCategory'
+import { CAT_ICON, type CatKey, categoryKey } from '@/lib/eventCategory'
 import { goingLabel } from '@/lib/eventGoing'
 import { type Countdown, countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
 import type { EventSummary } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
 import { AnimatedBar, BurstDots, PulseDot, usePop, useStaggerEntering } from './motion'
 
-// Eventos' building blocks (the redesign — color, motion, one-tap actions):
-// a ticket-stub list card, a full-bleed hero card, and a compact rail card,
-// all sharing the category color (lib/eventCategory), the live countdown
-// (lib/eventTime) and the optimistic RSVP (hooks/useEventRsvp).
+// Eventos' building blocks (Redesign 2): a ticket-stub list card and a compact rail card, sharing the
+// category ICON (lib/eventCategory — kinds are told apart by icon, never by colour), the live
+// countdown (lib/eventTime) and the optimistic RSVP (hooks/useEventRsvp). The big photo card is
+// EventHero.tsx.
 
 const CAT_LAYOUT = LinearTransition.springify().damping(18)
 
 export function CategoryIcon({
   cat,
   size = 14,
-  color,
+  color = 'accent',
 }: {
   cat: CatKey
   size?: number
   color?: Parameters<typeof WineGlassIcon>[0]['color']
 }) {
-  const c = color ?? CAT_TOKEN[cat]
-  if (cat === 'cata') return <WineGlassIcon size={size} color={c} />
-  if (cat === 'musica') return <MusicIcon size={size} color={c} />
-  if (cat === 'brunch') return <SunIcon size={size} color={c} />
-  if (cat === 'food') return <ForkKnifeIcon size={size} color={c} />
-  if (cat === 'happy') return <CocktailIcon size={size} color={c} />
-  return <SparkleIcon size={size} color={c} />
+  const icon = CAT_ICON[cat]
+  if (icon === 'wine') return <WineGlassIcon size={size} color={color} />
+  if (icon === 'music') return <MusicIcon size={size} color={color} />
+  if (icon === 'sun') return <SunIcon size={size} color={color} />
+  if (icon === 'fork') return <ForkKnifeIcon size={size} color={color} />
+  if (icon === 'cocktail') return <CocktailIcon size={size} color={color} />
+  return <SparkleIcon size={size} color={color} />
 }
 
 // Re-render once a minute so countdowns stay honest while a screen is open.
@@ -105,9 +106,9 @@ export function countdownLabel(t: ReturnType<typeof useT>, c: Countdown): string
   return t('events.cd_days', { n: c.n })
 }
 
-// "¡Hoy · en 3 h!" pill. Pulsing dot when it's imminent; while the event is
-// actually happening it turns the "live" green with an on-air dot and says
-// until when ("Live · until 4:00 PM").
+// When it starts. Quiet muted text ("In 5 days") until it matters — imminent (a pulsing dot) or
+// happening now ("Live · until 4:00 PM") turns it into the accent pill — and a dark glass pill over a
+// photo.
 export function CountdownChip({
   e,
   now,
@@ -118,23 +119,25 @@ export function CountdownChip({
   onPhoto?: boolean
 }) {
   const t = useT()
-  const cat = categoryKey(e.category, e.title)
   const c = countdown(e.startsAt, e.endsAt, now)
   const live = c.kind === 'live'
   const hot = isImminent(c)
   const label = live ? liveLabel(t, e) : countdownLabel(t, c)
+  if (!live && !hot && !onPhoto) {
+    return (
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-micro text-text-muted">
+        {label}
+      </Text>
+    )
+  }
   return (
     <View
-      className={`flex-row items-center gap-1.5 self-start rounded-pill px-2.5 py-1 ${live ? 'bg-live' : hot ? CAT_CLASSES[cat].bg : onPhoto ? 'bg-photo-scrim' : CAT_CLASSES[cat].soft}`}
+      className={`flex-row items-center gap-1.5 self-start rounded-pill px-2.5 py-1 ${live || hot ? 'bg-accent-fill' : 'bg-photo-scrim'}`}
     >
-      {live ? (
-        <PulseDot color="on-live" size={6} />
-      ) : hot ? (
-        <PulseDot color="on-cat" size={6} />
-      ) : null}
+      {live || hot ? <PulseDot color="on-accent" size={6} /> : null}
       <Text
         maxFontSizeMultiplier={MAX_SCALE}
-        className={`font-ui-semibold text-micro ${live ? 'text-on-live' : hot ? 'text-on-cat' : onPhoto ? 'text-on-photo' : CAT_CLASSES[cat].text}`}
+        className={`font-ui-semibold text-micro ${live || hot ? 'text-on-accent' : 'text-on-photo'}`}
       >
         {label}
       </Text>
@@ -162,16 +165,14 @@ export function stubParts(iso: string) {
   }
 }
 
-// "12/16 cupos" line + animated bar. Turns urgent at ≤3 left.
+// "12/16 spots" line + animated bar. Turns urgent at ≤3 left.
 export function SpotsLine({
   capacity,
   spotsLeft,
-  cat,
   compact,
 }: {
   capacity: number
   spotsLeft: number
-  cat: CatKey
   compact?: boolean
 }) {
   const t = useT()
@@ -187,7 +188,7 @@ export function SpotsLine({
     <View className={compact ? 'mt-2' : 'mt-3'}>
       <View className="mb-1 flex-row items-baseline justify-between">
         <Caption
-          className={`font-ui-semibold text-micro ${urgent ? 'text-danger' : CAT_CLASSES[cat].text}`}
+          className={`font-ui-semibold text-micro ${urgent ? 'text-danger' : 'text-accent'}`}
         >
           {label}
         </Caption>
@@ -197,8 +198,8 @@ export function SpotsLine({
       </View>
       <AnimatedBar
         ratio={taken / capacity}
-        fillClass={urgent ? 'bg-danger' : CAT_CLASSES[cat].bg}
-        trackClass={CAT_CLASSES[cat].soft}
+        fillClass={urgent ? 'bg-danger' : 'bg-accent-fill'}
+        trackClass="bg-bg-sunk"
         height={compact ? 4 : 6}
       />
     </View>
@@ -246,7 +247,6 @@ export function RsvpButtons({
   size?: 'sm' | 'md'
 }) {
   const t = useT()
-  const cat = categoryKey(e.category, e.title)
   const { rsvp, toggle } = rsvpState
   const going = rsvp === 'going'
   const save = useEventSave(e)
@@ -256,9 +256,8 @@ export function RsvpButtons({
   const md = size === 'md'
   return (
     <View className="flex-row items-center gap-2">
-      {/* Save (bookmark) — into Saved → Events. Replaced the "Me interesa"
-          heart: a save is independent of going, and it's how an event gets
-          kept (events never go into custom lists). */}
+      {/* Save (bookmark) — into Saved → Events. A save is independent of going, and it's
+          how an event gets kept (events never go into custom lists). */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={save.saved ? t('events.unsave_cta') : t('events.save_cta')}
@@ -268,11 +267,11 @@ export function RsvpButtons({
           heartPop.pop()
           save.toggle()
         }}
-        className={`items-center justify-center rounded-pill border ${md ? 'h-12 w-12' : 'h-9 w-9'} ${save.saved ? `${CAT_CLASSES[cat].border} ${CAT_CLASSES[cat].soft}` : 'border-line-strong'}`}
+        className={`items-center justify-center rounded-pill border ${md ? 'h-12 w-12' : 'h-[34px] w-[34px]'} ${save.saved ? 'border-accent bg-accent-soft' : 'border-line-strong'}`}
       >
         <Animated.View style={heartPop.style}>
           {save.saved ? (
-            <BookmarkFilledIcon size={md ? 20 : 16} color={CAT_TOKEN[cat]} />
+            <BookmarkFilledIcon size={md ? 20 : 16} color="accent" />
           ) : (
             <BookmarkIcon size={md ? 20 : 16} color="text-muted" />
           )}
@@ -287,16 +286,16 @@ export function RsvpButtons({
             if (!going) setBurst((b) => b + 1)
             toggle('going')
           }}
-          className={`flex-row items-center justify-center gap-1.5 rounded-pill ${md ? 'h-12 px-6' : 'h-9 px-4'} ${going ? CAT_CLASSES[cat].bg : 'bg-ink'}`}
+          className={`flex-row items-center justify-center gap-1.5 rounded-pill ${md ? 'h-12 px-6' : 'h-[34px] px-4'} ${going ? 'bg-accent-fill' : 'bg-ink'}`}
         >
-          {going ? <CheckIcon size={md ? 16 : 13} color="on-cat" strokeWidth={2.2} /> : null}
+          {going ? <CheckIcon size={md ? 16 : 13} color="on-accent" strokeWidth={2.2} /> : null}
           <Text
             maxFontSizeMultiplier={MAX_SCALE}
-            className={`font-ui-semibold ${md ? 'text-body' : 'text-label'} ${going ? 'text-on-cat' : 'text-on-ink'}`}
+            className={`font-ui-semibold ${md ? 'text-body' : 'text-label'} ${going ? 'text-on-accent' : 'text-on-ink'}`}
           >
             {going ? t('events.going_done') : t('events.going_cta')}
           </Text>
-          <BurstDots trigger={burst} color={CAT_TOKEN[cat]} />
+          <BurstDots trigger={burst} color="accent" />
         </Pressable>
       </Animated.View>
     </View>
@@ -306,7 +305,7 @@ export function RsvpButtons({
 // An honesty mark, not a feature badge — the seeded/mock events sit on real
 // Santo Domingo restaurants that haven't confirmed them (e.venueConfirmed),
 // so every card and the detail page say so in plain, quiet text: no pill, no
-// border, no icon, and never a cat-* hue or brass (both would read as
+// border, no icon, and never an accent (it would read as
 // promotion, the opposite of the point). `tone="on-photo"` for the two cards
 // that render this over a photo; the plain-card default otherwise.
 function SampleMark({ tone = 'muted' }: { tone?: 'muted' | 'on-photo' }) {
@@ -322,51 +321,58 @@ function SampleMark({ tone = 'muted' }: { tone?: 'muted' | 'on-photo' }) {
 }
 
 // ── Ticket card (the list) ────────────────────────────────────────────────
+// A raised r26 card: the date set like a ticket on a stub at the left (a dashed seam), and at the
+// right the kind (icon + word), when, the title, where, how many spots are left, who is going —
+// and the two actions (save, I'm going).
 export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: number; now: Date }) {
   const t = useT()
+  const lift = useLift()
   const cat = categoryKey(e.category, e.title)
-  const cls = CAT_CLASSES[cat]
   const s = stubParts(e.startsAt)
   const rsvpState = useEventRsvp(e)
   const { goingCount, spotsLeft } = rsvpState
   const entering = useStaggerEntering(index)
-  const surface = useColor('bg')
   return (
-    <Animated.View entering={entering} layout={CAT_LAYOUT} className="mb-3">
+    <Animated.View entering={entering} layout={CAT_LAYOUT} className="mb-2.5">
       <Link href={`/events/${e.id}`} asChild>
-        <Pressable className="flex-row overflow-hidden rounded-card border border-line bg-surface active:opacity-90">
-          {/* The stub — category wash, the date set like a ticket */}
-          <View className={`w-[74px] items-center justify-center py-3 ${cls.soft}`}>
-            <Text className={`font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}>
+        <Pressable
+          className="flex-row overflow-hidden rounded-[26px] bg-surface active:opacity-90"
+          style={lift}
+        >
+          {/* The stub — the date, in the accent */}
+          <View className="w-[84px] items-center justify-center py-3">
+            <Text
+              maxFontSizeMultiplier={1.1}
+              className="font-ui-semibold text-micro uppercase tracking-eyebrow text-accent"
+            >
               {s.dow}
             </Text>
             <Text
               style={DATA_FIGURES}
               maxFontSizeMultiplier={1.1}
-              className={`font-serif text-rank leading-[48px] ${cls.text}`}
+              className="font-serif text-rank leading-[48px] text-accent"
             >
               {s.day}
             </Text>
-            <Text className={`font-ui-semibold text-micro uppercase ${cls.text}`}>{s.month}</Text>
-            <Text className="mt-1 font-ui-medium text-micro text-text-muted">{s.time}</Text>
+            <Text
+              maxFontSizeMultiplier={1.1}
+              className="font-ui-semibold text-micro uppercase tracking-eyebrow text-accent"
+            >
+              {s.month}
+            </Text>
+            <Text maxFontSizeMultiplier={1.1} className="mt-1 font-ui text-eyebrow text-text-muted">
+              {s.time}
+            </Text>
           </View>
-          {/* Perforation: a dashed seam with two notches punched out */}
-          <View className="w-0 border-line-strong border-l border-dashed" />
-          <View
-            style={{ backgroundColor: surface }}
-            className="absolute top-[-8px] left-[66px] h-4 w-4 rounded-pill border border-line"
-          />
-          <View
-            style={{ backgroundColor: surface }}
-            className="absolute bottom-[-8px] left-[66px] h-4 w-4 rounded-pill border border-line"
-          />
-          <View className="flex-1 p-3">
+          <View className="my-3 w-0 border-l border-dashed border-line-strong" />
+          <View className="min-w-0 flex-1 px-3.5 py-3">
             <View className="flex-row items-center justify-between gap-2">
-              <View className="flex-1 flex-row items-center gap-1.5">
+              <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
                 <CategoryIcon cat={cat} size={13} />
                 <Text
                   numberOfLines={1}
-                  className={`shrink font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="shrink font-ui-semibold text-micro text-accent"
                 >
                   {eventCategoryLabel(e.category) ?? t('events.cat_default')}
                 </Text>
@@ -380,20 +386,20 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
             >
               {e.title}
             </Text>
-            <Caption numberOfLines={1}>
-              {[e.restaurant.name, e.restaurant.neighborhood, eventPriceLabel(e.priceLabel)]
-                .filter(Boolean)
-                .join(' · ')}
+            <Caption numberOfLines={1} className="mt-0.5 text-meta">
+              {[e.restaurant.name, eventPriceLabel(e.priceLabel)].filter(Boolean).join(' · ')}
             </Caption>
             {!e.venueConfirmed ? <SampleMark /> : null}
             {e.capacity != null && spotsLeft != null ? (
-              <SpotsLine capacity={e.capacity} spotsLeft={spotsLeft} cat={cat} compact />
+              <SpotsLine capacity={e.capacity} spotsLeft={spotsLeft} compact />
             ) : null}
-            <View className="mt-3 flex-row items-center justify-between">
-              <FacesStack
-                faces={e.friendsGoing}
-                label={goingLabel(t, { friendsGoingCount: e.friendsGoingCount, goingCount })}
-              />
+            <View className="mt-2.5 flex-row items-center gap-2">
+              <View className="min-w-0 flex-1">
+                <FacesStack
+                  faces={e.friendsGoing}
+                  label={goingLabel(t, { friendsGoingCount: e.friendsGoingCount, goingCount })}
+                />
+              </View>
               <RsvpButtons e={e} rsvpState={rsvpState} />
             </View>
           </View>
@@ -403,120 +409,55 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
   )
 }
 
-// ── Hero card (the "Destacados" carousel) ───────────────────────────────────
-export function EventHeroCard({ e, width, now }: { e: EventSummary; width: number; now: Date }) {
-  const cat = categoryKey(e.category, e.title)
-  const cls = CAT_CLASSES[cat]
-  const s = stubParts(e.startsAt)
-  const scrim = useColor('photo-scrim')
-  const rsvpState = useEventRsvp(e)
-  return (
-    <Link href={`/events/${e.id}`} asChild>
-      <Pressable style={{ width }} className="h-60 overflow-hidden rounded-card active:opacity-95">
-        <PlaceCover
-          name={e.title}
-          coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
-          size={{ w: 900, h: 620 }}
-          className="absolute inset-0 h-full w-full rounded-none"
-        />
-        <LinearGradient
-          colors={['transparent', scrim]}
-          locations={[0.25, 1]}
-          style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-        />
-        {/* Date block top-left, category chip top-right */}
-        <View
-          className={`absolute top-3 left-3 min-w-[48px] items-center rounded-sm px-2.5 pt-0.5 pb-1.5 ${cls.bg}`}
-        >
-          <Text
-            style={DATA_FIGURES}
-            maxFontSizeMultiplier={1.1}
-            className="font-serif text-serif-lg leading-[34px] text-on-cat"
-          >
-            {s.day}
-          </Text>
-          <Text className="font-ui-semibold text-micro uppercase text-on-cat">{s.month}</Text>
-        </View>
-        <View className="absolute top-3 right-3 max-w-[60%] flex-row items-center gap-1.5 rounded-pill bg-photo-scrim px-2.5 py-1">
-          <CategoryIcon cat={cat} size={12} color="on-photo" />
-          <Text numberOfLines={1} className="shrink font-ui-semibold text-micro text-on-photo">
-            {eventCategoryLabel(e.category)}
-          </Text>
-        </View>
-        <View className="absolute right-3 bottom-3 left-3">
-          <CountdownChip e={e} now={now} onPhoto />
-          <Text
-            numberOfLines={2}
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-2 font-serif text-title text-on-photo"
-          >
-            {e.title}
-          </Text>
-          <View className="mt-1 flex-row items-end justify-between gap-3">
-            <View className="flex-1">
-              <Text numberOfLines={1} className="font-ui text-label text-on-photo-2">
-                {e.restaurant.name} · {s.time}
-              </Text>
-              {!e.venueConfirmed ? <SampleMark tone="on-photo" /> : null}
-            </View>
-            <RsvpButtons e={e} rsvpState={rsvpState} />
-          </View>
-        </View>
-      </Pressable>
-    </Link>
-  )
-}
-
-// ── Mini card (feed "Este finde", restaurant "Próximos eventos") ────────────
+// ── Mini card (feed "This weekend", restaurant "Upcoming events") ───────────
 export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
+  const lift = useLift()
   const cat = categoryKey(e.category, e.title)
-  const cls = CAT_CLASSES[cat]
   const s = stubParts(e.startsAt)
   const scrim = useColor('photo-scrim')
   return (
     <Link href={`/events/${e.id}`} asChild>
-      <Pressable className="w-48 overflow-hidden rounded-card border border-line bg-surface active:opacity-85">
-        <View className="h-28 w-full">
-          <PlaceCover
-            name={e.title}
-            coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
-            size={{ w: 400, h: 240 }}
-            className="h-full w-full rounded-none"
-          />
-          <LinearGradient
-            colors={['transparent', scrim]}
-            locations={[0.4, 1]}
-            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-          />
-          <View className={`absolute top-2 left-2 items-center rounded-sm px-2 py-1 ${cls.bg}`}>
-            <Text style={DATA_FIGURES} className="font-serif text-serif-sm text-on-cat">
-              {s.day}
+      <Pressable className="w-48 rounded-card bg-surface active:opacity-85" style={lift}>
+        <View className="overflow-hidden rounded-card">
+          <View className="h-28 w-full">
+            <PlaceCover
+              name={e.title}
+              coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
+              size={{ w: 400, h: 240 }}
+              className="h-full w-full rounded-none"
+            />
+            <LinearGradient
+              colors={['transparent', scrim]}
+              locations={[0.4, 1]}
+              style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+            />
+            <View className="absolute top-2 left-2 items-center rounded-sm bg-accent-fill px-2 py-1">
+              <Text style={DATA_FIGURES} className="font-serif text-serif-sm text-on-accent">
+                {s.day}
+              </Text>
+              <Text className="font-ui-semibold text-micro uppercase text-on-accent">
+                {s.month}
+              </Text>
+            </View>
+            <View className="absolute bottom-2 left-2">
+              <CountdownChip e={e} now={now} onPhoto />
+            </View>
+          </View>
+          <View className="px-3 pt-2 pb-3">
+            <View className="flex-row items-center gap-1 pr-1">
+              <CategoryIcon cat={cat} size={12} />
+              <Text numberOfLines={1} className="shrink font-ui-semibold text-micro text-accent">
+                {eventCategoryLabel(e.category)}
+              </Text>
+            </View>
+            <Text numberOfLines={1} className="mt-0.5 font-serif text-serif-sm text-text">
+              {e.title}
             </Text>
-            <Text className="font-ui-semibold text-micro uppercase text-on-cat">{s.month}</Text>
+            <Caption numberOfLines={1} className="text-micro">
+              {e.restaurant.name} · {s.time}
+            </Caption>
+            {!e.venueConfirmed ? <SampleMark /> : null}
           </View>
-          <View className="absolute bottom-2 left-2">
-            <CountdownChip e={e} now={now} onPhoto />
-          </View>
-        </View>
-        <View className="px-3 pt-2 pb-3">
-          <View className="flex-row items-center gap-1 pr-1">
-            <CategoryIcon cat={cat} size={11} />
-            {/* One line, ellipsized — "COCKTAIL TASTING" in letter-spaced caps
-                ran into the card's edge. */}
-            <Text
-              numberOfLines={1}
-              className={`shrink font-ui-semibold text-micro uppercase tracking-eyebrow ${cls.text}`}
-            >
-              {eventCategoryLabel(e.category)}
-            </Text>
-          </View>
-          <Text numberOfLines={1} className="mt-0.5 font-serif text-serif-sm text-text">
-            {e.title}
-          </Text>
-          <Caption numberOfLines={1} className="text-micro">
-            {e.restaurant.name} · {s.time}
-          </Caption>
-          {!e.venueConfirmed ? <SampleMark /> : null}
         </View>
       </Pressable>
     </Link>

@@ -72,22 +72,6 @@ module.exports = {
         'photo-scrim': 'var(--photo-scrim)',
         'overlay-scrim': 'var(--overlay-scrim)',
         'avatar-light': 'var(--avatar-light)',
-        // INTERIM — event categories and "live" collapse to the accent (see
-        // vars.ts) and are deleted with the Explore milestone.
-        'cat-cata': 'var(--cat-cata)',
-        'cat-cata-soft': 'var(--cat-cata-soft)',
-        'cat-musica': 'var(--cat-musica)',
-        'cat-musica-soft': 'var(--cat-musica-soft)',
-        'cat-brunch': 'var(--cat-brunch)',
-        'cat-brunch-soft': 'var(--cat-brunch-soft)',
-        'cat-food': 'var(--cat-food)',
-        'cat-food-soft': 'var(--cat-food-soft)',
-        'cat-happy': 'var(--cat-happy)',
-        'cat-happy-soft': 'var(--cat-happy-soft)',
-        'on-cat': 'var(--on-cat)',
-        live: 'var(--live)',
-        'live-soft': 'var(--live-soft)',
-        'on-live': 'var(--on-live)',
       },
       fontFamily: {
         // The one display face: Instrument Serif, weight 400, upright only. It has no

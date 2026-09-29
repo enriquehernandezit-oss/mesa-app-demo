@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-import { Caption, SectionHeader } from '@/components/ui'
+import { Caption, Eyebrow, MAX_SCALE } from '@/components/ui'
 import { useT } from '@/lib/i18n'
 import type { ExternalSuggestion } from '@/lib/types'
 
@@ -26,7 +26,7 @@ export function ExternalResults({
   const busy = creatingId !== null
   return (
     <View>
-      {heading ?? <SectionHeader>{t('external.on_google')}</SectionHeader>}
+      {heading ?? <Eyebrow className="pb-1 pt-4">{t('external.on_google')}</Eyebrow>}
       {suggestions.map((s) => {
         const pending = creatingId === s.providerPlaceId
         return (
@@ -35,18 +35,20 @@ export function ExternalResults({
             accessibilityRole="button"
             disabled={busy}
             onPress={() => onPick(s.providerPlaceId)}
-            className="border-line border-b py-3 active:opacity-70"
+            className="border-line border-b py-2.5 active:opacity-70"
           >
-            <Text className="font-serif text-serif-sm text-text">{s.name}</Text>
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-serif-xs text-text">
+              {s.name}
+            </Text>
             {pending || s.secondaryText ? (
-              <Caption className="mt-0.5">
+              <Caption className="mt-0.5 text-meta">
                 {pending ? t('external.creating_profile') : s.secondaryText}
               </Caption>
             ) : null}
           </Pressable>
         )
       })}
-      <Caption className="mt-2 text-text-faint">Powered by Google</Caption>
+      <Caption className="mt-2.5 text-micro text-text-faint">Powered by Google</Caption>
     </View>
   )
 }

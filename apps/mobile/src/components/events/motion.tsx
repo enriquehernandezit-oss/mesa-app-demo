@@ -77,8 +77,18 @@ export function BurstDots({ trigger, color }: { trigger: number; color: ColorTok
     p.value = 0
     p.value = withTiming(1, { duration: 520, easing: EASE })
   }, [trigger, p, reduced])
+  // Nothing until the first burst: eight always-mounted animated dots per ticket are dead weight
+  // on a list of tickets (and were the views a Fabric unmount assertion kept tripping on).
+  if (!trigger) return null
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: '50%', top: '50%' }}>
+    // collapsable={false}: this is a 0×0 layout-only box holding animated children, which Fabric
+    // flattens away — and unmounting one of those children then crashed the app ("Attempt to
+    // unmount a view which is mounted inside a different view").
+    <View
+      pointerEvents="none"
+      collapsable={false}
+      style={{ position: 'absolute', left: '50%', top: '50%' }}
+    >
       {BURST_ANGLES.map((angle) => (
         <BurstDot key={angle} angle={angle} color={c} p={p} />
       ))}
@@ -100,6 +110,7 @@ function BurstDot({ angle, color, p }: { angle: number; color: string; p: { valu
   })
   return (
     <Animated.View
+      collapsable={false}
       style={[
         {
           position: 'absolute',

@@ -1,21 +1,25 @@
 import { useQuery } from '@tanstack/react-query'
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedScrollHandler,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated'
 
-import { EmptyState, ErrorState, SectionHeader, Skeleton } from '@/components/ui'
+import {
+  Chip,
+  EmptyState,
+  ErrorState,
+  Eyebrow,
+  IconButton,
+  SectionHeader,
+  Skeleton,
+} from '@/components/ui'
 import { CalendarIcon, CloseIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
-import { CAT_CLASSES, CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
+import { CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
 import {
   type DayRange,
   addDays,
@@ -30,21 +34,19 @@ import type { EventSummary } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
 import { EventDatePicker, rangeLabel } from './EventDatePicker'
-import { CategoryIcon, EventHeroCard, EventTicket, useNow } from './EventTicket'
+import { EventHeroPager } from './EventHero'
+import { CategoryIcon, EventTicket, useNow } from './EventTicket'
 import { EASE } from './motion'
 
-// Explore's "Eventos" (M21, redesigned for color + motion): a calendar button
-// and a day strip (Todo · Hoy · Mañana · Dom 20 …) whose selected circle slides
-// to the tapped day, category chips with their own hue, a "Destacados" carousel
-// of the next few events as full-bleed photo cards, then ticket-stub cards for
-// everything that matches. One `upcoming` fetch; day/category filtering is
-// client-side.
+// Explore's Events (M21, Redesign 2): a calendar button and a day strip (All · Today · Tue …) whose
+// selected circle slides to the tapped day, category pills — each with its own ICON, never its own
+// colour — a Featured pager of the next few events as big photo cards, then ticket cards for everything that
+// matches. One `upcoming` fetch; day/category filtering is client-side.
 //
-// The strip and the calendar are two views of ONE selection (`sel`, a
-// DayRange): `null` is every upcoming day, `start === end` is the day the
-// strip's circle sits on, and `start !== end` is a range the strip tints and
-// the range bar names. Neither can drift from the other because neither owns
-// its own state.
+// The strip and the calendar are two views of ONE selection (`sel`, a DayRange): `null` is every
+// upcoming day, `start === end` is the day the strip's circle sits on, and `start !== end` is a range
+// the strip tints and the range bar names. Neither can drift from the other because neither owns its
+// own state.
 
 type Day = 'all' | string
 
@@ -95,20 +97,17 @@ export const EventsBrowse = memo(function EventsBrowse() {
     Math.max(STRIP_DAYS, sel ? daysBetween(today, sel.end) + 1 : 0),
   )
   const days = useMemo(() => nextDays(dayCount, new Date(`${today}T16:00:00Z`)), [today, dayCount])
-  // Which categories fall on each day — the little colored dots in the strip.
-  const catsByDay = useMemo(() => {
-    const m = new Map<string, CatKey[]>()
+  // How many events fall on each day — a dot per event (up to two) under the day in the strip.
+  const countByDay = useMemo(() => {
+    const m = new Map<string, number>()
     for (const e of all) {
       const k = sdDayKey(e.startsAt)
-      const c = categoryKey(e.category, e.title)
-      const cur = m.get(k) ?? []
-      if (!cur.includes(c)) cur.push(c)
-      m.set(k, cur)
+      m.set(k, (m.get(k) ?? 0) + 1)
     }
     return m
   }, [all])
   // The same days, as the calendar's "something is on" dots.
-  const daysWithEvents = useMemo(() => new Set(catsByDay.keys()), [catsByDay])
+  const daysWithEvents = useMemo(() => new Set(countByDay.keys()), [countByDay])
 
   const matchesCat = (e: EventSummary) => cat === 'all' || categoryKey(e.category, e.title) === cat
   // `all` is already only the events the API considers upcoming — whether one
@@ -131,7 +130,7 @@ export const EventsBrowse = memo(function EventsBrowse() {
         sel={sel}
         onChange={setSel}
         onOpenPicker={() => setPicking(true)}
-        catsByDay={catsByDay}
+        countByDay={countByDay}
         today={today}
       />
 
@@ -173,26 +172,34 @@ export const EventsBrowse = memo(function EventsBrowse() {
         daysWithEvents={daysWithEvents}
       />
 
-      {/* Category chips — each one wears its own hue */}
+      {/* Category pills — each kind wears its own icon */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         className="-mx-5 mt-3"
-        contentContainerClassName="gap-2 px-5"
+        contentContainerClassName="gap-2 px-5 pb-1"
       >
-        <CatChip
-          label={t('events.all_cats')}
-          active={cat === 'all'}
-          onPress={() => setCat('all')}
-        />
+        <Chip
+          state={cat === 'all' ? 'selected' : 'default'}
+          onPress={() => {
+            tapSelect()
+            setCat('all')
+          }}
+        >
+          {t('events.all_cats')}
+        </Chip>
         {CAT_ORDER.map((c) => (
-          <CatChip
+          <Chip
             key={c}
-            cat={c}
-            label={t(`events.cat_${c}`)}
-            active={cat === c}
-            onPress={() => setCat(cat === c ? 'all' : c)}
-          />
+            state={cat === c ? 'selected' : 'default'}
+            icon={<CategoryIcon cat={c} size={15} color={cat === c ? 'on-ink' : 'text'} />}
+            onPress={() => {
+              tapSelect()
+              setCat(cat === c ? 'all' : c)
+            }}
+          >
+            {t(`events.cat_${c}`)}
+          </Chip>
         ))}
       </ScrollView>
 
@@ -220,7 +227,15 @@ export const EventsBrowse = memo(function EventsBrowse() {
               ))}
             </View>
           ) : null}
-          {featured.length > 0 ? <Featured events={featured} now={now} /> : null}
+          {featured.length > 0 ? (
+            <View className="mt-4">
+              <Eyebrow className="pb-2">{t('events.featured')}</Eyebrow>
+              {/* The pager runs edge to edge; this list pads its content 20. */}
+              <View className="-mx-5">
+                <EventHeroPager events={featured} height={330} now={now} dated />
+              </View>
+            </View>
+          ) : null}
           <View className="mt-4">
             {list.map((e, i) => (
               <EventTicket key={`${selKey}-${cat}-${e.id}`} e={e} index={i} now={now} />
@@ -271,7 +286,7 @@ export const EventsBrowse = memo(function EventsBrowse() {
 const ITEM_W = 46
 const ITEM_GAP = 2
 const STEP = ITEM_W + ITEM_GAP
-const DOT = 36
+const DOT = 40
 // The strip's own left inset now that the calendar button sits outside it.
 const STRIP_PAD = 6
 
@@ -280,14 +295,14 @@ const DayStrip = memo(function DayStrip({
   sel,
   onChange,
   onOpenPicker,
-  catsByDay,
+  countByDay,
   today,
 }: {
   days: string[]
   sel: DayRange
   onChange: (s: DayRange) => void
   onOpenPicker: () => void
-  catsByDay: Map<string, CatKey[]>
+  countByDay: Map<string, number>
   today: string
 }) {
   const t = useT()
@@ -341,20 +356,18 @@ const DayStrip = memo(function DayStrip({
       {/* The calendar, pinned outside the scroller so it's always the first
           thing on the row — a specific date, or a range, without swiping a
           fortnight of chips. Aligned with the day circles, not the row. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t('events.dates_title')}
-        accessibilityState={{ selected: rangeOn }}
-        hitSlop={8}
-        onPress={() => {
-          tapSelect()
-          onOpenPicker()
-        }}
-        style={{ marginTop: 18, width: DOT, height: DOT }}
-        className={`items-center justify-center rounded-pill border active:opacity-70 ${rangeOn ? 'border-accent bg-accent-fill' : 'border-line-strong bg-surface'}`}
-      >
-        <CalendarIcon size={17} color={rangeOn ? 'on-accent' : 'text-2'} />
-      </Pressable>
+      <View style={{ marginTop: 18 }}>
+        <IconButton
+          size={DOT}
+          kind={rangeOn ? 'accent' : 'chip'}
+          accessibilityLabel={t('events.dates_title')}
+          onPress={() => {
+            tapSelect()
+            onOpenPicker()
+          }}
+          icon={<CalendarIcon size={17} color={rangeOn ? 'on-accent' : 'text'} />}
+        />
+      </View>
 
       <ScrollView
         ref={scrollRef}
@@ -400,7 +413,7 @@ const DayStrip = memo(function DayStrip({
                 : new Intl.DateTimeFormat(dateLocale(), { day: 'numeric', timeZone: 'UTC' }).format(
                     date as Date,
                   )
-            const dots = d === 'all' ? [] : (catsByDay.get(d) ?? []).slice(0, 3)
+            const dots = d === 'all' ? 0 : Math.min(countByDay.get(d) ?? 0, 2)
             const fg = on ? 'text-on-ink' : band ? 'text-on-accent' : 'text-text'
             return (
               <Pressable
@@ -446,8 +459,8 @@ const DayStrip = memo(function DayStrip({
                   </Text>
                 </View>
                 <View className="mt-1 h-1 flex-row gap-0.5">
-                  {dots.map((c) => (
-                    <View key={c} className={`h-1 w-1 rounded-pill ${CAT_CLASSES[c].bg}`} />
+                  {Array.from({ length: dots }, (_, n) => (
+                    <View key={n} className="h-1 w-1 rounded-pill bg-accent" />
                   ))}
                 </View>
               </Pressable>
@@ -458,98 +471,3 @@ const DayStrip = memo(function DayStrip({
     </View>
   )
 })
-
-function CatChip({
-  cat,
-  label,
-  active,
-  onPress,
-}: {
-  cat?: CatKey
-  label: string
-  active: boolean
-  onPress: () => void
-}) {
-  const cls = cat ? CAT_CLASSES[cat] : CAT_CLASSES.default
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      onPress={() => {
-        tapSelect()
-        onPress()
-      }}
-      className={`min-h-[36px] flex-row items-center gap-1.5 rounded-pill border px-3 active:scale-[0.97] ${active ? `${cls.bg} ${cls.border}` : 'border-line-strong bg-surface'}`}
-    >
-      {cat ? <CategoryIcon cat={cat} size={13} color={active ? 'on-cat' : undefined} /> : null}
-      <Text
-        className={`font-ui-semibold text-micro ${active ? (cat ? 'text-on-cat' : 'text-on-accent') : 'text-text'}`}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  )
-}
-
-// ── "Destacados" carousel: centered card full size, neighbours shrink/dim ───
-function Featured({ events, now }: { events: EventSummary[]; now: Date }) {
-  const t = useT()
-  const { width } = useWindowDimensions()
-  const cardW = Math.round(width * 0.82)
-  const gap = 12
-  const step = cardW + gap
-  const scrollX = useSharedValue(0)
-  const onScroll = useAnimatedScrollHandler((e) => {
-    scrollX.value = e.contentOffset.x
-  })
-  return (
-    <View className="mt-5">
-      <Text className="mb-2 font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
-        {t('events.featured')}
-      </Text>
-      <Animated.ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={step}
-        decelerationRate="fast"
-        // One card per swipe, and a trailing pad so the LAST card can reach
-        // its snap point too — without it the final offset was shorter than
-        // 2 × step, so the carousel fought the finger at the end.
-        disableIntervalMomentum
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        className="-mx-5"
-        contentContainerStyle={{ paddingLeft: 20, paddingRight: width - cardW - 20, gap }}
-      >
-        {events.map((e, i) => (
-          <FeaturedSlot key={e.id} index={i} step={step} scrollX={scrollX}>
-            <EventHeroCard e={e} width={cardW} now={now} />
-          </FeaturedSlot>
-        ))}
-      </Animated.ScrollView>
-    </View>
-  )
-}
-
-function FeaturedSlot({
-  index,
-  step,
-  scrollX,
-  children,
-}: {
-  index: number
-  step: number
-  scrollX: SharedValue<number>
-  children: React.ReactNode
-}) {
-  const reduced = useReducedMotion()
-  const style = useAnimatedStyle(() => {
-    if (reduced) return {}
-    const d = Math.abs(scrollX.value - index * step) / step
-    return {
-      opacity: interpolate(d, [0, 1], [1, 0.72], Extrapolation.CLAMP),
-      transform: [{ scale: interpolate(d, [0, 1], [1, 0.94], Extrapolation.CLAMP) }],
-    }
-  })
-  return <Animated.View style={style}>{children}</Animated.View>
-}

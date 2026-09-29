@@ -1,8 +1,7 @@
-// Event categories → one of five warm hues (theme/vars.ts `--cat-*`, Eventos
-// only). `events.category` is free curated text ("Cata de cócteles",
-// "Música en vivo"…), so this normalizes it by keyword; anything unrecognized
-// falls back to Mesa's brass. Pure (no RN imports) so it's unit-tested
-// alongside the other lib/*.test.ts files.
+// Event categories → one of five kinds, each with its own icon (CAT_ICON below). `events.category`
+// is free curated text ("Cata de cócteles", "Música en vivo"…), so this normalizes it by keyword;
+// anything unrecognized is 'default'. Pure (no RN imports) so it's unit-tested alongside the other
+// lib/*.test.ts files.
 
 export type CatKey = 'cata' | 'musica' | 'brunch' | 'food' | 'happy' | 'default'
 
@@ -31,59 +30,18 @@ export function categoryKey(category: string | null, title?: string | null): Cat
   return 'default'
 }
 
-// Literal class strings (not built by concatenation) so Tailwind/NativeWind
-// sees and generates every one of them.
-export const CAT_CLASSES: Record<
-  CatKey,
-  { bg: string; soft: string; text: string; border: string }
-> = {
-  cata: {
-    bg: 'bg-cat-cata',
-    soft: 'bg-cat-cata-soft',
-    text: 'text-cat-cata',
-    border: 'border-cat-cata',
-  },
-  musica: {
-    bg: 'bg-cat-musica',
-    soft: 'bg-cat-musica-soft',
-    text: 'text-cat-musica',
-    border: 'border-cat-musica',
-  },
-  brunch: {
-    bg: 'bg-cat-brunch',
-    soft: 'bg-cat-brunch-soft',
-    text: 'text-cat-brunch',
-    border: 'border-cat-brunch',
-  },
-  food: {
-    bg: 'bg-cat-food',
-    soft: 'bg-cat-food-soft',
-    text: 'text-cat-food',
-    border: 'border-cat-food',
-  },
-  happy: {
-    bg: 'bg-cat-happy',
-    soft: 'bg-cat-happy-soft',
-    text: 'text-cat-happy',
-    border: 'border-cat-happy',
-  },
-  default: {
-    bg: 'bg-accent-fill',
-    soft: 'bg-bg-sunk',
-    text: 'text-accent',
-    border: 'border-accent',
-  },
+// Kinds are told apart by ICON, never by colour (docs/DESIGN.md: one burgundy accent, no rainbow).
+// Names, not components, so this stays pure and unit-tested; components/events/EventTicket's
+// CategoryIcon maps each name to its stroke icon.
+export type CatIcon = 'wine' | 'music' | 'sun' | 'fork' | 'cocktail' | 'sparkle'
+export const CAT_ICON: Record<CatKey, CatIcon> = {
+  cata: 'wine',
+  musica: 'music',
+  brunch: 'sun',
+  food: 'fork',
+  happy: 'cocktail',
+  default: 'sparkle',
 }
-
-// The color token (for SVG strokes / Animated colors, via useColor).
-export const CAT_TOKEN = {
-  cata: 'cat-cata',
-  musica: 'cat-musica',
-  brunch: 'cat-brunch',
-  food: 'cat-food',
-  happy: 'cat-happy',
-  default: 'accent',
-} as const satisfies Record<CatKey, string>
 
 // Filter order for the chips row.
 export const CAT_ORDER: Exclude<CatKey, 'default'>[] = ['cata', 'food', 'musica', 'brunch', 'happy']

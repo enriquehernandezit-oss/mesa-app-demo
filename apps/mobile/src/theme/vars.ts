@@ -80,23 +80,6 @@ const day = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#2a1512',
   '--avatar-light': '#e8d5bd',
-  // INTERIM (deleted in the Explore milestone). Event categories used to be five
-  // hues; they are now the accent, so an event reads as an event and its icon says
-  // which kind. Kept as tokens only so existing classes keep resolving.
-  '--cat-cata': '#7a1a29',
-  '--cat-cata-soft': 'rgba(122, 26, 41, 0.08)',
-  '--cat-musica': '#7a1a29',
-  '--cat-musica-soft': 'rgba(122, 26, 41, 0.08)',
-  '--cat-brunch': '#7a1a29',
-  '--cat-brunch-soft': 'rgba(122, 26, 41, 0.08)',
-  '--cat-food': '#7a1a29',
-  '--cat-food-soft': 'rgba(122, 26, 41, 0.08)',
-  '--cat-happy': '#7a1a29',
-  '--cat-happy-soft': 'rgba(122, 26, 41, 0.08)',
-  '--on-cat': '#f4ede2',
-  '--live': '#7a1a29',
-  '--live-soft': 'rgba(122, 26, 41, 0.08)',
-  '--on-live': '#f4ede2',
 } as const
 
 const night = {
@@ -145,23 +128,6 @@ const night = {
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#2a1512',
   '--avatar-light': '#e8d5bd',
-  // INTERIM (see above). At night the plain cat/live tokens are cream, because they
-  // are also used as text and burgundy text on black is unreadable; on-cat is then
-  // dark, for text set on a cream fill.
-  '--cat-cata': '#f4ede2',
-  '--cat-cata-soft': 'rgba(122, 26, 41, 0.28)',
-  '--cat-musica': '#f4ede2',
-  '--cat-musica-soft': 'rgba(122, 26, 41, 0.28)',
-  '--cat-brunch': '#f4ede2',
-  '--cat-brunch-soft': 'rgba(122, 26, 41, 0.28)',
-  '--cat-food': '#f4ede2',
-  '--cat-food-soft': 'rgba(122, 26, 41, 0.28)',
-  '--cat-happy': '#f4ede2',
-  '--cat-happy-soft': 'rgba(122, 26, 41, 0.28)',
-  '--on-cat': '#0b0809',
-  '--live': '#f4ede2',
-  '--live-soft': 'rgba(122, 26, 41, 0.28)',
-  '--on-live': '#0b0809',
 } as const
 
 export const themeVars: Record<ThemeName, ReturnType<typeof vars>> = {
@@ -203,6 +169,8 @@ export const FLOAT = '0 12px 30px rgba(33, 1, 4, 0.18)'
 // affordance on any map; recoloring it burgundy would read as a bug, not a
 // choice. Theme-invariant for the same reason SHADOW is.
 export const MAP_USER_LOCATION_BLUE = '#007AFF'
+// The white ring round it — also Apple's, also the same in both themes.
+export const MAP_USER_LOCATION_RING = '#ffffff'
 
 // Numerals that are DATA — a score, a position, a count — get both features:
 //   lining-nums  — one shared height, all on the baseline

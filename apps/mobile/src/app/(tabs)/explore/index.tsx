@@ -1,10 +1,20 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native'
-import type { SearchBarCommands } from 'react-native-screens'
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native'
 
 import { EventsBrowse } from '@/components/events/EventsBrowse'
+import { HitRow } from '@/components/explore/HitRow'
+import { MemberRow } from '@/components/explore/MemberRow'
+import { TrendingRail } from '@/components/explore/TrendingRail'
 import { type ExploreFilterValues, ExploreFilters } from '@/components/ExploreFilters'
 import { ExternalResults } from '@/components/ExternalResults'
 import { useTabBarClearance } from '@/components/MesaTabBar'
@@ -14,33 +24,25 @@ import {
   Chip,
   EmptyState,
   ErrorState,
+  Eyebrow,
+  IconButton,
+  MAX_SCALE,
   RowsSkeleton,
-  SectionHeader,
   Segmented,
 } from '@/components/ui'
-import { Avatar } from '@/components/ui/Avatar'
-import { CloseIcon, PinIcon, SortIcon } from '@/components/ui/icons'
-import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { showSheet } from '@/components/ui/Sheet'
+import { Field } from '@/components/ui/Field'
+import { CloseIcon, MapIcon, SearchIcon, SlidersIcon, SortIcon } from '@/components/ui/icons'
+import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
-import type {
-  ExploreHit,
-  ExploreMember,
-  ExploreResponse,
-  Neighborhood,
-  RailSpot,
-} from '@/lib/types'
+import type { ExploreHit, ExploreMember, ExploreResponse, Neighborhood } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
-import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { DATA_FIGURES, themeColors } from '@/theme/vars'
 
 // Explore (Phase 6 mock F1) — searches your circle's rankings, not the open
 // internet. Browses top spots by default; a query also returns members and
@@ -81,8 +83,8 @@ function fetchExplore(q: string, f: ExploreFilterValues, openNow: boolean, sort:
   return api.get<ExploreResponse>(`/restaurants?${params}`)
 }
 
-// An applied filter, shown on its own in the rail with a small × badge on
-// its top-right corner — tapping the pill drops just that filter.
+// An applied filter, shown on its own in the rail as a solid pill with a small × — tapping it
+// drops just that filter.
 function RemovablePill({ label, onRemove }: { label: string; onRemove: () => void }) {
   const t = useT()
   return (
@@ -91,14 +93,12 @@ function RemovablePill({ label, onRemove }: { label: string; onRemove: () => voi
       accessibilityLabel={`${t('explore.remove_filter')}: ${label}`}
       onPress={onRemove}
       hitSlop={4}
-      className="active:scale-[0.97] active:opacity-80"
+      className="min-h-[32px] flex-row items-center gap-1.5 rounded-pill bg-ink pl-3.5 pr-2.5 active:scale-[0.97] active:opacity-80"
     >
-      <View className="min-h-[36px] justify-center rounded-pill border border-accent bg-accent-fill px-3">
-        <Text className="font-ui-medium text-micro text-on-accent">{label}</Text>
-      </View>
-      <View className="absolute -top-1.5 -right-1.5 h-[18px] w-[18px] items-center justify-center rounded-pill border border-bg bg-text">
-        <CloseIcon size={10} color="bg" strokeWidth={2.4} />
-      </View>
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-label text-on-ink">
+        {label}
+      </Text>
+      <CloseIcon size={12} color="on-ink" strokeWidth={2.4} />
     </Pressable>
   )
 }
@@ -112,8 +112,6 @@ export default function ExploreScreen() {
     { key: 'score', label: t('explore.sort_score') },
     { key: 'name', label: t('explore.sort_name') },
   ]
-  const theme = useResolvedTheme()
-  const c = themeColors[theme]
   const accent = useColor('accent')
   const [q, setQ] = useState('')
   // Places/Events (M21) — a view-switcher, the same Segmented control as
@@ -133,57 +131,20 @@ export default function ExploreScreen() {
   const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string; focus?: string }>()
   const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
   const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
-  // Imperative focus for the native search bar (Feed's search field hands
-  // off here — see the Stack.Screen options below for why this can't be the
-  // declarative `autoFocus` prop on iOS). `useFocusEffect`, not a plain
-  // `useEffect`: Explore is a tab, so it can already be mounted from an
-  // earlier visit this session — a plain effect keyed on `params.focus` only
-  // fires on a genuine mount or a value change, neither of which is
-  // guaranteed to happen again on a same-tab re-navigation, which is exactly
-  // when this was silently doing nothing. `useFocusEffect` instead fires on
-  // every tab-focus event and reads the current param fresh each time.
-  // Delayed + retried, not a single immediate call: right when this screen
-  // gains focus, react-native-screens' native header (and the UISearchBar
-  // inside it) is often still mid-transition, and calling .focus() on a
-  // UISearchBar that hasn't finished becoming the key view can silently do
-  // nothing. `router.setParams` clears the flag once acted on, so revisiting
-  // Explore later (via the tab bar, not Feed's search field) doesn't refocus
-  // it again on a stale param.
-  const searchBarRef = useRef<SearchBarCommands>(null)
+  // Feed's search field hands off here with `?focus=1`: put the cursor in ours. `useFocusEffect`,
+  // not a plain `useEffect` — Explore is a tab, so it can already be mounted from an earlier visit
+  // this session, and an effect keyed on `params.focus` alone would not fire again. Slightly
+  // delayed so the screen has finished arriving. `router.setParams` clears the flag once acted on,
+  // so revisiting Explore later (via the tab bar) doesn't refocus on a stale param.
+  const searchRef = useRef<TextInput>(null)
   useFocusEffect(
     useCallback(() => {
       if (params.focus !== '1') return
-      let cancelled = false
-      let attempts = 0
-      // Calls .focus() several times once the ref appears, not just once —
-      // the ref going non-null only means the JS component mounted, not that
-      // UIKit's UISearchBar has actually become ready to accept first-
-      // responder status. A focus() call in that gap can silently no-op
-      // with nothing to catch it by, which read as "the search bar does
-      // nothing, it just navigates" — the params flag only clears once this
-      // whole window has passed, so a late-arriving native view still gets
-      // a real focus() call before this gives up.
-      let focusCallsAfterRefAppeared = 0
-      const tryFocus = () => {
-        if (cancelled) return
-        if (searchBarRef.current) {
-          searchBarRef.current.focus()
-          focusCallsAfterRefAppeared++
-          if (focusCallsAfterRefAppeared >= 5) {
-            router.setParams({ focus: '' })
-            return
-          }
-          setTimeout(tryFocus, 120)
-          return
-        }
-        attempts++
-        if (attempts < 15) setTimeout(tryFocus, 80)
-      }
-      const kickoff = setTimeout(tryFocus, 100)
-      return () => {
-        cancelled = true
-        clearTimeout(kickoff)
-      }
+      const id = setTimeout(() => {
+        searchRef.current?.focus()
+        router.setParams({ focus: '' })
+      }, 250)
+      return () => clearTimeout(id)
     }, [params.focus, router]),
   )
   const [price, setPrice] = useState<number | null>(null)
@@ -210,6 +171,19 @@ export default function ExploreScreen() {
       selectedIndex: SORT_OPTIONS.findIndex((o) => o.key === sort),
     })
     if (idx != null) setSort(SORT_OPTIONS[idx].key)
+  }
+
+  // "Neighborhood ▾": the one filter worth a pill of its own — a bottom-sheet chooser, the same
+  // pattern as Your list's. (The rest live in the Filters panel.)
+  const pickHood = async () => {
+    const list = neighborhoods.data?.neighborhoods ?? []
+    const v = await pickOne(
+      t('explore.sector'),
+      list.map((n) => n.slug),
+      hood,
+      (slug) => list.find((n) => n.slug === slug)?.name ?? slug,
+    )
+    if (v !== undefined) setHood(v)
   }
 
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -284,49 +258,20 @@ export default function ExploreScreen() {
     onCreated: (restaurant) => router.push(`/r/${restaurant.id}`),
   })
 
-  // Memoized (responsiveness audit): written inline, this object got a brand
-  // new `headerRight` function on every render — including every keystroke
-  // via `onChangeText`/setQ and every query refetch — and react-native-
-  // screens rebuilding the native header button mid-press could drop that
-  // tap. Now it only changes when something it actually reads does.
+  // The map, as the bar's one action. Memoized (responsiveness audit): written inline, this object
+  // got a brand new `headerRight` function on every render — including every keystroke via setQ —
+  // and react-native-screens rebuilding the native header button mid-press could drop that tap.
   const headerOptions = useMemo(
     () => ({
-      headerSearchBarOptions: {
-        ref: searchBarRef,
-        placeholder: translate(lang, 'explore.search_placeholder'),
-        cancelButtonText: translate(lang, 'common.cancel'),
-        hideWhenScrolling: false,
-        autoCapitalize: 'none' as const,
-        // Feed's own search field (FeedHeader in discover.tsx) is just a
-        // Pressable that hands off here with `?focus=1` — the actual
-        // focus is done imperatively below (searchBarRef.effect), not via
-        // this `autoFocus` prop: react-native-screens 4.26's iOS native
-        // module (RNSSearchBar.mm) never reads an autoFocus prop at all,
-        // only exposes an imperative `focus` command — it's Android-only
-        // there, so on iOS this was a silent no-op. Kept here anyway in
-        // case Android ever ships; costs nothing.
-        autoFocus: params.focus === '1',
-        tintColor: c.accent,
-        textColor: c.text,
-        hintTextColor: c['text-muted'],
-        headerIconColor: c['text-muted'],
-        onChangeText: (e: { nativeEvent: { text: string } }) => setQ(e.nativeEvent.text),
-      },
       headerRight: () => (
-        <Pressable
-          accessibilityRole="button"
+        <IconButton
           accessibilityLabel={translate(lang, 'explore.map_label')}
           onPress={() => router.push('/map')}
-          className="min-h-[44px] flex-row items-center gap-1.5 active:opacity-70"
-        >
-          <PinIcon size={15} />
-          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {translate(lang, 'explore.map_chip')}
-          </Text>
-        </Pressable>
+          icon={<MapIcon size={18} color="text" />}
+        />
       ),
     }),
-    [lang, c, params.focus, router],
+    [lang, router],
   )
 
   // Explore is nested one level inside its own Stack (explore/_layout.tsx),
@@ -365,6 +310,22 @@ export default function ExploreScreen() {
           scroll view's content inset (hoisting it out put it behind the
           native large title) and stays the only live copy — two copies bound
           to one value is the bug Rankings had. */}
+      {/* Search is Mesa's own field, not the navigation bar's native one: on iOS 26 the native bar
+          folds into the bottom toolbar — behind the floating tab bar, so it was simply gone —
+          and stacked under the title it takes the system's colours, unreadable at Night. */}
+      <View className="mt-1">
+        <Field
+          ref={searchRef}
+          icon={<SearchIcon size={18} color="text-muted" />}
+          placeholder={t('explore.search_placeholder')}
+          value={q}
+          onChangeText={setQ}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
       <Segmented
         className="mt-3"
         value={view}
@@ -407,8 +368,8 @@ export default function ExploreScreen() {
             </Chip>
             <Chip
               size="sm"
-              chevron
-              state={panelCount > 0 ? 'active' : 'default'}
+              icon={<SlidersIcon size={13} />}
+              state={panelCount > 0 ? 'selected' : 'default'}
               onPress={() => setFiltersOpen(true)}
             >
               {panelCount > 0
@@ -429,7 +390,11 @@ export default function ExploreScreen() {
                 label={neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood}
                 onRemove={() => setHood(null)}
               />
-            ) : null}
+            ) : (
+              <Chip size="sm" chevron onPress={pickHood}>
+                {t('explore.sector')}
+              </Chip>
+            )}
             {cuisine ? (
               <RemovablePill
                 label={cuisineLabel(cuisine) ?? cuisine}
@@ -471,7 +436,7 @@ export default function ExploreScreen() {
 
           {members.length > 0 && (
             <>
-              <SectionHeader>{t('explore.members')}</SectionHeader>
+              <Eyebrow className="pb-2">{t('explore.members')}</Eyebrow>
               {members.map((m) => (
                 <MemberRow key={m.id} m={m} />
               ))}
@@ -479,7 +444,7 @@ export default function ExploreScreen() {
           )}
 
           {members.length > 0 && hits.length > 0 && (
-            <SectionHeader>{t('explore.spots')}</SectionHeader>
+            <Eyebrow className="pb-2 pt-3">{t('explore.spots')}</Eyebrow>
           )}
         </View>
       </View>
@@ -510,9 +475,8 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      {/* Search lives in the navigation bar, not the page: UIKit owns the field,
-          its focus/cancel behavior, and the keyboard. The map entry is the bar's
-          right action. */}
+      {/* The map entry is the navigation bar's right action; the search field is the page's own
+          (in the list header) — see the comment there. */}
       <Stack.Screen options={headerOptions} />
       {/* Places is a real virtualized list (perf pass). It was a ScrollView
           with `hits.map()`, so the browse state mounted every row the
@@ -581,132 +545,3 @@ export default function ExploreScreen() {
     </View>
   )
 }
-
-// Wrapped in memo(): `setQ` (the native search bar's onChangeText) updates
-// this screen's state on every keystroke, well before the debounced query
-// refires, so without this every mounted row re-renders under a finger
-// that's still on the glass. It matters less now that the list virtualizes
-// — only a screenful is mounted — but it's still the difference between
-// re-rendering ~8 rows per keystroke and re-rendering none.
-//
-// A white card on the cream ground, same row shape as Rankings' cards: one
-// line of meta instead of Characteristics' two stacked lines.
-const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number }) {
-  const t = useT()
-  return (
-    <Link href={`/r/${r.id}`} asChild>
-      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface py-2.5 pr-3 pl-2 active:opacity-80">
-        {/* No adjustsFontSizeToFit: iOS binary-searches a font size on the UI
-            thread for every layout pass it's on, and this column is a fixed
-            22pt holding 1–3 digits, so there was never a size to search for. */}
-        <Text
-          style={[DATA_FIGURES, { width: 22 }]}
-          numberOfLines={1}
-          className="text-center font-ui-medium text-label text-text-muted"
-        >
-          {index + 1}
-        </Text>
-        <PlaceCover
-          name={r.name}
-          coverImageId={r.coverImageId}
-          size={{ w: 200, h: 200 }}
-          className="h-12 w-12 rounded-sm"
-        />
-        <View className="flex-1">
-          <Text className="font-ui-semibold text-subhead text-text" numberOfLines={1}>
-            {r.name}
-          </Text>
-          <Caption numberOfLines={1} className="mt-[1px]">
-            {[
-              cuisineLabel(r.cuisine),
-              // Imported rows often carry an address but no mapped sector —
-              // fall back so the row still says where the place is.
-              r.neighborhood ?? r.address,
-              r.priceTier ? '$'.repeat(r.priceTier) : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Caption>
-        </View>
-        {r.friendCount > 0 && r.friendAvg != null ? (
-          <ScoreBadge
-            size="sm"
-            score={r.friendAvg}
-            attribution={{ kind: 'friends', count: r.friendCount }}
-          />
-        ) : r.isNew ? (
-          <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
-            {t('explore.be_first')}
-          </Text>
-        ) : null}
-      </Pressable>
-    </Link>
-  )
-})
-
-// A member result row — links to their passport.
-// What Santo Domingo is cheering this fortnight — a genuinely different signal
-// from Explore's friend-score default, which is why it earns a rail here rather
-// than a third rail on Discover (where the feed IS the product).
-//
-// The card carries ONLY the cheer count. Never a score, never a ScoreBadge: a
-// bare number beside a place reads as the place's own rating, and in Mesa every
-// score is attributed to a person. Cheers are activity, not a verdict.
-function TrendingRail() {
-  const t = useT()
-  const q = useQuery({
-    queryKey: ['trending'],
-    queryFn: () => {
-      track('trending_opened')
-      return api.get<{ restaurants: RailSpot[] }>('/restaurants/trending')
-    },
-    staleTime: 300_000,
-  })
-  const spots = q.data?.restaurants ?? []
-  // Under four qualifying spots the rail reads as broken rather than sparse —
-  // a cold graph should show nothing at all.
-  if (spots.length < 4) return null
-  return (
-    <SpotRail title={t('explore.trending_title')}>
-      {spots.map((s) => (
-        <SpotCard
-          key={s.id}
-          href={`/r/${s.id}`}
-          name={s.name}
-          coverImageId={s.coverImageId}
-          caption={
-            <Caption className="text-micro" numberOfLines={1}>
-              {t('explore.cheers_this_week', { n: s.cheerCount ?? 0 })}
-            </Caption>
-          }
-        />
-      ))}
-    </SpotRail>
-  )
-}
-
-// Wrapped in memo() (perf pass) — same reasoning as HitRow just above.
-const MemberRow = memo(function MemberRow({ m }: { m: ExploreMember }) {
-  const t = useT()
-  return (
-    <Link href={`/u/${m.id}`} asChild>
-      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
-        <Avatar name={m.name || m.handle || 'm'} src={m.image} size={44} />
-        <View className="flex-1">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-            {m.name || m.handle}
-          </Text>
-          <Caption numberOfLines={1}>
-            {[
-              m.handle ? `@${m.handle}` : null,
-              t('settings.ranked_count', { n: m.rankedCount }),
-              m.neighborhood,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Caption>
-        </View>
-      </Pressable>
-    </Link>
-  )
-})

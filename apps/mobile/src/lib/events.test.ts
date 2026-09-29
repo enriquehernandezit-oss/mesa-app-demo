@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 
-import { categoryKey, eventCategoryText, eventPriceText } from './eventCategory'
+import {
+  CAT_ICON,
+  CAT_ORDER,
+  categoryKey,
+  eventCategoryText,
+  eventPriceText,
+} from './eventCategory'
 import {
   countdown,
   daysBetween,
@@ -27,6 +33,17 @@ describe('categoryKey', () => {
   })
   test('the category outranks the title', () => {
     expect(categoryKey('Brunch', 'Brunch + DJ Set')).toBe('brunch')
+  })
+})
+
+describe('CAT_ICON', () => {
+  test('every kind has an icon, and the filterable kinds each have their own', () => {
+    for (const k of ['cata', 'musica', 'brunch', 'food', 'happy', 'default'] as const) {
+      expect(CAT_ICON[k]).toBeTruthy()
+    }
+    const icons = CAT_ORDER.map((k) => CAT_ICON[k])
+    expect(new Set(icons).size).toBe(icons.length)
+    expect(icons).not.toContain(CAT_ICON.default)
   })
 })
 

@@ -140,6 +140,5 @@ Content objects (feed posts, ranking rows, rails, profile stats) are white
 `bg-surface` cards (`rounded-card`, r24) on the cream ground, lifted by a warm
 shadow on Day only (`useLift()`); Night cards are flat.
 Burgundy is the one app-wide accent — no second hue, no pink, no brass, no
-rainbow. Event kinds are told apart by icon, not color (the `cat-*` tokens are an
-interim alias, deleted with the Explore milestone). Small accent text is cream at
+rainbow. Event kinds are told apart by icon, not color. Small accent text is cream at
 night: `text-accent` does that, and `bg-accent-fill` is for burgundy surfaces.

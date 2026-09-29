@@ -84,9 +84,9 @@ Load-bearing notes:
   color. `Button` keeps its `variant` names — `primary` (solid ink), `secondary` (the raised
   chip), `accent` (burgundy), `ghost` (hairline), `destructive` (a danger ring) — rather than
   renaming ~45 call sites to the boards' solid / chip / … vocabulary.
-- **Interim:** `cat-*`, `live*`, `on-cat`, `on-live` still exist so event surfaces keep working.
-  They are burgundy by day and cream at night (they double as text) and are deleted with the
-  Explore milestone. Event kinds are told apart by **icon**, never by hue.
+- Event kinds are told apart by **icon**, never by hue (`lib/eventCategory.ts` `CAT_ICON`: tasting → wine
+  glass, food → fork and knife, music → note, brunch → sun, happy hour → cocktail, anything else → sparkle).
+  The old `cat-*`, `live*`, `on-cat` and `on-live` tokens are gone; "live" and "starting soon" are the accent.
 
 ## Type
 
@@ -221,7 +221,25 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   period then (after a hairline) scope, "You're #1 in the city." in the serif, rows of position + avatar +
   name + a COUNT of spots (never styled like a score), your own row raised.
 - **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
-- **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.
+- **Explore** (`app/(tabs)/explore/index.tsx`, `components/explore/*`, `components/events/*`): the serif title,
+  a **search field** — Mesa's own `Field` in the page, not the native navigation-bar search (on iOS 26 that
+  folds into the bottom toolbar, behind the floating tab bar, and stacked under the title it takes the
+  system's colours, unreadable at Night) — then the **Places / Events** switcher, and the **Map** as a chip in
+  the bar. **Places:** pills Score ▾ / Filters (a bottom sheet of grouped rows, "Show N places") / Open now /
+  Neighborhood ▾ (a bottom-sheet chooser; once set it becomes a solid pill with a ×); a Trending rail (a flame
+  and the cheer count on a photo — never a score) in the default browse state; rows are raised r22 cards —
+  rank, 54pt picture, serif name, meta, "N friends" — with the friends' `ScoreStack` (or "Be the first").
+  **Events:** a calendar chip and a day strip (a dot per event, at most two), category pills each with its
+  icon, a **Featured** pager of big photo cards (glass "Wed 30 Sep · 7 PM" chip, save, a frosted panel with
+  the title, who's going and "I'm going"), then ticket cards — the date on a stub in the accent, a dashed
+  seam, the kind (icon + word), when, title, spots left, who's going, save + I'm going. One big card serves
+  Tonight (Feed) and Featured (`components/events/EventHero.tsx`).
+- **The map** (`app/map.tsx`, `components/MesaMap.tsx`): full-bleed; Back, a line saying how many spots your
+  friends ranked, and "find me" float over it as glass. A spot people you follow have ranked is a **score pin**
+  (their average, in a raised pill — solid ink once chosen); every other place is a quiet dot in ONE native
+  circle layer (a hundred-odd views for them was heavy and buried the pins — many places share a
+  coordinate). Tapping either opens a glass card at the bottom: picture, name, meta with the distance, the
+  friends' score, and a chevron into the place.
 - **"How was it?"** (`components/rank/{FeelStep,FeelSlider,Flute}.tsx`, `lib/feel.ts`) is one 3-stop
   slider — _Didn't love it / It was fine / Loved it_ — under a **realistic Kir Royale flute** that goes
   flat → a slow thin stream in a misted glass → five lively streams with a ring of mousse and a fizz over
@@ -263,8 +281,8 @@ places a raw color value may appear:
 3. **`components/ui/ThemePicker.tsx`** — the Auto / Day / Night tiles show each theme literally.
 4. **`components/rank/Flute.tsx` + `fluteData.ts`** — the rating illustration.
 5. **`components/GoogleSignInButton.tsx`** — Google's own brand colors.
-6. **`components/MesaMap.tsx`**, **`lib/media.ts`** — the map's user-location dot and ring, and the
-   Mapbox static-map pin.
+6. **`lib/media.ts`** — the Mapbox static-map pin (the map's user-location dot and its ring are constants in
+   `theme/vars.ts`).
 7. **`apps/mobile/app.json`** — the native splash and icon backgrounds.
 8. **`apps/api/src/lib/publicPage.ts`** (the public share pages) and
    **`apps/api/src/routes/legal-pages.ts`** (privacy/terms) — self-contained stylesheets in a
@@ -376,5 +394,5 @@ decision, so it doesn't drift again.
   this grep is the enforcement):
   ```
   grep -rnE "#[0-9a-fA-F]{3,8}\b|rgba?\(" apps/mobile/src \
-    | grep -vE "src/(theme/vars\.ts|global\.css|components/(ShareCard|GoogleSignInButton|MesaMap|ui/ThemePicker)\.tsx|components/rank/(Flute|fluteData))"   # → 0
+    | grep -vE "src/(theme/vars\.ts|global\.css|components/(ShareCard|GoogleSignInButton|ui/ThemePicker)\.tsx|components/rank/(Flute|fluteData))"   # → 0
   ```

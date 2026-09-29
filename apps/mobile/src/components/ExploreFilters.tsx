@@ -10,12 +10,12 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { Button, Caption, Chip, MAX_SCALE, Segmented } from '@/components/ui'
+import { Button, Caption, Chip, IconButton, MAX_SCALE, Segmented } from '@/components/ui'
 import { ChevronIcon, CloseIcon } from '@/components/ui/icons'
 import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { Neighborhood } from '@/lib/types'
-import { SHADOW } from '@/theme/vars'
+import { useLift } from '@/theme/useLift'
 
 export type ExploreFilterValues = {
   hood: string | null
@@ -67,7 +67,8 @@ const openSections = (v: ExploreFilterValues): Record<SectionKey, boolean> => ({
 // messy") — five option sets expanded at once read as a wall of chips. The
 // controls and the filter model are untouched; only what's visible changed.
 //
-// A floating card over a scrim, sliding up from the bottom edge. RN's own
+// A bottom sheet (r34 top corners, a grabber, a title and a close chip) over a scrim, sliding up from
+// the bottom edge, its rows in one raised group. RN's own
 // <Modal> is fine here (Explore is a tab, never itself a native modal); its
 // built-in animation is off and one shared value drives the scrim fade + card
 // slide both ways, so opening and closing are the same smooth curve.
@@ -94,6 +95,7 @@ export function ExploreFilters({
 }) {
   const t = useT()
   const insets = useSafeAreaInsets()
+  const lift = useLift()
   const { height } = useWindowDimensions()
   const [draft, setDraft] = useState(value)
   const [open, setOpen] = useState<Record<SectionKey, boolean>>(() => openSections(value))
@@ -134,11 +136,7 @@ export function ExploreFilters({
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
-      <View
-        pointerEvents={visible ? 'auto' : 'none'}
-        className="flex-1 justify-end px-2"
-        style={{ paddingBottom: Math.max(insets.bottom, 8) }}
-      >
+      <View pointerEvents={visible ? 'auto' : 'none'} className="flex-1 justify-end">
         <Animated.View style={scrim} className="absolute inset-0 bg-overlay-scrim">
           <Pressable
             className="flex-1"
@@ -147,152 +145,150 @@ export function ExploreFilters({
           />
         </Animated.View>
         <Animated.View
-          className="overflow-hidden rounded-card border border-line bg-bg"
+          className="overflow-hidden rounded-t-sheet bg-bg"
           style={[
-            {
-              maxHeight: height - insets.top - 24,
-              shadowColor: SHADOW,
-              shadowOpacity: 0.25,
-              shadowRadius: 24,
-              shadowOffset: { width: 0, height: -4 },
-            },
+            { maxHeight: height - insets.top - 24, paddingBottom: Math.max(insets.bottom, 12) },
             card,
           ]}
         >
-          <View className="items-center pt-2">
+          <View className="items-center pt-2.5">
             <View className="h-1 w-10 rounded-pill bg-line-strong" />
           </View>
-          <View className="flex-row items-center justify-center px-5 pt-2 pb-2">
-            <Text className="font-ui-semibold text-subhead text-text">
+          <View className="h-12 flex-row items-center justify-center px-4">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-body text-text"
+            >
               {t('explore.filters_title')}
             </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('comments.close')}
-              onPress={onClose}
-              hitSlop={8}
-              className="absolute right-4 h-10 w-10 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
-            >
-              <CloseIcon size={18} />
-            </Pressable>
+            <View className="absolute right-4">
+              <IconButton
+                size={34}
+                accessibilityLabel={t('comments.close')}
+                onPress={onClose}
+                icon={<CloseIcon size={16} color="text" />}
+              />
+            </View>
           </View>
 
-          <ScrollView contentContainerClassName="px-5 pb-2" showsVerticalScrollIndicator={false}>
-            <Group
-              first
-              label={t('explore.price')}
-              value={draft.price != null ? '$'.repeat(draft.price) : t('common.any')}
-              active={draft.price != null}
-              open={open.price}
-              onToggle={() => toggle('price')}
-            >
-              <Segmented
+          <ScrollView contentContainerClassName="px-4 pb-3" showsVerticalScrollIndicator={false}>
+            <View className="overflow-hidden rounded-group bg-surface" style={lift}>
+              <Group
+                first
+                label={t('explore.price')}
+                value={draft.price != null ? '$'.repeat(draft.price) : t('common.any')}
+                active={draft.price != null}
+                open={open.price}
+                onToggle={() => toggle('price')}
+              >
+                <Segmented
+                  value={
+                    draft.price != null ? (String(draft.price) as (typeof PRICES)[number]) : null
+                  }
+                  onChange={(v) => set('price', Number(v))}
+                  onClear={() => set('price', null)}
+                  options={PRICES.map((p) => ({ value: p, label: '$'.repeat(Number(p)) }))}
+                />
+              </Group>
+
+              <Group
+                label={t('explore.min_score')}
                 value={
-                  draft.price != null ? (String(draft.price) as (typeof PRICES)[number]) : null
+                  draft.minScore != null ? `${draft.minScore / 10}+` : t('explore.min_score_all')
                 }
-                onChange={(v) => set('price', Number(v))}
-                onClear={() => set('price', null)}
-                options={PRICES.map((p) => ({ value: p, label: '$'.repeat(Number(p)) }))}
-              />
-            </Group>
+                active={draft.minScore != null}
+                open={open.minScore}
+                onToggle={() => toggle('minScore')}
+              >
+                <Segmented
+                  value={
+                    draft.minScore == null
+                      ? 'all'
+                      : (String(draft.minScore) as (typeof SCORES)[number]['value'])
+                  }
+                  onChange={(v) => set('minScore', v === 'all' ? null : Number(v))}
+                  options={SCORES.map((s) => ({
+                    value: s.value,
+                    label: s.value === 'all' ? t('explore.min_score_all') : s.label,
+                  }))}
+                />
+              </Group>
 
-            <Group
-              label={t('explore.min_score')}
-              value={
-                draft.minScore != null ? `${draft.minScore / 10}+` : t('explore.min_score_all')
-              }
-              active={draft.minScore != null}
-              open={open.minScore}
-              onToggle={() => toggle('minScore')}
-            >
-              <Segmented
+              <Group
+                label={t('explore.sector')}
                 value={
-                  draft.minScore == null
-                    ? 'all'
-                    : (String(draft.minScore) as (typeof SCORES)[number]['value'])
+                  draft.hood
+                    ? (neighborhoods.find((n) => n.slug === draft.hood)?.name ?? draft.hood)
+                    : t('common.any')
                 }
-                onChange={(v) => set('minScore', v === 'all' ? null : Number(v))}
-                options={SCORES.map((s) => ({
-                  value: s.value,
-                  label: s.value === 'all' ? t('explore.min_score_all') : s.label,
-                }))}
-              />
-            </Group>
+                active={draft.hood != null}
+                open={open.hood}
+                onToggle={() => toggle('hood')}
+              >
+                <ChipWrap>
+                  {neighborhoods.map((n) => (
+                    <Chip
+                      key={n.slug}
+                      size="sm"
+                      state={draft.hood === n.slug ? 'selected' : 'default'}
+                      onPress={() => set('hood', draft.hood === n.slug ? null : n.slug)}
+                    >
+                      {n.name}
+                    </Chip>
+                  ))}
+                </ChipWrap>
+              </Group>
 
-            <Group
-              label={t('explore.sector')}
-              value={
-                draft.hood
-                  ? (neighborhoods.find((n) => n.slug === draft.hood)?.name ?? draft.hood)
-                  : t('common.any')
-              }
-              active={draft.hood != null}
-              open={open.hood}
-              onToggle={() => toggle('hood')}
-            >
-              <ChipWrap>
-                {neighborhoods.map((n) => (
-                  <Chip
-                    key={n.slug}
-                    size="sm"
-                    state={draft.hood === n.slug ? 'selected' : 'default'}
-                    onPress={() => set('hood', draft.hood === n.slug ? null : n.slug)}
-                  >
-                    {n.name}
-                  </Chip>
-                ))}
-              </ChipWrap>
-            </Group>
+              <Group
+                label={t('explore.cuisine')}
+                value={
+                  draft.cuisine ? (cuisineLabel(draft.cuisine) ?? draft.cuisine) : t('common.any')
+                }
+                active={draft.cuisine != null}
+                open={open.cuisine}
+                onToggle={() => toggle('cuisine')}
+              >
+                <ChipWrap>
+                  {cuisines.map((c) => (
+                    <Chip
+                      key={c}
+                      size="sm"
+                      state={draft.cuisine === c ? 'selected' : 'default'}
+                      onPress={() => set('cuisine', draft.cuisine === c ? null : c)}
+                    >
+                      {cuisineLabel(c) ?? c}
+                    </Chip>
+                  ))}
+                </ChipWrap>
+              </Group>
 
-            <Group
-              label={t('explore.cuisine')}
-              value={
-                draft.cuisine ? (cuisineLabel(draft.cuisine) ?? draft.cuisine) : t('common.any')
-              }
-              active={draft.cuisine != null}
-              open={open.cuisine}
-              onToggle={() => toggle('cuisine')}
-            >
-              <ChipWrap>
-                {cuisines.map((c) => (
-                  <Chip
-                    key={c}
-                    size="sm"
-                    state={draft.cuisine === c ? 'selected' : 'default'}
-                    onPress={() => set('cuisine', draft.cuisine === c ? null : c)}
-                  >
-                    {cuisineLabel(c) ?? c}
-                  </Chip>
-                ))}
-              </ChipWrap>
-            </Group>
-
-            <Group
-              label={t('explore.occasion')}
-              value={draft.occasion ? tagLabel(draft.occasion) : t('common.any')}
-              active={draft.occasion != null}
-              open={open.occasion}
-              onToggle={() => toggle('occasion')}
-            >
-              <ChipWrap>
-                {OCCASION_TAGS.map((tag) => (
-                  <Chip
-                    key={tag}
-                    size="sm"
-                    state={draft.occasion === tag ? 'selected' : 'default'}
-                    onPress={() => set('occasion', draft.occasion === tag ? null : tag)}
-                  >
-                    {tagLabel(tag)}
-                  </Chip>
-                ))}
-              </ChipWrap>
-            </Group>
+              <Group
+                label={t('explore.occasion')}
+                value={draft.occasion ? tagLabel(draft.occasion) : t('common.any')}
+                active={draft.occasion != null}
+                open={open.occasion}
+                onToggle={() => toggle('occasion')}
+              >
+                <ChipWrap>
+                  {OCCASION_TAGS.map((tag) => (
+                    <Chip
+                      key={tag}
+                      size="sm"
+                      state={draft.occasion === tag ? 'selected' : 'default'}
+                      onPress={() => set('occasion', draft.occasion === tag ? null : tag)}
+                    >
+                      {tagLabel(tag)}
+                    </Chip>
+                  ))}
+                </ChipWrap>
+              </Group>
+            </View>
           </ScrollView>
 
-          <View className="flex-row gap-3 border-line border-t px-5 pt-3 pb-4">
+          <View className="flex-row gap-2.5 px-4 pt-1">
             <Button
               variant="secondary"
-              className="flex-1 w-auto bg-surface"
+              className="flex-1 w-auto"
               onPress={() => setDraft(NO_EXPLORE_FILTERS)}
             >
               {t('explore.clear')}
@@ -360,14 +356,14 @@ function Group({
         accessibilityState={{ expanded: open }}
         accessibilityLabel={`${label}: ${value}`}
         onPress={onToggle}
-        className="min-h-[52px] flex-row items-center py-3 active:opacity-60"
+        className="min-h-[56px] flex-row items-center px-4 py-3 active:opacity-60"
       >
-        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-label text-text-2">
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-body text-text">
           {label}
         </Text>
         <Caption
           numberOfLines={1}
-          className={`ml-3 flex-1 text-right font-ui-semibold ${active ? 'text-accent' : ''}`}
+          className={`ml-3 flex-1 text-right text-subhead ${active ? 'font-ui-semibold text-accent' : ''}`}
         >
           {value}
         </Caption>
@@ -381,7 +377,7 @@ function Group({
         pointerEvents={open ? 'auto' : 'none'}
       >
         <View
-          className="absolute top-0 right-0 left-0 pb-4"
+          className="absolute top-0 right-0 left-0 px-4 pb-4"
           onLayout={(e) => setH(e.nativeEvent.layout.height)}
         >
           {children}

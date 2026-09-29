@@ -41,7 +41,7 @@ import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
-import { CAT_CLASSES, CAT_TOKEN, categoryKey } from '@/lib/eventCategory'
+import { categoryKey } from '@/lib/eventCategory'
 import { goingLabel } from '@/lib/eventGoing'
 import { countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
@@ -105,7 +105,6 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
   const scrim = useColor('photo-scrim')
   const bg = useColor('bg')
   const cat = categoryKey(e.category, e.title)
-  const cls = CAT_CLASSES[cat]
   const rsvpState = useEventRsvp(e)
   const cd = countdown(e.startsAt, e.endsAt, now)
   const live = cd.kind === 'live'
@@ -185,9 +184,9 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           />
           <Animated.View style={titleStyle} className="absolute right-5 bottom-10 left-5">
             <View className="flex-row items-center gap-2">
-              <View className={`flex-row items-center gap-1.5 rounded-pill px-2.5 py-1 ${cls.bg}`}>
-                <CategoryIcon cat={cat} size={12} color="on-cat" />
-                <Text className="font-ui-semibold text-micro text-on-cat">
+              <View className="flex-row items-center gap-1.5 rounded-pill bg-accent-fill px-2.5 py-1">
+                <CategoryIcon cat={cat} size={12} color="on-accent" />
+                <Text className="font-ui-semibold text-micro text-on-accent">
                   {eventCategoryLabel(e.category) ?? t('events.cat_default')}
                 </Text>
               </View>
@@ -233,23 +232,21 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           ) : (
             <Animated.View
               entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
-              className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live ? 'bg-live' : isImminent(cd) ? cls.bg : 'border border-line bg-surface'}`}
+              className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live || isImminent(cd) ? 'bg-accent-fill' : 'bg-surface'}`}
             >
               {live ? (
-                <PulseDot color="on-live" size={9} />
+                <PulseDot color="on-accent" size={9} />
               ) : isImminent(cd) ? (
-                <PulseDot color="on-cat" size={8} />
+                <PulseDot color="on-accent" size={8} />
               ) : (
-                <ClockIcon size={18} color={CAT_TOKEN[cat]} />
+                <ClockIcon size={18} color="accent" />
               )}
               <View className="flex-1">
-                <Caption
-                  className={live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : undefined}
-                >
+                <Caption className={live || isImminent(cd) ? 'text-on-accent' : undefined}>
                   {live ? t('events.live_now') : t('events.starts_in')}
                 </Caption>
                 <Text
-                  className={`font-ui-semibold text-body ${live ? 'text-on-live' : isImminent(cd) ? 'text-on-cat' : cls.text}`}
+                  className={`font-ui-semibold text-body ${live || isImminent(cd) ? 'text-on-accent' : 'text-accent'}`}
                 >
                   {live
                     ? e.endsAt
@@ -322,7 +319,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
 
           {e.capacity != null && rsvpState.spotsLeft != null ? (
             <InfoCard index={3}>
-              <SpotsLine capacity={e.capacity} spotsLeft={rsvpState.spotsLeft} cat={cat} />
+              <SpotsLine capacity={e.capacity} spotsLeft={rsvpState.spotsLeft} />
             </InfoCard>
           ) : null}
 
@@ -411,10 +408,10 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           <Pressable
             accessibilityRole="button"
             onPress={() => Linking.openURL(whatsapp).catch(() => {})}
-            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border ${cls.border} active:opacity-70`}
+            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border border-accent active:opacity-70`}
           >
             <WhatsAppIcon size={16} />
-            <Text className={`font-ui-semibold text-label ${cls.text}`}>
+            <Text className={`font-ui-semibold text-label text-accent`}>
               {t('events.whatsapp')}
             </Text>
           </Pressable>
@@ -422,10 +419,10 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           <Pressable
             accessibilityRole="button"
             onPress={() => e.ticketUrl && Linking.openURL(e.ticketUrl).catch(() => {})}
-            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border ${cls.border} active:opacity-70`}
+            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border border-accent active:opacity-70`}
           >
             <WebIcon size={16} />
-            <Text className={`font-ui-semibold text-label ${cls.text}`}>
+            <Text className={`font-ui-semibold text-label text-accent`}>
               {t('events.buy_tickets')}
             </Text>
           </Pressable>

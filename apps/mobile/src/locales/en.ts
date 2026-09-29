@@ -282,7 +282,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'explore.trending_title': 'Trending this week',
   'explore.cheers_this_week': { one: '{n} cheer this week', other: '{n} cheers this week' },
   'explore.map_label': 'View the map',
-  'explore.map_chip': 'Map',
   'explore.search_placeholder': 'Search a spot, dish, or member',
 
   'leaderboard.period_month': 'This month',
@@ -833,8 +832,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'map.title': 'The map',
   'map.friends_ranked_count': {
-    one: '1 spot your friends have ranked.',
-    other: '{n} spots your friends have ranked.',
+    one: '1 spot your friends ranked',
+    other: '{n} spots your friends ranked',
   },
   'map.locate_me': 'Locate me on the map',
   'map.locating': 'Finding your location…',
@@ -846,7 +845,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'map.coming_soon_body': 'The map is coming in the next version.',
   'map.unavailable': "The map isn't available.",
   'map.nobody_ranked': 'No one you follow has ranked this yet.',
-  'map.view_arrow': 'View ›',
 
   'settings.unblock_error': "Couldn't unblock. Try again.",
   'settings.invite_error': "Couldn't create your invite.",
