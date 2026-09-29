@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { AppState, Appearance, View } from 'react-native'
+import { AppState, Appearance, type StyleProp, View, type ViewStyle } from 'react-native'
 
 import { GROUND, type ThemeName, themeVars } from './vars'
 
@@ -160,6 +160,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       <View style={[themeVars[resolved], { flex: 1, backgroundColor: GROUND[resolved] }]}>
         {children}
       </View>
+    </ThemeContext.Provider>
+  )
+}
+
+// Renders its children in ONE fixed theme, whatever the app is showing: the class colours
+// (through the nested vars) and everything read from the theme in JS (useColor, useLift, a
+// Field's keyboard) all resolve to `theme` inside it. For a surface whose ground is a fixed
+// colour rather than the theme's — the cream card on the burgundy landing has to stay Day
+// at Night, or its dark-mode fields and cream text would sit on cream.
+export function ThemeScope({
+  theme,
+  style,
+  children,
+}: {
+  theme: ThemeName
+  style?: StyleProp<ViewStyle>
+  children: ReactNode
+}) {
+  const outer = useTheme()
+  const value = useMemo<ThemeContextValue>(() => ({ ...outer, resolved: theme }), [outer, theme])
+  return (
+    <ThemeContext.Provider value={value}>
+      <View style={[themeVars[theme], style]}>{children}</View>
     </ThemeContext.Provider>
   )
 }

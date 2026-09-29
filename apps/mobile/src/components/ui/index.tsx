@@ -108,12 +108,14 @@ export const Serif = ({ className, ...p }: TextProps & { className?: string }) =
 )
 
 /* Wordmark — the lowercase word "mesa" in Instrument Serif, in the `logo` color
-   (oxblood by day, cream at night). It is the only mark Mesa shows inside the app:
-   the capital-M icon lives on the home screen and never on a screen. Size is
-   caller-controlled; the line box is 1.15× so the tall serif never clips. */
+   (oxblood by day, cream at night; on the burgundy landing a caller passes `text-on-accent`).
+   It is the only mark Mesa shows inside the app: the capital-M icon lives on the home
+   screen and never on a screen. Size is caller-controlled and it never scales with Dynamic
+   Type — it is a logo, not text; the line box is 1.15× so the tall serif never clips. */
 export const Wordmark = ({ size = 40, className }: { size?: number; className?: string }) => (
   <Text
     accessibilityLabel="Mesa"
+    allowFontScaling={false}
     className={`font-serif ${hasTextColor(className) ? '' : 'text-logo'} ${className ?? ''}`}
     style={{ fontSize: size, lineHeight: Math.round(size * 1.15) }}
   >

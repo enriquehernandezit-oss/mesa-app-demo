@@ -115,7 +115,9 @@ type is Instrument Serif (upright — **no italics anywhere**); UI is the iOS sy
 font. **The logo is the lowercase word `mesa`** in oxblood by day and cream by
 night, and it is the only mark shown in the app — the capital-M **app icon lives
 on the home screen only** and never appears on any screen, least of all the
-landing page.
+landing page. **The signed-out landing (sign-in, verify-email, reset-password) is
+the one burgundy ground** — `#7a1a29` in both themes, the wordmark and words in
+cream, the form on a cream card (`components/AuthShell.tsx`).
 
 **Content is Mesa, chrome is iOS.** The token layer governs every _content_
 surface — cards, rows, sheets' contents, the type ramp, the stroke-icon language.

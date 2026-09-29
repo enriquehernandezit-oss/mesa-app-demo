@@ -9,8 +9,8 @@ import {
   type TextInput,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { AuthCard, AuthGround } from '@/components/AuthShell'
 import { Body, Button, Caption, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { LockIcon } from '@/components/ui/icons'
@@ -45,7 +45,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg">
+    <AuthGround>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1"
@@ -63,17 +63,17 @@ export default function ResetPassword() {
           <Pressable
             accessible={false}
             onPress={Keyboard.dismiss}
-            className="flex-grow justify-center gap-5 px-5 py-6"
+            className="flex-grow justify-center gap-6 px-5 py-6"
           >
             <View className="items-center gap-2">
-              <Wordmark size={56} />
-              <Serif className="mt-3 text-center text-serif-lg text-text">
+              <Wordmark size={56} className="text-on-accent" />
+              <Serif className="mt-3 text-center text-serif-lg text-on-accent">
                 {t('auth.reset_title')}
               </Serif>
             </View>
 
             {!token ? (
-              <View className="gap-3">
+              <AuthCard>
                 <Serif className="text-serif-sm text-center">{t('auth.reset_missing_token')}</Serif>
                 <Body className="text-center text-text-2">
                   {t('auth.reset_missing_token_body')}
@@ -81,16 +81,16 @@ export default function ResetPassword() {
                 <Button variant="primary" onPress={goSignIn}>
                   {t('auth.reset_back_to_signin')}
                 </Button>
-              </View>
+              </AuthCard>
             ) : done ? (
-              <View className="gap-3">
+              <AuthCard>
                 <Serif className="text-serif-md text-center">{t('auth.reset_done')}</Serif>
                 <Button variant="primary" onPress={goSignIn}>
                   {t('auth.sign_in_button')}
                 </Button>
-              </View>
+              </AuthCard>
             ) : (
-              <View className="gap-3">
+              <AuthCard>
                 <Field
                   icon={<LockIcon size={18} color="text-muted" />}
                   placeholder={t('auth.reset_new_password_placeholder')}
@@ -131,11 +131,11 @@ export default function ResetPassword() {
                   <Caption className="text-danger">{t('auth.reset_mismatch')}</Caption>
                 )}
                 {error && <Caption className="text-danger">{error}</Caption>}
-              </View>
+              </AuthCard>
             )}
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </AuthGround>
   )
 }

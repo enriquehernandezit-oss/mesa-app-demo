@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from 'react'
 import { Text, TextInput, View } from 'react-native'
 
+import { MAX_SCALE } from '@/components/ui'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
@@ -56,6 +57,7 @@ export function Field({
       placeholderTextColor={placeholder}
       selectionColor={accent}
       keyboardAppearance={theme === 'night' ? 'dark' : 'light'}
+      maxFontSizeMultiplier={MAX_SCALE}
       className={`rounded border bg-surface font-ui text-body text-text ${
         error ? 'border-danger' : 'border-transparent'
       } ${multilineBox ? 'min-h-[84px] p-4' : icon ? 'min-h-[52px] pl-11 pr-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}

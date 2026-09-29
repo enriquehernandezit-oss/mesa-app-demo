@@ -111,7 +111,7 @@ a stacked serif figure, or set a column of counts in the system font, where `tab
 | Use                                           | Size / weight                               |
 | --------------------------------------------- | ------------------------------------------- |
 | Hero place name                               | serif 46                                    |
-| "mesa" on landing / auth (no icon above it)   | serif 72 (splash 56)                        |
+| "mesa" on landing / auth (no icon above it)   | serif 72, cream on burgundy (splash 56)     |
 | Onboarding step titles                        | serif 36 (`text-headline`)                  |
 | Large titles (Explore, Your list, Plans…)     | serif 40, line height 1.02                  |
 | Greeting; "How was it?" / "Which was better?" | serif 33–34                                 |
@@ -321,6 +321,17 @@ the app and are viewed inside someone else's feed, so they look the same for eve
 - **The landing and auth screens show the wordmark only.** No icon, no tile, anywhere in the app.
   With no mark above it the wordmark carries the screen alone, so it is set at 72 (the boards, which
   draw the M icon over a 46 word, are superseded on this point).
+- **The landing is burgundy, in both themes (a founder decision, 2026-09-30, over the boards' cream / black).**
+  The signed-out screens — sign-in / create account (`screens/AuthFlow.tsx`), and the pages the emails link
+  to (`app/verify-email.tsx`, `app/reset-password.tsx`) — sit on `accent-fill` `#7a1a29` (the app's
+  burgundy, not the icon's deeper oxblood), with the wordmark and the tagline in cream (`on-accent`) and
+  the form on a **cream card** (r30) — the card's contents always in Day tokens, even at Night, through
+  `ThemeScope` (`theme/ThemeProvider.tsx`; the shared shell is `components/AuthShell.tsx`). The status bar
+  is light on it, and the Apple button is always black there. Nothing after sign-in is burgundy ground.
+  The wordmark never scales with Dynamic Type (it is a logo); the text on the card is capped like the rest.
+  **Follow-ups for the native rebuild (E1):** the native splash should be the same burgundy with the cream
+  wordmark (both appearances), and the in-app `Splash` (`components/Splash.tsx`) switches to it in the same
+  build — until then the launch is cream → landing.
 - **The app icon is a capital serif `M`** — cream `#f1e8da` on an oxblood radial gradient
   (`#4d0b17` → `#2e0309` at 42% → `#210104`, centred at 30% / 18%), a full-bleed 1024 square (iOS
   applies its own ~22% corner mask). It exists on the home screen and nowhere else.
@@ -410,7 +421,8 @@ decision, so it doesn't drift again.
 - **No italics.** Not in the wordmark, notes, quotes or captions.
 - **No app icon inside the app** — least of all on the landing screen. The wordmark only.
 - **Text over photography is always light-on-a-dark-scrim**, in both themes.
-- **Day is cream (`#f3ede4`), Night is black (`#0b0809`).** Never a stark white or oxblood ground.
+- **Day is cream (`#f3ede4`), Night is black (`#0b0809`).** Never a stark white or oxblood ground — the one
+  exception is the signed-out landing, which is burgundy (`#7a1a29`) in both themes (see "The wordmark and the icon").
 - **No raw colors outside the sites named above.** Enforce with (oxlint doesn't lint colors, so
   this grep is the enforcement):
   ```
