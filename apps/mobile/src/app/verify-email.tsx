@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { AuthCard, AuthGround } from '@/components/AuthShell'
 import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
@@ -56,28 +56,24 @@ export default function VerifyEmail() {
   const enter = () => router.replace('/')
 
   return (
-    <AuthGround>
-      <View className="flex-1 justify-center gap-6 px-5">
-        <View className="items-center">
-          <Wordmark size={64} className="text-on-accent" />
-        </View>
-        <AuthCard>
-          <Eyebrow className="text-center">
+    <SafeAreaView className="flex-1 bg-bg">
+      <View className="flex-1 justify-center px-8">
+        <View className="items-center gap-3">
+          <Wordmark size={64} />
+          <Eyebrow className="mt-4">
             {state === 'done'
               ? t('auth.verify_confirmed_eyebrow')
               : t('auth.verify_pending_eyebrow')}
           </Eyebrow>
 
-          {state === 'verifying' && (
-            <Caption className="text-center">{t('auth.verify_verifying')}</Caption>
-          )}
+          {state === 'verifying' && <Caption>{t('auth.verify_verifying')}</Caption>}
 
           {state === 'done' && (
             <>
               <Serif className="text-center text-serif-lg text-text">
                 {t('auth.verify_done_title')}
               </Serif>
-              <Body className="text-center text-subhead text-text-muted">
+              <Body className="max-w-[19rem] text-center text-subhead text-text-muted">
                 {t('auth.verify_done_body')}
               </Body>
             </>
@@ -88,7 +84,7 @@ export default function VerifyEmail() {
               <Serif className="text-center text-serif-lg text-text">
                 {state === 'missing' ? t('auth.verify_missing_token') : t('auth.INVALID_TOKEN')}
               </Serif>
-              <Body className="text-center text-subhead text-text-muted">
+              <Body className="max-w-[19rem] text-center text-subhead text-text-muted">
                 {t('auth.verify_expired_body')}
               </Body>
               {error && (
@@ -98,12 +94,13 @@ export default function VerifyEmail() {
               )}
             </>
           )}
-
-          <Button variant="primary" className="mt-2" onPress={enter}>
-            {state === 'done' ? t('auth.verify_enter_done') : t('auth.verify_enter_pending')}
-          </Button>
-        </AuthCard>
+        </View>
       </View>
-    </AuthGround>
+      <View className="px-5 pb-6">
+        <Button variant="primary" onPress={enter}>
+          {state === 'done' ? t('auth.verify_enter_done') : t('auth.verify_enter_pending')}
+        </Button>
+      </View>
+    </SafeAreaView>
   )
 }

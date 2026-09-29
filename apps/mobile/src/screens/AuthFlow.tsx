@@ -16,8 +16,8 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { AuthCard, AuthGround } from '@/components/AuthShell'
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { Body, Button, Caption, Eyebrow, MAX_SCALE, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
@@ -28,6 +28,7 @@ import { authErrorMessage } from '@/lib/authErrors'
 import { clearAuthLost } from '@/lib/authLost'
 import { useT } from '@/lib/i18n'
 import { queryClient } from '@/lib/query'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 
 // A terminal-style blinking cursor after "objetivo: SDQ" — same opacity-loop
 // shape as components/ui's Skeleton shimmer.
@@ -38,7 +39,7 @@ function BlinkingCursor() {
   }, [o])
   const style = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    <Animated.Text style={style} className="font-serif text-serif-md text-on-accent">
+    <Animated.Text style={style} className="font-serif text-serif-md text-text">
       _
     </Animated.Text>
   )
@@ -52,9 +53,6 @@ function splitAction(label: string): [string, string] {
   return i < 0 ? ['', label] : [label.slice(0, i + 2), label.slice(i + 2)]
 }
 
-// The landing (Redesign 2): the app's burgundy in both themes, the wordmark and the tagline in
-// cream, and the form on a cream card (components/AuthShell). A cursor blinks after the tagline.
-//
 // Sign-in — email + password (the launch method) plus Sign in with Apple and
 // Google, Apple shown with equal prominence per App Store 4.8 (both are native
 // id-token flows, so a `false` GoogleSignin.signIn() cancel and Apple's thrown
@@ -100,6 +98,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [appleAvailable, setAppleAvailable] = useState(false)
   const passwordRef = useRef<TextInput>(null)
+  const theme = useResolvedTheme()
 
   // Sign in with Apple is iOS-only (and simulator-dependent). Probe once; the
   // button only renders when the device actually supports it.
@@ -220,32 +219,29 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
 
   if (suspended) {
     return (
-      <AuthGround>
-        <View className="flex-1 justify-center gap-6 px-5">
-          <View className="items-center">
-            <Wordmark size={64} className="text-on-accent" />
-          </View>
-          <AuthCard>
-            <Eyebrow className="text-center text-danger">{t('auth.suspended_title')}</Eyebrow>
-            <Serif className="text-center text-serif-lg text-text">
-              {t('auth.suspended_headline')}
-            </Serif>
-            <Body className="text-center text-subhead text-text-muted">
-              {t('auth.suspended_body')}
-            </Body>
-            <Button
-              variant="primary"
-              className="mt-2"
-              onPress={async () => {
-                await signOut().catch(() => {})
-                clearAuthLost()
-              }}
-            >
-              {t('auth.back_to_start')}
-            </Button>
-          </AuthCard>
+      <SafeAreaView className="flex-1 bg-bg">
+        <View className="flex-1 items-center justify-center gap-3 px-8">
+          <Wordmark size={64} />
+          <Eyebrow className="mt-4 text-danger">{t('auth.suspended_title')}</Eyebrow>
+          <Serif className="text-center text-serif-lg text-text">
+            {t('auth.suspended_headline')}
+          </Serif>
+          <Body className="text-center text-subhead text-text-muted">
+            {t('auth.suspended_body')}
+          </Body>
         </View>
-      </AuthGround>
+        <View className="px-5 pb-6">
+          <Button
+            variant="secondary"
+            onPress={async () => {
+              await signOut().catch(() => {})
+              clearAuthLost()
+            }}
+          >
+            {t('auth.back_to_start')}
+          </Button>
+        </View>
+      </SafeAreaView>
     )
   }
 
@@ -255,7 +251,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   )
 
   return (
-    <AuthGround>
+    <SafeAreaView className="flex-1 bg-bg">
       {/* Centered form; the KeyboardAvoidingView lifts it so the keyboard never
           sits on top of the password field on a smaller phone. */}
       <KeyboardAvoidingView
@@ -275,24 +271,22 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
           <Pressable
             accessible={false}
             onPress={Keyboard.dismiss}
-            className="flex-grow justify-center gap-6 px-5 py-6"
+            className="flex-grow justify-center gap-5 px-5 py-6"
           >
             {/* The wordmark alone carries the screen: the capital-M app icon lives on
                 the home screen and is never drawn in the app. */}
             <View className="items-center gap-3">
-              <Wordmark size={72} className="text-on-accent" />
+              <Wordmark size={72} />
               <View className="items-center gap-1">
-                <Eyebrow className="uppercase tracking-eyebrow text-on-accent opacity-70">
-                  Revolución gastronómica
-                </Eyebrow>
+                <Eyebrow className="uppercase tracking-eyebrow">Revolución gastronómica</Eyebrow>
                 <View className="flex-row items-baseline">
-                  <Serif className="text-serif-md text-on-accent">Primer objetivo: SDQ</Serif>
+                  <Serif className="text-serif-md text-text">Primer objetivo: SDQ</Serif>
                   <BlinkingCursor />
                 </View>
               </View>
             </View>
 
-            <AuthCard>
+            <View className="gap-3">
               <Eyebrow className="pl-1">
                 {mode === 'signup' ? t('auth.create_account_eyebrow') : t('auth.welcome_back')}
               </Eyebrow>
@@ -400,7 +394,11 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               {Platform.OS === 'ios' && appleAvailable && (
                 <AppleAuthentication.AppleAuthenticationButton
                   buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                  buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  buttonStyle={
+                    theme === 'night'
+                      ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                      : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                  }
                   cornerRadius={27}
                   style={{ height: 54, width: '100%' }}
                   onPress={appleAuth}
@@ -413,10 +411,10 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                   disabled={busy}
                 />
               )}
-            </AuthCard>
+            </View>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
-    </AuthGround>
+    </SafeAreaView>
   )
 }
