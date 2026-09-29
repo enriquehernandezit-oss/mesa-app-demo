@@ -159,8 +159,12 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **The picture rule.** A card's picture is, in order: the friend's photo → the place's photo →
   the friend's **words** set as the picture → a **name card** (`surface-raised`, hairline ring,
   the name in serif). A place page with no photo opens on its map. No letter tiles, no stamps.
-- **Tab bar:** a floating glass capsule (inset 18, bottom 24). The active tab is a 46pt filled
-  `ink` circle; the **+** is a 50pt `accent-fill` circle. No labels.
+- **Tab bar:** a floating glass capsule (inset 18, 66pt, bottom `max(safe-area − 10, 16)`), absolutely
+  positioned so scenes run under it. The active tab is a 46pt filled `ink` circle; the **+** is a
+  50pt `accent-fill` circle. No labels. Activity's unseen signal is the **bell dot** in the feed
+  header, not a tab badge.
+- **Screen headers** (`ScreenHeader`): a 42pt round `chip` back button, an optional centered 16/600
+  title, an optional right slot.
 - **Rank bar (place page):** a dark floating pill — burgundy **Rank it** (**Rank again** once
   ranked), a cream save circle, and **Directions**.
 - **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'

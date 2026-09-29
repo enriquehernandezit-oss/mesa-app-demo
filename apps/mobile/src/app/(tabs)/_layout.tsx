@@ -15,19 +15,15 @@ import { themeColors } from '@/theme/vars'
 // The four-tab shell. Self-guards: if the session is lost or the account is
 // ejected, redirect straight to sign-in (this is what makes sign-out reactive).
 //
-// SHIPPED: MesaTabBar (NATIVE_TABS = false). The REAL UITabBar (expo-router's
-// NativeTabs, kept below as NativeShell) was tried first for the raised center
-// "+": it gives iOS's own Liquid Glass material, scroll-edge treatment,
-// minimize-on-scroll, system re-press scroll-to-top, and badges for free. Two
-// things it can't do killed it: no exposed way to render one item's icon at a
-// larger point size than its siblings (checked react-native-screens' full
-// native prop list — icon *color* is overridable, size isn't), and its
-// "scroll edge" transparency needs an explicit opt-out that still read as
-// translucent against real content on-device. Instagram and TikTok's own
-// raised center buttons are plain overlays on the native bar for exactly this
-// reason (bigger button = leave the constrained native item system).
-// MesaTabBar is that same move, done as a full custom bar instead of an
-// overlay, since it also fixes the transparency for free (it's a plain View).
+// SHIPPED: MesaTabBar (NATIVE_TABS = false) — a floating glass capsule with a solid
+// circle behind the open tab and a burgundy "+". The REAL UITabBar (expo-router's
+// NativeTabs, kept below as NativeShell) was tried first: it gives iOS's own Liquid
+// Glass material, scroll-edge treatment, minimize-on-scroll, system re-press
+// scroll-to-top, and badges for free. What it can't do: render one item's icon at a
+// larger point size than its siblings (checked react-native-screens' full native
+// prop list — icon *color* is overridable, size isn't), draw a filled circle behind
+// the active item, or float as an inset capsule. So MesaTabBar is a plain absolutely
+// positioned View over the scenes (docs/NATIVE.md's tab bar row).
 //
 // `NATIVE_TABS` stays as the escape hatch — NativeTabs may mature past these
 // limits, and it's a one-line revert back to it if the custom bar needs to

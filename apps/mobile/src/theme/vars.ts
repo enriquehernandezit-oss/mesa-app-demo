@@ -191,6 +191,10 @@ export const SHADOW = '#3c2814'
 // it: a tight contact shadow and a soft ambient one.
 export const LIFT = '0 1px 2px rgba(60, 40, 20, 0.07), 0 6px 18px rgba(60, 40, 20, 0.05)'
 
+// The deeper shadow under something that FLOATS over the page — the tab bar. Tinted
+// with the oxblood rather than black. Day only, like LIFT.
+export const FLOAT = '0 12px 30px rgba(33, 1, 4, 0.18)'
+
 // The map's own "you are here" marker (components/MesaMap.tsx) — deliberately
 // the same system blue Apple Maps/MapKit uses for a user-location dot, not a
 // brand token. The map itself is already native-styled chrome (Mapbox's own

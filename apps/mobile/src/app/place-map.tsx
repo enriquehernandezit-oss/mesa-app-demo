@@ -57,7 +57,7 @@ export default function PlaceMapScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel={p.name || t('common.back_plain')} />
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} title={p.name} />
       <View className="flex-1">
         {MesaMap && Number.isFinite(lat) && Number.isFinite(lng) ? (
           <MesaMap

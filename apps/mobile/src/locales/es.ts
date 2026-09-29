@@ -515,6 +515,7 @@ export const es = {
   'common.error_fallback': 'Algo salió mal. Intenta de nuevo en un momento.',
   'common.any': 'Cualquiera',
   'common.n_of_total': '{n} de {total}',
+  'tabs.rank_a_spot': 'Rankear un spot',
   'score.must_go': 'Imperdible',
   'score.great': 'Excelente',
   'score.good': 'Bueno',

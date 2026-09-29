@@ -11,7 +11,7 @@ import { useT } from '@/lib/i18n'
 import { shareProfile } from '@/lib/shareProfile'
 
 // Persistent app bar over the tab shell. Discover variant: wordmark + leaderboard
-// + activity bell (with an unseen badge). Profile variant: the member's name +
+// + activity bell (a burgundy dot when there is something unseen). Profile variant: the member's name +
 // share + settings. Ported from apps/app/src/components/TopBar.tsx; share wires
 // up in N6.
 // Sizing only — press feedback lives on the wrapping Pressable. A plain View
@@ -44,11 +44,7 @@ function ActivityBell() {
         <Btn>
           <BellIcon size={19} color="text" />
           {unseen > 0 && (
-            <View className="absolute right-1.5 top-1.5 min-w-[16px] items-center justify-center rounded-pill bg-danger px-1">
-              <Text className="font-ui-semibold text-[10px] text-on-accent leading-[14px]">
-                {unseen > 9 ? '9+' : unseen}
-              </Text>
-            </View>
+            <View className="absolute right-2.5 top-2.5 h-2 w-2 rounded-pill border-[1.5px] border-bg bg-accent-fill" />
           )}
         </Btn>
       </Pressable>
@@ -100,11 +96,8 @@ export function TopBar({
                 <ShareIcon size={19} color="text" />
               </Btn>
             </Pressable>
-            {/* The tab bar's unseen-activity badge lands on the Profile tab
-                (MesaTabBar.tsx), but until now this variant had no bell at
-                all — tapping the badge opened a screen with no way to reach
-                Activity. Same bell, same unseen count, as the discover
-                variant below. */}
+            {/* The Profile tab has no badge of its own, so this variant carries the
+                same bell and unseen dot as the discover variant below. */}
             <ActivityBell />
             <Link href="/settings" asChild>
               <Pressable

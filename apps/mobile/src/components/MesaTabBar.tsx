@@ -1,5 +1,9 @@
 import { type Tabs, useRouter } from 'expo-router'
+import { useRef } from 'react'
+import { Pressable, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { Glass } from '@/components/ui/Glass'
 import {
   CompassIcon,
   DiscoverIcon,
@@ -7,53 +11,41 @@ import {
   PlusIcon,
   RankingsIcon,
 } from '@/components/ui/icons'
-import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { tapLight, tapSelect } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
-import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 // The exact props expo-router's Tabs passes to a custom tabBar (it re-exports its
 // own BottomTabBarProps, distinct from @react-navigation's).
 type MesaTabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0]
-import { useRef } from 'react'
-import { Pressable, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-// The bar's own content height (minHeight + paddingTop below), on top of
-// whatever bottom safe-area inset the device adds — a screen scrolling
-// underneath this floating bar needs at least this much bottom clearance
-// or its last row ends up permanently hidden behind it. Exported so screen
-// content can't drift out of sync with the bar's actual layout.
-export const TAB_BAR_CONTENT_HEIGHT = 74
+// The floating capsule's geometry (docs/DESIGN.md): inset 18 from each side, 66pt
+// tall, its bottom edge sitting a little INSIDE the home-indicator inset so it reads
+// as floating rather than docked.
+const BAR_HEIGHT = 66
+const BAR_INSET = 18
+const barBottom = (insetBottom: number) => Math.max(insetBottom - 10, 16)
 
-// A tab screen's own scrollable content should pad its bottom by this much
-// (plus a little breathing room) so the last row clears the floating bar
-// instead of ending up underneath it.
+// A tab screen's own scrollable content should pad its bottom by this much (plus a
+// little breathing room) so the last row clears the floating bar. The bar is
+// absolutely positioned, so the scenes run UNDER it and this is the only thing
+// keeping a last row from ending up behind it. Also where toasts sit.
 export function useTabBarClearance(extra = 16) {
   const insets = useSafeAreaInsets()
-  return insets.bottom + TAB_BAR_CONTENT_HEIGHT + extra
+  return barBottom(insets.bottom) + BAR_HEIGHT + extra
 }
 
-// Custom bottom bar: four tabs plus an inline "+" pill (rank a place), ported
-// from app/router.tsx's 5-slot layout. Tonight is cut, so the tabs are
-// Discover · Explore · (+) · Rankings · Profile.
+// Custom bottom bar: four tabs and a raised-in-colour "+" (rank a place) — Feed ·
+// Explore · (+) · Rankings · Profile. A glass capsule; the open tab sits in a solid
+// `ink` circle, the "+" is a burgundy `accent-fill` circle, and there are no labels
+// (the accessibility labels stay).
 //
 // This is the SHIPPED bar (NATIVE_TABS = false in (tabs)/_layout.tsx), not a
-// fallback: the native UITabBar (expo-router's NativeTabs) was tried first for
-// the "+", but has no exposed way to render one item's icon at a larger point
-// size than its siblings (confirmed against react-native-screens' full native
-// prop list — only icon *color* is overridable, not size), and its
-// "scroll edge" transparency needs an explicit opt-out that still left the bar
-// reading as translucent on real hardware — see docs/NATIVE.md's tab bar row.
-//
-// The "+" itself is a flat inline pill, not a raised circle: a first pass
-// raised it above the bar with a brass glow, styled after Instagram's classic
-// overlay button, but next to the icons it read "mishapen," not like a
-// current professional app. Threads, X and TikTok all sit their center action
-// *in* the row — filled instead of outlined is what marks it as different,
-// not elevation. Matching that meant boldening the other four icons too
-// (strokeWidth 2 here only, vs the app-wide 1.6 default) so they hold their
-// own next to a solid filled shape.
+// fallback: the native UITabBar (expo-router's NativeTabs) was tried first for the
+// "+", but has no exposed way to render one item's icon at a larger point size than
+// its siblings (confirmed against react-native-screens' full native prop list —
+// only icon *color* is overridable, not size), and it cannot be a floating capsule
+// with a circle on the active item — see docs/NATIVE.md's tab bar row.
 const ICONS: Record<string, typeof DiscoverIcon> = {
   discover: DiscoverIcon,
   explore: CompassIcon,
@@ -67,19 +59,13 @@ const LABEL_KEYS = {
   profile: 'tabs.profile',
 } as const
 
-const TAB_ICON_STROKE = 2
-const PILL_WIDTH = 52
-const PILL_HEIGHT = 34
-
 function TabItem({
   routeName,
   focused,
-  badge,
   onPress,
 }: {
   routeName: string
   focused: boolean
-  badge?: number
   onPress: () => void
 }) {
   const t = useT()
@@ -87,25 +73,16 @@ function TabItem({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={t(LABEL_KEYS[routeName as keyof typeof LABEL_KEYS])}
       accessibilityState={{ selected: focused }}
       onPress={onPress}
-      className="flex-1 items-center justify-center gap-[3px]"
+      className={`h-[46px] w-[46px] items-center justify-center rounded-pill ${focused ? 'bg-ink' : ''}`}
     >
-      <View>
-        <Ico size={22} color={focused ? 'accent' : 'tab-inactive'} strokeWidth={TAB_ICON_STROKE} />
-        {badge ? (
-          <View className="-top-1.5 -right-2.5 absolute min-w-[16px] items-center justify-center rounded-pill bg-danger px-1">
-            <Text className="font-ui-semibold text-[10px] text-on-accent leading-[14px]">
-              {badge > 9 ? '9+' : badge}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      <Text
-        className={`font-ui-semibold text-[10px] ${focused ? 'text-accent' : 'text-tab-inactive'}`}
-      >
-        {t(LABEL_KEYS[routeName as keyof typeof LABEL_KEYS])}
-      </Text>
+      {focused ? (
+        <Ico size={21} color="on-ink" strokeWidth={1.9} />
+      ) : (
+        <Ico size={22} color="tab-inactive" strokeWidth={1.8} />
+      )}
     </Pressable>
   )
 }
@@ -113,8 +90,8 @@ function TabItem({
 export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const fabBg = useColor('ink')
-  const unseen = useUnseenActivity()
+  const t = useT()
+  const float = useLift('float')
   const order = state.routes
 
   // Same re-entrancy guard as the native path's trigger listener: a few rapid
@@ -131,7 +108,7 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
     }, 1000)
   }
 
-  const item = (name: string, badge?: number) => {
+  const item = (name: string) => {
     const idx = order.findIndex((r) => r.name === name)
     const focused = state.index === idx
     return (
@@ -139,7 +116,6 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
         key={name}
         routeName={name}
         focused={focused}
-        badge={badge}
         onPress={() => {
           const e = navigation.emit({
             type: 'tabPress',
@@ -156,36 +132,35 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
   }
 
   return (
+    // Absolute, so the scenes run under the bar; `box-none` so the empty strip either
+    // side of the capsule still passes touches through to the page.
     <View
-      className="flex-row items-stretch justify-around border-t border-line bg-surface"
-      // `minHeight` is the CONTENT area, on top of the bottom safe-area inset
-      // it doesn't include — home-indicator devices have ~34pt there, which
-      // was silently eating into the 56 total before (no paddingTop existed
-      // at all), squeezing icon+label rows against the top edge until they
-      // visibly clipped. Explicit paddingTop is the actual fix; the bumped
-      // minHeight is just margin so a future taller item still fits.
-      style={{
-        minHeight: TAB_BAR_CONTENT_HEIGHT - 10,
-        paddingTop: 10,
-        paddingBottom: insets.bottom,
-        paddingHorizontal: 10,
-      }}
+      pointerEvents="box-none"
+      className="absolute inset-x-0 bottom-0"
+      style={{ paddingHorizontal: BAR_INSET, paddingBottom: barBottom(insets.bottom) }}
     >
-      {item('discover')}
-      {item('explore')}
-      <View className="flex-1 items-center justify-center">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Rankear un spot"
-          onPress={openRank}
-          className="items-center justify-center rounded-pill active:scale-95"
-          style={{ width: PILL_WIDTH, height: PILL_HEIGHT, backgroundColor: fabBg }}
+      {/* The shadow sits on its own view: Glass clips its material to the capsule. */}
+      <View style={[{ borderRadius: BAR_HEIGHT / 2 }, float]}>
+        <Glass
+          variant="bar"
+          radius={BAR_HEIGHT / 2}
+          className="flex-row items-center justify-around px-2"
+          style={{ height: BAR_HEIGHT }}
         >
-          <PlusIcon size={20} color="on-ink" />
-        </Pressable>
+          {item('discover')}
+          {item('explore')}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('tabs.rank_a_spot')}
+            onPress={openRank}
+            className="h-[50px] w-[50px] items-center justify-center rounded-pill bg-accent-fill active:scale-95"
+          >
+            <PlusIcon size={22} color="on-accent" strokeWidth={2.2} />
+          </Pressable>
+          {item('rankings')}
+          {item('profile')}
+        </Glass>
       </View>
-      {item('rankings')}
-      {item('profile', unseen)}
     </View>
   )
 }

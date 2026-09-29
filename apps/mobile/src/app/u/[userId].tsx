@@ -163,7 +163,8 @@ export default function UserRankings() {
     <View className="flex-1 bg-bg">
       <ScreenHeader
         onBack={goBack}
-        backLabel={user.name || user.handle || t('common.back_plain')}
+        backLabel={t('common.back_plain')}
+        title={user.name || user.handle || undefined}
         right={
           <Pressable
             accessibilityRole="button"

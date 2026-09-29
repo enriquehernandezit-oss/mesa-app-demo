@@ -80,7 +80,7 @@ export default function MatchScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel={theirName} />
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} title={theirName} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10">
         <View className="items-center gap-2">
           <View className="flex-row items-center">
