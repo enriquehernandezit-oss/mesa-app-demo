@@ -2,9 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Animated, ScrollView, View, useWindowDimensions } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventMiniCard } from '@/components/events/EventTicket'
 import { FriendNotes } from '@/components/place/FriendNotes'
@@ -12,7 +11,7 @@ import { PlaceDishes } from '@/components/place/PlaceDishes'
 import { PlaceHero, type PlaceTag } from '@/components/place/PlaceHero'
 import { PlaceInfo } from '@/components/place/PlaceInfo'
 import { PlaceStats, type Stat } from '@/components/place/PlaceStats'
-import { PlaceTopChrome } from '@/components/place/PlaceTopChrome'
+import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
 import { RANK_BAR_HEIGHT, RankBar, useRankBarBottom } from '@/components/place/RankBar'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
@@ -42,7 +41,6 @@ import { useColor } from '@/theme/useColor'
 // The layout is one scroll: a transparent hero block one screen tall (the overlay lives here and
 // scrolls away), then the sheet. The backdrop is NOT in the scroll, so it stays put beneath.
 const SHEET_RADIUS = 32
-const CHROME_HEIGHT = 56
 
 export default function RestaurantProfile() {
   const { restaurantId } = useLocalSearchParams<{ restaurantId: string }>()
@@ -50,29 +48,14 @@ export default function RestaurantProfile() {
   const queryClient = useQueryClient()
   const t = useT()
   const { height: winH } = useWindowDimensions()
-  const insets = useSafeAreaInsets()
   const theme = useResolvedTheme()
   const friendsOnly = useFriendsOnlyScores()
   const scrim = useColor('photo-scrim')
   const barBottom = useRankBarBottom()
   const heroH = winH
 
-  // The scroll drives the top chrome's cross-fade. The flag that gates its touch targets lives
-  // in PlaceTopChrome; this page reaches it through a ref, so flipping it never re-renders the
-  // rails mid-fling. The event object is built once per hero height.
-  const scrollY = useRef(new Animated.Value(0)).current
-  const setCondensedRef = useRef<((v: boolean) => void) | null>(null)
-  const condensedAt = heroH - (insets.top + CHROME_HEIGHT)
-  const onScroll = useMemo(
-    () =>
-      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-        useNativeDriver: true,
-        listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-          setCondensedRef.current?.(e.nativeEvent.contentOffset.y > condensedAt - 30)
-        },
-      }),
-    [scrollY, condensedAt],
-  )
+  // The scroll drives the top chrome's cross-fade (see usePhotoPageScroll).
+  const { scrollY, onScroll, setCondensedRef, condensedAt } = usePhotoPageScroll(heroH)
   const scrollRef = useRef<ScrollView>(null)
   const friendsY = useRef(0)
   const heroFade = scrollY.interpolate({

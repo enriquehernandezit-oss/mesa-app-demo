@@ -7,16 +7,28 @@ import { ChevronIcon, PinIcon } from '@/components/ui/icons'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
 
-export type PlaceTag = { key: string; icon?: ReactNode; label: string; onPress?: () => void }
+// `hot` turns the chip into the accent pill — "live now", "starts in 40 min" — the one tag that
+// should read at a glance.
+export type PlaceTag = {
+  key: string
+  icon?: ReactNode
+  label: string
+  onPress?: () => void
+  hot?: boolean
+}
 
 // What sits ON the photo, low on the page: the category chip, the frosted name panel, the
 // frosted panel of tags, and a hint that there is more below. The photo itself is the page's
-// fixed backdrop; this block scrolls up over it and away as the details sheet rises.
+// fixed backdrop; this block scrolls up over it and away as the details sheet rises. The place
+// page and the event page share it: the chip's `icon` (a pin for a place, the kind's icon for an
+// event) and the name's size (`titleClass`) are the two things that differ.
 //
-// `bottom` is the room to leave under the hint for the floating rank bar.
+// `bottom` is the room to leave under the hint for the floating bar.
 export function PlaceHero({
   name,
   category,
+  icon,
+  titleClass = 'text-hero',
   sub,
   tags,
   hint,
@@ -24,6 +36,8 @@ export function PlaceHero({
 }: {
   name: string
   category: string
+  icon?: ReactNode
+  titleClass?: string
   sub: string
   tags: PlaceTag[]
   hint: string
@@ -38,7 +52,7 @@ export function PlaceHero({
           className="h-9 flex-row items-center gap-[7px] rounded-pill bg-surface px-[15px]"
           style={lift}
         >
-          <PinIcon size={15} color="text" />
+          {icon ?? <PinIcon size={15} color="text" />}
           <Text
             numberOfLines={1}
             maxFontSizeMultiplier={MAX_SCALE}
@@ -55,7 +69,7 @@ export function PlaceHero({
           adjustsFontSizeToFit
           minimumFontScale={0.7}
           maxFontSizeMultiplier={MAX_SCALE}
-          className="text-center font-serif text-hero text-hglass-fg"
+          className={`text-center font-serif text-hglass-fg ${titleClass}`}
         >
           {name}
         </Text>
@@ -73,12 +87,14 @@ export function PlaceHero({
           <View className="flex-row flex-wrap justify-center gap-2">
             {tags.map((tag) => {
               const chip = (
-                <View className="h-[34px] flex-row items-center gap-1.5 rounded-pill bg-hchip px-3">
+                <View
+                  className={`h-[34px] flex-row items-center gap-1.5 rounded-pill px-3 ${tag.hot ? 'bg-accent-fill' : 'bg-hchip'}`}
+                >
                   {tag.icon}
                   <Text
                     numberOfLines={1}
                     maxFontSizeMultiplier={MAX_SCALE}
-                    className="font-ui-semibold text-label text-hglass-fg"
+                    className={`font-ui-semibold text-label ${tag.hot ? 'text-on-accent' : 'text-hglass-fg'}`}
                   >
                     {tag.label}
                   </Text>

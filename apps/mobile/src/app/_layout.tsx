@@ -250,9 +250,10 @@ function MesaStack() {
         name="friends/instagram"
         options={{ ...utility, headerLargeTitle: false, title: t('instagram.title') }}
       />
-      {/* Title (the chosen spot, or "Votación abierta") is set by the screen
-          itself once the plan loads — same pattern as people/[userId] above. */}
-      <Stack.Screen name="plans/[planId]" options={{ ...utility, headerLargeTitle: false }} />
+      {/* One plan opens on the chosen spot's photo with its own glass back/share
+          (a bare screen, like events/[eventId]); its loading and error states
+          draw a ScreenHeader themselves. */}
+      <Stack.Screen name="plans/[planId]" />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
       <Stack.Screen name="moderation" options={{ ...utility, title: t('nav.moderation') }} />
       {/* Titles for these two are set by the screens themselves once the data

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -12,10 +12,36 @@ import { DATA_FIGURES } from '@/theme/vars'
 
 // The place page's fixed top chrome, in two states that trade places as the details sheet
 // rises: over the photo, a frosted back button, the score ("8.0 Great · Mesa") and share; once
-// the sheet reaches the top, a solid bar — back, the name, the score. Both are driven by the
+// the sheet reaches the top, a solid bar — back, the name, the score (with no score to show — an
+// event, or a place nobody has ranked — the bar ends in share instead). Both are driven by the
 // page's scroll (`scrollY`); the flag that gates their touch targets lives HERE, so flipping
 // it re-renders only this component, not the page's rails mid-fling (the page reaches it
 // through `setterRef`).
+// The scroll plumbing every photo-first page shares (the place, the event, a plan): the scroll
+// offset that drives PlaceTopChrome's cross-fade (a native-driven Animated.Value), the ref through
+// which the chrome is told when it has gone solid, and the offset (`condensedAt`) at which that
+// happens — when the bottom of a `heroH`-tall photo reaches the bar. Hand `onScroll` to an
+// Animated.ScrollView; the flag lives behind a ref so flipping it never re-renders the page.
+export const CHROME_HEIGHT = 56
+
+export function usePhotoPageScroll(heroH: number) {
+  const insets = useSafeAreaInsets()
+  const scrollY = useRef(new Animated.Value(0)).current
+  const setCondensedRef = useRef<((v: boolean) => void) | null>(null)
+  const condensedAt = heroH - (insets.top + CHROME_HEIGHT)
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+        listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+          setCondensedRef.current?.(e.nativeEvent.contentOffset.y > condensedAt - 30)
+        },
+      }),
+    [scrollY, condensedAt],
+  )
+  return { scrollY, onScroll, setCondensedRef, condensedAt }
+}
+
 export function PlaceTopChrome({
   name,
   score,
@@ -32,8 +58,8 @@ export function PlaceTopChrome({
   name: string
   // The score shown on the photo, 0–100, and whose it is ("Mesa" / "Friends"); null hides it.
   score: number | null
-  who: string
-  mesaCount: number
+  who?: string
+  mesaCount?: number
   onBack: () => void
   onShare: () => void
   onTop: () => void
@@ -81,7 +107,7 @@ export function PlaceTopChrome({
           <HeroButton label={t('common.back_plain')} onPress={onBack}>
             <BackIcon size={20} color="hglass-fg" />
           </HeroButton>
-          {score != null ? <ScoreGlass score={score} who={who} /> : null}
+          {score != null ? <ScoreGlass score={score} who={who ?? ''} /> : null}
         </View>
         <HeroButton label={t('common.share')} onPress={onShare}>
           <ShareIcon size={18} color="hglass-fg" />
@@ -129,9 +155,16 @@ export function PlaceTopChrome({
               <ScoreBadge
                 size="sm"
                 score={score}
-                attribution={{ kind: 'mesa', count: mesaCount }}
+                attribution={{ kind: 'mesa', count: mesaCount ?? 0 }}
               />
-            ) : null}
+            ) : (
+              <IconButton
+                size={40}
+                accessibilityLabel={t('common.share')}
+                onPress={onShare}
+                icon={<ShareIcon size={18} color="text" />}
+              />
+            )}
           </View>
         </Glass>
       </Animated.View>
@@ -140,7 +173,7 @@ export function PlaceTopChrome({
 }
 
 // A round control laid on the photo: frosted glass (white frost by day, smoked at night).
-function HeroButton({
+export function HeroButton({
   label,
   onPress,
   children,

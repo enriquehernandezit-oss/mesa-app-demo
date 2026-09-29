@@ -5,10 +5,12 @@ import { Pressable, Text, View } from 'react-native'
 import { PersonRow } from '@/components/PersonRow'
 import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
+import { SearchIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
 import { tapLight } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import type { FollowUser } from '@/lib/types'
+import { useLift } from '@/theme/useLift'
 
 // Invite picker for Planes (M3): a follower list with a select/deselect pill —
 // invitees are always the host's own followers (a decision made up front, see
@@ -20,7 +22,8 @@ import type { FollowUser } from '@/lib/types'
 // step needs each invitee's name/avatar, and re-fetching them from an id set
 // after the fact would just be this same list again. Renders its rows plain
 // (no internal ScrollView) — both callers already scroll the step that hosts
-// this.
+// this. Redesign 2: a search field with its glyph, and a pill per row — a raised "Invite", a
+// solid ink "Invited".
 export function FollowerPicker({
   selected,
   onToggle,
@@ -31,6 +34,7 @@ export function FollowerPicker({
   exclude?: Set<string>
 }) {
   const t = useT()
+  const lift = useLift()
   const [q, setQ] = useState('')
   const followers = useQuery({
     queryKey: ['followers'],
@@ -66,6 +70,7 @@ export function FollowerPicker({
   return (
     <View>
       <Field
+        icon={<SearchIcon size={18} color="text-muted" />}
         value={q}
         onChangeText={setQ}
         placeholder={t('plans.search_placeholder')}
@@ -90,13 +95,14 @@ export function FollowerPicker({
                     tapLight()
                     onToggle(u)
                   }}
-                  className={`min-h-[36px] justify-center rounded-pill border px-4 active:opacity-70 ${
-                    selected.has(u.id) ? 'border-accent bg-accent-fill' : 'border-line'
+                  className={`min-h-[34px] justify-center rounded-pill px-4 active:opacity-70 ${
+                    selected.has(u.id) ? 'bg-ink' : 'bg-chip'
                   }`}
+                  style={selected.has(u.id) ? undefined : lift}
                 >
                   <Text
-                    className={`font-ui-semibold text-eyebrow ${
-                      selected.has(u.id) ? 'text-on-accent' : 'text-text-muted'
+                    className={`font-ui-semibold text-label ${
+                      selected.has(u.id) ? 'text-on-ink' : 'text-text'
                     }`}
                   >
                     {selected.has(u.id) ? t('plans.invited_pill') : t('plans.invite_pill')}

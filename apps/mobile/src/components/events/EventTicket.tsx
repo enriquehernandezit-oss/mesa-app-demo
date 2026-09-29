@@ -165,6 +165,13 @@ export function stubParts(iso: string) {
   }
 }
 
+// "12 spots left" / "Last 3 spots!" / "Full" — urgent (≤3 left) is the one the bar turns red for.
+export function spotsLabel(t: ReturnType<typeof useT>, spotsLeft: number): string {
+  if (spotsLeft === 0) return t('events.sold_out')
+  if (spotsLeft <= 3) return t('events.last_spots', { n: spotsLeft })
+  return t('events.spots_left', { n: spotsLeft })
+}
+
 // "12/16 spots" line + animated bar. Turns urgent at ≤3 left.
 export function SpotsLine({
   capacity,
@@ -178,12 +185,7 @@ export function SpotsLine({
   const t = useT()
   const taken = capacity - spotsLeft
   const urgent = spotsLeft <= 3
-  const label =
-    spotsLeft === 0
-      ? t('events.sold_out')
-      : urgent
-        ? t('events.last_spots', { n: spotsLeft })
-        : t('events.spots_left', { n: spotsLeft })
+  const label = spotsLabel(t, spotsLeft)
   return (
     <View className={compact ? 'mt-2' : 'mt-3'}>
       <View className="mb-1 flex-row items-baseline justify-between">
@@ -230,21 +232,22 @@ export function FacesStack({
           <Avatar name={f.name} src={f.image} size={size} />
         </Animated.View>
       ))}
-      {label ? <Caption className="ml-2 text-micro">{label}</Caption> : null}
+      {label ? (
+        <Caption className={`text-micro ${faces.length > 0 ? 'ml-2' : ''}`}>{label}</Caption>
+      ) : null}
     </View>
   )
 }
-// The two RSVP controls, with pop + burst + haptic.
+// The two RSVP controls, with pop + burst + haptic. (The event page has its own, bigger pair:
+// EventBar.)
 export function RsvpButtons({
   e,
   rsvpState,
-  size = 'sm',
 }: {
   e: EventSummary
   // The owner's useEventRsvp — shared so the card's spots bar and these
   // buttons move together on the same tap.
   rsvpState: ReturnType<typeof useEventRsvp>
-  size?: 'sm' | 'md'
 }) {
   const t = useT()
   const { rsvp, toggle } = rsvpState
@@ -253,7 +256,6 @@ export function RsvpButtons({
   const goingPop = usePop()
   const heartPop = usePop()
   const [burst, setBurst] = useState(0)
-  const md = size === 'md'
   return (
     <View className="flex-row items-center gap-2">
       {/* Save (bookmark) — into Saved → Events. A save is independent of going, and it's
@@ -267,17 +269,17 @@ export function RsvpButtons({
           heartPop.pop()
           save.toggle()
         }}
-        className={`items-center justify-center rounded-pill border ${md ? 'h-12 w-12' : 'h-[34px] w-[34px]'} ${save.saved ? 'border-accent bg-accent-soft' : 'border-line-strong'}`}
+        className={`h-[34px] w-[34px] items-center justify-center rounded-pill border ${save.saved ? 'border-accent bg-accent-soft' : 'border-line-strong'}`}
       >
         <Animated.View style={heartPop.style}>
           {save.saved ? (
-            <BookmarkFilledIcon size={md ? 20 : 16} color="accent" />
+            <BookmarkFilledIcon size={16} color="accent" />
           ) : (
-            <BookmarkIcon size={md ? 20 : 16} color="text-muted" />
+            <BookmarkIcon size={16} color="text-muted" />
           )}
         </Animated.View>
       </Pressable>
-      <Animated.View style={goingPop.style} className={md ? 'flex-1' : undefined}>
+      <Animated.View style={goingPop.style}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: going }}
@@ -286,12 +288,12 @@ export function RsvpButtons({
             if (!going) setBurst((b) => b + 1)
             toggle('going')
           }}
-          className={`flex-row items-center justify-center gap-1.5 rounded-pill ${md ? 'h-12 px-6' : 'h-[34px] px-4'} ${going ? 'bg-accent-fill' : 'bg-ink'}`}
+          className={`h-[34px] flex-row items-center justify-center gap-1.5 rounded-pill px-4 ${going ? 'bg-accent-fill' : 'bg-ink'}`}
         >
-          {going ? <CheckIcon size={md ? 16 : 13} color="on-accent" strokeWidth={2.2} /> : null}
+          {going ? <CheckIcon size={13} color="on-accent" strokeWidth={2.2} /> : null}
           <Text
             maxFontSizeMultiplier={MAX_SCALE}
-            className={`font-ui-semibold ${md ? 'text-body' : 'text-label'} ${going ? 'text-on-accent' : 'text-on-ink'}`}
+            className={`font-ui-semibold text-label ${going ? 'text-on-accent' : 'text-on-ink'}`}
           >
             {going ? t('events.going_done') : t('events.going_cta')}
           </Text>

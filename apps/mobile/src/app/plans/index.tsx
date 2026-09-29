@@ -3,25 +3,29 @@ import { Link, Stack, useRouter } from 'expo-router'
 import { useMemo } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { StatusBadge } from '@/components/plans/parts'
 import {
   Button,
-  Caption,
   EmptyState,
   ErrorState,
+  MAX_SCALE,
   RowsSkeleton,
   SectionHeader,
 } from '@/components/ui'
+import { PlusIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import { isPastPlan, isPendingInvite } from '@/lib/plans'
 import { formatPlanDate } from '@/lib/time'
 import type { Plan, PlanReply } from '@/lib/types'
+import { useLift } from '@/theme/useLift'
 
 // Plans (M3): the entry point for group dinners, reached from Profile's
 // "Planes" row and Activity's plan rows. Three sections, in the order a
 // member should act on them — what needs a reply first, then what's already
-// on the calendar, then the record of what happened.
+// on the calendar, then the record of what happened. Redesign 2: raised rows, a status badge
+// at the right of each, and "New" as a solid pill in the header.
 export default function PlansScreen() {
   const t = useT()
   const lang = useLanguage()
@@ -42,9 +46,13 @@ export default function PlansScreen() {
           accessibilityRole="button"
           accessibilityLabel={translate(lang, 'plans.new_label')}
           onPress={() => router.push('/plans/new')}
-          className="min-h-[44px] justify-center active:opacity-70"
+          className="h-[40px] flex-row items-center gap-1.5 rounded-pill bg-ink px-4 active:opacity-80"
         >
-          <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
+          <PlusIcon size={15} color="on-ink" strokeWidth={2.2} />
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-pill text-on-ink"
+          >
             {translate(lang, 'plans.new_short')}
           </Text>
         </Pressable>
@@ -67,7 +75,7 @@ export default function PlansScreen() {
       <Stack.Screen options={headerOptions} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-10"
+        contentContainerClassName="px-4 pb-10"
         contentInsetAdjustmentBehavior="automatic"
       >
         {q.isPending ? (
@@ -89,7 +97,9 @@ export default function PlansScreen() {
           <>
             {pending.length > 0 && (
               <View>
-                <SectionHeader>{t('plans.section_pending')}</SectionHeader>
+                <View className="px-1">
+                  <SectionHeader>{t('plans.section_pending')}</SectionHeader>
+                </View>
                 {pending.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -97,7 +107,9 @@ export default function PlansScreen() {
             )}
             {upcoming.length > 0 && (
               <View>
-                <SectionHeader>{t('plans.section_upcoming')}</SectionHeader>
+                <View className="px-1">
+                  <SectionHeader>{t('plans.section_upcoming')}</SectionHeader>
+                </View>
                 {upcoming.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -105,7 +117,9 @@ export default function PlansScreen() {
             )}
             {past.length > 0 && (
               <View>
-                <SectionHeader>{t('plans.section_past')}</SectionHeader>
+                <View className="px-1">
+                  <SectionHeader>{t('plans.section_past')}</SectionHeader>
+                </View>
                 {past.map((p) => (
                   <PlanRow key={p.id} plan={p} />
                 ))}
@@ -127,43 +141,57 @@ function replyLabel(t: ReturnType<typeof useT>, reply: PlanReply | null): string
 
 function PlanRow({ plan }: { plan: Plan }) {
   const t = useT()
+  const lift = useLift()
   const chosen = plan.options.find((o) => o.id === plan.chosenRestaurantId)
   const cover = chosen ?? plan.options[0]
   const title = chosen ? chosen.name : t('plans.options_voting', { n: plan.options.length })
   const sub = plan.isHost
     ? t('plans.host_summary', { going: plan.counts.going, maybe: plan.counts.maybe })
     : t('plans.hosted_by', { name: plan.host.name })
+  // An invite still waiting on you is the row that asks something of you.
+  const pendingReply = isPendingInvite(plan)
   const badge =
     plan.status === 'cancelled'
       ? t('plans.cancelled_badge')
-      : plan.isHost
-        ? t('plans.hosting_badge')
-        : replyLabel(t, plan.myReply)
+      : isPastPlan(plan)
+        ? t('plans.past_chip')
+        : plan.isHost
+          ? t('plans.hosting_badge')
+          : replyLabel(t, plan.myReply)
 
   return (
     <Link href={`/plans/${plan.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
+        className="mb-2 flex-row items-center gap-3 rounded-group bg-surface px-3 py-2.5 active:opacity-80"
+        style={lift}
       >
-        <PlaceCover
-          name={cover?.name ?? plan.host.name}
-          coverImageId={cover?.coverImageId ?? null}
-          size={{ w: 160, h: 160 }}
-          className="h-14 w-14"
-        />
+        <View className="h-[56px] w-[56px] overflow-hidden rounded-[16px]">
+          <PlaceCover
+            name={cover?.name ?? plan.host.name}
+            coverImageId={cover?.coverImageId ?? null}
+            size={{ w: 168, h: 168 }}
+            className="h-full w-full rounded-none"
+          />
+        </View>
         <View className="min-w-0 flex-1">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+          <Text
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-serif-sm text-text"
+          >
             {title}
           </Text>
-          <Caption numberOfLines={1}>{formatPlanDate(plan.startsAt)}</Caption>
-          <Caption className="text-micro" numberOfLines={1}>
+          {/* The date and the who-line wrap rather than truncate: at large text sizes the badge
+              takes a good share of the row. */}
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="mt-0.5 font-ui text-meta text-text-2">
+            {formatPlanDate(plan.startsAt)}
+          </Text>
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-micro text-text-muted">
             {sub}
-          </Caption>
+          </Text>
         </View>
-        <Caption className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
-          {badge}
-        </Caption>
+        <StatusBadge strong={pendingReply}>{badge}</StatusBadge>
       </Pressable>
     </Link>
   )

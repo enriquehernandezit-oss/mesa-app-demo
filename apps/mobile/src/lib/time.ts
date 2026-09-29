@@ -18,37 +18,33 @@ export function timeAgo(iso: string): string {
 
 // Planes (M3): display formatting for a plan's date/time.
 
-// Santo Domingo has no DST, so a fixed offset TZ is safe to hardcode — every
-// plan date renders pinned to it rather than the reader's own device, since
-// "8:00 pm" in a WhatsApp share should mean Santo Domingo time regardless of
-// who's reading it. Mirrors apps/api/src/routes/share-pages.ts's formatter.
-// The *locale* (weekday/month names), unlike the timezone, does follow the
-// app's language — built per call via dateLocale() rather than cached at
-// module scope, so it reflects the current language on every call.
-function planDateFormatter(): Intl.DateTimeFormat {
-  return new Intl.DateTimeFormat(dateLocale(), {
-    timeZone: 'America/Santo_Domingo',
+// Every plan date renders pinned to Santo Domingo (no DST) rather than the reader's own device,
+// since "8:00 pm" in a WhatsApp share should mean Santo Domingo time regardless of who's reading
+// it. Mirrors apps/api/src/routes/share-pages.ts's formatter. The *locale* (weekday/month names),
+// unlike the timezone, does follow the app's language — read per call via dateLocale() rather
+// than cached at module scope, so it reflects the current language on every call.
+const PLAN_TZ = 'America/Santo_Domingo'
+
+// "sáb 20 sep, 8:00 pm". The date and the time come from two plain `format()` calls joined with a
+// comma: this used to read them out of one formatter's `formatToParts`, and under Hermes (seen in
+// the iOS simulator) that came back without the time at all ("sáb 20 sep,"). The am/pm marker is
+// normalised to lowercase "am"/"pm" whatever the locale spells ("p. m.", "PM").
+export function formatPlanDate(iso: string): string {
+  const d = new Date(iso)
+  const locale = dateLocale()
+  const day = new Intl.DateTimeFormat(locale, {
+    timeZone: PLAN_TZ,
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+  }).format(d)
+  const time = new Intl.DateTimeFormat(locale, {
+    timeZone: PLAN_TZ,
     hour: 'numeric',
     minute: '2-digit',
   })
-}
-
-// "sáb 20 sep, 8:00 pm" — the formatter emits the date and time as two runs
-// with no separator between them; a comma reads better than the bare space.
-export function formatPlanDate(iso: string): string {
-  const parts = planDateFormatter().formatToParts(new Date(iso))
-  const day = parts
-    .filter((p) => p.type === 'weekday' || p.type === 'day' || p.type === 'month')
-    .map((p) => p.value)
-    .join(' ')
-  const time = parts
-    .filter((p) => p.type === 'hour' || p.type === 'minute' || p.type === 'dayPeriod')
-    .map((p) => p.value)
-    .join('')
-    .replace(/([ap])\.?\s?m\.?/i, (_m, ap) => `${ap}m`)
+    .format(d)
+    .replace(/([ap])\.?\s?m\.?/i, (_m, ap: string) => `${ap.toLowerCase()}m`)
   return `${day}, ${time}`
 }
 

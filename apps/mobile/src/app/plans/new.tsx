@@ -5,8 +5,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FollowerPicker } from '@/components/FollowerPicker'
+import { CheckCircle } from '@/components/plans/parts'
 import {
-  Body,
   Button,
   Caption,
   Card,
@@ -15,13 +15,12 @@ import {
   Eyebrow,
   RowsSkeleton,
   Serif,
-  Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
-import { CheckIcon } from '@/components/ui/icons'
-import { Characteristics } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
+import { SearchIcon } from '@/components/ui/icons'
+import { PlaceLine } from '@/components/ui/PlaceLine'
+import { SheetHeader, SheetTitle } from '@/components/ui/SheetHeader'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
@@ -86,7 +85,8 @@ function addDays(d: Date, n: number): Date {
 // own followers. One route on local state, same shape as rank.tsx: `step`
 // walks forward with "Continuar" and backward with beforeRemove, which also
 // guards the drag-to-dismiss / edge-swipe against silently losing a
-// half-built plan.
+// half-built plan. Redesign 2: each step is a page sheet — a round Close/Back chip, the sheet's
+// name, the question in the serif, and one solid button at the foot.
 export default function NewPlanScreen() {
   const t = useT()
   const router = useRouter()
@@ -148,7 +148,7 @@ export default function NewPlanScreen() {
   }
 
   // Swipe-down-to-dismiss (and Android hardware back) closes the modal
-  // outright rather than stepping back one step — the visible BackBar above
+  // outright rather than stepping back one step — the header's Close/Back chip above
   // already does the stepping, on every step. An empty flow (no spot picked
   // yet) just closes; once a spot is picked, confirm before throwing it away.
   usePreventRemove(spots.length > 0, ({ data }) => {
@@ -241,17 +241,17 @@ export default function NewPlanScreen() {
   })
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+    <View className="flex-1 bg-bg">
+      <SheetHeader
+        label={t('plans.new_table')}
+        onClose={step === 'spots' ? goBack : undefined}
+        onBack={step === 'spots' ? undefined : goBack}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-10"
+        contentContainerClassName="pb-6"
         keyboardShouldPersistTaps="handled"
       >
-        <BackBar
-          label={step === 'spots' ? t('plans.new_table_back') : t('common.back')}
-          onBack={goBack}
-        />
-
         {step === 'spots' && (
           <SpotsStep
             spots={spots}
@@ -277,9 +277,9 @@ export default function NewPlanScreen() {
         )}
         {step === 'who' && (
           <>
-            <Title className="mt-4">{t('plans.who_title')}</Title>
-            <Body className="mt-1">{t('plans.no_followers_body')}</Body>
-            <View className="mt-4">
+            <SheetTitle>{t('plans.who_title')}</SheetTitle>
+            <Caption className="mt-2 px-5 text-pill">{t('plans.no_followers_body')}</Caption>
+            <View className="mt-4 px-4">
               <FollowerPicker
                 selected={new Set(invitees.keys())}
                 onToggle={(user) =>
@@ -305,10 +305,7 @@ export default function NewPlanScreen() {
         )}
       </ScrollView>
 
-      <View
-        className="border-line border-t px-5 pt-3"
-        style={{ paddingBottom: insets.bottom + 12 }}
-      >
+      <View className="px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) + 4 }}>
         {step === 'review' ? (
           <Button
             loading={create.isPending}
@@ -334,18 +331,6 @@ export default function NewPlanScreen() {
   )
 }
 
-function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onBack}
-      className="min-h-[44px] self-start justify-center active:opacity-60"
-    >
-      <Text className="font-ui-medium text-label text-text-muted">{label}</Text>
-    </Pressable>
-  )
-}
-
 function SpotsStep({
   spots,
   query,
@@ -365,18 +350,20 @@ function SpotsStep({
   const selectedIds = new Set(spots.map((s) => s.id))
   return (
     <>
-      <Title className="mt-4">{t('plans.where_title')}</Title>
-      <Field
-        className="mt-4"
-        value={query}
-        onChangeText={setQuery}
-        placeholder={t('plans.search_spot_placeholder')}
-        returnKeyType="search"
-        clearButtonMode="while-editing"
-        autoCorrect={false}
-      />
+      <SheetTitle>{t('plans.where_title')}</SheetTitle>
+      <View className="mt-4 px-4">
+        <Field
+          icon={<SearchIcon size={18} color="text-muted" />}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t('plans.search_spot_placeholder')}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          autoCorrect={false}
+        />
+      </View>
       {spots.length > 0 && (
-        <View className="mt-3 flex-row flex-wrap gap-2">
+        <View className="mt-3 flex-row flex-wrap gap-2 px-5">
           {spots.map((s) => (
             <Chip key={s.id} state="selected" size="sm" onPress={() => onToggle(s)}>
               {s.name} ✕
@@ -384,42 +371,31 @@ function SpotsStep({
           ))}
         </View>
       )}
-      <Caption className="mt-3">{t('plans.spot_rule_caption')}</Caption>
+      <Caption className="mt-3 px-5 text-meta">{t('plans.spot_rule_caption')}</Caption>
 
-      <View className="mt-2">
+      <View className="mt-2 px-5">
         {isPending ? (
           <RowsSkeleton />
         ) : (
-          results.map((r) => {
-            const selected = selectedIds.has(r.id)
-            return (
-              <Pressable
-                key={r.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-                onPress={() => onToggle(r)}
-                className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
-              >
-                <PlaceCover
-                  name={r.name}
-                  coverImageId={r.coverImageId}
-                  size={{ w: 160, h: 160 }}
-                  className="h-14 w-14"
-                />
-                <View className="min-w-0 flex-1">
-                  <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-                    {r.name}
-                  </Text>
-                  <Characteristics
-                    priceTier={r.priceTier}
-                    cuisine={r.cuisine}
-                    neighborhood={r.neighborhood}
-                  />
-                </View>
-                {selected ? <CheckIcon size={18} color="accent" /> : null}
-              </Pressable>
-            )
-          })
+          results.map((r) => (
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: selectedIds.has(r.id) }}
+              onPress={() => onToggle(r)}
+              className="py-2 active:opacity-80"
+            >
+              <PlaceLine
+                name={r.name}
+                coverImageId={r.coverImageId}
+                cuisine={r.cuisine}
+                neighborhood={r.neighborhood}
+                priceTier={r.priceTier}
+                nameClass="text-serif-sm"
+                right={<CheckCircle on={selectedIds.has(r.id)} />}
+              />
+            </Pressable>
+          ))
         )}
       </View>
     </>
@@ -455,7 +431,6 @@ function WhenStep({
     return (
       <Chip
         key={`${t.h}:${t.m}:${t.nextDay}`}
-        size="sm"
         state={selected ? 'selected' : 'default'}
         disabled={disabled}
         className={disabled ? 'opacity-40' : ''}
@@ -470,33 +445,36 @@ function WhenStep({
   }
   return (
     <>
-      <Title className="mt-4">{t('plans.when_title')}</Title>
-      <ChipRail className="mt-4">
-        {dayChips.map((d) => (
-          <Chip
-            key={d.toISOString()}
-            size="sm"
-            state={sameDay(d, day) ? 'selected' : 'default'}
-            onPress={() => {
-              tapSelect()
-              setDay(d)
-            }}
-          >
-            {dayChipLabel(d, today)}
-          </Chip>
-        ))}
-      </ChipRail>
-      <View className="mt-4 flex-row flex-wrap gap-2">
+      <SheetTitle>{t('plans.when_title')}</SheetTitle>
+      <View className="px-5">
+        <ChipRail className="mt-4">
+          {dayChips.map((d) => (
+            <Chip
+              key={d.toISOString()}
+              state={sameDay(d, day) ? 'selected' : 'default'}
+              onPress={() => {
+                tapSelect()
+                setDay(d)
+              }}
+            >
+              {dayChipLabel(d, today)}
+            </Chip>
+          ))}
+        </ChipRail>
+      </View>
+      <View className="mt-4 flex-row flex-wrap gap-2 px-5">
         {DEFAULT_TIMES.map(timeChip)}
         {showExtraTimes ? (
           EXTRA_TIMES.map(timeChip)
         ) : (
-          <Chip size="sm" chevron onPress={() => setShowExtraTimes(true)}>
+          <Chip chevron onPress={() => setShowExtraTimes(true)}>
             {t('plans.other_time')}
           </Chip>
         )}
       </View>
-      {resolvedLabel ? <Serif className="mt-5 text-serif-sm">{resolvedLabel}</Serif> : null}
+      {resolvedLabel ? (
+        <Serif className="mt-5 px-5 text-serif-md text-text">{resolvedLabel}</Serif>
+      ) : null}
     </>
   )
 }
@@ -519,13 +497,13 @@ function ReviewStep({
   const extra = invitees.length - shown.length
   return (
     <>
-      <Title className="mt-4">{t('plans.review_title')}</Title>
-      <Card className="mt-4 gap-3">
+      <SheetTitle>{t('plans.review_title')}</SheetTitle>
+      <Card className="mx-4 mt-4 gap-3">
         {spots.length > 1 ? (
           <View>
             <Eyebrow className="mb-1">{t('plans.voting_between')}</Eyebrow>
             {spots.map((s, i) => (
-              <Text key={s.id} className="font-ui text-body text-text">
+              <Text key={s.id} className="font-serif text-serif-md text-text">
                 {i + 1}. {s.name}
               </Text>
             ))}
@@ -547,7 +525,7 @@ function ReviewStep({
           </View>
         ) : null}
       </Card>
-      <View className="mt-4">
+      <View className="mt-4 px-4">
         <Field
           label={t('plans.note_label')}
           value={note}

@@ -240,6 +240,27 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   circle layer (a hundred-odd views for them was heavy and buried the pins — many places share a
   coordinate). Tapping either opens a glass card at the bottom: picture, name, meta with the distance, the
   friends' score, and a chevron into the place.
+- **The event page** (`app/events/[eventId].tsx`, `components/events/EventBar.tsx`) is the place page's shape:
+  the photo _is_ the page — the event's own, else its venue's, else a map of where it is — with a category chip
+  (the kind's icon, "Special · Set menu RD$3,500"), a frosted title panel (serif 40) and a panel of what matters
+  at a glance (when it starts — the accent once it is imminent or live — spots left, who is going; nothing for a
+  cancelled event). The r32 details sheet holds When, Where (+ Directions), the description, the spots bar,
+  Who's going (+ Invite friends) and a ghost Book-on-WhatsApp / Buy-tickets button; the top chrome is
+  `PlaceTopChrome` (glass back and share, then a solid bar with the title and share). One floating bar holds a
+  round save chip and **I'm going** in `accent-fill` — solid ink with a check once you are; a cancelled event
+  keeps the bar's place but says so. The scroll choreography every photo-first page shares is
+  `usePhotoPageScroll` (place, event, plan).
+- **Plans** (`app/plans/*`, `components/plans/parts.tsx`, `components/FollowerPicker.tsx`): the list is raised
+  r22 rows — a 56pt picture, the spot in the serif, the date and who is hosting — with a `StatusBadge` at the
+  right (solid ink only for an invite that waits on you) under Pending invites / Upcoming / Past, and **New** a
+  solid pill in the header. One plan opens on the chosen spot's photo fading into the ground (glass back and
+  share, the same chrome as the event page): a serif title ("Vote open"), the date · who hosts, the note as a
+  quote, the vote as a card of rows with a round pick mark and a **Confirm spot** chip for the host, and the
+  guests as grouped rows ("Going (3)", "Maybe", "No reply") with the host / voted-for badges. **New table** and
+  **Invite more** are page sheets: a round Close (first step) or Back chip, the sheet's name, the question in
+  the serif (`SheetHeader` / `SheetTitle`), one solid button at the foot — Where (a search field, picture rows
+  with a pick mark, chosen spots as solid pills), When (day and time pills), With whom (a search field, a raised
+  **Invite** / solid **Invited** pill per follower), Review.
 - **"How was it?"** (`components/rank/{FeelStep,FeelSlider,Flute}.tsx`, `lib/feel.ts`) is one 3-stop
   slider — _Didn't love it / It was fine / Loved it_ — under a **realistic Kir Royale flute** that goes
   flat → a slow thin stream in a misted glass → five lively streams with a ring of mousse and a fizz over

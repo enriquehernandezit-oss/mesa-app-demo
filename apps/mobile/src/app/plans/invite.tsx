@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FollowerPicker } from '@/components/FollowerPicker'
-import { Button, RowsSkeleton, Title } from '@/components/ui'
+import { Button, RowsSkeleton } from '@/components/ui'
+import { SheetHeader, SheetTitle } from '@/components/ui/SheetHeader'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
@@ -48,23 +49,15 @@ export default function InviteScreen() {
   })
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
+    <View className="flex-1 bg-bg">
+      <SheetHeader onClose={() => router.back()} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-6"
+        contentContainerClassName="pb-6"
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          className="min-h-[44px] self-start justify-center active:opacity-60"
-        >
-          <Text className="font-ui-medium text-label text-text-muted">
-            {t('plans.invite_more_back')}
-          </Text>
-        </Pressable>
-        <Title className="mt-4">{t('plans.invite_more')}</Title>
-        <View className="mt-4">
+        <SheetTitle>{t('plans.invite_more')}</SheetTitle>
+        <View className="mt-4 px-4">
           {plan.isPending ? (
             <RowsSkeleton />
           ) : (
@@ -83,10 +76,7 @@ export default function InviteScreen() {
           )}
         </View>
       </ScrollView>
-      <View
-        className="border-line border-t px-5 pt-3"
-        style={{ paddingBottom: insets.bottom + 12 }}
-      >
+      <View className="px-4 pt-3" style={{ paddingBottom: Math.max(insets.bottom, 16) + 4 }}>
         <Button
           disabled={selected.size === 0 || invite.isPending}
           loading={invite.isPending}

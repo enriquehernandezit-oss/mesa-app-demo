@@ -1,42 +1,46 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import type { ReactNode } from 'react'
-import { Linking, Pressable, Share, Text, View, useWindowDimensions } from 'react-native'
-import Animated, {
-  Extrapolation,
-  FadeInDown,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-} from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { type ReactNode, useRef } from 'react'
+import {
+  Animated,
+  Linking,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native'
 
+import { EVENT_BAR_HEIGHT, EventBar } from '@/components/events/EventBar'
 import {
   CategoryIcon,
   FacesStack,
-  RsvpButtons,
   SpotsLine,
   countdownLabel,
+  liveLabel,
+  spotsLabel,
   useNow,
 } from '@/components/events/EventTicket'
-import { PulseDot, useStaggerEntering } from '@/components/events/motion'
+import { PlaceHero, type PlaceTag } from '@/components/place/PlaceHero'
+import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
+import { useRankBarBottom } from '@/components/place/RankBar'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Caption, ErrorState, MAX_SCALE, Skeleton } from '@/components/ui'
-import { GlassCircle } from '@/components/ui/GlassCircle'
+import { Body, Button, Caption, ErrorState, Skeleton } from '@/components/ui'
 import {
-  BackIcon,
   CalendarIcon,
   ChevronIcon,
   ClockIcon,
   DirectionsIcon,
-  ShareIcon,
+  PeopleIcon,
+  PinIcon,
+  SendIcon,
   WebIcon,
   WhatsAppIcon,
 } from '@/components/ui/icons'
-import { PlaceCover } from '@/components/ui/PlaceCover'
+import { PlaceLine } from '@/components/ui/PlaceLine'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
@@ -45,15 +49,23 @@ import { categoryKey } from '@/lib/eventCategory'
 import { goingLabel } from '@/lib/eventGoing'
 import { countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
+import { imageUrl, mapboxStaticUrl } from '@/lib/media'
 import { shareTextWhatsAppFirst } from '@/lib/shareProfile'
 import type { EventSummary, RestaurantProfileResponse } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
-// One Mesa-curated event (M21, redesigned for color + motion). A full-bleed
-// photo hero that stretches on pull and drifts on scroll, the category's hue
-// on the date and countdown, info cards that rise in, a live spots bar, and
-// a sticky action bar (Voy / Me interesa / WhatsApp or tickets) that slides
-// up from the bottom. Never member-editable (docs/EVENTS.md).
+// One Mesa-curated event (Redesign 2). The same shape as the place page: the photo IS the page —
+// the event's own, else its venue's — with a frosted title panel and a panel of what matters at a
+// glance (when it starts, spots left, who is going), and a details sheet that rises over it
+// (when, where, what, spots, who). One floating bar holds the two actions: save and "I'm going".
+// Never member-editable (docs/EVENTS.md).
+//
+// The scroll choreography is r/[restaurantId].tsx's: a transparent hero block one screen tall
+// scrolls away over a fixed backdrop, and the top chrome trades glass controls for a solid bar.
+const SHEET_RADIUS = 32
+
 export default function EventDetailScreen() {
   const t = useT()
   const router = useRouter()
@@ -69,9 +81,9 @@ export default function EventDetailScreen() {
   if (q.isPending) {
     return (
       <View className="flex-1 bg-bg">
-        <Skeleton height={340} />
-        <View className="gap-3 px-5 pt-5">
-          <Skeleton height={16} width={140} />
+        <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+        <View className="gap-3 px-5 pt-4">
+          <Skeleton height={340} />
           <Skeleton height={28} width="80%" />
           <Skeleton height={90} />
         </View>
@@ -92,48 +104,51 @@ export default function EventDetailScreen() {
   return <EventDetail e={q.data.event} onBack={goBack} />
 }
 
-const HERO_H = 340
-
 function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
   const t = useT()
   const router = useRouter()
   const queryClient = useQueryClient()
-  const insets = useSafeAreaInsets()
-  const { width } = useWindowDimensions()
-  const reduced = useReducedMotion()
+  const { height: winH } = useWindowDimensions()
   const now = useNow()
+  const theme = useResolvedTheme()
   const scrim = useColor('photo-scrim')
-  const bg = useColor('bg')
+  const lift = useLift()
+  const barBottom = useRankBarBottom()
+  const heroH = winH
   const cat = categoryKey(e.category, e.title)
   const rsvpState = useEventRsvp(e)
   const cd = countdown(e.startsAt, e.endsAt, now)
   const live = cd.kind === 'live'
+  const hot = live || isImminent(cd)
   const when = eventWhenLabel(e.startsAt)
 
-  // Scroll-driven hero: stretches on overscroll, drifts up at half speed,
-  // and a compact title bar fades in once the photo has scrolled away.
-  const y = useSharedValue(0)
-  const onScroll = useAnimatedScrollHandler((ev) => {
-    y.value = ev.contentOffset.y
+  // The scroll drives the top chrome's cross-fade (see usePhotoPageScroll).
+  const { scrollY, onScroll, setCondensedRef, condensedAt } = usePhotoPageScroll(heroH)
+  const scrollRef = useRef<ScrollView>(null)
+  const heroFade = scrollY.interpolate({
+    inputRange: [0, heroH * 0.35],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
   })
-  const heroStyle = useAnimatedStyle(() => {
-    if (reduced) return {}
-    return {
-      transform: [
-        { translateY: y.value < 0 ? y.value / 2 : y.value * 0.45 },
-        { scale: y.value < 0 ? 1 + -y.value / HERO_H : 1 },
-      ],
-    }
-  })
-  // The photo's big title fades out as it scrolls up toward the status bar,
-  // handing off to the compact bar below instead of sliding under the clock.
-  const titleStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(y.value, [0, HERO_H - 170], [1, 0], Extrapolation.CLAMP),
-  }))
-  const barStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(y.value, [HERO_H - 140, HERO_H - 80], [0, 1], Extrapolation.CLAMP),
-  }))
 
+  const photo = imageUrl(e.coverImageId ?? e.restaurant.coverImageId, { w: 1200, h: 2000 })
+  // With no photo of its own or its venue's the page opens on a map of where it is (as the place
+  // page does). The venue's coordinates come from its profile — the same query Directions uses,
+  // so it is fetched once — and only when there is no photo to show.
+  const venue = useQuery({
+    queryKey: ['restaurant', e.restaurant.id],
+    queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${e.restaurant.id}`),
+    staleTime: 5 * 60_000,
+    enabled: !photo,
+  })
+  const backdropMap =
+    !photo && venue.data
+      ? mapboxStaticUrl(venue.data.restaurant.lat, venue.data.restaurant.lng, {
+          w: 600,
+          h: 1000,
+          theme,
+        })
+      : null
   const endTime = e.endsAt
     ? new Intl.DateTimeFormat(dateLocale(), { hour: 'numeric', minute: '2-digit' }).format(
         new Date(e.endsAt),
@@ -149,6 +164,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
     await openDirections(r.restaurant.lat, r.restaurant.lng, e.restaurant.name)
   }
   const shareText = t('events.share_text', { title: e.title, when, place: e.restaurant.name })
+  const share = () => Share.share({ message: shareText }).catch(() => {})
   const whatsapp = e.bookingWhatsapp
     ? `https://wa.me/${e.bookingWhatsapp}?text=${encodeURIComponent(
         t('events.whatsapp_msg', { title: e.title, when }),
@@ -159,305 +175,275 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
     goingCount: rsvpState.goingCount,
   })
 
+  // What matters at a glance, on the photo: when it starts (the accent once it is imminent or
+  // live), what is left, who is going. A cancelled event shows none of it — the bar and the
+  // first card in the sheet say so.
+  const tags: PlaceTag[] = e.cancelled
+    ? []
+    : [
+        {
+          key: 'when',
+          icon: <ClockIcon size={14} color={hot ? 'on-accent' : 'hglass-fg'} />,
+          label: live ? liveLabel(t, e) : countdownLabel(t, cd),
+          hot,
+        },
+        ...(e.capacity != null && rsvpState.spotsLeft != null
+          ? [
+              {
+                key: 'spots',
+                icon: <PeopleIcon size={14} color="hglass-fg" />,
+                label: spotsLabel(t, rsvpState.spotsLeft),
+              },
+            ]
+          : []),
+        ...(e.friendsGoingCount > 0 || rsvpState.goingCount > 0
+          ? [
+              {
+                key: 'going',
+                icon: <PeopleIcon size={14} color="hglass-fg" />,
+                label: facesLabel,
+                onPress:
+                  e.friendsGoingCount > 0 ? () => router.push(`/events/${e.id}/going`) : undefined,
+              },
+            ]
+          : []),
+      ]
+
+  const chip = [
+    eventCategoryLabel(e.category) ?? t('events.cat_default'),
+    e.priceLabel ? eventPriceLabel(e.priceLabel) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <View className="flex-1 bg-bg">
-      <Animated.ScrollView
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 + insets.bottom }}
-      >
-        {/* Hero */}
-        <View style={{ height: HERO_H, overflow: 'visible' }}>
-          <Animated.View style={[{ height: HERO_H, width }, heroStyle]}>
-            <PlaceCover
-              name={e.title}
-              coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
-              size={{ w: 1000, h: 700 }}
-              className="h-full w-full rounded-none"
-            />
-          </Animated.View>
-          <LinearGradient
-            colors={['transparent', scrim]}
-            locations={[0.35, 1]}
-            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+      {/* The backdrop: fixed, one screen tall, beneath everything — the photo, else a map, else
+          (no Mapbox token) the plain ground with the frosted panels carrying the page. */}
+      <View className="absolute inset-x-0 top-0 bg-surface-raised" style={{ height: winH }}>
+        {photo || backdropMap ? (
+          <Image
+            source={{ uri: photo ?? backdropMap ?? undefined }}
+            style={{ width: '100%', height: '100%' }}
+            contentFit="cover"
+            transition={150}
           />
-          <Animated.View style={titleStyle} className="absolute right-5 bottom-10 left-5">
-            <View className="flex-row items-center gap-2">
-              <View className="flex-row items-center gap-1.5 rounded-pill bg-accent-fill px-2.5 py-1">
-                <CategoryIcon cat={cat} size={12} color="on-accent" />
-                <Text className="font-ui-semibold text-micro text-on-accent">
-                  {eventCategoryLabel(e.category) ?? t('events.cat_default')}
-                </Text>
-              </View>
-              {e.priceLabel ? (
-                <View className="rounded-pill bg-photo-scrim px-2.5 py-1">
-                  <Text className="font-ui-semibold text-micro text-on-photo">
-                    {eventPriceLabel(e.priceLabel)}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-            <Text
-              maxFontSizeMultiplier={MAX_SCALE}
-              className="mt-2 font-serif text-display leading-[46px] text-on-photo"
-            >
-              {e.title}
-            </Text>
-            <Text className="mt-1 font-ui-medium text-label text-on-photo-2">
-              {e.restaurant.name} · {when}
-            </Text>
+        ) : null}
+        {photo ? (
+          <>
+            <LinearGradient
+              colors={[scrim, 'transparent']}
+              locations={[0, 0.2]}
+              style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.4 }}
+            />
+            <LinearGradient
+              colors={['transparent', scrim]}
+              locations={[0.52, 1]}
+              style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, opacity: 0.5 }}
+            />
+          </>
+        ) : null}
+      </View>
+
+      <Animated.ScrollView
+        ref={scrollRef}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={onScroll}
+      >
+        <View style={{ height: heroH }}>
+          <Animated.View style={{ flex: 1, opacity: heroFade }}>
+            <PlaceHero
+              name={e.title}
+              category={chip}
+              icon={<CategoryIcon cat={cat} size={15} color="text" />}
+              titleClass="text-display"
+              sub={`${e.restaurant.name} · ${when}`}
+              tags={tags}
+              hint={t('events.hint')}
+              bottom={barBottom + EVENT_BAR_HEIGHT + 14}
+            />
           </Animated.View>
         </View>
 
-        {/* Solid ground: the hero drifts DOWN as you scroll (parallax), so
-            without this it showed through the gaps between the cards. */}
-        <View className="bg-bg px-5">
-          {/* Countdown banner — a cancelled event replaces it outright
-              rather than showing a countdown to something that isn't
-              happening. */}
-          {e.cancelled ? (
-            <Animated.View
-              entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
-              className="-mt-5 flex-row items-center gap-3 rounded-card border border-line bg-surface px-4 py-3"
-            >
-              <ClockIcon size={18} color="text-muted" />
-              <View className="flex-1">
-                <Text className="font-ui-semibold text-body text-text">
-                  {t('events.cancelled_title')}
-                </Text>
-                <Caption>{t('events.cancelled_body')}</Caption>
-              </View>
-            </Animated.View>
-          ) : (
-            <Animated.View
-              entering={reduced ? undefined : FadeInDown.duration(300).delay(80)}
-              className={`-mt-5 flex-row items-center gap-3 rounded-card px-4 py-3 ${live || isImminent(cd) ? 'bg-accent-fill' : 'bg-surface'}`}
-            >
-              {live ? (
-                <PulseDot color="on-accent" size={9} />
-              ) : isImminent(cd) ? (
-                <PulseDot color="on-accent" size={8} />
-              ) : (
-                <ClockIcon size={18} color="accent" />
-              )}
-              <View className="flex-1">
-                <Caption className={live || isImminent(cd) ? 'text-on-accent' : undefined}>
-                  {live ? t('events.live_now') : t('events.starts_in')}
-                </Caption>
-                <Text
-                  className={`font-ui-semibold text-body ${live || isImminent(cd) ? 'text-on-accent' : 'text-accent'}`}
-                >
-                  {live
-                    ? e.endsAt
-                      ? t('events.live_until', {
-                          time: new Intl.DateTimeFormat(dateLocale(), {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          }).format(new Date(e.endsAt)),
-                        })
-                      : t('events.cd_live')
-                    : countdownLabel(t, cd)}
-                </Text>
-              </View>
-            </Animated.View>
-          )}
+        <View
+          className="bg-bg"
+          style={{
+            minHeight: winH,
+            borderTopLeftRadius: SHEET_RADIUS,
+            borderTopRightRadius: SHEET_RADIUS,
+            paddingBottom: barBottom + EVENT_BAR_HEIGHT + 24,
+          }}
+        >
+          <View className="mb-1.5 mt-2 h-[5px] w-[38px] self-center rounded-[3px] bg-text-faint opacity-80" />
 
-          {/* The fuller sample-event sentence — sits right where the reader has
-              accepted the event as real and is about to act on it. The cards
-              above (EventTicket/EventHeroCard/EventMiniCard) carry the short
-              "Evento de muestra" mark; this is the one place that explains it. */}
-          {!e.venueConfirmed ? (
-            <Caption className="mt-3 text-center">{t('events.sample_note')}</Caption>
-          ) : null}
+          <View className="gap-2.5 px-4 pt-3">
+            {e.cancelled ? (
+              <InfoCard
+                lift={lift}
+                label={t('events.cancelled_title')}
+                icon={<ClockIcon size={15} color="text-muted" />}
+              >
+                <Body className="mt-2 text-text">{t('events.cancelled_body')}</Body>
+              </InfoCard>
+            ) : null}
 
-          {/* Info cards */}
-          <InfoCard
-            index={0}
-            icon={<CalendarIcon size={18} color="text-muted" />}
-            label={t('events.when')}
-          >
-            <Text className="font-ui-semibold text-body text-text">{when}</Text>
-            {endTime ? <Caption>– {endTime}</Caption> : null}
-          </InfoCard>
-
-          <InfoCard index={1} label={t('events.where')}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(`/r/${e.restaurant.id}`)}
-              className="flex-row items-center gap-3 active:opacity-70"
+            <InfoCard
+              lift={lift}
+              label={t('events.when')}
+              icon={<CalendarIcon size={15} color="text-muted" />}
             >
-              <PlaceCover
-                name={e.restaurant.name}
-                coverImageId={e.restaurant.coverImageId}
-                size={{ w: 160, h: 160 }}
-                className="h-12 w-12 rounded-sm"
-              />
-              <View className="flex-1">
-                <Text className="font-ui-semibold text-body text-text">{e.restaurant.name}</Text>
-                {e.restaurant.neighborhood ? <Caption>{e.restaurant.neighborhood}</Caption> : null}
-              </View>
-              <ChevronIcon size={14} color="text-faint" />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={directions}
-              className="mt-3 min-h-[40px] flex-row items-center justify-center gap-2 rounded-pill border border-line-strong active:opacity-70"
-            >
-              <DirectionsIcon size={16} />
-              <Text className="font-ui-semibold text-label text-text">
-                {t('events.directions')}
-              </Text>
-            </Pressable>
-          </InfoCard>
-
-          {e.description ? (
-            <InfoCard index={2}>
-              <Body>{e.description}</Body>
+              <Text className="mt-2 font-ui-semibold text-section text-text">{when}</Text>
+              {endTime ? (
+                <Caption className="mt-0.5">{t('events.until', { time: endTime })}</Caption>
+              ) : null}
             </InfoCard>
-          ) : null}
 
-          {e.capacity != null && rsvpState.spotsLeft != null ? (
-            <InfoCard index={3}>
-              <SpotsLine capacity={e.capacity} spotsLeft={rsvpState.spotsLeft} />
-            </InfoCard>
-          ) : null}
-
-          <InfoCard index={4} label={t('events.who_going')}>
-            {/* With friends going the whole line opens WHO — the exact list of them. */}
-            {e.friendsGoingCount > 0 ? (
+            <InfoCard
+              lift={lift}
+              label={t('events.where')}
+              icon={<PinIcon size={15} color="text-muted" />}
+            >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t('events.friends_going_title')}
-                onPress={() => router.push(`/events/${e.id}/going`)}
-                className="flex-row items-center justify-between active:opacity-70"
+                onPress={() => router.push(`/r/${e.restaurant.id}`)}
+                className="mt-2.5 active:opacity-70"
               >
-                <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
-                <ChevronIcon size={16} color="text-faint" />
+                <PlaceLine
+                  name={e.restaurant.name}
+                  coverImageId={e.restaurant.coverImageId}
+                  neighborhood={e.restaurant.neighborhood}
+                  picture={48}
+                  nameClass="text-serif-md"
+                  right={<ChevronIcon size={16} color="text-faint" />}
+                />
               </Pressable>
-            ) : (
-              <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
-            )}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => shareTextWhatsAppFirst(shareText)}
-              className="mt-3 min-h-[40px] flex-row items-center justify-center gap-2 rounded-pill border border-line-strong active:opacity-70"
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-3 min-h-[42px]"
+                icon={<DirectionsIcon size={16} />}
+                onPress={directions}
+              >
+                {t('events.directions')}
+              </Button>
+            </InfoCard>
+
+            {e.description ? (
+              <InfoCard lift={lift}>
+                <Body className="leading-[23px] text-text">{e.description}</Body>
+              </InfoCard>
+            ) : null}
+
+            {e.capacity != null && rsvpState.spotsLeft != null ? (
+              <InfoCard lift={lift}>
+                <SpotsLine capacity={e.capacity} spotsLeft={rsvpState.spotsLeft} compact />
+              </InfoCard>
+            ) : null}
+
+            <InfoCard
+              lift={lift}
+              label={t('events.who_going')}
+              icon={<PeopleIcon size={15} color="text-muted" />}
             >
-              <WhatsAppIcon size={16} />
-              <Text className="font-ui-semibold text-label text-text">
-                {t('events.invite_friends')}
-              </Text>
-            </Pressable>
-          </InfoCard>
+              <View className="mt-2.5">
+                {/* With friends going the whole line opens WHO — the exact list of them. */}
+                {e.friendsGoingCount > 0 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('events.friends_going_title')}
+                    onPress={() => router.push(`/events/${e.id}/going`)}
+                    className="flex-row items-center justify-between active:opacity-70"
+                  >
+                    <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
+                    <ChevronIcon size={16} color="text-faint" />
+                  </Pressable>
+                ) : (
+                  <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
+                )}
+              </View>
+              {!e.cancelled ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3 min-h-[42px]"
+                  icon={<SendIcon size={16} />}
+                  onPress={() => shareTextWhatsAppFirst(shareText)}
+                >
+                  {t('events.invite_friends')}
+                </Button>
+              ) : null}
+            </InfoCard>
+
+            {!e.cancelled && whatsapp ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<WhatsAppIcon size={16} />}
+                onPress={() => Linking.openURL(whatsapp).catch(() => {})}
+              >
+                {t('events.whatsapp')}
+              </Button>
+            ) : !e.cancelled && e.ticketUrl ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<WebIcon size={16} />}
+                onPress={() => e.ticketUrl && Linking.openURL(e.ticketUrl).catch(() => {})}
+              >
+                {t('events.buy_tickets')}
+              </Button>
+            ) : null}
+
+            {/* The fuller sample-event sentence — sits right where the reader has accepted the
+                event as real and is about to act on it. The cards elsewhere carry the short
+                "Sample event" mark; this is the one place that explains it. */}
+            {!e.venueConfirmed ? (
+              <Caption className="mt-1 text-center">{t('events.sample_note')}</Caption>
+            ) : null}
+          </View>
         </View>
       </Animated.ScrollView>
 
-      {/* Compact title bar — fades in once the hero is gone */}
-      <Animated.View
-        pointerEvents="none"
-        style={[{ paddingTop: insets.top + 8, backgroundColor: bg }, barStyle]}
-        className="absolute inset-x-0 top-0 border-line border-b px-16 pb-3"
-      >
-        <Text numberOfLines={1} className="text-center font-serif text-serif-md text-text">
-          {e.title}
-        </Text>
-      </Animated.View>
+      <PlaceTopChrome
+        name={e.title}
+        score={null}
+        onBack={onBack}
+        onShare={share}
+        onTop={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+        scrollY={scrollY}
+        fadeStart={condensedAt - 80}
+        fadeEnd={condensedAt}
+        setterRef={setCondensedRef}
+      />
 
-      {/* Floating back / share */}
-      <View
-        pointerEvents="box-none"
-        className="absolute inset-x-0 flex-row justify-between px-4"
-        style={{ top: insets.top + 4 }}
-      >
-        <GlassCircle onPress={onBack} accessibilityLabel={t('common.back_plain')}>
-          <BackIcon size={18} />
-        </GlassCircle>
-        <GlassCircle
-          onPress={() => Share.share({ message: shareText }).catch(() => {})}
-          accessibilityLabel={t('events.share')}
-        >
-          <ShareIcon size={18} />
-        </GlassCircle>
-      </View>
-
-      {/* Sticky action bar — slides up once the screen is in */}
-      <Animated.View
-        entering={
-          reduced
-            ? undefined
-            : FadeInDown.duration(320)
-                .delay(180)
-                .withInitialValues({
-                  opacity: 0,
-                  transform: [{ translateY: 60 }],
-                })
-        }
-        className="absolute inset-x-0 bottom-0 gap-2 border-line border-t bg-bg px-5 pt-3"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-      >
-        {e.cancelled ? (
-          <View className="min-h-[44px] items-center justify-center rounded-pill bg-bg-sunk">
-            <Text className="font-ui-semibold text-label text-text-muted">
-              {t('events.cancelled_title')}
-            </Text>
-          </View>
-        ) : (
-          <RsvpButtons e={e} rsvpState={rsvpState} size="md" />
-        )}
-        {!e.cancelled && whatsapp ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => Linking.openURL(whatsapp).catch(() => {})}
-            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border border-accent active:opacity-70`}
-          >
-            <WhatsAppIcon size={16} />
-            <Text className={`font-ui-semibold text-label text-accent`}>
-              {t('events.whatsapp')}
-            </Text>
-          </Pressable>
-        ) : e.ticketUrl ? (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => e.ticketUrl && Linking.openURL(e.ticketUrl).catch(() => {})}
-            className={`min-h-[44px] flex-row items-center justify-center gap-2 rounded-pill border border-accent active:opacity-70`}
-          >
-            <WebIcon size={16} />
-            <Text className={`font-ui-semibold text-label text-accent`}>
-              {t('events.buy_tickets')}
-            </Text>
-          </Pressable>
-        ) : null}
-      </Animated.View>
+      <EventBar e={e} rsvpState={rsvpState} />
     </View>
   )
 }
 
+// One card of the details sheet: r24, lifted on Day (`lift` comes from the page so the cards
+// don't each subscribe), with an optional small label and icon over its content.
 function InfoCard({
-  index,
+  lift,
   label,
   icon,
   children,
 }: {
-  index: number
+  lift: ReturnType<typeof useLift>
   label?: string
   icon?: ReactNode
   children: ReactNode
 }) {
-  const entering = useStaggerEntering(index + 1)
   return (
-    <Animated.View
-      entering={entering}
-      className="mt-3 rounded-card border border-line bg-surface p-4"
-    >
+    <View className="rounded-card bg-surface px-4 py-3.5" style={lift}>
       {label ? (
-        <View className="mb-2 flex-row items-center gap-2">
+        <View className="flex-row items-center gap-2">
           {icon}
-          <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-text-muted">
-            {label}
-          </Text>
+          <Text className="font-ui-semibold text-meta text-text-muted">{label}</Text>
         </View>
       ) : null}
       {children}
-    </Animated.View>
+    </View>
   )
 }
