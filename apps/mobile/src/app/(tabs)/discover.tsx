@@ -21,6 +21,8 @@ import { FriendCard } from '@/components/feed/FriendCard'
 import { ListCovers } from '@/components/feed/ListCovers'
 import { NewNearYou } from '@/components/feed/NewNearYou'
 import { PeopleShelf } from '@/components/feed/PeopleShelf'
+import { PopularHeader } from '@/components/feed/PopularHeader'
+import { PopularRow } from '@/components/feed/PopularRow'
 import { TonightHero } from '@/components/feed/TonightHero'
 import { TonightPick } from '@/components/feed/TonightPick'
 import { YourSix } from '@/components/feed/YourSix'
@@ -33,6 +35,7 @@ import {
   Caption,
   Card,
   ErrorState,
+  EmptyState,
   Eyebrow,
   SectionHeader,
   Serif,
@@ -46,13 +49,22 @@ import { type FeedRow, buildFeedRows } from '@/lib/feedRows'
 import { readFeedSeen, writeFeedSeen } from '@/lib/feedSeen'
 import { msUntilHomeRefresh } from '@/lib/homeCache'
 import { useT } from '@/lib/i18n'
-import type { FeedItem, FriendSuggestion, HomeResponse, SuggestedUser } from '@/lib/types'
+import type {
+  FeedItem,
+  FriendSuggestion,
+  HomeResponse,
+  Neighborhood,
+  PopularItem,
+  PopularPage,
+  SuggestedUser,
+} from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 
-// The Feed (Redesign 2): a greeting, then four pills — For you, Friends, Events, Lists.
-// "For you" and "Friends" are friends' rankings as cards; "Events" and "Lists" host what
+// The Feed (Redesign 2): a greeting, then five pills — For you, Friends, Popular, Events,
+// Lists. "For you" and "Friends" are friends' rankings as cards; "Popular" is the whole
+// city's places, ranked (GET /popular, a page at a time); "Events" and "Lists" host what
 // used to be rails. For you also opens with "Your six" and "Tonight" (GET /home, cached
 // until 5 AM) and, among the cards, the "People you may know" and "New near you" shelves.
 // Once the inline pills scroll away, a glass bar pins them to the top.
@@ -67,11 +79,21 @@ interface FeedPage {
   nextCursor: string | null
 }
 
-type Row = FeedRow<FeedItem, FriendSuggestion>
+// The Popular view's rows sit beside the friend feed's in one list: a ranked place, and a
+// divider where the week's top places give way to the all-time favorites.
+type Row =
+  | FeedRow<FeedItem, FriendSuggestion>
+  | { type: 'popular'; key: string; item: PopularItem; rank: number }
+  | { type: 'popular_tail'; key: 'popular_tail' }
 
 function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
   const seen = new Set<string>()
   return items.filter((i) => (seen.has(i.rankingId) ? false : seen.add(i.rankingId)))
+}
+
+function uniqueByPlace(items: PopularItem[]): PopularItem[] {
+  const seen = new Set<string>()
+  return items.filter((i) => (seen.has(i.restaurant.id) ? false : seen.add(i.restaurant.id)))
 }
 
 export default function DiscoverTab() {
@@ -83,6 +105,7 @@ export default function DiscoverTab() {
   const indicator = useResolvedTheme() === 'night' ? ('white' as const) : ('black' as const)
   const [view, setView] = useState<FeedView>('for_you')
   const friendsView = view === 'for_you' || view === 'friends'
+  const [hood, setHood] = useState<string | null>(null)
 
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
@@ -107,6 +130,34 @@ export default function DiscoverTab() {
     queryFn: () => api.get<{ users: FriendSuggestion[] }>('/social/suggestions'),
     staleTime: 120_000,
     enabled: view === 'for_you' && feed.isSuccess && items.length > 0,
+  })
+
+  // Popular: the city's places, by cursor. A ranking invalidates it (lib/invalidateAfterRanking).
+  const popular = useInfiniteQuery({
+    queryKey: ['popular', hood],
+    queryFn: ({ pageParam }) => {
+      const qs = [
+        hood ? `hood=${encodeURIComponent(hood)}` : null,
+        pageParam ? `cursor=${encodeURIComponent(pageParam)}` : null,
+      ]
+        .filter(Boolean)
+        .join('&')
+      return api.get<PopularPage>(`/popular${qs ? `?${qs}` : ''}`)
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    staleTime: 300_000,
+    enabled: view === 'popular',
+  })
+  const popularItems = useMemo(
+    () => uniqueByPlace(popular.data?.pages.flatMap((p) => p.items) ?? []),
+    [popular.data],
+  )
+  const neighborhoods = useQuery({
+    queryKey: ['neighborhoods'],
+    queryFn: () => api.get<{ neighborhoods: Neighborhood[] }>('/onboarding/neighborhoods'),
+    staleTime: Number.POSITIVE_INFINITY,
+    enabled: view === 'popular',
   })
 
   // The top of For you — your six, tonight, new near you — in one request, the same all
@@ -145,16 +196,22 @@ export default function DiscoverTab() {
 
   const rows = useMemo<Row[]>(
     () =>
-      friendsView && seenAt !== undefined
-        ? buildFeedRows({
-            items,
-            people: suggestions.data?.users ?? [],
-            seenAt,
-            shelves: view === 'for_you',
-            nearYou: view === 'for_you' && (newNearYou?.length ?? 0) > 0,
+      view === 'popular'
+        ? popularItems.flatMap((item, i): Row[] => {
+            const row: Row = { type: 'popular', key: item.restaurant.id, item, rank: i + 1 }
+            const startsTail = item.phase === 'all' && popularItems[i - 1]?.phase !== 'all'
+            return startsTail ? [{ type: 'popular_tail', key: 'popular_tail' }, row] : [row]
           })
-        : [],
-    [friendsView, view, items, suggestions.data, seenAt, newNearYou],
+        : friendsView && seenAt !== undefined
+          ? buildFeedRows({
+              items,
+              people: suggestions.data?.users ?? [],
+              seenAt,
+              shelves: view === 'for_you',
+              nearYou: view === 'for_you' && (newNearYou?.length ?? 0) > 0,
+            })
+          : [],
+    [friendsView, view, items, popularItems, suggestions.data, seenAt, newNearYou],
   )
 
   const refetchCurrent = useCallback(
@@ -163,10 +220,12 @@ export default function DiscoverTab() {
         ? queryClient.invalidateQueries({ queryKey: ['events'] })
         : view === 'lists'
           ? queryClient.invalidateQueries({ queryKey: ['lists'] })
-          : view === 'for_you'
-            ? Promise.all([feed.refetch(), home.refetch()])
-            : feed.refetch(),
-    [view, queryClient, feed, home],
+          : view === 'popular'
+            ? popular.refetch()
+            : view === 'for_you'
+              ? Promise.all([feed.refetch(), home.refetch()])
+              : feed.refetch(),
+    [view, queryClient, feed, home, popular],
   )
   const { refreshing, onRefresh } = usePullToRefresh(refetchCurrent)
 
@@ -177,6 +236,8 @@ export default function DiscoverTab() {
       if (row.type === 'card') return <FriendCard item={row.item} index={index} />
       if (row.type === 'shelf') return <PeopleShelf people={row.people} />
       if (row.type === 'new_near_you') return <NewNearYou places={newNearYou ?? []} />
+      if (row.type === 'popular') return <PopularRow item={row.item} rank={row.rank} />
+      if (row.type === 'popular_tail') return <PopularTail />
       return <CaughtUp />
     },
     [newNearYou],
@@ -190,9 +251,13 @@ export default function DiscoverTab() {
       // programmatically shifts the scroll offset down to reveal the spinner and
       // doesn't reliably restore it (usePullToRefresh's own header), which raced the
       // scrollToOffset above. A real pull-to-refresh gesture is untouched.
+      if (view === 'popular') {
+        void popular.refetch()
+        return
+      }
       void feed.refetch()
       if (view === 'for_you') void home.refetch()
-    }, [feed, home, view]),
+    }, [feed, home, popular, view]),
   )
 
   // The pinned pill bar: once the inline pills have scrolled up under the status bar.
@@ -234,6 +299,12 @@ export default function DiscoverTab() {
               </View>
             ) : view === 'lists' ? (
               <ListCovers />
+            ) : view === 'popular' ? (
+              <PopularHeader
+                hoods={neighborhoods.data?.neighborhoods ?? []}
+                hood={hood}
+                onHood={setHood}
+              />
             ) : (
               <>
                 {view === 'for_you' ? (
@@ -262,7 +333,15 @@ export default function DiscoverTab() {
           </>
         }
         ListEmptyComponent={
-          !friendsView ? null : feed.isPending || seenAt === undefined ? (
+          view === 'popular' ? (
+            popular.isPending ? (
+              <PopularSkeleton />
+            ) : popular.isError ? (
+              <ErrorState onRetry={() => popular.refetch()}>{t('discover.load_error')}</ErrorState>
+            ) : (
+              <EmptyState body={t('popular.empty_body')}>{t('popular.empty_title')}</EmptyState>
+            )
+          ) : !friendsView ? null : feed.isPending || seenAt === undefined ? (
             <FeedSkeleton />
           ) : feed.isError ? (
             <ErrorState onRetry={() => feed.refetch()}>{t('discover.load_error')}</ErrorState>
@@ -271,7 +350,11 @@ export default function DiscoverTab() {
           )
         }
         ListFooterComponent={
-          !friendsView || items.length === 0 ? null : feed.isFetchingNextPage ? (
+          view === 'popular' ? (
+            popular.isFetchingNextPage ? (
+              <Body className="py-4 text-center">…</Body>
+            ) : null
+          ) : !friendsView || items.length === 0 ? null : feed.isFetchingNextPage ? (
             <Body className="py-4 text-center">…</Body>
           ) : !feed.hasNextPage ? (
             <FeedEnd />
@@ -290,7 +373,11 @@ export default function DiscoverTab() {
         scrollEventThrottle={16}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (friendsView && feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
+          if (view === 'popular') {
+            if (popular.hasNextPage && !popular.isFetchingNextPage) popular.fetchNextPage()
+          } else if (friendsView && feed.hasNextPage && !feed.isFetchingNextPage) {
+            feed.fetchNextPage()
+          }
         }}
       />
       <PinnedPills visible={pinned} view={view} onChange={changeView} />
@@ -387,6 +474,36 @@ function SuggestedRow({ user: u, last }: { user: SuggestedUser; last: boolean })
         </Button>
       }
     />
+  )
+}
+
+// Where the week's top places give way to the all-time favorites.
+function PopularTail() {
+  const t = useT()
+  return (
+    <View className="px-5">
+      <SectionHeader>{t('popular.all_time')}</SectionHeader>
+    </View>
+  )
+}
+
+// Popular while it loads: rows of the same shape (rank, picture, two lines, a score).
+function PopularSkeleton() {
+  return (
+    <View className="gap-3 px-5 pt-2">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <View key={i} className="flex-row items-center gap-3">
+          <Skeleton width={24} height={20} />
+          <View className="overflow-hidden rounded-[16px]">
+            <Skeleton width={54} height={54} />
+          </View>
+          <View className="flex-1 gap-2">
+            <Skeleton width="60%" height={16} />
+            <Skeleton width="40%" height={12} />
+          </View>
+        </View>
+      ))}
+    </View>
   )
 }
 

@@ -170,7 +170,7 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'
   notes; dishes; info; map).
 - **Feed:** a greeting header (avatar, search chip, bell; no wordmark) and pills **For you / Friends /
-  Events / Lists** (**Popular** joins with its API, D10). **For you** opens with **Your six** (a 2-column
+  Popular / Events / Lists**. **For you** opens with **Your six** (a 2-column
   grid of 62pt tiles: picture, serif name, and _why_ in one muted line — "Diego · 9.6", "Saved · 2 friends",
   "You saved it"; hidden under two places, an odd count drops its last) and **Tonight** (a 372pt r32 photo card
   per event, swiped with a peek of the next and pager dots: glass time chip and save on the photo, a frosted
@@ -180,6 +180,14 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   shelf and a **New near you** shelf (150-wide cards with a "New" pill) follow the first six; "You're caught
   up · older below" marks where you'd stopped (SecureStore `mesa.feed_seen`, read once per visit); the end
   card offers Explore and Find friends. Once the inline pills scroll away, a solid bar pins them to the top.
+- **Popular** (`GET /popular`, the pill's view): _Popular this week_ (serif 28) with what it counts, a row
+  of neighborhood pills (All first), then ranked rows — rank numeral, 54pt picture, serif name (+ a solid
+  accent **New** pill for a place added in the last 3 weeks), `cuisine · neighborhood`, one line about the
+  friends who ranked it ("Diego ranked it 9.6", "Natalia and 1 other", "3 friends"), and the `ScoreStack` at
+  the right. The score is everyone's average ("Mesa's"), never a friend's. Ordering is momentum × quality:
+  the week's rankings fade by half every 3 days (a save adds ½ a ranking, a cheer ¼), times a Bayesian
+  average (a place needs 3 rankers; few rankers are pulled toward the city mean). The top 50 with a ranking
+  this week come first; **All-time favorites** carries on by quality so the list never just stops.
 - **Chips on a picture:** over a **photo** a chip is dark glass (`Glass variant="photo"`, a photo being its own
   dark island); over a **name card** — pale by day — it is a solid `ink` chip instead, because dark glass goes
   muddy grey-brown there (`components/feed/PhotoChip.tsx`). The bottom scrim is drawn only over real photos.

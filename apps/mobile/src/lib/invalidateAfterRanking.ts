@@ -16,6 +16,8 @@ export function invalidateAfterRanking(restaurantId: string | null): void {
   queryClient.invalidateQueries({ queryKey: ['feed'] })
   // Your six leaves out what you've ranked, and friends' rankings feed it.
   queryClient.invalidateQueries({ queryKey: ['home'] })
+  // Popular moves with every ranking.
+  queryClient.invalidateQueries({ queryKey: ['popular'] })
   if (restaurantId) queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
   queryClient.invalidateQueries({ queryKey: ['me-stats'] })
   queryClient.invalidateQueries({ queryKey: ['explore'] })

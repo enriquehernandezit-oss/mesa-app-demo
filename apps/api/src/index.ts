@@ -28,6 +28,7 @@ import { moderationRoutes } from './routes/moderation'
 import { notificationsRoutes } from './routes/notifications'
 import { onboardingRoutes } from './routes/onboarding'
 import { plansRoutes } from './routes/plans'
+import { popularRoutes } from './routes/popular'
 import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
@@ -188,6 +189,7 @@ app.route('/collections', collectionsRoutes)
 app.route('/moderation', moderationRoutes)
 app.route('/feed', feedRoutes)
 app.route('/home', homeRoutes)
+app.route('/popular', popularRoutes)
 app.route('/restaurants', restaurantRoutes)
 app.route('/cheers', cheersRoutes)
 app.route('/comments', commentsRoutes)

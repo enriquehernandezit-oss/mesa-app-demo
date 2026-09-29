@@ -790,6 +790,25 @@ export type SixReason =
   | { kind: 'saved' } // "You saved it"
   | { kind: 'trending' } // the city's own ranking, filling a short list
 
+// GET /popular — the city's places by momentum × quality, a page at a time. The rules
+// live in apps/api/src/lib/popular.ts. `phase` says which list a row is on: the week's top
+// places, or the all-time tail that follows them.
+export interface PopularItem {
+  phase: 'week' | 'all'
+  restaurant: HomeRestaurant
+  // Everyone's average for the place, stored 0–100 ("Mesa's" score).
+  score: number
+  rankers: number
+  isNew: boolean
+  // People you follow who ranked it: how many, and the highest of them (first name).
+  friends: { count: number; name: string | null; score: number | null }
+}
+
+export interface PopularPage {
+  items: PopularItem[]
+  nextCursor: string | null
+}
+
 export interface HomeResponse {
   six: { restaurant: HomeRestaurant; reason: SixReason }[]
   // Events on tonight (now → 4 AM Santo Domingo), up to five; else tonight's pick — the
