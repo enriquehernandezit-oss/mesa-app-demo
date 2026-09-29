@@ -454,8 +454,8 @@ export default function ExploreScreen() {
                 hitSlop={6}
                 className="min-h-[36px] flex-row items-center gap-1 rounded-pill px-2 active:opacity-60"
               >
-                <CloseIcon size={11} color="accent-strong" strokeWidth={2.2} />
-                <Caption numberOfLines={1} className="font-ui-semibold text-accent-strong">
+                <CloseIcon size={11} color="accent" strokeWidth={2.2} />
+                <Caption numberOfLines={1} className="font-ui-semibold text-accent">
                   {t('explore.clear_all')}
                 </Caption>
               </Pressable>
@@ -636,7 +636,7 @@ const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number
             attribution={{ kind: 'friends', count: r.friendCount }}
           />
         ) : r.isNew ? (
-          <Text className="font-ui-semibold text-eyebrow text-accent-strong uppercase tracking-eyebrow">
+          <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
             {t('explore.be_first')}
           </Text>
         ) : null}

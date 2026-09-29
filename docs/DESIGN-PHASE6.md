@@ -1,5 +1,8 @@
 # Mesa — Phase 6 Restyle: Handoff
 
+> **Historical.** This describes the brass / oxblood design that Redesign 2 replaced. The current
+> spec is `docs/DESIGN.md` and the boards in `docs/design/`. Kept for reference only.
+
 The Phase 6 restyle that moved the brand from the dark oxblood ground to the
 light warm-paper ground. Now a completed-and-conformed reference (see
 `docs/DESIGN-PHASE6-SCREENS.md` for the screen mocks). It was a **restyle, not a

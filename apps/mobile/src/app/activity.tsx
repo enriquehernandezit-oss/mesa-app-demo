@@ -286,7 +286,7 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
             className={`min-h-[36px] justify-center rounded-pill border px-4 active:opacity-70 ${following ? 'border-line' : 'border-accent'}`}
           >
             <Text
-              className={`font-ui-semibold text-eyebrow ${following ? 'text-text-muted' : 'text-accent-strong'}`}
+              className={`font-ui-semibold text-eyebrow ${following ? 'text-text-muted' : 'text-accent'}`}
             >
               {following ? t('activity.following_pill') : t('activity.follow_pill')}
             </Text>

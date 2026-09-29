@@ -129,7 +129,7 @@ export default function LeaderboardScreen() {
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     maxFontSizeMultiplier={1.1}
-                    className={`w-6 text-center font-serif-semibold text-serif-sm ${i < 3 ? 'text-accent-strong' : 'text-text-faint'}`}
+                    className={`w-6 text-center font-serif-semibold text-serif-sm ${i < 3 ? 'text-accent' : 'text-text-faint'}`}
                   >
                     {i + 1}
                   </Text>

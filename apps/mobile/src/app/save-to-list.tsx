@@ -178,7 +178,7 @@ export default function SaveToListSheet() {
         ) : null}
 
         {toggle.isError ? (
-          <Caption className="mt-2 text-status-packed">{t('saveToList.toggle_error')}</Caption>
+          <Caption className="mt-2 text-danger">{t('saveToList.toggle_error')}</Caption>
         ) : null}
 
         {creating ? (
@@ -242,9 +242,7 @@ export default function SaveToListSheet() {
                 </Chip>
               ))}
             </View>
-            {createError ? (
-              <Caption className="mt-3 text-status-packed">{createError}</Caption>
-            ) : null}
+            {createError ? <Caption className="mt-3 text-danger">{createError}</Caption> : null}
             <Button
               className="mt-4"
               disabled={!trimmed}
@@ -261,7 +259,7 @@ export default function SaveToListSheet() {
             className="mt-4 min-h-[56px] flex-row items-center gap-3 rounded-card border border-dashed border-line-strong px-4 active:opacity-70"
           >
             <PlusIcon size={18} color="accent" />
-            <Text className="font-ui-semibold text-body text-accent-strong">
+            <Text className="font-ui-semibold text-body text-accent">
               {t('saveToList.new_list_cta')}
             </Text>
           </Pressable>

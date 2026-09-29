@@ -106,7 +106,7 @@ export default function SettingsHub() {
                 .join(' · ')}
             </Caption>
           </View>
-          <Text className="font-ui-medium text-label text-accent-strong">
+          <Text className="font-ui-medium text-label text-accent">
             {t('settings.edit_profile')}
           </Text>
         </Pressable>
@@ -181,7 +181,7 @@ export default function SettingsHub() {
 
         <View className="mt-6 rounded border border-line bg-surface px-4">
           <RowButton onPress={handleSignOut} disabled={signingOut} last>
-            <Text className="flex-1 font-ui-medium text-body text-accent-strong">
+            <Text className="flex-1 font-ui-medium text-body text-accent">
               {t('settings.sign_out')}
             </Text>
             {signingOut ? <ActivityIndicator size="small" color={accent} /> : null}

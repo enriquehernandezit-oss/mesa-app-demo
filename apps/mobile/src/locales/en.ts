@@ -783,8 +783,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.export_share_message': 'My rankings on Mesa',
   'settings.export_error': "Couldn't export. Try again.",
   'settings.appearance': 'Appearance',
+  'settings.theme_auto': 'Auto',
+  'settings.theme_day': 'Day',
+  'settings.theme_night': 'Night',
   'settings.appearance_auto_hint':
-    'Auto switches to Candlelit after dark, or when your iPhone is in dark mode.',
+    'Auto switches to Night after dark, or when your iPhone is in dark mode.',
   'settings.your_list': 'Your list',
   'settings.friends_only_scores': 'Friends-only scores',
   'settings.export_rankings': 'Export my rankings',

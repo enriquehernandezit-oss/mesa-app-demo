@@ -162,7 +162,7 @@ function PlanRow({ plan }: { plan: Plan }) {
             {sub}
           </Caption>
         </View>
-        <Caption className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
+        <Caption className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
           {badge}
         </Caption>
       </Pressable>

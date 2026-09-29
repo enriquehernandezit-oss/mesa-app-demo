@@ -95,7 +95,7 @@ export function SaveButton({
       {text ? (
         <Text
           maxFontSizeMultiplier={MAX_SCALE}
-          className={`font-ui-semibold text-label ${saved ? 'text-accent-strong' : 'text-text-muted'}`}
+          className={`font-ui-semibold text-label ${saved ? 'text-accent' : 'text-text-muted'}`}
         >
           {text}
         </Text>

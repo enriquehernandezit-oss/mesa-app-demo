@@ -23,11 +23,11 @@ import { themeColors } from '@/theme/vars'
 //
 // Being a real system surface here still gets two things right:
 //
-//   Theme. Mesa's resolved theme can be Candlelit while the OS is in light mode
+//   Theme. Mesa's resolved theme can be Night while the OS is in light mode
 //   (Auto flips at 6pm), so the sheet is told explicitly which appearance to use
-//   rather than inheriting the system's guess and coming up white over oxblood.
+//   rather than inheriting the system's guess and coming up white over black.
 //
-//   Tint. Brass, from the token layer — the one accent Mesa allows.
+//   Tint. The accent, from the token layer.
 //
 // Resolves to the chosen index, or null when dismissed. Off-iOS it falls back to
 // an Alert with the same contract, so callers never branch on platform.
@@ -53,7 +53,7 @@ export function showActionSheet(opts: {
           cancelButtonIndex: labels.length - 1,
           ...(destructiveIndex >= 0 ? { destructiveButtonIndex: destructiveIndex } : {}),
           tintColor: c.accent,
-          userInterfaceStyle: theme === 'candlelit' ? 'dark' : 'light',
+          userInterfaceStyle: theme === 'night' ? 'dark' : 'light',
         },
         (i) => resolve(i === labels.length - 1 ? null : i),
       )

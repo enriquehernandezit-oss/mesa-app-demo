@@ -62,7 +62,7 @@ export default function DiscoverTab() {
   const t = useT()
   const accent = useColor('accent')
   const tabBarClearance = useTabBarClearance()
-  const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
+  const indicator = useResolvedTheme() === 'night' ? ('white' as const) : ('black' as const)
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
     queryFn: ({ pageParam }) =>

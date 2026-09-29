@@ -13,7 +13,7 @@ import { ChevronIcon, CloseIcon } from '@/components/ui/icons'
 import { type DayRange, monthCells, monthOf, shiftMonth } from '@/lib/eventTime'
 import { tapSelect } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
-import { BRASS_SHADOW, DATA_FIGURES } from '@/theme/vars'
+import { SHADOW, DATA_FIGURES } from '@/theme/vars'
 
 import { EASE } from './motion'
 
@@ -156,7 +156,7 @@ export function EventDatePicker({
           style={[
             {
               maxWidth: 380,
-              shadowColor: BRASS_SHADOW,
+              shadowColor: SHADOW,
               shadowOpacity: 0.25,
               shadowRadius: 24,
               shadowOffset: { width: 0, height: 8 },
@@ -316,15 +316,15 @@ function DayCell({
   // the header, and lib/eventTime's note on why they're labels, not instants.
   const edge = draft != null && (day === draft.start || day === draft.end)
   const within = draft != null && day > draft.start && day < draft.end
-  const fill = edge ? 'bg-btn-primary-bg' : within ? 'bg-accent-fill' : ''
+  const fill = edge ? 'bg-ink' : within ? 'bg-accent-fill' : ''
   const fg = edge
-    ? 'text-btn-primary-fg'
+    ? 'text-on-ink'
     : within
       ? 'text-on-accent'
       : out
         ? 'text-text-faint'
         : day === today
-          ? 'text-accent-strong'
+          ? 'text-accent'
           : 'text-text'
   return (
     <Pressable
@@ -344,7 +344,7 @@ function DayCell({
         </Text>
       </View>
       <View
-        className={`mt-px h-1 w-1 rounded-pill ${hasEvents && !edge && !within ? 'bg-accent' : ''}`}
+        className={`mt-px h-1 w-1 rounded-pill ${hasEvents && !edge && !within ? 'bg-accent-fill' : ''}`}
       />
     </Pressable>
   )

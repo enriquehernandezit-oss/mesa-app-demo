@@ -15,7 +15,7 @@ import { ChevronIcon, CloseIcon } from '@/components/ui/icons'
 import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { Neighborhood } from '@/lib/types'
-import { BRASS_SHADOW } from '@/theme/vars'
+import { SHADOW } from '@/theme/vars'
 
 export type ExploreFilterValues = {
   hood: string | null
@@ -151,7 +151,7 @@ export function ExploreFilters({
           style={[
             {
               maxHeight: height - insets.top - 24,
-              shadowColor: BRASS_SHADOW,
+              shadowColor: SHADOW,
               shadowOpacity: 0.25,
               shadowRadius: 24,
               shadowOffset: { width: 0, height: -4 },
@@ -367,7 +367,7 @@ function Group({
         </Text>
         <Caption
           numberOfLines={1}
-          className={`ml-3 flex-1 text-right font-ui-semibold ${active ? 'text-accent-strong' : ''}`}
+          className={`ml-3 flex-1 text-right font-ui-semibold ${active ? 'text-accent' : ''}`}
         >
           {value}
         </Caption>

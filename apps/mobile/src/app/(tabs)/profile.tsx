@@ -339,7 +339,7 @@ export default function ProfileTab() {
             onPress={() => setEditing(true)}
             className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
           >
-            <Text className="font-ui-semibold text-label text-accent-strong">
+            <Text className="font-ui-semibold text-label text-accent">
               {t('profile.edit_profile')}
             </Text>
           </Pressable>
@@ -348,9 +348,7 @@ export default function ProfileTab() {
             onPress={() => router.push('/friends')}
             className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
           >
-            <Text className="font-ui-semibold text-label text-accent-strong">
-              {t('friends.title')}
-            </Text>
+            <Text className="font-ui-semibold text-label text-accent">{t('friends.title')}</Text>
           </Pressable>
         </View>
 
@@ -364,7 +362,7 @@ export default function ProfileTab() {
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Text className="font-ui-semibold text-label text-accent-strong">
+                <Text className="font-ui-semibold text-label text-accent">
                   {t('profile.see_your_list')} ›
                 </Text>
               </Pressable>
@@ -423,7 +421,7 @@ export default function ProfileTab() {
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Text className="font-ui-semibold text-label text-accent-strong">
+                <Text className="font-ui-semibold text-label text-accent">
                   {t('profile.see_all_events')} ›
                 </Text>
               </Pressable>

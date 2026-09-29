@@ -724,7 +724,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
               onPress={() => router.push(`/dish?restaurant=${restaurantId}`)}
               className="min-h-[44px] justify-center active:opacity-60"
             >
-              <Text className="font-ui text-eyebrow text-accent-strong uppercase tracking-eyebrow">
+              <Text className="font-ui text-eyebrow text-accent uppercase tracking-eyebrow">
                 {t('restaurant.add_dish')}
               </Text>
             </Pressable>
@@ -790,7 +790,7 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
             onPress={() => router.push(`/r/${restaurantId}/dishes`)}
             className="mt-2 min-h-[44px] items-end justify-center active:opacity-60"
           >
-            <Text className="font-ui text-eyebrow text-accent-strong uppercase tracking-eyebrow">
+            <Text className="font-ui text-eyebrow text-accent uppercase tracking-eyebrow">
               {t('restaurant.see_all_dishes')}
             </Text>
           </Pressable>

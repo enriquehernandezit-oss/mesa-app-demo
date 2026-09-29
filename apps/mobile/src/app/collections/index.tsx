@@ -63,7 +63,7 @@ export default function CollectionsScreen() {
               onPress={newList}
               className="w-[48%] items-center justify-center gap-1 rounded-card border border-line-strong border-dashed active:opacity-70"
             >
-              <Text className="font-ui-medium text-label text-accent-strong">
+              <Text className="font-ui-medium text-label text-accent">
                 {t('rankings.new_list')}
               </Text>
             </Pressable>

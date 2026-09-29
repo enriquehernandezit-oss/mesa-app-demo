@@ -78,7 +78,7 @@ export default function InstagramImportScreen() {
         {t('instagram.pick_file')}
       </Button>
 
-      {error ? <Caption className="mt-2 text-status-packed">{error}</Caption> : null}
+      {error ? <Caption className="mt-2 text-danger">{error}</Caption> : null}
 
       {matches ? (
         <View className="mt-6">

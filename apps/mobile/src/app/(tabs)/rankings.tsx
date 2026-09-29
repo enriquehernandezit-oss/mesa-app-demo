@@ -90,7 +90,7 @@ export default function RankingsTab() {
   const router = useRouter()
   const t = useT()
   const tabBarClearance = useTabBarClearance()
-  const indicator = useResolvedTheme() === 'candlelit' ? ('white' as const) : ('black' as const)
+  const indicator = useResolvedTheme() === 'night' ? ('white' as const) : ('black' as const)
   const { tab: tabParam, kind: kindParam } = useLocalSearchParams<{ tab?: string; kind?: string }>()
   const [tab, setTab] = useState<'mine' | 'saved' | 'barrios'>(
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
@@ -353,7 +353,7 @@ export default function RankingsTab() {
           onPress={() => setFiltersAnimated(NO_FILTERS)}
           className="min-h-[36px] justify-center px-1 active:opacity-60"
         >
-          <Caption className="font-ui-semibold text-accent-strong">{t('rankings.clear')}</Caption>
+          <Caption className="font-ui-semibold text-accent">{t('rankings.clear')}</Caption>
         </Pressable>
       )}
     </ChipRail>
@@ -635,7 +635,7 @@ function SwipeToRemove({
             ref.current?.close()
             onRemove()
           }}
-          className="ml-2 w-[88px] items-center justify-center rounded-card bg-status-packed active:opacity-80"
+          className="ml-2 w-[88px] items-center justify-center rounded-card bg-danger active:opacity-80"
         >
           <Text className="font-ui-medium text-label text-on-accent">{t('rankings.remove')}</Text>
         </Pressable>
@@ -752,10 +752,7 @@ const RankingRow = memo(function RankingRow({
                   </Caption>
                 ) : null}
                 {accentLine ? (
-                  <Caption
-                    numberOfLines={1}
-                    className="mt-[1px] font-ui-semibold text-accent-strong"
-                  >
+                  <Caption numberOfLines={1} className="mt-[1px] font-ui-semibold text-accent">
                     {accentLine}
                   </Caption>
                 ) : null}
@@ -835,7 +832,7 @@ function ActionText({
       className="min-h-[44px] justify-center active:opacity-60"
     >
       <Text
-        className={`font-ui text-eyebrow uppercase tracking-eyebrow ${danger ? 'text-status-packed' : 'text-text-muted'}`}
+        className={`font-ui text-eyebrow uppercase tracking-eyebrow ${danger ? 'text-danger' : 'text-text-muted'}`}
       >
         {children}
       </Text>

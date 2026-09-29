@@ -84,7 +84,7 @@ export default function RootLayout() {
 
   // Two Keychain reads have to land before the first frame, or the first frame is
   // a lie: the session token (else the gate flashes sign-in at a signed-in member)
-  // and the theme choice (else an explicit Afternoon/Candlelit choice flashes the
+  // and the theme choice (else an explicit Day/Night choice flashes the
   // Auto-resolved theme first). Both are bounded internally.
   const [preloaded, setPreloaded] = useState(false)
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function RootLayout() {
 //   free. Mesa's serif rides in via headerTitleStyle/headerLargeTitleStyle —
 //   the font is the identity, the bar is the system's.
 //
-// Both bar and title colors follow the RESOLVED theme, which can be Candlelit
+// Both bar and title colors follow the RESOLVED theme, which can be Night
 // while the OS is light (Auto flips at 6pm), so they're computed here rather
 // than left to the system's light/dark guess.
 function MesaStack() {
@@ -150,7 +150,7 @@ function MesaStack() {
       headerStyle: { backgroundColor: c.bg },
       headerLargeStyle: { backgroundColor: c.bg },
       headerBlurEffect:
-        theme === 'candlelit'
+        theme === 'night'
           ? ('systemChromeMaterialDark' as const)
           : ('systemChromeMaterialLight' as const),
       headerShadowVisible: false,

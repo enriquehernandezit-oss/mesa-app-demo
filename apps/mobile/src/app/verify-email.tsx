@@ -60,7 +60,7 @@ export default function VerifyEmail() {
       <View className="flex-1 justify-center gap-4 px-5">
         <View className="items-center gap-2">
           <Wordmark size={64} />
-          <Eyebrow className="text-accent-strong">
+          <Eyebrow className="text-accent">
             {state === 'done'
               ? t('auth.verify_confirmed_eyebrow')
               : t('auth.verify_pending_eyebrow')}
@@ -88,7 +88,7 @@ export default function VerifyEmail() {
                 {t('auth.verify_expired_body')}
               </Body>
               {error && (
-                <Caption className="text-center text-status-packed" accessibilityRole="alert">
+                <Caption className="text-center text-danger" accessibilityRole="alert">
                   {error}
                 </Caption>
               )}

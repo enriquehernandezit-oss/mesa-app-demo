@@ -1152,7 +1152,7 @@ function RevealStep({
           />
         </View>
         {dishNamesError && (
-          <Caption className="mt-1 text-status-packed">{t('rank.dish_names_error')}</Caption>
+          <Caption className="mt-1 text-danger">{t('rank.dish_names_error')}</Caption>
         )}
 
         <View className="mt-3 flex-row flex-wrap gap-2">
@@ -1222,7 +1222,7 @@ function RevealStep({
               {d.dishId ? (
                 <View className="flex-row items-center gap-1">
                   <CheckIcon size={13} color="accent" />
-                  <Caption className="font-ui-semibold text-micro text-accent-strong">
+                  <Caption className="font-ui-semibold text-micro text-accent">
                     {t('rank.dish_saved')}
                   </Caption>
                 </View>
@@ -1380,9 +1380,7 @@ function RevealStep({
               onPress={onRetryCommit}
               className="active:opacity-60"
             >
-              <Text className="font-ui-medium text-label text-accent-strong">
-                {t('rank.retry_short')}
-              </Text>
+              <Text className="font-ui-medium text-label text-accent">{t('rank.retry_short')}</Text>
             </Pressable>
           </View>
         ) : null}
@@ -1397,7 +1395,7 @@ function RevealStep({
           {selectedDishes.length > 0 && !dishSyncPending ? (
             <View className="flex-row items-center justify-center gap-1.5">
               <CheckIcon size={14} color="accent" />
-              <Caption className="font-ui-medium text-accent-strong">
+              <Caption className="font-ui-medium text-accent">
                 {t('rank.dishes_saved', { n: selectedDishes.length })}
               </Caption>
             </View>

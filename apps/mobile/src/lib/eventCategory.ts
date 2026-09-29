@@ -70,7 +70,7 @@ export const CAT_CLASSES: Record<
   default: {
     bg: 'bg-accent-fill',
     soft: 'bg-bg-sunk',
-    text: 'text-accent-strong',
+    text: 'text-accent',
     border: 'border-accent',
   },
 }

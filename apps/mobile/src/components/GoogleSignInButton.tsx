@@ -57,10 +57,10 @@ export function GoogleSignInButton({
   onPress: () => void
   disabled?: boolean
 }) {
-  // Mirrors the Apple button's own mapping: the light surface on Candlelit,
-  // the dark one on Afternoon, so the two read as a pair rather than fighting
+  // Mirrors the Apple button's own mapping: the light surface on Night,
+  // the dark one on Day, so the two read as a pair rather than fighting
   // each other.
-  const dark = useResolvedTheme() !== 'candlelit'
+  const dark = useResolvedTheme() !== 'night'
   return (
     <Pressable
       accessibilityRole="button"

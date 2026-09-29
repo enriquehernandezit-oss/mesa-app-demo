@@ -237,7 +237,7 @@ export default function RestaurantMenuScreen() {
               sectionOffsets.current[i] = e.nativeEvent.layout.y
             }}
           >
-            <Eyebrow className="text-accent-strong">{s.label[lang]}</Eyebrow>
+            <Eyebrow className="text-accent">{s.label[lang]}</Eyebrow>
           </View>,
           <View key={`b-${s.name}`}>
             {/* Prices deliberately not shown — they drift with time and a

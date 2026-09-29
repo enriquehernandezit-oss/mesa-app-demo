@@ -67,9 +67,7 @@ export default function MapScreen() {
             onPress={() => requestLocation()}
             className="min-h-[40px] justify-center active:opacity-60"
           >
-            <Text className="font-ui-medium text-label text-accent-strong">
-              {t('map.locate_me')}
-            </Text>
+            <Text className="font-ui-medium text-label text-accent">{t('map.locate_me')}</Text>
           </Pressable>
         )}
         {locationStatus === 'loading' && <Caption>{t('map.locating')}</Caption>}
@@ -156,9 +154,7 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
         </Pressable>
         <Link href={`/r/${spot.id}`} asChild>
           <Pressable accessibilityRole="button" onPress={onClose} className="active:opacity-70">
-            <Text className="font-ui-medium text-label text-accent-strong">
-              {t('map.view_arrow')}
-            </Text>
+            <Text className="font-ui-medium text-label text-accent">{t('map.view_arrow')}</Text>
           </Pressable>
         </Link>
       </View>

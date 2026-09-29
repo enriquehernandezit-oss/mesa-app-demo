@@ -4,7 +4,7 @@ import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { tapError } from '@/lib/haptics'
-import { BRASS_SHADOW } from '@/theme/vars'
+import { SHADOW } from '@/theme/vars'
 
 import { type Toast, dismiss, useToasts } from './toast-store'
 
@@ -52,9 +52,9 @@ function ToastItem({ toast }: { toast: Toast }) {
       exiting={FadeOutDown.duration(200)}
       pointerEvents="box-none"
       accessibilityLiveRegion="polite"
-      className={`flex-row items-center gap-3 rounded border px-4 py-3 ${error ? 'border-status-packed bg-surface' : 'border-line bg-surface-raised'}`}
+      className={`flex-row items-center gap-3 rounded border px-4 py-3 ${error ? 'border-danger bg-surface' : 'border-line bg-surface-raised'}`}
       style={{
-        shadowColor: BRASS_SHADOW,
+        shadowColor: SHADOW,
         shadowOpacity: 0.2,
         shadowRadius: 12,
         shadowOffset: { width: 0, height: 4 },
@@ -66,7 +66,7 @@ function ToastItem({ toast }: { toast: Toast }) {
           the toast for its whole 3–5s. */}
       <Text
         pointerEvents="none"
-        className={`flex-1 font-ui text-label ${error ? 'text-status-packed' : 'text-text'}`}
+        className={`flex-1 font-ui text-label ${error ? 'text-danger' : 'text-text'}`}
       >
         {toast.message}
       </Text>
@@ -79,9 +79,7 @@ function ToastItem({ toast }: { toast: Toast }) {
             dismiss(toast.id)
           }}
         >
-          <Text className="font-ui-semibold text-label text-accent-strong">
-            {toast.action.label}
-          </Text>
+          <Text className="font-ui-semibold text-label text-accent">{toast.action.label}</Text>
         </Pressable>
       )}
     </Animated.View>

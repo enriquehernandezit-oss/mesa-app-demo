@@ -1,138 +1,169 @@
 import { vars } from 'nativewind'
 import type { TextStyle } from 'react-native'
 
-// The two Mesa themes as NativeWind variable maps, ported from
-// apps/app/src/styles/tokens.css. ThemeProvider applies one of these to a root
-// View via style={themeVars[active]}, so every `bg-bg`/`text-accent` class in the
-// tree resolves to the active theme. Keep these in lockstep with the web tokens.
+// The two Mesa themes — Day (cream) and Night (black) — as NativeWind variable
+// maps. ThemeProvider applies one of these to a root View via
+// style={themeVars[active]}, so every `bg-bg`/`text-accent` class in the tree
+// resolves to the active theme. The values come from docs/design/redesign2 (the
+// `.Day` / `.Night` blocks, and docs/DESIGN.md).
 //
 // Only color changes per theme (type/spacing/radius are theme-invariant and live
 // in tailwind.config.js). Names match the tailwind `colors` keys exactly.
+//
+// TWO ACCENTS, ON PURPOSE. Burgundy (#7a1a29) is the one brand accent, but it is
+// unreadable as small text on black, so the accent splits by job:
+//   accent       — text, icons, borders, "on" states. Burgundy by day, CREAM at night.
+//   accent-fill  — surfaces: the +, Rank it, the slider, switches, badges. Burgundy
+//                  in both themes, with on-accent (cream) drawn on it.
+// Never set `text-accent` on an `accent-fill` surface (burgundy on burgundy by day).
+// There is no pink anywhere: Night is black + burgundy, nothing in between.
 
-export type ThemeName = 'afternoon' | 'candlelit'
+export type ThemeName = 'day' | 'night'
 
-const afternoon = {
-  '--bg': '#f5efe4',
-  '--bg-sunk': '#e7dccb',
-  // A real 4-step depth ladder in light, mirroring what dark already has:
-  // bg-sunk < bg < surface = surface-raised. Both card tokens are pure white:
-  // Enrique wants cards to read as distinct objects against the cream ground,
-  // not the same warm-paper tint (surface was previously a step above bg, not
-  // a real jump). `--line` moved up 0.12 -> 0.14 alpha to keep card edges from
-  // washing out on the brighter white.
+const day = {
+  '--bg': '#f3ede4',
+  '--bg-sunk': '#e9e1d5',
+  // Cards are pure white on the cream ground so content objects read as distinct
+  // objects; surface-raised is the warmer step used by name cards and inset areas.
   '--surface': '#ffffff',
-  '--surface-raised': '#ffffff',
-  '--text': '#2a1512',
-  '--text-2': '#4a3b32',
-  '--text-muted': '#746253',
-  '--text-faint': '#b0a08e',
-  '--accent': '#8a5f24',
-  // In a light theme "strong" must be DARKER than accent (more contrast, ~8:1),
-  // the inverse of dark themes where strong is brighter.
-  '--accent-strong': '#6f4718',
-  '--accent-fill': '#8a5f24',
-  '--on-accent': '#fdf7ec',
-  '--tab-inactive': '#786a5b',
-  '--line': 'rgba(120, 80, 60, 0.14)',
-  '--line-strong': 'rgba(120, 80, 60, 0.18)',
-  '--status-packed': '#b0512e',
-  '--status-good': '#9a6a28',
-  '--status-building': '#97794f',
-  '--status-slow': '#8a7b6c',
-  '--on-photo': '#ebe4d6',
-  '--on-photo-2': '#dcccbb',
-  '--on-photo-accent': '#e2c179',
-  '--btn-primary-bg': '#2a1512',
-  '--btn-primary-fg': '#fdf7ec',
+  '--surface-raised': '#faf7f2',
+  '--text': '#16110f',
+  '--text-2': '#3d332d',
+  '--text-muted': '#8a7a6c',
+  '--text-faint': '#b9ab9c',
+  '--accent': '#7a1a29',
+  '--accent-fill': '#7a1a29',
+  '--on-accent': '#f4ede2',
+  '--accent-soft': 'rgba(122, 26, 41, 0.08)',
+  // The high-contrast "solid": ink by day, cream at night. Solid buttons, the
+  // active tab circle, selected pills. (Not named `solid`: Tailwind's `border-solid`
+  // would then also set a border color.)
+  '--ink': '#16110f',
+  '--on-ink': '#f4ede2',
+  '--danger': '#b3261e',
+  // The floating capsule fills: pills, icon buttons, the "Add a note" bar.
+  '--chip': '#ffffff',
+  // The wordmark. The app's original oxblood by day; cream at night, where oxblood
+  // would vanish on black.
+  '--logo': '#210104',
+  '--tab-inactive': 'rgba(22, 17, 15, 0.5)',
+  '--line': 'rgba(22, 17, 15, 0.09)',
+  '--line-strong': 'rgba(22, 17, 15, 0.16)',
+  // Translucent chrome. `glass*` is the tint laid over a real material (or over
+  // content, on iOS < 26); `*-fallback` is the near-opaque stand-in when there is
+  // no material. `hglass*` is the frosted panel that sits on a photograph.
+  '--glass': 'rgba(255, 255, 255, 0.62)',
+  '--glass-line': 'rgba(255, 255, 255, 0.85)',
+  '--glass-fallback': 'rgba(255, 255, 255, 0.94)',
+  '--hglass': 'rgba(255, 255, 255, 0.62)',
+  '--hglass-line': 'rgba(255, 255, 255, 0.85)',
+  '--hglass-fg': '#16110f',
+  '--hglass-fallback': 'rgba(255, 255, 255, 0.86)',
+  '--hchip': 'rgba(255, 255, 255, 0.8)',
+  // The floating rank bar on the place page: dark in both themes.
+  '--bar': '#16110f',
+  '--on-bar': '#f4ede2',
+  '--bar-chip': 'rgba(244, 237, 226, 0.12)',
+  // Text set on a photograph is theme-invariant (a photo is its own dark island).
+  '--on-photo': '#f5efe4',
+  '--on-photo-2': 'rgba(245, 239, 228, 0.75)',
+  '--photo-scrim': 'rgba(20, 4, 4, 0.85)',
+  '--overlay-scrim': 'rgba(22, 17, 15, 0.3)',
   '--avatar-hue-1': '#b5773c',
   '--avatar-hue-2': '#c8703f',
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#2a1512',
-  '--overlay-scrim': 'rgba(15, 1, 2, 0.4)',
-  // Event categories (Eventos only — docs/DESIGN.md "Where color is allowed
-  // to live"): one hue per kind of night out, so a tasting, a DJ set and
-  // a brunch read differently at a glance. Solid for fills/labels, -soft for
-  // washes; text on a solid fill is --on-cat.
-  '--cat-cata': '#c2185b',
-  '--cat-cata-soft': 'rgba(194, 24, 91, 0.10)',
-  '--cat-musica': '#2f4fd6',
-  '--cat-musica-soft': 'rgba(47, 79, 214, 0.10)',
-  '--cat-brunch': '#b26a00',
-  '--cat-brunch-soft': 'rgba(178, 106, 0, 0.12)',
-  '--cat-food': '#d84315',
-  '--cat-food-soft': 'rgba(216, 67, 21, 0.10)',
-  '--cat-happy': '#00838f',
-  '--cat-happy-soft': 'rgba(0, 131, 143, 0.10)',
-  '--on-cat': '#fdf7ec',
-  // "Live now" — an event happening at this moment (Eventos only). Green is
-  // the universal on-air signal; it's reserved for that one state.
-  '--live': '#15803d',
-  '--live-soft': 'rgba(21, 128, 61, 0.12)',
-  '--on-live': '#fdf7ec',
-  // The dark end of the gradient under text set on a photograph —
-  // theme-invariant, like --on-photo (a photo is its own dark island).
-  '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
+  '--avatar-light': '#e8d5bd',
+  // INTERIM (deleted in the Explore milestone). Event categories used to be five
+  // hues; they are now the accent, so an event reads as an event and its icon says
+  // which kind. Kept as tokens only so existing classes keep resolving.
+  '--cat-cata': '#7a1a29',
+  '--cat-cata-soft': 'rgba(122, 26, 41, 0.08)',
+  '--cat-musica': '#7a1a29',
+  '--cat-musica-soft': 'rgba(122, 26, 41, 0.08)',
+  '--cat-brunch': '#7a1a29',
+  '--cat-brunch-soft': 'rgba(122, 26, 41, 0.08)',
+  '--cat-food': '#7a1a29',
+  '--cat-food-soft': 'rgba(122, 26, 41, 0.08)',
+  '--cat-happy': '#7a1a29',
+  '--cat-happy-soft': 'rgba(122, 26, 41, 0.08)',
+  '--on-cat': '#f4ede2',
+  '--live': '#7a1a29',
+  '--live-soft': 'rgba(122, 26, 41, 0.08)',
+  '--on-live': '#f4ede2',
 } as const
 
-const candlelit = {
-  '--bg': '#210104',
-  '--bg-sunk': '#180b0b',
-  '--surface': '#2c1516',
-  '--surface-raised': '#391c1d',
-  '--text': '#ebe4d6',
-  '--text-2': '#dcccbb',
-  '--text-muted': '#a3867a',
-  '--text-faint': '#7d6459',
-  '--accent': '#c09050',
-  '--accent-strong': '#e2c179',
-  '--accent-fill': '#c09050',
-  '--on-accent': '#210104',
-  '--tab-inactive': '#9a8175',
-  '--line': 'rgba(235, 228, 214, 0.1)',
-  '--line-strong': 'rgba(235, 228, 214, 0.16)',
-  '--status-packed': '#e0865a',
-  '--status-good': '#c09050',
-  '--status-building': '#a98a63',
-  '--status-slow': '#7a6258',
-  '--on-photo': '#ebe4d6',
-  '--on-photo-2': '#dcccbb',
-  '--on-photo-accent': '#e2c179',
-  '--btn-primary-bg': '#c09050',
-  '--btn-primary-fg': '#210104',
+const night = {
+  '--bg': '#0b0809',
+  '--bg-sunk': '#050404',
+  '--surface': '#171213',
+  '--surface-raised': '#1f191a',
+  '--text': '#f4ede2',
+  '--text-2': '#d9cfc2',
+  '--text-muted': 'rgba(244, 237, 226, 0.55)',
+  '--text-faint': 'rgba(244, 237, 226, 0.32)',
+  '--accent': '#f4ede2',
+  '--accent-fill': '#7a1a29',
+  '--on-accent': '#f4ede2',
+  '--accent-soft': 'rgba(122, 26, 41, 0.28)',
+  '--ink': '#f4ede2',
+  '--on-ink': '#0b0809',
+  '--danger': '#ff6b5e',
+  '--chip': 'rgba(255, 255, 255, 0.08)',
+  '--logo': '#f4ede2',
+  '--tab-inactive': 'rgba(244, 237, 226, 0.55)',
+  '--line': 'rgba(255, 255, 255, 0.08)',
+  '--line-strong': 'rgba(255, 255, 255, 0.14)',
+  '--glass': 'rgba(255, 255, 255, 0.1)',
+  '--glass-line': 'rgba(255, 255, 255, 0.14)',
+  '--glass-fallback': 'rgba(27, 21, 22, 0.94)',
+  // Light frost washes cream text out over a bright photo at night, so the panel
+  // is smoked glass instead.
+  '--hglass': 'rgba(16, 11, 11, 0.58)',
+  '--hglass-line': 'rgba(255, 255, 255, 0.12)',
+  '--hglass-fg': '#f4ede2',
+  '--hglass-fallback': 'rgba(16, 11, 11, 0.84)',
+  '--hchip': 'rgba(255, 255, 255, 0.1)',
+  '--bar': '#1b1516',
+  '--on-bar': '#f4ede2',
+  '--bar-chip': 'rgba(244, 237, 226, 0.12)',
+  '--on-photo': '#f5efe4',
+  '--on-photo-2': 'rgba(245, 239, 228, 0.75)',
+  '--photo-scrim': 'rgba(20, 4, 4, 0.85)',
+  '--overlay-scrim': 'rgba(0, 0, 0, 0.55)',
   '--avatar-hue-1': '#b5773c',
   '--avatar-hue-2': '#c8703f',
   '--avatar-hue-3': '#a98a63',
   '--avatar-ink': '#fdf7ec',
-  '--overlay-scrim': 'rgba(8, 0, 1, 0.55)',
-  // "Noche neón" (founder's pick): vivid nightlife hues that pop on oxblood —
-  // tasting magenta, music electric blue, brunch gold, food orange, happy-hour
-  // cyan. Afternoon carries the same five hues, deepened for contrast on paper.
-  '--cat-cata': '#ff4d9d',
-  '--cat-cata-soft': 'rgba(255, 77, 157, 0.20)',
-  '--cat-musica': '#5b8cff',
-  '--cat-musica-soft': 'rgba(91, 140, 255, 0.20)',
-  '--cat-brunch': '#ffc24a',
-  '--cat-brunch-soft': 'rgba(255, 194, 74, 0.18)',
-  '--cat-food': '#ff7a1a',
-  '--cat-food-soft': 'rgba(255, 122, 26, 0.18)',
-  '--cat-happy': '#22d3ee',
-  '--cat-happy-soft': 'rgba(34, 211, 238, 0.18)',
-  '--on-cat': '#210104',
-  '--live': '#34d399',
-  '--live-soft': 'rgba(52, 211, 153, 0.18)',
-  '--on-live': '#210104',
-  '--photo-scrim': 'rgba(12, 3, 2, 0.78)',
+  '--avatar-light': '#e8d5bd',
+  // INTERIM (see above). At night the plain cat/live tokens are cream, because they
+  // are also used as text and burgundy text on black is unreadable; on-cat is then
+  // dark, for text set on a cream fill.
+  '--cat-cata': '#f4ede2',
+  '--cat-cata-soft': 'rgba(122, 26, 41, 0.28)',
+  '--cat-musica': '#f4ede2',
+  '--cat-musica-soft': 'rgba(122, 26, 41, 0.28)',
+  '--cat-brunch': '#f4ede2',
+  '--cat-brunch-soft': 'rgba(122, 26, 41, 0.28)',
+  '--cat-food': '#f4ede2',
+  '--cat-food-soft': 'rgba(122, 26, 41, 0.28)',
+  '--cat-happy': '#f4ede2',
+  '--cat-happy-soft': 'rgba(122, 26, 41, 0.28)',
+  '--on-cat': '#0b0809',
+  '--live': '#f4ede2',
+  '--live-soft': 'rgba(122, 26, 41, 0.28)',
+  '--on-live': '#0b0809',
 } as const
 
 export const themeVars: Record<ThemeName, ReturnType<typeof vars>> = {
-  afternoon: vars(afternoon),
-  candlelit: vars(candlelit),
+  day: vars(day),
+  night: vars(night),
 }
 
 // Raw hex/rgba by theme, for the few places that need a color as a VALUE rather
 // than a class — react-native-svg strokes, imperative APIs — where NativeWind's
 // className can't reach. Keyed without the leading '--'. See useColor.
-export type ColorToken = keyof typeof afternoon extends `--${infer K}` ? K : never
+export type ColorToken = keyof typeof day extends `--${infer K}` ? K : never
 
 const strip = (m: Record<string, string>) =>
   Object.fromEntries(Object.entries(m).map(([k, v]) => [k.slice(2), v])) as Record<
@@ -140,19 +171,18 @@ const strip = (m: Record<string, string>) =>
     string
   >
 
-// The warm shadow under Mesa's primary ink actions (the Button, the rank FAB).
-// Theme-invariant by design — it reads as the same lamp-lit drop in both themes —
-// which is why it's a constant rather than a per-theme token. Raw hex is legal
-// here and only here (docs/DESIGN.md).
-export const BRASS_SHADOW = '#6b4715'
+// The warm drop shadow under raised surfaces (buttons, sheets, toasts). Theme-
+// invariant — it only shows on the light theme — so it is a constant rather than
+// a per-theme token. Raw hex is legal here and only here (docs/DESIGN.md).
+export const SHADOW = '#3c2814'
 
 // The map's own "you are here" marker (components/MesaMap.tsx) — deliberately
 // the same system blue Apple Maps/MapKit uses for a user-location dot, not a
 // brand token. The map itself is already native-styled chrome (Mapbox's own
 // light-v11/dark-v11 StyleURLs, not Mesa's token layer — see MesaMap.tsx's
 // header comment), and this is the one universally-recognized "that's you"
-// affordance on any map; recoloring it brass would read as a bug, not a
-// choice. Theme-invariant for the same reason BRASS_SHADOW is.
+// affordance on any map; recoloring it burgundy would read as a bug, not a
+// choice. Theme-invariant for the same reason SHADOW is.
 export const MAP_USER_LOCATION_BLUE = '#007AFF'
 
 // Cormorant ships OLDSTYLE figures by default: the digits sit at different
@@ -175,13 +205,13 @@ export const MAP_USER_LOCATION_BLUE = '#007AFF'
 export const DATA_FIGURES: TextStyle = { fontVariant: ['lining-nums', 'tabular-nums'] }
 
 export const themeColors: Record<ThemeName, Record<ColorToken, string>> = {
-  afternoon: strip(afternoon),
-  candlelit: strip(candlelit),
+  day: strip(day),
+  night: strip(night),
 }
 
 // The literal grounds, for surfaces that must paint before the provider mounts
-// (native splash background, status bar) — mirrors --swatch-* in the web tokens.
+// (native splash background, status bar).
 export const GROUND: Record<ThemeName, string> = {
-  afternoon: '#f5efe4',
-  candlelit: '#210104',
+  day: '#f3ede4',
+  night: '#0b0809',
 }

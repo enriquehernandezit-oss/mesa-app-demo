@@ -180,7 +180,7 @@ export default function AccountSettings() {
                   onPress={resendVerification}
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
-                  <Text className="font-ui-medium text-label text-accent-strong">
+                  <Text className="font-ui-medium text-label text-accent">
                     {verifying ? t('settings.sending') : t('settings.verify_email')}
                   </Text>
                 </Pressable>
@@ -227,9 +227,7 @@ export default function AccountSettings() {
                 birthMonth.length > 0 &&
                 birthYear.length === 4 &&
                 !birthdayIso && (
-                  <Caption className="text-status-packed">
-                    {t('onboarding.birthday_invalid')}
-                  </Caption>
+                  <Caption className="text-danger">{t('onboarding.birthday_invalid')}</Caption>
                 )}
               <Button
                 variant="primary"
@@ -326,17 +324,17 @@ export default function AccountSettings() {
         </View>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
-        <View className="mt-8 gap-3 rounded border border-status-packed p-4">
-          <Eyebrow className="text-status-packed">{t('settings.danger_zone')}</Eyebrow>
+        <View className="mt-8 gap-3 rounded border border-danger p-4">
+          <Eyebrow className="text-danger">{t('settings.danger_zone')}</Eyebrow>
           {!confirmingDelete ? (
             <>
               <Caption>{t('settings.delete_account_warning')}</Caption>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setConfirmingDelete(true)}
-                className="min-h-[44px] items-center justify-center rounded border border-status-packed active:opacity-70"
+                className="min-h-[44px] items-center justify-center rounded border border-danger active:opacity-70"
               >
-                <Text className="font-ui-medium text-label text-status-packed">
+                <Text className="font-ui-medium text-label text-danger">
                   {t('settings.delete_account')}
                 </Text>
               </Pressable>

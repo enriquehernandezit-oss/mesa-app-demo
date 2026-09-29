@@ -212,7 +212,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 items-center justify-center gap-4 px-5">
           <Wordmark size={64} />
-          <Eyebrow className="text-accent-strong">{t('auth.suspended_title')}</Eyebrow>
+          <Eyebrow className="text-accent">{t('auth.suspended_title')}</Eyebrow>
           <SerifItalic className="text-title text-center">
             {t('auth.suspended_headline')}
           </SerifItalic>
@@ -261,7 +261,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             <View className="items-center gap-2">
               <Wordmark size={84} />
               <View className="items-center">
-                <Eyebrow className="text-accent-strong">Revolución gastronómica</Eyebrow>
+                <Eyebrow className="text-accent">Revolución gastronómica</Eyebrow>
                 <View className="flex-row items-baseline">
                   <SerifItalic className="text-serif-sm text-text">
                     Primer objetivo: SDQ
@@ -312,7 +312,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                 }}
               />
               {mode === 'signup' && password.length > 0 && password.length < 8 && (
-                <Caption className="text-status-packed">
+                <Caption className="text-danger">
                   {t('auth.password_chars_left', { n: 8 - password.length })}
                 </Caption>
               )}
@@ -324,10 +324,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                     : t('auth.sign_in_button')}
               </Button>
               {error && (
-                <Caption
-                  className="text-center text-status-packed"
-                  accessibilityLiveRegion="polite"
-                >
+                <Caption className="text-center text-danger" accessibilityLiveRegion="polite">
                   {error}
                 </Caption>
               )}
@@ -368,7 +365,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                 <AppleAuthentication.AppleAuthenticationButton
                   buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
                   buttonStyle={
-                    theme === 'candlelit'
+                    theme === 'night'
                       ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                       : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
                   }

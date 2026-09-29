@@ -93,7 +93,7 @@ export default function MatchScreen() {
             {t('match.you_and', { name: theirName })}
           </Text>
           {matchPercent != null ? (
-            <Text className="font-serif text-rank text-accent-strong">{matchPercent}%</Text>
+            <Text className="font-serif text-rank text-accent">{matchPercent}%</Text>
           ) : null}
           <Caption>{t('match.shared_count', { n: sharedCount })}</Caption>
 
@@ -102,7 +102,7 @@ export default function MatchScreen() {
             onPress={() => setHowOpen((v) => !v)}
             className="mt-2 min-h-[36px] flex-row items-center active:opacity-70"
           >
-            <Text className="font-ui-medium text-label text-accent-strong">
+            <Text className="font-ui-medium text-label text-accent">
               {t('match.how_it_works_label')} {howOpen ? '▲' : '▾'}
             </Text>
           </Pressable>

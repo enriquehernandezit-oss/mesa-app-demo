@@ -49,7 +49,7 @@ export default function BlockedAccounts() {
                   onPress={() => unblock.mutate(u.id)}
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
-                  <Text className="font-ui-medium text-label text-accent-strong">
+                  <Text className="font-ui-medium text-label text-accent">
                     {t('settings.unblock')}
                   </Text>
                 </Pressable>

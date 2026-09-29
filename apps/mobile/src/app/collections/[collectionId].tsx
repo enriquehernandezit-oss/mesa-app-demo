@@ -143,7 +143,7 @@ export default function CollectionDetailScreen() {
               onPress={confirmDeleteList}
               className="min-h-[44px] justify-center active:opacity-60"
             >
-              <Text className="font-ui-medium text-label text-status-packed">
+              <Text className="font-ui-medium text-label text-danger">
                 {t('collections.delete_list')}
               </Text>
             </Pressable>
@@ -237,7 +237,7 @@ export default function CollectionDetailScreen() {
               }}
               className="mt-2 min-h-[36px] justify-center active:opacity-60"
             >
-              <Caption className="font-ui-semibold text-accent-strong">
+              <Caption className="font-ui-semibold text-accent">
                 {t('collections.add_description')}
               </Caption>
             </Pressable>
@@ -318,7 +318,7 @@ function CollectionItemRow({
               }}
               className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
             >
-              <Caption className="text-status-packed">{t('rankings.remove')}</Caption>
+              <Caption className="text-danger">{t('rankings.remove')}</Caption>
             </Pressable>
           )}
         </Pressable>
@@ -344,7 +344,7 @@ function CollectionItemRow({
             }}
             className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
           >
-            <Caption className="text-status-packed">{t('rankings.remove')}</Caption>
+            <Caption className="text-danger">{t('rankings.remove')}</Caption>
           </Pressable>
         </Pressable>
       </Link>

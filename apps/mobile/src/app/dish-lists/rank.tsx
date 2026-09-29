@@ -181,7 +181,7 @@ function PairwiseFlow({
         </Text>
         {saveError ? (
           <>
-            <Body className="mt-2 text-status-packed">{t('dishLists.save_error')}</Body>
+            <Body className="mt-2 text-danger">{t('dishLists.save_error')}</Body>
             <Pressable
               accessibilityRole="button"
               onPress={onRetry}

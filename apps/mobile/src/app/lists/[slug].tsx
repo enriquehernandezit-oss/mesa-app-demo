@@ -134,7 +134,7 @@ export default function ListScreen() {
                   onPress={() => setNoteOpen((v) => !v)}
                   className="min-h-[36px] flex-row items-center active:opacity-70"
                 >
-                  <Text className="font-ui-medium text-label text-accent-strong">
+                  <Text className="font-ui-medium text-label text-accent">
                     {t('lists.how_we_made_it')} {noteOpen ? '▲' : '▾'}
                   </Text>
                 </Pressable>

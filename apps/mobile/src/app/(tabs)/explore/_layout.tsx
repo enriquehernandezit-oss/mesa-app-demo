@@ -23,7 +23,7 @@ export default function ExploreLayout() {
         headerStyle: { backgroundColor: c.bg },
         headerLargeStyle: { backgroundColor: c.bg },
         headerBlurEffect:
-          theme === 'candlelit'
+          theme === 'night'
             ? ('systemChromeMaterialDark' as const)
             : ('systemChromeMaterialLight' as const),
         headerShadowVisible: false,

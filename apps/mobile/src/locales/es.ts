@@ -842,8 +842,11 @@ export const es = {
   'settings.export_share_message': 'Mis rankings de Mesa',
   'settings.export_error': 'No se pudo exportar. Intenta de nuevo.',
   'settings.appearance': 'Apariencia',
+  'settings.theme_auto': 'Auto',
+  'settings.theme_day': 'Día',
+  'settings.theme_night': 'Noche',
   'settings.appearance_auto_hint':
-    'Auto pasa a Candlelit al anochecer o si tu iPhone está en modo oscuro.',
+    'Auto pasa a Noche al anochecer o si tu iPhone está en modo oscuro.',
   'settings.your_list': 'Tu lista',
   'settings.friends_only_scores': 'Puntuaciones solo de amigos',
   'settings.export_rankings': 'Exportar mis rankings',

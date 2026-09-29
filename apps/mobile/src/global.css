@@ -2,35 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Afternoon (paper) — the default theme, ported verbatim from
-   apps/app/src/styles/tokens.css. Candlelit is applied at runtime by
-   ThemeProvider via NativeWind vars() (src/theme/vars.ts is the source of truth
-   for both themes); these :root values are the base NativeWind resolves against
-   before the provider mounts and for the initial paint. */
+/* Day (cream) — the base theme NativeWind resolves against before ThemeProvider
+   mounts and for the initial paint. Night is applied at runtime via NativeWind
+   vars(). src/theme/vars.ts is the source of truth for both themes: when a token
+   changes there, change it here too — this block must stay identical to its `day` map. */
 :root {
-  --bg: #f5efe4;
-  --bg-sunk: #e7dccb;
-  --surface: #fffdf8;
-  --surface-raised: #fffdf8;
-  --text: #2a1512;
-  --text-2: #4a3b32;
-  --text-muted: #746253;
-  --text-faint: #b0a08e;
-  --accent: #8a5f24;
-  --accent-strong: #8a5a2a;
-  --accent-fill: #8a5f24;
-  --on-accent: #fdf7ec;
-  --tab-inactive: #786a5b;
-  --line: rgba(120, 80, 60, 0.12);
-  --line-strong: rgba(120, 80, 60, 0.16);
-  --status-packed: #b0512e;
-  --status-good: #9a6a28;
-  --status-building: #97794f;
-  --status-slow: #8a7b6c;
-  --on-photo: #ebe4d6;
-  --on-photo-2: #dcccbb;
-  --on-photo-accent: #e2c179;
-  --btn-primary-bg: #2a1512;
-  --btn-primary-fg: #fdf7ec;
-  --overlay-scrim: rgba(15, 1, 2, 0.4);
+  --bg: #f3ede4;
+  --bg-sunk: #e9e1d5;
+  --surface: #ffffff;
+  --surface-raised: #faf7f2;
+  --text: #16110f;
+  --text-2: #3d332d;
+  --text-muted: #8a7a6c;
+  --text-faint: #b9ab9c;
+  --accent: #7a1a29;
+  --accent-fill: #7a1a29;
+  --on-accent: #f4ede2;
+  --accent-soft: rgba(122, 26, 41, 0.08);
+  --ink: #16110f;
+  --on-ink: #f4ede2;
+  --danger: #b3261e;
+  --chip: #ffffff;
+  --logo: #210104;
+  --tab-inactive: rgba(22, 17, 15, 0.5);
+  --line: rgba(22, 17, 15, 0.09);
+  --line-strong: rgba(22, 17, 15, 0.16);
+  --glass: rgba(255, 255, 255, 0.62);
+  --glass-line: rgba(255, 255, 255, 0.85);
+  --glass-fallback: rgba(255, 255, 255, 0.94);
+  --hglass: rgba(255, 255, 255, 0.62);
+  --hglass-line: rgba(255, 255, 255, 0.85);
+  --hglass-fg: #16110f;
+  --hglass-fallback: rgba(255, 255, 255, 0.86);
+  --hchip: rgba(255, 255, 255, 0.8);
+  --bar: #16110f;
+  --on-bar: #f4ede2;
+  --bar-chip: rgba(244, 237, 226, 0.12);
+  --on-photo: #f5efe4;
+  --on-photo-2: rgba(245, 239, 228, 0.75);
+  --photo-scrim: rgba(20, 4, 4, 0.85);
+  --overlay-scrim: rgba(22, 17, 15, 0.3);
+  --avatar-hue-1: #b5773c;
+  --avatar-hue-2: #c8703f;
+  --avatar-hue-3: #a98a63;
+  --avatar-ink: #2a1512;
+  --avatar-light: #e8d5bd;
+  --cat-cata: #7a1a29;
+  --cat-cata-soft: rgba(122, 26, 41, 0.08);
+  --cat-musica: #7a1a29;
+  --cat-musica-soft: rgba(122, 26, 41, 0.08);
+  --cat-brunch: #7a1a29;
+  --cat-brunch-soft: rgba(122, 26, 41, 0.08);
+  --cat-food: #7a1a29;
+  --cat-food-soft: rgba(122, 26, 41, 0.08);
+  --cat-happy: #7a1a29;
+  --cat-happy-soft: rgba(122, 26, 41, 0.08);
+  --on-cat: #f4ede2;
+  --live: #7a1a29;
+  --live-soft: rgba(122, 26, 41, 0.08);
+  --on-live: #f4ede2;
 }

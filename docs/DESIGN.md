@@ -1,238 +1,209 @@
 # Mesa — Design & Aesthetic
 
-> **Screen-level source of truth:** `docs/DESIGN-PHASE6-SCREENS.md` transcribes
-> the authoritative 18-screen Phase 6 design (what each screen contains, in what
-> order, with exact copy). `docs/DESIGN-PHASE6.md` is the token + four-pattern +
-> chrome handoff. This file is the aesthetic rationale below both. When a screen's
-> composition is in question, the screen spec wins.
+> **Source of truth: "Redesign 2".** The boards in `docs/design/redesign2/` (92 screens,
+> each drawn in Day and Night) and the rating graphic in `docs/design/rating/` are the
+> screen-level spec — open them in a browser; see `docs/design/README.md`. This file is
+> the system behind them: tokens, type, shape, components, and the rules that don't
+> change. `docs/DESIGN-PHASE6.md` and `docs/DESIGN-PHASE6-SCREENS.md` are **historical**
+> (the brass/oxblood design they describe is gone). Where the code disagrees with this
+> file, the code is behind — the app is being brought to this spec milestone by milestone.
 
-Mesa ships **two themes**, and both are first-class. The look is still fixed —
-you do not invent a style — but "fixed" now means _these two palettes and this
-one semantic token layer_, not a single oxblood ground.
+Mesa ships **two themes**, both first-class, and one semantic token layer that both resolve
+through. The look is fixed — you do not invent a style.
 
-- **Afternoon** — the light "paper" theme. Warm ivory grounds, ink-brown text,
-  aged-brass accent. The **default**. Editorial daylight: a dining magazine
-  spread, not a startup dashboard.
-- **Candlelit** — the original dark oxblood theme. Deep burgundy grounds, cream
-  text, brass accent. After-9 energy.
-- **Auto** — follows the OS `prefers-color-scheme` **and the clock**: Candlelit
-  from 6pm to 6am local time, or whenever the OS is in dark mode; Afternoon
-  otherwise. Mesa is a going-out app, so Auto should read as "after-9 energy"
-  once it's actually evening, not just when the OS happens to be dark. See
-  `apps/app/src/styles/theme.ts` (`resolve()`) and the mirrored boot script in
-  `index.html`.
+- **Day** — cream paper. `#f3ede4` ground, white cards, ink text.
+- **Night** — black. `#0b0809` ground, `#171213` cards, cream text, **a bit of burgundy**.
+- **Auto** — follows the OS **and the clock**: Night from 6pm to 6am or whenever the OS is in
+  dark mode, Day otherwise. Mesa is a going-out app, so Auto should read as evening energy
+  once it actually is evening. (`theme/ThemeProvider.tsx`, `resolve()`.)
 
-The two must feel like one product photographed at two times of day — same
-type, same spacing, same brass thread, same imagery. A user switches in Settings
-and nothing moves but the ground and the ink.
+They must feel like one product photographed at two times of day — same type, same shapes,
+same burgundy thread, same imagery. A member switches in Settings and nothing moves but the
+ground and the ink. Stored choice: SecureStore `mesa.theme_choice` (`auto | day | night`; the
+old `afternoon | candlelit` values are migrated on read).
 
-> **Why this replaces the old single-theme rule.** Earlier versions of this doc
-> said "no bright/light default theme" and "don't restyle away from these
-> tokens." Phase 6 (the paper redesign) supersedes that. The brand is now the
-> **semantic token layer** below plus the two palettes — not the raw oxblood hex
-> values. Do not reintroduce a "one true ground."
+## Color: one token layer, one accent
 
-## How color works: the semantic token layer
+**Never reference a raw color** — no hex, no `rgba()`, no brand name — in a screen or
+component. Every color resolves through a **semantic** token whose _meaning_ is stable across
+themes and whose value changes. Defined once:
 
-**Never reference a raw brand color** (`--ink`, `--cream`, `--brass`, a hex, or
-an `rgba()`) anywhere in the app. Every color in the app resolves through a
-**semantic** custom property whose _meaning_ is stable across both themes; only
-its value changes. This is the whole mechanism that lets one component look
-right on both grounds.
+- `apps/mobile/src/theme/vars.ts` — the `day` and `night` maps (NativeWind `vars()`), the
+  source of truth. `ThemeProvider` applies the active map to a root `View`.
+- `apps/mobile/tailwind.config.js` — token names → classes (`bg-bg`, `text-accent`).
+- `apps/mobile/src/global.css` — `:root` = the Day map, for the frame before the provider
+  mounts. It must stay identical to `vars.ts`'s `day` map.
+- `useColor('token')` (`theme/useColor.ts`) for the few places that need a value, not a class
+  (SVG strokes, native tints).
 
-Defined once in `apps/app/src/styles/tokens.css`:
+### Two accents, on purpose
 
-- `:root { … }` — the **Afternoon** values (the default ground).
-- `html[data-theme="candlelit"] { … }` — the **Candlelit** overrides.
+Burgundy `#7a1a29` is Mesa's one accent, but burgundy text on black is unreadable, so it splits
+by job:
 
-`data-theme` is _always_ present on `<html>` (Auto is resolved to a concrete
-theme in JS before first paint — see `apps/app/src/styles/theme.ts` and the
-inline boot script in `index.html`). There is no third CSS state.
+| Token         | Job                                                    | Day       | Night     |
+| ------------- | ------------------------------------------------------ | --------- | --------- |
+| `accent`      | text, icons, borders, "on" states                      | `#7a1a29` | `#f4ede2` |
+| `accent-fill` | surfaces: the +, Rank it, the slider, switches, badges | `#7a1a29` | `#7a1a29` |
+| `on-accent`   | text/icons **on** an `accent-fill` surface             | `#f4ede2` | `#f4ede2` |
+| `accent-soft` | a wash of burgundy behind a chip or a highlighted row  | `.08`     | `.28`     |
+
+Never set `text-accent` on an `accent-fill` surface (burgundy on burgundy by day). **There is no
+pink anywhere**, and no brass: Night is black + burgundy, nothing in between.
 
 ### Semantic tokens
 
-Afternoon values are the **exact Phase 6 handoff palette** (see `docs/DESIGN-PHASE6.md`).
+| Token                                                            | Role                                                      | Day                                    | Night                                |
+| ---------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
+| `bg`                                                             | screen ground                                             | `#f3ede4`                              | `#0b0809`                            |
+| `bg-sunk`                                                        | behind cards, tracks, photo fallback                      | `#e9e1d5`                              | `#050404`                            |
+| `surface`                                                        | cards, groups                                             | `#ffffff`                              | `#171213`                            |
+| `surface-raised`                                                 | name cards, inset areas                                   | `#faf7f2`                              | `#1f191a`                            |
+| `text` / `text-2`                                                | primary / body                                            | `#16110f` / `#3d332d`                  | `#f4ede2` / `#d9cfc2`                |
+| `text-muted` / `text-faint`                                      | metadata / placeholders                                   | `#8a7a6c` / `#b9ab9c`                  | cream `.55` / `.32`                  |
+| `ink` / `on-ink`                                                 | the high-contrast solid: solid buttons, active tab, chips | `#16110f` / `#f4ede2`                  | `#f4ede2` / `#0b0809`                |
+| `chip`                                                           | floating capsule fill: pills, icon buttons, the note bar  | `#ffffff`                              | white `.08`                          |
+| `danger`                                                         | errors, destructive                                       | `#b3261e`                              | `#ff6b5e`                            |
+| `logo`                                                           | the wordmark                                              | `#210104` oxblood                      | `#f4ede2` cream                      |
+| `tab-inactive`                                                   | inactive tab icons                                        | ink `.5`                               | cream `.55`                          |
+| `line` / `line-strong`                                           | hairlines — **never flat grey**                           | ink `.09` / `.16`                      | white `.08` / `.14`                  |
+| `glass`, `glass-line`, `glass-fallback`                          | translucent chrome (tab bar, toast, sticky headers)       | white `.62` / `.85` / `.94`            | white `.10` / `.14` / `#1b1516 .94`  |
+| `hglass`, `hglass-line`, `hglass-fg`, `hglass-fallback`, `hchip` | the frosted panel on a photograph                         | white frost, ink text                  | **smoked** `#100b0b .58`, cream text |
+| `bar`, `on-bar`, `bar-chip`                                      | the floating rank bar — dark in both themes               | `#16110f`                              | `#1b1516`                            |
+| `on-photo`, `on-photo-2`, `photo-scrim`, `overlay-scrim`         | text and scrims over photography                          | theme-invariant except `overlay-scrim` |                                      |
+| `avatar-hue-*`, `avatar-ink`, `avatar-light`                     | the initial-letter avatar gradient                        | warm tones                             | same                                 |
 
-| Token                                                 | Role                                                    | Afternoon                               | Candlelit                      |
-| ----------------------------------------------------- | ------------------------------------------------------- | --------------------------------------- | ------------------------------ |
-| `--bg`                                                | screen ground (`--screen`)                              | `#f5efe4`                               | `#210104`                      |
-| `--bg-sunk`                                           | app bg / behind cards / photo fallback (`--paper`)      | `#e7dccb`                               | `#180b0b`                      |
-| `--surface`                                           | cards, sheets, tab bar (`--card`)                       | `#ffffff`                               | `#2c1516`                      |
-| `--surface-raised`                                    | raised elements (one card color)                        | `#ffffff`                               | `#391c1d`                      |
-| `--text`                                              | primary text, FAB fill, dark badges (`--ink`)           | `#2a1512`                               | `#ebe4d6`                      |
-| `--text-2`                                            | body copy where `--ink` is too heavy (`--body`)         | `#4a3b32`                               | `#dcccbb`                      |
-| `--text-muted`                                        | captions, metadata, inactive (`--muted`)                | `#a2917f`                               | `#a3867a`                      |
-| `--text-faint`                                        | annotation-level text only (`--faint`)                  | `#b0a08e`                               | `#7d6459`                      |
-| `--accent`                                            | brass — active states, scores, primary accent           | `#9a6a28`                               | `#c09050`                      |
-| `--accent-strong`                                     | brass on small text / eyebrows / pill labels (`--deep`) | `#8a5a2a`                               | `#e2c179`                      |
-| `--accent-fill`                                       | solid brass fill (the one filled CTA / chips)           | `#9a6a28`                               | `#c09050`                      |
-| `--on-accent`                                         | text/icon **on** a brass or ink fill                    | `#fdf7ec`                               | `#210104`                      |
-| `--tab-inactive`                                      | inactive tab-bar item                                   | `#8a7b6c`                               | `#8a7166`                      |
-| `--line` / `--line-strong`                            | warm hairlines — **never flat grey**                    | `rgba(120,80,60,.14/.18)`               | `rgba(235,228,214,.10/.16)`    |
-| `--brass-line` / `--brass-line-soft` / `--brass-wash` | outlined pills, active chips, filled chips              | `rgba(154,106,40,.4/.28/.1)`            | `rgba(226,193,121,.4/.28/.12)` |
-| `--on-photo*` / photo scrims                          | text/scrims over photography — **theme-invariant**      | light / dark                            | light / dark                   |
-| `--shadow-card` / `--glow-*`                          | elevation & emphasis                                    | warm brown, never black                 | warm black / brass bloom       |
-| `--grain-tint` / `--grain-blend` / `--grain-opacity`  | film-grain overlay                                      | `multiply`, warm                        | `soft-light`, black            |
-| `--status-packed/good/building/slow`                  | nightlife status                                        | `#c2603a`/`#9a6a28`/`#97794f`/`#8a7b6c` | per-theme                      |
+Load-bearing notes:
 
-Notes that are load-bearing, not stylistic:
+- **Light frost washes cream text out over a bright photo at night**, so `hglass` is smoked
+  glass there. Don't "fix" it to follow the Day frost.
+- **Photos carry their own dark island.** Text over a photograph is light-on-a-dark-scrim in
+  _both_ themes; `on-photo*` and `photo-scrim` do not change per theme.
+- **`ink` is not called `solid`** because Tailwind's `border-solid` would then also set a border
+  color. Button _kinds_ are still `solid | chip | accent | ghost | glass | danger`.
+- **Interim:** `cat-*`, `live*`, `on-cat`, `on-live` still exist so event surfaces keep working.
+  They are burgundy by day and cream at night (they double as text) and are deleted with the
+  Explore milestone. Event kinds are told apart by **icon**, never by hue.
 
-- **Brass darkens on paper.** Afternoon `--accent` is `#9a6a28`, `--accent-strong`
-  (`--deep`) `#8a5a2a` — a _dark_ accent on a light field. On Candlelit it inverts
-  (`--accent-strong` is _brighter_ than `--accent`). Nothing references a raw
-  "brass" name — it would lie on paper.
-- **`--accent-fill` is now per-theme** (`#9a6a28` on paper, `#c09050` on oxblood);
-  the text on it flips via `--on-accent` (cream on paper's ink/brass fills).
-- **One card color.** `--surface`/`--surface-raised` are both `#ffffff` on
-  paper (raised to pure white from Phase 6's `#fffdf8` at the founder's
-  request, so cards read as distinct objects against the cream `--bg`); the
-  skeleton shimmer doesn't depend on the two differing — it shimmers across
-  `--bg-sunk → #f0e7d8 → --bg-sunk`.
-- **One UI family.** Plus Jakarta Sans carries all metadata, eyebrows, and pill
-  labels. Theme-invariant. (JetBrains Mono held this role until it was retired on
-  2026-09-15 at the founder's request — see Type & spacing below.)
-- **Photos carry their own dark island.** Text over a photograph is always
-  light-on-a-dark-scrim, in _both_ themes. `--on-photo*` and the scrims are
-  deliberately theme-invariant.
+## Type
 
-### Type & spacing
+- **Display serif: Instrument Serif**, weight 400, **upright only** — the wordmark, place
+  names, big numerals, quotes and notes. **No italics anywhere**, notes included.
+- **UI: the iOS system font (SF Pro)** at 400 / 500 / 600 / 700. The mock draws 650; use 600.
+- **No monospace.** Data numerals use tabular figures (`DATA_FIGURES`).
+- Type never uses synthesized weights or styles.
 
-Type family, scale, spacing, radii, and motion tokens are theme-independent and
-also live in `tokens.css` (`--font-serif`, `--font-ui`, `--text-*`, `--space-*`,
-`--radius*`, `--ease-spring`, `--tracking-eyebrow`, `--safe-*`).
+| Use                                           | Size / weight              |
+| --------------------------------------------- | -------------------------- |
+| Hero place name; "mesa" on splash and auth    | serif 46                   |
+| Large titles (Explore, Your list, Plans…)     | serif 40, line height 1.02 |
+| Greeting; "How was it?" / "Which was better?" | serif 33–34                |
+| Feed and event card titles; podium names      | serif 28                   |
+| Row names, friend-card place names, quotes    | serif 19–22                |
+| Podium numerals                               | serif 168 / 90 / 70        |
+| Section headers                               | UI 21/600                  |
+| Body, rows, fields, CTAs                      | UI 15–16 (CTA 16/600)      |
+| Pills, secondary labels                       | UI 14/600                  |
+| Meta                                          | UI 12.5 muted              |
+| Score words                                   | UI 11/600–700              |
 
-- **Display serif:** Cormorant Garamond (wordmark `mesa`, restaurant names, the
-  big rank numerals). Georgia is the fallback.
-- **UI / body:** Plus Jakarta Sans — the one UI family. It also carries
-  **metadata** (400, 12–13pt, muted), **eyebrows** (600, 11pt, uppercase, 1.76px
-  tracking), **pill labels** (600), and **data numerals** (with `DATA_FIGURES`
-  tabular figures). JetBrains Mono held metadata/eyebrows/pills through Phase 6
-  and was **retired on 2026-09-15** at the founder's request; there is no
-  monospace family in Mesa.
-- **Eyebrows:** uppercase, letter-spaced ~0.16em, small, in `--accent`.
-- **Editorial italic:** the quiz tagline treatment — italic serif for editorial
-  moments.
+Serif needs generous line height (≈1.1× for titles) or it clips — set it in the size tuple, not
+per call site.
 
-## Event category colors (Eventos only)
+## Shape, depth, glass
 
-Brass remains Mesa's one app-wide accent. The single scoped exception is
-**Eventos** (Explore's events tab, the event page, the feed's "Este finde"
-rail and a restaurant's "Próximos eventos"): each kind of night out wears its
-own hue so a tasting, a DJ set and a brunch read apart at a glance.
+- **Capsules everywhere**: pills, CTAs (h54 / 46 / 40 / 36), search (h46), the tab bar (h66),
+  the rank bar (h70), toasts. **Circles** for every icon button.
+- **Radii:** cards 24, grouped lists and rows 22, stat tiles 20, friend cards 24, compare and
+  end cards 28, photo heroes 28–32, frosted panels 30, sheets 34 (top corners), menus 16, fields 18.
+- **Depth:** a two-layer warm shadow (`--lift`) **in Day only**; Night has none. Never a black shadow.
+- **Glass:** translucent chrome (tab bar, sticky headers, toast) uses the `glass*` tokens over a
+  real material on iOS 26 (`expo-glass-effect`), and the near-opaque `*-fallback` token where
+  there is none. Photo panels use `hglass*`. Controls floating over photos are glass circles.
 
-| Token          | Kind                                | Afternoon               | Candlelit               |
-| -------------- | ----------------------------------- | ----------------------- | ----------------------- |
-| `--cat-cata`   | tastings (wine, whisky, cocktails)  | `#c2185b` magenta       | `#ff4d9d` magenta       |
-| `--cat-musica` | live music, DJ, karaoke             | `#2f4fd6` electric blue | `#5b8cff` electric blue |
-| `--cat-brunch` | brunch                              | `#b26a00` gold          | `#ffc24a` gold          |
-| `--cat-food`   | food tastings, omakase, chef nights | `#d84315` orange        | `#ff7a1a` orange        |
-| `--cat-happy`  | happy hour                          | `#00838f` cyan          | `#22d3ee` cyan          |
+## Components and patterns
 
-"Noche neón" (founder's pick, Sept 2026): vivid nightlife hues — they're what
-makes Eventos read as a night out. Afternoon uses the same five hues deepened
-for contrast on paper; Candlelit uses them bright, with stronger washes.
-
-**Live now** — `--live` (Afternoon `#15803d`, Candlelit `#34d399`) with
-`--live-soft` and `--on-live`: the one green in the app, reserved for an event
-that is happening at this moment (the countdown chip and the event page's
-banner turn green with a pulsing on-air dot: "Live · until 4:00 PM"). Never
-use it for anything else — "open now" and statuses keep their own tokens.
-
-Each has a `-soft` wash; text on a solid fill is `--on-cat`. The free-text
-`events.category` maps to a key in `apps/mobile/src/lib/eventCategory.ts`
-(unknown → brass). **Never use `cat-*` outside event surfaces.** Text set on a
-photo uses the theme-invariant `--photo-scrim` gradient + `--on-photo*`.
+- **Score = number + word.** Serif number, then 9+ **Must go**, 8+ **Great**, 7+ **Good**,
+  5+ **Fine**, else **Skip**. Three forms: a capsule (`chip` / `photo` / `solid`), a dense-row
+  stack (number over a small `accent` word, right-aligned), and a glass capsule on photo heroes.
+  A score is always attributed — yours, a friend's, or "Mesa's" — never the place's own rating.
+- **The picture rule.** A card's picture is, in order: the friend's photo → the place's photo →
+  the friend's **words** set as the picture → a **name card** (`surface-raised`, hairline ring,
+  the name in serif). A place page with no photo opens on its map. No letter tiles, no stamps.
+- **Tab bar:** a floating glass capsule (inset 18, bottom 24). The active tab is a 46pt filled
+  `ink` circle; the **+** is a 50pt `accent-fill` circle. No labels.
+- **Rank bar (place page):** a dark floating pill — burgundy **Rank it** (**Rank again** once
+  ranked), a cream save circle, and **Directions**.
+- **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'
+  notes; dishes; info; map).
+- **Feed:** a greeting header (no wordmark), pills **For you / Friends / Popular / Events /
+  Lists**, "Your six", one **Tonight** hero (or "Tonight's pick" with no events), friend cards.
+- **Your list:** a podium — #1 a large photo card with a giant serif numeral, #2/#3 as halves.
+- **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
+- **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.
+- **"How was it?"** is one 3-stop slider — _Didn't love it / It was fine / Loved it_ — under a
+  **realistic Kir Royale flute** that goes flat → a slow stream → lively bubbles with mousse and
+  spray. Geometry and the seeded bubble tables: `docs/design/rating/F17-Bubbles.dc.html`. The
+  slider only chooses which third of your list the comparison searches; scores stay by list position.
 
 ## Where color is allowed to live
 
-A token swap in `tokens.css` reaches every CSS file and every inline `style`
-prop in TSX (all of which use `var(--token)`). It does **not** reach five sites,
-which are the _only_ places a raw color value may appear. If you touch color,
-these are the sites to check — the audit does not need to be redone:
+A token swap reaches every screen. It does **not** reach these sites, which are the _only_
+places a raw color value may appear:
 
-1. **`apps/app/src/lib/shareCard.ts`** — the 1080×1920 canvas story card. Canvas
-   cannot resolve `var()`. **Frozen as Candlelit brand** (see below).
-2. **`apps/api/src/routes/share-pages.ts`** — a self-contained stylesheet for the
-   server-rendered public OG/share pages. Separate workspace package; a token
-   swap never reaches it. **Frozen as Candlelit brand** (see below).
-3. **`apps/app/capacitor.config.ts`** — the native pre-paint `backgroundColor`.
-   Set to the Afternoon ground (the default); a Candlelit user accepts a
-   sub-100ms light flash on cold start.
-4. **`apps/app/src/screens/map/MapScreen.tsx`** — the inline SVG `<stop>`s use
-   the CSS `stop-color` _property_ (which accepts `var()`), not the presentation
-   attribute. So they follow the tokens; do not hardcode them.
-5. **`apps/api/src/routes/legal-pages.ts`** — a self-contained stylesheet for the
-   hosted privacy/terms/EULA pages, same workspace problem as (2). **Afternoon**,
-   not frozen Candlelit: a legal document is meant to be read like paper, not to
-   look like a Mesa object in someone else's feed. It also loads no web font, so
-   the type is the system serif/sans rather than Cormorant / Plus Jakarta.
+1. **`theme/vars.ts`** and **`global.css`** — the palette itself.
+2. **`components/ShareCard.tsx`** — the 1080×1920 story card, drawn off-screen and shared out.
+   **Frozen: black `#0b0809` + burgundy + cream**, lowercase wordmark, in both themes.
+3. **`components/ui/ThemePicker.tsx`** — the Auto / Day / Night tiles show each theme literally.
+4. **`components/rank/Flute.tsx` + `fluteData.ts`** — the rating illustration.
+5. **`components/GoogleSignInButton.tsx`** — Google's own brand colors.
+6. **`components/MesaMap.tsx`**, **`lib/media.ts`** — the map's user-location dot and ring, and the
+   Mapbox static-map pin.
+7. **`apps/mobile/app.json`** — the native splash and icon backgrounds.
+8. **`apps/api/src/lib/publicPage.ts`** (the public share pages) and
+   **`apps/api/src/routes/legal-pages.ts`** (privacy/terms) — self-contained stylesheets in a
+   separate package. Share pages follow the frozen card; legal pages are Day, meant to be read
+   like paper. If a palette changes, change them in the same commit.
 
-**Frozen share surfaces (a deliberate decision):** the story card and the public
-share page are artifacts that _leave_ the app and are viewed inside someone
-else's feed. They stay Candlelit (oxblood) regardless of the sharer's theme, so
-every shared Mesa card looks the same. Do not "fix" them to follow the theme.
-If that decision is ever reversed, `share-pages.ts` must gain a
-`prefers-color-scheme` `@media` block **in the same commit** as any palette
-change, or its second `:root` will drift from the app's.
+**Frozen share surfaces (a deliberate decision):** the story card and the public share page leave
+the app and are viewed inside someone else's feed, so they look the same for every sharer.
 
-## The wordmark
+## The wordmark and the icon
 
-Lowercase serif `mesa`, in `--text` on `--bg`, weight 700 — Cormorant
-Garamond's heaviest real face (the family doesn't have 900; a request for 900
-gets synthesized off the 600 face by the browser, softening the serif's fine
-strokes, so `styles/global.css` also sets `font-synthesis: none` on `html` to
-make sure that never happens silently again). Rendered as text (it scales and
-themes cleanly). Real file: `assets/brand/mesa-wordmark-burgundy.png`. A
-hand-drawn table-sign icon variant is the app icon; keep the two consistent.
+- **The wordmark is the word `mesa` in lowercase**, Instrument Serif, `logo` color — **oxblood
+  `#210104` by day, cream by night** (oxblood would vanish on black). Rendered as text so it
+  scales and themes cleanly.
+- **The landing and auth screens show the wordmark only.** No icon, no tile, anywhere in the app.
+- **The app icon is a capital serif `M`** — cream `#f1e8da` on an oxblood radial gradient
+  (`#4d0b17` → `#2e0309` at 42% → `#210104`, centred at 30% / 18%), a full-bleed 1024 square (iOS
+  applies its own ~22% corner mask). It exists on the home screen and nowhere else.
+- Files: `assets/brand/` (wordmarks), `apps/mobile/assets/images/` (icon, splash).
 
 ## Iconography
 
-One stroke-SVG icon language (`components/ui/icons.tsx`), matching the tab
-bar's original style: 24 viewBox, 1.6 stroke, round caps/joins, `currentColor`
-(themes for free). Add new icons there — do not reach for a Unicode dingbat.
+One stroke-SVG icon language (`components/ui/icons.tsx`): 24 viewBox, stroke 1.8–2.2, round
+caps and joins, `currentColor` (themes for free). Add new icons there — do not reach for a
+Unicode dingbat, and never use emoji, with one exception: **🥂 is the one sanctioned emoji**,
+kept _only_ in outbound share copy (WhatsApp/iMessage text) as Mesa's brand voice.
 
-- The cheers reaction (feed, Activity) is `HeartIcon`/`HeartFilledIcon` in
-  `components/ui/icons.tsx`, not an emoji — a full-colour glyph was the only
-  thing in the app breaking "brass is the only accent." **🥂 is the one
-  sanctioned emoji**, kept _only_ in outbound share copy (WhatsApp/iMessage
-  text that leaves the app) as Mesa's brand voice — an SVG can't travel in a
-  text message. Nothing else uses emoji.
-- Text-glyph punctuation used _as prose_, matching the mocks' literal copy
-  strings, stays: the `‹`/`›` chevrons in header/link text ("‹ Add a note",
-  "2 friends ›") and the `✕` close-glyph in flow headers ("✕ Recents"). These
-  render identically everywhere (they're common Latin-1-adjacent punctuation)
-  and are part of the authored copy, not a stray icon choice.
-- Everything that was a standalone dingbat acting as an icon — a pill's
-  leading glyph, an icon-only button — is now one of the SVGs above. The
-  Phase 6 screen spec's literal glyphs (`◉ ☏ ▸ ▤ ✎ ⇅ ↗ ☰ ✓ ◇ ♡ ➤`) are
-  superseded by this file; those characters render unpredictably across iOS/
-  Android webviews (tofu or emoji-style substitution on some systems), which
-  an SVG path doesn't.
-- Some of those Unicode glyphs were reused for more than one meaning in the
-  Phase 6 code (`◉` was both "website" and "reserve a table"; `▤` was both
-  "list membership" and "order food") — the SVG set keeps those meanings
-  separate (`WebIcon`/`ReserveIcon`, `ListIcon`/`OrderIcon`) rather than
-  perpetuating the collision.
+- The cheers reaction is `HeartIcon` / `HeartFilledIcon`.
+- SF Symbols are allowed in genuinely native chrome only (native header buttons); everywhere
+  tokened, use the stroke icons.
 
-## Aesthetic direction (from the moodboard)
+## Aesthetic direction
 
-Reference images live in `assets/moodboard/`. The through-line holds in both
-themes:
+Modern iOS, not a printed magazine: full-bleed photography, frosted glass over it, capsules and
+circles, big soft radii, one serif for display and the system font for everything you tap.
 
-- **Film photography, not product photography.** Warm grain, slight blur,
-  on-camera flash. Never sterile, never flat.
-- **The table, not menus.** Friends toasting, sharing plates — the social act of
-  eating. Warm and human, never cold luxury.
-- **Editorial restraint.** Big serif, generous negative space, one brass accent
-  at a time. A magazine dining editorial.
-- **Candlelit imagery on both grounds.** Afternoon is a _paper_ ground under
-  _candlelit_ photos — the warmth comes from the imagery and the ivory (never
-  pure white), not from a dark UI.
+- **Film photography, not product photography.** Warm grain, on-camera flash. Never sterile.
+- **The table, not menus.** Friends toasting, sharing plates — warm and human, never cold luxury.
+- **Restraint.** One accent, one serif, generous space. Cream and black with a bit of burgundy.
+- **Not Beli.** Mesa is discovery through friends: a greeting instead of a logo at the top of the
+  feed, "vibe" notes not star ratings, a podium instead of a feed of chips.
 
-When Afternoon feels like a sterile white SaaS app, it's wrong; when it feels
-like a dining magazine printed on warm stock, it's right. When Candlelit feels
-like a tech dashboard, it's wrong; when it feels like a dim restaurant at 9pm,
-it's right.
+When Day feels like a sterile white SaaS app it's wrong; when it feels like a dining magazine on
+warm stock it's right. When Night feels like a tech dashboard it's wrong; when it feels like a dim
+restaurant at 9pm it's right.
 
 ## Language & voice
 
@@ -285,17 +256,17 @@ decision, so it doesn't drift again.
 
 ## Hard "don'ts"
 
-- **No star ratings, anywhere, in any form.** Ranking + vibe notes only. A score
-  is always attributed (yours / a friend's / all of Mesa), never presented as
-  the place's own rating.
-- **Brass is the only accent.** No system-blue, no second accent hue.
+- **No star ratings, anywhere, in any form.** Ranking + vibe notes only. A score is always
+  attributed (yours / a friend's / all of Mesa), never presented as the place's own rating.
+- **Burgundy is the only accent.** No second hue, no rainbow event colors, **no pink, no brass**.
+- **No burgundy text on black.** Small accent text is cream at night (`text-accent` does this).
+- **No italics.** Not in the wordmark, notes, quotes or captions.
+- **No app icon inside the app** — least of all on the landing screen. The wordmark only.
 - **Text over photography is always light-on-a-dark-scrim**, in both themes.
-- **Never a pure-white ground, never pure black.** Afternoon's `--bg` is warm
-  ivory (`#f5efe4`); the extremes are `#fffdf8` and `#2a1512`.
-- **No raw brand colors or hex/rgba outside `tokens.css`** and the four sites
-  named above. Enforce with:
+- **Day is cream (`#f3ede4`), Night is black (`#0b0809`).** Never a stark white or oxblood ground.
+- **No raw colors outside the sites named above.** Enforce with (oxlint doesn't lint colors, so
+  this grep is the enforcement):
   ```
-  grep -rn "var(--ink\|var(--cream\|var(--dim\|var(--brass\|var(--surface-2" apps/app/src   # → 0
-  grep -rnE "#[0-9a-fA-F]{3,8}|rgba?\(" apps/app/src --include="*.css" | grep -v tokens.css  # → 0
+  grep -rnE "#[0-9a-fA-F]{3,8}\b|rgba?\(" apps/mobile/src \
+    | grep -vE "src/(theme/vars\.ts|global\.css|components/(ShareCard|GoogleSignInButton|MesaMap|ui/ThemePicker)\.tsx|components/rank/(Flute|fluteData))"   # → 0
   ```
-  (oxlint does not lint CSS, so these greps are the enforcement mechanism.)

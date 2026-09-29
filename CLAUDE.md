@@ -100,18 +100,22 @@ starting the next. Do not run ahead into later milestones unprompted.
 
 ## Design
 
-Do not invent a look. Read `docs/DESIGN.md` — it is the source of truth. Mesa
-ships **two first-class themes**, Afternoon (light paper, default) and Candlelit
-(dark oxblood), plus Auto. Both resolve through the **semantic token layer** in
-`apps/mobile/src/theme/vars.ts` (the two `--bg`/`--text`/`--accent` maps), mapped
-to Tailwind names in `apps/mobile/tailwind.config.js` and consumed as classes
-(`bg-bg`, `text-accent`). Never reference a raw brand color or a hex/`rgba()`
-outside `vars.ts` and the sites `docs/DESIGN.md` names under "Where color is
-allowed to live" — in the native app those are the share card
-(`components/ShareCard.tsx`, frozen Candlelit because it leaves the app) and the
-ThemePicker swatches (literal previews of each theme). The real wordmark is at
-`assets/brand/mesa-wordmark-burgundy.png`; aesthetic references are in
-`assets/moodboard/`.
+Do not invent a look. Read `docs/DESIGN.md` — it is the source of truth — and
+open the boards in `docs/design/` (Redesign 2, every screen in both themes). Mesa
+ships **two first-class themes**, **Day** (cream) and **Night** (black with a bit
+of burgundy), plus **Auto**. Both resolve through the **semantic token layer** in
+`apps/mobile/src/theme/vars.ts` (the `day` and `night` maps), mapped to Tailwind
+names in `apps/mobile/tailwind.config.js` and consumed as classes (`bg-bg`,
+`text-accent`). Never reference a raw brand color or a hex/`rgba()` outside
+`vars.ts` and the sites `docs/DESIGN.md` names under "Where color is allowed to
+live" — in the native app those are the share card (`components/ShareCard.tsx`,
+frozen black + burgundy because it leaves the app), the ThemePicker swatches
+(literal previews of each theme), the rating flute, and Google's button. Display
+type is Instrument Serif (upright — **no italics anywhere**); UI is the iOS system
+font. **The logo is the lowercase word `mesa`** in oxblood by day and cream by
+night, and it is the only mark shown in the app — the capital-M **app icon lives
+on the home screen only** and never appears on any screen, least of all the
+landing page.
 
 **Content is Mesa, chrome is iOS.** The token layer governs every _content_
 surface — cards, rows, sheets' contents, the type ramp, the stroke-icon language.
@@ -128,11 +132,13 @@ is ever flipped back on) — MesaTabBar and everywhere else use the stroke icons
 in `components/ui/icons.tsx`, the one icon language for tokened surfaces; and
 any native surface must
 be told Mesa's _resolved_ theme explicitly (`getResolvedTheme()`), because Auto
-turns Candlelit at 6pm on a light-mode phone and the system's own guess would be
+turns Night at 6pm on a light-mode phone and the system's own guess would be
 wrong. A control that lives inside a scrolling page is content, not chrome — that
 is why the view-switchers are Mesa's own tokened `Segmented` (components/ui: a
 sunk track with a white sliding thumb), not the native UISegmentedControl.
 Content objects (feed posts, ranking rows, rails, profile stats) are white
 `bg-surface` cards (`rounded-card`) on the cream ground.
-Brass is the one app-wide accent; the only exception is the event category
-hues (`cat-*`, Eventos surfaces only — see docs/DESIGN.md).
+Burgundy is the one app-wide accent — no second hue, no pink, no brass, no
+rainbow. Event kinds are told apart by icon, not color (the `cat-*` tokens are an
+interim alias, deleted with the Explore milestone). Small accent text is cream at
+night: `text-accent` does that, and `bg-accent-fill` is for burgundy surfaces.

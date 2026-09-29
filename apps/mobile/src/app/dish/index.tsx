@@ -374,7 +374,7 @@ export default function DishCompose() {
         </View>
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
-          <Caption className="mt-3 text-status-packed">{t('dish.rank_first_error')}</Caption>
+          <Caption className="mt-3 text-danger">{t('dish.rank_first_error')}</Caption>
         )}
 
         <View className="mt-6">

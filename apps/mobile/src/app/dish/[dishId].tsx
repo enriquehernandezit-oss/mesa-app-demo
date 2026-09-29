@@ -241,7 +241,7 @@ export default function DishDetail() {
               onPress={confirmRemove}
               className="mt-5 min-h-[44px] justify-center active:opacity-60"
             >
-              <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
+              <Text className="font-ui text-eyebrow text-danger uppercase tracking-eyebrow">
                 {remove.isPending ? t('dish.deleting') : t('dish.delete_this')}
               </Text>
             </Pressable>

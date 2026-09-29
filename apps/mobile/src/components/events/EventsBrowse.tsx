@@ -242,9 +242,9 @@ export const EventsBrowse = memo(function EventsBrowse() {
                     const k = sdDayKey(nextDay.startsAt)
                     setSel({ start: k, end: k })
                   }}
-                  className="mt-3 min-h-[44px] justify-center rounded-pill bg-btn-primary-bg px-5 active:opacity-80"
+                  className="mt-3 min-h-[44px] justify-center rounded-pill bg-ink px-5 active:opacity-80"
                 >
-                  <Text className="font-ui-semibold text-label text-btn-primary-fg">
+                  <Text className="font-ui-semibold text-label text-on-ink">
                     {t('events.jump_next')} ·{' '}
                     {new Intl.DateTimeFormat(dateLocale(), {
                       weekday: 'short',
@@ -377,7 +377,7 @@ const DayStrip = memo(function DayStrip({
           {!rangeOn ? (
             <Animated.View
               pointerEvents="none"
-              className="absolute rounded-pill bg-btn-primary-bg"
+              className="absolute rounded-pill bg-ink"
               style={[{ left: (ITEM_W - DOT) / 2, top: 18, width: DOT, height: DOT }, ring]}
             />
           ) : null}
@@ -401,7 +401,7 @@ const DayStrip = memo(function DayStrip({
                     date as Date,
                   )
             const dots = d === 'all' ? [] : (catsByDay.get(d) ?? []).slice(0, 3)
-            const fg = on ? 'text-btn-primary-fg' : band ? 'text-on-accent' : 'text-text'
+            const fg = on ? 'text-on-ink' : band ? 'text-on-accent' : 'text-text'
             return (
               <Pressable
                 key={d}
@@ -423,7 +423,7 @@ const DayStrip = memo(function DayStrip({
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   maxFontSizeMultiplier={1.1}
-                  className={`h-[18px] font-ui-semibold text-[10px] uppercase tracking-eyebrow ${d === today ? 'text-accent-strong' : 'text-text-faint'}`}
+                  className={`h-[18px] font-ui-semibold text-[10px] uppercase tracking-eyebrow ${d === today ? 'text-accent' : 'text-text-faint'}`}
                 >
                   {top}
                 </Text>
@@ -504,7 +504,7 @@ function Featured({ events, now }: { events: EventSummary[]; now: Date }) {
   })
   return (
     <View className="mt-5">
-      <Text className="mb-2 font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
+      <Text className="mb-2 font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
         {t('events.featured')}
       </Text>
       <Animated.ScrollView

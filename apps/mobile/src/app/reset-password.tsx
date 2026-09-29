@@ -127,9 +127,9 @@ export default function ResetPassword() {
                   {busy ? '…' : t('auth.reset_save_button')}
                 </Button>
                 {password.length > 0 && confirm.length > 0 && password !== confirm && (
-                  <Caption className="text-status-packed">{t('auth.reset_mismatch')}</Caption>
+                  <Caption className="text-danger">{t('auth.reset_mismatch')}</Caption>
                 )}
-                {error && <Caption className="text-status-packed">{error}</Caption>}
+                {error && <Caption className="text-danger">{error}</Caption>}
               </View>
             )}
           </Pressable>

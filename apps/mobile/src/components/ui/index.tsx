@@ -21,7 +21,7 @@ import Animated, {
 import { ChevronIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
-import { BRASS_SHADOW } from '@/theme/vars'
+import { SHADOW } from '@/theme/vars'
 
 // Mesa UI primitives, ported from apps/app/src/components/ui. Everything the app
 // renders composes from these so the brand rules (brass-only accent, serif
@@ -50,7 +50,7 @@ export const MAX_SCALE = 1.35
 // but aren't colors) so the primitive can omit its default color whenever the
 // caller already specified one.
 const TEXT_COLOR_KEYS =
-  /\btext-(live-soft|on-live|live|cat-cata-soft|cat-musica-soft|cat-brunch-soft|cat-food-soft|cat-happy-soft|cat-cata|cat-musica|cat-brunch|cat-food|cat-happy|on-cat|bg-sunk|overlay-scrim|surface-raised|accent-strong|accent-fill|status-packed|status-building|tab-inactive|line-strong|status-good|on-photo-accent|btn-primary-bg|btn-primary-fg|status-slow|on-photo-2|on-accent|on-photo|text-muted|text-faint|surface|accent|text-2|line|text|bg)\b/
+  /\btext-(cat-brunch-soft|cat-musica-soft|hglass-fallback|cat-happy-soft|glass-fallback|surface-raised|cat-cata-soft|cat-food-soft|overlay-scrim|avatar-light|tab-inactive|accent-fill|accent-soft|hglass-line|line-strong|photo-scrim|cat-brunch|cat-musica|glass-line|on-photo-2|text-faint|text-muted|cat-happy|hglass-fg|live-soft|on-accent|bar-chip|cat-cata|cat-food|on-photo|bg-sunk|on-live|surface|accent|danger|hglass|on-bar|on-cat|on-ink|text-2|glass|hchip|chip|line|live|logo|text|bar|ink|bg)\b/
 function hasTextColor(className?: string): boolean {
   return Boolean(className && TEXT_COLOR_KEYS.test(className))
 }
@@ -128,13 +128,13 @@ type ButtonProps = Omit<PressableProps, 'children'> & {
   className?: string
 }
 const BTN_BG: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'bg-btn-primary-bg',
+  primary: 'bg-ink',
   secondary: 'bg-transparent border border-line',
   ghost: 'bg-transparent',
-  destructive: 'bg-status-packed',
+  destructive: 'bg-danger',
 }
 const BTN_FG: Record<NonNullable<ButtonProps['variant']>, string> = {
-  primary: 'text-btn-primary-fg',
+  primary: 'text-on-ink',
   secondary: 'text-text',
   ghost: 'text-text-2',
   destructive: 'text-on-accent',
@@ -176,7 +176,7 @@ export const Button = ({
       style={
         variant === 'primary'
           ? {
-              shadowColor: BRASS_SHADOW,
+              shadowColor: SHADOW,
               shadowOpacity: 0.35,
               shadowRadius: 18,
               shadowOffset: { width: 0, height: 4 },
@@ -274,11 +274,11 @@ export const Chip = ({
 
 /* --- Segmented --- one sunk track, the selected option a raised white thumb
    that SLIDES to the tapped option. For mutually exclusive VIEW switches
-   (Rankeados/Quiero probar/Barrios, Lugares/Eventos, Afternoon/Candlelit/
+   (Rankeados/Quiero probar/Barrios, Lugares/Eventos, Day/Night/
    Auto) — the founder's call to read these as one control instead of a row
    of separate pills. Filters that can stack (Barrio ▾, Ocasión ▾) stay
    Chips: they're not exclusive. The thumb is `surface-raised`, pure white on
-   Afternoon, so it pops the same way the cards do against the cream ground.
+   Day, so it pops the same way the cards do against the cream ground.
    The thumb is one absolutely positioned view animated on the UI thread
    (translateX), so it glides even while the screen below is busy
    re-rendering for the new view. */
@@ -363,7 +363,7 @@ export function Segmented<T extends string>({
               bottom: SEG_PAD,
               left: SEG_PAD,
               width: segW,
-              shadowColor: BRASS_SHADOW,
+              shadowColor: SHADOW,
               shadowOpacity: 0.18,
               shadowRadius: 6,
               shadowOffset: { width: 0, height: 2 },
@@ -534,9 +534,7 @@ export const ErrorState = ({
           onPress={onRetry}
           className="mt-3 min-h-[44px] justify-center rounded-pill border border-accent px-4 active:opacity-80"
         >
-          <Text className="font-ui-semibold text-label text-accent-strong">
-            {t('common.retry')}
-          </Text>
+          <Text className="font-ui-semibold text-label text-accent">{t('common.retry')}</Text>
         </Pressable>
       )}
     </View>
@@ -552,7 +550,7 @@ export const SectionHeader = ({
   action?: ReactNode
 }) => (
   <View className="mb-3 mt-5 flex-row items-baseline justify-between gap-3">
-    <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent-strong">
+    <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
       {children}
     </Text>
     {action}

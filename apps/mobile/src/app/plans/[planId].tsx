@@ -348,7 +348,7 @@ export default function PlanDetailScreen() {
               onPress={openCancelConfirm}
               className="min-h-[44px] items-center justify-center active:opacity-70"
             >
-              <Text className="font-ui-medium text-label text-status-packed">
+              <Text className="font-ui-medium text-label text-danger">
                 {t('plans.cancel_confirm_button')}
               </Text>
             </Pressable>

@@ -80,8 +80,8 @@ function NativeShell() {
       <NativeTabs
         tintColor={c.accent}
         // A solid bar, not the system's translucent material: the glass/blur
-        // read as "invisible" against Mesa's content, especially Candlelit's
-        // dark ground. Same c.bg the utility header bars already use, so the
+        // read as "invisible" against Mesa's content, especially Night's
+        // black ground. Same c.bg the utility header bars already use, so the
         // tab bar and a pushed screen's nav bar are the same solid chrome.
         backgroundColor={c.bg}
         // Without this, iOS 26's "scroll edge" treatment overrides
@@ -91,7 +91,7 @@ function NativeShell() {
         // prevent. Keeps the bar solid regardless of scroll position.
         disableTransparentOnScrollEdge
         minimizeBehavior="onScrollDown"
-        badgeBackgroundColor={c['status-packed']}
+        badgeBackgroundColor={c['danger']}
         badgeTextColor={c['on-accent']}
         labelStyle={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11 }}
         iconColor={{ default: c['tab-inactive'], selected: c.accent }}

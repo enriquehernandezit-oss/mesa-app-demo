@@ -20,7 +20,7 @@ export function KeyboardDone({ id }: { id: string }) {
           onPress={() => Keyboard.dismiss()}
           className="min-h-[36px] justify-center px-2 active:opacity-60"
         >
-          <Text className="font-ui-semibold text-label text-accent-strong">{t('common.done')}</Text>
+          <Text className="font-ui-semibold text-label text-accent">{t('common.done')}</Text>
         </Pressable>
       </View>
     </InputAccessoryView>

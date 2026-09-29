@@ -251,7 +251,7 @@ export const MoreIcon = (p: IconProps) => (
     <Circle cx="18.5" cy="12" r="1.4" />
   </FilledIcon>
 )
-// Appearance switcher: Afternoon (sun) and Candlelit (crescent moon).
+// Appearance switcher: Day (sun) and Night (crescent moon).
 export const SunIcon = (p: IconProps) => (
   <Icon {...p}>
     <Circle cx="12" cy="12" r="4" />

@@ -5,19 +5,18 @@ import { AppState, Appearance, View } from 'react-native'
 
 import { GROUND, type ThemeName, themeVars } from './vars'
 
-// Theme resolution, ported from apps/app/src/styles/theme.ts. Two themes plus
-// Auto, which follows the OS AND the clock — Mesa is a going-out app, so Auto
-// reads as evening energy once it actually is evening, not only when the OS is
-// in dark mode.
+// Theme resolution. Two themes — Day and Night — plus Auto, which follows the OS
+// AND the clock: Mesa is a going-out app, so Auto reads as evening energy once it
+// actually is evening, not only when the OS is in dark mode.
 //
 // The saved choice is read from SecureStore BEFORE the first frame: initThemeChoice()
 // resolves in the root layout's splash gate (same shape as initToken()), and the
 // provider seeds from that cache synchronously. Reading it after mount instead —
 // which is what this did — meant anyone with an explicit choice got a frame of the
-// wrong theme on every cold start: pick Afternoon and open the app at 9pm and Auto
-// painted Candlelit first, then snapped. A first-time member still starts on Auto.
+// wrong theme on every cold start: pick Day and open the app at 9pm and Auto
+// painted Night first, then snapped. A first-time member still starts on Auto.
 
-export type ThemeChoice = 'auto' | 'afternoon' | 'candlelit'
+export type ThemeChoice = 'auto' | 'day' | 'night'
 
 const EVENING_START_HOUR = 18
 const MORNING_END_HOUR = 6
@@ -28,9 +27,9 @@ function isEvening(now = new Date()): boolean {
 }
 
 function resolve(choice: ThemeChoice): ThemeName {
-  if (choice === 'afternoon' || choice === 'candlelit') return choice
+  if (choice === 'day' || choice === 'night') return choice
   const osDark = Appearance.getColorScheme() === 'dark'
-  return osDark || isEvening() ? 'candlelit' : 'afternoon'
+  return osDark || isEvening() ? 'night' : 'day'
 }
 
 // The next 6am/6pm boundary strictly after now — mirrors theme.ts.nextBoundary.
@@ -56,8 +55,13 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const CHOICE_KEY = 'mesa.theme_choice'
 
-function isChoice(v: string | null): v is ThemeChoice {
-  return v === 'auto' || v === 'afternoon' || v === 'candlelit'
+// The two themes were called Afternoon and Candlelit before the Redesign 2 rename;
+// a member's saved choice still carries the old name until they next pick one.
+const LEGACY_CHOICE: Record<string, ThemeChoice> = { afternoon: 'day', candlelit: 'night' }
+
+function parseChoice(v: string | null): ThemeChoice | null {
+  if (v === 'auto' || v === 'day' || v === 'night') return v
+  return v ? (LEGACY_CHOICE[v] ?? null) : null
 }
 
 let cachedChoice: ThemeChoice = 'auto'
@@ -70,7 +74,8 @@ export async function initThemeChoice(): Promise<void> {
     const read = SecureStore.getItemAsync(CHOICE_KEY)
     const timeout = new Promise<null>((r) => setTimeout(() => r(null), 3000))
     const v = await Promise.race([read, timeout])
-    if (isChoice(v)) cachedChoice = v
+    const saved = parseChoice(v)
+    if (saved) cachedChoice = saved
   } catch {
     // Keep Auto.
   }
@@ -78,7 +83,7 @@ export async function initThemeChoice(): Promise<void> {
 
 // The resolved theme for imperative, non-React callers — system surfaces that are
 // created outside the tree (action sheets, alerts) still have to match the theme
-// Mesa is actually painting, which can be Candlelit while the OS is light.
+// Mesa is actually painting, which can be Night while the OS is light.
 let currentResolved: ThemeName = resolve('auto')
 export function getResolvedTheme(): ThemeName {
   return currentResolved
@@ -149,9 +154,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider value={value}>
       {/* The bar follows MESA's theme, not the OS's: `style="auto"` would read the
-          system scheme and get it wrong every evening, since Auto turns Candlelit
+          system scheme and get it wrong every evening, since Auto turns Night
           at 6pm on a light-mode phone. */}
-      <StatusBar style={resolved === 'candlelit' ? 'light' : 'dark'} animated />
+      <StatusBar style={resolved === 'night' ? 'light' : 'dark'} animated />
       <View style={[themeVars[resolved], { flex: 1, backgroundColor: GROUND[resolved] }]}>
         {children}
       </View>

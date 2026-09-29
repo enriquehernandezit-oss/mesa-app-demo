@@ -44,7 +44,7 @@ export function MesaMap({
   style?: StyleProp<ViewStyle>
 }) {
   const theme = useResolvedTheme()
-  const styleURL = theme === 'candlelit' ? Mapbox.StyleURL.Dark : Mapbox.StyleURL.Light
+  const styleURL = theme === 'night' ? Mapbox.StyleURL.Dark : Mapbox.StyleURL.Light
 
   // Fit-to-bounds view: the box around every plotted point (spots + you). A
   // box needs two DISTINCT points — one point (or several stacked on the same
@@ -92,7 +92,7 @@ export function MesaMap({
               hitSlop={12}
             >
               <View
-                className={`h-4 w-4 rounded-pill border-2 ${hot ? 'border-on-accent bg-accent' : 'border-surface bg-text'}`}
+                className={`h-4 w-4 rounded-pill border-2 ${hot ? 'border-on-accent bg-accent-fill' : 'border-surface bg-text'}`}
               />
             </Pressable>
           </MarkerView>

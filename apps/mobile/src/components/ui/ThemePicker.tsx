@@ -6,7 +6,7 @@ import { MoonIcon, SunIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { type ThemeChoice, useTheme } from '@/theme/ThemeProvider'
 
-// Apariencia — Auto / Afternoon / Candlelit as one segmented control (the
+// Apariencia — Auto / Day / Night as one segmented control (the
 // founder's mock: one sunk track, a white thumb, sun/moon glyphs), replacing
 // the three separate swatch pills. Applies immediately and persists
 // (ThemeProvider owns both).
@@ -32,16 +32,16 @@ export function ThemePicker() {
           startTransition(() => setChoice(v))
         }}
         options={[
-          { value: 'auto', label: 'Auto' },
+          { value: 'auto', label: t('settings.theme_auto') },
           {
-            value: 'afternoon',
-            label: 'Afternoon',
-            icon: <SunIcon size={15} color={shown === 'afternoon' ? 'text' : 'text-muted'} />,
+            value: 'day',
+            label: t('settings.theme_day'),
+            icon: <SunIcon size={15} color={shown === 'day' ? 'text' : 'text-muted'} />,
           },
           {
-            value: 'candlelit',
-            label: 'Candlelit',
-            icon: <MoonIcon size={14} color={shown === 'candlelit' ? 'text' : 'text-muted'} />,
+            value: 'night',
+            label: t('settings.theme_night'),
+            icon: <MoonIcon size={14} color={shown === 'night' ? 'text' : 'text-muted'} />,
           },
         ]}
       />

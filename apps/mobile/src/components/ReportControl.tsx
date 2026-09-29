@@ -92,7 +92,7 @@ export function ReportControl({
       }}
       className="mt-2 min-h-[44px] justify-center active:opacity-60"
     >
-      <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
+      <Text className="font-ui text-eyebrow text-danger uppercase tracking-eyebrow">
         {label ?? t('report.label')}
       </Text>
     </Pressable>

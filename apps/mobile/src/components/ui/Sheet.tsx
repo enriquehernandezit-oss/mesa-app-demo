@@ -11,7 +11,7 @@ import Animated, {
 import { Eyebrow } from '@/components/ui'
 import { CheckIcon } from '@/components/ui/icons'
 import { getLanguage, t } from '@/lib/i18n'
-import { BRASS_SHADOW } from '@/theme/vars'
+import { SHADOW } from '@/theme/vars'
 
 // Mesa's own themed chooser (a centered pop-up since Sept 2026; was a bottom sheet) — the same imperative-promise shape as
 // lib/actionSheet.ts's showActionSheet, so a call site swaps by changing one
@@ -198,7 +198,7 @@ export function SheetHost() {
         style={[
           {
             maxWidth: 380,
-            shadowColor: BRASS_SHADOW,
+            shadowColor: SHADOW,
             shadowOpacity: 0.25,
             shadowRadius: 24,
             shadowOffset: { width: 0, height: 8 },
@@ -233,7 +233,7 @@ export function SheetHost() {
               >
                 <Text
                   className={`flex-1 font-ui text-body ${
-                    o.destructive ? 'text-status-packed' : active ? 'text-accent' : 'text-text'
+                    o.destructive ? 'text-danger' : active ? 'text-accent' : 'text-text'
                   }`}
                 >
                   {o.label}

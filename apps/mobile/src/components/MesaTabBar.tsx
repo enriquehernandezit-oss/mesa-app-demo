@@ -94,7 +94,7 @@ function TabItem({
       <View>
         <Ico size={22} color={focused ? 'accent' : 'tab-inactive'} strokeWidth={TAB_ICON_STROKE} />
         {badge ? (
-          <View className="-top-1.5 -right-2.5 absolute min-w-[16px] items-center justify-center rounded-pill bg-status-packed px-1">
+          <View className="-top-1.5 -right-2.5 absolute min-w-[16px] items-center justify-center rounded-pill bg-danger px-1">
             <Text className="font-ui-semibold text-[10px] text-on-accent leading-[14px]">
               {badge > 9 ? '9+' : badge}
             </Text>
@@ -113,7 +113,7 @@ function TabItem({
 export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const fabBg = useColor('btn-primary-bg')
+  const fabBg = useColor('ink')
   const unseen = useUnseenActivity()
   const order = state.routes
 
@@ -181,7 +181,7 @@ export function MesaTabBar({ state, navigation }: MesaTabBarProps) {
           className="items-center justify-center rounded-pill active:scale-95"
           style={{ width: PILL_WIDTH, height: PILL_HEIGHT, backgroundColor: fabBg }}
         >
-          <PlusIcon size={20} color="btn-primary-fg" />
+          <PlusIcon size={20} color="on-ink" />
         </Pressable>
       </View>
       {item('rankings')}

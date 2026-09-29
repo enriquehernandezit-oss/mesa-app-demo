@@ -154,7 +154,7 @@ export function Characteristics({
   return (
     <View className="mt-1 gap-[2px]">
       {occasionTags && occasionTags.length > 0 && (
-        <Caption className="font-ui-medium text-micro text-accent-strong">
+        <Caption className="font-ui-medium text-micro text-accent">
           {occasionTags.map(tagLabel).join(' · ')}
         </Caption>
       )}
@@ -204,7 +204,7 @@ export function UtilityPill({
     if (!href) return
     // A web link opens IN the app (SFSafariViewController) instead of ejecting
     // to Safari — the member reads a menu and comes back with Done, they don't
-    // app-switch. Themed so it doesn't flash white over Candlelit. tel:/mailto:
+    // app-switch. Themed so it doesn't flash white over Night. tel:/mailto:
     // still hand off to the system, which is what they're for.
     if (/^https?:/.test(href)) {
       WebBrowser.openBrowserAsync(href, {
@@ -276,7 +276,7 @@ export function ScoreBadge({
   return (
     <View className="items-center gap-1">
       <View
-        className={`${box} items-center justify-center rounded-sm ${mesa ? 'border border-line bg-surface' : 'bg-accent'}`}
+        className={`${box} items-center justify-center rounded-sm ${mesa ? 'border border-line bg-surface' : 'bg-accent-fill'}`}
       >
         <Text
           style={DATA_FIGURES}
@@ -285,9 +285,7 @@ export function ScoreBadge({
           {displayScore(score)}
         </Text>
       </View>
-      {badge ? (
-        <Caption className="font-ui-medium text-micro text-accent-strong">{badge}</Caption>
-      ) : null}
+      {badge ? <Caption className="font-ui-medium text-micro text-accent">{badge}</Caption> : null}
       {caption ? <Caption>{caption}</Caption> : null}
       {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}
     </View>

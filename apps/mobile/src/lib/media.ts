@@ -29,20 +29,20 @@ export function imageUrl(
 
 // The MapBox stock style backing each Mesa theme. Paired with --map-tint in
 // tokens.css (which pushes the result toward Mesa) — change one, change both.
-export const MAP_STYLE_ID = { afternoon: 'light-v11', candlelit: 'dark-v11' } as const
+export const MAP_STYLE_ID = { day: 'light-v11', night: 'dark-v11' } as const
 export type MapTheme = keyof typeof MAP_STYLE_ID
 
 // A static MapBox map image (no JS library — light, works in the webview).
-// `theme` picks the matching stock style: a dark map under the light Afternoon
+// `theme` picks the matching stock style: a dark map under the light Day
 // theme reads as a black slab dropped on paper, so this is not cosmetic.
-// A brass pin marks the restaurant.
+// A burgundy pin marks the restaurant.
 export function mapboxStaticUrl(
   lat: number,
   lng: number,
   opts: { w?: number; h?: number; zoom?: number; theme?: MapTheme } = {},
 ): string | null {
   if (!MAPBOX) return null
-  const { w = 700, h = 260, zoom = 15, theme = 'candlelit' } = opts
-  const pin = `pin-l+c09050(${lng},${lat})`
+  const { w = 700, h = 260, zoom = 15, theme = 'night' } = opts
+  const pin = `pin-l+7a1a29(${lng},${lat})`
   return `https://api.mapbox.com/styles/v1/mapbox/${MAP_STYLE_ID[theme]}/static/${pin}/${lng},${lat},${zoom}/${w}x${h}@2x?access_token=${MAPBOX}`
 }

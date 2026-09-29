@@ -11,9 +11,9 @@ import { useColor } from '@/theme/useColor'
 // It also carries the two things a bare TextInput gets wrong on iOS, in one
 // place instead of nine:
 //
-//   keyboardAppearance — a Candlelit member typing a note used to get a blinding
+//   keyboardAppearance — a Night member typing a note used to get a blinding
 //   white keyboard. It follows Mesa's RESOLVED theme, not the OS's, because Auto
-//   turns Candlelit at 6pm on a light-mode phone.
+//   turns Night at 6pm on a light-mode phone.
 //
 //   selectionColor — the caret and selection are brass, not iOS system blue,
 //   which is the one accent docs/DESIGN.md allows.
@@ -39,9 +39,9 @@ export function Field({ multilineBox, label, error, className, ref, ...props }: 
       ref={ref}
       placeholderTextColor={placeholder}
       selectionColor={accent}
-      keyboardAppearance={theme === 'candlelit' ? 'dark' : 'light'}
+      keyboardAppearance={theme === 'night' ? 'dark' : 'light'}
       className={`rounded border bg-surface font-ui text-body text-text ${
-        error ? 'border-status-packed' : 'border-line'
+        error ? 'border-danger' : 'border-line'
       } ${multilineBox ? 'min-h-[84px] p-3' : 'min-h-[52px] px-4'} ${className ?? ''}`}
       {...props}
     />
@@ -57,7 +57,7 @@ export function Field({ multilineBox, label, error, className, ref, ...props }: 
         </Text>
       ) : null}
       {input}
-      {error ? <Text className="mt-1 font-ui text-micro text-status-packed">{error}</Text> : null}
+      {error ? <Text className="mt-1 font-ui text-micro text-danger">{error}</Text> : null}
     </View>
   )
 }

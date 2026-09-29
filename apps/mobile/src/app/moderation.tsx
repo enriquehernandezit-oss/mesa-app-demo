@@ -185,7 +185,7 @@ function ReportRow({
   return (
     <View className="mb-3 rounded border border-line bg-surface p-4">
       <View className="flex-row items-center justify-between">
-        <Caption className="font-ui-medium text-micro text-accent-strong">
+        <Caption className="font-ui-medium text-micro text-accent">
           {t(TYPE_KEYS[report.targetType])}
         </Caption>
         <Caption className="text-micro">{timeAgo(report.createdAt)}</Caption>
@@ -275,7 +275,7 @@ function ReportRow({
             onPress={() => onAct('remove')}
             className="min-h-[44px] justify-center active:opacity-60"
           >
-            <Text className="font-ui text-eyebrow text-status-packed uppercase tracking-eyebrow">
+            <Text className="font-ui text-eyebrow text-danger uppercase tracking-eyebrow">
               {report.targetType === 'user'
                 ? t('moderation.eject_button')
                 : t('moderation.remove_button')}

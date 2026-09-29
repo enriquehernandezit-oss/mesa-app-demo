@@ -186,7 +186,7 @@ export function SpotsLine({
     <View className={compact ? 'mt-2' : 'mt-3'}>
       <View className="mb-1 flex-row items-baseline justify-between">
         <Caption
-          className={`font-ui-semibold text-micro ${urgent ? 'text-status-packed' : CAT_CLASSES[cat].text}`}
+          className={`font-ui-semibold text-micro ${urgent ? 'text-danger' : CAT_CLASSES[cat].text}`}
         >
           {label}
         </Caption>
@@ -196,7 +196,7 @@ export function SpotsLine({
       </View>
       <AnimatedBar
         ratio={taken / capacity}
-        fillClass={urgent ? 'bg-status-packed' : CAT_CLASSES[cat].bg}
+        fillClass={urgent ? 'bg-danger' : CAT_CLASSES[cat].bg}
         trackClass={CAT_CLASSES[cat].soft}
         height={compact ? 4 : 6}
       />
@@ -286,12 +286,12 @@ export function RsvpButtons({
             if (!going) setBurst((b) => b + 1)
             toggle('going')
           }}
-          className={`flex-row items-center justify-center gap-1.5 rounded-pill ${md ? 'h-12 px-6' : 'h-9 px-4'} ${going ? CAT_CLASSES[cat].bg : 'bg-btn-primary-bg'}`}
+          className={`flex-row items-center justify-center gap-1.5 rounded-pill ${md ? 'h-12 px-6' : 'h-9 px-4'} ${going ? CAT_CLASSES[cat].bg : 'bg-ink'}`}
         >
           {going ? <CheckIcon size={md ? 16 : 13} color="on-cat" strokeWidth={2.2} /> : null}
           <Text
             maxFontSizeMultiplier={MAX_SCALE}
-            className={`font-ui-semibold ${md ? 'text-body' : 'text-label'} ${going ? 'text-on-cat' : 'text-btn-primary-fg'}`}
+            className={`font-ui-semibold ${md ? 'text-body' : 'text-label'} ${going ? 'text-on-cat' : 'text-on-ink'}`}
           >
             {going ? t('events.going_done') : t('events.going_cta')}
           </Text>

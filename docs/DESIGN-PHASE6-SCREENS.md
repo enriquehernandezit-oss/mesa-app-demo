@@ -1,5 +1,8 @@
 # Mesa — Phase 6 Screen Spec (the 18-screen design)
 
+> **Historical.** This describes the brass / oxblood design that Redesign 2 replaced. The current
+> spec is `docs/DESIGN.md` and the boards in `docs/design/`. Kept for reference only.
+
 This is the **authoritative screen-by-screen transcription** of the Phase 6 design the
 founder handed off as 18 rendered mocks (9 flows, drawn at a 284×600 frame — font sizes are
 device-realistic, do not scale up). It supersedes the compositional guidance in

@@ -204,7 +204,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           front instead of leaving it read as a pure Instagram field. */}
       <Caption className="mt-1">{t('onboarding.handle_helper')}</Caption>
       {handle.length > 0 && !handleValid && (
-        <Caption className="mt-1 text-status-packed">{t('onboarding.handle_rules')}</Caption>
+        <Caption className="mt-1 text-danger">{t('onboarding.handle_rules')}</Caption>
       )}
 
       <Eyebrow className="mt-5 mb-2">{t('rank.sector')}</Eyebrow>
@@ -261,7 +261,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           same reasoning as the handle helper above. */}
       <Caption className="mt-1">{t('onboarding.birthday_helper')}</Caption>
       {birthDay.length > 0 && birthMonth.length > 0 && birthYear.length === 4 && !birthday && (
-        <Caption className="mt-1 text-status-packed">{t('onboarding.birthday_invalid')}</Caption>
+        <Caption className="mt-1 text-danger">{t('onboarding.birthday_invalid')}</Caption>
       )}
 
       <Pressable
@@ -278,7 +278,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         <Caption className="flex-1">{t('onboarding.eula_accept')}</Caption>
       </Pressable>
 
-      {errorText && <Caption className="mt-3 text-status-packed">{errorText}</Caption>}
+      {errorText && <Caption className="mt-3 text-danger">{errorText}</Caption>}
 
       <View className="mt-6">
         <Button
@@ -365,7 +365,7 @@ function RankStep({ onNext }: { onNext: () => void }) {
                       className="h-full w-full"
                     />
                     {on && (
-                      <View className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-pill bg-accent">
+                      <View className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-pill bg-accent-fill">
                         <CheckIcon size={13} color="on-accent" />
                       </View>
                     )}
