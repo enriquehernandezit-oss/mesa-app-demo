@@ -280,6 +280,30 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   the serif (`SheetHeader` / `SheetTitle`), one solid button at the foot — Where (a search field, picture rows
   with a pick mark, chosen spots as solid pills), When (day and time pills), With whom (a search field, a raised
   **Invite** / solid **Invited** pill per follower), Review.
+- **Settings, comments and share** (`app/settings/*`, `app/notifications.tsx`, `app/legal/[doc].tsx`,
+  `app/moderation.tsx`, `app/photo-edit.tsx`, `app/comments/[rankingId].tsx`, `components/ShareCard.tsx`).
+  **Settings** opens on a raised me card (avatar 48, name in the serif, "@handle · 143 ranked", **Edit
+  profile**), then icon groups (`NavRow`: Your account · Privacy · Preferences · Notifications · About;
+  Friends; Sign out on its own) — `Group` / `Row` / `NavRow` / `GroupLabel` in `components/SettingsRow.tsx`.
+  **Your account** puts email (Verified ✓), Birthday, Change password and Sign out on other devices in one
+  group — the inline forms open inside it on the ground colour (`Field onCard`) — and the **danger zone** is
+  a ringed r22 panel with a ringed Delete account pill. **Privacy**: a switch row with its explanation,
+  Blocked accounts (avatar + name + @handle + Unblock), Export. **Preferences**: **three theme tiles** — Auto
+  (cream | black), Day, Night — each a small literal preview (raw colour, allowed here), the chosen one ringed
+  in ink, then the language as two pills. **About**: the lowercase wordmark (the logo — never the app-icon M)
+  over "Mesa 1.0.0", then the legal links. **Notifications**: a raised permission card (a solid Enable
+  pill) over one group of switches. **Legal**: the document's title in the native large title, its date, the
+  Spanish-only note as a soft burgundy panel (English mode), each section a 17/600 heading over 15pt prose.
+  **Moderation**: raised cards — the kind and age, the content, the reason, a ringed Remove / Eject pill and a
+  raised Dismiss. **Edit photo**: a round Close chip, a square frame, a round rotate chip and a solid Use
+  photo. **Comments** is a sheet: the post (avatar, "Diego ranked O.Livia", their words as a serif quote, the
+  score chip at the end), the thread (avatar 38, name + age, the comment, a "···"), and a composer — your
+  avatar, a capsule field, a round burgundy send button that wakes once there is text.
+  **The share card** (`ShareCard.tsx`, frozen — see "Where color is allowed to live"): the photo sinks into
+  black under the lowercase wordmark; a spot card is `#1` in the serif, the name, the meta in small caps, the
+  score as a serif figure with its **word in a burgundy chip**, their words as a quote; a list card is
+  "NAME · N SAVED" over serif rows (position, name, score); the footer says "donde tus amigos comen de
+  verdad".
 - **Lists, dishes and menus** (`app/lists/[slug].tsx`, `app/collections/*`, `app/save-to-list.tsx`,
   `app/dish-lists/*`, `components/DishNudgeCard.tsx`, `app/dish/*`, `app/r/[restaurantId]/dishes.tsx`,
   `app/menu/[restaurantId].tsx`). A **featured list** opens on a photo that fades into the ground under the glass back
@@ -352,8 +376,10 @@ places a raw color value may appear:
 7. **`apps/mobile/app.json`** — the native splash and icon backgrounds.
 8. **`apps/api/src/lib/publicPage.ts`** (the public share pages) and
    **`apps/api/src/routes/legal-pages.ts`** (privacy/terms) — self-contained stylesheets in a
-   separate package. Share pages follow the frozen card; legal pages are Day, meant to be read
-   like paper. If a palette changes, change them in the same commit.
+   separate package. Share pages follow the frozen card (`#0b0809` / `#7a1a29` / `#f4ede2`, Instrument Serif,
+   the system font for UI, a score as a number + a burgundy word chip); legal pages are Day by default and
+   Night under a dark device (`prefers-color-scheme`), in system fonts only — they make no external
+   request. If a palette changes, change them in the same commit.
 
 **Frozen share surfaces (a deliberate decision):** the story card and the public share page leave
 the app and are viewed inside someone else's feed, so they look the same for every sharer.

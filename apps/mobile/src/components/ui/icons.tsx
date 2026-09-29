@@ -225,11 +225,6 @@ export const CommentIcon = (p: IconProps) => (
     <Path d="M20 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.1A8 8 0 1 1 20 11.5Z" />
   </Icon>
 )
-export const ArrowUpIcon = (p: IconProps) => (
-  <Icon {...p}>
-    <Path d="M12 19V5M6 11l6-6 6 6" />
-  </Icon>
-)
 export const ArrowRightIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M5 12h14M13 6l6 6-6 6" />
@@ -378,6 +373,13 @@ export const UserPlusIcon = (p: IconProps) => (
   <Icon {...p}>
     <Circle cx="9.5" cy="8" r="3.5" />
     <Path d="M3 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M19 8v6M16 11h6" />
+  </Icon>
+)
+// A circle with an "i" — "About".
+export const InfoIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="9" />
+    <Path d="M12 11v5.5M12 7.6v.01" />
   </Icon>
 )
 // A flag on a pole — "Report".

@@ -34,6 +34,9 @@ type FieldProps = React.ComponentProps<typeof TextInput> & {
   error?: string
   // A leading glyph inside the field (mail, lock, search) — muted, non-interactive.
   icon?: ReactNode
+  // The field sits INSIDE a white card (a settings group, a form panel): it takes the ground
+  // colour and no lift, so it doesn't vanish into the card.
+  onCard?: boolean
   ref?: Ref<TextInput>
 }
 
@@ -42,6 +45,7 @@ export function Field({
   label,
   error,
   icon,
+  onCard,
   className,
   style,
   ref,
@@ -58,10 +62,10 @@ export function Field({
       selectionColor={accent}
       keyboardAppearance={theme === 'night' ? 'dark' : 'light'}
       maxFontSizeMultiplier={MAX_SCALE}
-      className={`rounded border bg-surface font-ui text-body text-text ${
+      className={`rounded border ${onCard ? 'bg-bg' : 'bg-surface'} font-ui text-body text-text ${
         error ? 'border-danger' : 'border-transparent'
       } ${multilineBox ? 'min-h-[84px] p-4' : icon ? 'min-h-[52px] pl-11 pr-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}
-      style={[lift, style]}
+      style={[onCard ? undefined : lift, style]}
       {...props}
     />
   )

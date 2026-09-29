@@ -3,10 +3,20 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Group, RowButton } from '@/components/SettingsRow'
-import { Caption, Eyebrow } from '@/components/ui'
+import { Group, GroupLabel, NavRow } from '@/components/SettingsRow'
+import { Caption, MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { ChevronIcon } from '@/components/ui/icons'
+import {
+  BellIcon,
+  FlagIcon,
+  InfoIcon,
+  LockIcon,
+  MailIcon,
+  PeopleIcon,
+  PersonIcon,
+  SendIcon,
+  SunIcon,
+} from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { api } from '@/lib/api'
@@ -16,6 +26,7 @@ import { useT } from '@/lib/i18n'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { MeStats } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 // Settings hub (M15) — a shallow index of a few grouped destinations instead
 // of the one long flat scroll app/settings.tsx used to be (521 lines, every
@@ -23,7 +34,8 @@ import { useColor } from '@/theme/useColor'
 // enough (3-4 rows apiece) to earn their own screen; Friends and Help stay
 // right here since they're one or two rows each. Row/RowButton move to
 // components/SettingsRow.tsx so every screen in this directory shares them
-// instead of each redefining its own copy.
+// instead of each redefining its own copy. Redesign 2: a raised me card (tap it to edit), then icon
+// groups — the account pages, Friends, help, the moderator queue — and Sign out on its own.
 export default function SettingsHub() {
   const router = useRouter()
   const t = useT()
@@ -56,6 +68,7 @@ export default function SettingsHub() {
 
   const [signingOut, setSigningOut] = useState(false)
   const accent = useColor('accent')
+  const lift = useLift()
   async function handleSignOut() {
     if (signingOut) return
     setSigningOut(true)
@@ -81,7 +94,7 @@ export default function SettingsHub() {
     <View className="flex-1 bg-bg">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-12"
+        contentContainerClassName="px-4 pb-12"
         contentInsetAdjustmentBehavior="automatic"
       >
         {/* Tappable profile card → straight into edit mode, not the profile
@@ -90,14 +103,19 @@ export default function SettingsHub() {
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push('/profile?edit=1')}
-          className="flex-row items-center gap-3 rounded border border-line bg-surface p-3 active:opacity-80"
+          className="mt-3 flex-row items-center gap-3 rounded-card bg-surface px-4 py-3.5 active:opacity-80"
+          style={lift}
         >
-          <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={44} />
+          <Avatar name={p?.name || p?.handle || 'm'} src={p?.image} size={48} />
           <View className="min-w-0 flex-1">
-            <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-serif text-serif-md text-text"
+              numberOfLines={1}
+            >
               {p?.name || t('common.you')}
             </Text>
-            <Caption numberOfLines={1}>
+            <Caption numberOfLines={1} className="text-meta">
               {[
                 p?.handle ? `@${p.handle}` : null,
                 stats.isError ? null : t('settings.ranked_count', { n: stats.data?.places ?? 0 }),
@@ -106,86 +124,97 @@ export default function SettingsHub() {
                 .join(' · ')}
             </Caption>
           </View>
-          <Text className="font-ui-medium text-label text-accent">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-accent"
+          >
             {t('settings.edit_profile')}
           </Text>
         </Pressable>
 
-        <Group className="mt-6">
-          <RowButton onPress={() => router.push('/settings/account')}>
-            <Text className="flex-1 font-ui text-body text-text">{t('settings.account')}</Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-          <RowButton onPress={() => router.push('/settings/privacy')}>
-            <Text className="flex-1 font-ui text-body text-text">{t('settings.privacy')}</Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-          <RowButton onPress={() => router.push('/settings/preferences')}>
-            <Text className="flex-1 font-ui text-body text-text">{t('settings.preferences')}</Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-          <RowButton onPress={() => router.push('/notifications')}>
-            <Text className="flex-1 font-ui text-body text-text">
-              {t('settings.notifications')}
-            </Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-          <RowButton onPress={() => router.push('/settings/about')} last>
-            <Text className="flex-1 font-ui text-body text-text">{t('settings.about')}</Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
+        <Group className="mt-4">
+          <NavRow
+            icon={<PersonIcon size={18} />}
+            label={t('settings.account')}
+            onPress={() => router.push('/settings/account')}
+          />
+          <NavRow
+            icon={<LockIcon size={18} />}
+            label={t('settings.privacy')}
+            onPress={() => router.push('/settings/privacy')}
+          />
+          <NavRow
+            icon={<SunIcon size={18} />}
+            label={t('settings.preferences')}
+            onPress={() => router.push('/settings/preferences')}
+          />
+          <NavRow
+            icon={<BellIcon size={18} />}
+            label={t('settings.notifications')}
+            onPress={() => router.push('/notifications')}
+          />
+          <NavRow
+            icon={<InfoIcon size={18} />}
+            label={t('settings.about')}
+            onPress={() => router.push('/settings/about')}
+            last
+          />
         </Group>
 
-        <Eyebrow className="mt-6 mb-2">{t('settings.friends_section')}</Eyebrow>
+        <GroupLabel>{t('settings.friends_section')}</GroupLabel>
         <Group>
-          <RowButton onPress={() => router.push('/friends')}>
-            <Text className="flex-1 font-ui text-body text-text">{t('settings.find_friends')}</Text>
-            <ChevronIcon size={16} color="text-faint" />
-          </RowButton>
-          <RowButton onPress={shareInvite} disabled={inviting} last>
-            <Text className="flex-1 font-ui text-body text-text">
-              {t('settings.invite_friends')}
-            </Text>
-            {inviteStats.data && inviteStats.data.joined > 0 ? (
-              <Caption className="text-micro">
-                {t('settings.joined_count', { n: inviteStats.data.joined })}
-              </Caption>
-            ) : (
-              <ChevronIcon size={16} color="text-faint" />
-            )}
-          </RowButton>
+          <NavRow
+            icon={<PeopleIcon size={18} />}
+            label={t('settings.find_friends')}
+            onPress={() => router.push('/friends')}
+          />
+          <NavRow
+            icon={<SendIcon size={18} />}
+            label={t('settings.invite_friends')}
+            onPress={shareInvite}
+            disabled={inviting}
+            meta={
+              inviteStats.data && inviteStats.data.joined > 0
+                ? t('settings.joined_count', { n: inviteStats.data.joined })
+                : undefined
+            }
+            last
+          />
         </Group>
 
         {supportEmail ? (
           <>
-            <Eyebrow className="mt-6 mb-2">{t('settings.help')}</Eyebrow>
+            <GroupLabel>{t('settings.help')}</GroupLabel>
             <Group>
-              <RowButton onPress={reportProblem} last>
-                <Text className="flex-1 font-ui text-body text-text">
-                  {t('settings.report_problem')}
-                </Text>
-                <ChevronIcon size={16} color="text-faint" />
-              </RowButton>
+              <NavRow
+                icon={<MailIcon size={18} />}
+                label={t('settings.report_problem')}
+                onPress={reportProblem}
+                last
+              />
             </Group>
           </>
         ) : null}
 
         {p?.isModerator ? (
-          <Group className="mt-6">
-            <RowButton onPress={() => router.push('/moderation')} last>
-              <Text className="flex-1 font-ui text-body text-text">{t('settings.moderation')}</Text>
-              <ChevronIcon size={16} color="text-faint" />
-            </RowButton>
+          <Group className="mt-5">
+            <NavRow
+              icon={<FlagIcon size={18} />}
+              label={t('settings.moderation')}
+              onPress={() => router.push('/moderation')}
+              last
+            />
           </Group>
         ) : null}
 
-        <Group className="mt-6">
-          <RowButton onPress={handleSignOut} disabled={signingOut} last>
-            <Text className="flex-1 font-ui-medium text-body text-accent">
-              {t('settings.sign_out')}
-            </Text>
-            {signingOut ? <ActivityIndicator size="small" color={accent} /> : null}
-          </RowButton>
+        <Group className="mt-5">
+          <NavRow
+            label={t('settings.sign_out')}
+            onPress={handleSignOut}
+            disabled={signingOut}
+            trailing={signingOut ? <ActivityIndicator size="small" color={accent} /> : null}
+            last
+          />
         </Group>
       </ScrollView>
     </View>

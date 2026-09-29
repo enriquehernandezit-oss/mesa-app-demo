@@ -563,13 +563,17 @@ export const Toggle = ({
   // both appearances, and tinting it reads as a broken switch.
   const track = useColor('accent-fill')
   const off = useColor('line-strong')
+  // Wrapped so it centres itself in a row: a bare UISwitch sits at the top of its flex line when
+  // the row's other content is taller (a label with a caption under it).
   return (
-    <Switch
-      value={checked}
-      onValueChange={onChange}
-      accessibilityLabel={label}
-      trackColor={{ false: off, true: track }}
-      ios_backgroundColor={off}
-    />
+    <View className="justify-center self-center">
+      <Switch
+        value={checked}
+        onValueChange={onChange}
+        accessibilityLabel={label}
+        trackColor={{ false: off, true: track }}
+        ios_backgroundColor={off}
+      />
+    </View>
   )
 }

@@ -216,6 +216,11 @@ describe.skipIf(!deps)('share pages: curated list / collection / dish list (loca
       expect(res.status).toBe(200)
       const html = await res.text()
       expect(html).toContain('Curated Test List')
+      // The shell is the frozen black + burgundy + cream one: Instrument Serif, no italics.
+      expect(html).toContain('<div class="mark">mesa</div>')
+      expect(html).toContain('Instrument+Serif')
+      expect(html).not.toContain('italic')
+      expect(html).not.toContain('Cormorant')
       expect(html).toContain(`${tag}-r0`)
       expect(html).toContain(`${tag}-r1`)
       expect(html.indexOf(`${tag}-r0`)).toBeLessThan(html.indexOf(`${tag}-r1`))

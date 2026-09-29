@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Animated, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -10,7 +10,7 @@ import { useTabBarClearance } from '@/components/MesaTabBar'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileStats } from '@/components/profile/ProfileStats'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Group, RowButton } from '@/components/SettingsRow'
+import { Group, NavRow } from '@/components/SettingsRow'
 import {
   Button,
   Caption,
@@ -506,31 +506,6 @@ export default function ProfileTab() {
 
       <ProfileHeader name={p?.name || t('common.you')} handle={p?.handle} scrollY={scrollY} />
     </View>
-  )
-}
-
-function NavRow({
-  icon,
-  label,
-  meta,
-  onPress,
-  last,
-}: {
-  icon: ReactNode
-  label: string
-  meta?: string
-  onPress: () => void
-  last?: boolean
-}) {
-  return (
-    <RowButton onPress={onPress} last={last}>
-      {icon}
-      <Text maxFontSizeMultiplier={MAX_SCALE} className="flex-1 font-ui text-body text-text">
-        {label}
-      </Text>
-      {meta ? <Caption>{meta}</Caption> : null}
-      <ChevronIcon size={16} color="text-faint" />
-    </RowButton>
   )
 }
 

@@ -22,50 +22,59 @@ import { esc } from '../lib/publicPage'
 // literally — a separate workspace package with no access to
 // apps/mobile/src/theme/vars.ts, exactly like lib/publicPage.ts's shell (see
 // docs/DESIGN.md, "Where color is allowed to live"). Unlike that one, this
-// page is AFTERNOON, not frozen Candlelit: a share card is an artifact that
-// leaves the app and wants to look like a Mesa object inside a stranger's
-// feed, while a legal document just wants to be read on paper. Values copied
-// from the `afternoon` map in vars.ts.
+// page follows the reader's device: Day (cream, white card) by default, Night
+// (black, the night card) under prefers-color-scheme — a share card is an
+// artifact that leaves the app and wants to look like a Mesa object inside a
+// stranger's feed, while a legal document just wants to be read. Values copied
+// from the `day` and `night` maps in vars.ts.
 //
-// Fonts are the system stacks rather than Cormorant Garamond / Plus Jakarta
-// Sans, because loading those means a request to Google's servers from a page
-// whose whole point is that it doesn't phone anywhere.
+// Fonts are the system stacks rather than Instrument Serif / SF via Google
+// Fonts, because loading those means a request to Google's servers from a page
+// whose whole point is that it doesn't phone anywhere. Georgia stands in for
+// the serif; nothing on the page is italic.
 const STYLES = `
   :root {
-    --bg: #f5efe4; --surface: #ffffff;
-    --text: #2a1512; --text-2: #4a3b32; --text-muted: #746253;
-    --accent-strong: #6f4718; --line: rgba(120, 80, 60, 0.14);
+    color-scheme: light dark;
+    --bg: #f3ede4; --surface: #ffffff; --logo: #210104;
+    --text: #16110f; --text-2: #3d332d; --text-muted: #8a7a6c;
+    --accent: #7a1a29; --line: rgba(22, 17, 15, 0.09);
+    --lift: 0 1px 2px rgba(60, 40, 20, 0.05), 0 10px 28px rgba(60, 40, 20, 0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0809; --surface: #171213; --logo: #f4ede2;
+      --text: #f4ede2; --text-2: #d9cfc2; --text-muted: rgba(244, 237, 226, 0.55);
+      --accent: #f4ede2; --line: rgba(255, 255, 255, 0.08);
+      --lift: none;
+    }
   }
   * { box-sizing: border-box; margin: 0; }
   body {
     background: var(--bg); color: var(--text-2);
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', sans-serif;
     font-size: 16px; line-height: 1.6;
     padding: 40px 20px 64px;
   }
   .wrap { width: 100%; max-width: 640px; margin: 0 auto; }
   .mark {
-    font-family: Georgia, 'Times New Roman', serif; font-size: 30px;
-    letter-spacing: .5px; color: var(--text); text-decoration: none;
+    font-family: Georgia, 'Times New Roman', serif; font-style: normal; font-size: 36px;
+    color: var(--logo); text-decoration: none;
   }
-  .doc { margin-top: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 32px 28px; }
-  h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 600; font-size: 34px; line-height: 1.1; color: var(--text); }
-  h2 {
-    font-size: 12px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase;
-    color: var(--accent-strong); margin: 32px 0 10px;
-  }
+  .doc { margin-top: 28px; background: var(--surface); border-radius: 24px; padding: 32px 28px; box-shadow: var(--lift); }
+  h1 { font-family: Georgia, 'Times New Roman', serif; font-style: normal; font-weight: 400; font-size: 38px; line-height: 1.08; color: var(--text); }
+  h2 { font-size: 18px; font-weight: 650; color: var(--text); margin: 30px 0 8px; }
   p { margin-top: 12px; }
   p:first-of-type { margin-top: 0; }
   .updated { font-size: 14px; color: var(--text-muted); margin-top: 10px; }
   ul { margin: 14px 0 0; padding-left: 20px; }
   li { margin-top: 8px; }
-  a { color: var(--accent-strong); }
+  a { color: var(--accent); }
   .foot { margin-top: 24px; font-size: 14px; color: var(--text-muted); }
   .foot a { margin-right: 14px; }
   @media (max-width: 480px) {
     body { padding: 28px 16px 48px; }
-    .doc { padding: 24px 20px; border-radius: 12px; }
-    h1 { font-size: 28px; }
+    .doc { padding: 24px 20px; border-radius: 20px; }
+    h1 { font-size: 30px; }
   }
 `
 

@@ -3,7 +3,15 @@ import { Image } from 'expo-image'
 import { Redirect, Stack, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import {
+  Button,
+  Caption,
+  Card,
+  EmptyState,
+  ErrorState,
+  MAX_SCALE,
+  RowsSkeleton,
+} from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -117,7 +125,7 @@ export default function ModerationQueue() {
       <Stack.Screen options={{ title: t('moderation.title') }} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-10"
+        contentContainerClassName="px-4 pb-10"
         contentInsetAdjustmentBehavior="automatic"
       >
         {q.isPending ? (
@@ -128,7 +136,7 @@ export default function ModerationQueue() {
           <EmptyState body={t('moderation.empty_body')}>{t('moderation.empty_title')}</EmptyState>
         ) : (
           <>
-            <Caption className="mb-3 mt-2 text-micro">
+            <Caption className="mb-3 mt-1 px-1 text-pill">
               {t('moderation.open_reports_count', { n: reports.length })}
             </Caption>
             {reports.map((r) => (
@@ -183,12 +191,12 @@ function ReportRow({
   const router = useRouter()
   const target = report.target
   return (
-    <View className="mb-3 rounded border border-line bg-surface p-4">
+    <Card className="mb-2.5 px-4 py-4">
       <View className="flex-row items-center justify-between">
-        <Caption className="font-ui-medium text-micro text-accent">
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-meta text-text">
           {t(TYPE_KEYS[report.targetType])}
-        </Caption>
-        <Caption className="text-micro">{timeAgo(report.createdAt)}</Caption>
+        </Text>
+        <Caption className="text-meta">{timeAgo(report.createdAt)}</Caption>
       </View>
 
       {/* The reported content itself — without it there's nothing to judge. */}
@@ -203,7 +211,7 @@ function ReportRow({
           onPress={() => router.push(`/u/${target.userId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text selectable className="font-serif text-serif-sm text-text-2">
+          <Text selectable className="font-serif text-serif-sm text-text">
             “{target.body}”
           </Text>
         </Pressable>
@@ -216,7 +224,7 @@ function ReportRow({
           {target.imageId ? (
             <Image
               source={{ uri: imageUrl(target.imageId, { w: 200, h: 200 }) ?? undefined }}
-              style={{ width: 56, height: 56, borderRadius: 10 }}
+              style={{ width: 48, height: 48, borderRadius: 14 }}
               contentFit="cover"
             />
           ) : null}
@@ -267,32 +275,30 @@ function ReportRow({
         </Caption>
       ) : null}
 
-      <View className="mt-3 flex-row gap-5">
+      <View className="mt-3 flex-row gap-2">
         {!report.alreadyHandled && target !== null && (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="destructive"
+            size="sm"
             disabled={busy}
+            className="min-h-[38px] flex-1"
             onPress={() => onAct('remove')}
-            className="min-h-[44px] justify-center active:opacity-60"
           >
-            <Text className="font-ui text-eyebrow text-danger uppercase tracking-eyebrow">
-              {report.targetType === 'user'
-                ? t('moderation.eject_button')
-                : t('moderation.remove_button')}
-            </Text>
-          </Pressable>
+            {report.targetType === 'user'
+              ? t('moderation.eject_button')
+              : t('moderation.remove_button')}
+          </Button>
         )}
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={busy}
+          className="min-h-[38px] flex-1"
           onPress={() => onAct('dismiss')}
-          className="min-h-[44px] justify-center active:opacity-60"
         >
-          <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {t('moderation.dismiss_button')}
-          </Text>
-        </Pressable>
+          {t('moderation.dismiss_button')}
+        </Button>
       </View>
-    </View>
+    </Card>
   )
 }

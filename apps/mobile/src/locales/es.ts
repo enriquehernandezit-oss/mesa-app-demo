@@ -915,6 +915,11 @@ export const es = {
   'settings.appearance_auto_hint':
     'Auto pasa a Noche al anochecer o si tu iPhone está en modo oscuro.',
   'settings.friends_only_scores': 'Puntuaciones solo de amigos',
+  'settings.friends_only_scores_hint':
+    'Muestra solo las puntuaciones de tus amigos, no el promedio de todos.',
+  'settings.theme_auto_sub': 'Sigue la noche',
+  'settings.theme_day_sub': 'Crema',
+  'settings.theme_night_sub': 'Negro',
   'settings.export_rankings': 'Exportar mis rankings',
   'settings.blocked_accounts': 'Cuentas bloqueadas',
   'settings.blocked_load_error': 'No se pudieron cargar tus cuentas bloqueadas.',
@@ -935,7 +940,7 @@ export const es = {
   'settings.app_version': 'Versión de la app',
   'settings.invite_friends': 'Invitar amigos',
   'settings.joined_count': { one: '{n} se unió', other: '{n} se unieron' },
-  'settings.verified': 'Verificado ✓',
+  'settings.verified': 'Verificado',
   'settings.link_sent': 'Enlace enviado ›',
   'settings.sending': 'Enviando…',
   'settings.verify_email': 'Verificar correo',

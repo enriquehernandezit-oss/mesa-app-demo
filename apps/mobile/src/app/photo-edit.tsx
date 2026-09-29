@@ -7,13 +7,14 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { Button, Caption } from '@/components/ui'
+import { Button, Caption, IconButton, MAX_SCALE as MAX_FONT_SCALE } from '@/components/ui'
 import { CloseIcon, RotateIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { finishPhotoEdit, getPendingPhotoEdit } from '@/lib/photoEditor'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 const FRAME_MARGIN = 40
 const MAX_FRAME = 360
@@ -66,6 +67,7 @@ export default function PhotoEditScreen() {
   const insets = useSafeAreaInsets()
   const { width } = useWindowDimensions()
   const accent = useColor('accent')
+  const lift = useLift()
   const [job] = useState(() => getPendingPhotoEdit())
   const resolvedRef = useRef(false)
 
@@ -225,26 +227,27 @@ export default function PhotoEditScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="flex-row items-center justify-between px-5">
-        <Pressable
-          accessibilityRole="button"
+    <View className="flex-1 bg-bg pt-4">
+      <View className="flex-row items-center justify-between px-4">
+        <IconButton
           accessibilityLabel={t('comments.close')}
           onPress={cancel}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
+          icon={<CloseIcon size={18} color="text" />}
+        />
+        <Text
+          maxFontSizeMultiplier={MAX_FONT_SCALE}
+          className="font-ui-semibold text-body text-text"
         >
-          <CloseIcon size={18} />
-        </Pressable>
-        <Text className="font-ui-semibold text-label text-text">{t('photoEdit.title')}</Text>
-        <View className="h-10 w-10" />
+          {t('photoEdit.title')}
+        </Text>
+        <View className="h-[42px] w-[42px]" />
       </View>
 
       <View className="flex-1 items-center justify-center px-5">
         <View
           style={[
             { width: FRAME, height: FRAME },
-            { borderRadius: job?.shape === 'circle' ? FRAME / 2 : 16 },
+            { borderRadius: job?.shape === 'circle' ? FRAME / 2 : 18 },
           ]}
           className="items-center justify-center overflow-hidden bg-bg-sunk"
         >
@@ -266,7 +269,7 @@ export default function PhotoEditScreen() {
       </View>
 
       <View
-        className="flex-row items-center gap-3 px-5"
+        className="flex-row items-center gap-2.5 px-4"
         style={{ paddingBottom: Math.max(insets.bottom, 16) }}
       >
         <Pressable
@@ -274,11 +277,17 @@ export default function PhotoEditScreen() {
           accessibilityLabel={t('photoEdit.rotate')}
           disabled={busy || !workingSize}
           onPress={rotate}
-          className="h-[52px] w-[52px] items-center justify-center rounded border border-line bg-surface active:opacity-70 disabled:opacity-45"
+          className="h-[56px] w-[56px] items-center justify-center rounded-pill bg-chip active:opacity-70 disabled:opacity-45"
+          style={lift}
         >
-          <RotateIcon size={20} />
+          <RotateIcon size={22} />
         </Pressable>
-        <Button className="flex-1" loading={busy} disabled={!workingSize} onPress={confirm}>
+        <Button
+          className="min-h-[56px] flex-1"
+          loading={busy}
+          disabled={!workingSize}
+          onPress={confirm}
+        >
           {t('photoEdit.use_photo')}
         </Button>
       </View>

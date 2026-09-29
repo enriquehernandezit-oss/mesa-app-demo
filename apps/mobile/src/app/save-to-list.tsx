@@ -207,7 +207,7 @@ export default function SaveToListSheet() {
         ) : null}
 
         {creating ? (
-          <Card className="mt-3 p-4">
+          <Card className="mt-3 px-4 py-4">
             {hasItem ? (
               <Text
                 maxFontSizeMultiplier={MAX_SCALE}

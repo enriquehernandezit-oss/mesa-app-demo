@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams } from 'expo-router'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 
-import { Body, Caption, EmptyState, Eyebrow, SectionHeader, Wordmark } from '@/components/ui'
+import { Caption, EmptyState, MAX_SCALE } from '@/components/ui'
 import { useLanguage, useT } from '@/lib/i18n'
 
 // In-app legal pages. Apple requires the Privacy Policy and Terms to be
@@ -281,6 +281,8 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
   },
 }
 
+// Redesign 2: the native large title names the document; under it the date, the Spanish-only note
+// (English mode) as a soft burgundy panel, then each section as a 17/600 heading over 15pt prose.
 export default function LegalPage() {
   const t = useT()
   const lang = useLanguage()
@@ -298,18 +300,34 @@ export default function LegalPage() {
           contentContainerClassName="px-5 pb-12"
           contentInsetAdjustmentBehavior="automatic"
         >
-          <Wordmark size={32} />
-          <Eyebrow className="mt-4">Legal</Eyebrow>
-          <Caption className="mt-2">{entry.updated}</Caption>
+          <Caption className="mt-1 text-pill">{entry.updated}</Caption>
           {lang === 'en' && (
-            <Caption className="mt-3 text-text-muted">{t('legal.spanish_only_note')}</Caption>
+            <View className="mt-4 rounded-[16px] bg-accent-soft px-3.5 py-3">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui text-label leading-[19px] text-text-2"
+              >
+                {t('legal.spanish_only_note')}
+              </Text>
+            </View>
           )}
           {entry.sections.map((section) => (
-            <View key={section.heading}>
-              <SectionHeader>{section.heading}</SectionHeader>
-              <View className="gap-3">
+            <View key={section.heading} className="pt-5">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-[17px] text-text"
+              >
+                {section.heading}
+              </Text>
+              <View className="mt-1.5 gap-3">
                 {section.paragraphs.map((paragraph) => (
-                  <Body key={paragraph.slice(0, 24)}>{paragraph}</Body>
+                  <Text
+                    key={paragraph.slice(0, 24)}
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui text-subhead leading-[23px] text-text-2"
+                  >
+                    {paragraph}
+                  </Text>
                 ))}
               </View>
             </View>

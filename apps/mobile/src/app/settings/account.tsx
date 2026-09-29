@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Group, Row, RowButton } from '@/components/SettingsRow'
-import { Button, Caption, Eyebrow } from '@/components/ui'
+import { Group, NavRow, Row } from '@/components/SettingsRow'
+import { Button, Caption, MAX_SCALE } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { CalendarIcon, CheckIcon, LockIcon, MailIcon, RotateIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
@@ -12,15 +14,14 @@ import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { dateLocale, useT } from '@/lib/i18n'
 import { parseBirthdayIso } from '@/lib/time'
-import { useColor } from '@/theme/useColor'
 
 // Account (M15) — email verification, password, ending other sessions, and
-// account deletion. Moved verbatim out of the old flat app/settings.tsx.
+// account deletion. Moved verbatim out of the old flat app/settings.tsx. Redesign 2: icon rows in
+// one grouped card (the inline forms open inside it), and the danger zone a ringed r22 panel.
 export default function AccountSettings() {
   const router = useRouter()
   const t = useT()
   const queryClient = useQueryClient()
-  const placeholder = useColor('text-muted')
   const { data } = useProfile(true)
   const p = data?.profile
 
@@ -158,19 +159,27 @@ export default function AccountSettings() {
     <View className="flex-1 bg-bg">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-12"
+        contentContainerClassName="px-4 pb-12"
         contentInsetAdjustmentBehavior="automatic"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <Group className="mt-4">
+        <Group className="mt-3">
           {realEmail && (
             <Row>
-              <Text className="flex-1 font-ui text-body text-text" numberOfLines={1}>
+              <MailIcon size={18} />
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="min-w-0 flex-1 font-ui text-body text-text"
+                numberOfLines={1}
+              >
                 {realEmail}
               </Text>
               {p?.emailVerified ? (
-                <Caption>{t('settings.verified')}</Caption>
+                <View className="flex-row items-center gap-1">
+                  <Caption>{t('settings.verified')}</Caption>
+                  <CheckIcon size={14} color="text-muted" strokeWidth={2.2} />
+                </View>
               ) : verifySent ? (
                 <Caption>{t('settings.link_sent')}</Caption>
               ) : (
@@ -180,7 +189,10 @@ export default function AccountSettings() {
                   onPress={resendVerification}
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
-                  <Text className="font-ui-medium text-label text-accent">
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui-semibold text-label text-accent"
+                  >
                     {verifying ? t('settings.sending') : t('settings.verify_email')}
                   </Text>
                 </Pressable>
@@ -193,35 +205,41 @@ export default function AccountSettings() {
               at signup going forward, but every pre-M23 account has none yet
               and sets it here for the first time. */}
           {editingBirthday ? (
-            <View className="gap-3 py-4">
+            <View className="gap-3 border-line border-b py-4">
               <View className="flex-row gap-2">
-                <TextInput
-                  className="min-h-[48px] w-16 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
-                  placeholder={t('onboarding.birthday_day')}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={birthDay}
-                  onChangeText={(v) => setBirthDay(v.replace(/\D/g, ''))}
-                />
-                <TextInput
-                  className="min-h-[48px] w-16 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
-                  placeholder={t('onboarding.birthday_month')}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  value={birthMonth}
-                  onChangeText={(v) => setBirthMonth(v.replace(/\D/g, ''))}
-                />
-                <TextInput
-                  className="min-h-[48px] w-24 rounded border border-line bg-bg px-3 text-center font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
-                  placeholder={t('onboarding.birthday_year')}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                  value={birthYear}
-                  onChangeText={(v) => setBirthYear(v.replace(/\D/g, ''))}
-                />
+                <View className="w-[72px]">
+                  <Field
+                    onCard
+                    className="text-center"
+                    placeholder={t('onboarding.birthday_day')}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    value={birthDay}
+                    onChangeText={(v) => setBirthDay(v.replace(/\D/g, ''))}
+                  />
+                </View>
+                <View className="w-[72px]">
+                  <Field
+                    onCard
+                    className="text-center"
+                    placeholder={t('onboarding.birthday_month')}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    value={birthMonth}
+                    onChangeText={(v) => setBirthMonth(v.replace(/\D/g, ''))}
+                  />
+                </View>
+                <View className="w-[104px]">
+                  <Field
+                    onCard
+                    className="text-center"
+                    placeholder={t('onboarding.birthday_year')}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    value={birthYear}
+                    onChangeText={(v) => setBirthYear(v.replace(/\D/g, ''))}
+                  />
+                </View>
               </View>
               {birthDay.length > 0 &&
                 birthMonth.length > 0 &&
@@ -250,12 +268,12 @@ export default function AccountSettings() {
               </Button>
             </View>
           ) : (
-            <RowButton onPress={() => setEditingBirthday(true)}>
-              <Text className="flex-1 font-ui text-body text-text">
-                {t('onboarding.birthday_label')}
-              </Text>
-              <Caption>{birthdayLabel ?? t('settings.birthday_not_set')}</Caption>
-            </RowButton>
+            <NavRow
+              icon={<CalendarIcon size={18} />}
+              label={t('onboarding.birthday_label')}
+              meta={birthdayLabel ?? t('settings.birthday_not_set')}
+              onPress={() => setEditingBirthday(true)}
+            />
           )}
 
           {/* Change password — only for accounts that HAVE one. An Apple or
@@ -263,10 +281,9 @@ export default function AccountSettings() {
               control that can only fail. */}
           {realEmail &&
             (changingPassword ? (
-              <View className="gap-3 py-4">
-                <TextInput
-                  className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
+              <View className="gap-3 border-line border-b py-4">
+                <Field
+                  onCard
                   placeholder={t('settings.current_password_placeholder')}
                   secureTextEntry
                   textContentType="password"
@@ -274,9 +291,8 @@ export default function AccountSettings() {
                   value={currentPassword}
                   onChangeText={setCurrentPassword}
                 />
-                <TextInput
-                  className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
+                <Field
+                  onCard
                   placeholder={t('settings.new_password_placeholder')}
                   secureTextEntry
                   textContentType="newPassword"
@@ -305,51 +321,71 @@ export default function AccountSettings() {
                 </Button>
               </View>
             ) : (
-              <RowButton onPress={() => setChangingPassword(true)}>
-                <Text className="flex-1 font-ui text-body text-text">
-                  {t('settings.change_password')}
-                </Text>
-              </RowButton>
+              <NavRow
+                icon={<LockIcon size={18} />}
+                label={t('settings.change_password')}
+                onPress={() => setChangingPassword(true)}
+              />
             ))}
 
           {/* The control people look for after a scare: end every OTHER
               session. */}
-          <RowButton onPress={() => revokeOthers.mutate()} disabled={revokeOthers.isPending} last>
-            <Text className="flex-1 font-ui text-body text-text">
-              {revokeOthers.isPending
+          <NavRow
+            icon={<RotateIcon size={18} />}
+            label={
+              revokeOthers.isPending
                 ? t('settings.signing_out_others')
-                : t('settings.sign_out_others')}
-            </Text>
-          </RowButton>
+                : t('settings.sign_out_others')
+            }
+            onPress={() => revokeOthers.mutate()}
+            disabled={revokeOthers.isPending}
+            chevron={false}
+            last
+          />
         </Group>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
-        <View className="mt-8 gap-3 rounded border border-danger p-4">
-          <Eyebrow className="text-danger">{t('settings.danger_zone')}</Eyebrow>
+        <View className="mt-4 gap-3 rounded-group border-[1.5px] border-danger p-4">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-danger"
+          >
+            {t('settings.danger_zone')}
+          </Text>
           {!confirmingDelete ? (
             <>
-              <Caption>{t('settings.delete_account_warning')}</Caption>
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui text-pill leading-[20px] text-text-2"
+              >
+                {t('settings.delete_account_warning')}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setConfirmingDelete(true)}
-                className="min-h-[44px] items-center justify-center rounded border border-danger active:opacity-70"
+                className="min-h-[44px] items-center justify-center rounded-pill border-[1.5px] border-danger active:opacity-70"
               >
-                <Text className="font-ui-medium text-label text-danger">
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-subhead text-danger"
+                >
                   {t('settings.delete_account')}
                 </Text>
               </Pressable>
             </>
           ) : (
             <>
-              <Caption>
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui text-pill leading-[20px] text-text-2"
+              >
                 {realEmail
                   ? t('settings.delete_confirm_with_password')
                   : t('settings.delete_confirm_no_password')}
-              </Caption>
+              </Text>
               {realEmail && (
-                <TextInput
-                  className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
-                  placeholderTextColor={placeholder}
+                <Field
+                  onCard
                   placeholder={t('settings.your_password_placeholder')}
                   secureTextEntry
                   textContentType="password"

@@ -3,7 +3,15 @@ import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../context'
-import { esc, layout, notFound, publicOrigin } from '../lib/publicPage'
+import {
+  displayScore,
+  esc,
+  layout,
+  notFound,
+  publicOrigin,
+  scoreChip,
+  scoreWord,
+} from '../lib/publicPage'
 
 // PUBLIC share pages — the growth loop's return path. When a user shares their
 // ranking, the share text carries a link here. These pages are server-rendered
@@ -46,9 +54,9 @@ const planDateFormatter = new Intl.DateTimeFormat('es-DO', {
   minute: '2-digit',
 })
 
-// Scores are stored 0–100, always shown 0–10 (never stars). Mirrors the app's
-// lib/display.ts so the public page reads identically to the in-app passport.
-const d10 = (score: number) => (score / 10).toFixed(1)
+// Scores are stored 0–100, always shown 0–10 with a word (never stars) — displayScore / scoreChip
+// / scoreWord in lib/publicPage.ts mirror the app's lib/score.ts, so the public page reads
+// identically to the in-app passport.
 
 // Absolute, crawler-reachable cover URL. Same precedence as the client's
 // media.ts: a full URL (an R2 upload, or a legacy value) passes through; a
@@ -148,7 +156,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
                 (r) =>
                   `<li><span class="pos">${r.position}</span><span class="nm">${esc(
                     r.name,
-                  )}</span><span class="sc">${d10(r.score)}</span></li>`,
+                  )}</span>${scoreChip(r.score)}</li>`,
               )
               .join('')}</ol>`
           : ''
@@ -215,7 +223,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
             (r) =>
               `<li><span class="pos">${r.position}</span><span class="nm">${esc(
                 r.name,
-              )}</span><span class="sc">${d10(r.score)}</span></li>`,
+              )}</span>${scoreChip(r.score)}</li>`,
           )
           .join('')}
       </ol>`
@@ -291,7 +299,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     const statLine =
       count > 0
         ? `${count} ${count === 1 ? 'persona ha' : 'personas han'} rankeado${
-            avg != null ? ` · promedio ${d10(avg)}` : ''
+            avg != null ? ` · promedio ${displayScore(avg)} · ${scoreWord(avg)}` : ''
           }`
         : 'Aún nadie lo ha rankeado. Sé el primero.'
 

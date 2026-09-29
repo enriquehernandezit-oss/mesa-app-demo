@@ -4,9 +4,9 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Share, Text, View } from 'react-native'
 
-import { Group, Row, RowButton } from '@/components/SettingsRow'
-import { Caption, Toggle } from '@/components/ui'
-import { ChevronIcon } from '@/components/ui/icons'
+import { Group, NavRow, Row } from '@/components/SettingsRow'
+import { Caption, MAX_SCALE, Toggle } from '@/components/ui'
+import { DownloadIcon, LockIcon, PersonIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
@@ -43,12 +43,16 @@ export default function PrivacySettings() {
   }
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-4">
+    <View className="flex-1 bg-bg px-4 pt-3">
       <Group>
         <Row>
-          <Text className="flex-1 font-ui text-body text-text">
-            {t('settings.friends_only_scores')}
-          </Text>
+          <LockIcon size={18} />
+          <View className="min-w-0 flex-1">
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-body text-text">
+              {t('settings.friends_only_scores')}
+            </Text>
+            <Caption className="text-meta">{t('settings.friends_only_scores_hint')}</Caption>
+          </View>
           <Toggle
             checked={friendsOnly}
             onChange={(v) => {
@@ -58,22 +62,19 @@ export default function PrivacySettings() {
             label={t('settings.friends_only_scores')}
           />
         </Row>
-        <RowButton onPress={() => router.push('/settings/blocked')}>
-          <Text className="flex-1 font-ui text-body text-text">
-            {t('settings.blocked_accounts')}
-          </Text>
-          <ChevronIcon size={16} color="text-faint" />
-        </RowButton>
-        <RowButton onPress={exportRankings} disabled={exporting} last>
-          <Text className="flex-1 font-ui text-body text-text">
-            {t('settings.export_rankings')}
-          </Text>
-          {exporting ? (
-            <Caption className="text-micro">…</Caption>
-          ) : (
-            <ChevronIcon size={16} color="text-faint" />
-          )}
-        </RowButton>
+        <NavRow
+          icon={<PersonIcon size={18} />}
+          label={t('settings.blocked_accounts')}
+          onPress={() => router.push('/settings/blocked')}
+        />
+        <NavRow
+          icon={<DownloadIcon size={18} />}
+          label={t('settings.export_rankings')}
+          onPress={exportRankings}
+          disabled={exporting}
+          trailing={exporting ? <Caption className="text-micro">…</Caption> : undefined}
+          last
+        />
       </Group>
     </View>
   )

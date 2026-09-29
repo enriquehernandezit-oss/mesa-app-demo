@@ -58,6 +58,16 @@ describe('legal pages', () => {
     }
   })
 
+  test('is Day by default and Night under a dark device, in Redesign 2 colours, with no italics', async () => {
+    const html = await (await get('/legal/privacy')).text()
+    expect(html).toContain('#f3ede4') // Day ground
+    expect(html).toContain('prefers-color-scheme: dark')
+    expect(html).toContain('#0b0809') // Night ground
+    expect(html).toContain('#7a1a29') // the one burgundy accent
+    expect(html).not.toContain('italic')
+    expect(html).not.toContain('#6f4718') // the retired brass
+  })
+
   test('no draft or internal notes survive in the published copy', async () => {
     for (const id of ids) {
       const text = JSON.stringify(LEGAL_DOCS[id]).toLowerCase()

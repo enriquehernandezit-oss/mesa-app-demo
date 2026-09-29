@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { Group, Row } from '@/components/SettingsRow'
-import { EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import { Caption, EmptyState, ErrorState, MAX_SCALE, RowsSkeleton } from '@/components/ui'
+import { Avatar } from '@/components/ui/Avatar'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
@@ -26,7 +27,7 @@ export default function BlockedAccounts() {
   const blocked = blocks.data?.blocked ?? []
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-4">
+    <View className="flex-1 bg-bg px-4 pt-3">
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
         {blocks.isPending ? (
           <RowsSkeleton rows={4} />
@@ -40,16 +41,31 @@ export default function BlockedAccounts() {
           <Group>
             {blocked.map((u, i) => (
               <Row key={u.id} last={i === blocked.length - 1}>
-                <Text className="flex-1 font-ui text-body text-text">
-                  {u.name || (u.handle ? `@${u.handle}` : t('common.someone'))}
-                </Text>
+                <Avatar name={u.name || u.handle || 'm'} src={u.image} size={36} />
+                <View className="min-w-0 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui text-body text-text"
+                  >
+                    {u.name || (u.handle ? `@${u.handle}` : t('common.someone'))}
+                  </Text>
+                  {u.name && u.handle ? (
+                    <Caption numberOfLines={1} className="text-meta">
+                      @{u.handle}
+                    </Caption>
+                  ) : null}
+                </View>
                 <Pressable
                   accessibilityRole="button"
                   disabled={unblock.isPending}
                   onPress={() => unblock.mutate(u.id)}
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
-                  <Text className="font-ui-medium text-label text-accent">
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui-semibold text-subhead text-text"
+                  >
                     {t('settings.unblock')}
                   </Text>
                 </Pressable>

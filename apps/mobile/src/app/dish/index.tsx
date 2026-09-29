@@ -423,13 +423,11 @@ export default function DishCompose() {
           <Text maxFontSizeMultiplier={MAX_SCALE} className="flex-1 font-ui text-subhead text-text">
             {t('dish.friends_only_label')}
           </Text>
-          <View className="justify-center self-center">
-            <Toggle
-              checked={friendsOnly}
-              onChange={setFriendsOnly}
-              label={t('dish.friends_only_label')}
-            />
-          </View>
+          <Toggle
+            checked={friendsOnly}
+            onChange={setFriendsOnly}
+            label={t('dish.friends_only_label')}
+          />
         </View>
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (

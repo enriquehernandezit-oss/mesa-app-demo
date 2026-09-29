@@ -4,7 +4,8 @@ import { useCallback, useState } from 'react'
 import { Linking, Text, View } from 'react-native'
 
 import { Group, Row } from '@/components/SettingsRow'
-import { Body, Button, Caption, Toggle } from '@/components/ui'
+import { Body, Button, Caption, Card, MAX_SCALE, Toggle } from '@/components/ui'
+import { BellIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { type PushPermission, pushPermissionStatus, registerForPush } from '@/lib/push'
@@ -74,32 +75,42 @@ export default function NotificationSettings() {
   const unsupported = permission === 'unsupported'
 
   return (
-    <View className="flex-1 bg-bg px-5 pt-4">
+    <View className="flex-1 bg-bg px-4 pt-3">
       {permission === 'denied' ? (
-        <View className="mb-4 gap-2 rounded border border-line bg-surface p-4">
+        <Card className="mb-3 gap-3 px-4 py-4">
           <Body>{t('notifications.permission_denied')}</Body>
-          <Button variant="secondary" onPress={() => Linking.openSettings()}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<BellIcon size={16} />}
+            onPress={() => Linking.openSettings()}
+          >
             {t('notifications.open_settings')}
           </Button>
-        </View>
+        </Card>
       ) : permission === 'undetermined' ? (
-        <View className="mb-4 gap-2 rounded border border-line bg-surface p-4">
+        <Card className="mb-3 gap-3 px-4 py-4">
           <Body>{t('notifications.permission_prompt')}</Body>
-          <Button variant="secondary" onPress={enable}>
+          <Button size="sm" icon={<BellIcon size={16} color="on-ink" />} onPress={enable}>
             {t('notifications.enable')}
           </Button>
-        </View>
+        </Card>
       ) : unsupported ? (
-        <View className="mb-4 gap-2 rounded border border-line bg-surface p-4">
+        <Card className="mb-3 px-4 py-4">
           <Body>{t('notifications.unsupported')}</Body>
-        </View>
+        </Card>
       ) : null}
 
       <View pointerEvents={unsupported ? 'none' : 'auto'}>
         <Group className={unsupported ? 'opacity-50' : ''}>
           {rows.map((row, i) => (
             <Row key={row.key} last={i === rows.length - 1}>
-              <Text className="flex-1 font-ui text-body text-text">{row.label}</Text>
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="min-w-0 flex-1 font-ui text-body text-text"
+              >
+                {row.label}
+              </Text>
               <Toggle
                 checked={prefs.data?.[row.key] ?? true}
                 onChange={(v) => update.mutate({ [row.key]: v })}
@@ -109,7 +120,7 @@ export default function NotificationSettings() {
           ))}
         </Group>
       </View>
-      <Caption className="mt-3">{t('notifications.footer')}</Caption>
+      <Caption className="mt-3 px-1 text-label">{t('notifications.footer')}</Caption>
     </View>
   )
 }

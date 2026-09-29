@@ -1,25 +1,25 @@
 import { ScrollView, View } from 'react-native'
 
-import { Eyebrow } from '@/components/ui'
+import { GroupLabel } from '@/components/SettingsRow'
 import { LanguagePicker } from '@/components/ui/LanguagePicker'
 import { ThemePicker } from '@/components/ui/ThemePicker'
 import { useT } from '@/lib/i18n'
 
 // Preferencias (M15) — Apariencia + Idioma, split out of the old flat
-// app/settings.tsx.
+// app/settings.tsx. Redesign 2: three theme tiles with literal swatches, then the language as pills.
 export default function PreferencesSettings() {
   const t = useT()
   return (
     <View className="flex-1 bg-bg">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-12"
+        contentContainerClassName="px-4 pb-12"
         contentInsetAdjustmentBehavior="automatic"
       >
-        <Eyebrow className="mt-4 mb-2">{t('settings.appearance')}</Eyebrow>
+        <GroupLabel>{t('settings.appearance')}</GroupLabel>
         <ThemePicker />
 
-        <Eyebrow className="mt-6 mb-2">{t('settings.language')}</Eyebrow>
+        <GroupLabel>{t('settings.language')}</GroupLabel>
         <LanguagePicker />
       </ScrollView>
     </View>
