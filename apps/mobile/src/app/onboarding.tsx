@@ -323,7 +323,6 @@ function PickCard({
       <View className="overflow-hidden rounded-group">
         <View className="h-[104px]">
           <PlaceCover
-            seed={r.id}
             name={r.name}
             coverImageId={r.coverImageId}
             size={{ w: 400, h: 300 }}

@@ -53,25 +53,26 @@ pink anywhere**, and no brass: Night is black + burgundy, nothing in between.
 
 ### Semantic tokens
 
-| Token                                                            | Role                                                      | Day                                    | Night                                |
-| ---------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
-| `bg`                                                             | screen ground                                             | `#f3ede4`                              | `#0b0809`                            |
-| `bg-sunk`                                                        | behind cards, tracks, photo fallback                      | `#e9e1d5`                              | `#050404`                            |
-| `surface`                                                        | cards, groups                                             | `#ffffff`                              | `#171213`                            |
-| `surface-raised`                                                 | name cards, inset areas                                   | `#faf7f2`                              | `#1f191a`                            |
-| `text` / `text-2`                                                | primary / body                                            | `#16110f` / `#3d332d`                  | `#f4ede2` / `#d9cfc2`                |
-| `text-muted` / `text-faint`                                      | metadata / placeholders                                   | `#8a7a6c` / `#b9ab9c`                  | cream `.55` / `.32`                  |
-| `ink` / `on-ink`                                                 | the high-contrast solid: solid buttons, active tab, chips | `#16110f` / `#f4ede2`                  | `#f4ede2` / `#0b0809`                |
-| `chip`                                                           | floating capsule fill: pills, icon buttons, the note bar  | `#ffffff`                              | white `.08`                          |
-| `danger`                                                         | errors, destructive                                       | `#b3261e`                              | `#ff6b5e`                            |
-| `logo`                                                           | the wordmark                                              | `#210104` oxblood                      | `#f4ede2` cream                      |
-| `tab-inactive`                                                   | inactive tab icons                                        | ink `.5`                               | cream `.55`                          |
-| `line` / `line-strong`                                           | hairlines — **never flat grey**                           | ink `.09` / `.16`                      | white `.08` / `.14`                  |
-| `glass`, `glass-line`, `glass-fallback`                          | translucent chrome (tab bar, toast, sticky headers)       | white `.62` / `.85` / `.94`            | white `.10` / `.14` / `#1b1516 .94`  |
-| `hglass`, `hglass-line`, `hglass-fg`, `hglass-fallback`, `hchip` | the frosted panel on a photograph                         | white frost, ink text                  | **smoked** `#100b0b .58`, cream text |
-| `bar`, `on-bar`, `bar-chip`                                      | the floating rank bar — dark in both themes               | `#16110f`                              | `#1b1516`                            |
-| `on-photo`, `on-photo-2`, `photo-scrim`, `overlay-scrim`         | text and scrims over photography                          | theme-invariant except `overlay-scrim` |                                      |
-| `avatar-hue-*`, `avatar-ink`, `avatar-light`                     | the initial-letter avatar gradient                        | warm tones                             | same                                 |
+| Token                                                            | Role                                                       | Day                                    | Night                                |
+| ---------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- | ------------------------------------ |
+| `bg`                                                             | screen ground                                              | `#f3ede4`                              | `#0b0809`                            |
+| `bg-sunk`                                                        | behind cards, tracks, photo fallback                       | `#e9e1d5`                              | `#050404`                            |
+| `surface`                                                        | cards, groups                                              | `#ffffff`                              | `#171213`                            |
+| `surface-raised`                                                 | name cards, inset areas                                    | `#faf7f2`                              | `#1f191a`                            |
+| `text` / `text-2`                                                | primary / body                                             | `#16110f` / `#3d332d`                  | `#f4ede2` / `#d9cfc2`                |
+| `text-muted` / `text-faint`                                      | metadata / placeholders                                    | `#8a7a6c` / `#b9ab9c`                  | cream `.55` / `.32`                  |
+| `ink` / `on-ink`                                                 | the high-contrast solid: solid buttons, active tab, chips  | `#16110f` / `#f4ede2`                  | `#f4ede2` / `#0b0809`                |
+| `chip`                                                           | floating capsule fill: pills, icon buttons, the note bar   | `#ffffff`                              | white `.08`                          |
+| `danger`                                                         | errors, destructive                                        | `#b3261e`                              | `#ff6b5e`                            |
+| `logo`                                                           | the wordmark                                               | `#210104` oxblood                      | `#f4ede2` cream                      |
+| `tab-inactive`                                                   | inactive tab icons                                         | ink `.5`                               | cream `.55`                          |
+| `line` / `line-strong`                                           | hairlines — **never flat grey**                            | ink `.09` / `.16`                      | white `.08` / `.14`                  |
+| `glass`, `glass-line`, `glass-fallback`                          | translucent chrome (tab bar, toast, sticky headers)        | white `.62` / `.85` / `.94`            | white `.10` / `.14` / `#1b1516 .94`  |
+| `hglass`, `hglass-line`, `hglass-fg`, `hglass-fallback`, `hchip` | the frosted panel on a photograph                          | white frost, ink text                  | **smoked** `#100b0b .58`, cream text |
+| `pglass`, `pglass-line`, `pglass-fallback`                       | small controls and score pills on a photograph: dark glass | same in both themes                    |
+| `bar`, `on-bar`, `bar-chip`                                      | the floating rank bar — dark in both themes                | `#16110f`                              | `#1b1516`                            |
+| `on-photo`, `on-photo-2`, `photo-scrim`, `overlay-scrim`         | text and scrims over photography                           | theme-invariant except `overlay-scrim` |                                      |
+| `avatar-hue-*`, `avatar-ink`, `avatar-light`                     | the initial-letter avatar gradient                         | warm tones                             | same                                 |
 
 Load-bearing notes:
 
@@ -139,11 +140,19 @@ per call site.
   24, `rounded-hero` 30, `rounded-sheet` 34, `rounded-pill` (every capsule and circle).
 - **Glass:** translucent chrome (tab bar, sticky headers, toast) uses the `glass*` tokens over a
   real material on iOS 26 (`expo-glass-effect`), and the near-opaque `*-fallback` token where
-  there is none. Photo panels use `hglass*`. Controls floating over photos are glass circles.
+  there is none. Photo panels use `hglass*`; small controls and score pills on a photograph use
+  `pglass*`. One component does all three — `components/ui/Glass.tsx` (`variant` = `bar | panel |
+photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not the OS's.
+- **Bottom sheets** (`components/ui/Sheet.tsx`, `showSheet` / `pickOne`): r34 top corners, a grabber, a
+  title with a close chip, one white r22 group of 50pt rows with hairlines; dismiss by tapping the
+  scrim, the chip, or dragging the header down. A root overlay, so it still cannot draw over a native
+  modal (`rank`, `dish/index`) — those keep native action sheets. **Settings groups** are
+  `Group` + `Row`/`RowButton` (`components/SettingsRow.tsx`): one r22 card, 54pt rows.
 
 ## Components and patterns
 
-- **Score = number + word.** Serif number, then 9+ **Must go**, 8+ **Great**, 7+ **Good**,
+- **Score = number + word** (`ScoreBadge`, `ScoreStack`; the word is `scoreWordKey()` in `lib/score.ts`,
+  read off the displayed number, ES: Imperdible / Excelente / Bueno / Normal / Sáltalo). Serif number, then 9+ **Must go**, 8+ **Great**, 7+ **Good**,
   5+ **Fine**, else **Skip**. Three forms: a capsule (`chip` / `photo` / `solid`), a dense-row
   stack (number over a small `accent` word, right-aligned), and a glass capsule on photo heroes.
   A score is always attributed — yours, a friend's, or "Mesa's" — never the place's own rating.

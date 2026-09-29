@@ -515,6 +515,11 @@ export const es = {
   'common.error_fallback': 'Algo salió mal. Intenta de nuevo en un momento.',
   'common.any': 'Cualquiera',
   'common.n_of_total': '{n} de {total}',
+  'score.must_go': 'Imperdible',
+  'score.great': 'Excelente',
+  'score.good': 'Bueno',
+  'score.fine': 'Normal',
+  'score.skip': 'Sáltalo',
 
   // components/ReportControl.tsx
   'report.label': 'Reportar',

@@ -380,7 +380,6 @@ export default function ProfileTab() {
                     {r.position}
                   </Text>
                   <PlaceCover
-                    seed={r.restaurant.id}
                     name={r.restaurant.name}
                     coverImageId={r.restaurant.coverImageId}
                     size={{ w: 160, h: 160 }}

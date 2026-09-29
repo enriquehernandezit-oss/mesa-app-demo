@@ -1,10 +1,13 @@
 import { eventCategoryText, eventPriceText } from './eventCategory'
-import { dateLocale, getLanguage } from './i18n'
+import { dateLocale, getLanguage, t } from './i18n'
+import { scoreWordKey } from './score'
 
-// Score display: stored 0–100, shown Beli-style as 0–10 with one decimal
-// ("8.7"). One place so every screen and share card agrees.
-export function displayScore(score: number): string {
-  return (score / 10).toFixed(1)
+export { displayScore, scoreWordKey, type ScoreWordKey } from './score'
+
+// For plain (non-component) callers; a component should `useT()` the key so it
+// re-renders when the language flips.
+export function scoreWord(score: number): string {
+  return t(getLanguage(), scoreWordKey(score))
 }
 
 // The 0–100 score for a 0-based position in a list of `total` — a client mirror

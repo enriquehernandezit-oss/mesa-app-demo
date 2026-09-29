@@ -3,7 +3,7 @@ import { useFocusEffect } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { Linking, Text, View } from 'react-native'
 
-import { Row } from '@/components/SettingsRow'
+import { Group, Row } from '@/components/SettingsRow'
 import { Body, Button, Caption, Toggle } from '@/components/ui'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
@@ -95,20 +95,19 @@ export default function NotificationSettings() {
         </View>
       ) : null}
 
-      <View
-        pointerEvents={unsupported ? 'none' : 'auto'}
-        className={`rounded border border-line bg-surface px-4 ${unsupported ? 'opacity-50' : ''}`}
-      >
-        {rows.map((row, i) => (
-          <Row key={row.key} last={i === rows.length - 1}>
-            <Text className="flex-1 font-ui text-body text-text">{row.label}</Text>
-            <Toggle
-              checked={prefs.data?.[row.key] ?? true}
-              onChange={(v) => update.mutate({ [row.key]: v })}
-              label={row.label}
-            />
-          </Row>
-        ))}
+      <View pointerEvents={unsupported ? 'none' : 'auto'}>
+        <Group className={unsupported ? 'opacity-50' : ''}>
+          {rows.map((row, i) => (
+            <Row key={row.key} last={i === rows.length - 1}>
+              <Text className="flex-1 font-ui text-body text-text">{row.label}</Text>
+              <Toggle
+                checked={prefs.data?.[row.key] ?? true}
+                onChange={(v) => update.mutate({ [row.key]: v })}
+                label={row.label}
+              />
+            </Row>
+          ))}
+        </Group>
       </View>
       <Caption className="mt-3">{t('notifications.footer')}</Caption>
     </View>

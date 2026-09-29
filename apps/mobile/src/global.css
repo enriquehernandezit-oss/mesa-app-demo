@@ -35,6 +35,9 @@
   --hglass-fg: #16110f;
   --hglass-fallback: rgba(255, 255, 255, 0.86);
   --hchip: rgba(255, 255, 255, 0.8);
+  --pglass: rgba(20, 6, 6, 0.32);
+  --pglass-line: rgba(255, 255, 255, 0.18);
+  --pglass-fallback: rgba(20, 6, 6, 0.62);
   --bar: #16110f;
   --on-bar: #f4ede2;
   --bar-chip: rgba(244, 237, 226, 0.12);

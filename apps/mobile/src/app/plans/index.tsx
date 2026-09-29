@@ -147,7 +147,6 @@ function PlanRow({ plan }: { plan: Plan }) {
         className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
       >
         <PlaceCover
-          seed={cover?.id ?? plan.id}
           name={cover?.name ?? plan.host.name}
           coverImageId={cover?.coverImageId ?? null}
           size={{ w: 160, h: 160 }}

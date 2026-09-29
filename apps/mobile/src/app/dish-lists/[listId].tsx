@@ -103,7 +103,6 @@ export default function DishListDetailScreen() {
                 className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5"
               >
                 <PlaceCover
-                  seed={entry.restaurant.id}
                   name={entry.restaurant.name}
                   coverImageId={entry.dish.imageId ?? entry.restaurant.coverImageId}
                   size={{ w: 200, h: 200 }}
@@ -142,7 +141,6 @@ function RankedRow({ entry }: { entry: DishListEntry & { position: number } }) {
           {position}
         </Text>
         <PlaceCover
-          seed={restaurant.id}
           name={restaurant.name}
           coverImageId={dish.imageId ?? restaurant.coverImageId}
           size={{ w: 200, h: 200 }}

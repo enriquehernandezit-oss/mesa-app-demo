@@ -92,7 +92,6 @@ export default function ListScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
           <View className="h-56">
             <PlaceCover
-              seed={slug}
               name={q.data.list.title}
               coverImageId={q.data.list.coverImageId}
               size={{ w: 1000, h: 560 }}
@@ -153,7 +152,6 @@ export default function ListScreen() {
                       {r.position}
                     </Text>
                     <PlaceCover
-                      seed={r.id}
                       name={r.name}
                       coverImageId={r.coverImageId}
                       size={{ w: 200, h: 200 }}

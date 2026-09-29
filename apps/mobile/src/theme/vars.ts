@@ -60,6 +60,12 @@ const day = {
   '--hglass-fg': '#16110f',
   '--hglass-fallback': 'rgba(255, 255, 255, 0.86)',
   '--hchip': 'rgba(255, 255, 255, 0.8)',
+  // Small controls and pills set on a photograph: a dark-tinted glass that reads the
+  // same in both themes (a photo is its own dark island). `pglass-fallback` is the
+  // stand-in where there is no material.
+  '--pglass': 'rgba(20, 6, 6, 0.32)',
+  '--pglass-line': 'rgba(255, 255, 255, 0.18)',
+  '--pglass-fallback': 'rgba(20, 6, 6, 0.62)',
   // The floating rank bar on the place page: dark in both themes.
   '--bar': '#16110f',
   '--on-bar': '#f4ede2',
@@ -124,6 +130,9 @@ const night = {
   '--hglass-fg': '#f4ede2',
   '--hglass-fallback': 'rgba(16, 11, 11, 0.84)',
   '--hchip': 'rgba(255, 255, 255, 0.1)',
+  '--pglass': 'rgba(20, 6, 6, 0.32)',
+  '--pglass-line': 'rgba(255, 255, 255, 0.18)',
+  '--pglass-fallback': 'rgba(20, 6, 6, 0.62)',
   '--bar': '#1b1516',
   '--on-bar': '#f4ede2',
   '--bar-chip': 'rgba(244, 237, 226, 0.12)',
@@ -134,7 +143,7 @@ const night = {
   '--avatar-hue-1': '#b5773c',
   '--avatar-hue-2': '#c8703f',
   '--avatar-hue-3': '#a98a63',
-  '--avatar-ink': '#fdf7ec',
+  '--avatar-ink': '#2a1512',
   '--avatar-light': '#e8d5bd',
   // INTERIM (see above). At night the plain cat/live tokens are cream, because they
   // are also used as text and burgundy text on black is unreadable; on-cat is then

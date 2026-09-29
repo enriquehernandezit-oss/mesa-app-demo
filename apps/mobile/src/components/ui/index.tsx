@@ -52,7 +52,7 @@ export const MAX_SCALE = 1.35
 // but aren't colors) so the primitive can omit its default color whenever the
 // caller already specified one.
 const TEXT_COLOR_KEYS =
-  /\btext-(cat-brunch-soft|cat-musica-soft|hglass-fallback|cat-happy-soft|glass-fallback|surface-raised|cat-cata-soft|cat-food-soft|overlay-scrim|avatar-light|tab-inactive|accent-fill|accent-soft|hglass-line|line-strong|photo-scrim|cat-brunch|cat-musica|glass-line|on-photo-2|text-faint|text-muted|cat-happy|hglass-fg|live-soft|on-accent|bar-chip|cat-cata|cat-food|on-photo|bg-sunk|on-live|surface|accent|danger|hglass|on-bar|on-cat|on-ink|text-2|glass|hchip|chip|line|live|logo|text|bar|ink|bg)\b/
+  /\btext-(cat-brunch-soft|cat-musica-soft|hglass-fallback|pglass-fallback|cat-happy-soft|glass-fallback|surface-raised|cat-cata-soft|cat-food-soft|overlay-scrim|avatar-light|tab-inactive|accent-fill|accent-soft|hglass-line|line-strong|pglass-line|photo-scrim|cat-brunch|cat-musica|glass-line|on-photo-2|text-faint|text-muted|cat-happy|hglass-fg|live-soft|on-accent|bar-chip|cat-cata|cat-food|on-photo|bg-sunk|on-live|surface|accent|danger|hglass|on-bar|on-cat|on-ink|pglass|text-2|glass|hchip|chip|line|live|logo|text|bar|ink|bg)\b/
 function hasTextColor(className?: string): boolean {
   return Boolean(className && TEXT_COLOR_KEYS.test(className))
 }

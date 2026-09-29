@@ -401,7 +401,6 @@ function SpotsStep({
                 className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
               >
                 <PlaceCover
-                  seed={r.id}
                   name={r.name}
                   coverImageId={r.coverImageId}
                   size={{ w: 160, h: 160 }}

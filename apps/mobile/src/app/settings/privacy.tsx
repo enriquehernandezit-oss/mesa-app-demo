@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Share, Text, View } from 'react-native'
 
-import { Row, RowButton } from '@/components/SettingsRow'
+import { Group, Row, RowButton } from '@/components/SettingsRow'
 import { Caption, Toggle } from '@/components/ui'
 import { ChevronIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
@@ -44,7 +44,7 @@ export default function PrivacySettings() {
 
   return (
     <View className="flex-1 bg-bg px-5 pt-4">
-      <View className="rounded border border-line bg-surface px-4">
+      <Group>
         <Row>
           <Text className="flex-1 font-ui text-body text-text">
             {t('settings.friends_only_scores')}
@@ -74,7 +74,7 @@ export default function PrivacySettings() {
             <ChevronIcon size={16} color="text-faint" />
           )}
         </RowButton>
-      </View>
+      </Group>
     </View>
   )
 }

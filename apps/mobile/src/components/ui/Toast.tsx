@@ -3,8 +3,8 @@ import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated'
 
 import { useTabBarClearance } from '@/components/MesaTabBar'
+import { Glass } from '@/components/ui/Glass'
 import { tapError } from '@/lib/haptics'
-import { SHADOW } from '@/theme/vars'
 
 import { type Toast, dismiss, useToasts } from './toast-store'
 
@@ -29,7 +29,7 @@ export function Toaster() {
         right: 0,
         bottom,
         gap: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 24,
       }}
     >
       {toasts.map((t) => (
@@ -52,36 +52,32 @@ function ToastItem({ toast }: { toast: Toast }) {
       exiting={FadeOutDown.duration(200)}
       pointerEvents="box-none"
       accessibilityLiveRegion="polite"
-      className={`flex-row items-center gap-3 rounded border px-4 py-3 ${error ? 'border-danger bg-surface' : 'border-line bg-surface-raised'}`}
-      style={{
-        shadowColor: SHADOW,
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 6,
-      }}
     >
-      {/* pointerEvents none: box-none on the container doesn't stop this
-          Text from being the touch target, which ate taps on the card under
-          the toast for its whole 3–5s. */}
-      <Text
-        pointerEvents="none"
-        className={`flex-1 font-ui text-label ${error ? 'text-danger' : 'text-text'}`}
-      >
-        {toast.message}
-      </Text>
-      {toast.action && (
-        <Pressable
-          accessibilityRole="button"
-          className="active:opacity-60"
-          onPress={() => {
-            toast.action?.onClick()
-            dismiss(toast.id)
-          }}
+      {/* A glass capsule: it floats over whatever screen it lands on, and stays
+          legible over both a bright photo and the dark ground. */}
+      <Glass variant="bar" className="min-h-[52px] flex-row items-center gap-3 px-5 py-3">
+        {/* pointerEvents none: box-none on the container doesn't stop this
+            Text from being the touch target, which ate taps on the card under
+            the toast for its whole 3–5s. */}
+        <Text
+          pointerEvents="none"
+          className={`flex-1 font-ui-medium text-subhead ${error ? 'text-danger' : 'text-text'}`}
         >
-          <Text className="font-ui-semibold text-label text-accent">{toast.action.label}</Text>
-        </Pressable>
-      )}
+          {toast.message}
+        </Text>
+        {toast.action && (
+          <Pressable
+            accessibilityRole="button"
+            className="active:opacity-60"
+            onPress={() => {
+              toast.action?.onClick()
+              dismiss(toast.id)
+            }}
+          >
+            <Text className="font-ui-semibold text-subhead text-accent">{toast.action.label}</Text>
+          </Pressable>
+        )}
+      </Glass>
     </Animated.View>
   )
 }

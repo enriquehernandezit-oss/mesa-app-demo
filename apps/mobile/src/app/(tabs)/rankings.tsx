@@ -732,7 +732,6 @@ const RankingRow = memo(function RankingRow({
               className="flex-1 flex-row items-center gap-2.5 active:opacity-80"
             >
               <PlaceCover
-                seed={ranking.restaurant.id}
                 name={ranking.restaurant.name}
                 coverImageId={ranking.restaurant.coverImageId}
                 size={{ w: 160, h: 160 }}

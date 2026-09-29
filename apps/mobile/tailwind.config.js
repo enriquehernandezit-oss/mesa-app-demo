@@ -61,6 +61,9 @@ module.exports = {
         'hglass-fg': 'var(--hglass-fg)',
         'hglass-fallback': 'var(--hglass-fallback)',
         hchip: 'var(--hchip)',
+        pglass: 'var(--pglass)',
+        'pglass-line': 'var(--pglass-line)',
+        'pglass-fallback': 'var(--pglass-fallback)',
         bar: 'var(--bar)',
         'on-bar': 'var(--on-bar)',
         'bar-chip': 'var(--bar-chip)',
@@ -110,6 +113,7 @@ module.exports = {
         micro: 12,
         // The dense-row sentence size for flat feed/activity rows (HIG Subheadline).
         subhead: 15,
+        'serif-xs': [16.5, '19px'],
         'serif-sm': [19, '22px'],
         'serif-md': [21, '24px'],
         'serif-xl': [26, '29px'],

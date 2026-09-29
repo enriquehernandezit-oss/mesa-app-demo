@@ -151,7 +151,6 @@ export default function MatchScreen() {
               <Link key={r.restaurantId} href={`/r/${r.restaurantId}`} asChild>
                 <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
                   <PlaceCover
-                    seed={r.restaurantId}
                     name={r.name}
                     coverImageId={r.coverImageId}
                     size={{ w: 200, h: 200 }}
@@ -189,7 +188,6 @@ function MatchPlaceRow({
     <Link href={`/r/${place.restaurantId}`} asChild>
       <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
         <PlaceCover
-          seed={place.restaurantId}
           name={place.name}
           coverImageId={place.coverImageId}
           size={{ w: 200, h: 200 }}

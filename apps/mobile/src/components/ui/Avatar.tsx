@@ -5,8 +5,9 @@ import { Text } from 'react-native'
 import { useColor } from '@/theme/useColor'
 import type { ColorToken } from '@/theme/vars'
 
-// One avatar everywhere: a photo when the user has one, else their initial on a
-// warm gradient ringed in brass. Ported from apps/app/src/components/ui/Avatar.
+// One avatar everywhere: a photo when the user has one, else their initial on a warm
+// gradient (a person's own tone fading to a light cream, dark initial on top — the same
+// in both themes). No ring: a stack of overlapping avatars draws its own separator.
 // Gradient hues rotate by name so a person keeps the same color everywhere.
 const HUES: ColorToken[] = ['avatar-hue-1', 'avatar-hue-2', 'avatar-hue-3']
 function hueFor(name: string): ColorToken {
@@ -24,9 +25,8 @@ export function Avatar({
   src?: string | null
   size?: number
 }) {
-  const ring = useColor('accent')
   const hue = useColor(hueFor(name))
-  const sunk = useColor('bg-sunk')
+  const light = useColor('avatar-light')
   const ink = useColor('avatar-ink')
   const initial = name.trim().charAt(0).toUpperCase() || 'M'
 
@@ -34,13 +34,7 @@ export function Avatar({
     return (
       <Image
         source={{ uri: src }}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderWidth: 1,
-          borderColor: ring,
-        }}
+        style={{ width: size, height: size, borderRadius: size / 2 }}
         contentFit="cover"
         transition={120}
       />
@@ -48,17 +42,13 @@ export function Avatar({
   }
   return (
     <LinearGradient
-      colors={[hue, sunk]}
+      colors={[hue, light]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        // Same 1px brass ring as the photo path — without it the two states
-        // have different outer geometry wherever they sit side by side.
-        borderWidth: 1,
-        borderColor: ring,
         alignItems: 'center',
         justifyContent: 'center',
       }}

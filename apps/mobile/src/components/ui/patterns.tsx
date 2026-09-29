@@ -5,10 +5,12 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
 import { Caption, Chip, Eyebrow, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { Glass } from '@/components/ui/Glass'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { cuisineLabel, priceLabel, tagLabel } from '@/lib/display'
+import { cuisineLabel, displayScore, priceLabel, scoreWordKey, tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES, GROUND, themeColors } from '@/theme/vars'
 
 // A horizontal rail of cover cards under a section header — the same container
@@ -45,40 +47,42 @@ export function SpotRail({ title, children }: { title: string; children: ReactNo
 // (trending's cheer count) where another puts plain text.
 export function SpotCard({
   href,
-  seed,
   name,
   coverImageId,
   caption,
   variant = 'tall',
 }: {
   href: Href
-  seed: string
   name: string
   coverImageId: string | null
   caption?: ReactNode
   variant?: 'wide' | 'tall'
 }) {
   const wide = variant === 'wide'
-  // A white card with a hairline border — photo on top, name and caption
-  // inside the card (founder's call: every content object is white on the
-  // cream ground, the featured lists included).
+  const lift = useLift()
+  // A white r22 card, lifted on Day — photo on top, name and caption inside the card
+  // (every content object is white on the cream ground, the featured lists
+  // included). Two views: the outer carries the lift (a shadow is clipped by an
+  // overflow on its own view), the inner rounds the photo's corners.
   return (
     <Link href={href} asChild>
       <Pressable
-        className={`overflow-hidden rounded-card border border-line bg-surface active:opacity-80 ${wide ? 'w-44' : 'w-36'}`}
+        className={`rounded-group bg-surface active:opacity-80 ${wide ? 'w-44' : 'w-36'}`}
+        style={lift}
       >
-        <PlaceCover
-          seed={seed}
-          name={name}
-          coverImageId={coverImageId}
-          size={wide ? { w: 360, h: 220 } : { w: 320, h: 360 }}
-          className={`rounded-none ${wide ? 'h-24 w-44' : 'h-36 w-36'}`}
-        />
-        <View className="px-3 pt-2 pb-3">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-            {name}
-          </Text>
-          {caption}
+        <View className="overflow-hidden rounded-group">
+          <PlaceCover
+            name={name}
+            coverImageId={coverImageId}
+            size={wide ? { w: 360, h: 220 } : { w: 320, h: 360 }}
+            className={`rounded-none ${wide ? 'h-24 w-44' : 'h-36 w-36'}`}
+          />
+          <View className="px-3 pt-2 pb-3">
+            <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+              {name}
+            </Text>
+            {caption}
+          </View>
         </View>
       </Pressable>
     </Link>
@@ -172,10 +176,8 @@ export function Characteristics({
   )
 }
 
-import { displayScore } from '@/lib/display'
-
-// Outlined utility pill with a leading glyph — Website / Call / Directions / list
-// membership. With `href` it opens via Linking behind an https/tel allow-list
+// A round utility tile — a 54pt chip circle with a glyph and its label under it:
+// Website / Call / Directions / list membership. With `href` it opens via Linking behind an https/tel allow-list
 // (a website value can be a server-provided Google field); else it runs onPress.
 type ScoreAttribution =
   | { kind: 'you' }
@@ -216,18 +218,24 @@ export function UtilityPill({
     }
     if (/^(tel:|mailto:)/.test(href)) Linking.openURL(href).catch(() => {})
   }
+  const lift = useLift()
   return (
     <Pressable
       accessibilityRole="button"
       onPress={open}
-      className="min-h-[56px] flex-1 items-center justify-center gap-1 rounded border border-line bg-surface px-1 py-2 active:opacity-80"
+      className="flex-1 items-center gap-1.5 active:opacity-80"
     >
-      {icon}
+      <View
+        className="h-[54px] w-[54px] items-center justify-center rounded-pill bg-chip"
+        style={lift}
+      >
+        {icon}
+      </View>
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.8}
-        className="font-ui text-eyebrow text-text"
+        className="font-ui text-micro text-text-2"
       >
         {children}
       </Text>
@@ -243,51 +251,89 @@ function badgeText(a: ScoreAttribution, t: ReturnType<typeof useT>): string | nu
   return null
 }
 
-// Attributed score — a filled brass badge with the number, an attribution
-// caption, and optional caption/sub. Every score is attributed; the place
-// never gets its own bare rating. The ONE score treatment in the app: every
-// call site renders through this (no bare `displayScore()` numerals, no
-// hand-rolled rings) so a number always reads as a rating, never as a page
-// number or a count. 'mesa' takes a quiet OUTLINE, not a second fill — the
-// token `accent-fill` is literally the same hex as `accent` in both themes
-// (confirmed on device: two "filled" variants were indistinguishable), so an
-// unattributed aggregate has to recede by going unfilled, not by a fill color
-// that doesn't exist.
+// A score is a NUMBER + a WORD (docs/DESIGN.md): a serif figure and, beside it, what
+// that figure means — 9+ Must go, 8+ Great, 7+ Good, 5+ Fine, else Skip.
+//
+// Every score is attributed; the place never gets its own bare rating. The ONE score
+// treatment in the app: every call site renders through this (no bare `displayScore()`
+// numerals, no hand-rolled rings) so a number always reads as a rating, never as a
+// page number or a count.
+//
+//   kind  chip   — a soft burgundy wash, on a card (the default; a Mesa aggregate goes
+//                  neutral so it recedes behind a person's own score)
+//         photo  — dark glass, for a photograph
+//         solid  — ink, the one that matters most on a screen
+//
+// The attribution caption ("Tú", a name, "3 amigos") sits under the capsule.
 export function ScoreBadge({
   score,
   attribution,
   size = 'md',
+  kind = 'chip',
   caption,
   sub,
 }: {
   score: number
   attribution: ScoreAttribution
   size?: 'sm' | 'md'
+  kind?: 'chip' | 'photo' | 'solid'
   caption?: string
   sub?: string
 }) {
   const t = useT()
   const badge = badgeText(attribution, t)
   const mesa = attribution.kind === 'mesa'
-  // min-w (not a fixed w) so the badge hugs a 2-digit "10.0" without
-  // clipping while still lining up a column of 1-digit-and-a-decimal scores.
-  const box = size === 'sm' ? 'min-w-[40px] px-2 py-1' : 'min-w-[52px] px-3 py-1.5'
-  const num = size === 'sm' ? 'text-serif-sm' : 'text-serif-md'
+  const sm = size === 'sm'
+  const box = `flex-row items-center ${sm ? 'min-h-[24px] gap-1 px-2' : 'min-h-[30px] gap-1.5 px-2.5'}`
+  const ink = kind === 'photo' ? 'text-on-photo' : kind === 'solid' ? 'text-on-ink' : 'text-text'
+  const figures = (
+    <>
+      <Text
+        style={DATA_FIGURES}
+        className={`font-serif ${sm ? 'text-serif-xs' : 'text-serif-sm'} ${ink}`}
+      >
+        {displayScore(score)}
+      </Text>
+      <Text className={`font-ui-semibold text-eyebrow ${ink}`}>{t(scoreWordKey(score))}</Text>
+    </>
+  )
   return (
     <View className="items-center gap-1">
-      <View
-        className={`${box} items-center justify-center rounded-sm ${mesa ? 'border border-line bg-surface' : 'bg-accent-fill'}`}
-      >
-        <Text
-          style={DATA_FIGURES}
-          className={`font-serif ${num} ${mesa ? 'text-text-2' : 'text-on-accent'}`}
+      {kind === 'photo' ? (
+        <Glass variant="photo" className={box}>
+          {figures}
+        </Glass>
+      ) : (
+        <View
+          className={`${box} rounded-pill ${
+            kind === 'solid' ? 'bg-ink' : mesa ? 'bg-bg-sunk' : 'bg-accent-soft'
+          }`}
         >
-          {displayScore(score)}
-        </Text>
-      </View>
+          {figures}
+        </View>
+      )}
       {badge ? <Caption className="font-ui-medium text-micro text-accent">{badge}</Caption> : null}
       {caption ? <Caption>{caption}</Caption> : null}
       {sub ? <Caption className="text-text-faint">{sub}</Caption> : null}
+    </View>
+  )
+}
+
+// The dense-row form of a score: the figure over its word, right-aligned — for ranked
+// lists and friends' notes where a capsule would crowd the row.
+export function ScoreStack({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
+  const t = useT()
+  return (
+    <View className="min-w-[52px] items-end">
+      <Text
+        style={DATA_FIGURES}
+        className={`font-serif text-text ${size === 'sm' ? 'text-serif-xs' : 'text-serif-md'}`}
+      >
+        {displayScore(score)}
+      </Text>
+      <Text className="mt-0.5 font-ui-semibold text-eyebrow text-accent">
+        {t(scoreWordKey(score))}
+      </Text>
     </View>
   )
 }

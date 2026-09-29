@@ -296,7 +296,6 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
             <Link href={`/plans/${a.planId}`} asChild>
               <Pressable className="active:opacity-80">
                 <PlaceCover
-                  seed={a.restaurant?.id ?? a.planId}
                   name={a.restaurant?.name ?? ''}
                   coverImageId={a.restaurant?.coverImageId ?? null}
                   size={{ w: 96, h: 96 }}
@@ -310,7 +309,6 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
             <Link href={`/r/${a.restaurant.id}`} asChild>
               <Pressable className="active:opacity-80">
                 <PlaceCover
-                  seed={a.restaurant.id}
                   name={a.restaurant.name}
                   coverImageId={a.restaurant.coverImageId}
                   size={{ w: 96, h: 96 }}

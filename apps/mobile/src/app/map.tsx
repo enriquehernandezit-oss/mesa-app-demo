@@ -116,7 +116,6 @@ function SpotCard({ spot, onClose }: { spot: MapSpot; onClose: () => void }) {
           className="flex-1 flex-row items-center gap-3 active:opacity-80"
         >
           <PlaceCover
-            seed={spot.id}
             name={spot.name}
             coverImageId={spot.coverImageId}
             size={{ w: 200, h: 200 }}

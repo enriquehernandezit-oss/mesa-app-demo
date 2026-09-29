@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
-import { RowButton } from '@/components/SettingsRow'
+import { Group, RowButton } from '@/components/SettingsRow'
 import { Caption, Eyebrow } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { ChevronIcon } from '@/components/ui/icons'
@@ -111,7 +111,7 @@ export default function SettingsHub() {
           </Text>
         </Pressable>
 
-        <View className="mt-6 rounded border border-line bg-surface px-4">
+        <Group className="mt-6">
           <RowButton onPress={() => router.push('/settings/account')}>
             <Text className="flex-1 font-ui text-body text-text">{t('settings.account')}</Text>
             <ChevronIcon size={16} color="text-faint" />
@@ -134,10 +134,10 @@ export default function SettingsHub() {
             <Text className="flex-1 font-ui text-body text-text">{t('settings.about')}</Text>
             <ChevronIcon size={16} color="text-faint" />
           </RowButton>
-        </View>
+        </Group>
 
         <Eyebrow className="mt-6 mb-2">{t('settings.friends_section')}</Eyebrow>
-        <View className="rounded border border-line bg-surface px-4">
+        <Group>
           <RowButton onPress={() => router.push('/friends')}>
             <Text className="flex-1 font-ui text-body text-text">{t('settings.find_friends')}</Text>
             <ChevronIcon size={16} color="text-faint" />
@@ -154,39 +154,39 @@ export default function SettingsHub() {
               <ChevronIcon size={16} color="text-faint" />
             )}
           </RowButton>
-        </View>
+        </Group>
 
         {supportEmail ? (
           <>
             <Eyebrow className="mt-6 mb-2">{t('settings.help')}</Eyebrow>
-            <View className="rounded border border-line bg-surface px-4">
+            <Group>
               <RowButton onPress={reportProblem} last>
                 <Text className="flex-1 font-ui text-body text-text">
                   {t('settings.report_problem')}
                 </Text>
                 <ChevronIcon size={16} color="text-faint" />
               </RowButton>
-            </View>
+            </Group>
           </>
         ) : null}
 
         {p?.isModerator ? (
-          <View className="mt-6 rounded border border-line bg-surface px-4">
+          <Group className="mt-6">
             <RowButton onPress={() => router.push('/moderation')} last>
               <Text className="flex-1 font-ui text-body text-text">{t('settings.moderation')}</Text>
               <ChevronIcon size={16} color="text-faint" />
             </RowButton>
-          </View>
+          </Group>
         ) : null}
 
-        <View className="mt-6 rounded border border-line bg-surface px-4">
+        <Group className="mt-6">
           <RowButton onPress={handleSignOut} disabled={signingOut} last>
             <Text className="flex-1 font-ui-medium text-body text-accent">
               {t('settings.sign_out')}
             </Text>
             {signingOut ? <ActivityIndicator size="small" color={accent} /> : null}
           </RowButton>
-        </View>
+        </Group>
       </ScrollView>
     </View>
   )

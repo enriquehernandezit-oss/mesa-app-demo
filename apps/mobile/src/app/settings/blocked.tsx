@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Row } from '@/components/SettingsRow'
+import { Group, Row } from '@/components/SettingsRow'
 import { EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
@@ -37,7 +37,7 @@ export default function BlockedAccounts() {
         ) : blocked.length === 0 ? (
           <EmptyState>{t('settings.no_blocked_accounts')}</EmptyState>
         ) : (
-          <View className="rounded border border-line bg-surface px-4">
+          <Group>
             {blocked.map((u, i) => (
               <Row key={u.id} last={i === blocked.length - 1}>
                 <Text className="flex-1 font-ui text-body text-text">
@@ -55,7 +55,7 @@ export default function BlockedAccounts() {
                 </Pressable>
               </Row>
             ))}
-          </View>
+          </Group>
         )}
       </ScrollView>
     </View>

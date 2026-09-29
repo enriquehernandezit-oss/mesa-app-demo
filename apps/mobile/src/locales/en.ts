@@ -475,6 +475,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'common.error_fallback': 'Something went wrong. Try again in a moment.',
   'common.any': 'Any',
   'common.n_of_total': '{n} of {total}',
+  'score.must_go': 'Must go',
+  'score.great': 'Great',
+  'score.good': 'Good',
+  'score.fine': 'Fine',
+  'score.skip': 'Skip',
 
   'report.label': 'Report',
   'report.reason_spam': 'Spam',

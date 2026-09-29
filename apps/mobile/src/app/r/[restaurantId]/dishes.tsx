@@ -50,7 +50,6 @@ export default function AllDishesScreen() {
                 <Link href={`/dish/${d.id}`} asChild>
                   <Pressable className="active:opacity-80">
                     <PlaceCover
-                      seed={d.id}
                       name={d.name}
                       coverImageId={d.imageId}
                       size={{ w: 480, h: 480 }}

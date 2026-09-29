@@ -256,7 +256,6 @@ export default function RestaurantProfile() {
             mapUrl comment above for why a map no longer stands in here. */}
         <View style={{ height: heroH }}>
           <PlaceCover
-            seed={restaurant.id}
             name={restaurant.name}
             coverImageId={restaurant.coverImageId}
             size={{ w: 1000, h: 750 }}
@@ -516,7 +515,6 @@ export default function RestaurantProfile() {
                 <SpotCard
                   key={s.id}
                   href={`/r/${s.id}`}
-                  seed={s.id}
                   name={s.name}
                   coverImageId={s.coverImageId}
                   caption={
@@ -750,7 +748,6 @@ function PopularDishes({ restaurantId, canAdd }: { restaurantId: string; canAdd:
                 <Link href={`/dish/${d.id}`} asChild>
                   <Pressable className="active:opacity-80">
                     <PlaceCover
-                      seed={d.id}
                       name={d.name}
                       coverImageId={d.imageId}
                       size={{ w: 320, h: 320 }}

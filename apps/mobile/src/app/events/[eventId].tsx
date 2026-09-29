@@ -176,7 +176,6 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
         <View style={{ height: HERO_H, overflow: 'visible' }}>
           <Animated.View style={[{ height: HERO_H, width }, heroStyle]}>
             <PlaceCover
-              seed={e.id}
               name={e.title}
               coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
               size={{ w: 1000, h: 700 }}
@@ -296,7 +295,6 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
               className="flex-row items-center gap-3 active:opacity-70"
             >
               <PlaceCover
-                seed={e.restaurant.id}
                 name={e.restaurant.name}
                 coverImageId={e.restaurant.coverImageId}
                 size={{ w: 160, h: 160 }}

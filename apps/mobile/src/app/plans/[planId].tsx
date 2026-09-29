@@ -167,7 +167,6 @@ export default function PlanDetailScreen() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <PlaceCover
-          seed={cover?.id ?? plan.id}
           name={cover?.name ?? plan.host.name}
           coverImageId={cover?.coverImageId ?? null}
           size={{ w: 640, h: 480 }}
@@ -239,7 +238,6 @@ export default function PlanDetailScreen() {
                     className={`flex-row items-center gap-3 py-3 active:opacity-80 ${i === plan.options.length - 1 ? '' : 'border-line border-b'}`}
                   >
                     <PlaceCover
-                      seed={o.id}
                       name={o.name}
                       coverImageId={o.coverImageId}
                       size={{ w: 160, h: 160 }}

@@ -607,7 +607,6 @@ const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index: number
           {index + 1}
         </Text>
         <PlaceCover
-          seed={r.id}
           name={r.name}
           coverImageId={r.coverImageId}
           size={{ w: 200, h: 200 }}
@@ -673,7 +672,6 @@ function TrendingRail() {
         <SpotCard
           key={s.id}
           href={`/r/${s.id}`}
-          seed={s.id}
           name={s.name}
           coverImageId={s.coverImageId}
           caption={

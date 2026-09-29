@@ -253,7 +253,6 @@ function ListsRail() {
             key={l.slug}
             variant="wide"
             href={`/lists/${l.slug}`}
-            seed={l.slug}
             name={l.title}
             coverImageId={l.coverImageId}
             caption={
@@ -465,7 +464,6 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
           className="mt-3 flex-row items-center gap-3 active:opacity-70"
         >
           <PlaceCover
-            seed={item.restaurant.id}
             name={item.restaurant.name}
             coverImageId={item.restaurant.coverImageId}
             size={{ w: 160, h: 160 }}

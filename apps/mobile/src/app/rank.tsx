@@ -1464,7 +1464,6 @@ function NoteStep({
       >
         <View className="flex-row items-center gap-3 border-line border-b pb-4">
           <PlaceCover
-            seed={picked.id}
             name={picked.name}
             coverImageId={picked.coverImageId}
             size={{ w: 120, h: 120 }}
@@ -1785,7 +1784,6 @@ function FindStep({
         className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
       >
         <PlaceCover
-          seed={r.id}
           name={r.name}
           coverImageId={r.coverImageId}
           size={{ w: 160, h: 160 }}

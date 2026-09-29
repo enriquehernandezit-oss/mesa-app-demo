@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-import { Row, RowButton } from '@/components/SettingsRow'
+import { Group, Row, RowButton } from '@/components/SettingsRow'
 import { Button, Caption, Eyebrow } from '@/components/ui'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
@@ -163,7 +163,7 @@ export default function AccountSettings() {
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <View className="mt-4 rounded border border-line bg-surface px-4">
+        <Group className="mt-4">
           {realEmail && (
             <Row>
               <Text className="flex-1 font-ui text-body text-text" numberOfLines={1}>
@@ -321,7 +321,7 @@ export default function AccountSettings() {
                 : t('settings.sign_out_others')}
             </Text>
           </RowButton>
-        </View>
+        </Group>
 
         {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
         <View className="mt-8 gap-3 rounded border border-danger p-4">

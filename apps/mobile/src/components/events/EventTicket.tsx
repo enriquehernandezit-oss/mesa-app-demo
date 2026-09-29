@@ -415,7 +415,6 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
     <Link href={`/events/${e.id}`} asChild>
       <Pressable style={{ width }} className="h-60 overflow-hidden rounded-card active:opacity-95">
         <PlaceCover
-          seed={e.id}
           name={e.title}
           coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
           size={{ w: 900, h: 620 }}
@@ -480,7 +479,6 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
       <Pressable className="w-48 overflow-hidden rounded-card border border-line bg-surface active:opacity-85">
         <View className="h-28 w-full">
           <PlaceCover
-            seed={e.id}
             name={e.title}
             coverImageId={e.coverImageId ?? e.restaurant.coverImageId}
             size={{ w: 400, h: 240 }}

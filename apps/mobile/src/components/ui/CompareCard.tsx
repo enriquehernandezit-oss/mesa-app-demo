@@ -42,7 +42,6 @@ export function CompareCard({
     >
       <View className="overflow-hidden rounded-[28px]">
         <PlaceCover
-          seed={item.id}
           name={item.name}
           coverImageId={item.coverImageId}
           size={{ w: 700, h: 340 }}
