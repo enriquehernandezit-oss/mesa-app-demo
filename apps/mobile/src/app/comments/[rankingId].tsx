@@ -182,9 +182,7 @@ export default function CommentsSheet() {
                   <Text className="text-text-muted"> · {displayScore(post.score)}</Text>
                 </Text>
                 {post.note ? (
-                  <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">
-                    “{post.note}”
-                  </Text>
+                  <Text className="mt-1 font-serif text-serif-sm text-text-2">“{post.note}”</Text>
                 ) : null}
               </View>
             </View>

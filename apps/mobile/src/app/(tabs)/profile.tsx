@@ -7,7 +7,7 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { EventTicket, useNow } from '@/components/events/EventTicket'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { TopBar } from '@/components/TopBar'
-import { Button, Caption, Chip, ErrorState, Eyebrow, SerifItalic, Skeleton } from '@/components/ui'
+import { Button, Caption, Chip, ErrorState, Eyebrow, Serif, Skeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
 import {
@@ -283,9 +283,7 @@ export default function ProfileTab() {
               .join(' · ')}
           </Caption>
           {tasteLine ? (
-            <SerifItalic className="mt-2 px-6 text-center text-serif-sm text-text-2">
-              {tasteLine}
-            </SerifItalic>
+            <Serif className="mt-2 px-6 text-center text-serif-sm text-text-2">{tasteLine}</Serif>
           ) : null}
         </View>
 

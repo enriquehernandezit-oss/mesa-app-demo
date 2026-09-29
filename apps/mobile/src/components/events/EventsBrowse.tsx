@@ -439,7 +439,7 @@ const DayStrip = memo(function DayStrip({
                     className={
                       d === 'all'
                         ? `font-ui-semibold text-micro ${fg}`
-                        : `font-serif-semibold text-serif-sm ${fg}`
+                        : `font-serif text-serif-sm ${fg}`
                     }
                   >
                     {num}

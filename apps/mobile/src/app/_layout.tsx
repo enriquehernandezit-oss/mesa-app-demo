@@ -1,14 +1,5 @@
 import '../global.css'
-import {
-  CormorantGaramond_400Regular_Italic,
-  CormorantGaramond_500Medium,
-  CormorantGaramond_600SemiBold,
-} from '@expo-google-fonts/cormorant-garamond'
-import {
-  PlusJakartaSans_400Regular,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-} from '@expo-google-fonts/plus-jakarta-sans'
+import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useFonts } from 'expo-font'
 import { Stack, usePathname } from 'expo-router'
@@ -70,14 +61,9 @@ export default function RootLayout() {
   // whole app sat on the splash screen with no recovery path. A font that
   // fails to load is a degraded look (system fallback), not a reason to hang —
   // so fontError counts as "ready" too, and gets reported once.
-  const [loaded, fontError] = useFonts({
-    CormorantGaramond_500Medium,
-    CormorantGaramond_600SemiBold,
-    CormorantGaramond_400Regular_Italic,
-    PlusJakartaSans_400Regular,
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-  })
+  // One bundled face: Instrument Serif, the display serif. Everything you tap and
+  // read is the iOS system font, which needs no loading.
+  const [loaded, fontError] = useFonts({ InstrumentSerif_400Regular })
   useEffect(() => {
     if (fontError) captureError(fontError, 'fonts.load')
   }, [fontError])
@@ -154,8 +140,12 @@ function MesaStack() {
           ? ('systemChromeMaterialDark' as const)
           : ('systemChromeMaterialLight' as const),
       headerShadowVisible: false,
-      headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-      headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+      headerTitleStyle: { fontFamily: 'InstrumentSerif_400Regular', color: c.text },
+      headerLargeTitleStyle: {
+        fontFamily: 'InstrumentSerif_400Regular',
+        fontSize: 40,
+        color: c.text,
+      },
       headerBackTitle: t('nav.back'),
     }),
     [theme, c, t],

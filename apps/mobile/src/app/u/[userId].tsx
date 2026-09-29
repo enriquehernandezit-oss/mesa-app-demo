@@ -338,7 +338,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
             </View>
           )}
           {ranking.note ? (
-            <Text selectable className="mt-1 font-serif-italic text-serif-sm text-text-2">
+            <Text selectable className="mt-1 font-serif text-serif-sm text-text-2">
               “{ranking.note}”
             </Text>
           ) : null}

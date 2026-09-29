@@ -3,6 +3,8 @@
 // The actual values are CSS variables resolved per theme at runtime by
 // ThemeProvider (src/theme/vars.ts), which is what lets Mesa's clock-based Auto
 // work where NativeWind's OS `dark:` variant can't.
+const plugin = require('tailwindcss/plugin')
+
 module.exports = {
   content: ['./src/**/*.{ts,tsx}'],
   presets: [require('nativewind/preset')],
@@ -85,17 +87,18 @@ module.exports = {
         'on-live': 'var(--on-live)',
       },
       fontFamily: {
-        serif: ['CormorantGaramond_500Medium'],
-        'serif-semibold': ['CormorantGaramond_600SemiBold'],
-        'serif-italic': ['CormorantGaramond_400Regular_Italic'],
-        ui: ['PlusJakartaSans_400Regular'],
-        'ui-medium': ['PlusJakartaSans_500Medium'],
-        'ui-semibold': ['PlusJakartaSans_600SemiBold'],
+        // The one display face: Instrument Serif, weight 400, upright only. It has no
+        // bold and no italic — never ask for either (`font-serif` is the only serif
+        // class). The UI face is the iOS system font; see the `plugins` block below.
+        serif: ['InstrumentSerif_400Regular'],
       },
+      // Serif sizes carry their own line height (≈1.1×): Instrument Serif is set
+      // tight and clips at a unitless-1 leading. Explicit px units, because RN
+      // lineHeight is absolute points and a bare number would read as a multiplier.
       fontSize: {
-        display: 38,
-        title: 25,
-        rank: 40,
+        display: [40, '44px'],
+        title: [28, '31px'],
+        rank: [40, '44px'],
         body: 16,
         label: 13,
         eyebrow: 11,
@@ -104,9 +107,9 @@ module.exports = {
         micro: 12,
         // The dense-row sentence size for flat feed/activity rows (HIG Subheadline).
         subhead: 15,
-        'serif-sm': 18,
-        'serif-md': 22,
-        'serif-lg': 30,
+        'serif-sm': [19, '22px'],
+        'serif-md': [21, '24px'],
+        'serif-lg': [34, '37px'],
       },
       borderRadius: {
         DEFAULT: 14,
@@ -116,16 +119,24 @@ module.exports = {
         card: 20,
         pill: 999,
       },
-      lineHeight: {
-        // The serif title's measured leading (paired with text-title = 25).
-        // Explicit px unit: RN lineHeight is absolute points, and a unitless
-        // value would read as a font-size multiplier, not 28pt.
-        title: '28px',
-      },
       letterSpacing: {
         eyebrow: '1.76px',
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // The UI face is the iOS system font (SF Pro), in the weights the design uses.
+    // These keep the class names the app already speaks (`font-ui`, `font-ui-medium`,
+    // `font-ui-semibold`) but resolve to `System` + a weight instead of a font
+    // FAMILY per weight — SF is one variable family, and asking for a family name
+    // per weight is how a custom face works, not the system's. The design draws 650
+    // in places; 600 is the nearest real weight.
+    plugin(({ addUtilities }) =>
+      addUtilities({
+        '.font-ui': { fontFamily: 'System', fontWeight: '400' },
+        '.font-ui-medium': { fontFamily: 'System', fontWeight: '500' },
+        '.font-ui-semibold': { fontFamily: 'System', fontWeight: '600' },
+      }),
+    ),
+  ],
 }

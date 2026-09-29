@@ -72,7 +72,7 @@ const PX_KEY = /\bpx-/
 export const Title = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif-semibold text-title leading-title ${hasTextColor(className) ? '' : 'text-text'} ${className ?? ''}`}
+    className={`font-serif text-title ${hasTextColor(className) ? '' : 'text-text'} ${className ?? ''}`}
     {...p}
   />
 )
@@ -97,20 +97,23 @@ export const Eyebrow = ({ className, ...p }: TextProps & { className?: string })
     {...p}
   />
 )
-export const SerifItalic = ({ className, ...p }: TextProps & { className?: string }) => (
+export const Serif = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-serif-italic ${hasTextColor(className) ? '' : 'text-text-2'} ${className ?? ''}`}
+    className={`font-serif ${hasTextColor(className) ? '' : 'text-text-2'} ${className ?? ''}`}
     {...p}
   />
 )
 
-/* Wordmark — lowercase serif "mesa"; size is caller-controlled. */
+/* Wordmark — the lowercase word "mesa" in Instrument Serif, in the `logo` color
+   (oxblood by day, cream at night). It is the only mark Mesa shows inside the app:
+   the capital-M icon lives on the home screen and never on a screen. Size is
+   caller-controlled; the line box is 1.15× so the tall serif never clips. */
 export const Wordmark = ({ size = 40, className }: { size?: number; className?: string }) => (
   <Text
-    accessibilityLabel="mesa"
-    className={`font-serif-semibold text-text ${className ?? ''}`}
-    style={{ fontSize: size, lineHeight: size }}
+    accessibilityLabel="Mesa"
+    className={`font-serif ${hasTextColor(className) ? '' : 'text-logo'} ${className ?? ''}`}
+    style={{ fontSize: size, lineHeight: Math.round(size * 1.15) }}
   >
     mesa
   </Text>
@@ -478,7 +481,7 @@ export const EmptyState = ({
   action?: ReactNode
 }) => (
   <View className="mt-6 items-center gap-2 px-5">
-    <SerifItalic className="text-serif-sm text-center">{children}</SerifItalic>
+    <Serif className="text-serif-sm text-center">{children}</Serif>
     {body && <Body className="text-center">{body}</Body>}
     {action && <View className="mt-3">{action}</View>}
   </View>

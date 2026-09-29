@@ -27,8 +27,12 @@ export default function ExploreLayout() {
             ? ('systemChromeMaterialDark' as const)
             : ('systemChromeMaterialLight' as const),
         headerShadowVisible: false,
-        headerTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
-        headerLargeTitleStyle: { fontFamily: 'CormorantGaramond_600SemiBold', color: c.text },
+        headerTitleStyle: { fontFamily: 'InstrumentSerif_400Regular', color: c.text },
+        headerLargeTitleStyle: {
+          fontFamily: 'InstrumentSerif_400Regular',
+          fontSize: 40,
+          color: c.text,
+        },
         // Opaque, same reason as the root stack's contentStyle.
         contentStyle: { backgroundColor: c.bg },
         freezeOnBlur: true,

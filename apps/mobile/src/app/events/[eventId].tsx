@@ -206,7 +206,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
             </View>
             <Text
               maxFontSizeMultiplier={MAX_SCALE}
-              className="mt-2 font-serif-semibold text-display leading-[46px] text-on-photo"
+              className="mt-2 font-serif text-display leading-[46px] text-on-photo"
             >
               {e.title}
             </Text>
@@ -354,7 +354,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
         style={[{ paddingTop: insets.top + 8, backgroundColor: bg }, barStyle]}
         className="absolute inset-x-0 top-0 border-line border-b px-16 pb-3"
       >
-        <Text numberOfLines={1} className="text-center font-serif-semibold text-serif-md text-text">
+        <Text numberOfLines={1} className="text-center font-serif text-serif-md text-text">
           {e.title}
         </Text>
       </Animated.View>

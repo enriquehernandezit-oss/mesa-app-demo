@@ -82,14 +82,7 @@ export function PlaceCover({
     <View className={box}>
       <Svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice">
         {marks(faint)[fnv1a(seed) % 6]}
-        <SvgText
-          x={100}
-          y={126}
-          textAnchor="middle"
-          fill={faint}
-          fontSize={64}
-          fontFamily="PlusJakartaSans_500Medium"
-        >
+        <SvgText x={100} y={126} textAnchor="middle" fill={faint} fontSize={64} fontWeight="500">
           {initial}
         </SvgText>
       </Svg>

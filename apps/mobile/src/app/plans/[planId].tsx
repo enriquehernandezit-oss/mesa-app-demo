@@ -11,7 +11,7 @@ import {
   ErrorState,
   RowsSkeleton,
   SectionHeader,
-  SerifItalic,
+  Serif,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -176,7 +176,7 @@ export default function PlanDetailScreen() {
         <Title className="mt-4">{chosen ? chosen.name : t('plans.voting_open_title')}</Title>
         <Caption className="mt-1">{formatPlanDate(plan.startsAt)}</Caption>
         <Caption className="mt-0.5">{t('plans.hosted_by', { name: plan.host.name })}</Caption>
-        {plan.note ? <SerifItalic className="mt-2 text-serif-sm">{plan.note}</SerifItalic> : null}
+        {plan.note ? <Serif className="mt-2 text-serif-sm">{plan.note}</Serif> : null}
         {(cancelled || past) && (
           <View className="mt-3 flex-row gap-2">
             {cancelled ? (

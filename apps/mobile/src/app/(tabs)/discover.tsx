@@ -19,7 +19,7 @@ import {
   ErrorState,
   Eyebrow,
   MAX_SCALE,
-  SerifItalic,
+  Serif,
   Skeleton,
   Title,
 } from '@/components/ui'
@@ -199,7 +199,7 @@ function EmptyFeed() {
   return (
     <View>
       <View className="items-center gap-2 rounded border border-line bg-surface p-6">
-        <SerifItalic className="text-title">{t('discover.empty_title')}</SerifItalic>
+        <Serif className="text-title">{t('discover.empty_title')}</Serif>
         <Body className="text-center">{t('discover.empty_body')}</Body>
       </View>
       {users.length > 0 && (
@@ -500,7 +500,7 @@ const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; i
             numberOfLines={3}
             onLongPress={onReportNote}
             maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-3 font-serif-italic text-serif-md text-text-2"
+            className="mt-3 font-serif text-serif-md text-text-2"
           >
             “{item.note}”
           </Text>

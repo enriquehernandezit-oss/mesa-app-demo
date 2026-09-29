@@ -605,7 +605,7 @@ function CondensedBar({
   )
 }
 
-// Friends' scores (mock D2 "Their scores") — avatar + name + serif-italic quote +
+// Friends' scores (mock D2 "Their scores") — avatar + name + serif quote +
 // serif score. Capped at 3 with a "See all N rankings" expander.
 function TheirScores({ rankings }: { rankings: RestaurantProfileResponse['friendsRankings'] }) {
   const [expanded, setExpanded] = useState(false)
@@ -677,7 +677,7 @@ function FriendScoreRow({ fr }: { fr: FriendRanking }) {
             {fr.user.name || fr.user.handle}
           </Text>
           {fr.note ? (
-            <Text className="font-serif-italic text-serif-sm text-text-2">“{fr.note}”</Text>
+            <Text className="font-serif text-serif-sm text-text-2">“{fr.note}”</Text>
           ) : null}
         </View>
         <ScoreBadge size="sm" score={fr.score} attribution={{ kind: 'stated' }} />

@@ -73,9 +73,7 @@ export function TopBar({
       style={{ paddingTop: insets.top + 12, paddingBottom: 12 }}
     >
       {variant === 'profile' ? (
-        <Text className="font-serif-semibold text-serif-md text-text">
-          {title || t('common.you')}
-        </Text>
+        <Text className="font-serif text-serif-md text-text">{title || t('common.you')}</Text>
       ) : (
         <Wordmark size={22} />
       )}

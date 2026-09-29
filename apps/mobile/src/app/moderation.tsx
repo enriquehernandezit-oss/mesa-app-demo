@@ -203,7 +203,7 @@ function ReportRow({
           onPress={() => router.push(`/u/${target.userId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text selectable className="font-serif-italic text-serif-sm text-text-2">
+          <Text selectable className="font-serif text-serif-sm text-text-2">
             “{target.body}”
           </Text>
         </Pressable>
@@ -223,7 +223,7 @@ function ReportRow({
           <View className="flex-1">
             <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
             {target.caption ? (
-              <Text selectable className="font-serif-italic text-serif-sm text-text-2">
+              <Text selectable className="font-serif text-serif-sm text-text-2">
                 “{target.caption}”
               </Text>
             ) : null}

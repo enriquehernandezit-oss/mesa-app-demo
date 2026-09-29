@@ -90,8 +90,20 @@ Load-bearing notes:
 - **Display serif: Instrument Serif**, weight 400, **upright only** — the wordmark, place
   names, big numerals, quotes and notes. **No italics anywhere**, notes included.
 - **UI: the iOS system font (SF Pro)** at 400 / 500 / 600 / 700. The mock draws 650; use 600.
-- **No monospace.** Data numerals use tabular figures (`DATA_FIGURES`).
+- **No monospace.** Data numerals use `DATA_FIGURES` (see the note below on what it does per face).
 - Type never uses synthesized weights or styles.
+
+**In code** (`apps/mobile/tailwind.config.js`): `font-serif` is `InstrumentSerif_400Regular` — the
+only serif class, because the face has no bold or italic (never ask for either; the old
+`font-serif-semibold` / `font-serif-italic` are gone). `font-ui`, `font-ui-medium` and
+`font-ui-semibold` are `fontFamily: System` + weight 400 / 500 / 600 (a small Tailwind plugin, so
+the class names stayed the same); NativeWind passes the weight straight through. The size classes
+that are serif (`text-display`, `text-title`, `text-serif-sm|md|lg`, `text-rank`) carry their own
+line height in px. The wordmark is `<Wordmark>` (`components/ui`), `font-serif text-logo`.
+
+**Numerals.** Instrument Serif's digits are lining but **proportional** and the font has no `tnum`
+feature (measured from the font file), so `tabular-nums` does nothing on serif numerals — right-align
+a stacked serif figure, or set a column of counts in the system font, where `tabular-nums` works.
 
 | Use                                           | Size / weight              |
 | --------------------------------------------- | -------------------------- |

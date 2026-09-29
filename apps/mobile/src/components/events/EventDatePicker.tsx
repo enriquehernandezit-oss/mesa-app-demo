@@ -193,7 +193,7 @@ export function EventDatePicker({
             <Text
               maxFontSizeMultiplier={MAX_SCALE}
               numberOfLines={1}
-              className="flex-1 text-center font-serif-semibold text-serif-md text-text"
+              className="flex-1 text-center font-serif text-serif-md text-text"
             >
               {monthTitle}
             </Text>

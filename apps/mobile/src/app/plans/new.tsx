@@ -14,7 +14,7 @@ import {
   ChipRail,
   Eyebrow,
   RowsSkeleton,
-  SerifItalic,
+  Serif,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -497,9 +497,7 @@ function WhenStep({
           </Chip>
         )}
       </View>
-      {resolvedLabel ? (
-        <SerifItalic className="mt-5 text-serif-sm">{resolvedLabel}</SerifItalic>
-      ) : null}
+      {resolvedLabel ? <Serif className="mt-5 text-serif-sm">{resolvedLabel}</Serif> : null}
     </>
   )
 }

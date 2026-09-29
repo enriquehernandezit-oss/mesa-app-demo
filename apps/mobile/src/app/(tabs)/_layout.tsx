@@ -93,7 +93,7 @@ function NativeShell() {
         minimizeBehavior="onScrollDown"
         badgeBackgroundColor={c['danger']}
         badgeTextColor={c['on-accent']}
-        labelStyle={{ fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11 }}
+        labelStyle={{ fontWeight: '500', fontSize: 11 }}
         iconColor={{ default: c['tab-inactive'], selected: c.accent }}
       >
         <NativeTabs.Trigger name="discover">

@@ -18,7 +18,7 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { track } from '@/lib/analytics'
 import { authClient, signOut } from '@/lib/auth-client'
@@ -37,7 +37,7 @@ function BlinkingCursor() {
   }, [o])
   const style = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    <Animated.Text style={style} className="font-serif-italic text-serif-sm text-text">
+    <Animated.Text style={style} className="font-serif text-serif-sm text-text">
       _
     </Animated.Text>
   )
@@ -213,9 +213,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
         <View className="flex-1 items-center justify-center gap-4 px-5">
           <Wordmark size={64} />
           <Eyebrow className="text-accent">{t('auth.suspended_title')}</Eyebrow>
-          <SerifItalic className="text-title text-center">
-            {t('auth.suspended_headline')}
-          </SerifItalic>
+          <Serif className="text-title text-center">{t('auth.suspended_headline')}</Serif>
           <Body className="max-w-[19rem] text-center">{t('auth.suspended_body')}</Body>
           <View className="mt-4 w-full">
             <Button
@@ -263,9 +261,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               <View className="items-center">
                 <Eyebrow className="text-accent">Revolución gastronómica</Eyebrow>
                 <View className="flex-row items-baseline">
-                  <SerifItalic className="text-serif-sm text-text">
-                    Primer objetivo: SDQ
-                  </SerifItalic>
+                  <Serif className="text-serif-sm text-text">Primer objetivo: SDQ</Serif>
                   <BlinkingCursor />
                 </View>
               </View>

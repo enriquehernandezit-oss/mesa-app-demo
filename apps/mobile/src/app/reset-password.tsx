@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { authClient } from '@/lib/auth-client'
 import { useT } from '@/lib/i18n'
@@ -71,9 +71,7 @@ export default function ResetPassword() {
 
             {!token ? (
               <View className="gap-3">
-                <SerifItalic className="text-serif-sm text-center">
-                  {t('auth.reset_missing_token')}
-                </SerifItalic>
+                <Serif className="text-serif-sm text-center">{t('auth.reset_missing_token')}</Serif>
                 <Body className="text-center text-text-2">
                   {t('auth.reset_missing_token_body')}
                 </Body>
@@ -83,9 +81,7 @@ export default function ResetPassword() {
               </View>
             ) : done ? (
               <View className="gap-3">
-                <SerifItalic className="text-serif-md text-center">
-                  {t('auth.reset_done')}
-                </SerifItalic>
+                <Serif className="text-serif-md text-center">{t('auth.reset_done')}</Serif>
                 <Button variant="primary" onPress={goSignIn}>
                   {t('auth.sign_in_button')}
                 </Button>

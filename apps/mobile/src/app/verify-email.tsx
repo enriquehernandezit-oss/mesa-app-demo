@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { Body, Button, Caption, Eyebrow, SerifItalic, Wordmark } from '@/components/ui'
+import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { useT } from '@/lib/i18n'
@@ -70,9 +70,7 @@ export default function VerifyEmail() {
 
           {state === 'done' && (
             <>
-              <SerifItalic className="text-title text-center">
-                {t('auth.verify_done_title')}
-              </SerifItalic>
+              <Serif className="text-title text-center">{t('auth.verify_done_title')}</Serif>
               <Body className="max-w-[19rem] text-center text-text-2">
                 {t('auth.verify_done_body')}
               </Body>
@@ -81,9 +79,9 @@ export default function VerifyEmail() {
 
           {(state === 'expired' || state === 'missing') && (
             <>
-              <SerifItalic className="text-title text-center">
+              <Serif className="text-title text-center">
                 {state === 'missing' ? t('auth.verify_missing_token') : t('auth.INVALID_TOKEN')}
-              </SerifItalic>
+              </Serif>
               <Body className="max-w-[19rem] text-center text-text-2">
                 {t('auth.verify_expired_body')}
               </Body>

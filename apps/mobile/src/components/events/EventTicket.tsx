@@ -342,7 +342,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
             <Text
               style={DATA_FIGURES}
               maxFontSizeMultiplier={1.1}
-              className={`font-serif-semibold text-rank leading-[48px] ${cls.text}`}
+              className={`font-serif text-rank leading-[48px] ${cls.text}`}
             >
               {s.day}
             </Text>
@@ -375,7 +375,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
             <Text
               numberOfLines={2}
               maxFontSizeMultiplier={MAX_SCALE}
-              className="mt-1.5 font-serif-semibold text-serif-md text-text"
+              className="mt-1.5 font-serif text-serif-md text-text"
             >
               {e.title}
             </Text>
@@ -433,7 +433,7 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
           <Text
             style={DATA_FIGURES}
             maxFontSizeMultiplier={1.1}
-            className="font-serif-semibold text-serif-lg leading-[34px] text-on-cat"
+            className="font-serif text-serif-lg leading-[34px] text-on-cat"
           >
             {s.day}
           </Text>
@@ -450,7 +450,7 @@ export function EventHeroCard({ e, width, now }: { e: EventSummary; width: numbe
           <Text
             numberOfLines={2}
             maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-2 font-serif-semibold text-title text-on-photo"
+            className="mt-2 font-serif text-title text-on-photo"
           >
             {e.title}
           </Text>
@@ -492,7 +492,7 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
           />
           <View className={`absolute top-2 left-2 items-center rounded-sm px-2 py-1 ${cls.bg}`}>
-            <Text style={DATA_FIGURES} className="font-serif-semibold text-serif-sm text-on-cat">
+            <Text style={DATA_FIGURES} className="font-serif text-serif-sm text-on-cat">
               {s.day}
             </Text>
             <Text className="font-ui-semibold text-micro uppercase text-on-cat">{s.month}</Text>
@@ -513,7 +513,7 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
               {eventCategoryLabel(e.category)}
             </Text>
           </View>
-          <Text numberOfLines={1} className="mt-0.5 font-serif-semibold text-serif-sm text-text">
+          <Text numberOfLines={1} className="mt-0.5 font-serif text-serif-sm text-text">
             {e.title}
           </Text>
           <Caption numberOfLines={1} className="text-micro">

@@ -23,10 +23,11 @@ const BRASS = '#c09050'
 const BRASS_2 = '#e2c179'
 const COVER_FALLBACK = '#2c1516'
 
-const SERIF_M = 'CormorantGaramond_500Medium'
-const SERIF_SB = 'CormorantGaramond_600SemiBold'
-const SERIF_IT = 'CormorantGaramond_400Regular_Italic'
-const SANS_SB = 'PlusJakartaSans_600SemiBold'
+// The card uses the same two faces as the app: Instrument Serif (upright — it has
+// no italic or bold, so quotes and totals are set in the one weight) and the system
+// font for small caps labels.
+const SERIF = 'InstrumentSerif_400Regular'
+const SANS_SB = { fontFamily: 'System', fontWeight: '600' } as const
 
 export function ShareCard({ req, onReady }: { req: ShareCardReq; onReady: () => void }) {
   const cover = req.coverUrl
@@ -74,7 +75,7 @@ export function ShareCard({ req, onReady }: { req: ShareCardReq; onReady: () => 
           top: 70,
           width: W,
           textAlign: 'center',
-          fontFamily: SERIF_M,
+          fontFamily: SERIF,
           fontSize: 110,
           color: CREAM,
         }}
@@ -91,7 +92,7 @@ export function ShareCard({ req, onReady }: { req: ShareCardReq; onReady: () => 
           bottom: 80,
           width: W,
           textAlign: 'center',
-          fontFamily: SERIF_IT,
+          fontFamily: SERIF,
           fontSize: 40,
           color: CREAM_DIM,
         }}
@@ -115,25 +116,23 @@ function SpotBody({ req }: { req: Extract<ShareCardReq, { kind: 'spot' }> }) {
       }}
     >
       {req.position ? (
-        <Text style={{ fontFamily: SERIF_SB, fontSize: 150, color: BRASS, ...DATA_FIGURES }}>
+        <Text style={{ fontFamily: SERIF, fontSize: 150, color: BRASS, ...DATA_FIGURES }}>
           #{req.position}
         </Text>
       ) : null}
       <Text
-        style={{ fontFamily: SERIF_M, fontSize: 96, color: CREAM, textAlign: 'center' }}
+        style={{ fontFamily: SERIF, fontSize: 96, color: CREAM, textAlign: 'center' }}
         numberOfLines={1}
       >
         {req.name}
       </Text>
-      <Text
-        style={{ fontFamily: SANS_SB, fontSize: 30, color: BRASS, letterSpacing: 3, marginTop: 12 }}
-      >
+      <Text style={{ ...SANS_SB, fontSize: 30, color: BRASS, letterSpacing: 3, marginTop: 12 }}>
         {req.meta.toUpperCase()}
       </Text>
       {req.score != null ? (
         <Text
           style={{
-            fontFamily: SERIF_M,
+            fontFamily: SERIF,
             fontSize: 84,
             color: BRASS_2,
             marginTop: 24,
@@ -146,7 +145,7 @@ function SpotBody({ req }: { req: Extract<ShareCardReq, { kind: 'spot' }> }) {
       {req.note ? (
         <Text
           style={{
-            fontFamily: SERIF_IT,
+            fontFamily: SERIF,
             fontSize: 44,
             color: CREAM_DIM,
             textAlign: 'center',
@@ -203,7 +202,7 @@ function ListBody({
     >
       <Text
         style={{
-          fontFamily: SANS_SB,
+          ...SANS_SB,
           fontSize: 34,
           color: BRASS,
           letterSpacing: 8,
@@ -214,7 +213,7 @@ function ListBody({
       </Text>
       <Text
         style={{
-          fontFamily: SANS_SB,
+          ...SANS_SB,
           fontSize: 26,
           color: CREAM_DIM,
           letterSpacing: 2,
@@ -239,7 +238,7 @@ function ListBody({
           {row.position != null && (
             <Text
               style={{
-                fontFamily: SERIF_SB,
+                fontFamily: SERIF,
                 fontSize: 76,
                 color: BRASS,
                 width: 110,
@@ -251,7 +250,7 @@ function ListBody({
           )}
           <Text
             style={{
-              fontFamily: row.position != null ? SERIF_M : SERIF_IT,
+              fontFamily: row.position != null ? SERIF : SERIF,
               fontSize: row.position != null ? 60 : 48,
               color: row.position != null ? CREAM : CREAM_DIM,
               flex: 1,
@@ -261,7 +260,7 @@ function ListBody({
             {row.name}
           </Text>
           {row.score != null && (
-            <Text style={{ fontFamily: SERIF_M, fontSize: 56, color: BRASS_2, ...DATA_FIGURES }}>
+            <Text style={{ fontFamily: SERIF, fontSize: 56, color: BRASS_2, ...DATA_FIGURES }}>
               {(row.score / 10).toFixed(1)}
             </Text>
           )}

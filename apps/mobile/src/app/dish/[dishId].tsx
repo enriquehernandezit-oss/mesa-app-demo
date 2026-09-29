@@ -171,7 +171,7 @@ export default function DishDetail() {
             </Pressable>
           </Link>
           <View className="mt-2 flex-row items-start justify-between gap-3">
-            <Text className="flex-1 font-serif-semibold text-title text-text">{dish.name}</Text>
+            <Text className="flex-1 font-serif text-title text-text">{dish.name}</Text>
             <View className="flex-row items-center gap-3">
               <CheersButton
                 target={{ kind: 'dish', id: dishId }}
@@ -187,9 +187,7 @@ export default function DishDetail() {
           </View>
           {dish.categoryId ? <Caption className="mt-0.5">{categoryText}</Caption> : null}
           {dish.caption ? (
-            <Text className="mt-1 font-serif-italic text-serif-sm text-text-2">
-              “{dish.caption}”
-            </Text>
+            <Text className="mt-1 font-serif text-serif-sm text-text-2">“{dish.caption}”</Text>
           ) : null}
 
           {/* The place card — the anchor. Carries the poster's attributed score. */}

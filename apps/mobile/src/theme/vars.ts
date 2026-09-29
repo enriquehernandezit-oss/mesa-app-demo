@@ -185,23 +185,23 @@ export const SHADOW = '#3c2814'
 // choice. Theme-invariant for the same reason SHADOW is.
 export const MAP_USER_LOCATION_BLUE = '#007AFF'
 
-// Cormorant ships OLDSTYLE figures by default: the digits sit at different
-// heights and 3/4/5/7/9 hang well below the baseline (measured: cap height 625,
-// but `nine` bottoms out at -275 while `one` sits flat at 0). That is correct
-// and handsome inside a sentence — "Miembro desde agosto de 2026" — and wrong
-// everywhere a number is DATA: a score wobbles inside its brass ring, and a
-// column of positions never lines up.
-//
-// So numerals that are data get both features:
+// Numerals that are DATA — a score, a position, a count — get both features:
 //   lining-nums  — one shared height, all on the baseline
-//   tabular-nums — one shared width, so stacked scores and positions align
+//   tabular-nums — one shared width, so stacked figures line up
 //
-// Plus Jakarta's digits are already lining, so on sans data it's `tabular-nums`
-// that does the work — the columns of counts and positions still need to align.
+// What each face does:
+//   SF (the UI font)  proportional by default, with a tabular feature (Apple's
+//                     documented behavior) — so `tabular-nums` is what makes a
+//                     column of counts and positions align.
+//   Instrument Serif  measured from its font file (400Regular.ttf): digits are
+//                     already lining, but proportional ("1" is a narrow glyph),
+//                     and the font has NO tnum/lnum feature, so `tabular-nums`
+//                     is a no-op on serif numerals. Right-align a stacked serif
+//                     figure (or set it in the system font) if columns must align;
+//                     a lone score, or a count inside a stat tile, is unaffected.
 //
 // Applied per-site with a style prop because NativeWind can't express
-// fontVariant. Prose keeps the default oldstyle figures — don't spread this
-// onto body copy.
+// fontVariant. Prose doesn't need it — don't spread this onto body copy.
 export const DATA_FIGURES: TextStyle = { fontVariant: ['lining-nums', 'tabular-nums'] }
 
 export const themeColors: Record<ThemeName, Record<ColorToken, string>> = {

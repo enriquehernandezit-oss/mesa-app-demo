@@ -75,7 +75,7 @@ export function layout(opts: {
   <meta name="twitter:description" content="${esc(description)}" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Plus+Jakarta+Sans:wght@500;600&display=swap" rel="stylesheet" />
   <style>
     /* FROZEN as Candlelit (oxblood) brand — a public OG/share page seen by
        logged-out strangers inside someone else's feed. Kept dark regardless of
@@ -105,9 +105,9 @@ export function layout(opts: {
     .pos { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 28px; color: var(--brass); width: 28px; }
     .nm { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 24px; color: var(--cream); }
     .sc { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 24px; color: var(--brass-2); }
-    blockquote { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 22px; color: var(--cream-dim); margin: 22px auto 0; max-width: 380px; line-height: 1.35; }
+    blockquote { font-family: 'Cormorant Garamond', Georgia, serif; font-style: normal; font-size: 22px; color: var(--cream-dim); margin: 22px auto 0; max-width: 380px; line-height: 1.35; }
     .cta { display: inline-block; margin-top: 34px; background: var(--brass); color: var(--ink); font-weight: 600; font-size: 15px; letter-spacing: .3px; text-decoration: none; padding: 15px 34px; border-radius: 999px; }
-    .tagline { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 16px; color: var(--cream-dim); margin-top: 20px; }
+    .tagline { font-family: 'Cormorant Garamond', Georgia, serif; font-style: normal; font-size: 16px; color: var(--cream-dim); margin-top: 20px; }
     .missing { padding: 60px 0; }
 
     /* Auth pages (/p/reset-password, /p/verify-email). No JS runs on these —

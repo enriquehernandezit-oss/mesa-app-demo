@@ -12,8 +12,7 @@
     "test": "cd src/lib && bun test"
   },
   "dependencies": {
-    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
-    "@expo-google-fonts/plus-jakarta-sans": "^0.4.1",
+    "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@posthog/react-native-plugin": "^2.9.4",
     "@react-native-google-signin/google-signin": "^16.1.5",
     "@rnmapbox/maps": "^10.3.5",

@@ -24,7 +24,7 @@ import {
   ErrorState,
   Eyebrow,
   RowsSkeleton,
-  SerifItalic,
+  Serif,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -1364,7 +1364,7 @@ function RevealStep({
               ))}
             </>
           ) : (
-            <SerifItalic className="mt-1 text-serif-sm">{t('rank.no_friends_ranked')}</SerifItalic>
+            <Serif className="mt-1 text-serif-sm">{t('rank.no_friends_ranked')}</Serif>
           )}
         </View>
 
