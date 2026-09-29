@@ -760,7 +760,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'profile.photo_process_error': "Couldn't process the photo. Try again.",
   'profile.change_avatar_label': 'Change profile photo',
   'profile.load_error': "Couldn't load your profile.",
-  'profile.member_since': 'Member since {date}',
+  'profile.member_since': 'since {date}',
+  'profile.avg_score': 'Average score',
   'profile.taste_both': 'You mostly eat {cuisine}, almost always in {hood}.',
   'profile.taste_cuisine_only': 'You mostly eat {cuisine}.',
   'profile.taste_hood_only': 'You mostly rank in {hood}.',
@@ -772,12 +773,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'profile.following': 'Following',
   'profile.ranked': 'Ranked',
   'profile.edit_profile': 'Edit profile',
-  'profile.plans': 'Planes',
+  'profile.plans': 'Plans',
   'profile.rank_in_dr': 'Rank in DR',
   'profile.current_streak': 'Current streak',
   'profile.streak_weeks_count': { one: '1 week', other: '{n} weeks' },
   'profile.no_streak_yet': 'None yet',
-  'profile.edit_back': '‹ Edit profile',
   // Mesa's own unique @ (handle) — was mislabeled "Instagram" until M23 added
   // a real, separate Instagram field below.
   'profile.username_label': 'Username · optional',

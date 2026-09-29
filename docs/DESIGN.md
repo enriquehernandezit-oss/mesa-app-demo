@@ -240,6 +240,25 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   circle layer (a hundred-odd views for them was heavy and buried the pins — many places share a
   coordinate). Tapping either opens a glass card at the bottom: picture, name, meta with the distance, the
   friends' score, and a chevron into the place.
+- **Profile, people and taste match** (`app/(tabs)/profile.tsx`, `app/u/[userId].tsx`, `app/match/[userId].tsx`,
+  `app/people/[userId].tsx`, `app/friends/*`, `components/profile/*`): **Your profile** centres the identity — a 92pt
+  photo with a round ink camera chip, the name in the serif (34), `@handle · neighbourhood · since Sep 2026`, and one
+  serif line on how you eat — over a single white r22 card of counts (`ProfileStats`: Ranked · Followers · Following ·
+  Week streak, each a control), **Edit profile** / **Find friends** chips, **Your top 3** as a `MiniPodium` (three equal
+  132pt tiles, the numeral over the name), the events you're going to, one grouped icon list (Ranked · Saved · Your
+  lists · Your dishes · Plans · Explore spots) and two tiles (rank in the DR, average score). Share and Settings are
+  round chips at the top (`ProfileHeader`); once the page scrolls a glass bar with your name fades in behind them.
+  **Someone else's profile** is the same head: the taste match is an accent pill ("+82% taste match") with "across 12
+  shared spots" beside it, a three-count card, a solid **Follow** / a raised **Following ✓**, and their favorites as
+  numbered raised cards (picture, name, meta, their order, their words, the score); report and block live behind the
+  "···" chip. **The match page** is the two faces, "You and Diego", the percentage in the serif at 86, the shared
+  cuisines and neighbourhoods as white pills, then Where you agree / Where you don't as raised rows with both scores
+  (yours, theirs) at the right. **Followers / Following** is one Followers|Following segmented control over a grouped
+  white list (42pt faces, a solid Follow or a raised Following). **Find friends** is raised cards — Invite (an accent
+  round button), Contacts (a switch and Search my contacts), Instagram — then People you may know as one grouped list
+  with a ✕ and a Follow each; **Import from Instagram** is the serif title, a card of four numbered steps and a solid
+  Choose file. **Edit profile** is a back chip and title, the photo, labelled fields (icons for Instagram and Website),
+  pills for neighbourhood, go-to neighbourhoods and cuisines, and one solid Save.
 - **The event page** (`app/events/[eventId].tsx`, `components/events/EventBar.tsx`) is the place page's shape:
   the photo _is_ the page — the event's own, else its venue's, else a map of where it is — with a category chip
   (the kind's icon, "Special · Set menu RD$3,500"), a frosted title panel (serif 40) and a panel of what matters

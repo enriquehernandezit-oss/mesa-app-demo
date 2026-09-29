@@ -642,7 +642,7 @@ export const es = {
   'collections.empty_list': 'Esta lista está vacía.',
   'collections.already_went': 'Ya fuiste · #{n}',
 
-  // components/TopBar.tsx
+  // components/feed/FeedHeader.tsx, components/profile/ProfileHeader.tsx
   'nav.activity_unseen': 'Actividad, {n} sin ver',
   'nav.share_profile': 'Compartir perfil',
   'nav.share_profile_no_handle': 'Ponte un @usuario para compartir tu perfil.',
@@ -814,7 +814,8 @@ export const es = {
   'profile.photo_process_error': 'No se pudo procesar la foto. Intenta de nuevo.',
   'profile.change_avatar_label': 'Cambiar foto de perfil',
   'profile.load_error': 'No se pudo cargar tu perfil.',
-  'profile.member_since': 'Miembro desde {date}',
+  'profile.member_since': 'desde {date}',
+  'profile.avg_score': 'Puntaje promedio',
   'profile.taste_both': 'Comes sobre todo {cuisine}, casi siempre en {hood}.',
   'profile.taste_cuisine_only': 'Comes sobre todo {cuisine}.',
   'profile.taste_hood_only': 'Rankeas casi siempre en {hood}.',
@@ -831,7 +832,6 @@ export const es = {
   'profile.current_streak': 'Racha actual',
   'profile.streak_weeks_count': { one: '1 semana', other: '{n} semanas' },
   'profile.no_streak_yet': 'Aún ninguna',
-  'profile.edit_back': '‹ Editar perfil',
   // Mesa's propio @ (handle) — estaba mal etiquetado "Instagram" hasta que
   // M23 agregó un campo real y separado para Instagram, abajo.
   'profile.username_label': 'Usuario · opcional',

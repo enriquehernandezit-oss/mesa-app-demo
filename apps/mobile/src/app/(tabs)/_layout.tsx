@@ -141,7 +141,7 @@ function NativeShell() {
           <NativeTabs.Trigger.Icon sf={{ default: 'person', selected: 'person.fill' }} />
           <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
           {/* No tab owns Activity, so its unseen count rides the account tab —
-              the bell in the TopBar stays the primary entry point. */}
+              the bell in the Feed header stays the primary entry point. */}
           {unseen > 0 ? (
             <NativeTabs.Trigger.Badge>
               {unseen > 9 ? '9+' : String(unseen)}

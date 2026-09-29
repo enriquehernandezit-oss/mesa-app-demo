@@ -53,7 +53,13 @@ export function Avatar({
         justifyContent: 'center',
       }}
     >
-      <Text className="font-ui-semibold" style={{ color: ink, fontSize: size * 0.44 }}>
+      {/* The initial is drawn to fit the circle, so it never scales with the text-size setting
+          (at the largest size it outgrew the 88pt profile photo and was cut off). */}
+      <Text
+        allowFontScaling={false}
+        className="font-ui-semibold"
+        style={{ color: ink, fontSize: size * 0.44 }}
+      >
         {initial}
       </Text>
     </LinearGradient>

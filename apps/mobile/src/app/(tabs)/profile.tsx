@@ -1,27 +1,42 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import type { ReactNode } from 'react'
-import { useCallback, useRef, useState } from 'react'
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react'
+import { Animated, Linking, Pressable, ScrollView, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventTicket, useNow } from '@/components/events/EventTicket'
+import { MiniPodium } from '@/components/list/Podium'
 import { useTabBarClearance } from '@/components/MesaTabBar'
-import { TopBar } from '@/components/TopBar'
-import { Button, Caption, Chip, ErrorState, Eyebrow, Serif, Skeleton } from '@/components/ui'
+import { ProfileHeader } from '@/components/profile/ProfileHeader'
+import { ProfileStats } from '@/components/profile/ProfileStats'
+import { ScreenHeader } from '@/components/ScreenHeader'
+import { Group, RowButton } from '@/components/SettingsRow'
+import {
+  Button,
+  Caption,
+  Chip,
+  ErrorState,
+  Eyebrow,
+  MAX_SCALE,
+  SectionHeader,
+  Serif,
+  Skeleton,
+} from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Field } from '@/components/ui/Field'
 import {
   BookmarkIcon,
   CalendarIcon,
+  AtIcon,
+  CameraIcon,
   CheckIcon,
   ChevronIcon,
   CompassIcon,
   ForkKnifeIcon,
   ListIcon,
-  PlusIcon,
+  UserPlusIcon,
+  WebIcon,
 } from '@/components/ui/icons'
-import { Stat } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
@@ -29,12 +44,13 @@ import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { ALL_CUISINES, cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
-import { dateLocale, useT } from '@/lib/i18n'
+import { dateLocale, useLanguage, useT } from '@/lib/i18n'
 import { openImagePicker } from '@/lib/image'
 import { editPhoto } from '@/lib/photoEditor'
 import { isPendingInvite } from '@/lib/plans'
 import type { EventSummary, MeStats, Neighborhood, Plan, Ranking } from '@/lib/types'
 import { uploadImage } from '@/lib/upload'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // Shared avatar-change pipeline: sheet (camera/library) → permission → launch
@@ -106,16 +122,20 @@ function useAvatarPicker() {
   return { change, busy: busy || setAvatar.isPending }
 }
 
+// The photo, with the camera chip that says it can be changed: tapping it opens the
+// camera/library chooser directly. Shared by the profile and Edit profile.
 function AvatarEditButton({
   name,
   src,
   onPress,
   busy,
+  size = 92,
 }: {
   name: string
   src?: string | null
   onPress: () => void
   busy: boolean
+  size?: number
 }) {
   const t = useT()
   return (
@@ -127,9 +147,9 @@ function AvatarEditButton({
         disabled={busy}
         className="active:opacity-80"
       >
-        <Avatar name={name} src={src} size={88} />
-        <View className="absolute right-0.5 bottom-0.5 h-[22px] w-[22px] items-center justify-center rounded-pill border-2 border-bg bg-accent-fill">
-          <PlusIcon size={12} color="on-accent" />
+        <Avatar name={name} src={src} size={size} />
+        <View className="absolute -right-0.5 bottom-0.5 h-[30px] w-[30px] items-center justify-center rounded-pill border-2 border-bg bg-ink">
+          <CameraIcon size={15} color="on-ink" />
         </View>
       </Pressable>
       {busy && <Caption className="mt-1 text-micro">…</Caption>}
@@ -137,11 +157,12 @@ function AvatarEditButton({
   )
 }
 
-// The user's own profile (Phase 6 mock E1): centered identity + avatar picker, a
-// stats trio, edit/share, routes into the lists, and the two stat cards. The top
-// bar (name + share + settings) is TopBar's profile variant. Ported from
-// apps/app/src/screens/tabs/ProfileTab.tsx; the <input type=file> avatar becomes
-// expo-image-picker + lib/photoEditor.ts's crop/rotate.
+// The user's own profile (Redesign 2): the identity centred (photo with its camera chip, name in
+// the serif, @handle · neighbourhood · since, one line on how you eat), a card of counts, Edit
+// profile / Find friends, your top three as a mini podium, and an icon list into everything that
+// is yours. Share and Settings are the round chips at the top (ProfileHeader), which grows a glass
+// bar with your name once the page scrolls. Ported from apps/app/src/screens/tabs/ProfileTab.tsx;
+// the <input type=file> avatar becomes expo-image-picker + lib/photoEditor.ts's crop/rotate.
 // The same ticket card Explore shows, so its bookmark and "I'm going" work
 // right here; the countdown keeps its own minute tick.
 function ProfileEventTicket({ e, index }: { e: EventSummary; index: number }) {
@@ -152,6 +173,8 @@ function ProfileEventTicket({ e, index }: { e: EventSummary; index: number }) {
 export default function ProfileTab() {
   const router = useRouter()
   const t = useT()
+  const language = useLanguage()
+  const insets = useSafeAreaInsets()
   const tabBarClearance = useTabBarClearance()
   const { data, isPending, isError, refetch } = useProfile(true)
   const p = data?.profile
@@ -190,6 +213,16 @@ export default function ProfileTab() {
   })
   const pendingPlans = (plans.data?.plans ?? []).filter(isPendingInvite).length
 
+  // The scroll offset drives ProfileHeader's glass bar (native-driven, so it never touches JS).
+  const scrollY = useRef(new Animated.Value(0)).current
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+      }),
+    [scrollY],
+  )
+
   // Called before the `editing` branch below so the hook itself is always
   // registered (rules of hooks) — while actually editing, viewScrollRef is
   // unmounted, so the scroll call is a harmless no-op and only the
@@ -217,9 +250,9 @@ export default function ProfileTab() {
   if (isPending) {
     return (
       <View className="flex-1 bg-bg">
-        <TopBar variant="profile" title={t('common.you')} />
-        <View className="items-center gap-3 pt-8">
-          <Skeleton height={88} width={88} />
+        <ProfileHeader name={t('common.you')} scrollY={scrollY} />
+        <View className="items-center gap-3" style={{ paddingTop: insets.top + 44 }}>
+          <Skeleton height={92} width={92} />
           <Skeleton height={14} width={140} />
           <Skeleton height={11} width={180} />
         </View>
@@ -229,23 +262,31 @@ export default function ProfileTab() {
   if (isError) {
     return (
       <View className="flex-1 bg-bg">
-        <TopBar variant="profile" title={t('common.you')} />
-        <ErrorState onRetry={() => refetch()}>{t('profile.load_error')}</ErrorState>
+        <ProfileHeader name={t('common.you')} scrollY={scrollY} />
+        <View style={{ paddingTop: insets.top + 44 }}>
+          <ErrorState onRetry={() => refetch()}>{t('profile.load_error')}</ErrorState>
+        </View>
       </View>
     )
   }
 
   const memberSince =
     p?.createdAt &&
-    new Date(p.createdAt).toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' })
+    new Date(p.createdAt).toLocaleDateString(dateLocale(), { month: 'short', year: 'numeric' })
   const neighborhood = p?.neighborhood?.name
+  const identityLine = [
+    p?.handle ? `@${p.handle}` : null,
+    neighborhood,
+    memberSince ? t('profile.member_since', { date: memberSince }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   // One editorial line from the taste stats the API already computes — a read on
-  // how you eat, not another number. Elliptical "comida <cuisine>", so the
-  // feminine cuisine label reads naturally, and all three null shapes hold.
-  const topCuisine = stats.data?.topCuisine
-    ? cuisineLabel(stats.data.topCuisine)?.toLowerCase()
-    : null
+  // how you eat, not another number. In Spanish it is elliptical ("comida <cuisine>"), so the
+  // cuisine goes lower-case there; English keeps its capital ("Italian"). All three null shapes hold.
+  const cuisine = stats.data?.topCuisine ? cuisineLabel(stats.data.topCuisine) : null
+  const topCuisine = cuisine && language === 'es' ? cuisine.toLowerCase() : cuisine
   const topHood = stats.data?.topNeighborhood
   const tasteLine =
     topCuisine && topHood
@@ -258,170 +299,150 @@ export default function ProfileTab() {
 
   return (
     <View className="flex-1 bg-bg">
-      <TopBar variant="profile" title={p?.name || t('common.you')} shareHandle={p?.handle} />
-      <ScrollView
+      <Animated.ScrollView
         ref={viewScrollRef}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5"
-        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        contentContainerStyle={{ paddingTop: insets.top + 44, paddingBottom: tabBarClearance }}
       >
-        <View className="items-center pt-2">
-          {/* Tapping the avatar opens the camera/library chooser directly —
-              "Editar perfil" below opens the full screen for everything else
-              (name, handle, sector, bio), which shows the same photo control
-              at its top. */}
+        <View className="items-center px-6">
+          {/* Tapping the photo opens the camera/library chooser directly — "Edit profile"
+              below opens the full screen for everything else (name, handle, sector, bio),
+              which shows the same photo control at its top. */}
           <AvatarEditButton
             name={p?.name || p?.handle || 'm'}
             src={p?.image}
             onPress={avatarPicker.change}
             busy={avatarPicker.busy}
           />
-          {p?.handle ? <Text className="mt-2 text-label text-text-2">@{p.handle}</Text> : null}
-          <Caption className="mt-1">
-            {[memberSince && t('profile.member_since', { date: memberSince }), neighborhood]
-              .filter(Boolean)
-              .join(' · ')}
-          </Caption>
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-3 text-center font-serif text-serif-lg text-text"
+          >
+            {p?.name || t('common.you')}
+          </Text>
+          {identityLine ? (
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-1.5 text-center font-ui text-label text-text-muted"
+            >
+              {identityLine}
+            </Text>
+          ) : null}
           {tasteLine ? (
-            <Serif className="mt-2 px-6 text-center text-serif-sm text-text-2">{tasteLine}</Serif>
+            <Serif className="mt-2.5 text-center text-serif-sm text-text-2">{tasteLine}</Serif>
           ) : null}
         </View>
 
-        {/* The same trio as another member's passport — the two are the same
-            object and should read that way. "Rank en RD" used to sit here AND in
-            the stat card below, the same number twice on one screen; it belongs
-            with the other achievement number, so it lives in the card only.
-            Rendered with — placeholders while `stats` is still loading (instead
-            of only once it lands) so the trio reserves its space rather than
-            the whole header shifting down; hidden only on a genuine error. */}
-        {/* Stats in one white card on the cream ground (founder's mock) —
-            ranked · followers · following · streak, hairline-divided.
-            Rendered with — placeholders while loading so it reserves its
-            space; hidden only on a genuine error. */}
+        {/* Rendered with — placeholders while `stats` is still loading (instead of only once it
+            lands) so the card reserves its space rather than the page shifting down; hidden
+            only on a genuine error. */}
         {!stats.isError && (
-          <View className="mt-5 flex-row rounded-card border border-line bg-surface py-2">
-            {[
-              {
-                n: stats.data ? String(stats.data.places) : '—',
-                l: t('profile.ranked'),
-                go: () => router.push('/rankings'),
-              },
-              {
-                n: stats.data ? String(stats.data.followers) : '—',
-                l: t('profile.followers'),
-                go: () => router.push(`/people/${p?.id}?tab=followers`),
-              },
-              {
-                n: stats.data ? String(stats.data.following) : '—',
-                l: t('profile.following'),
-                go: () => router.push(`/people/${p?.id}?tab=following`),
-              },
-              {
-                n: stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—',
-                l: t('profile.streak_short'),
-                go: () => router.push('/leaderboard'),
-              },
-            ].map((s, i) => (
-              <View key={s.l} className={`flex-1 ${i > 0 ? 'border-line border-l' : ''}`}>
-                <Stat n={s.n} l={s.l} onPress={s.go} />
-              </View>
-            ))}
+          <View className="mt-5">
+            <ProfileStats
+              items={[
+                {
+                  n: stats.data ? String(stats.data.places) : '—',
+                  l: t('profile.ranked'),
+                  go: () => router.push('/rankings'),
+                },
+                {
+                  n: stats.data ? String(stats.data.followers) : '—',
+                  l: t('profile.followers'),
+                  go: () => router.push(`/people/${p?.id}?tab=followers`),
+                },
+                {
+                  n: stats.data ? String(stats.data.following) : '—',
+                  l: t('profile.following'),
+                  go: () => router.push(`/people/${p?.id}?tab=following`),
+                },
+                {
+                  n:
+                    stats.data && stats.data.streakWeeks > 0 ? String(stats.data.streakWeeks) : '—',
+                  l: t('profile.streak_short'),
+                  go: () => router.push('/leaderboard'),
+                },
+              ]}
+            />
           </View>
         )}
 
-        {/* Share lives in TopBar only now — it used to also duplicate here,
-            same handler, two entry points for one action. */}
-        <View className="mt-4 flex-row gap-3">
-          <Pressable
-            accessibilityRole="button"
+        <View className="mx-4 mt-3 flex-row gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="min-h-[44px] flex-1"
             onPress={() => setEditing(true)}
-            className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
           >
-            <Text className="font-ui-semibold text-label text-accent">
-              {t('profile.edit_profile')}
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
+            {t('profile.edit_profile')}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="min-h-[44px] flex-1"
+            icon={<UserPlusIcon size={17} />}
             onPress={() => router.push('/friends')}
-            className="min-h-[48px] flex-1 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
           >
-            <Text className="font-ui-semibold text-label text-accent">{t('friends.title')}</Text>
-          </Pressable>
+            {t('friends.title')}
+          </Button>
         </View>
 
-        {/* Tu top 3 — the first three of your list, as white cards. */}
+        {/* Your top three — the first of your list, as a mini podium. */}
         {top3.length > 0 ? (
-          <View className="mt-6">
-            <View className="mb-3 flex-row items-baseline justify-between">
-              <Text className="font-ui-semibold text-subhead text-text">{t('profile.top3')}</Text>
-              <Pressable
-                onPress={() => router.push('/rankings')}
-                hitSlop={8}
-                className="active:opacity-60"
-              >
-                <Text className="font-ui-semibold text-label text-accent">
-                  {t('profile.see_your_list')} ›
-                </Text>
-              </Pressable>
-            </View>
-            <View className="gap-2">
-              {top3.map((r) => (
-                <Pressable
-                  key={r.id}
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/r/${r.restaurant.id}`)}
-                  className="flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
-                >
-                  <Text
-                    style={[DATA_FIGURES, { width: 22 }]}
-                    className="text-center font-serif text-serif-sm text-text"
+          <View className="px-4">
+            <View className="px-1">
+              <SectionHeader
+                action={
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push('/rankings')}
+                    hitSlop={8}
+                    className="flex-row items-center gap-1 active:opacity-60"
                   >
-                    {r.position}
-                  </Text>
-                  <PlaceCover
-                    name={r.restaurant.name}
-                    coverImageId={r.restaurant.coverImageId}
-                    size={{ w: 160, h: 160 }}
-                    className="h-14 w-14 rounded-sm"
-                  />
-                  <View className="flex-1">
-                    <Text numberOfLines={1} className="font-ui-semibold text-subhead text-text">
-                      {r.restaurant.name}
+                    <Text
+                      maxFontSizeMultiplier={MAX_SCALE}
+                      className="font-ui-semibold text-label text-accent"
+                    >
+                      {t('profile.see_your_list')}
                     </Text>
-                    <Caption numberOfLines={1}>
-                      {[cuisineLabel(r.restaurant.cuisine), r.neighborhood]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Caption>
-                  </View>
-                  <Text style={DATA_FIGURES} className="font-serif text-serif-lg text-accent">
-                    {displayScore(r.score)}
-                  </Text>
-                </Pressable>
-              ))}
+                    <ChevronIcon size={13} color="accent" />
+                  </Pressable>
+                }
+              >
+                {t('profile.top3')}
+              </SectionHeader>
             </View>
+            <MiniPodium items={top3} />
           </View>
         ) : null}
 
-        {/* What you've said you're going to — the events half of "my stuff",
-            capped at three the way Tu top 3 is, with the full list a tap away
-            in Explore. */}
+        {/* What you've said you're going to — the events half of "my stuff", capped at three
+            the way your top three is, with the full list a tap away in Explore. */}
         {going.length > 0 ? (
-          <View className="mt-6">
-            <View className="mb-3 flex-row items-baseline justify-between">
-              <Text className="font-ui-semibold text-subhead text-text">
-                {t('events.going_section')}
-              </Text>
-              <Pressable
-                onPress={() => router.push('/explore')}
-                hitSlop={8}
-                className="active:opacity-60"
+          <View className="px-4">
+            <View className="px-1">
+              <SectionHeader
+                action={
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push('/explore')}
+                    hitSlop={8}
+                    className="flex-row items-center gap-1 active:opacity-60"
+                  >
+                    <Text
+                      maxFontSizeMultiplier={MAX_SCALE}
+                      className="font-ui-semibold text-label text-accent"
+                    >
+                      {t('profile.see_all_events')}
+                    </Text>
+                    <ChevronIcon size={13} color="accent" />
+                  </Pressable>
+                }
               >
-                <Text className="font-ui-semibold text-label text-accent">
-                  {t('profile.see_all_events')} ›
-                </Text>
-              </Pressable>
+                {t('events.going_section')}
+              </SectionHeader>
             </View>
             {going.map((e, i) => (
               <ProfileEventTicket key={e.id} e={e} index={i} />
@@ -429,60 +450,61 @@ export default function ProfileTab() {
           </View>
         ) : null}
 
-        <View className="mt-6 overflow-hidden rounded-card border border-line bg-surface px-4">
-          {/* No count here — the trio above already carries it. */}
-          <NavRow
-            icon={<CheckIcon size={15} />}
-            label={t('profile.ranked')}
-            onPress={() => router.push('/rankings')}
-          />
-          <NavRow
-            icon={<BookmarkIcon size={15} />}
-            label={t('rankings.saved_tab')}
-            onPress={() => router.push('/rankings?tab=saved')}
-          />
-          {/* The member's named lists (M19) — they used to be a rail at the
-              top of Guardados, which buried them inside the ranked passport.
-              This is their one entry point now, a peer of "Tus platos". */}
-          <NavRow
-            icon={<ListIcon size={15} />}
-            label={t('rankings.lists_section')}
-            onPress={() => router.push('/collections')}
-          />
-          <NavRow
-            icon={<ForkKnifeIcon size={15} />}
-            label={t('dishLists.title')}
-            onPress={() => router.push('/dish-lists')}
-          />
-          <NavRow
-            icon={<CalendarIcon size={15} />}
-            label={t('profile.plans')}
-            meta={pendingPlans > 0 ? String(pendingPlans) : undefined}
-            onPress={() => router.push('/plans')}
-          />
-          {/* Was "Recomendados para ti", which promised a personalized list this
-              row never opened — it goes to Explore, whose default browse state
-              is exactly that query. The label now says where it goes. */}
-          <NavRow
-            icon={<CompassIcon size={15} />}
-            label={t('rankings.explore_spots')}
-            onPress={() => router.push('/explore')}
-            last
-          />
+        <View className="mt-4 px-4">
+          <Group>
+            {/* No count on Ranked — the card above already carries it. */}
+            <NavRow
+              icon={<CheckIcon size={18} />}
+              label={t('profile.ranked')}
+              onPress={() => router.push('/rankings')}
+            />
+            <NavRow
+              icon={<BookmarkIcon size={18} />}
+              label={t('rankings.saved_tab')}
+              onPress={() => router.push('/rankings?tab=saved')}
+            />
+            {/* The member's named lists (M19) — their one entry point, a peer of "Your dishes". */}
+            <NavRow
+              icon={<ListIcon size={18} />}
+              label={t('rankings.lists_section')}
+              onPress={() => router.push('/collections')}
+            />
+            <NavRow
+              icon={<ForkKnifeIcon size={18} />}
+              label={t('dishLists.title')}
+              onPress={() => router.push('/dish-lists')}
+            />
+            <NavRow
+              icon={<CalendarIcon size={18} />}
+              label={t('profile.plans')}
+              meta={pendingPlans > 0 ? String(pendingPlans) : undefined}
+              onPress={() => router.push('/plans')}
+            />
+            {/* Goes to Explore, whose default browse state is the recommendations query. */}
+            <NavRow
+              icon={<CompassIcon size={18} />}
+              label={t('rankings.explore_spots')}
+              onPress={() => router.push('/explore')}
+              last
+            />
+          </Group>
         </View>
 
-        {!stats.isError && (
-          <View className="mt-4 flex-row gap-3">
-            <StatCard
+        {!stats.isError && stats.data ? (
+          <View className="mx-4 mt-3 flex-row gap-2">
+            <StatTile
               label={t('profile.rank_in_dr')}
-              value={
-                stats.data ? (stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—') : '—'
-              }
+              value={stats.data.rankInDr != null ? `#${stats.data.rankInDr}` : '—'}
               onPress={() => router.push('/leaderboard')}
             />
+            {stats.data.avgScore != null ? (
+              <StatTile label={t('profile.avg_score')} value={displayScore(stats.data.avgScore)} />
+            ) : null}
           </View>
-        )}
-      </ScrollView>
+        ) : null}
+      </Animated.ScrollView>
+
+      <ProfileHeader name={p?.name || t('common.you')} handle={p?.handle} scrollY={scrollY} />
     </View>
   )
 }
@@ -501,24 +523,20 @@ function NavRow({
   last?: boolean
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={`flex-row items-center justify-between py-4 active:opacity-70 ${last ? '' : 'border-line border-b'}`}
-    >
-      <View className="flex-row items-center gap-2">
-        {icon}
-        <Text className="font-ui text-body text-text">{label}</Text>
-      </View>
-      <View className="flex-row items-center gap-1.5">
-        {meta ? <Caption>{meta}</Caption> : null}
-        <ChevronIcon size={16} color="text-faint" />
-      </View>
-    </Pressable>
+    <RowButton onPress={onPress} last={last}>
+      {icon}
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="flex-1 font-ui text-body text-text">
+        {label}
+      </Text>
+      {meta ? <Caption>{meta}</Caption> : null}
+      <ChevronIcon size={16} color="text-faint" />
+    </RowButton>
   )
 }
 
-function StatCard({
+// A number that says where you stand (your rank in the country, your average) — a raised r22
+// tile with the figure in the serif.
+function StatTile({
   label,
   value,
   onPress,
@@ -527,22 +545,35 @@ function StatCard({
   value: string
   onPress?: () => void
 }) {
+  const lift = useLift()
   const body = (
     <>
-      <Caption className="text-micro">{label}</Caption>
-      <Text style={DATA_FIGURES} className="mt-1 font-serif text-serif-md text-accent">
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-meta text-text-muted">
+        {label}
+      </Text>
+      <Text
+        style={DATA_FIGURES}
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="mt-1.5 font-serif text-serif-lg text-text"
+      >
         {value}
       </Text>
     </>
   )
+  const box = 'flex-1 rounded-group bg-surface px-4 py-3.5'
   if (!onPress) {
-    return <View className="flex-1 rounded border border-line bg-surface p-4">{body}</View>
+    return (
+      <View className={box} style={lift}>
+        {body}
+      </View>
+    )
   }
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      className="flex-1 rounded border border-line bg-surface p-4 active:opacity-70"
+      className={`${box} active:opacity-70`}
+      style={lift}
     >
       {body}
     </Pressable>
@@ -552,10 +583,12 @@ function StatCard({
 // The one place that owns the whole profile — name, @handle, sector, bio AND
 // the photo, which used to be a separate direct-avatar-tap flow on the main
 // screen instead of living here. PATCH /me/profile for the fields, PATCH
-// /me/avatar for the photo — two endpoints, one screen.
+// /me/avatar for the photo — two endpoints, one screen. Redesign 2: a back chip and title, the
+// photo, labelled fields, pills for the choices, and one solid Save.
 function EditProfile({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const t = useT()
+  const tabBarClearance = useTabBarClearance()
   const { data } = useProfile(true)
   const p = data?.profile
   const [name, setName] = useState(p?.name ?? '')
@@ -614,24 +647,20 @@ function EditProfile({ onClose }: { onClose: () => void }) {
 
   return (
     <View className="flex-1 bg-bg">
+      <ScreenHeader
+        onBack={onClose}
+        backLabel={t('common.back_plain')}
+        title={t('profile.edit_profile')}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-10 pt-14"
+        contentContainerStyle={{ paddingBottom: tabBarClearance }}
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          accessibilityRole="button"
-          onPress={onClose}
-          className="min-h-[44px] justify-center active:opacity-60"
-        >
-          <Text className="font-ui-medium text-label text-text-muted">
-            {t('profile.edit_back')}
-          </Text>
-        </Pressable>
-
         <View className="mt-2 items-center">
           <AvatarEditButton
+            size={84}
             name={p?.name || p?.handle || 'm'}
             src={p?.image}
             onPress={avatarPicker.change}
@@ -639,7 +668,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           />
         </View>
 
-        <View className="mt-6 gap-4">
+        <View className="mt-5 gap-4 px-4">
           <Field
             label={t('onboarding.name_label')}
             value={name}
@@ -661,6 +690,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           />
           <Field
             label={t('profile.instagram_label')}
+            icon={<AtIcon size={18} color="text-muted" />}
             value={instagramHandle}
             onChangeText={setInstagramHandle}
             placeholder={t('profile.instagram_placeholder')}
@@ -670,6 +700,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           />
           <Field
             label={t('profile.website_label')}
+            icon={<WebIcon size={18} color="text-muted" />}
             value={website}
             onChangeText={setWebsite}
             placeholder={t('profile.website_placeholder')}
@@ -685,7 +716,6 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               {neighborhoods.data?.neighborhoods.map((n) => (
                 <Chip
                   key={n.slug}
-                  size="sm"
                   state={currentSlug === n.slug ? 'selected' : 'default'}
                   onPress={() => setSlug(n.slug)}
                 >
@@ -700,7 +730,6 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               {neighborhoods.data?.neighborhoods.map((n) => (
                 <Chip
                   key={n.slug}
-                  size="sm"
                   state={favoriteSlugs.has(n.slug) ? 'selected' : 'default'}
                   onPress={() => toggleFavoriteSlug(n.slug)}
                 >
@@ -715,7 +744,6 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               {ALL_CUISINES.map((c) => (
                 <Chip
                   key={c}
-                  size="sm"
                   state={cuisines.has(c) ? 'selected' : 'default'}
                   onPress={() => toggleCuisine(c)}
                 >
@@ -727,7 +755,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           <Field label={t('profile.bio_label')} value={bio} onChangeText={setBio} maxLength={160} />
         </View>
 
-        <View className="mt-6">
+        <View className="mt-6 px-4">
           <Button
             variant="primary"
             loading={save.isPending}

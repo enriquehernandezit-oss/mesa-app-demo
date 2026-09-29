@@ -3,6 +3,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { ProfileStats } from '@/components/profile/ProfileStats'
 import { pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
@@ -10,24 +11,29 @@ import {
   Caption,
   EmptyState,
   ErrorState,
+  IconButton,
+  MAX_SCALE,
   RowsSkeleton,
   SectionHeader,
   Skeleton,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { MoreIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge, Stat } from '@/components/ui/patterns'
+import { CheckIcon, MoreIcon, UserPlusIcon } from '@/components/ui/icons'
+import { ScoreStack } from '@/components/ui/patterns'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useFollow } from '@/hooks/useFollow'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
-import { tagLabel } from '@/lib/display'
+import { cuisineLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
-// Another person's ranked passport (mock E2) — and the surface where UGC
+// Another person's ranked passport (Redesign 2: the identity centred, the match as an accent pill,
+// a card of counts, Follow, and their favorites as numbered cards) — and the surface where UGC
 // moderation is exercised (App Store 1.2): report a vibe note or the member,
 // block them. Blocking severs the graph and hides their content; the API 404s a
 // blocked user, so this view empties out. Ported from apps/app/src/screens/user/
@@ -96,6 +102,7 @@ export default function UserRankings() {
   const reportUser = useMutation({
     mutationFn: (reason: string) =>
       api.post('/moderation/reports', { targetType: 'user', targetId: userId, reason }),
+    onSuccess: () => toast({ message: t('common.reported') }),
     onError: () => toast({ variant: 'error', message: t('common.report_error') }),
   })
 
@@ -164,86 +171,108 @@ export default function UserRankings() {
       <ScreenHeader
         onBack={goBack}
         backLabel={t('common.back_plain')}
-        title={user.name || user.handle || undefined}
         right={
-          <Pressable
-            accessibilityRole="button"
+          <IconButton
             accessibilityLabel={t('rankings.more_actions')}
-            disabled={reportUser.isPending}
             onPress={openMenu}
-            hitSlop={8}
-            className="h-11 w-8 items-center justify-center active:opacity-60"
-          >
-            <MoreIcon size={18} color="text-muted" />
-          </Pressable>
+            icon={<MoreIcon size={18} color="text" />}
+          />
         }
       />
       <ScrollView
         ref={scrollRef}
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-10"
+        contentContainerClassName="pb-10"
       >
-        <View className="items-center gap-1">
+        <View className="items-center px-6">
           <Avatar name={user.name || user.handle || 'm'} src={user.image} size={88} />
-          {user.handle ? <Text className="mt-2 text-label text-text-2">@{user.handle}</Text> : null}
-          {neighborhood ? <Caption>{neighborhood}</Caption> : null}
-          {matchPercent != null ? (
-            <Pressable
-              accessibilityRole="button"
-              className="mt-2 items-center gap-1"
-              onPress={() => router.push(`/match/${userId}`)}
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-3 text-center font-serif text-greeting text-text"
+          >
+            {user.name || user.handle}
+          </Text>
+          {user.handle || neighborhood ? (
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-1 text-center font-ui text-label text-text-muted"
             >
+              {[user.handle ? `@${user.handle}` : null, neighborhood].filter(Boolean).join(' · ')}
+            </Text>
+          ) : null}
+          {matchPercent != null ? (
+            <View className="mt-3 flex-row flex-wrap items-center justify-center gap-2">
               {/* A match % IS a control here — it opens the pair page. */}
-              <View className="min-h-[36px] justify-center rounded-pill bg-accent-fill px-3">
-                <Text className="font-ui-medium text-label text-on-accent">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push(`/match/${userId}`)}
+                className="min-h-[32px] justify-center rounded-pill bg-accent-fill px-3 py-1 active:opacity-80"
+              >
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-pill text-on-accent"
+                >
                   {t('passport.match_percent', { n: matchPercent })}
                 </Text>
-              </View>
-              {/* The denominator behind the percentage — a match with no shared
-                  count is the least trustworthy way to show a number. */}
-              <Caption className="text-micro">
+              </Pressable>
+              {/* The denominator behind the percentage — a match with no shared count is the
+                  least trustworthy way to show a number. */}
+              <Caption className="text-meta">
                 {t('passport.shared_spots', { n: sharedCount })}
               </Caption>
-            </Pressable>
+            </View>
           ) : sharedCount > 0 ? (
-            // 1-2 shared spots: below tasteMatch's MIN_SHARED_FOR_MATCH, so
-            // there's no honest percentage yet — say what's missing instead.
-            <Caption className="mt-2 text-micro">
+            // 1-2 shared spots: below tasteMatch's MIN_SHARED_FOR_MATCH, so there's no honest
+            // percentage yet — say what's missing instead.
+            <Caption className="mt-3 text-meta">
               {t('passport.match_need_more', { n: 3 - sharedCount })}
             </Caption>
           ) : null}
+        </View>
 
-          {/* Same trio as your own profile — the passport is the same object. */}
-          <View className="mt-4 flex-row justify-around self-stretch">
-            <Stat
-              n={String(followerCount)}
-              l={t('profile.followers')}
-              onPress={() => router.push(`/people/${userId}?tab=followers`)}
-            />
-            <Stat
-              n={String(followingCount)}
-              l={t('profile.following')}
-              onPress={() => router.push(`/people/${userId}?tab=following`)}
-            />
-            <Stat n={String(rankings.length)} l={t('profile.ranked')} onPress={jumpToRankings} />
-          </View>
+        <View className="mt-5">
+          <ProfileStats
+            items={[
+              {
+                n: String(followerCount),
+                l: t('profile.followers'),
+                go: () => router.push(`/people/${userId}?tab=followers`),
+              },
+              {
+                n: String(followingCount),
+                l: t('profile.following'),
+                go: () => router.push(`/people/${userId}?tab=following`),
+              },
+              { n: String(rankings.length), l: t('profile.ranked'), go: jumpToRankings },
+            ]}
+          />
+        </View>
 
-          <View className="mt-4 flex-row items-center gap-3">
-            <Button
-              variant="primary"
-              className="w-auto px-6"
-              disabled={followPending}
-              onPress={toggleFollow}
-            >
-              {isFollowing ? t('passport.following_button') : t('passport.follow_button')}
-            </Button>
-          </View>
+        <View className="mt-4 items-center">
+          <Button
+            variant={isFollowing ? 'secondary' : 'primary'}
+            size="sm"
+            className="min-h-[46px] px-6"
+            icon={
+              isFollowing ? (
+                <CheckIcon size={17} color="text" />
+              ) : (
+                <UserPlusIcon size={17} color="on-ink" />
+              )
+            }
+            disabled={followPending}
+            onPress={toggleFollow}
+          >
+            {isFollowing ? t('passport.following_button') : t('passport.follow_button')}
+          </Button>
         </View>
 
         {rankings.length === 0 ? (
           <EmptyState>{t('passport.no_rankings')}</EmptyState>
         ) : (
           <View
+            className="px-4"
             onLayout={(e) => {
               rankingsY.current = e.nativeEvent.layout.y
             }}
@@ -252,25 +281,31 @@ export default function UserRankings() {
                 inert "Todos N" caption while a second, separate Pressable
                 below did the actual expanding — same information, only one of
                 the two worked. */}
-            <SectionHeader
-              action={
-                rankings.length > 4 ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setExpanded((v) => !v)}
-                    className="min-h-[44px] justify-center active:opacity-60"
-                  >
-                    <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-                      {expanded
-                        ? t('restaurant.show_less')
-                        : t('passport.show_all', { n: rankings.length })}
-                    </Text>
-                  </Pressable>
-                ) : undefined
-              }
-            >
-              {t('passport.their_favorites', { name: firstName })}
-            </SectionHeader>
+            <View className="px-1">
+              <SectionHeader
+                action={
+                  rankings.length > 4 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setExpanded((v) => !v)}
+                      hitSlop={8}
+                      className="active:opacity-60"
+                    >
+                      <Text
+                        maxFontSizeMultiplier={MAX_SCALE}
+                        className="font-ui-semibold text-label text-accent"
+                      >
+                        {expanded
+                          ? t('restaurant.show_less')
+                          : t('passport.show_all', { n: rankings.length })}
+                      </Text>
+                    </Pressable>
+                  ) : undefined
+                }
+              >
+                {t('passport.their_favorites', { name: firstName })}
+              </SectionHeader>
+            </View>
             {shown.map((r) => (
               <TheirRow key={r.id} ranking={r} />
             ))}
@@ -287,6 +322,7 @@ export default function UserRankings() {
 // afford a second line of text whose only job is to accuse its author.
 function TheirRow({ ranking }: { ranking: TheirRanking }) {
   const t = useT()
+  const lift = useLift()
   const report = useMutation({
     mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
       api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
@@ -302,49 +338,70 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
         }
       : undefined
 
+  const meta = [cuisineLabel(ranking.restaurant.cuisine), ranking.neighborhood]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <Link href={`/r/${ranking.restaurant.id}`} asChild>
       <Pressable
         accessibilityRole="button"
-        className="mb-2 flex-row gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80"
+        className="mb-2 flex-row items-start gap-3 rounded-group bg-surface py-3 pl-3 pr-3.5 active:opacity-80"
+        style={lift}
       >
-        {/* Same quiet position marker as the member's own Rankings rows. */}
+        {/* The position: the top three in ink, the rest quieter. */}
         <Text
-          style={[DATA_FIGURES, { width: 26 }]}
+          style={[DATA_FIGURES, { width: 18 }]}
           numberOfLines={1}
           adjustsFontSizeToFit
-          className={`text-center font-serif text-serif-md ${ranking.position <= 3 ? 'text-text' : 'text-text-faint'}`}
+          className={`pt-3.5 text-center font-serif text-serif-md ${ranking.position <= 3 ? 'text-text' : 'text-text-faint'}`}
         >
           {ranking.position}
         </Text>
-        <View className="flex-1">
-          <Text className="font-serif text-serif-md text-text">{ranking.restaurant.name}</Text>
-          <Characteristics
-            priceTier={ranking.restaurant.priceTier}
-            cuisine={ranking.restaurant.cuisine}
-            neighborhood={ranking.neighborhood}
+        <View className="h-[52px] w-[52px] overflow-hidden rounded-[16px]">
+          <PlaceCover
+            name={ranking.restaurant.name}
+            coverImageId={ranking.restaurant.coverImageId}
+            size={{ w: 156, h: 156 }}
+            className="h-full w-full rounded-none"
           />
-          {(ranking.favoriteDish || (ranking.tags?.length ?? 0) > 0) && (
-            <View className="mt-1 flex-row flex-wrap items-center gap-2">
-              {ranking.favoriteDish && (
-                <Caption className="text-text-2">
-                  {t('rankings.order_this', { dish: ranking.favoriteDish })}
-                </Caption>
-              )}
-              {(ranking.tags ?? []).map((t) => (
-                <Caption key={t} className="text-micro">
-                  {tagLabel(t)}
-                </Caption>
-              ))}
-            </View>
-          )}
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-serif-sm text-text"
+          >
+            {ranking.restaurant.name}
+          </Text>
+          {meta ? (
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-0.5 font-ui text-meta text-text-muted"
+            >
+              {meta}
+            </Text>
+          ) : null}
+          {ranking.favoriteDish ? (
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-0.5 font-ui text-meta text-text-2"
+            >
+              {t('rankings.order_this', { dish: ranking.favoriteDish })}
+            </Text>
+          ) : null}
           {ranking.note ? (
-            <Text selectable className="mt-1 font-serif text-serif-sm text-text-2">
+            <Text
+              selectable
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-1 font-serif text-serif-xs text-text"
+            >
               “{ranking.note}”
             </Text>
           ) : null}
         </View>
-        <ScoreBadge size="sm" score={ranking.score} attribution={{ kind: 'stated' }} />
+        <ScoreStack score={ranking.score} size="sm" />
         {/* Nested Pressable inside the row's own Link is fine in RN (unlike
             Link-in-Link, which has its own gesture-machinery bug — see the
             feed card's comment on the same fix): RN hands it the touch, so the
@@ -355,7 +412,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
             accessibilityLabel={t('report.note_a11y')}
             onPress={onReportNote}
             hitSlop={8}
-            className="-mr-1 h-11 w-7 items-center justify-center active:opacity-60"
+            className="-mr-1 h-8 w-7 items-center justify-center active:opacity-60"
           >
             <MoreIcon size={18} color="text-faint" />
           </Pressable>

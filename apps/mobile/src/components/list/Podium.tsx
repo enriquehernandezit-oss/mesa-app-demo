@@ -149,7 +149,20 @@ function BigTile({ ranking }: { ranking: Ranking }) {
   )
 }
 
-function HalfTile({ ranking }: { ranking: Ranking }) {
+// Your top three at a smaller size — the head of Profile: three equal tiles, the position over
+// the name (rather than beside it) so the names have the tile's whole width.
+export function MiniPodium({ items }: { items: Ranking[] }) {
+  if (items.length === 0) return null
+  return (
+    <View className="flex-row gap-2">
+      {items.slice(0, 3).map((r) => (
+        <HalfTile key={r.id} ranking={r} mini />
+      ))}
+    </View>
+  )
+}
+
+function HalfTile({ ranking, mini }: { ranking: Ranking; mini?: boolean }) {
   const tile = useTile(ranking)
   return (
     <Pressable
@@ -157,7 +170,7 @@ function HalfTile({ ranking }: { ranking: Ranking }) {
       accessibilityLabel={tile.label}
       onPress={tile.open}
       onLongPress={tile.actions}
-      className={`h-[146px] flex-1 overflow-hidden rounded-[26px] active:opacity-90 ${tile.photo ? 'bg-bg-sunk' : 'border border-line bg-surface-raised'}`}
+      className={`flex-1 overflow-hidden rounded-[26px] active:opacity-90 ${mini ? 'h-[132px]' : 'h-[146px]'} ${tile.photo ? 'bg-bg-sunk' : 'border border-line bg-surface-raised'}`}
     >
       {tile.photo ? (
         <>
@@ -176,9 +189,9 @@ function HalfTile({ ranking }: { ranking: Ranking }) {
           {
             position: 'absolute',
             left: 12,
-            bottom: -8,
-            fontSize: 90,
-            lineHeight: 90,
+            bottom: mini ? 58 : -8,
+            fontSize: mini ? 70 : 90,
+            lineHeight: mini ? 70 : 90,
             opacity: tile.numeralOpacity,
           },
         ]}
@@ -199,7 +212,7 @@ function HalfTile({ ranking }: { ranking: Ranking }) {
       <Text
         numberOfLines={2}
         maxFontSizeMultiplier={MAX_SCALE}
-        className={`absolute bottom-3.5 left-[58px] right-2.5 font-serif text-serif-sm ${tile.ink}`}
+        className={`absolute bottom-3.5 right-2.5 font-serif text-serif-sm ${mini ? 'left-3' : 'left-[58px]'} ${tile.ink}`}
       >
         {ranking.restaurant.name}
       </Text>

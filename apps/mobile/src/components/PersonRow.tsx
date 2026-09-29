@@ -47,7 +47,7 @@ export function PersonRow({
           accessibilityRole="button"
           className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80"
         >
-          <Avatar name={user.name || user.handle || 'm'} src={user.image} size={36} />
+          <Avatar name={user.name || user.handle || 'm'} src={user.image} size={42} />
           <View className="min-w-0 flex-1">
             <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
               {user.name || user.handle}

@@ -71,12 +71,12 @@ export default function PeopleScreen() {
           keyExtractor={(u) => u.id}
           renderItem={({ item, index }) => {
             // A virtualized list can't wrap its rows in one View, so each row
-            // carries its slice of the grouped white card: side borders always,
-            // top edge + rounding on the first, bottom edge + rounding on the last.
+            // carries its slice of the grouped white card: rounded at the first row's top and the
+            // last row's bottom (no lift — a shadow per slice would show the seams).
             const last = index === (q.data?.users.length ?? 0) - 1
             return (
               <View
-                className={`border-line border-x bg-surface px-3 ${index === 0 ? 'rounded-t-card border-t' : ''} ${last ? 'rounded-b-card border-b' : ''}`}
+                className={`bg-surface px-4 ${index === 0 ? 'rounded-t-group' : ''} ${last ? 'rounded-b-group' : ''}`}
               >
                 <PersonRow
                   user={item}
@@ -88,7 +88,7 @@ export default function PeopleScreen() {
               </View>
             )
           }}
-          contentContainerClassName="px-5 pb-10"
+          contentContainerClassName="px-4 pb-10"
           ListEmptyComponent={
             <EmptyState
               body={

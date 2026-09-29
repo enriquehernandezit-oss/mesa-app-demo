@@ -101,7 +101,11 @@ export function SpotCard({
 export function Stat({ n, l, onPress }: { n: string; l: string; onPress?: () => void }) {
   const body = (
     <>
-      <Text style={DATA_FIGURES} className="font-serif text-serif-md text-text">
+      <Text
+        style={DATA_FIGURES}
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="font-serif text-serif-xl text-text"
+      >
         {n}
       </Text>
       {/* One line, shrinking to fit — a four-up card left "Semanas racha"

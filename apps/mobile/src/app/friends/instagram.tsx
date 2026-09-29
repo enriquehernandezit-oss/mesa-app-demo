@@ -3,20 +3,24 @@ import { useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Body, Button, Caption, Card, Eyebrow, Title } from '@/components/ui'
+import { Group } from '@/components/SettingsRow'
+import { Body, Button, Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
+import { DownloadIcon } from '@/components/ui/icons'
 import { useInviteLink } from '@/hooks/useInviteLink'
 import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { parseInstagramExport } from '@/lib/instagramImport'
 import type { ContactMatchUser } from '@/lib/types'
+import { useLift } from '@/theme/useLift'
 
 // Instagram find-friends import (M18): a step-by-step guide to Instagram's
 // own "Descarga tu información" export, then a local file pick + parse (no
 // upload — see lib/instagramImport.ts's own header) and a match against
 // Mesa's own @handle column. Handles are unverified by construction (an
 // Instagram export can't prove who owns a Mesa handle), so every result is
-// framed as a suggestion — Seguir, never an auto-follow.
+// framed as a suggestion — Seguir, never an auto-follow. Redesign 2: the serif title, one raised
+// card with the four steps, a solid Choose file, and the matches as one grouped list.
 export default function InstagramImportScreen() {
   const t = useT()
   const invite = useInviteLink()
@@ -57,51 +61,76 @@ export default function InstagramImportScreen() {
     }
   }
 
+  const lift = useLift()
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-5 pb-10"
+      contentContainerClassName="px-4 pb-10"
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Title className="mt-4">{t('instagram.title')}</Title>
-      <Body className="mt-1">{t('instagram.subtitle')}</Body>
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="mt-4 px-1 font-serif text-serif-lg text-text"
+      >
+        {t('instagram.title')}
+      </Text>
+      <Body className="mt-1.5 px-1 text-subhead">{t('instagram.subtitle')}</Body>
 
-      <Card className="mt-4 gap-3">
-        <Eyebrow>{t('instagram.how_to_title')}</Eyebrow>
+      <View className="mt-5 rounded-card bg-surface p-4" style={lift}>
+        <Caption className="pb-1 font-ui-semibold">{t('instagram.how_to_title')}</Caption>
         <Step n={1} text={t('instagram.step1')} />
         <Step n={2} text={t('instagram.step2')} />
         <Step n={3} text={t('instagram.step3')} />
         <Step n={4} text={t('instagram.step4')} />
-      </Card>
+      </View>
 
-      <Button className="mt-4" disabled={picking} loading={picking} onPress={pickAndImport}>
+      <Button
+        className="mt-3.5"
+        icon={<DownloadIcon size={18} color="on-ink" />}
+        disabled={picking}
+        loading={picking}
+        onPress={pickAndImport}
+      >
         {t('instagram.pick_file')}
       </Button>
 
       {error ? <Caption className="mt-2 text-danger">{error}</Caption> : null}
 
       {matches ? (
-        <View className="mt-6">
-          <Eyebrow>
-            {matches.length > 0
-              ? t('instagram.matches_found', { n: matches.length })
-              : t('instagram.no_matches')}
-          </Eyebrow>
-          {matches.map((u) => (
-            <PersonRow
-              key={u.id}
-              user={u}
-              subtitle={t('instagram.matched_subtitle', { handle: u.handle ?? '' })}
-              right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
-            />
-          ))}
+        <View>
+          <View className="px-1">
+            <SectionHeader>
+              {matches.length > 0
+                ? t('instagram.matches_found', { n: matches.length })
+                : t('instagram.no_matches')}
+            </SectionHeader>
+          </View>
+          {matches.length > 0 ? (
+            <Group>
+              {matches.map((u, i) => (
+                <PersonRow
+                  key={u.id}
+                  user={u}
+                  subtitle={t('instagram.matched_subtitle', { handle: u.handle ?? '' })}
+                  right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
+                  last={i === matches.length - 1}
+                />
+              ))}
+            </Group>
+          ) : null}
           {unmatchedCount > 0 ? (
-            <Card className="mt-4 gap-2">
+            <View className="mt-3 gap-2 rounded-card bg-surface p-4" style={lift}>
               <Body>{t('instagram.unmatched_count', { n: unmatchedCount })}</Body>
-              <Button variant="secondary" disabled={invite.sharing} onPress={invite.share}>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="min-h-[44px] border border-line"
+                disabled={invite.sharing}
+                onPress={invite.share}
+              >
                 {t('friends.invite_title')}
               </Button>
-            </Card>
+            </View>
           ) : null}
         </View>
       ) : null}
@@ -111,11 +140,11 @@ export default function InstagramImportScreen() {
 
 function Step({ n, text }: { n: number; text: string }) {
   return (
-    <View className="flex-row items-start gap-3">
-      <View className="mt-0.5 h-6 w-6 items-center justify-center rounded-pill bg-accent-fill">
-        <Text className="font-ui-semibold text-micro text-on-accent">{n}</Text>
+    <View className="flex-row items-start gap-3 py-[7px]">
+      <View className="h-[26px] w-[26px] items-center justify-center rounded-pill bg-ink">
+        <Text className="font-ui-semibold text-label text-on-ink">{n}</Text>
       </View>
-      <Body className="flex-1">{text}</Body>
+      <Body className="flex-1 pt-[3px] text-subhead">{text}</Body>
     </View>
   )
 }

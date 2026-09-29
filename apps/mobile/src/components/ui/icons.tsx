@@ -373,3 +373,16 @@ export const SearchIcon = (p: IconProps) => (
     <Path d="m20 20-3.5-3.5" />
   </Icon>
 )
+// A person with a plus — "Follow" / "Find friends".
+export const UserPlusIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="9.5" cy="8" r="3.5" />
+    <Path d="M3 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M19 8v6M16 11h6" />
+  </Icon>
+)
+// A tray with an arrow into it — "Choose file" (a file you downloaded).
+export const DownloadIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14" />
+  </Icon>
+)

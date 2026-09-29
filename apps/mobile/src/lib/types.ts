@@ -509,7 +509,8 @@ export interface TheirRanking {
   id: string
   position: number
   score: number
-  restaurant: RestaurantRef
+  // coverImageId arrived after the first builds — optional until every API in the wild sends it.
+  restaurant: RestaurantRef & { coverImageId?: string | null }
   neighborhood: string | null
   note: string | null
   noteId: string | null

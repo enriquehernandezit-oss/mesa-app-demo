@@ -1,20 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { FollowPill, PersonRow } from '@/components/PersonRow'
+import { Group } from '@/components/SettingsRow'
 import {
   Body,
   Button,
   Caption,
-  Card,
   ErrorState,
+  IconButton,
+  MAX_SCALE,
   RowsSkeleton,
-  Title,
+  SectionHeader,
   Toggle,
 } from '@/components/ui'
-import { ChevronIcon, ShareIcon } from '@/components/ui/icons'
+import { Field } from '@/components/ui/Field'
+import { AtIcon, ChevronIcon, CloseIcon, PeopleIcon, ShareIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { useInviteLink } from '@/hooks/useInviteLink'
 import { useProfile } from '@/hooks/useProfile'
@@ -24,22 +27,31 @@ import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { reasonLine } from '@/lib/suggestionReason'
 import type { ContactMatchUser, FriendSuggestion } from '@/lib/types'
-import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 // Find friends (M18) — the v1 (M12.5) invite card + suggestions, now joined
 // by contacts (opt-in "let them find you" + search-my-contacts) and an
 // Instagram import. Reached from Profile, the empty feed, Settings and the
-// followers screen.
+// followers screen. Redesign 2: each way in is a raised card, the suggestions one grouped list.
 
 // Half the route's own 2000 cap — headroom for a long address book without
 // either side having to think about the limit again.
 const CONTACTS_BATCH = 1000
 
+// One of the ways in: a raised r24 card on the ground.
+function FriendsCard({ children }: { children: React.ReactNode }) {
+  const lift = useLift()
+  return (
+    <View className="mt-2.5 rounded-card bg-surface px-4 py-3.5" style={lift}>
+      {children}
+    </View>
+  )
+}
+
 function ContactsCard() {
   const t = useT()
   const queryClient = useQueryClient()
   const me = useProfile(true)
-  const placeholderColor = useColor('text-muted')
   const findable = me.data?.profile.phoneMatchEnabled ?? false
 
   const [editingPhone, setEditingPhone] = useState(false)
@@ -138,12 +150,14 @@ function ContactsCard() {
   }
 
   return (
-    <Card className="mt-4">
-      <Text className="font-ui-semibold text-body text-text">{t('friends.contacts_title')}</Text>
+    <FriendsCard>
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-body text-text">
+        {t('friends.contacts_title')}
+      </Text>
 
-      <View className="mt-3 flex-row items-center gap-3">
+      <View className="mt-2.5 flex-row items-center gap-3">
         <View className="min-w-0 flex-1">
-          <Text className="font-ui text-body text-text">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
             {t('friends.contacts_findable_toggle')}
           </Text>
           <Caption className="mt-0.5">{t('friends.contacts_findable_body')}</Caption>
@@ -160,9 +174,8 @@ function ContactsCard() {
 
       {editingPhone && !findable ? (
         <View className="mt-3 flex-row items-center gap-2">
-          <TextInput
-            className="min-h-[44px] flex-1 rounded border border-line bg-bg px-3 font-ui text-body text-text"
-            placeholderTextColor={placeholderColor}
+          <Field
+            className="flex-1"
             placeholder={t('friends.contacts_phone_placeholder')}
             keyboardType="phone-pad"
             value={phone}
@@ -179,8 +192,15 @@ function ContactsCard() {
         </View>
       ) : null}
 
-      <View className="mt-4 border-line border-t pt-4">
-        <Button variant="secondary" disabled={searching} onPress={searchContacts}>
+      <View className="mt-3.5">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="min-h-[44px] border border-line"
+          icon={<PeopleIcon size={17} />}
+          disabled={searching}
+          onPress={searchContacts}
+        >
           {searching ? t('rank.searching') : t('friends.search_contacts')}
         </Button>
         {contactMsg ? <Caption className="mt-2">{contactMsg}</Caption> : null}
@@ -188,7 +208,7 @@ function ContactsCard() {
 
       {matches && matches.length > 0 ? (
         <View className="mt-2">
-          {/* Already inside the white Card — only the trailing hairline goes. */}
+          {/* Already inside the white card — only the trailing hairline goes. */}
           {matches.map(({ user, contactName }, i) => (
             <PersonRow
               key={user.id}
@@ -200,7 +220,7 @@ function ContactsCard() {
           ))}
         </View>
       ) : null}
-    </Card>
+    </FriendsCard>
   )
 }
 
@@ -208,21 +228,22 @@ function InstagramCard() {
   const t = useT()
   const router = useRouter()
   return (
-    <Card className="mt-4">
+    <FriendsCard>
       <Pressable
         accessibilityRole="button"
         onPress={() => router.push('/friends/instagram')}
         className="flex-row items-center gap-3 active:opacity-70"
       >
+        <AtIcon size={20} />
         <View className="min-w-0 flex-1">
-          <Text className="font-ui-semibold text-body text-text">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-body text-text">
             {t('friends.instagram_title')}
           </Text>
           <Caption className="mt-0.5">{t('friends.instagram_body')}</Caption>
         </View>
         <ChevronIcon size={16} color="text-faint" />
       </Pressable>
-    </Card>
+    </FriendsCard>
   )
 }
 
@@ -252,32 +273,45 @@ export default function FriendsScreen() {
     <ScrollView
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
-      contentContainerClassName="px-5 pb-10"
+      contentContainerClassName="px-4 pb-10"
       contentInsetAdjustmentBehavior="automatic"
     >
-      <Pressable
-        accessibilityRole="button"
-        onPress={invite.share}
-        disabled={invite.sharing}
-        className="mt-4 flex-row items-center gap-3 rounded border border-line bg-surface p-4 active:opacity-80"
-      >
-        <View className="h-10 w-10 items-center justify-center rounded-pill bg-accent-fill">
-          <ShareIcon size={18} color="on-accent" />
-        </View>
-        <View className="flex-1">
-          <Text className="font-ui-semibold text-body text-text">{t('friends.invite_title')}</Text>
-          <Caption className="mt-0.5">
-            {invite.joined > 0
-              ? t('settings.joined_count', { n: invite.joined })
-              : t('friends.invite_body')}
-          </Caption>
-        </View>
-      </Pressable>
+      <FriendsCard>
+        <Pressable
+          accessibilityRole="button"
+          onPress={invite.share}
+          disabled={invite.sharing}
+          className="flex-row items-center gap-3.5 active:opacity-80"
+        >
+          <IconButton
+            kind="accent"
+            size={46}
+            accessibilityLabel={t('friends.invite_title')}
+            onPress={invite.share}
+            icon={<ShareIcon size={19} color="on-accent" />}
+          />
+          <View className="flex-1">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-body text-text"
+            >
+              {t('friends.invite_title')}
+            </Text>
+            <Caption className="mt-0.5">
+              {invite.joined > 0
+                ? t('settings.joined_count', { n: invite.joined })
+                : t('friends.invite_body')}
+            </Caption>
+          </View>
+        </Pressable>
+      </FriendsCard>
 
       <ContactsCard />
       <InstagramCard />
 
-      <Title className="mt-6 mb-1">{t('friends.suggestions_title')}</Title>
+      <View className="px-1">
+        <SectionHeader>{t('friends.suggestions_title')}</SectionHeader>
+      </View>
       {suggested.isPending ? (
         <RowsSkeleton rows={5} thumb={36} />
       ) : suggested.isError ? (
@@ -285,7 +319,7 @@ export default function FriendsScreen() {
       ) : users.length === 0 ? (
         <Body>{t('friends.no_suggestions')}</Body>
       ) : (
-        <View className="overflow-hidden rounded-card border border-line bg-surface px-3">
+        <Group>
           {users.map((u, i) => (
             <PersonRow
               key={u.id}
@@ -301,9 +335,9 @@ export default function FriendsScreen() {
                     onPress={() => {
                       if (!dismiss.isPending) dismiss.mutate(u.id)
                     }}
-                    className="min-h-[32px] min-w-[32px] items-center justify-center"
+                    className="h-[30px] w-[30px] items-center justify-center active:opacity-60"
                   >
-                    <Text className="font-ui text-body text-text-muted">✕</Text>
+                    <CloseIcon size={15} color="text-muted" />
                   </Pressable>
                   <FollowPill userId={u.id} initial={false} from="find_friends" />
                 </View>
@@ -311,7 +345,7 @@ export default function FriendsScreen() {
               last={i === users.length - 1}
             />
           ))}
-        </View>
+        </Group>
       )}
     </ScrollView>
   )
