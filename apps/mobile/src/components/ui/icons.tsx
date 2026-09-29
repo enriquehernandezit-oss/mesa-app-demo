@@ -230,6 +230,11 @@ export const ArrowUpIcon = (p: IconProps) => (
     <Path d="M12 19V5M6 11l6-6 6 6" />
   </Icon>
 )
+export const ArrowRightIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M5 12h14M13 6l6 6-6 6" />
+  </Icon>
+)
 export const CloseIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M6 6l12 12M18 6 6 18" />

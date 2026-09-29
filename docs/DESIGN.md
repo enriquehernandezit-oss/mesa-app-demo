@@ -203,10 +203,20 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **Your list:** a podium — #1 a large photo card with a giant serif numeral, #2/#3 as halves.
 - **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
 - **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.
-- **"How was it?"** is one 3-stop slider — _Didn't love it / It was fine / Loved it_ — under a
-  **realistic Kir Royale flute** that goes flat → a slow stream → lively bubbles with mousse and
-  spray. Geometry and the seeded bubble tables: `docs/design/rating/F17-Bubbles.dc.html`. The
-  slider only chooses which third of your list the comparison searches; scores stay by list position.
+- **"How was it?"** (`components/rank/{FeelStep,FeelSlider,Flute}.tsx`, `lib/feel.ts`) is one 3-stop
+  slider — _Didn't love it / It was fine / Loved it_ — under a **realistic Kir Royale flute** that goes
+  flat → a slow thin stream in a misted glass → five lively streams with a ring of mousse and a fizz over
+  the rim. It opens on **It was fine** with **Next** already enabled; the answer is written in serif 54
+  under the glass, with "Goes in the top / middle / bottom third of your list" (hidden under three places).
+  One shared `level` (0–2) drives the flute, the word and the slider live while a finger drags, and snaps
+  to a stop on release (a haptic tick on each stop passed; a tap on the track goes to the nearest stop; the
+  pan claims only a horizontal drag so it never fights the modal's swipe-down). Bottom bar: **Add a note**
+  (an _inline_ field — the Sheet and Toaster can't draw over the native rank modal) and a solid **Next →**.
+  The flute is SVG (glass, drink, foam, mist) with the ~50 bubbles and fizz specks as native Views on ONE
+  frame clock, paused when the screen isn't focused and frozen (a still frame that still answers the slider)
+  under Reduce Motion; the bubble tables are the approved design's, extracted once into `fluteData.ts`
+  (`docs/design/rating/F17-Bubbles.dc.html`). The slider only chooses which third of your list the
+  comparison searches; scores stay by list position.
 
 ## Where color is allowed to live
 

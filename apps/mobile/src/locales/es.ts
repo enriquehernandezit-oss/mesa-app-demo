@@ -998,6 +998,12 @@ export const es = {
   // app/rank.tsx
   'rank.back': '✕ Rankear un spot',
   'rank.add_note_back': '‹ Agregar nota',
+  'rank.feel_next': 'Siguiente',
+  'rank.feel_add_note': 'Añadir una nota',
+  'rank.feel_close': 'Cerrar',
+  'rank.range_loved': 'Va en el tercio de arriba de tu lista',
+  'rank.range_fine': 'Va en el tercio del medio de tu lista',
+  'rank.range_disliked': 'Va en el tercio de abajo de tu lista',
   'rank.sentiment_title': '¿Cómo estuvo?',
   'rank.sentiment_loved': 'Me encantó',
   'rank.sentiment_fine': 'Estuvo bien',

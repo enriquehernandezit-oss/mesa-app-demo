@@ -101,6 +101,8 @@ module.exports = {
       fontSize: {
         // The place page's name, on its frosted panel.
         hero: [46, '48px'],
+        // "How was it?" — the answer, big, under the flute.
+        answer: [54, '56px'],
         display: [40, '44px'],
         title: [28, '31px'],
         rank: [40, '44px'],

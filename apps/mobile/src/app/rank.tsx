@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
+import { FeelStep } from '@/components/rank/FeelStep'
 import {
   Body,
   Button,
@@ -222,6 +223,8 @@ export default function RankAPlace() {
   })
 
   const [sentiment, setSentiment] = useState<Sentiment | null>(null)
+  // What the flute last said — the slider opens here again if you step back to it.
+  const [feel, setFeel] = useState<Sentiment>('fine')
   const [position, setPosition] = useState<number | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [note, setNote] = useState('')
@@ -812,7 +815,10 @@ export default function RankAPlace() {
         }}
         onDone={async () => {
           await dishQueueRef.current
-          finishToRankings()
+          // A note typed on the first screen ("Add a note") must not be lost by finishing here:
+          // save it with the ranking, the same POST the note step makes.
+          if (note.trim()) save.mutate(position)
+          else finishToRankings()
         }}
         onAddNote={async () => {
           await dishQueueRef.current
@@ -846,54 +852,28 @@ export default function RankAPlace() {
   // the type checker, not a real runtime path.
   if (!picked) return null
 
-  // Sentiment — how did it feel? Narrows the comparison band.
+  // Sentiment — how did it feel? Narrows the comparison band. The flute and its slider
+  // (components/rank/FeelStep); it opens on the last answer given, "it was fine" the first time.
   if (!sentiment) {
     return (
-      <StepScreen>
-        <BackBar
-          label={t('common.back')}
-          onBack={() => {
-            if (deepLinked) router.replace('/rankings')
-            else setPickedId(null)
-          }}
-        />
-        <View className="mt-4 items-center gap-1">
-          <Eyebrow>{picked.name}</Eyebrow>
-          <Title>{t('rank.sentiment_title')}</Title>
-        </View>
-        <View className="mt-6 gap-3">
-          <SentimentButton
-            tone="loved"
-            onPress={() => {
-              tapSelect()
-              track('rank_started', { sentiment: 'loved', rerank: isRerank })
-              setSentiment('loved')
-            }}
-          >
-            {t('rank.sentiment_loved')}
-          </SentimentButton>
-          <SentimentButton
-            tone="fine"
-            onPress={() => {
-              tapSelect()
-              track('rank_started', { sentiment: 'fine', rerank: isRerank })
-              setSentiment('fine')
-            }}
-          >
-            {t('rank.sentiment_fine')}
-          </SentimentButton>
-          <SentimentButton
-            tone="low"
-            onPress={() => {
-              tapSelect()
-              track('rank_started', { sentiment: 'disliked', rerank: isRerank })
-              setSentiment('disliked')
-            }}
-          >
-            {t('rank.sentiment_disliked')}
-          </SentimentButton>
-        </View>
-      </StepScreen>
+      <FeelStep
+        placeName={picked.name}
+        placeCoverId={picked.coverImageId}
+        listSize={existingForCompare.length}
+        initial={feel}
+        note={note}
+        onNote={setNote}
+        onClose={() => {
+          if (deepLinked) router.replace('/rankings')
+          else setPickedId(null)
+        }}
+        onNext={(answer) => {
+          tapSelect()
+          track('rank_started', { sentiment: answer, rerank: isRerank })
+          setFeel(answer)
+          setSentiment(answer)
+        }}
+      />
     )
   }
 
@@ -930,27 +910,6 @@ function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
       className="min-h-[44px] self-start justify-center active:opacity-60"
     >
       <Text className="font-ui-medium text-label text-text-muted">{label}</Text>
-    </Pressable>
-  )
-}
-
-function SentimentButton({
-  tone,
-  children,
-  onPress,
-}: {
-  tone: 'loved' | 'fine' | 'low'
-  children: React.ReactNode
-  onPress: () => void
-}) {
-  const border = tone === 'loved' ? 'border-accent' : tone === 'low' ? 'border-line' : 'border-line'
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className={`min-h-[56px] items-center justify-center rounded border ${border} bg-surface active:opacity-80`}
-    >
-      <Text className="font-serif text-serif-md text-text">{children}</Text>
     </Pressable>
   )
 }
