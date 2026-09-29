@@ -272,6 +272,7 @@ export function ScoreBadge({
   kind = 'chip',
   caption,
   sub,
+  word = true,
 }: {
   score: number
   attribution: ScoreAttribution
@@ -279,6 +280,8 @@ export function ScoreBadge({
   kind?: 'chip' | 'photo' | 'solid'
   caption?: string
   sub?: string
+  // The number alone, for a tile too small for its word (the podium's #2 and #3).
+  word?: boolean
 }) {
   const t = useT()
   const badge = badgeText(attribution, t)
@@ -295,9 +298,11 @@ export function ScoreBadge({
       >
         {displayScore(score)}
       </Text>
-      <Text maxFontSizeMultiplier={MAX_SCALE} className={`font-ui-semibold text-eyebrow ${ink}`}>
-        {t(scoreWordKey(score))}
-      </Text>
+      {word ? (
+        <Text maxFontSizeMultiplier={MAX_SCALE} className={`font-ui-semibold text-eyebrow ${ink}`}>
+          {t(scoreWordKey(score))}
+        </Text>
+      ) : null}
     </>
   )
   return (

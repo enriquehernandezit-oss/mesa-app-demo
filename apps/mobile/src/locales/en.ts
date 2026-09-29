@@ -293,7 +293,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'leaderboard.my_rank_friends': "You're #{n} among your friends.",
   'leaderboard.empty_friends': 'Follow some friends to see how you compare.',
   'leaderboard.load_error': "Couldn't load the leaderboard.",
-  'leaderboard.spots_avg': 'spots · avg.',
+  'leaderboard.spots': { one: 'spot', other: 'spots' },
 
   'lists.not_found': 'List not found.',
   'lists.load_error': "Couldn't load the list.",
@@ -708,7 +708,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'onboarding.skip_for_now': 'Skip for now',
 
   'rankings.sort_by': 'Sort by',
-  'rankings.title': 'Rankings',
+  'rankings.title': 'Your list',
   'rankings.share_my_list': 'Share my list',
   'rankings.places': 'places',
   'rankings.want_to_try_stat': 'want to try',
@@ -722,7 +722,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rankings.saved_tab': 'Saved',
   'rankings.lists_section': 'Your lists',
   'rankings.new_list': '+ New',
-  'rankings.places_section': 'Saved places',
   'rankings.dishes_section': 'Saved dishes',
   'rankings.no_saved_dishes': "You haven't saved any dishes yet.",
   'rankings.streak_weeks': 'wk. streak',
@@ -753,7 +752,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rankings.add_note': 'Add note',
   'rankings.barrios_empty_body': 'Rank a few places first.',
   'rankings.rank_button': 'Rank',
-  'rankings.removing': 'Removing…',
+  'rankings.hood_stats': { one: '1 spot · avg.', other: '{n} spots · avg.' },
 
   'profile.avatar_change_error': "Couldn't update the photo. Try again.",
   'profile.avatar_photo_title': 'Profile photo',
@@ -865,7 +864,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.theme_night': 'Night',
   'settings.appearance_auto_hint':
     'Auto switches to Night after dark, or when your iPhone is in dark mode.',
-  'settings.your_list': 'Your list',
   'settings.friends_only_scores': 'Friends-only scores',
   'settings.export_rankings': 'Export my rankings',
   'settings.blocked_accounts': 'Blocked accounts',

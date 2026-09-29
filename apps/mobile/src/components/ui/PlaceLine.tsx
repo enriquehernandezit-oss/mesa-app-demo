@@ -5,9 +5,10 @@ import { MAX_SCALE } from '@/components/ui'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { cuisineLabel, priceLabel } from '@/lib/display'
 
-// A place as the rank flow shows it in a row: its picture (the photo, else the name card), its
+// A place as a row shows it (the rank flow's Find list and note step, Your list's saved places): its picture (the photo, else the name card), its
 // name in the serif, one line of "cuisine · neighborhood · $$", and whatever belongs at the
-// right (a score, "Not ranked"). Used by the Find list and the note step's header.
+// right (a score, "Not ranked"). `note` is an optional third line in the accent (what you
+// ordered, an occasion).
 export function PlaceLine({
   name,
   coverImageId,
@@ -15,6 +16,7 @@ export function PlaceLine({
   neighborhood,
   priceTier,
   extra,
+  note,
   picture = 52,
   nameClass = 'text-serif-sm',
   right,
@@ -26,6 +28,7 @@ export function PlaceLine({
   priceTier?: number | null
   // Appended to the meta line (e.g. the distance).
   extra?: string | null
+  note?: string | null
   picture?: number
   nameClass?: string
   right?: ReactNode
@@ -58,6 +61,15 @@ export function PlaceLine({
             className="mt-0.5 font-ui text-meta text-text-muted"
           >
             {meta}
+          </Text>
+        ) : null}
+        {note ? (
+          <Text
+            numberOfLines={1}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-0.5 font-ui-semibold text-micro text-accent"
+          >
+            {note}
           </Text>
         ) : null}
       </View>

@@ -36,6 +36,8 @@ export const savedRoutes = new Hono<AuthedEnv>()
           name: restaurants.name,
           cuisine: restaurants.cuisine,
           priceTier: restaurants.priceTier,
+          // The picture on a saved-place row (Your list); null → the name card.
+          coverImageId: restaurants.coverImageId,
         },
         neighborhood: neighborhoods.name,
         savedAt: savedPlaces.createdAt,

@@ -306,7 +306,7 @@ export const es = {
   'leaderboard.my_rank_friends': 'Eres #{n} entre tus amigos.',
   'leaderboard.empty_friends': 'Sigue a algunos amigos para ver cómo te comparas.',
   'leaderboard.load_error': 'No se pudo cargar la clasificación.',
-  'leaderboard.spots_avg': 'spots · prom.',
+  'leaderboard.spots': { one: 'spot', other: 'spots' },
 
   // app/lists/[slug].tsx
   'lists.not_found': 'Lista no encontrada.',
@@ -758,7 +758,7 @@ export const es = {
 
   // app/(tabs)/rankings.tsx
   'rankings.sort_by': 'Ordenar por',
-  'rankings.title': 'Rankings',
+  'rankings.title': 'Tu lista',
   'rankings.share_my_list': 'Compartir mi lista',
   'rankings.places': 'lugares',
   'rankings.want_to_try_stat': 'quiero probar',
@@ -775,7 +775,6 @@ export const es = {
   'rankings.saved_tab': 'Guardados',
   'rankings.lists_section': 'Tus listas',
   'rankings.new_list': '+ Nueva',
-  'rankings.places_section': 'Lugares guardados',
   'rankings.dishes_section': 'Platos guardados',
   'rankings.no_saved_dishes': 'Todavía no has guardado ningún plato.',
   'rankings.streak_weeks': 'sem. de racha',
@@ -806,7 +805,7 @@ export const es = {
   'rankings.add_note': 'Agregar nota',
   'rankings.barrios_empty_body': 'Rankea algunos lugares primero.',
   'rankings.rank_button': 'Rankear',
-  'rankings.removing': 'Quitando…',
+  'rankings.hood_stats': { one: '1 spot · prom.', other: '{n} spots · prom.' },
 
   // app/(tabs)/profile.tsx
   'profile.avatar_change_error': 'No se pudo actualizar la foto. Intenta de nuevo.',
@@ -923,7 +922,6 @@ export const es = {
   'settings.theme_night': 'Noche',
   'settings.appearance_auto_hint':
     'Auto pasa a Noche al anochecer o si tu iPhone está en modo oscuro.',
-  'settings.your_list': 'Tu lista',
   'settings.friends_only_scores': 'Puntuaciones solo de amigos',
   'settings.export_rankings': 'Exportar mis rankings',
   'settings.blocked_accounts': 'Cuentas bloqueadas',

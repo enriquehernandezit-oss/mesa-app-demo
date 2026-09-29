@@ -405,7 +405,7 @@ export interface ActivityItem {
 }
 
 export interface SavedPlace {
-  restaurant: RestaurantRef
+  restaurant: RestaurantRef & { coverImageId?: string | null }
   neighborhood: string | null
   savedAt: string
 }

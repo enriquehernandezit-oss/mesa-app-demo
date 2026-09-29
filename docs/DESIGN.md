@@ -205,7 +205,21 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **Chips on a picture:** over a **photo** a chip is dark glass (`Glass variant="photo"`, a photo being its own
   dark island); over a **name card** — pale by day — it is a solid `ink` chip instead, because dark glass goes
   muddy grey-brown there (`components/feed/PhotoChip.tsx`). The bottom scrim is drawn only over real photos.
-- **Your list:** a podium — #1 a large photo card with a giant serif numeral, #2/#3 as halves.
+- **Your list** (`app/(tabs)/rankings.tsx`, `components/list/{Podium,RankRow,SavedRows,HoodCards}.tsx`): the
+  title (serif 40) with Leaderboard and Share chips, the trio _places / saved / wk. streak_ as real controls,
+  then a pill switcher **Mine / Saved / Neighborhoods** (one instance, so the slide survives a switch).
+  **Mine:** sort and filter pills (each opens a bottom-sheet chooser), then the **podium** — #1 a 204pt r30
+  card (photo under a dark fade, the position in serif 168 bleeding off the bottom, name + score at the
+  right), #2/#3 halves (146pt, numeral 90, a number-only score chip) — then flat rows from #4: position,
+  50pt picture, serif name, meta, what you ordered (else an occasion) in the accent, `ScoreStack`, "···"
+  (note, rank again, remove) and a left swipe to remove. The podium is the head of your list **in its own
+  order, unfiltered**: sort or filter and every row is a plain row (the top three of a view aren't your top
+  three). A place with no photo is a plain raised card with the numeral ghosted at 14%. **Saved:** Restaurants
+  (a raised card with a solid Rank pill and a close), Dishes (a two-up photo grid, the filled bookmark
+  un-saves), Events (the same ticket as Explore). **Neighborhoods:** one card each — name, "N spots · avg.",
+  a bar against your fullest neighborhood; a tap filters Mine to it. **Leaderboard:** a subline, pills for
+  period then (after a hairline) scope, "You're #1 in the city." in the serif, rows of position + avatar +
+  name + a COUNT of spots (never styled like a score), your own row raised.
 - **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
 - **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.
 - **"How was it?"** (`components/rank/{FeelStep,FeelSlider,Flute}.tsx`, `lib/feel.ts`) is one 3-stop
