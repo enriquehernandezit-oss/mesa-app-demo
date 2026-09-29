@@ -103,6 +103,8 @@ module.exports = {
         hero: [46, '48px'],
         // "How was it?" — the answer, big, under the flute.
         answer: [54, '56px'],
+        // "Your score" on the reveal: the number, as large as the screen sets anything.
+        score: [84, '88px'],
         display: [40, '44px'],
         title: [28, '31px'],
         rank: [40, '44px'],

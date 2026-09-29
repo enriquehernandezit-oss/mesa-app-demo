@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 
+import { RankHeader } from '@/components/rank/RankHeader'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, ErrorState, Skeleton, Title } from '@/components/ui'
+import { Body, Button, Chip, ErrorState, MAX_SCALE, Serif, Skeleton } from '@/components/ui'
 import { CompareCard, type CompareCardItem } from '@/components/ui/CompareCard'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
@@ -109,15 +110,14 @@ export default function RankScreen() {
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
         <View className="items-center px-5 pt-10">
           <Body className="text-center">{t('dishLists.nothing_to_rank')}</Body>
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="secondary"
+            size="sm"
+            className="mt-4"
             onPress={() => router.replace(`/dish-lists/${listId}`)}
-            className="mt-4 min-h-[44px] justify-center active:opacity-70"
           >
-            <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
-              {t('dishLists.view_list')}
-            </Text>
-          </Pressable>
+            {t('dishLists.view_list')}
+          </Button>
         </View>
       </View>
     )
@@ -182,15 +182,9 @@ function PairwiseFlow({
         {saveError ? (
           <>
             <Body className="mt-2 text-danger">{t('dishLists.save_error')}</Body>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onRetry}
-              className="mt-3 min-h-[44px] justify-center active:opacity-70"
-            >
-              <Text className="font-ui-semibold text-eyebrow text-accent uppercase tracking-eyebrow">
-                {t('common.retry')}
-              </Text>
-            </Pressable>
+            <Button variant="secondary" size="sm" className="mt-3" onPress={onRetry}>
+              {t('common.retry')}
+            </Button>
           </>
         ) : (
           <Body className="mt-2">{t('common.saving')}</Body>
@@ -216,15 +210,16 @@ function PairwiseFlow({
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={onBack} backLabel={t('common.back_plain')} />
-      <View className="mt-2 gap-4 px-5">
-        <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
-          {t('common.n_of_total', { n: step, total })}
-        </Text>
-        <View className="items-center gap-1">
-          <Title>{t('dishLists.compare_title', { label })}</Title>
+      {/* Close only: there is no earlier step to go back to, so a Back chip would be a second
+          Close. */}
+      <RankHeader onClose={onBack} center={t('common.n_of_total', { n: step, total })} />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-8">
+        <View className="items-center px-5 pb-3.5 pt-3">
+          <Serif maxFontSizeMultiplier={MAX_SCALE} className="text-center text-greeting text-text">
+            {t('dishLists.compare_title', { label })}
+          </Serif>
         </View>
-        <View className="gap-3">
+        <View className="px-4">
           <CompareCard
             item={comparison.current}
             subline={sentimentLabel(comparison.current.sentiment)}
@@ -234,19 +229,19 @@ function PairwiseFlow({
               setState((s) => choose(s, true))
             }}
           />
-          <Pressable
-            accessibilityRole="button"
+        </View>
+        <View className="items-center py-2.5">
+          <Chip
             onPress={() => {
               tapSelect()
               setAnswered((a) => a + 1)
               setState((s) => tie(s))
             }}
-            className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
           >
-            <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-              {t('rank.roughly_equal')}
-            </Text>
-          </Pressable>
+            {t('rank.roughly_equal')}
+          </Chip>
+        </View>
+        <View className="px-4">
           <CompareCard
             item={comparison.pivot}
             subline={
@@ -260,7 +255,7 @@ function PairwiseFlow({
             }}
           />
         </View>
-      </View>
+      </ScrollView>
     </View>
   )
 }

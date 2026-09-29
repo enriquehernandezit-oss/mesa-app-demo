@@ -83,14 +83,20 @@ export function FeelStep({
             className="h-9 max-w-[62%] flex-row items-center gap-2 rounded-pill bg-chip pl-1.5 pr-3.5"
             style={lift}
           >
-            <View className="h-[26px] w-[26px] overflow-hidden rounded-pill">
-              <PlaceCover
-                name={placeName}
-                coverImageId={placeCoverId}
-                size={{ w: 60, h: 60 }}
-                className="h-full w-full rounded-none"
-              />
-            </View>
+            {/* A photo, if there is one — a name card is unreadable at 26pt, and the name is
+                right beside it. */}
+            {placeCoverId ? (
+              <View className="h-[26px] w-[26px] overflow-hidden rounded-pill">
+                <PlaceCover
+                  name={placeName}
+                  coverImageId={placeCoverId}
+                  size={{ w: 60, h: 60 }}
+                  className="h-full w-full rounded-none"
+                />
+              </View>
+            ) : (
+              <View className="w-1.5" />
+            )}
             <Text
               numberOfLines={1}
               maxFontSizeMultiplier={MAX_SCALE}
@@ -129,6 +135,7 @@ export function FeelStep({
         <View className="mb-7 mt-6 items-center">
           <FeelSlider
             level={level}
+            initial={start}
             labels={words}
             onStop={setStop}
             label={t('rank.sentiment_title')}

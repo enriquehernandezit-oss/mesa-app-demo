@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Text, View } from 'react-native'
 
 import { imageUrl } from '@/lib/media'
+import { nameCardFontSize } from '@/lib/nameCard'
 import { useColor } from '@/theme/useColor'
 
 // The cover for a place: its photo, else a NAME CARD — the place's name set in the
@@ -45,7 +46,7 @@ export function PlaceCover({
 function NameCard({ name, className }: { name: string; className?: string }) {
   const line = useColor('line')
   const [box, setBox] = useState<{ w: number; h: number } | null>(null)
-  const fontSize = box ? Math.max(11, Math.min(28, Math.round(Math.min(box.w, box.h) * 0.2))) : 0
+  const fontSize = box ? nameCardFontSize(name, box.w, box.h) : 0
   return (
     <View
       onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
@@ -57,8 +58,6 @@ function NameCard({ name, className }: { name: string; className?: string }) {
           numberOfLines={3}
           // A picture, not a paragraph: its size follows the box, not the text-size setting.
           allowFontScaling={false}
-          adjustsFontSizeToFit
-          minimumFontScale={0.6}
           className="text-center font-serif text-text"
           style={{ fontSize, lineHeight: Math.round(fontSize * 1.25) }}
         >

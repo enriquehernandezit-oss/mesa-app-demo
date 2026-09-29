@@ -140,7 +140,8 @@ per call site.
   24, `rounded-hero` 30, `rounded-sheet` 34, `rounded-pill` (every capsule and circle).
 - **Glass:** translucent chrome (tab bar, sticky headers, toast) uses the `glass*` tokens over a
   real material on iOS 26 (`expo-glass-effect`), and the near-opaque `*-fallback` token where
-  there is none. Photo panels use `hglass*`; small controls and score pills on a photograph use
+  there is none. Anything that floats over rows of _text_ — the toast, a sticky header — passes
+  `solid` and takes the fallback, since the material lets the words behind it show through. Photo panels use `hglass*`; small controls and score pills on a photograph use
   `pglass*`. One component does all three — `components/ui/Glass.tsx` (`variant` = `bar | panel |
 photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not the OS's.
 - **Bottom sheets** (`components/ui/Sheet.tsx`, `showSheet` / `pickOne`): r34 top corners, a grabber, a
@@ -159,6 +160,10 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **The picture rule.** A card's picture is, in order: the friend's photo → the place's photo →
   the friend's **words** set as the picture → a **name card** (`surface-raised`, hairline ring,
   the name in serif). A place page with no photo opens on its map. No letter tiles, no stamps.
+  The name card's type size is worked out in `lib/nameCard.ts` (the biggest size, a fifth of the
+  box's short side, at which the name wraps into ≤ 3 lines inside the padding) — never iOS's
+  shrink-to-fit, which left the same 26pt name a few points tall on one card and full size on the next.
+  A thumbnail too small to read a name on (the 26pt place chip on "How was it?") shows no picture at all.
 - **Tab bar:** a floating glass capsule (inset 18, 66pt, bottom `max(safe-area − 10, 16)`), absolutely
   positioned so scenes run under it. The active tab is a 46pt filled `ink` circle; the **+** is a
   50pt `accent-fill` circle. No labels. Activity's unseen signal is the **bell dot** in the feed
@@ -217,6 +222,21 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   under Reduce Motion; the bubble tables are the approved design's, extracted once into `fluteData.ts`
   (`docs/design/rating/F17-Bubbles.dc.html`). The slider only chooses which third of your list the
   comparison searches; scores stay by list position.
+- **The rest of the rank flow** (`app/rank.tsx`, `components/rank/{RankHeader,PlaceLine,MiniFeel}.tsx`)
+  is one modal, one look. **Find the spot:** serif 33 title with a Close chip, a search field, pills
+  Nearby / Open now / Want to try (the saved places on their own), rows of a 52pt picture + serif name +
+  one meta line + `ScoreStack` (or "Not ranked"). **Compare:** Back and Close chips with "1 of 6" between
+  them, "Which was better?" serif 34, two r28 `CompareCard`s with **About the same** (a chip) between; no
+  "swap it" — both places are on your own list. **Reveal:** "Your score" over the number in serif 84 and its
+  word, the place, a burgundy "#20 of 160 on your list" pill, the place above and below it (yours ringed),
+  "What did you order?", then one card per dish with a **mini slider** — the same control as "How was it?",
+  26pt knob, **unset until touched** (a dish's feeling is optional; once set it can be changed, not cleared —
+  remove the dish to start over) — and a dashed Add a photo on the first; then "Your friends · avg." and a
+  bar with **Add a note** and **Done** (out of the way while the dish field has the keyboard). **Note:**
+  the place, "Your note", the occasion pills, a pinned **Save note**. **Finish:** no stamp screen — Done
+  leaves for Your list and a toast says "{place} landed at #{n} on your list." (raised as the screen
+  unmounts: a toast started while the native modal is up never shows). The share-my-top-5 card lives on
+  Your list's share chip.
 
 ## Where color is allowed to live
 

@@ -8,13 +8,24 @@ import {
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
-import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated'
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native'
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
 import { FeelStep } from '@/components/rank/FeelStep'
+import { MiniFeel } from '@/components/rank/MiniFeel'
+import { PlaceLine } from '@/components/rank/PlaceLine'
+import { RankHeader } from '@/components/rank/RankHeader'
 import {
   Body,
   Button,
@@ -24,16 +35,18 @@ import {
   ChipRail,
   ErrorState,
   Eyebrow,
+  IconButton,
+  MAX_SCALE,
   RowsSkeleton,
   Serif,
   Title,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
-import { CheckIcon } from '@/components/ui/icons'
+import { Field } from '@/components/ui/Field'
+import { CameraIcon, CheckIcon, CloseIcon, SearchIcon } from '@/components/ui/icons'
 import { KeyboardDone } from '@/components/ui/KeyboardDone'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
+import { ScoreBadge, ScoreStack } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -46,8 +59,11 @@ import {
   OCCASION_TAGS,
   displayScore,
   grainOptions,
+  cuisineLabel,
   ordinal,
+  priceLabel,
   scoreForPosition,
+  scoreWordKey,
   tagLabel,
 } from '@/lib/display'
 import { captureError } from '@/lib/errors'
@@ -55,7 +71,6 @@ import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
-import { imageUrl } from '@/lib/media'
 import {
   type PairwiseState,
   type Sentiment,
@@ -69,8 +84,6 @@ import {
 import { usePreventRemove } from '@/lib/preventRemove'
 import { registerForPush } from '@/lib/push'
 import { markRankExplainerSeen, rankExplainerSeen } from '@/lib/rankExplainer'
-import { shareListCard } from '@/lib/shareCardStore'
-import { profileShareText } from '@/lib/shareProfile'
 import type {
   DishName,
   DishNudge,
@@ -82,7 +95,7 @@ import type {
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
 import { useMyLocation } from '@/lib/useMyLocation'
-import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // Rank-a-place (Phase 6 mocks B1–B4): find the spot (merged ranked + unranked
@@ -137,45 +150,6 @@ type SelectedDish = {
 
 type RankStage = 'sentiment' | 'placed' | 'revealed'
 const STAGE_ORDER: Record<RankStage, number> = { sentiment: 1, placed: 2, revealed: 3 }
-
-type Top5Item = { position: number; name: string; score: number; coverImageId?: string | null }
-
-// The updated top 5, computed purely from local flow state (never from the
-// `mine` query) — a background refetch from `invalidateAfterRanking` may not
-// have landed by the time the celebration stamp shows, and this is the exact
-// moment the "Compartir mi top 5" button appears. Mirrors RevealStep's `around`
-// loop, generalized from ±1 neighbor to the whole ordered list.
-function buildTop5(existingForCompare: Item[], picked: Item, position: number): Top5Item[] {
-  // Sorted by the server's own position, not the rounded display score — with
-  // >=25 places the linear score formula gives adjacent positions the same
-  // integer, so sorting by score could show two places swapped.
-  const orderedByPos = [...existingForCompare].sort(
-    (a, b) => (a.position ?? Number.POSITIVE_INFINITY) - (b.position ?? Number.POSITIVE_INFINITY),
-  )
-  const total = orderedByPos.length + 1
-  const full: Top5Item[] = []
-  for (let pos = 1; pos <= total; pos++) {
-    if (pos === position) {
-      full.push({
-        position: pos,
-        name: picked.name,
-        score: scoreForPosition(pos - 1, total),
-        coverImageId: picked.coverImageId,
-      })
-    } else {
-      const r = orderedByPos[pos < position ? pos - 1 : pos - 2]
-      if (r) {
-        full.push({
-          position: pos,
-          name: r.name,
-          score: scoreForPosition(pos - 1, total),
-          coverImageId: r.coverImageId,
-        })
-      }
-    }
-  }
-  return full.slice(0, 5)
-}
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
@@ -345,24 +319,13 @@ export default function RankAPlace() {
     staleTime: 60_000,
   })
 
-  // Held so a swipe-back (or the modal's own beforeRemove-driven dismiss)
-  // during the 1.3s stamp can cancel the pending state change — acting on a
-  // screen that already unmounted is exactly what produces the "screen 'rank'
-  // was removed natively but didn't get removed from JS state" warning. It used
-  // to gate a `router.replace('/rankings')`; now it gates revealing the two
-  // finish actions below instead — same guard, later timer target.
-  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    return () => {
-      if (finishTimer.current) clearTimeout(finishTimer.current)
-    }
-  }, [])
-
-  const [showFinishActions, setShowFinishActions] = useState(false)
+  // Done: the ranking is saved (the reveal committed it), so go to Your list. Where it landed is
+  // said by the toast the screen raises as it unmounts (below). `placedStamp` lets the leave
+  // through the discard guard; the leave itself waits for that to take effect (see the effect
+  // after the guard).
   const finishToRankings = () => {
     setPlacedStamp(true)
     tapSuccess()
-    finishTimer.current = setTimeout(() => setShowFinishActions(true), 1300)
   }
 
   // "Saved as you tap" (M13): each dish add, sentiment change, or photo
@@ -489,13 +452,12 @@ export default function RankAPlace() {
     if (wasFirst && newFirst) enqueueDish(() => postDish(newFirst, { isFirst: true }))
   }
 
-  function toggleDishSentiment(nameKey: string, sentiment: Sentiment) {
+  // A dish's own slider: unset until touched, then it says what you set. (Only the slider
+  // calls this; a dish you don't rate stays null, which is fine.)
+  function setDishSentiment(nameKey: string, sentiment: Sentiment) {
     const target = selectedDishes.find((d) => d.nameKey === nameKey)
-    if (!target) return
-    const updated: SelectedDish = {
-      ...target,
-      sentiment: target.sentiment === sentiment ? null : sentiment,
-    }
+    if (!target || target.sentiment === sentiment) return
+    const updated: SelectedDish = { ...target, sentiment }
     setSelectedDishes((cur) => cur.map((d) => (d.nameKey === nameKey ? updated : d)))
     const isFirst = selectedDishes[0]?.nameKey === nameKey
     enqueueDish(() => postDish(updated, { isFirst }))
@@ -585,6 +547,12 @@ export default function RankAPlace() {
     })
   })
 
+  // Finished → leave. Declared after the guard so it has already stood down (`dirty` includes
+  // `!placedStamp`) by the time the navigation asks it.
+  useEffect(() => {
+    if (placedStamp) router.replace('/rankings')
+  }, [placedStamp, router])
+
   // The furthest stage reached, ratcheted forward only — never downgraded by
   // the in-app "Atrás" handlers (RevealStep/NoteStep's onBack) unwinding a
   // state back to null as the member steps backward. Read only from the
@@ -621,21 +589,19 @@ export default function RankAPlace() {
     return () => {
       if (stageRef.current && !placedStampRef.current) {
         track('rank_abandoned', { stage: stageRef.current })
-        // Swiped away (or backed out) after the score committed, but without
-        // ever tapping "Listo" or "Guardar nota" — the ranking is real and on
-        // the list either way, so say so. `<Toaster/>` can't render above a
-        // still-presented native modal (rank IS one), but this fires from the
-        // unmount cleanup, i.e. as the modal is already going away, so it
-        // lands the moment the sheet is actually gone — same mechanism as any
-        // other post-dismissal toast in this app.
-        if (positionRef.current !== null && commitSucceededRef.current && pickedRef.current) {
-          toast({
-            message: t('rank.saved_without_stamp', {
-              name: pickedRef.current.name,
-              position: positionRef.current,
-            }),
-          })
-        }
+      }
+      // However the screen was left — Done, or swiped away after the score committed — the
+      // ranking is real and on the list, so say where it landed. `<Toaster/>` can't render above
+      // a still-presented native modal (rank IS one; a toast started while it is up never shows),
+      // but this fires from the unmount cleanup, i.e. as the modal is already going away, so it
+      // lands the moment the sheet is actually gone.
+      if (positionRef.current !== null && commitSucceededRef.current && pickedRef.current) {
+        toast({
+          message: t('rank.landed', {
+            name: pickedRef.current.name,
+            position: positionRef.current,
+          }),
+        })
       }
     }
   }, [])
@@ -683,56 +649,8 @@ export default function RankAPlace() {
     queryClient.invalidateQueries({ queryKey: ['rankings', 'candidates'] })
   }
 
-  // The celebration stamp — "#3 · Mijas" punches in over the screen. Once
-  // finishTimer's 1.3s pause is up, two actions fade in: this is the highest-
-  // intent moment in the whole app, and it used to have no share affordance at
-  // all before silently auto-navigating away.
-  if (placedStamp && committedPlace && position !== null) {
-    const firstName = (me.data?.profile.name ?? '').split(' ')[0] || 'Mi'
-    const shareTop5 = () => {
-      const items = buildTop5(existingForCompare, committedPlace, position)
-      shareListCard({
-        eyebrow: `${firstName} · top ${Math.min(items.length, 5)}`,
-        subtitle: [me.data?.profile.neighborhood?.name, 'Santo Domingo']
-          .filter(Boolean)
-          .join(' · '),
-        items: items.map((it) => ({ position: it.position, name: it.name, score: it.score })),
-        coverUrl: imageUrl(items[0]?.coverImageId, { w: 1080, h: 780 }),
-        text: profileShareText(me.data?.profile.handle),
-      })
-    }
-    return (
-      <View className="flex-1 items-center justify-center gap-3 bg-bg px-5">
-        {/* The stamp punches in — it already fires tapSuccess, and a celebration
-            that appears instantly reads as a screen change, not an event. */}
-        <Animated.View
-          entering={ZoomIn.springify().damping(12)}
-          className="h-28 w-28 items-center justify-center rounded-pill border-2 border-accent"
-        >
-          <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
-            #{position}
-          </Text>
-        </Animated.View>
-        <Animated.View entering={FadeInDown.delay(150)} className="items-center gap-3">
-          <Text className="font-serif text-serif-lg text-text">{committedPlace.name}</Text>
-          <Caption>{t('rank.added_to_passport')}</Caption>
-        </Animated.View>
-        {/* "Listo" is the only action that leaves — sharing doesn't navigate
-            away on its own, so tapping it and coming back still shows this
-            screen (and the share sheet can be reopened). */}
-        {showFinishActions && (
-          <Animated.View entering={FadeIn} className="mt-4 w-full gap-3">
-            <Button variant="primary" onPress={shareTop5}>
-              {t('rank.share_top5')}
-            </Button>
-            <Button variant="ghost" onPress={() => router.replace('/rankings')}>
-              {t('common.done')}
-            </Button>
-          </Animated.View>
-        )}
-      </View>
-    )
-  }
+  // Finished: the toast is up and the modal is on its way out (see finishToRankings).
+  if (placedStamp) return <View className="flex-1 bg-bg" />
 
   if (candidates.isPending || mine.isPending) {
     return (
@@ -804,7 +722,7 @@ export default function RankAPlace() {
         dishGrain={dishGrain}
         onAddDish={addDish}
         onRemoveDish={removeDish}
-        onToggleSentiment={toggleDishSentiment}
+        onSetSentiment={setDishSentiment}
         onAttachPhoto={attachDishPhoto}
         onRemovePhoto={removeDishPhoto}
         onSetGrain={setDishGrainAndSync}
@@ -879,38 +797,15 @@ export default function RankAPlace() {
 
   // B2 — pairwise placement, banded by sentiment.
   return (
-    <StepScreen>
-      <BackBar label={t('common.back')} onBack={() => setSentiment(null)} />
-      <PlaceStep
-        existing={existingForCompare}
-        item={picked}
-        sentiment={sentiment}
-        isRerank={isRerank}
-        onPlaced={setPosition}
-      />
-    </StepScreen>
-  )
-}
-
-// Safe-area screen wrapper for the flow's non-scrolling steps.
-function StepScreen({ children }: { children: React.ReactNode }) {
-  const insets = useSafeAreaInsets()
-  return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      {children}
-    </View>
-  )
-}
-
-function BackBar({ label, onBack }: { label: string; onBack: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onBack}
-      className="min-h-[44px] self-start justify-center active:opacity-60"
-    >
-      <Text className="font-ui-medium text-label text-text-muted">{label}</Text>
-    </Pressable>
+    <PlaceStep
+      existing={existingForCompare}
+      item={picked}
+      sentiment={sentiment}
+      isRerank={isRerank}
+      onPlaced={setPosition}
+      onBack={() => setSentiment(null)}
+      onClose={() => (router.canGoBack() ? router.back() : router.replace('/rankings'))}
+    />
   )
 }
 
@@ -938,7 +833,7 @@ function RevealStep({
   dishGrain,
   onAddDish,
   onRemoveDish,
-  onToggleSentiment,
+  onSetSentiment,
   onAttachPhoto,
   onRemovePhoto,
   onSetGrain,
@@ -966,7 +861,7 @@ function RevealStep({
   dishGrain: Grain
   onAddDish: (dish: SelectedDish) => void
   onRemoveDish: (nameKey: string) => void
-  onToggleSentiment: (nameKey: string, sentiment: Sentiment) => void
+  onSetSentiment: (nameKey: string, sentiment: Sentiment) => void
   onAttachPhoto: () => void
   onRemovePhoto: () => void
   onSetGrain: (g: Grain) => void
@@ -976,8 +871,10 @@ function RevealStep({
   onAddNote: () => void
 }) {
   const insets = useSafeAreaInsets()
-  const placeholder = useColor('text-muted')
+  const lift = useLift()
   const t = useT()
+  // The dish field has the keyboard: the Add a note / Done bar steps aside.
+  const [searching, setSearching] = useState(false)
   const [dishQuery, setDishQuery] = useState('')
   const debouncedDishQuery = useDebounced(dishQuery, 150)
   // Sorted by position, not rounded score — see buildTop5's comment above.
@@ -1012,6 +909,8 @@ function RevealStep({
     if (!trimmed) return
     onAddDish({ name: trimmed, nameKey: mesaNorm(trimmed), sentiment: null, isNew: true })
     setDishQuery('')
+    // The dish is in: put the keyboard away so its card (and the bar) are in view.
+    Keyboard.dismiss()
   }
 
   // A tap on "Listo" while the ranking/dishes are still saving is remembered,
@@ -1032,59 +931,106 @@ function RevealStep({
       onDone()
     }
   }, [wantsDone, saving, commitError, onDone])
+  // The pieces of the header line under the score: "Dominican · Bella Vista · $$".
+  const meta = [cuisineLabel(picked.cuisine), picked.neighborhood, priceLabel(picked.priceTier)]
+    .filter(Boolean)
+    .join(' · ')
   return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="flex-row items-center justify-between">
-        <BackBar label={t('common.back')} onBack={onBack} />
-        {/* Disabled while the commit hasn't settled, or the dish queue is
-            still draining — tapping "Listo" here used to jump straight to
-            the celebration stamp regardless of whether the ranking (and now,
-            every selected dish) had actually saved, so a fast tap right
-            after the reveal (or a slow connection) could show "#3 · Mijas"
-            for a ranking that then silently failed to persist. */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={finish}
-          disabled={listoBlocked}
-          className={`min-h-[44px] justify-center active:opacity-60 ${listoBlocked ? 'opacity-40' : ''}`}
-        >
-          <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {saving ? t('common.saving') : t('common.done')}
-          </Text>
-        </Pressable>
-      </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1 bg-bg"
+    >
+      {/* "Done" is held back while the commit hasn't settled or the dish queue is still
+          draining — finishing used to jump ahead of a ranking (or a dish) that then failed
+          to save. A tap that lands while it saves is remembered (see `finish`). */}
+      <RankHeader
+        onBack={onBack}
+        right={
+          <Pressable
+            accessibilityRole="button"
+            onPress={finish}
+            disabled={listoBlocked}
+            hitSlop={8}
+            className={`min-h-[42px] justify-center active:opacity-60 ${listoBlocked ? 'opacity-40' : ''}`}
+          >
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-body text-text"
+            >
+              {saving ? t('common.saving') : t('common.done')}
+            </Text>
+          </Pressable>
+        }
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
-        automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
-        <View className="items-center">
-          <Eyebrow>{t('rank.your_score')}</Eyebrow>
-          <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
+        <View className="items-center px-5 pt-1">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-text-muted"
+          >
+            {t('rank.your_score')}
+          </Text>
+          <Text
+            style={DATA_FIGURES}
+            maxFontSizeMultiplier={1.1}
+            className="mt-0.5 font-serif text-score text-text"
+          >
             {displayScore(score)}
           </Text>
-          <Title className="mt-1">{picked.name}</Title>
-          <Characteristics
-            priceTier={picked.priceTier}
-            cuisine={picked.cuisine}
-            neighborhood={picked.neighborhood}
-          />
-          <Chip size="sm" state="selected" className="mt-3">
-            {t('rank.position_of_total', { position, total })}
-          </Chip>
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-pill text-text">
+            {t(scoreWordKey(score))}
+          </Text>
+          <Serif
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-3 text-center text-title text-text"
+          >
+            {picked.name}
+          </Serif>
+          {meta ? (
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-1 text-center font-ui text-label text-text-muted"
+            >
+              {meta}
+            </Text>
+          ) : null}
+          <View className="mt-3 h-8 justify-center rounded-pill bg-accent-fill px-3.5">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-label text-on-accent"
+            >
+              {t('rank.position_of_total', { position, total })}
+            </Text>
+          </View>
         </View>
 
-        <View className="mt-6 gap-1">
+        {/* Where it landed: the place above and below it, and it ringed. */}
+        <View className="mt-4 gap-1.5 px-4">
           {around.map((n) => (
             <View
               key={n.pos}
-              className={`flex-row items-center gap-3 rounded px-3 py-2 ${n.isNew ? 'border border-accent bg-surface' : ''}`}
+              className={`h-[50px] flex-row items-center gap-3 rounded border-[1.5px] pl-4 pr-3 ${
+                n.isNew ? 'border-text bg-surface' : 'border-transparent'
+              }`}
+              style={n.isNew ? lift : undefined}
             >
-              <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-md text-text-muted">
+              <Text
+                style={DATA_FIGURES}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="w-[26px] font-serif text-serif-md text-text-muted"
+              >
                 {n.pos}
               </Text>
-              <Text className="flex-1 font-serif text-serif-md text-text" numberOfLines={1}>
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="flex-1 font-serif text-serif-md text-text"
+              >
                 {n.name}
               </Text>
               <ScoreBadge size="sm" score={n.score} attribution={{ kind: 'stated' }} />
@@ -1092,40 +1038,36 @@ function RevealStep({
           ))}
         </View>
 
-        {/* M13: dish-logging lives here now, not gated behind the note step —
-            no category caption, picker, or auto-expand anywhere in this
-            block, since the server infers it (guessDishCategory). Every tap
-            below posts on its own through the parent's queue. */}
-        <Eyebrow className="mt-6">{t('rank.what_did_you_order')}</Eyebrow>
-        <Caption className="mt-1">{t('rank.what_did_you_order_helper')}</Caption>
-        <View className="mt-2 min-h-[48px] rounded border border-line bg-surface px-4 justify-center">
-          <TextInput
-            className="font-ui text-body text-text"
-            placeholderTextColor={placeholder}
+        {/* Dishes live here, not behind the note step. Every tap below saves on its own
+            through the parent's queue; the server infers each dish's category. */}
+        <Eyebrow className="px-5 pb-2 pt-5">{t('rank.what_did_you_order')}</Eyebrow>
+        <View className="px-4">
+          <Field
+            icon={<SearchIcon size={18} color="text-muted" />}
             placeholder={t('rank.dish_search_placeholder')}
             maxLength={60}
             returnKeyType="search"
             value={dishQuery}
             onChangeText={setDishQuery}
             onSubmitEditing={addNewDishFromQuery}
+            onFocus={() => setSearching(true)}
+            onBlur={() => setSearching(false)}
           />
         </View>
         {dishNamesError && (
-          <Caption className="mt-1 text-danger">{t('rank.dish_names_error')}</Caption>
+          <Caption className="mt-1 px-5 text-danger">{t('rank.dish_names_error')}</Caption>
         )}
 
-        <View className="mt-3 flex-row flex-wrap gap-2">
+        <View className="flex-row flex-wrap gap-2 px-4 pt-3">
           {selectedDishes.map((d) => {
-            // M20 — once you've had this exact dish somewhere before, the
-            // chip says which time this is ("tu 2ª carbonara"). Never shown
-            // for the very first ("tu 1ª" would just be noise).
+            // Once you've had this exact dish somewhere before, the chip says which time
+            // this is ("your 2nd carbonara"). Never for the very first.
             const count = dishCounts.get(d.nameKey)
             return (
               <Chip
                 key={d.nameKey}
                 size="sm"
                 state="selected"
-                hitSlop={4}
                 onPress={() => {
                   tapSelect()
                   onRemoveDish(d.nameKey)
@@ -1141,7 +1083,6 @@ function RevealStep({
             <Chip
               key={n.nameKey}
               size="sm"
-              hitSlop={4}
               onPress={() => {
                 tapSelect()
                 onAddDish({
@@ -1150,6 +1091,7 @@ function RevealStep({
                   sentiment: null,
                   isNew: false,
                 })
+                Keyboard.dismiss()
               }}
             >
               {n.label} · {n.count}
@@ -1159,7 +1101,6 @@ function RevealStep({
             <Chip
               size="sm"
               state="active"
-              hitSlop={4}
               onPress={() => {
                 tapSelect()
                 addNewDishFromQuery()
@@ -1171,72 +1112,50 @@ function RevealStep({
         </View>
 
         {selectedDishes.map((d, i) => (
-          <View key={d.nameKey} className="mt-3 gap-2 rounded border border-line bg-surface p-3">
-            <View className="flex-row items-center gap-2">
-              <Text className="flex-1 font-serif text-serif-sm text-text" numberOfLines={1}>
+          <View key={d.nameKey} className="mx-4 mt-3 rounded-card bg-surface p-4" style={lift}>
+            <View className="flex-row items-center gap-3">
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="flex-1 font-serif text-serif-md text-text"
+              >
                 {d.name}
               </Text>
-              {/* Every tap here saves on its own (the parent's queue) — this
-                  says so, instead of leaving "did that stick?" to guesswork. */}
+              {/* Every change saves as you make it (the parent's queue) — this says so,
+                  instead of leaving "did that stick?" to guesswork. */}
               {d.dishId ? (
                 <View className="flex-row items-center gap-1">
-                  <CheckIcon size={13} color="accent" />
-                  <Caption className="font-ui-semibold text-micro text-accent">
-                    {t('rank.dish_saved')}
-                  </Caption>
+                  <CheckIcon size={14} color="text-muted" strokeWidth={2.2} />
+                  <Caption>{t('rank.dish_saved')}</Caption>
                 </View>
               ) : (
-                <Caption className="text-micro">{t('common.saving')}</Caption>
+                <Caption>{t('common.saving')}</Caption>
               )}
               <Pressable
                 accessibilityRole="button"
+                accessibilityLabel={t('rank.remove_dish')}
                 onPress={() => {
                   tapSelect()
                   onRemoveDish(d.nameKey)
                 }}
-                className="h-8 w-8 items-center justify-center active:opacity-60"
+                hitSlop={8}
+                className="active:opacity-60"
               >
-                <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+                <CloseIcon size={16} color="text-muted" strokeWidth={2} />
               </Pressable>
             </View>
-            <View className="flex-row gap-2">
-              <Chip
-                size="sm"
-                state={d.sentiment === 'loved' ? 'selected' : 'default'}
-                onPress={() => {
-                  tapSelect()
-                  onToggleSentiment(d.nameKey, 'loved')
-                }}
-              >
-                {t('rank.sentiment_loved')}
-              </Chip>
-              <Chip
-                size="sm"
-                state={d.sentiment === 'fine' ? 'selected' : 'default'}
-                onPress={() => {
-                  tapSelect()
-                  onToggleSentiment(d.nameKey, 'fine')
-                }}
-              >
-                {t('rank.sentiment_fine')}
-              </Chip>
-              <Chip
-                size="sm"
-                state={d.sentiment === 'disliked' ? 'selected' : 'default'}
-                onPress={() => {
-                  tapSelect()
-                  onToggleSentiment(d.nameKey, 'disliked')
-                }}
-              >
-                {t('rank.sentiment_disliked')}
-              </Chip>
+            <View className="mt-4">
+              <MiniFeel
+                sentiment={d.sentiment}
+                onChange={(s) => onSetSentiment(d.nameKey, s)}
+                label={t('rank.dish_feel_label', { name: d.name })}
+              />
             </View>
-            {/* The photo affordance only ever shows on the first selected
-                dish — one dish photo per rank, same as before M13. */}
+            {/* One dish photo per ranking, on the first dish. */}
             {i === 0 &&
               (dishImage ? (
-                <>
-                  <View className="h-40 w-full overflow-hidden rounded border border-line">
+                <View className="mt-3.5 gap-2">
+                  <View className="h-40 w-full overflow-hidden rounded">
                     <Image
                       source={{ uri: dishImage }}
                       style={{ width: '100%', height: '100%' }}
@@ -1246,9 +1165,9 @@ function RevealStep({
                       accessibilityRole="button"
                       accessibilityLabel={t('rank.remove_photo')}
                       onPress={onRemovePhoto}
-                      className="absolute top-2 right-2 h-8 w-8 items-center justify-center rounded-pill bg-surface active:opacity-70"
+                      className="absolute right-2 top-2 h-8 w-8 items-center justify-center rounded-pill bg-chip active:opacity-70"
                     >
-                      <Text className="font-ui text-eyebrow text-text-muted">✕</Text>
+                      <CloseIcon size={14} color="text" strokeWidth={2.2} />
                     </Pressable>
                   </View>
                   <View className="flex-row flex-wrap gap-2">
@@ -1263,69 +1182,72 @@ function RevealStep({
                       </Chip>
                     ))}
                   </View>
-                </>
+                </View>
               ) : (
                 <Pressable
                   accessibilityRole="button"
                   onPress={onAttachPhoto}
-                  className="min-h-[56px] flex-row items-center gap-3 rounded border border-line border-dashed px-4 active:opacity-80"
+                  className="mt-3.5 min-h-[56px] flex-row items-center justify-center gap-2 rounded border-[1.5px] border-dashed border-line-strong active:opacity-70"
                 >
-                  <Text className="font-serif text-serif-lg text-accent">+</Text>
-                  <Text className="font-ui text-body text-text">{t('rank.add_a_photo')}</Text>
+                  <CameraIcon size={18} color="text-2" strokeWidth={1.9} />
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui text-subhead text-text-2"
+                  >
+                    {t('rank.add_a_photo')}
+                  </Text>
                 </Pressable>
               ))}
           </View>
         ))}
 
         {dishNudge && (
-          <DishNudgeCard
-            label={dishNudge.label}
-            listId={dishNudge.listId}
-            count={dishNudge.kind === 'first' ? 3 : undefined}
-            onDismiss={onDismissNudge}
-          />
+          <View className="px-4">
+            <DishNudgeCard
+              label={dishNudge.label}
+              listId={dishNudge.listId}
+              count={dishNudge.kind === 'first' ? 3 : undefined}
+              onDismiss={onDismissNudge}
+            />
+          </View>
         )}
 
         {/* The other half of the core loop: where friends put this same place. */}
-        <View className="mt-6">
-          <Eyebrow>{t('rank.your_friends')}</Eyebrow>
-          {friendsPending ? (
-            <Caption className="mt-1">{t('rank.searching')}</Caption>
-          ) : friendsRankings.length > 0 ? (
-            <>
-              <Caption className="mt-1">
-                {t('rank.friends_ranked_count', { n: friendsRankings.length })} ·{' '}
-                {t('rank.avg_abbrev')}{' '}
-                <Text style={DATA_FIGURES} className="text-accent">
-                  {displayScore(friendAvg)}
+        <Eyebrow className="px-5 pb-1 pt-5">
+          {friendsRankings.length > 0
+            ? `${t('rank.your_friends')} · ${t('rank.avg_abbrev')} ${displayScore(friendAvg)}`
+            : t('rank.your_friends')}
+        </Eyebrow>
+        {friendsPending ? (
+          <Caption className="px-5 pt-1">{t('rank.searching')}</Caption>
+        ) : friendsRankings.length > 0 ? (
+          friendsRankings.slice(0, 3).map((f) => (
+            <Link key={f.user.id} href={`/u/${f.user.id}`} asChild>
+              <Pressable className="flex-row items-center gap-3 px-5 py-1.5 active:opacity-80">
+                <Avatar name={f.user.name || f.user.handle || 'm'} src={f.user.image} size={30} />
+                <Text
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="flex-1 font-ui text-subhead text-text"
+                >
+                  {f.user.name || f.user.handle}
                 </Text>
-              </Caption>
-              {friendsRankings.slice(0, 3).map((f) => (
-                <Link key={f.user.id} href={`/u/${f.user.id}`} asChild>
-                  <Pressable className="mt-2 flex-row items-center gap-3 active:opacity-80">
-                    <Avatar
-                      name={f.user.name || f.user.handle || 'm'}
-                      src={f.user.image}
-                      size={28}
-                    />
-                    <Text className="flex-1 font-ui-medium text-body text-text" numberOfLines={1}>
-                      {f.user.name || f.user.handle}
-                    </Text>
-                    <Text
-                      style={DATA_FIGURES}
-                      className="font-ui-medium text-eyebrow text-text-muted"
-                    >
-                      #{f.position}
-                    </Text>
-                    <ScoreBadge size="sm" score={f.score} attribution={{ kind: 'stated' }} />
-                  </Pressable>
-                </Link>
-              ))}
-            </>
-          ) : (
-            <Serif className="mt-1 text-serif-sm">{t('rank.no_friends_ranked')}</Serif>
-          )}
-        </View>
+                <Text
+                  style={DATA_FIGURES}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui text-meta text-text-muted"
+                >
+                  #{f.position}
+                </Text>
+                <ScoreBadge size="sm" score={f.score} attribution={{ kind: 'stated' }} />
+              </Pressable>
+            </Link>
+          ))
+        ) : (
+          <Serif className="px-5 pt-1 text-serif-sm text-text-2">
+            {t('rank.no_friends_ranked')}
+          </Serif>
+        )}
 
         {commitPending ? (
           <View className="mt-4 items-center">
@@ -1339,40 +1261,45 @@ function RevealStep({
               onPress={onRetryCommit}
               className="active:opacity-60"
             >
-              <Text className="font-ui-medium text-label text-accent">{t('rank.retry_short')}</Text>
+              <Text className="font-ui-semibold text-label text-accent">
+                {t('rank.retry_short')}
+              </Text>
             </Pressable>
           </View>
         ) : null}
-        <Body className="mt-6 text-center text-text-muted">
-          {t('rank.your_answer_moved', { name: picked.name })}
-        </Body>
-        {/* Two clear ways out: finish now (everything above is already
-            saved), or keep going to a note. "Agregar una nota" used to be the
-            only button, so logging dishes WITHOUT a note meant finding the
-            small "Listo" up top or swiping the sheet away. */}
-        <View className="mt-4 gap-3">
-          {selectedDishes.length > 0 && !dishSyncPending ? (
-            <View className="flex-row items-center justify-center gap-1.5">
-              <CheckIcon size={14} color="accent" />
-              <Caption className="font-ui-medium text-accent">
-                {t('rank.dishes_saved', { n: selectedDishes.length })}
-              </Caption>
-            </View>
-          ) : null}
-          <Button variant="primary" disabled={listoBlocked} onPress={finish}>
-            {saving ? t('common.saving') : t('rank.finish')}
-          </Button>
-          <Button variant="secondary" disabled={dishSyncPending} onPress={onAddNote}>
+      </ScrollView>
+
+      {/* Two ways out: finish now (everything above is already saved), or go on to a note.
+          Out of the way while the dish field has the keyboard. */}
+      {searching ? null : (
+        <View
+          className="flex-row gap-2.5 px-4 pt-2"
+          style={{ paddingBottom: Math.max(insets.bottom, 12) + 4 }}
+        >
+          <Button
+            variant="secondary"
+            className="w-auto flex-1"
+            disabled={dishSyncPending}
+            onPress={onAddNote}
+          >
             {t('rank.add_a_note')}
           </Button>
+          <Button
+            variant="primary"
+            className="w-auto flex-1"
+            disabled={listoBlocked}
+            onPress={finish}
+          >
+            {saving ? t('common.saving') : t('rank.finish')}
+          </Button>
         </View>
-      </ScrollView>
-    </View>
+      )}
+    </KeyboardAvoidingView>
   )
 }
 
-// B4 — note + occasion tags. Every dish was already saved on the reveal
-// (M13), so this step only finalizes the optional note/tags themselves.
+// B4 — note + occasion tags. Every dish was already saved on the reveal (M13), so this step
+// only finalizes the optional note and tags themselves.
 function NoteStep({
   picked,
   position,
@@ -1397,72 +1324,76 @@ function NoteStep({
   onSave: () => void
 }) {
   const insets = useSafeAreaInsets()
-  const placeholder = useColor('text-muted')
   const t = useT()
 
   return (
-    <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="flex-row items-center justify-between">
-        <BackBar label={t('rank.add_note_back')} onBack={onBack} />
-        <Pressable
-          accessibilityRole="button"
-          disabled={saving}
-          onPress={onSave}
-          className="min-h-[44px] justify-center active:opacity-60"
-        >
-          <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {t('common.done')}
-          </Text>
-        </Pressable>
-      </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1 bg-bg"
+    >
+      <RankHeader
+        onBack={onBack}
+        right={
+          <Pressable
+            accessibilityRole="button"
+            disabled={saving}
+            onPress={onSave}
+            hitSlop={8}
+            className="min-h-[42px] justify-center active:opacity-60"
+          >
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-body text-text"
+            >
+              {t('common.done')}
+            </Text>
+          </Pressable>
+        }
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
-        automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-row items-center gap-3 border-line border-b pb-4">
-          <PlaceCover
+        <View className="border-b border-line px-5 pb-4 pt-3.5">
+          <PlaceLine
             name={picked.name}
             coverImageId={picked.coverImageId}
-            size={{ w: 120, h: 120 }}
-            className="h-14 w-14"
-          />
-          <View className="flex-1">
-            <Text className="font-serif text-serif-md text-text">{picked.name}</Text>
-            <Characteristics
-              priceTier={picked.priceTier}
-              cuisine={picked.cuisine}
-              neighborhood={picked.neighborhood}
-            />
-          </View>
-          <ScoreBadge
-            score={scoreForPosition(position - 1, existingCount + 1)}
-            attribution={{ kind: 'you' }}
+            cuisine={picked.cuisine}
+            neighborhood={picked.neighborhood}
+            priceTier={picked.priceTier}
+            picture={56}
+            nameClass="text-serif-md"
+            right={
+              <ScoreBadge
+                kind="solid"
+                score={scoreForPosition(position - 1, existingCount + 1)}
+                attribution={{ kind: 'stated' }}
+              />
+            }
           />
         </View>
 
-        <TextInput
-          className="mt-4 min-h-[84px] rounded border border-line bg-surface p-3 font-ui text-body text-text"
-          placeholderTextColor={placeholder}
-          placeholder={t('rank.note_placeholder')}
-          maxLength={140}
-          multiline
-          inputAccessoryViewID="rank-note"
-          value={note}
-          onChangeText={setNote}
-        />
-
+        <Eyebrow className="px-5 pb-2 pt-5">{t('rank.your_note')}</Eyebrow>
+        <View className="px-4">
+          <Field
+            multilineBox
+            placeholder={t('rank.note_placeholder')}
+            maxLength={140}
+            inputAccessoryViewID="rank-note"
+            value={note}
+            onChangeText={setNote}
+          />
+        </View>
         <KeyboardDone id="rank-note" />
 
-        <Eyebrow className="mt-4">{t('rank.occasion')}</Eyebrow>
-        <View className="mt-2 flex-row flex-wrap gap-2">
+        <Eyebrow className="px-5 pb-2 pt-5">{t('rank.occasion')}</Eyebrow>
+        <View className="flex-row flex-wrap gap-2 px-5">
           {OCCASION_TAGS.map((tag) => {
             const on = tags.includes(tag)
             return (
               <Chip
                 key={tag}
-                size="sm"
                 state={on ? 'selected' : 'default'}
                 onPress={() =>
                   setTags((cur) =>
@@ -1475,29 +1406,35 @@ function NoteStep({
             )
           })}
         </View>
-
-        <View className="mt-6">
-          <Button variant="primary" disabled={saving} onPress={onSave}>
-            {saving ? t('common.saving') : t('rank.save_note')}
-          </Button>
-        </View>
       </ScrollView>
-    </View>
+
+      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 4 }}>
+        <Button variant="primary" disabled={saving} onPress={onSave}>
+          {saving ? t('common.saving') : t('rank.save_note')}
+        </Button>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
+// B2 — the comparisons: "Which was better?", the place you just rated against one on your list,
+// narrowed by the answer to How was it? until it has a slot. The whole screen, header included.
 function PlaceStep({
   existing,
   item,
   sentiment,
   isRerank,
   onPlaced,
+  onBack,
+  onClose,
 }: {
   existing: Item[]
   item: Item
   sentiment: Sentiment
   isRerank: boolean
   onPlaced: (position: number) => void
+  onBack: () => void
+  onClose: () => void
 }) {
   const t = useT()
   const initial = useMemo(
@@ -1527,7 +1464,11 @@ function PlaceStep({
   }, [done, state.ordered, item.id, onPlaced])
 
   if (comparison === null) {
-    return <Body className="mt-6">{t('rank.placing')}</Body>
+    return (
+      <View className="flex-1 items-center justify-center bg-bg">
+        <Body>{t('rank.placing')}</Body>
+      </View>
+    )
   }
 
   const step = answered + 1
@@ -1535,50 +1476,59 @@ function PlaceStep({
   const pivotPos = state.ordered.findIndex((x) => x.id === comparison.pivot.id) + 1
 
   return (
-    <View className="mt-4 gap-4">
-      <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
-        {t('common.n_of_total', { n: step, total })}
-      </Text>
-      <View className="items-center gap-1">
-        <Title>{t('rank.which_was_better')}</Title>
-        <Text className="text-center text-eyebrow text-text-muted">
-          {t('rank.your_answer_moves', { name: item.name })}
-        </Text>
-      </View>
-      <View className="gap-3">
-        <CompareCard
-          item={comparison.current}
-          subline={isRerank ? t('rank.already_on_list') : t('rank.new_on_list')}
-          onPress={() => {
-            tapSelect()
-            setAnswered((a) => a + 1)
-            setState((s) => choose(s, true))
-          }}
-        />
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            tapSelect()
-            setAnswered((a) => a + 1)
-            setState((s) => tie(s))
-          }}
-          className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
-        >
-          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {t('rank.roughly_equal')}
+    <View className="flex-1 bg-bg">
+      <RankHeader
+        onBack={onBack}
+        onClose={onClose}
+        center={t('common.n_of_total', { n: step, total })}
+      />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-8">
+        <View className="items-center px-5 pb-3.5 pt-3">
+          <Serif maxFontSizeMultiplier={MAX_SCALE} className="text-center text-serif-lg text-text">
+            {t('rank.which_was_better')}
+          </Serif>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-1.5 text-center font-ui text-label text-text-muted"
+          >
+            {t('rank.your_answer_moves', { name: item.name })}
           </Text>
-        </Pressable>
-        <CompareCard
-          item={comparison.pivot}
-          subline={t('rank.position_on_list', { position: pivotPos })}
-          score={comparison.pivot.score ?? null}
-          onPress={() => {
-            tapSelect()
-            setAnswered((a) => a + 1)
-            setState((s) => choose(s, false))
-          }}
-        />
-      </View>
+        </View>
+        <View className="px-4">
+          <CompareCard
+            item={comparison.current}
+            subline={isRerank ? t('rank.already_on_list') : t('rank.new_on_list')}
+            onPress={() => {
+              tapSelect()
+              setAnswered((a) => a + 1)
+              setState((s) => choose(s, true))
+            }}
+          />
+        </View>
+        <View className="items-center py-2.5">
+          <Chip
+            onPress={() => {
+              tapSelect()
+              setAnswered((a) => a + 1)
+              setState((s) => tie(s))
+            }}
+          >
+            {t('rank.roughly_equal')}
+          </Chip>
+        </View>
+        <View className="px-4">
+          <CompareCard
+            item={comparison.pivot}
+            subline={t('rank.position_on_list', { position: pivotPos })}
+            score={comparison.pivot.score ?? null}
+            onPress={() => {
+              tapSelect()
+              setAnswered((a) => a + 1)
+              setState((s) => choose(s, false))
+            }}
+          />
+        </View>
+      </ScrollView>
       {showCoach && (
         <RankCoachmark
           onDismiss={() => {
@@ -1656,9 +1606,10 @@ function FindStep({
   onBack: () => void
 }) {
   const insets = useSafeAreaInsets()
-  const placeholder = useColor('text-muted')
   const t = useT()
   const [adding, setAdding] = useState(false)
+  // Only the places you saved to try (the "Want to try" pill).
+  const [wantOnly, setWantOnly] = useState(false)
   const { position: myPosition, request: requestLocation } = useMyLocation()
   const q = query.trim().toLowerCase()
   // Hide "Abierto ahora" once the candidate list is catalog-heavy: it filters on
@@ -1709,11 +1660,12 @@ function FindStep({
   }
   // else: keep candList's server-side relevance order.
 
-  const leadGroup = q
-    ? []
-    : wantToTryIds
-        .map((id) => filtered.find((r) => r.id === id))
-        .filter((r): r is Item => Boolean(r))
+  // The places you saved to try, in the order you saved them: a pill of their own, and the
+  // group above the rest when nothing is being searched.
+  const wantList = wantToTryIds
+    .map((id) => filtered.find((r) => r.id === id))
+    .filter((r): r is Item => Boolean(r))
+  const leadGroup = q ? [] : wantList
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
@@ -1728,7 +1680,7 @@ function FindStep({
     create: createFromGoogle,
     creatingId,
   } = useExternalPlaceSearch({
-    query,
+    query: wantOnly ? '' : query,
     catalogNames: [...results.map((r) => r.name), ...leadGroup.map((r) => r.name)],
     onCreated: onGoogleCreated,
   })
@@ -1740,44 +1692,53 @@ function FindStep({
         key={r.id}
         accessibilityRole="button"
         onPress={() => onPick(r.id)}
-        className="flex-row items-center gap-3 border-line border-b py-3 active:opacity-80"
+        className="px-5 py-2 active:opacity-80"
       >
-        <PlaceCover
+        <PlaceLine
           name={r.name}
           coverImageId={r.coverImageId}
-          size={{ w: 160, h: 160 }}
-          className="h-14 w-14"
+          cuisine={r.cuisine}
+          neighborhood={r.neighborhood}
+          priceTier={r.priceTier}
+          extra={dist != null ? formatDistance(dist) : null}
+          right={
+            r.score != null ? (
+              <ScoreStack score={r.score} />
+            ) : (
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-micro text-text-muted"
+              >
+                {t('rank.unranked')}
+              </Text>
+            )
+          }
         />
-        <View className="flex-1">
-          <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
-            {r.name}
-          </Text>
-          <Characteristics
-            priceTier={r.priceTier}
-            cuisine={r.cuisine}
-            neighborhood={r.neighborhood}
-            distance={dist != null ? formatDistance(dist) : null}
-          />
-        </View>
-        {r.score != null ? (
-          <ScoreBadge size="sm" score={r.score} attribution={{ kind: 'you' }} />
-        ) : (
-          <Text className="font-ui-semibold text-eyebrow text-text-faint uppercase tracking-eyebrow">
-            {t('rank.unranked')}
-          </Text>
-        )}
       </Pressable>
     )
   }
 
+  const nothing = wantOnly ? wantList.length === 0 : leadGroup.length === 0 && results.length === 0
+
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="px-5">
-        <BackBar label={t('rank.back')} onBack={onBack} />
-        <Title className="mt-4">{t('rank.find_title')}</Title>
-        <TextInput
-          className="mt-4 min-h-[48px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-          placeholderTextColor={placeholder}
+    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 8 }}>
+      <View className="flex-row items-center justify-between gap-3 px-5">
+        <Serif
+          numberOfLines={1}
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="shrink text-greeting text-text"
+        >
+          {t('rank.find_title')}
+        </Serif>
+        <IconButton
+          accessibilityLabel={t('rank.feel_close')}
+          onPress={onBack}
+          icon={<CloseIcon size={18} color="text" />}
+        />
+      </View>
+      <View className="px-4 pt-3.5">
+        <Field
+          icon={<SearchIcon size={18} color="text-muted" />}
           placeholder={t('rank.find_placeholder')}
           value={query}
           onChangeText={setQuery}
@@ -1785,6 +1746,8 @@ function FindStep({
           clearButtonMode="while-editing"
           autoCorrect={false}
         />
+      </View>
+      <View className="px-5">
         <ChipRail className="mt-3">
           <Chip
             size="sm"
@@ -1805,50 +1768,71 @@ function FindStep({
               {t('rank.open_now')}
             </Chip>
           )}
+          {(wantToTryIds.length > 0 || wantOnly) && (
+            <Chip
+              size="sm"
+              state={wantOnly ? 'selected' : 'default'}
+              onPress={() => setWantOnly((v) => !v)}
+            >
+              {t('rank.want_to_try')}
+            </Chip>
+          )}
         </ChipRail>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pt-4 pb-10"
+        contentContainerClassName="pb-10"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        {leadGroup.length === 0 && results.length === 0 && !q ? (
-          <Body>{t('rank.ranked_everything')}</Body>
-        ) : leadGroup.length === 0 && results.length === 0 ? (
-          <Body>{t('rank.no_matches')}</Body>
+        {nothing ? (
+          <Body className="px-5 pt-4">
+            {wantOnly
+              ? t('rank.want_empty')
+              : q
+                ? t('rank.no_matches')
+                : t('rank.ranked_everything')}
+          </Body>
+        ) : wantOnly ? (
+          <View className="pt-2">{wantList.map(renderRow)}</View>
         ) : (
           <>
             {leadGroup.length > 0 && (
               <>
-                <Eyebrow>{t('rank.want_to_try')}</Eyebrow>
+                <Eyebrow className="px-5 pb-1 pt-4">{t('rank.want_to_try')}</Eyebrow>
                 {leadGroup.map(renderRow)}
-                <Eyebrow className="mt-3">{t('rank.all')}</Eyebrow>
+                <Eyebrow className="px-5 pb-1 pt-4">{t('rank.all')}</Eyebrow>
               </>
             )}
+            {leadGroup.length === 0 && <View className="h-2" />}
             {results.map(renderRow)}
           </>
         )}
 
-        {!adding && (
-          <ExternalResults
-            heading={<Eyebrow className="mt-3">{t('rank.on_google')}</Eyebrow>}
-            suggestions={suggestions}
-            creatingId={creatingId}
-            onPick={createFromGoogle}
-          />
+        {!adding && !wantOnly && (
+          <View className="px-5">
+            <ExternalResults
+              heading={<Eyebrow className="mt-3">{t('rank.on_google')}</Eyebrow>}
+              suggestions={suggestions}
+              creatingId={creatingId}
+              onPick={createFromGoogle}
+            />
+          </View>
         )}
 
-        {adding ? (
+        {wantOnly ? null : adding ? (
           <AddPlaceForm addPlace={addPlace} onCancel={() => setAdding(false)} />
         ) : (
           <Pressable
             accessibilityRole="button"
             onPress={() => setAdding(true)}
-            className="mt-4 min-h-[48px] items-center justify-center rounded border border-line border-dashed active:opacity-70"
+            className="mx-5 mt-4 min-h-[52px] items-center justify-center rounded border-[1.5px] border-dashed border-line-strong active:opacity-70"
           >
-            <Text className="font-ui-medium text-label text-text-muted">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-label text-text-muted"
+            >
               {t('rank.add_restaurant_cta')}
             </Text>
           </Pressable>
@@ -1867,7 +1851,6 @@ function AddPlaceForm({
   addPlace: AddPlaceMutation
   onCancel: () => void
 }) {
-  const placeholder = useColor('text-muted')
   const t = useT()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -1879,18 +1862,14 @@ function AddPlaceForm({
   })
   const canAdd = name.trim().length > 0 && slug.length > 0 && !addPlace.isPending
   return (
-    <View className="mt-4 gap-3 rounded border border-line bg-surface p-4">
-      <TextInput
-        className="min-h-[48px] rounded border border-line bg-bg px-4 font-ui text-body text-text"
-        placeholderTextColor={placeholder}
+    <View className="mx-4 mt-4 gap-3">
+      <Field
         placeholder={t('rank.restaurant_name_placeholder')}
         value={name}
         onChangeText={setName}
         maxLength={80}
       />
-      <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-        {t('rank.sector')}
-      </Text>
+      <Eyebrow>{t('rank.sector')}</Eyebrow>
       <View className="flex-row flex-wrap gap-2">
         {neighborhoods.data?.neighborhoods.map((n) => (
           <Chip
@@ -1904,12 +1883,13 @@ function AddPlaceForm({
         ))}
       </View>
       <View className="flex-row justify-end gap-3">
-        <Button variant="secondary" className="w-auto min-h-[44px] px-4" onPress={onCancel}>
+        <Button variant="secondary" size="sm" className="px-4" onPress={onCancel}>
           {t('common.cancel')}
         </Button>
         <Button
           variant="primary"
-          className="w-auto min-h-[44px] px-5"
+          size="sm"
+          className="px-5"
           disabled={!canAdd}
           onPress={() => addPlace.mutate({ name: name.trim(), neighborhoodSlug: slug })}
         >

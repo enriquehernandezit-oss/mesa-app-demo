@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from 'react-native'
 
-import { Caption } from '@/components/ui'
+import { Caption, MAX_SCALE } from '@/components/ui'
 import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useLift } from '@/theme/useLift'
@@ -49,7 +49,13 @@ export function CompareCard({
         />
         <View className="flex-row items-center gap-3 px-4 pb-3.5 pt-3">
           <View className="flex-1">
-            <Text className="font-serif text-serif-xl text-text" numberOfLines={1}>
+            {/* Leading loosened: a capital's accent ("KIJÁ") is clipped at the size's own 29. */}
+            <Text
+              className="font-serif text-serif-xl text-text"
+              style={{ lineHeight: 34 }}
+              maxFontSizeMultiplier={MAX_SCALE}
+              numberOfLines={2}
+            >
               {item.name}
             </Text>
             <Characteristics

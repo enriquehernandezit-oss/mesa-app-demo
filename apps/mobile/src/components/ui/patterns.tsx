@@ -3,7 +3,7 @@ import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Caption, Chip, Eyebrow, SectionHeader } from '@/components/ui'
+import { Caption, Chip, Eyebrow, MAX_SCALE, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { Glass } from '@/components/ui/Glass'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -290,11 +290,14 @@ export function ScoreBadge({
     <>
       <Text
         style={DATA_FIGURES}
+        maxFontSizeMultiplier={MAX_SCALE}
         className={`font-serif ${sm ? 'text-serif-xs' : 'text-serif-sm'} ${ink}`}
       >
         {displayScore(score)}
       </Text>
-      <Text className={`font-ui-semibold text-eyebrow ${ink}`}>{t(scoreWordKey(score))}</Text>
+      <Text maxFontSizeMultiplier={MAX_SCALE} className={`font-ui-semibold text-eyebrow ${ink}`}>
+        {t(scoreWordKey(score))}
+      </Text>
     </>
   )
   return (
@@ -330,11 +333,15 @@ export function ScoreStack({ score, size = 'md' }: { score: number; size?: 'sm' 
     <View className="min-w-[52px] items-end">
       <Text
         style={DATA_FIGURES}
+        maxFontSizeMultiplier={MAX_SCALE}
         className={`font-serif text-text ${size === 'sm' ? 'text-serif-xs' : 'text-serif-md'}`}
       >
         {displayScore(score)}
       </Text>
-      <Text className="mt-0.5 font-ui-semibold text-eyebrow text-accent">
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="mt-0.5 font-ui-semibold text-eyebrow text-accent"
+      >
         {t(scoreWordKey(score))}
       </Text>
     </View>

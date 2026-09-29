@@ -53,9 +53,9 @@ function ToastItem({ toast }: { toast: Toast }) {
       pointerEvents="box-none"
       accessibilityLiveRegion="polite"
     >
-      {/* A glass capsule: it floats over whatever screen it lands on, and stays
-          legible over both a bright photo and the dark ground. */}
-      <Glass variant="bar" className="min-h-[52px] flex-row items-center gap-3 px-5 py-3">
+      {/* A glass capsule that floats over whatever screen it lands on. `solid`: it sits over
+          rows of text, which the system material would let show through the words. */}
+      <Glass solid variant="bar" className="min-h-[52px] flex-row items-center gap-3 px-5 py-3">
         {/* pointerEvents none: box-none on the container doesn't stop this
             Text from being the touch target, which ate taps on the card under
             the toast for its whole 3–5s. */}
