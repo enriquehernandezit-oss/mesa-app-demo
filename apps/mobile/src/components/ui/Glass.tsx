@@ -52,7 +52,12 @@ export function Glass({
   const tint = useColor(tokens.tint)
   const line = useColor(tokens.line)
   const fallback = useColor(tokens.fallback)
-  const material = !solid && isLiquidGlassAvailable()
+  // The frosted panel at Night is the smoked fill, not the system material: over a bright
+  // photograph the material barely darkens (a white plate under cream text is unreadable),
+  // and a panel that holds a name has to be legible on ANY photo. By day the material's white
+  // frost is exactly right.
+  const smoked = variant === 'panel' && theme === 'night'
+  const material = !solid && !smoked && isLiquidGlassAvailable()
   return (
     <View
       style={[

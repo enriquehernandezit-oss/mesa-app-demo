@@ -27,6 +27,20 @@ event" flow, by design (M21).
 (event, user) — `PUT /events/:id/rsvp` upserts it, `DELETE` clears it
 outright.
 
+**Friends going.** Every event shape carries `friendsGoingCount` — the TRUE number of
+people you follow who are going (not banned, no block either way) — beside `friendsGoing`,
+which is only the first three faces for the avatar stack. So a card can say "43 friends
+going" outright. `GET /events/:id/going` returns who they are (newest sign-up first, capped
+at 200), and the app opens it from the event page's "Who's going" row and the Tonight card.
+
+**Telling friends.** The write that FIRST turns a member's RSVP into `going`, on an event
+that hasn't ended, pushes everyone who follows them (`events` category, `lib/eventPush.ts`):
+one push per follower per event per 6 hours however many friends sign up, and a member's
+going is announced once ever (`push_log` marker `event-going-announced:{eventId}`, claimed
+against the going member), so toggling off and on never re-notifies. Activity shows the same
+thing collapsed to one row per event — "Ana and 42 others are going to X" — and drops events
+that have ended.
+
 `saved_events` is a member's **Save** (the bookmark), one row per
 (event, user), row present = saved. It is **independent of the RSVP** — a
 member can be going _and_ have it saved, and clearing one never touches the

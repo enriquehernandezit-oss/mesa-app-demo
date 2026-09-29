@@ -401,6 +401,7 @@ export interface ActivityItem {
   reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
   eventId?: string // event_going
   eventTitle?: string // event_going
+  others?: number // event_going: how many other people you follow are going too
 }
 
 export interface SavedPlace {
@@ -754,6 +755,9 @@ export interface EventSummary {
   savedByMe?: boolean
   goingCount: number
   friendsGoing: { id: string; name: string; image: string | null }[]
+  // How many of the people you follow are going — the TRUE count; `friendsGoing` is only the
+  // first three, for the avatar stack. "32 friends going" reads this.
+  friendsGoingCount: number
   // Optional capacity ("12 de 16 cupos") and a WhatsApp booking number
   // (digits, E.164 without "+"). spotsLeft = max(0, capacity − goingCount).
   capacity: number | null

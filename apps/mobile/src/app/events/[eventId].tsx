@@ -42,6 +42,7 @@ import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
 import { CAT_CLASSES, CAT_TOKEN, categoryKey } from '@/lib/eventCategory'
+import { goingLabel } from '@/lib/eventGoing'
 import { countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
 import { shareTextWhatsAppFirst } from '@/lib/shareProfile'
@@ -154,15 +155,10 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
         t('events.whatsapp_msg', { title: e.title, when }),
       )}`
     : null
-  const facesLabel =
-    e.friendsGoing.length > 0
-      ? t('events.faces_label', {
-          name: e.friendsGoing[0]?.name.split(' ')[0] ?? '',
-          n: Math.max(0, rsvpState.goingCount - 1),
-        })
-      : rsvpState.goingCount > 0
-        ? t('events.going_count', { n: rsvpState.goingCount })
-        : t('events.be_first')
+  const facesLabel = goingLabel(t, {
+    friendsGoingCount: e.friendsGoingCount,
+    goingCount: rsvpState.goingCount,
+  })
 
   return (
     <View className="flex-1 bg-bg">
@@ -331,7 +327,20 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
           ) : null}
 
           <InfoCard index={4} label={t('events.who_going')}>
-            <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
+            {/* With friends going the whole line opens WHO — the exact list of them. */}
+            {e.friendsGoingCount > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('events.friends_going_title')}
+                onPress={() => router.push(`/events/${e.id}/going`)}
+                className="flex-row items-center justify-between active:opacity-70"
+              >
+                <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
+                <ChevronIcon size={16} color="text-faint" />
+              </Pressable>
+            ) : (
+              <FacesStack faces={e.friendsGoing} label={facesLabel} size={30} />
+            )}
             <Pressable
               accessibilityRole="button"
               onPress={() => shareTextWhatsAppFirst(shareText)}

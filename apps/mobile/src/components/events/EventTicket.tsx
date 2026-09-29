@@ -27,6 +27,7 @@ import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { useEventSave } from '@/hooks/useEventSave'
 import { eventCategoryLabel, eventPriceLabel } from '@/lib/display'
 import { CAT_CLASSES, CAT_TOKEN, type CatKey, categoryKey } from '@/lib/eventCategory'
+import { goingLabel } from '@/lib/eventGoing'
 import { type Countdown, countdown, isImminent } from '@/lib/eventTime'
 import { dateLocale, useT } from '@/lib/i18n'
 import type { EventSummary } from '@/lib/types'
@@ -391,9 +392,7 @@ export function EventTicket({ e, index = 0, now }: { e: EventSummary; index?: nu
             <View className="mt-3 flex-row items-center justify-between">
               <FacesStack
                 faces={e.friendsGoing}
-                label={
-                  goingCount > 0 ? t('events.going_count', { n: goingCount }) : t('events.be_first')
-                }
+                label={goingLabel(t, { friendsGoingCount: e.friendsGoingCount, goingCount })}
               />
               <RsvpButtons e={e} rsvpState={rsvpState} />
             </View>

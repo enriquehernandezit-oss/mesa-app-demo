@@ -167,8 +167,17 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   title, an optional right slot.
 - **Rank bar (place page):** a dark floating pill — burgundy **Rank it** (**Rank again** once
   ranked), a cream save circle, and **Directions**.
-- **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'
-  notes; dishes; info; map).
+- **Place page** (`app/r/[restaurantId].tsx`, `components/place/*`): the photo _is_ the page — a fixed
+  full-bleed backdrop (the place's photo, else a MapBox map of where it is), a category chip, a frosted **name
+  panel** (serif 46) and **tag panel** (where you stand, friends who ranked it or want to try it, the lists it is
+  in, occasion tags) laid over it, and a hint that there is more below. Glass back, **score** ("8.7 Great · Mesa")
+  and share float on the photo. Scrolling raises an r32 **details sheet** over it (stats Everyone / Friends / You;
+  friends' notes with a report "···"; dishes; the round Menu · Call · Website · Directions tiles; grouped facts —
+  address, hours, price · cuisine, lists; the map card; upcoming events; similar spots) while the overlay fades out
+  and the top chrome trades glass for a solid bar. One floating dark **rank bar** ("Rank it" / "Rank again" in
+  `accent-fill`, a cream save circle, Directions) holds the ranking action throughout. The frosted panel at
+  **Night** is the smoked fill, never the system material — over a bright photo the material barely darkens and
+  cream text on a white plate is unreadable.
 - **Feed:** a greeting header (avatar, search chip, bell; no wordmark) and pills **For you / Friends /
   Popular / Events / Lists**. **For you** opens with **Your six** (a 2-column
   grid of 62pt tiles: picture, serif name, and _why_ in one muted line — "Diego · 9.6", "Saved · 2 friends",

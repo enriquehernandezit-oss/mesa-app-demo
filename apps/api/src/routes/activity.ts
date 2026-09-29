@@ -4,6 +4,7 @@ import { alias } from 'drizzle-orm/pg-core'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
+import { collapseEventGoing } from '../lib/eventPush'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -48,6 +49,7 @@ export interface ActivityItem {
   reply?: 'going' | 'maybe' // plan_reply — what the invitee answered
   eventId?: string // event_going
   eventTitle?: string // event_going
+  others?: number // event_going: how many other people you follow are going too
 }
 
 export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
@@ -251,12 +253,16 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
         eq(eventRsvps.status, 'going'),
         inArray(eventRsvps.userId, following),
         isNull(events.cancelledAt),
+        // Not over yet — a friend going to something that already happened isn't news.
+        sql`coalesce(${events.endsAt}, ${events.startsAt} + interval '3 hours') > now()`,
         isNull(user.bannedAt),
         notBlocked,
       ),
     )
     .orderBy(desc(eventRsvps.updatedAt))
-    .limit(15)
+    // Collapsed to one row per event below, so this needs headroom for the crowd at a popular
+    // one — "Ana and 42 others" counts everyone fetched here.
+    .limit(200)
 
   const items: ActivityItem[] = [
     ...cheered.map((x) => ({
@@ -312,7 +318,7 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
           ]
         : [],
     ),
-    ...eventGoing.map((x) => ({
+    ...collapseEventGoing(eventGoing).map((x) => ({
       type: 'event_going' as const,
       at: x.at.toISOString(),
       user: x.user,
@@ -320,6 +326,8 @@ export const activityRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', as
       eventId: x.eventId,
       eventTitle: x.eventTitle,
       startsAt: x.startsAt.toISOString(),
+      // How many OTHER people you follow are going too.
+      others: x.others,
     })),
   ]
     .sort((a, b) => (a.at < b.at ? 1 : -1))

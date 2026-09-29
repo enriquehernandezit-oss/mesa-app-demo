@@ -1,9 +1,10 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, eq, gte, inArray, isNull, lt, notInArray, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, isNull, lt, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { goingAnnouncedKey, goingPushKey, isUpcoming } from '../lib/eventPush'
 import { sendPush } from '../lib/push'
 import { sdLocalNow, sdMidnight, tonightLateWindow } from '../lib/sdTime'
 import { blockedByMe, blockedMe, followerIds, followingIds } from '../lib/visibility'
@@ -14,7 +15,7 @@ import { requireAuth } from '../middleware/session'
 // weekend/upcoming), one event's detail, RSVP, and Save (the bookmark,
 // independent of RSVP; see GET /saved) — schema-level rules
 // (never delete a row, soft-cancel instead) live on `events` in schema.ts.
-const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user } = schema
+const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user, pushLog } = schema
 
 // The three Explore browse windows, each as [start, end) in real UTC
 // instants over startsAt — `start: null` / `end: null` mean no bound. `start`
@@ -79,9 +80,11 @@ const savedByMe = sql<boolean>`${savedEvents.userId} is not null`
 
 // Shared shaping for every event this file returns (browse, one restaurant's
 // rail, detail): the base rows plus, in exactly two more queries regardless
-// of how many events came back, each one's going-count and up to 3 friend
-// faces going — never a per-event query (CLAUDE.md rule 3). spotsLeft is
-// derived here from that same going-count, never stored.
+// of how many events came back, each one's going-count, how many of the people
+// I follow are going, and up to 3 of their faces — never a per-event query
+// (CLAUDE.md rule 3). The friend count is the true one (the faces are only the
+// first 3, for the avatar stack); "32 friends going" is worth saying. spotsLeft
+// is derived here from that same going-count, never stored.
 async function withFriendsGoing<
   T extends { id: string; capacity: number | null; myStatus: 'going' | 'interested' | null },
 >(me: { id: string }, rows: T[]): Promise<(Omit<T, 'myStatus'> & FriendsGoingFields)[]> {
@@ -117,7 +120,9 @@ async function withFriendsGoing<
 
   const countByEvent = new Map(goingCounts.map((g) => [g.eventId, g.count]))
   const facesByEvent = new Map<string, { id: string; name: string; image: string | null }[]>()
+  const friendCountByEvent = new Map<string, number>()
   for (const f of friendFaces) {
+    friendCountByEvent.set(f.eventId, (friendCountByEvent.get(f.eventId) ?? 0) + 1)
     const list = facesByEvent.get(f.eventId) ?? []
     if (list.length < 3) list.push({ id: f.id, name: f.name, image: f.image })
     facesByEvent.set(f.eventId, list)
@@ -131,6 +136,7 @@ async function withFriendsGoing<
       goingCount,
       spotsLeft: r.capacity === null ? null : Math.max(0, r.capacity - goingCount),
       friendsGoing: facesByEvent.get(r.id) ?? [],
+      friendsGoingCount: friendCountByEvent.get(r.id) ?? 0,
     }
   })
 }
@@ -139,6 +145,48 @@ type FriendsGoingFields = {
   goingCount: number
   spotsLeft: number | null
   friendsGoing: { id: string; name: string; image: string | null }[]
+  friendsGoingCount: number
+}
+
+// The people I follow who are going to an event, most recent sign-up first — the list
+// behind "32 friends going". Same visibility as the count and the faces (withFriendsGoing):
+// banned accounts and anyone blocked either way are left out. Capped, because a list
+// nobody scrolls past a couple of hundred isn't worth its bytes.
+const GOING_LIST_MAX = 200
+async function friendsGoingList(me: { id: string }, eventId: string) {
+  return db
+    .select({ id: user.id, name: user.name, handle: user.handle, image: user.image })
+    .from(eventRsvps)
+    .innerJoin(user, eq(user.id, eventRsvps.userId))
+    .where(
+      and(
+        eq(eventRsvps.eventId, eventId),
+        eq(eventRsvps.status, 'going'),
+        inArray(eventRsvps.userId, followingIds(me.id)),
+        isNull(user.bannedAt),
+        notInArray(eventRsvps.userId, blockedByMe(me.id)),
+        notInArray(eventRsvps.userId, blockedMe(me.id)),
+      ),
+    )
+    .orderBy(desc(eventRsvps.updatedAt), asc(user.id))
+    .limit(GOING_LIST_MAX)
+}
+
+// Everyone who follows this member and could be told they signed up: not banned, and no
+// block either way. Exported for the DB test — the route calls it once per first "going".
+export async function eventGoingRecipients(me: { id: string }): Promise<string[]> {
+  const rows = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(
+      and(
+        inArray(user.id, followerIds(me.id)),
+        isNull(user.bannedAt),
+        notInArray(user.id, blockedByMe(me.id)),
+        notInArray(user.id, blockedMe(me.id)),
+      ),
+    )
+  return rows.map((r) => r.id)
 }
 
 // The events that haven't ended and start inside [start, end) (either bound may be
@@ -307,12 +355,25 @@ export const eventsRoutes = new Hono<AuthedEnv>()
     return c.json({ event: { ...shaped, cancelled: cancelledAt !== null } })
   })
 
+  // Who, of the people I follow, is going — the list behind "32 friends going".
+  .get('/:id/going', async (c) => {
+    const me = c.get('user')
+    const eventId = c.req.param('id')
+    if (!z.string().uuid().safeParse(eventId).success) return c.json({ error: 'not_found' }, 404)
+    const found = await db.query.events.findFirst({
+      where: eq(events.id, eventId),
+      columns: { id: true },
+    })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+    return c.json({ friends: await friendsGoingList(me, eventId) })
+  })
+
   // Set (or change) my RSVP. Idempotent: re-sending the same status is a
-  // harmless overwrite. The push to followers who'd marked 'interested' only
-  // fires on the write that FIRST turns my status into 'going' — a later
-  // toggle away and back never re-notifies (mirrors rankings.ts's
-  // isFirstRanking trigger), and push_log's own dedupe on the unparameterized
-  // key backs that up server-side even if this check somehow raced.
+  // harmless overwrite. When I FIRST say 'going' to an event that hasn't ended,
+  // everyone who follows me is told (one push per follower per event per few
+  // hours — lib/eventPush.ts — however many friends sign up); a later toggle
+  // away and back never re-notifies, because the announcement is claimed once
+  // per (me, event) in push_log. The same "friend going" line is in Activity.
   .put('/:id/rsvp', async (c) => {
     const me = c.get('user')
     const eventId = c.req.param('id')
@@ -322,7 +383,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
 
     const found = await db.query.events.findFirst({
       where: and(eq(events.id, eventId), isNull(events.cancelledAt)),
-      columns: { id: true, title: true },
+      columns: { id: true, title: true, startsAt: true, endsAt: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
 
@@ -340,27 +401,29 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         set: { status: parsed.data.status, updatedAt: new Date() },
       })
 
-    if (parsed.data.status === 'going' && !wasGoing) {
-      const interested = await db
-        .select({ userId: eventRsvps.userId })
-        .from(eventRsvps)
-        .where(
-          and(
-            eq(eventRsvps.eventId, eventId),
-            eq(eventRsvps.status, 'interested'),
-            inArray(eventRsvps.userId, followerIds(me.id)),
-          ),
+    const now = new Date()
+    if (parsed.data.status === 'going' && !wasGoing && isUpcoming(found, now)) {
+      // Once per (me, event), ever: the marker row is mine, so a second "going" after
+      // toggling off and on finds it already there and stays quiet.
+      const first = await db
+        .insert(pushLog)
+        .values({ userId: me.id, key: goingAnnouncedKey(eventId) })
+        .onConflictDoNothing()
+        .returning({ userId: pushLog.userId })
+      if (first.length > 0) {
+        const recipients = await eventGoingRecipients(me)
+        const key = goingPushKey(eventId, now)
+        sendPush(
+          recipients.map((userId) => ({
+            userId,
+            key,
+            category: 'events' as const,
+            title: 'Mesa',
+            body: `${me.name || 'Alguien'} va a ${found.title}`,
+            data: { type: 'event', eventId },
+          })),
         )
-      sendPush(
-        interested.map((i) => ({
-          userId: i.userId,
-          key: `event-going:${eventId}:${me.id}`,
-          category: 'events',
-          title: 'Mesa',
-          body: `${me.name || 'Alguien'} va a ${found.title}`,
-          data: { type: 'event', eventId },
-        })),
-      )
+      }
     }
 
     return c.json({ ok: true })

@@ -99,6 +99,8 @@ module.exports = {
       // tight and clips at a unitless-1 leading. Explicit px units, because RN
       // lineHeight is absolute points and a bare number would read as a multiplier.
       fontSize: {
+        // The place page's name, on its frosted panel.
+        hero: [46, '48px'],
         display: [40, '44px'],
         title: [28, '31px'],
         rank: [40, '44px'],

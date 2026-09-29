@@ -178,6 +178,7 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
   const router = useRouter()
   const { following, toggle, pending } = useFollow(a.user.id, Boolean(a.followsBack), 'activity')
   const isPlan = a.type === 'plan_invite' || a.type === 'plan_reply'
+  const isEvent = a.type === 'event_going' && Boolean(a.eventId)
 
   // The row's primary destination — a plan when the row is one, else the
   // restaurant when the row names one, else the person. Doesn't replace the
@@ -186,9 +187,11 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
   // sentence, the timestamp).
   const primaryHref: Href = isPlan
     ? `/plans/${a.planId}`
-    : a.restaurant
-      ? `/r/${a.restaurant.id}`
-      : `/u/${a.user.id}`
+    : isEvent
+      ? `/events/${a.eventId}`
+      : a.restaurant
+        ? `/r/${a.restaurant.id}`
+        : `/u/${a.user.id}`
   const place = a.restaurant ? (
     isPlan ? (
       <Text className="font-ui-semibold text-text">{a.restaurant.name}</Text>
@@ -265,6 +268,14 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
                 {a.startsAt ? ` · ${formatPlanDate(a.startsAt)}` : ''}
               </>
             )}
+            {a.type === 'event_going' && (
+              <>
+                {a.others
+                  ? t('activity.event_going_others', { n: a.others })
+                  : t('activity.event_going')}
+                <Text className="font-ui-semibold text-text">{a.eventTitle}</Text>
+              </>
+            )}
             {a.type === 'plan_reply' && (
               <>
                 {a.reply === 'going'
@@ -306,7 +317,7 @@ const ActivityRow = memo(function ActivityRow({ a, last }: { a: ActivityItem; la
           )
         ) : (
           a.restaurant && (
-            <Link href={`/r/${a.restaurant.id}`} asChild>
+            <Link href={isEvent ? `/events/${a.eventId}` : `/r/${a.restaurant.id}`} asChild>
               <Pressable className="active:opacity-80">
                 <PlaceCover
                   name={a.restaurant.name}

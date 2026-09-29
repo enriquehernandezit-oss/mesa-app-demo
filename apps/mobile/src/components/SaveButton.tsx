@@ -33,7 +33,7 @@ export function SaveButton({
   // The saved item's own name, for the toast ("Guardaste «Casaluca»").
   name: string
   size?: number
-  variant?: 'icon' | 'pill'
+  variant?: 'icon' | 'pill' | 'bar'
   // 'icon' only: a label beside the glyph (the feed card's "Quiero probar").
   text?: string
   className?: string
@@ -62,6 +62,25 @@ export function SaveButton({
   }
 
   const label = saved ? t('save.remove') : t('save.save')
+  // The place page's rank bar: a cream circle on the dark bar.
+  if (variant === 'bar') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: saved }}
+        accessibilityLabel={label}
+        onPress={onTap}
+        onLongPress={openListPicker}
+        className={`h-[52px] w-[52px] items-center justify-center rounded-pill bg-on-bar active:opacity-80 ${className ?? ''}`}
+      >
+        {saved ? (
+          <BookmarkFilledIcon size={21} color="bar" />
+        ) : (
+          <BookmarkIcon size={21} color="bar" />
+        )}
+      </Pressable>
+    )
+  }
   if (variant === 'pill') {
     return (
       <Pressable

@@ -273,6 +273,8 @@ function MesaStack() {
           dish-lists/[listId] above; no dynamic title to seed since ScreenHeader
           here has no native title at all. */}
       <Stack.Screen name="events/[eventId]" />
+      {/* Who, of the people you follow, is going — the event's "32 friends going" list. */}
+      <Stack.Screen name="events/[eventId]/going" />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

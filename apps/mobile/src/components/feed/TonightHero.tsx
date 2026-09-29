@@ -20,6 +20,7 @@ import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
 import { useEventSave } from '@/hooks/useEventSave'
 import { eventPriceLabel } from '@/lib/display'
+import { goingLabel } from '@/lib/eventGoing'
 import { countdown } from '@/lib/eventTime'
 import { useT } from '@/lib/i18n'
 import { imageUrl } from '@/lib/media'
@@ -98,14 +99,8 @@ function HeroCard({ e, width, now }: { e: EventSummary; width: number; now: Date
   const when = live
     ? t('events.cd_live')
     : [stubParts(e.startsAt).time, e.restaurant.neighborhood].filter(Boolean).join(' · ')
-  // Faces are capped at three by the API, so "N friends going" is only said when every
-  // one going is a friend; otherwise the plain count.
-  const allFriends = e.friendsGoing.length > 0 && e.friendsGoing.length === goingCount
-  const goingLine = allFriends
-    ? t('events.friends_going_count', { n: goingCount })
-    : goingCount > 0
-      ? t('events.going_count', { n: goingCount })
-      : t('events.be_first')
+  // "32 friends going" (the exact count), else everyone going; tapping it opens who they are.
+  const goingLine = goingLabel(t, { friendsGoingCount: e.friendsGoingCount, goingCount })
 
   return (
     <Pressable
@@ -183,13 +178,30 @@ function HeroCard({ e, width, now }: { e: EventSummary; width: number; now: Date
         ) : null}
         <View className="mt-3 flex-row items-center gap-2.5">
           <FacesStack faces={e.friendsGoing} size={26} />
-          <Text
-            numberOfLines={1}
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="flex-1 font-ui text-label text-hglass-fg"
-          >
-            {goingLine}
-          </Text>
+          {e.friendsGoingCount > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push(`/events/${e.id}/going`)}
+              hitSlop={6}
+              className="flex-1 active:opacity-70"
+            >
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-label text-hglass-fg"
+              >
+                {goingLine}
+              </Text>
+            </Pressable>
+          ) : (
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="flex-1 font-ui text-label text-hglass-fg"
+            >
+              {goingLine}
+            </Text>
+          )}
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ selected: going }}
