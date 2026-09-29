@@ -117,6 +117,7 @@ module.exports = {
         'serif-sm': [19, '22px'],
         'serif-md': [21, '24px'],
         'serif-xl': [26, '29px'],
+        greeting: [33, '34px'],
         'serif-lg': [34, '37px'],
         headline: [36, '38px'],
       },

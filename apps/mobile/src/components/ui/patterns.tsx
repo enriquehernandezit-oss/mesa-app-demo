@@ -300,7 +300,10 @@ export function ScoreBadge({
   return (
     <View className="items-center gap-1">
       {kind === 'photo' ? (
-        <Glass variant="photo" className={box}>
+        // `solid`: this pill is repeated down feeds and rails, so it is a flat dark
+        // capsule, not a native glass view each (costly in a list, and a glass view
+        // created while its parent is still fading in renders washed out).
+        <Glass solid variant="photo" className={box}>
           {figures}
         </Glass>
       ) : (

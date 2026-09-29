@@ -202,6 +202,46 @@ export const Button = ({
   )
 }
 
+/* --- IconButton --- a round icon control: a 42pt raised chip by default (search, bell,
+   back — the chrome of a screen), or a solid ink / burgundy circle. A `dot` draws the
+   burgundy "something new" pip. Controls floating over a photograph use GlassCircle. */
+export const IconButton = ({
+  icon,
+  onPress,
+  accessibilityLabel,
+  kind = 'chip',
+  size = 42,
+  dot,
+  className,
+}: {
+  icon: ReactNode
+  onPress: () => void
+  accessibilityLabel: string
+  kind?: 'chip' | 'solid' | 'accent'
+  size?: number
+  dot?: boolean
+  className?: string
+}) => {
+  const lift = useLift()
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      hitSlop={4}
+      className={`items-center justify-center rounded-pill active:opacity-70 ${
+        kind === 'solid' ? 'bg-ink' : kind === 'accent' ? 'bg-accent-fill' : 'bg-chip'
+      } ${className ?? ''}`}
+      style={[{ width: size, height: size }, kind === 'chip' ? lift : undefined]}
+    >
+      {icon}
+      {dot ? (
+        <View className="absolute right-2.5 top-2.5 h-2 w-2 rounded-pill border-[1.5px] border-chip bg-accent-fill" />
+      ) : null}
+    </Pressable>
+  )
+}
+
 /* --- Card --- a content object: r24, white on Day (lifted), the night surface on Night
    (flat), no border. `raised` is the warmer inset step. */
 export const Card = ({

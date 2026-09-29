@@ -349,3 +349,10 @@ export const LockIcon = (p: IconProps) => (
     <Path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
   </Icon>
 )
+// A magnifying glass — the search chip.
+export const SearchIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="11" cy="11" r="7" />
+    <Path d="m20 20-3.5-3.5" />
+  </Icon>
+)

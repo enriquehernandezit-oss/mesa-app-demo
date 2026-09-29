@@ -28,6 +28,7 @@ export type FollowSource =
   | 'passport'
   | 'people_screen'
   | 'find_friends'
+  | 'feed_shelf'
 
 const RELATED_QUERY_KEYS = ['feed', 'activity', 'people', 'me-stats'] as const
 

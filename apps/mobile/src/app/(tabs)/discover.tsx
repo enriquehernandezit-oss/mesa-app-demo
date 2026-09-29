@@ -1,57 +1,67 @@
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { type Href, useRouter } from 'expo-router'
-import { memo, useCallback, useMemo, useRef } from 'react'
-import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native'
-import Animated, { FadeInDown } from 'react-native-reanimated'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useFocusEffect } from 'expo-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  AppState,
+  FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  RefreshControl,
+  View,
+} from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { CheersButton } from '@/components/CheersButton'
-import { EventMiniCard, useNow } from '@/components/events/EventTicket'
+import { EventsBrowse } from '@/components/events/EventsBrowse'
+import { CaughtUp } from '@/components/feed/CaughtUp'
+import { FeedEnd } from '@/components/feed/FeedEnd'
+import { FeedHeader } from '@/components/feed/FeedHeader'
+import { type FeedView, FeedPills } from '@/components/feed/FeedPills'
+import { FriendCard } from '@/components/feed/FriendCard'
+import { ListCovers } from '@/components/feed/ListCovers'
+import { PeopleShelf } from '@/components/feed/PeopleShelf'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import { PersonRow } from '@/components/PersonRow'
-import { pickReportReason } from '@/components/ReportControl'
-import { SaveButton } from '@/components/SaveButton'
-import { TopBar } from '@/components/TopBar'
+import { Group } from '@/components/SettingsRow'
 import {
   Body,
   Button,
   Caption,
+  Card,
   ErrorState,
   Eyebrow,
-  MAX_SCALE,
+  SectionHeader,
   Serif,
   Skeleton,
-  Title,
 } from '@/components/ui'
-import { Avatar } from '@/components/ui/Avatar'
-import { ChevronIcon, CommentIcon, MoreIcon } from '@/components/ui/icons'
-import { ScoreBadge, SpotCard, SpotRail } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
-import { toast } from '@/components/ui/toast-store'
+import { Glass } from '@/components/ui/Glass'
 import { useFollow } from '@/hooks/useFollow'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
-import { cuisineLabel, listAuthorLabel, priceLabel } from '@/lib/display'
+import { type FeedRow, buildFeedRows } from '@/lib/feedRows'
+import { readFeedSeen, writeFeedSeen } from '@/lib/feedSeen'
 import { useT } from '@/lib/i18n'
-import { imageUrl } from '@/lib/media'
-import { timeAgo } from '@/lib/time'
-import type { EventSummary, FeaturedList, FeedItem, SuggestedUser } from '@/lib/types'
+import type { FeedItem, FriendSuggestion, SuggestedUser } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
-import { DATA_FIGURES } from '@/theme/vars'
 
-// The discovery feed (Phase 6 mocks A1–A3): a featured-lists carousel, then the
-// feed column. Ranking cards are compact paper cards; dish posts carry a photo.
-// Ported from apps/app/src/screens/tabs/DiscoverTab.tsx. The QuickActions rail
-// (Reserve/Pedir inert, Cerca → map) is dropped from the native launch: all
-// three are cut or map-gated (N7). Pull-to-refresh + infinite scroll use a
-// FlatList (RefreshControl + onEndReached) in place of the web IntersectionObserver.
+// The Feed (Redesign 2): a greeting, then four pills — For you, Friends, Events, Lists.
+// "For you" and "Friends" are friends' rankings as cards (For you also has the "People
+// you may know" shelf between them); "Events" and "Lists" host what used to be rails.
+// Once the inline pills scroll away, a glass bar pins them to the top.
+//
+// One persistent FlatList, not a ternary across load states: that swapped the element
+// TYPE on every state change, which loses the ref and the scroll position a plain
+// re-render would keep, and a stable ref is what scroll-to-top-on-tab-press needs.
+// Pull-to-refresh and infinite scroll are RefreshControl + onEndReached.
 
 interface FeedPage {
   feed: FeedItem[]
   nextCursor: string | null
 }
+
+type Row = FeedRow<FeedItem, FriendSuggestion>
 
 function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
   const seen = new Set<string>()
@@ -61,8 +71,13 @@ function uniqueByRankingId(items: FeedItem[]): FeedItem[] {
 export default function DiscoverTab() {
   const t = useT()
   const accent = useColor('accent')
+  const insets = useSafeAreaInsets()
+  const queryClient = useQueryClient()
   const tabBarClearance = useTabBarClearance()
   const indicator = useResolvedTheme() === 'night' ? ('white' as const) : ('black' as const)
+  const [view, setView] = useState<FeedView>('for_you')
+  const friendsView = view === 'for_you' || view === 'friends'
+
   const feed = useInfiniteQuery({
     queryKey: ['feed'],
     queryFn: ({ pageParam }) =>
@@ -71,72 +86,141 @@ export default function DiscoverTab() {
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   })
   // Defensive: with a sound (createdAt, id) cursor server-side this shouldn't
-  // duplicate across pages, but a ranking never appears twice in one person's
-  // feed anyway (one row per ranking) — deduping by id is a cheap guarantee
-  // either way, not a workaround for a specific known gap.
-  // Memoized: this is FlatList's `data`. Unmemoized it was a brand new array
-  // identity every render, so the list re-diffed its whole window each time
-  // regardless of whether the feed had actually changed.
+  // duplicate across pages, but deduping by id is a cheap guarantee either way.
+  // Memoized: it is FlatList's data, and a fresh array every render made the list
+  // re-diff its whole window regardless of whether the feed had changed.
   const items = useMemo(
     () => uniqueByRankingId(feed.data?.pages.flatMap((p) => p.feed) ?? []),
     [feed.data],
   )
-  const { refreshing, onRefresh } = usePullToRefresh(feed.refetch)
-  // Stable across renders (perf pass, same reasoning as rankings.tsx's M14
-  // comment on renderRankingRow) — a fresh renderItem function every render
-  // of this screen made FlatList treat every mounted cell as changed on
-  // every pull-to-refresh/fetchNextPage/cheers tap, even with FeedCard now
-  // wrapped in memo() above.
-  const renderFeedItem = useCallback(
-    ({ item, index }: { item: FeedItem; index: number }) => <FeedCard item={item} index={index} />,
-    [],
+
+  // People to meet, for the shelf. Only "For you" shows it, and only once there is a
+  // feed to put it in.
+  const suggestions = useQuery({
+    queryKey: ['suggestions'],
+    queryFn: () => api.get<{ users: FriendSuggestion[] }>('/social/suggestions'),
+    staleTime: 120_000,
+    enabled: view === 'for_you' && feed.isSuccess && items.length > 0,
+  })
+
+  // How far the member had read last time — read ONCE, so the "caught up" divider
+  // stays where it was while they scroll and only moves on the next visit.
+  const [seenAt, setSeenAt] = useState<string | null | undefined>(undefined)
+  const seenRef = useRef<string | null>(null)
+  useEffect(() => {
+    void readFeedSeen().then((v) => {
+      seenRef.current = v
+      setSeenAt(v)
+    })
+  }, [])
+  const newestRef = useRef<string | null>(null)
+  newestRef.current = items[0]?.rankedAt ?? null
+  const flushSeen = useCallback(() => {
+    if (newestRef.current) void writeFeedSeen(newestRef.current, seenRef.current)
+  }, [])
+  // Save the watermark when the member leaves the tab or the app.
+  useFocusEffect(useCallback(() => flushSeen, [flushSeen]))
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') flushSeen()
+    })
+    return () => sub.remove()
+  }, [flushSeen])
+
+  const rows = useMemo<Row[]>(
+    () =>
+      friendsView && seenAt !== undefined
+        ? buildFeedRows({
+            items,
+            people: suggestions.data?.users ?? [],
+            seenAt,
+            shelves: view === 'for_you',
+          })
+        : [],
+    [friendsView, view, items, suggestions.data, seenAt],
   )
 
-  // One persistent FlatList, not a `feed.isPending ? <ScrollView/> : ...`
-  // ternary across FOUR branches (M23) — that swapped element TYPE on every
-  // load-state change, which loses whatever ref/scroll-position a plain
-  // re-render would otherwise have kept, the same failure mode rankings.tsx
-  // already worked around (see its own comment on skipLayoutAnimRef's
-  // neighbor). A stable ref is also what scroll-to-top-on-tab-press needs.
-  const listRef = useRef<FlatList<FeedItem>>(null)
+  const refetchCurrent = useCallback(
+    () =>
+      view === 'events'
+        ? queryClient.invalidateQueries({ queryKey: ['events'] })
+        : view === 'lists'
+          ? queryClient.invalidateQueries({ queryKey: ['lists'] })
+          : feed.refetch(),
+    [view, queryClient, feed],
+  )
+  const { refreshing, onRefresh } = usePullToRefresh(refetchCurrent)
+
+  // Stable across renders, so a screen-level re-render (pull-to-refresh, the next page,
+  // one cheers tap) doesn't make FlatList treat every mounted cell as changed.
+  const renderRow = useCallback(({ item: row, index }: { item: Row; index: number }) => {
+    if (row.type === 'card') return <FriendCard item={row.item} index={index} />
+    if (row.type === 'shelf') return <PeopleShelf people={row.people} />
+    return <CaughtUp />
+  }, [])
+
+  const listRef = useRef<FlatList<Row>>(null)
   useResetOnTabPress(
     useCallback(() => {
       listRef.current?.scrollToOffset({ offset: 0, animated: true })
-      // A silent refetch, not onRefresh(): flipping RefreshControl's
-      // `refreshing` on programmatically (not from an actual pull) shifts
-      // the scroll offset down to reveal the spinner and doesn't reliably
-      // restore it (usePullToRefresh's own header), which raced the
-      // scrollToOffset above and left a tab re-press landing scrolled down
-      // instead of at the top. A real pull-to-refresh gesture is untouched
-      // — only this synthetic trigger skips the visible spinner.
+      // A silent refetch, not onRefresh(): flipping RefreshControl's `refreshing` on
+      // programmatically shifts the scroll offset down to reveal the spinner and
+      // doesn't reliably restore it (usePullToRefresh's own header), which raced the
+      // scrollToOffset above. A real pull-to-refresh gesture is untouched.
       void feed.refetch()
     }, [feed]),
   )
 
+  // The pinned pill bar: once the inline pills have scrolled up under the status bar.
+  const pillsY = useRef(0)
+  const [pinned, setPinned] = useState(false)
+  const onScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const past = e.nativeEvent.contentOffset.y > pillsY.current - insets.top - 4
+      setPinned((was) => (was === past ? was : past))
+    },
+    [insets.top],
+  )
+  const changeView = useCallback(
+    (v: FeedView) => {
+      setView(v)
+      // Tapped from the pinned bar: land the new view right under it, not wherever the
+      // old view's scroll position happened to be.
+      if (pinned) listRef.current?.scrollToOffset({ offset: pillsY.current, animated: false })
+    },
+    [pinned],
+  )
+
   return (
     <View className="flex-1 bg-bg">
-      <TopBar variant="discover" />
       <FlatList
         ref={listRef}
-        data={items}
-        keyExtractor={(item) => item.rankingId}
-        renderItem={renderFeedItem}
+        data={rows}
+        keyExtractor={(row) => row.key}
+        renderItem={renderRow}
         ListHeaderComponent={
           <>
             <FeedHeader />
-            {/* Same condition the old loaded-only branch rendered these
-                under — a rail tied to a still-pending/failed/empty feed
-                isn't worth showing. */}
-            {feed.isSuccess && items.length > 0 ? (
-              <>
-                <ListsRail />
-                <EventsRail />
-              </>
+            <View onLayout={(e) => (pillsY.current = e.nativeEvent.layout.y)}>
+              <FeedPills value={view} onChange={changeView} />
+            </View>
+            {view === 'events' ? (
+              <View className="px-5">
+                <EventsBrowse />
+              </View>
+            ) : view === 'lists' ? (
+              <ListCovers />
+            ) : items.length > 0 ? (
+              <View className="px-5">
+                <SectionHeader action={<Caption>{t('feed.newest_first')}</Caption>}>
+                  {t('feed.from_friends')}
+                </SectionHeader>
+              </View>
             ) : null}
           </>
         }
         ListEmptyComponent={
-          feed.isPending ? (
+          !friendsView ? null : feed.isPending || seenAt === undefined ? (
             <FeedSkeleton />
           ) : feed.isError ? (
             <ErrorState onRetry={() => feed.refetch()}>{t('discover.load_error')}</ErrorState>
@@ -144,47 +228,70 @@ export default function DiscoverTab() {
             <EmptyFeed />
           )
         }
-        contentContainerClassName="px-5"
+        ListFooterComponent={
+          !friendsView || items.length === 0 ? null : feed.isFetchingNextPage ? (
+            <Body className="py-4 text-center">…</Body>
+          ) : !feed.hasNextPage ? (
+            <FeedEnd />
+          ) : null
+        }
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
-        // Without this a 2-item feed can't be pulled — there's nothing to
-        // overscroll — so a new member has no way to refresh.
+        // Without this a 2-item feed can't be pulled — there's nothing to overscroll —
+        // so a new member has no way to refresh.
         alwaysBounceVertical
         indicatorStyle={indicator}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onEndReachedThreshold={0.5}
         onEndReached={() => {
-          if (feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
+          if (friendsView && feed.hasNextPage && !feed.isFetchingNextPage) feed.fetchNextPage()
         }}
-        ListFooterComponent={
-          feed.isFetchingNextPage ? <Body className="py-4 text-center">…</Body> : null
-        }
       />
+      <PinnedPills visible={pinned} view={view} onChange={changeView} />
     </View>
   )
 }
 
-// The tab-header — eyebrow + title. Used to also carry a search field that
-// handed off to Explore's real (native) search bar with `?focus=1`; removed
-// at the founder's request — Explore's own search bar (in its nav bar) is
-// the one search entry point now. No horizontal padding of its own: the
-// parent FlatList's contentContainer already applies px-5, and this used to
-// add a SECOND px-5 on top of it — the header sat ~24pt further right than
-// "Listas destacadas" and the carousel just below it, with no shared left
-// edge on the page.
-function FeedHeader() {
-  const t = useT()
+// The pills again, in a glass bar that fades in over the top of the page once the inline
+// row has scrolled away.
+function PinnedPills({
+  visible,
+  view,
+  onChange,
+}: {
+  visible: boolean
+  view: FeedView
+  onChange: (v: FeedView) => void
+}) {
+  const insets = useSafeAreaInsets()
+  const o = useSharedValue(0)
+  useEffect(() => {
+    o.value = withTiming(visible ? 1 : 0, { duration: 160 })
+  }, [visible, o])
+  const style = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    // Tight to the first rail below (SpotRail's header adds its own mt-5):
-    // a bottom margin here on top of that left a ~32pt dead band between the
-    // title and "Listas destacadas".
-    <View className="pt-2 -mb-2">
-      <Eyebrow>{t('discover.eyebrow')}</Eyebrow>
-      <Title className="mt-1">{t('discover.title')}</Title>
-      <Caption className="mt-0.5">{t('discover.subtitle')}</Caption>
-    </View>
+    <Animated.View
+      pointerEvents={visible ? 'auto' : 'none'}
+      style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, style]}
+    >
+      <Glass
+        solid
+        variant="bar"
+        radius={0}
+        style={{
+          borderWidth: 0,
+          borderBottomWidth: 1,
+          paddingTop: insets.top + 8,
+          paddingBottom: 10,
+        }}
+      >
+        <FeedPills value={view} onChange={onChange} />
+      </Glass>
+    </Animated.View>
   )
 }
 
@@ -197,34 +304,40 @@ function EmptyFeed() {
   })
   const users = suggested.data?.users ?? []
   return (
-    <View>
-      <View className="items-center gap-2 rounded border border-line bg-surface p-6">
-        <Serif className="text-title">{t('discover.empty_title')}</Serif>
-        <Body className="text-center">{t('discover.empty_body')}</Body>
-      </View>
+    <View className="px-4">
+      <Card className="items-center gap-2 p-6">
+        <Serif className="text-center text-title text-text">{t('discover.empty_title')}</Serif>
+        <Body className="text-center text-text-muted">{t('discover.empty_body')}</Body>
+      </Card>
       {users.length > 0 && (
-        <Eyebrow className="mb-3 mt-5">{t('discover.start_with_these')}</Eyebrow>
+        <>
+          <Eyebrow className="mb-2 mt-5 px-1">{t('discover.start_with_these')}</Eyebrow>
+          <Group>
+            {users.map((u, i) => (
+              <SuggestedRow key={u.id} user={u} last={i === users.length - 1} />
+            ))}
+          </Group>
+        </>
       )}
-      {users.map((u) => (
-        <SuggestedRow key={u.id} user={u} />
-      ))}
     </View>
   )
 }
 
-function SuggestedRow({ user: u }: { user: SuggestedUser }) {
+function SuggestedRow({ user: u, last }: { user: SuggestedUser; last: boolean }) {
   const t = useT()
   const { following, toggle, pending } = useFollow(u.id, false, 'empty_feed')
   return (
     <PersonRow
       user={u}
+      last={last}
       subtitle={[t('settings.ranked_count', { n: u.rankedCount ?? 0 }), u.neighborhood]
         .filter(Boolean)
         .join(' · ')}
       right={
         <Button
-          variant="secondary"
-          className="w-auto min-h-[40px] px-4"
+          variant={following ? 'secondary' : 'primary'}
+          size="sm"
+          className="min-h-[34px] px-4"
           onPress={toggle}
           disabled={pending}
         >
@@ -235,342 +348,16 @@ function SuggestedRow({ user: u }: { user: SuggestedUser }) {
   )
 }
 
-// Featured editorial lists — a carousel of light paper cards (mock A3).
-function ListsRail() {
-  const t = useT()
-  const q = useQuery({
-    queryKey: ['lists'],
-    queryFn: () => api.get<{ lists: FeaturedList[] }>('/lists'),
-    staleTime: 120_000,
-  })
-  const lists = q.data?.lists ?? []
-  if (lists.length === 0) return null
-  return (
-    <View className="mb-2">
-      <SpotRail title={t('discover.featured_lists')}>
-        {lists.map((l) => (
-          <SpotCard
-            key={l.slug}
-            variant="wide"
-            href={`/lists/${l.slug}`}
-            name={l.title}
-            coverImageId={l.coverImageId}
-            caption={
-              <View className="gap-0.5">
-                <Caption className="text-micro" numberOfLines={1}>
-                  {t('discover.list_progress', { mine: l.mine, total: l.total })}
-                </Caption>
-                <Caption className="text-micro text-text-faint" numberOfLines={1}>
-                  {listAuthorLabel(l)}
-                </Caption>
-              </View>
-            }
-          />
-        ))}
-      </SpotRail>
-    </View>
-  )
-}
-
-// "Este finde" (M21) — same SpotRail/wide-SpotCard idiom as ListsRail right
-// above, one row down. Always the weekend window, never tonight/upcoming —
-// the feed is a single glance, not a place to pick a date range; Explore's
-// Eventos tab is where that lives. Hidden entirely when nothing's on this
-// weekend, same "just disappear" gate as ListsRail.
-function EventsRail() {
-  const t = useT()
-  const q = useQuery({
-    queryKey: ['events', 'weekend'],
-    queryFn: () => api.get<{ events: EventSummary[] }>('/events?when=weekend'),
-    staleTime: 120_000,
-  })
-  const list = q.data?.events ?? []
-  const now = useNow()
-  if (list.length === 0) return null
-  return (
-    <View className="mb-2">
-      <SpotRail title={t('discover.this_weekend')}>
-        {list.map((e) => (
-          <EventMiniCard key={e.id} e={e} now={now} />
-        ))}
-      </SpotRail>
-    </View>
-  )
-}
-
-// The skeleton holds the SAME shapes as the loaded feed so nothing reflows when
-// data arrives (mock A1).
+// The skeleton holds the SAME shapes as the loaded feed so nothing reflows when data
+// arrives: friend cards, 112 tall.
 function FeedSkeleton() {
   return (
-    <View>
-      <Skeleton height={12} width={110} className="mb-3 mt-5" />
-      <View className="mb-4 flex-row gap-3">
-        {[0, 1, 2].map((i) => (
-          <View key={i} className="w-40">
-            <Skeleton height={96} />
-            <Skeleton height={13} width="80%" className="mt-2" />
-            <Skeleton height={10} width="55%" className="mt-1" />
-          </View>
-        ))}
-      </View>
+    <View className="px-4 pt-1">
       {[0, 1, 2, 3].map((i) => (
-        <View key={i} className="flex-row items-start gap-3">
-          <Skeleton height={36} width={36} className="mt-3" />
-          <View className="flex-1 border-line border-b py-3">
-            <View className="flex-row items-start gap-3">
-              <View className="flex-1">
-                <Skeleton height={15} width="80%" />
-                <Skeleton height={13} width="55%" className="mt-1" />
-              </View>
-              <Skeleton height={30} width={40} />
-            </View>
-            <Skeleton height={18} width="90%" className="mt-2" />
-            <Skeleton height={20} width={20} className="mt-2" />
-          </View>
+        <View key={i} className="mb-2.5 overflow-hidden rounded-card">
+          <Skeleton height={112} />
         </View>
       ))}
     </View>
   )
 }
-
-// Only the first screenful rises in, and each post only ever once: FlatList
-// re-mounts cells as they scroll back into view and mounts new pages near the
-// viewport, which used to replay a delayed fade on screen — cards popping in
-// late, blank gaps on a fast scroll.
-const animatedPosts = new Set<string>()
-function feedEntering(id: string, index: number) {
-  if (index >= 6 || animatedPosts.has(id)) return undefined
-  animatedPosts.add(id)
-  return FadeInDown.duration(280).delay(index * 60)
-}
-
-// Each post is a white card on the cream ground (founder's mock, Sept 2026 —
-// replacing M9's flat hairline rows): who did it and when, the place with its
-// photo and the friend's score, the note, a preview of the latest comment,
-// then the action bar (cheers · comments · Quiero probar). A dish post leads
-// with its photo instead. The whole card taps through to the place (or the
-// dish); the avatar, the comment row and each action keep their own targets —
-// nested plain Pressables, where RN gives the innermost one the touch.
-//
-// Wrapped in memo() (perf pass): paired with the hoisted `renderFeedItem`
-// above, so a screen-level re-render (pull-to-refresh, fetchNextPage, a
-// single CheersButton tap) doesn't force every mounted card to re-render.
-const FeedCard = memo(function FeedCard({ item, index = 0 }: { item: FeedItem; index?: number }) {
-  const t = useT()
-  const router = useRouter()
-  const firstName = (item.user.name || item.user.handle || 'm').split(' ')[0] ?? 'm'
-  // Reporting the note (App Store 1.2). Two ways into the same sheet: the
-  // "···" in the card header, because 1.2 wants reporting "clearly available"
-  // and a long-press nobody can see isn't, and the long-press on the note
-  // itself, kept because people already reach for it.
-  const reportNote = useMutation({
-    mutationFn: ({ reason, noteId }: { reason: string; noteId: string }) =>
-      api.post('/moderation/reports', { targetType: 'vibe_note', targetId: noteId, reason }),
-    onSuccess: () => toast({ message: t('common.reported') }),
-    onError: () => toast({ variant: 'error', message: t('common.report_error') }),
-  })
-  const noteId = item.noteId
-  const onReportNote =
-    item.note && noteId
-      ? async () => {
-          const reason = await pickReportReason('vibe_note')
-          if (reason) reportNote.mutate({ reason, noteId })
-        }
-      : undefined
-  const meta = [
-    priceLabel(item.restaurant.priceTier),
-    cuisineLabel(item.restaurant.cuisine),
-    item.neighborhood,
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const isDish = Boolean(item.dishImage)
-  const href: Href = isDish && item.dishId ? `/dish/${item.dishId}` : `/r/${item.restaurant.id}`
-  const openComments = () => router.push(`/comments/${item.rankingId}`)
-  const commentCount = item.commentCount ?? 0
-
-  return (
-    <Animated.View entering={feedEntering(item.rankingId, index)} className="mb-3">
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push(href)}
-        className="rounded-card border border-line bg-surface p-4 active:opacity-90"
-      >
-        {/* Who + when */}
-        <View className="flex-row items-center gap-3">
-          <Pressable
-            accessibilityRole="button"
-            hitSlop={8}
-            onPress={() => router.push(`/u/${item.user.id}`)}
-            className="active:opacity-70"
-          >
-            <Avatar
-              name={item.user.name || item.user.handle || 'm'}
-              src={item.user.image}
-              size={40}
-            />
-          </Pressable>
-          <View className="flex-1">
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={MAX_SCALE}
-              className="font-ui text-subhead text-text"
-            >
-              <Text
-                className="font-ui-semibold"
-                onPress={() => router.push(`/u/${item.user.id}`)}
-                suppressHighlighting
-              >
-                {firstName}
-              </Text>{' '}
-              {isDish ? t('discover.posted_dish') : t('discover.ranked_verb')}
-            </Text>
-            <Caption>{timeAgo(item.rankedAt)}</Caption>
-          </View>
-          {/* The house per-row menu ("···", as on a ranking card). A nested
-              plain Pressable, so RN hands it the touch instead of the card's
-              tap-through to the place. Only on posts that carry a note: a dish
-              post's photo and caption are reportable on the dish page the card
-              opens, and its author from their passport — the note was the one
-              piece of UGC here with no visible path. */}
-          {onReportNote ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('report.note_a11y')}
-              onPress={onReportNote}
-              hitSlop={8}
-              className="-mr-1 h-11 w-8 items-center justify-center active:opacity-60"
-            >
-              <MoreIcon size={18} color="text-faint" />
-            </Pressable>
-          ) : null}
-        </View>
-
-        {isDish ? (
-          <View className="mt-3 h-56 overflow-hidden rounded-sm bg-bg-sunk">
-            <Image
-              source={{ uri: imageUrl(item.dishImage, { w: 900, h: 700 }) ?? undefined }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              transition={120}
-            />
-          </View>
-        ) : null}
-
-        {/* The place — photo, name, one line of meta, the friend's score */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(`/r/${item.restaurant.id}`)}
-          className="mt-3 flex-row items-center gap-3 active:opacity-70"
-        >
-          <PlaceCover
-            name={item.restaurant.name}
-            coverImageId={item.restaurant.coverImageId}
-            size={{ w: 160, h: 160 }}
-            className="h-14 w-14 rounded-sm"
-          />
-          <View className="flex-1">
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={MAX_SCALE}
-              className="font-ui-semibold text-subhead text-text"
-            >
-              {isDish && item.dishName
-                ? `${item.dishName} · ${item.restaurant.name}`
-                : item.restaurant.name}
-            </Text>
-            {meta ? (
-              <Caption className="mt-[2px]" numberOfLines={1}>
-                {meta}
-              </Caption>
-            ) : null}
-          </View>
-          {isDish ? (
-            <ChevronIcon size={14} color="text-muted" />
-          ) : (
-            <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
-          )}
-        </Pressable>
-
-        {item.note ? (
-          <Text
-            selectable
-            numberOfLines={3}
-            onLongPress={onReportNote}
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-3 font-serif text-serif-md text-text-2"
-          >
-            “{item.note}”
-          </Text>
-        ) : null}
-
-        {/* Latest comment + "Ver los N comentarios" */}
-        {item.lastComment ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('comments.open')}
-            onPress={openComments}
-            className="mt-3 active:opacity-70"
-          >
-            <Text
-              numberOfLines={2}
-              maxFontSizeMultiplier={MAX_SCALE}
-              className="font-ui text-label text-text-2"
-            >
-              <Text className="font-ui-semibold text-text">
-                {(item.lastComment.user.name || item.lastComment.user.handle || '').split(' ')[0]}
-              </Text>{' '}
-              {item.lastComment.body}
-            </Text>
-            {commentCount > 1 ? (
-              <Caption className="mt-1">{t('comments.view_all', { n: commentCount })}</Caption>
-            ) : null}
-          </Pressable>
-        ) : null}
-
-        {/* Action bar */}
-        <View className="mt-3 flex-row items-center gap-4">
-          <CheersButton
-            target={{ kind: 'ranking', id: item.rankingId }}
-            count={item.cheersCount ?? 0}
-            cheered={item.cheeredByMe ?? false}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('comments.open')}
-            onPress={openComments}
-            hitSlop={{ top: 12, bottom: 12 }}
-            className="min-w-[44px] flex-row items-center gap-1.5 active:opacity-70"
-          >
-            <CommentIcon size={20} color="text-muted" />
-            {commentCount > 0 ? (
-              <Text
-                style={DATA_FIGURES}
-                maxFontSizeMultiplier={MAX_SCALE}
-                className="font-ui-medium text-label text-text-muted"
-              >
-                {commentCount}
-              </Text>
-            ) : null}
-          </Pressable>
-          <View className="flex-1" />
-          {isDish && item.dishId ? (
-            <SaveButton
-              target={{ kind: 'dish', id: item.dishId }}
-              initial={item.dishSaved ?? false}
-              name={item.dishName || item.restaurant.name}
-              text={t('feed.want_to_try')}
-            />
-          ) : (
-            <SaveButton
-              target={{ kind: 'restaurant', id: item.restaurant.id }}
-              initial={item.restaurantSaved ?? false}
-              name={item.restaurant.name}
-              text={t('feed.want_to_try')}
-            />
-          )}
-        </View>
-      </Pressable>
-    </Animated.View>
-  )
-})

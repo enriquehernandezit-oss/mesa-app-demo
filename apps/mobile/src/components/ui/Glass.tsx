@@ -35,16 +35,24 @@ const TOKENS: Record<GlassVariant, { tint: ColorToken; line: ColorToken; fallbac
 export function Glass({
   variant = 'bar',
   radius = 999,
+  solid,
   style,
   children,
   ...rest
-}: ViewProps & { variant?: GlassVariant; radius?: number; children?: ReactNode }) {
+}: ViewProps & {
+  variant?: GlassVariant
+  radius?: number
+  // Skip the material and use the near-opaque fallback everywhere. For a bar that sits
+  // over TEXT (a sticky header): the material lets the words behind it show through.
+  solid?: boolean
+  children?: ReactNode
+}) {
   const theme = useResolvedTheme()
   const tokens = TOKENS[variant]
   const tint = useColor(tokens.tint)
   const line = useColor(tokens.line)
   const fallback = useColor(tokens.fallback)
-  const material = isLiquidGlassAvailable()
+  const material = !solid && isLiquidGlassAvailable()
   return (
     <View
       style={[

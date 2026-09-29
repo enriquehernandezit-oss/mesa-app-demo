@@ -22,20 +22,14 @@ import { ApiError, api } from '@/lib/api'
 import { importContactsWithNames } from '@/lib/contacts'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
-import type { ContactMatchUser, FriendSuggestion, SuggestionReason } from '@/lib/types'
+import { reasonLine } from '@/lib/suggestionReason'
+import type { ContactMatchUser, FriendSuggestion } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
 
 // Find friends (M18) — the v1 (M12.5) invite card + suggestions, now joined
 // by contacts (opt-in "let them find you" + search-my-contacts) and an
 // Instagram import. Reached from Profile, the empty feed, Settings and the
 // followers screen.
-
-function reasonLine(t: ReturnType<typeof useT>, reason: SuggestionReason): string {
-  if (reason.kind === 'mutual')
-    return t('friends.reason_mutual', { name: reason.name, n: reason.extraCount })
-  if (reason.kind === 'taste') return t('friends.reason_taste', { n: reason.percent })
-  return t('friends.reason_popular')
-}
 
 // Half the route's own 2000 cap — headroom for a long address book without
 // either side having to think about the limit again.

@@ -169,8 +169,12 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   ranked), a cream save circle, and **Directions**.
 - **Place page:** the photo _is_ the page — glass back and score, a frosted name panel (serif 46) and tag panel — with the details rising on scroll (stats: Everyone / Friends / You; friends'
   notes; dishes; info; map).
-- **Feed:** a greeting header (no wordmark), pills **For you / Friends / Popular / Events /
-  Lists**, "Your six", one **Tonight** hero (or "Tonight's pick" with no events), friend cards.
+- **Feed:** a greeting header (avatar, search chip, bell; no wordmark) and pills **For you / Friends /
+  Events / Lists** (**Popular** joins with its API, D10; "Your six" and the **Tonight** hero with theirs,
+  D8–D9). Friend cards come in three shapes by the picture rule; a "People you may know" shelf follows
+  every 6th card; "You're caught up · older below" marks where you'd stopped (SecureStore
+  `mesa.feed_seen`, read once per visit); the end card offers Explore and Find friends. Once the inline
+  pills scroll away, a solid bar pins them to the top.
 - **Your list:** a podium — #1 a large photo card with a giant serif numeral, #2/#3 as halves.
 - **Sheets** are bottom sheets (r34, grabber). **Settings** are inset grouped rows (r22, 54pt).
 - **Events:** one hero card; kinds by icon; no rainbow; "live" is the accent.

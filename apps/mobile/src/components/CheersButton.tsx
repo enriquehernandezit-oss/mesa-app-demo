@@ -33,11 +33,14 @@ export function CheersButton({
   count,
   cheered,
   className,
+  compact,
 }: {
   target: CheersTarget
   count: number
   cheered: boolean
   className?: string
+  // A smaller glyph and count, for a card's dense social line.
+  compact?: boolean
 }) {
   const t = useT()
   const [on, setOn] = useState(cheered)
@@ -134,16 +137,20 @@ export function CheersButton({
       accessibilityLabel={on ? t('cheers.remove') : t('cheers.give')}
       onPress={onTap}
       hitSlop={{ top: 12, bottom: 12 }}
-      className={`min-w-[44px] flex-row items-center gap-1.5 active:opacity-70 ${className ?? ''}`}
+      className={`${compact ? 'min-w-[32px]' : 'min-w-[44px]'} flex-row items-center gap-1.5 active:opacity-70 ${className ?? ''}`}
     >
       <Animated.View style={style}>
-        {on ? <HeartFilledIcon size={20} /> : <HeartIcon size={20} color="text-muted" />}
+        {on ? (
+          <HeartFilledIcon size={compact ? 15 : 20} />
+        ) : (
+          <HeartIcon size={compact ? 15 : 20} color="text-muted" />
+        )}
       </Animated.View>
       {n > 0 ? (
         <Text
           style={DATA_FIGURES}
           maxFontSizeMultiplier={MAX_SCALE}
-          className="font-ui-medium text-label text-text-muted"
+          className={`font-ui-medium text-text-muted ${compact ? 'text-micro' : 'text-label'}`}
         >
           {n}
         </Text>

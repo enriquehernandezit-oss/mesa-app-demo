@@ -63,7 +63,7 @@ const day = {
   // Small controls and pills set on a photograph: a dark-tinted glass that reads the
   // same in both themes (a photo is its own dark island). `pglass-fallback` is the
   // stand-in where there is no material.
-  '--pglass': 'rgba(20, 6, 6, 0.32)',
+  '--pglass': 'rgba(20, 6, 6, 0.5)',
   '--pglass-line': 'rgba(255, 255, 255, 0.18)',
   '--pglass-fallback': 'rgba(20, 6, 6, 0.62)',
   // The floating rank bar on the place page: dark in both themes.
@@ -130,7 +130,7 @@ const night = {
   '--hglass-fg': '#f4ede2',
   '--hglass-fallback': 'rgba(16, 11, 11, 0.84)',
   '--hchip': 'rgba(255, 255, 255, 0.1)',
-  '--pglass': 'rgba(20, 6, 6, 0.32)',
+  '--pglass': 'rgba(20, 6, 6, 0.5)',
   '--pglass-line': 'rgba(255, 255, 255, 0.18)',
   '--pglass-fallback': 'rgba(20, 6, 6, 0.62)',
   '--bar': '#1b1516',
