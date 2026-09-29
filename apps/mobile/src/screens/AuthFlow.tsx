@@ -212,7 +212,9 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       <SafeAreaView className="flex-1 bg-bg">
         <View className="flex-1 items-center justify-center gap-4 px-5">
           <Wordmark size={64} />
-          <Eyebrow className="text-accent">{t('auth.suspended_title')}</Eyebrow>
+          <Eyebrow className="uppercase tracking-eyebrow text-accent">
+            {t('auth.suspended_title')}
+          </Eyebrow>
           <Serif className="text-title text-center">{t('auth.suspended_headline')}</Serif>
           <Body className="max-w-[19rem] text-center">{t('auth.suspended_body')}</Body>
           <View className="mt-4 w-full">
@@ -259,7 +261,9 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             <View className="items-center gap-2">
               <Wordmark size={84} />
               <View className="items-center">
-                <Eyebrow className="text-accent">Revolución gastronómica</Eyebrow>
+                <Eyebrow className="uppercase tracking-eyebrow text-accent">
+                  Revolución gastronómica
+                </Eyebrow>
                 <View className="flex-row items-baseline">
                   <Serif className="text-serif-sm text-text">Primer objetivo: SDQ</Serif>
                   <BlinkingCursor />

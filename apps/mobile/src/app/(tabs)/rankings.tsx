@@ -96,7 +96,7 @@ export default function RankingsTab() {
     tabParam === 'saved' ? 'saved' : tabParam === 'barrios' ? 'barrios' : 'mine',
   )
   // Saved is split three ways — the places you want to try, dishes, events —
-  // behind its own sliding switcher. The member's named lists used to sit
+  // behind its own switcher. The member's named lists used to sit
   // above it in a rail; they have their own screen now (app/collections/
   // index.tsx, reached from Profile) so this tab is only what you saved.
   const [savedKind, setSavedKind] = useState<SavedKind>(

@@ -135,9 +135,10 @@ be told Mesa's _resolved_ theme explicitly (`getResolvedTheme()`), because Auto
 turns Night at 6pm on a light-mode phone and the system's own guess would be
 wrong. A control that lives inside a scrolling page is content, not chrome — that
 is why the view-switchers are Mesa's own tokened `Segmented` (components/ui: a
-sunk track with a white sliding thumb), not the native UISegmentedControl.
+row of pills, the chosen one solid ink), not the native UISegmentedControl.
 Content objects (feed posts, ranking rows, rails, profile stats) are white
-`bg-surface` cards (`rounded-card`) on the cream ground.
+`bg-surface` cards (`rounded-card`, r24) on the cream ground, lifted by a warm
+shadow on Day only (`useLift()`); Night cards are flat.
 Burgundy is the one app-wide accent — no second hue, no pink, no brass, no
 rainbow. Event kinds are told apart by icon, not color (the `cat-*` tokens are an
 interim alias, deleted with the Explore milestone). Small accent text is cream at

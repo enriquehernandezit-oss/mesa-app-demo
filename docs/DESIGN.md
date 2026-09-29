@@ -80,7 +80,9 @@ Load-bearing notes:
 - **Photos carry their own dark island.** Text over a photograph is light-on-a-dark-scrim in
   _both_ themes; `on-photo*` and `photo-scrim` do not change per theme.
 - **`ink` is not called `solid`** because Tailwind's `border-solid` would then also set a border
-  color. Button _kinds_ are still `solid | chip | accent | ghost | glass | danger`.
+  color. `Button` keeps its `variant` names — `primary` (solid ink), `secondary` (the raised
+  chip), `accent` (burgundy), `ghost` (hairline), `destructive` (a danger ring) — rather than
+  renaming ~45 call sites to the boards' solid / chip / … vocabulary.
 - **Interim:** `cat-*`, `live*`, `on-cat`, `on-live` still exist so event surfaces keep working.
   They are burgundy by day and cream at night (they double as text) and are deleted with the
   Explore milestone. Event kinds are told apart by **icon**, never by hue.
@@ -105,19 +107,19 @@ line height in px. The wordmark is `<Wordmark>` (`components/ui`), `font-serif t
 feature (measured from the font file), so `tabular-nums` does nothing on serif numerals — right-align
 a stacked serif figure, or set a column of counts in the system font, where `tabular-nums` works.
 
-| Use                                           | Size / weight              |
-| --------------------------------------------- | -------------------------- |
-| Hero place name; "mesa" on splash and auth    | serif 46                   |
-| Large titles (Explore, Your list, Plans…)     | serif 40, line height 1.02 |
-| Greeting; "How was it?" / "Which was better?" | serif 33–34                |
-| Feed and event card titles; podium names      | serif 28                   |
-| Row names, friend-card place names, quotes    | serif 19–22                |
-| Podium numerals                               | serif 168 / 90 / 70        |
-| Section headers                               | UI 21/600                  |
-| Body, rows, fields, CTAs                      | UI 15–16 (CTA 16/600)      |
-| Pills, secondary labels                       | UI 14/600                  |
-| Meta                                          | UI 12.5 muted              |
-| Score words                                   | UI 11/600–700              |
+| Use                                           | Size / weight                               |
+| --------------------------------------------- | ------------------------------------------- |
+| Hero place name; "mesa" on splash and auth    | serif 46                                    |
+| Large titles (Explore, Your list, Plans…)     | serif 40, line height 1.02                  |
+| Greeting; "How was it?" / "Which was better?" | serif 33–34                                 |
+| Feed and event card titles; podium names      | serif 28                                    |
+| Row names, friend-card place names, quotes    | serif 19–22                                 |
+| Podium numerals                               | serif 168 / 90 / 70                         |
+| Section headers (`SectionHeader`)             | UI 21/600 (`text-section`)                  |
+| Body, rows, fields, CTAs                      | UI 15–16 (CTA 16/600)                       |
+| Pills, secondary labels                       | UI 14/600 (`text-pill`)                     |
+| Meta and eyebrows (`Eyebrow`)                 | UI 12.5/600 muted (`text-meta`), mixed case |
+| Score words                                   | UI 11/600–700                               |
 
 Serif needs generous line height (≈1.1× for titles) or it clips — set it in the size tuple, not
 per call site.
@@ -128,7 +130,11 @@ per call site.
   the rank bar (h70), toasts. **Circles** for every icon button.
 - **Radii:** cards 24, grouped lists and rows 22, stat tiles 20, friend cards 24, compare and
   end cards 28, photo heroes 28–32, frosted panels 30, sheets 34 (top corners), menus 16, fields 18.
-- **Depth:** a two-layer warm shadow (`--lift`) **in Day only**; Night has none. Never a black shadow.
+- **Depth:** a two-layer warm shadow (`--lift`) **in Day only**; Night has none. Never a black
+  shadow. In code: `useLift()` (`theme/useLift.ts`, the `LIFT` string in `vars.ts`) — spread it
+  into `style` on cards, fields and chip-fill controls; it is `undefined` at night.
+- **Radius classes:** `rounded` 18 (fields), `rounded-sm` 14, `rounded-group` 22, `rounded-card`
+  24, `rounded-hero` 30, `rounded-sheet` 34, `rounded-pill` (every capsule and circle).
 - **Glass:** translucent chrome (tab bar, sticky headers, toast) uses the `glass*` tokens over a
   real material on iOS 26 (`expo-glass-effect`), and the near-opaque `*-fallback` token where
   there is none. Photo panels use `hglass*`. Controls floating over photos are glass circles.

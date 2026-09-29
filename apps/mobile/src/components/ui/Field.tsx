@@ -3,6 +3,7 @@ import { Text, TextInput, View } from 'react-native'
 
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 // Every text input in Mesa. The same class string and muted placeholder were
 // copy-pasted across nine files, and two screens had already grown their own
@@ -15,8 +16,11 @@ import { useColor } from '@/theme/useColor'
 //   white keyboard. It follows Mesa's RESOLVED theme, not the OS's, because Auto
 //   turns Night at 6pm on a light-mode phone.
 //
-//   selectionColor — the caret and selection are brass, not iOS system blue,
-//   which is the one accent docs/DESIGN.md allows.
+//   selectionColor — the caret and selection follow the accent (burgundy by day,
+//   cream at night), not iOS system blue.
+//
+// The shape is Redesign 2's field: r18, 52pt, a white card on Day (with the warm
+// lift) and the night card colour on Night, no border — until it errors.
 //
 // Everything else passes through, so AutoFill hints (`textContentType`), return
 // keys, and submit handlers are set per call site where they mean something.
@@ -30,10 +34,11 @@ type FieldProps = React.ComponentProps<typeof TextInput> & {
   ref?: Ref<TextInput>
 }
 
-export function Field({ multilineBox, label, error, className, ref, ...props }: FieldProps) {
-  const placeholder = useColor('text-muted')
+export function Field({ multilineBox, label, error, className, style, ref, ...props }: FieldProps) {
+  const placeholder = useColor('text-faint')
   const accent = useColor('accent')
   const theme = useResolvedTheme()
+  const lift = useLift()
   const input = (
     <TextInput
       ref={ref}
@@ -41,8 +46,9 @@ export function Field({ multilineBox, label, error, className, ref, ...props }: 
       selectionColor={accent}
       keyboardAppearance={theme === 'night' ? 'dark' : 'light'}
       className={`rounded border bg-surface font-ui text-body text-text ${
-        error ? 'border-danger' : 'border-line'
-      } ${multilineBox ? 'min-h-[84px] p-3' : 'min-h-[52px] px-4'} ${className ?? ''}`}
+        error ? 'border-danger' : 'border-transparent'
+      } ${multilineBox ? 'min-h-[84px] p-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}
+      style={[lift, style]}
       {...props}
     />
   )
@@ -52,12 +58,10 @@ export function Field({ multilineBox, label, error, className, ref, ...props }: 
   return (
     <View>
       {label ? (
-        <Text className="mb-1 font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-text-muted">
-          {label}
-        </Text>
+        <Text className="mb-1.5 font-ui-semibold text-label text-text-muted">{label}</Text>
       ) : null}
       {input}
-      {error ? <Text className="mt-1 font-ui text-micro text-danger">{error}</Text> : null}
+      {error ? <Text className="mt-1.5 font-ui text-micro text-danger">{error}</Text> : null}
     </View>
   )
 }

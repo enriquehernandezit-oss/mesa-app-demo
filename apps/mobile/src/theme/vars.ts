@@ -176,6 +176,12 @@ const strip = (m: Record<string, string>) =>
 // a per-theme token. Raw hex is legal here and only here (docs/DESIGN.md).
 export const SHADOW = '#3c2814'
 
+// The two-layer warm "lift" under raised content — cards, fields, chip buttons and
+// pills. DAY ONLY: on black a shadow is invisible and a black one would be wrong, so
+// Night has none (`useLift()` returns nothing there). Two layers, as the boards draw
+// it: a tight contact shadow and a soft ambient one.
+export const LIFT = '0 1px 2px rgba(60, 40, 20, 0.07), 0 6px 18px rgba(60, 40, 20, 0.05)'
+
 // The map's own "you are here" marker (components/MesaMap.tsx) — deliberately
 // the same system blue Apple Maps/MapKit uses for a user-location dot, not a
 // brand token. The map itself is already native-styled chrome (Mapbox's own

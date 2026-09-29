@@ -1,34 +1,36 @@
-import { type ReactNode, startTransition, useEffect, useRef, useState } from 'react'
+import { type ReactNode, startTransition, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
   type PressableProps,
   ScrollView,
+  type StyleProp,
   Switch,
   Text,
   type TextProps,
   View,
   type ViewProps,
+  type ViewStyle,
 } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 
 import { ChevronIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { useColor } from '@/theme/useColor'
-import { SHADOW } from '@/theme/vars'
+import { useLift } from '@/theme/useLift'
+import type { ColorToken } from '@/theme/vars'
 
-// Mesa UI primitives, ported from apps/app/src/components/ui. Everything the app
-// renders composes from these so the brand rules (brass-only accent, serif
-// display, no stars) hold by default. Color/size come from the NativeWind token
-// theme (tailwind.config.js), so `className` reads the same as on the web.
-// `Display` (dead on web) and `ActionRail` (its Reserve/Order are in the cut
-// set) are intentionally not ported.
+// Mesa UI primitives. Everything the app renders composes from these so the brand
+// rules (one burgundy accent, upright serif display, no stars) hold by default.
+// Color/size/radius come from the NativeWind token theme (tailwind.config.js), and
+// the shapes are Redesign 2's (docs/DESIGN.md "Shape, depth, glass"): capsule
+// buttons and pills, r24 cards, r18 fields — raised on Day by a warm lift, flat
+// on Night.
 
 /* --- Type ---
  * Every Text in Mesa routes through these, which is where Dynamic Type is
@@ -93,7 +95,7 @@ export const Caption = ({ className, ...p }: TextProps & { className?: string })
 export const Eyebrow = ({ className, ...p }: TextProps & { className?: string }) => (
   <Text
     maxFontSizeMultiplier={MAX_SCALE}
-    className={`font-ui-semibold text-eyebrow uppercase tracking-eyebrow ${hasTextColor(className) ? '' : 'text-accent'} ${className ?? ''}`}
+    className={`font-ui-semibold text-meta ${hasTextColor(className) ? '' : 'text-text-muted'} ${className ?? ''}`}
     {...p}
   />
 )
@@ -119,9 +121,12 @@ export const Wordmark = ({ size = 40, className }: { size?: number; className?: 
   </Text>
 )
 
-/* --- Button --- */
-type ButtonProps = Omit<PressableProps, 'children'> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive'
+/* --- Button --- a capsule. `primary` is the solid ink CTA, `secondary` the raised
+   chip, `accent` the burgundy fill (the one loud action on a screen), `ghost` a
+   hairline, `destructive` a danger ring. md is the 54pt CTA; sm the 46pt inline one. */
+type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
+  style?: StyleProp<ViewStyle>
+  variant?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive'
   size?: 'md' | 'sm'
   icon?: ReactNode
   // Swaps the icon slot for a spinner and disables the button; the label stays,
@@ -130,17 +135,28 @@ type ButtonProps = Omit<PressableProps, 'children'> & {
   children: ReactNode
   className?: string
 }
-const BTN_BG: Record<NonNullable<ButtonProps['variant']>, string> = {
+type ButtonVariant = NonNullable<ButtonProps['variant']>
+const BTN_BG: Record<ButtonVariant, string> = {
   primary: 'bg-ink',
-  secondary: 'bg-transparent border border-line',
-  ghost: 'bg-transparent',
-  destructive: 'bg-danger',
+  secondary: 'bg-chip',
+  accent: 'bg-accent-fill',
+  ghost: 'border border-line-strong bg-transparent',
+  destructive: 'border border-danger bg-transparent',
 }
-const BTN_FG: Record<NonNullable<ButtonProps['variant']>, string> = {
+const BTN_FG: Record<ButtonVariant, string> = {
   primary: 'text-on-ink',
   secondary: 'text-text',
-  ghost: 'text-text-2',
-  destructive: 'text-on-accent',
+  accent: 'text-on-accent',
+  ghost: 'text-text',
+  destructive: 'text-danger',
+}
+// The spinner needs a resolved color, not a class — the same token as the label.
+const BTN_SPINNER: Record<ButtonVariant, ColorToken> = {
+  primary: 'on-ink',
+  secondary: 'text',
+  accent: 'on-accent',
+  ghost: 'text',
+  destructive: 'danger',
 }
 export const Button = ({
   variant = 'primary',
@@ -150,65 +166,65 @@ export const Button = ({
   children,
   className,
   disabled,
+  style,
   ...p
 }: ButtonProps) => {
   const sm = size === 'sm'
   const off = disabled || loading
-  // Ghost's taller tap target is a min-height default too, so it defers to a
-  // caller's own min-h on the same terms as the size defaults above.
-  const ghostMinH = variant === 'ghost' ? 'min-h-[44px]' : ''
+  const lift = useLift()
+  const spinnerColor = useColor(BTN_SPINNER[variant])
   const sizing = [
     WIDTH_KEY.test(className ?? '') ? '' : sm ? 'w-auto' : 'w-full',
-    MIN_H_KEY.test(className ?? '') ? '' : sm ? 'min-h-[40px]' : 'min-h-[52px]',
-    PX_KEY.test(className ?? '') ? '' : sm ? 'px-4' : 'px-5',
-    MIN_H_KEY.test(className ?? '') ? '' : ghostMinH,
+    MIN_H_KEY.test(className ?? '') ? '' : sm ? 'min-h-[46px]' : 'min-h-[54px]',
+    PX_KEY.test(className ?? '') ? '' : 'px-5',
   ]
     .filter(Boolean)
     .join(' ')
-  // ActivityIndicator needs a resolved color, not a class — pull it from the
-  // token layer so it tracks the theme (and stays hex-free per the design law).
-  const onNeutral = useColor('accent')
-  const onFilled = useColor('on-accent')
-  const spinnerColor = variant === 'secondary' || variant === 'ghost' ? onNeutral : onFilled
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(off), busy: Boolean(loading) }}
       disabled={off}
-      className={`${sizing} flex-row items-center justify-center gap-2 rounded active:opacity-90 ${BTN_BG[variant]} ${off ? 'opacity-45' : ''} ${className ?? ''}`}
-      style={
-        variant === 'primary'
-          ? {
-              shadowColor: SHADOW,
-              shadowOpacity: 0.35,
-              shadowRadius: 18,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 6,
-            }
-          : undefined
-      }
+      className={`${sizing} flex-row items-center justify-center gap-2 rounded-pill active:opacity-90 ${BTN_BG[variant]} ${off ? 'opacity-45' : ''} ${className ?? ''}`}
+      // The lift belongs to the raised kind only — a solid or hairline button on
+      // the cream ground reads as a button without one.
+      style={[variant === 'secondary' ? lift : undefined, style]}
       {...p}
     >
       {loading ? <ActivityIndicator size="small" color={spinnerColor} /> : icon}
-      <Text className={`font-ui-semibold text-label ${BTN_FG[variant]}`}>{children}</Text>
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className={`font-ui-semibold ${sm ? 'text-subhead' : 'text-body'} ${BTN_FG[variant]}`}
+      >
+        {children}
+      </Text>
     </Pressable>
   )
 }
 
-/* --- Card --- */
+/* --- Card --- a content object: r24, white on Day (lifted), the night surface on Night
+   (flat), no border. `raised` is the warmer inset step. */
 export const Card = ({
   raised,
   className,
+  style,
   ...p
-}: ViewProps & { raised?: boolean; className?: string }) => (
-  <View
-    className={`rounded border border-line p-5 ${raised ? 'bg-surface-raised' : 'bg-surface'} ${className ?? ''}`}
-    {...p}
-  />
-)
+}: ViewProps & { raised?: boolean; className?: string }) => {
+  const lift = useLift()
+  return (
+    <View
+      className={`rounded-card p-5 ${raised ? 'bg-surface-raised' : 'bg-surface'} ${className ?? ''}`}
+      style={[lift, style]}
+      {...p}
+    />
+  )
+}
 
-/* --- Chip --- the one chip in the app (md + sm; default/active/selected). */
-type ChipProps = Omit<PressableProps, 'children'> & {
+/* --- Chip --- the one pill in the app (md 36pt, sm 32pt): a raised capsule,
+   the chosen one solid ink. `active` is a trigger that is OPEN (a ring, not a
+   fill — it is "in progress", not "committed", and shouldn't look selected). */
+type ChipProps = Omit<PressableProps, 'children' | 'style'> & {
+  style?: StyleProp<ViewStyle>
   state?: 'default' | 'active' | 'selected'
   size?: 'sm' | 'md'
   icon?: ReactNode
@@ -228,63 +244,58 @@ export const Chip = ({
   chevron,
   children,
   className,
+  style,
   ...p
 }: ChipProps) => {
   const sm = size === 'sm'
-  const filled = state === 'selected'
-  // `active` used to collapse into the same filled look as `selected` at
-  // size="sm" only (`filled = state === 'selected' || (sm && state ===
-  // 'active')`) — so a sm trigger that's simply OPEN (Rankings' "Filtros"
-  // chip while its panel is showing) was visually identical to one that has
-  // filters APPLIED. `active` now gets the same outline treatment at both
-  // sizes: it's "in progress," not "committed," and shouldn't look like it.
-  const outlineActive = state === 'active'
-  // Small controls shrink under the finger on iOS; a full-width Button dims
-  // instead (a big primary action that shrinks reads as a gimmick), which is why
-  // this lives here and not on Button.
-  const press = 'active:scale-[0.97]'
-  const box = sm
-    ? `min-h-[36px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : outlineActive ? 'border-accent bg-transparent' : 'bg-surface border-line-strong'}`
-    : `min-h-[44px] min-w-[44px] rounded-pill border px-3 py-2 ${press} ${filled ? 'bg-accent-fill border-accent' : outlineActive ? 'border-accent bg-transparent' : 'border-line bg-transparent'}`
-  const fg = filled
-    ? 'text-on-accent'
-    : outlineActive
-      ? 'text-accent'
-      : sm
-        ? 'text-text'
-        : 'text-text-2'
-  const font = sm ? 'font-ui-medium text-micro' : 'font-ui-medium text-label'
+  const selected = state === 'selected'
+  const open = state === 'active'
+  const lift = useLift()
+  // A ring on every chip (transparent unless open) so opening one doesn't nudge the
+  // row by a pixel. Small controls shrink under the finger on iOS; a full-width
+  // Button dims instead (a big primary action that shrinks reads as a gimmick).
+  const box = `${sm ? 'min-h-[32px]' : 'min-h-[36px]'} flex-row items-center justify-center gap-1.5 rounded-pill border px-3.5 active:scale-[0.97] ${
+    selected
+      ? 'border-transparent bg-ink'
+      : open
+        ? 'border-accent bg-chip'
+        : 'border-transparent bg-chip'
+  }`
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: state !== 'default' }}
-      className={`flex-row items-center justify-center gap-2 active:opacity-80 ${box} ${className ?? ''}`}
+      // The visible pill is 32–36pt; the finger target is not.
+      hitSlop={sm ? 6 : 4}
+      className={`${box} ${className ?? ''}`}
+      style={[selected ? undefined : lift, style]}
       {...p}
     >
       {icon}
-      <Text className={`${font} ${fg}`}>{children}</Text>
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className={`font-ui-semibold ${sm ? 'text-label' : 'text-pill'} ${selected ? 'text-on-ink' : 'text-text'}`}
+      >
+        {children}
+      </Text>
       {chevron ? (
-        <View style={{ transform: [{ rotate: '90deg' }] }}>
-          <ChevronIcon
-            size={12}
-            color={filled ? 'on-accent' : outlineActive ? 'accent' : sm ? 'text' : 'text-2'}
-          />
+        <View style={{ transform: [{ rotate: '90deg' }], opacity: 0.7 }}>
+          <ChevronIcon size={12} color={selected ? 'on-ink' : 'text'} />
         </View>
       ) : null}
     </Pressable>
   )
 }
 
-/* --- Segmented --- one sunk track, the selected option a raised white thumb
-   that SLIDES to the tapped option. For mutually exclusive VIEW switches
-   (Rankeados/Quiero probar/Barrios, Lugares/Eventos, Day/Night/
-   Auto) — the founder's call to read these as one control instead of a row
-   of separate pills. Filters that can stack (Barrio ▾, Ocasión ▾) stay
-   Chips: they're not exclusive. The thumb is `surface-raised`, pure white on
-   Day, so it pops the same way the cards do against the cream ground.
-   The thumb is one absolutely positioned view animated on the UI thread
-   (translateX), so it glides even while the screen below is busy
-   re-rendering for the new view. */
+/* --- Segmented --- a row of equal pills for mutually exclusive VIEW switches
+   (Mine/Saved/Neighborhoods, Places/Events, Auto/Day/Night). The chosen one is a
+   solid ink pill, the rest raised chips — the same language as Chip, but one
+   control: exactly one is always on. Filters that can stack (a neighborhood, an
+   occasion) stay Chips.
+   A tap flips the pill at once and commits inside a transition, so the switch is
+   never held back by the screen below re-rendering for the new view (and
+   ExploreFilters' "Apply" can't run before a just-tapped price reached its
+   draft). A value change from outside — the prop — wins. */
 export function Segmented<T extends string>({
   value,
   options,
@@ -293,8 +304,10 @@ export function Segmented<T extends string>({
   className,
   accessibilityLabel,
 }: {
-  // null = nothing selected (no thumb) — only meaningful with `onClear`.
+  // null = nothing selected — only meaningful with `onClear`.
   value: T | null
+  // An `icon` is drawn by the caller, so it picks its own color: `on-ink` on the
+  // chosen pill, `text` on the others.
   options: { value: T; label: string; icon?: ReactNode }[]
   onChange: (v: T) => void
   // When set, tapping the selected option clears it (a filter row's "any").
@@ -302,81 +315,16 @@ export function Segmented<T extends string>({
   className?: string
   accessibilityLabel?: string
 }) {
-  // A tap starts the thumb's slide on the UI thread and commits at once, inside
-  // a transition — the slide keeps its frames while the caller re-renders, and
-  // the new view is never held back (committing only after the slide landed
-  // made every switch wait the animation out, and let ExploreFilters' "Apply"
-  // run before a just-tapped price reached its draft). A value change from
-  // outside (the prop) JUMPS the thumb instead — Rankings renders one of these
-  // per list, and the copy that becomes visible after a switch must already sit
-  // on the new option, not start a second slide of its own.
   const [local, setLocal] = useState(value)
-  const [segW, setSegW] = useState(0)
-  const propIndex = options.findIndex((o) => o.value === value)
-  // The thumb's position is the OPTION INDEX, never a pixel offset, multiplied
-  // by the measured width inside the worklet. A pixel offset is only valid for
-  // the width it was computed against, and that is what read as lag: Rankings
-  // mounts one copy of this per list and hides all but one with
-  // `display: 'none'`, so the copy a switch reveals was laid out at width 0 and
-  // could only place its thumb a frame AFTER it appeared. An index survives
-  // that — the copy is already on the right option the first frame it has a
-  // width, and any later re-measure just re-derives the offset in place.
-  const pos = useSharedValue(Math.max(0, propIndex))
-  // The index this copy is resting on or sliding toward, so the effect can tell
-  // a real outside change from the echo of this copy's own tap. The one-shot
-  // "was tapped" flag this replaces could not: it was spent on the first effect
-  // run, while the effect re-ran again inside the same slide whenever the
-  // switch changed the layout below it — which both callers do — landing a raw
-  // assignment mid-flight that teleported the thumb and cut the slide short.
-  const target = useRef(Math.max(0, propIndex))
-  const found = options.findIndex((o) => o.value === local)
-  useEffect(() => {
-    setLocal(value)
-    if (propIndex >= 0 && propIndex !== target.current) {
-      target.current = propIndex
-      pos.value = propIndex
-    }
-  }, [value, propIndex, pos])
-  const thumbOpacity = useSharedValue(found >= 0 ? 1 : 0)
-  useEffect(() => {
-    thumbOpacity.value = withTiming(found >= 0 ? 1 : 0, { duration: 160 })
-  }, [found, thumbOpacity])
-  const thumbStyle = useAnimatedStyle(() => ({
-    opacity: thumbOpacity.value,
-    transform: [{ translateX: pos.value * segW }],
-  }))
+  useEffect(() => setLocal(value), [value])
+  const lift = useLift()
   return (
     <View
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
-      onLayout={(e) => {
-        const w = (e.nativeEvent.layout.width - SEG_PAD * 2) / options.length
-        if (w !== segW) setSegW(w)
-      }}
-      className={`flex-row rounded-pill bg-bg-sunk ${className ?? ''}`}
-      style={{ padding: SEG_PAD }}
+      className={`flex-row gap-2 ${className ?? ''}`}
     >
-      {segW > 0 ? (
-        <Animated.View
-          pointerEvents="none"
-          className="absolute rounded-pill bg-surface-raised"
-          style={[
-            {
-              top: SEG_PAD,
-              bottom: SEG_PAD,
-              left: SEG_PAD,
-              width: segW,
-              shadowColor: SHADOW,
-              shadowOpacity: 0.18,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            },
-            thumbStyle,
-          ]}
-        />
-      ) : null}
-      {options.map((o, i) => {
+      {options.map((o) => {
         const on = o.value === local
         return (
           <Pressable
@@ -392,11 +340,12 @@ export function Segmented<T extends string>({
                 return
               }
               setLocal(o.value)
-              target.current = i
-              pos.value = withSpring(i, SEG_SPRING)
               startTransition(() => onChange(o.value))
             }}
-            className="min-h-[40px] flex-1 flex-row items-center justify-center gap-1.5 px-2"
+            style={on ? undefined : lift}
+            className={`min-h-[40px] flex-1 flex-row items-center justify-center gap-1.5 rounded-pill px-2 active:scale-[0.97] ${
+              on ? 'bg-ink' : 'bg-chip'
+            }`}
           >
             {o.icon}
             <Text
@@ -404,7 +353,7 @@ export function Segmented<T extends string>({
               numberOfLines={1}
               adjustsFontSizeToFit
               minimumFontScale={0.8}
-              className={`text-label ${on ? 'font-ui-semibold text-text' : 'font-ui-medium text-text-muted'}`}
+              className={`font-ui-semibold text-pill ${on ? 'text-on-ink' : 'text-text'}`}
             >
               {o.label}
             </Text>
@@ -414,14 +363,6 @@ export function Segmented<T extends string>({
     </View>
   )
 }
-const SEG_PAD = 4
-// Critically damped and quick (~180ms to rest, no overshoot), so the thumb
-// reads as keeping up with the finger rather than easing in behind it. A
-// spring rather than a fixed duration because a second tap mid-slide then
-// retargets from the thumb's current velocity, instead of restarting a whole
-// ramp across a now-shorter distance — which is what made switching back and
-// forth feel progressively slower.
-const SEG_SPRING = { damping: 26, stiffness: 320, mass: 0.6 }
 
 /* Horizontal scrolling row of chips. Full-bleed: every caller already sits
    inside a px-5-padded screen, which used to double up here and cap the
@@ -481,8 +422,8 @@ export const EmptyState = ({
   action?: ReactNode
 }) => (
   <View className="mt-6 items-center gap-2 px-5">
-    <Serif className="text-serif-sm text-center">{children}</Serif>
-    {body && <Body className="text-center">{body}</Body>}
+    <Serif className="text-serif-xl text-center text-text">{children}</Serif>
+    {body && <Body className="text-center text-text-muted">{body}</Body>}
     {action && <View className="mt-3">{action}</View>}
   </View>
 )
@@ -544,7 +485,7 @@ export const ErrorState = ({
   )
 }
 
-/* --- SectionHeader --- brass eyebrow + optional right-aligned action. */
+/* --- SectionHeader --- a 21/600 title with an optional right-aligned action. */
 export const SectionHeader = ({
   children,
   action,
@@ -552,8 +493,11 @@ export const SectionHeader = ({
   children: ReactNode
   action?: ReactNode
 }) => (
-  <View className="mb-3 mt-5 flex-row items-baseline justify-between gap-3">
-    <Text className="font-ui-semibold text-eyebrow uppercase tracking-eyebrow text-accent">
+  <View className="mb-3 mt-6 flex-row items-baseline justify-between gap-3">
+    <Text
+      maxFontSizeMultiplier={MAX_SCALE}
+      className="shrink font-ui-semibold text-section text-text"
+    >
       {children}
     </Text>
     {action}

@@ -4,24 +4,22 @@ import { Circle, Path, Rect, Svg } from 'react-native-svg'
 import { useColor } from '@/theme/useColor'
 import type { ColorToken } from '@/theme/vars'
 
-// One icon language for the whole app, ported from apps/app/src/components/ui/
-// icons.tsx. Same geometry: 24 viewBox, 1.6 stroke, round caps/joins. On the web
-// these inherited `currentColor`; in RN there's no currentColor, so the base
-// takes a semantic `color` token (default 'text') resolved for the active theme —
-// which keeps "themes for free" and matches how className colors are chosen.
+// One icon language for the whole app: 24 viewBox, a 1.9 stroke (Redesign 2 draws
+// 1.8–2.2), round caps/joins. There's no currentColor in RN, so the base takes a
+// semantic `color` token (default 'text') resolved for the active theme — which
+// keeps "themes for free" and matches how className colors are chosen.
 type IconProps = {
   size?: number
   color?: ColorToken
-  // Per-instance override of the shared 1.6 default. Additive: every existing
-  // call site is untouched unless it opts in (the tab bar does, for icons
-  // that need to hold their own next to a filled shape — see MesaTabBar.tsx).
+  // Per-instance override of the shared default (the tab bar passes its own, for
+  // icons that need to hold their own next to a filled shape).
   strokeWidth?: number
 }
 
 function Icon({
   size = 16,
   color = 'text',
-  strokeWidth = 1.6,
+  strokeWidth = STROKE,
   children,
 }: IconProps & { children: ReactNode }) {
   const stroke = useColor(color)
@@ -41,6 +39,8 @@ function Icon({
   )
 }
 
+const STROKE = 1.9
+
 // Filled variant needs the fill color too (HeartFilled).
 function FilledIcon({
   size = 16,
@@ -55,7 +55,7 @@ function FilledIcon({
       viewBox="0 0 24 24"
       fill={c}
       stroke={c}
-      strokeWidth={1.6}
+      strokeWidth={STROKE}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -296,5 +296,43 @@ export const ClockIcon = (p: IconProps) => (
 export const WhatsAppIcon = (p: IconProps) => (
   <Icon {...p}>
     <Path d="M4 20l1.2-3.8A8 8 0 1 1 8 19l-4 1ZM9.2 8.6c.2 2.9 2.4 5.3 5.4 6l1-1.3-1.8-1-1 .8a4.6 4.6 0 0 1-2.1-2.1l.8-1-1-1.8-1.3.4" />
+  </Icon>
+)
+
+// Redesign 2 additions. (Wine, music, sort, menu and nav already exist above as
+// WineGlassIcon, MusicIcon, SortIcon, MenuIcon and DirectionsIcon.)
+// "@" — mentions and handles.
+export const AtIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="4" />
+    <Path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-3.5 7.1" />
+  </Icon>
+)
+// A paper plane — sending a comment.
+export const SendIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z" />
+  </Icon>
+)
+// Two sliders — filters.
+export const SlidersIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+    <Circle cx="16" cy="7" r="2" />
+    <Circle cx="10" cy="17" r="2" />
+  </Icon>
+)
+export const CameraIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M4 8h3l2-2.5h6L17 8h3v11H4Z" />
+    <Circle cx="12" cy="13" r="3.5" />
+  </Icon>
+)
+// A crosshair — "near me" / recenter the map.
+export const LocateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Circle cx="12" cy="12" r="3" />
+    <Circle cx="12" cy="12" r="7.5" />
+    <Path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22" />
   </Icon>
 )

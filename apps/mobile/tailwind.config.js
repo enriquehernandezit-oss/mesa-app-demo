@@ -99,7 +99,10 @@ module.exports = {
         display: [40, '44px'],
         title: [28, '31px'],
         rank: [40, '44px'],
+        section: 21,
         body: 16,
+        pill: 14,
+        meta: 12.5,
         label: 13,
         eyebrow: 11,
         // Smallest sans content size: small chip labels, photo pills, badge
@@ -109,14 +112,22 @@ module.exports = {
         subhead: 15,
         'serif-sm': [19, '22px'],
         'serif-md': [21, '24px'],
+        'serif-xl': [26, '29px'],
         'serif-lg': [34, '37px'],
       },
+      // Big soft radii (docs/DESIGN.md "Shape"). DEFAULT is the field radius; the rest
+      // are named for what wears them. Capsules (buttons, pills, bars) are `pill`.
       borderRadius: {
-        DEFAULT: 14,
-        sm: 10,
-        // The white content cards on the cream ground (feed posts, ranking
-        // rows, profile stats, featured lists) — softer than DEFAULT's 14.
-        card: 20,
+        DEFAULT: 18,
+        sm: 14,
+        // Content cards on the ground: feed posts, ranking rows, profile stats.
+        card: 24,
+        // Inset grouped lists and their rows (Settings).
+        group: 22,
+        // Photo heroes and frosted panels.
+        hero: 30,
+        // Bottom sheets (top corners).
+        sheet: 34,
         pill: 999,
       },
       letterSpacing: {

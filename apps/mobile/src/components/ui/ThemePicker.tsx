@@ -6,10 +6,9 @@ import { MoonIcon, SunIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { type ThemeChoice, useTheme } from '@/theme/ThemeProvider'
 
-// Apariencia — Auto / Day / Night as one segmented control (the
-// founder's mock: one sunk track, a white thumb, sun/moon glyphs), replacing
-// the three separate swatch pills. Applies immediately and persists
-// (ThemeProvider owns both).
+// Apariencia — Auto / Day / Night as one segmented control (the chosen pill is
+// solid, the others raised; sun/moon glyphs). Applies immediately and persists
+// (ThemeProvider owns both). The three literal-swatch tiles arrive with Settings.
 export function ThemePicker() {
   const t = useT()
   const { choice, setChoice } = useTheme()
@@ -36,12 +35,12 @@ export function ThemePicker() {
           {
             value: 'day',
             label: t('settings.theme_day'),
-            icon: <SunIcon size={15} color={shown === 'day' ? 'text' : 'text-muted'} />,
+            icon: <SunIcon size={15} color={shown === 'day' ? 'on-ink' : 'text'} />,
           },
           {
             value: 'night',
             label: t('settings.theme_night'),
-            icon: <MoonIcon size={14} color={shown === 'night' ? 'text' : 'text-muted'} />,
+            icon: <MoonIcon size={14} color={shown === 'night' ? 'on-ink' : 'text'} />,
           },
         ]}
       />
