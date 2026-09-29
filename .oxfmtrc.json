@@ -12,5 +12,5 @@
   "bracketSameLine": false,
   "bracketSpacing": true,
   "sortImports": true,
-  "ignorePatterns": ["packages/db/drizzle/**", "apps/mobile/assets/**"]
+  "ignorePatterns": ["packages/db/drizzle/**", "apps/mobile/assets/**", "docs/design/**"]
 }
