@@ -380,6 +380,12 @@ export const UserPlusIcon = (p: IconProps) => (
     <Path d="M3 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M19 8v6M16 11h6" />
   </Icon>
 )
+// A flag on a pole — "Report".
+export const FlagIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+  </Icon>
+)
 // A tray with an arrow into it — "Choose file" (a file you downloaded).
 export const DownloadIcon = (p: IconProps) => (
   <Icon {...p}>

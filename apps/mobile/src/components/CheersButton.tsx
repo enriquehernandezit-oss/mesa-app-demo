@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { MAX_SCALE } from '@/components/ui'
+import { Glass } from '@/components/ui/Glass'
 import { HeartFilledIcon, HeartIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
@@ -34,6 +35,7 @@ export function CheersButton({
   cheered,
   className,
   compact,
+  variant = 'default',
 }: {
   target: CheersTarget
   count: number
@@ -41,6 +43,8 @@ export function CheersButton({
   className?: string
   // A smaller glyph and count, for a card's dense social line.
   compact?: boolean
+  // 'photo': a frosted round control laid on a photograph (a dish's hero).
+  variant?: 'default' | 'photo'
 }) {
   const t = useT()
   const [on, setOn] = useState(cheered)
@@ -129,6 +133,38 @@ export function CheersButton({
       tapLight()
     }
     toggle.mutate(next)
+  }
+
+  if (variant === 'photo') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={on ? t('cheers.remove') : t('cheers.give')}
+        onPress={onTap}
+        hitSlop={4}
+        className={`active:opacity-80 ${className ?? ''}`}
+      >
+        <Glass
+          variant="panel"
+          radius={22}
+          className="h-[44px] min-w-[44px] flex-row items-center justify-center gap-1.5 px-3"
+        >
+          <Animated.View style={style}>
+            {on ? <HeartFilledIcon size={20} /> : <HeartIcon size={20} color="hglass-fg" />}
+          </Animated.View>
+          {n > 0 ? (
+            <Text
+              style={DATA_FIGURES}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-label text-hglass-fg"
+            >
+              {n}
+            </Text>
+          ) : null}
+        </Glass>
+      </Pressable>
+    )
   }
 
   return (

@@ -4,14 +4,26 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-import { Button, Caption, Chip, ErrorState, Eyebrow, RowsSkeleton, Title } from '@/components/ui'
-import { CheckIcon, CloseIcon, PlusIcon } from '@/components/ui/icons'
+import { Group } from '@/components/SettingsRow'
+import {
+  Button,
+  Caption,
+  Card,
+  Chip,
+  ErrorState,
+  IconButton,
+  MAX_SCALE,
+  RowsSkeleton,
+} from '@/components/ui'
+import { CheckCircle } from '@/components/ui/CheckCircle'
+import { CloseIcon, PlusIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
 import type { CollectionSummary } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 
 // Save to a named list (M19) — a page sheet reached from SaveButton's
@@ -26,7 +38,9 @@ import { useColor } from '@/theme/useColor'
 //
 // Redesigned (Sept 2026): was a formSheet at a 0.5 detent whose flex-1 root
 // mis-laid itself out (rows shifted off the left edge, the title clipped);
-// it's a plain page sheet now, with the create form inline.
+// it's a plain page sheet now, with the create form inline. Redesign 2: the item's name over a
+// serif title, the lists as one grouped card with a check circle each, and the new-list form a
+// card with a dashed cover square, a serif name line, suggestion pills and a solid Create.
 const SUGGESTIONS = {
   es: ['Pizza', 'Date night', 'Brunch', 'Con amigos', 'Para impresionar'],
   en: ['Pizza', 'Date night', 'Brunch', 'With friends', 'To impress'],
@@ -37,6 +51,8 @@ export default function SaveToListSheet() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
+  const accent = useColor('accent')
+  const keyboard = useResolvedTheme() === 'night' ? 'dark' : 'light'
   const { kind, id, name } = useLocalSearchParams<{
     kind?: 'restaurant' | 'dish'
     id?: string
@@ -112,31 +128,38 @@ export default function SaveToListSheet() {
 
   return (
     <KeyboardAvoidingView behavior="padding" className="flex-1 bg-bg">
-      <View className="flex-row items-start justify-between px-5 pt-5">
-        <View className="flex-1 pr-3">
+      <View className="flex-row items-start justify-between gap-3 px-5 pt-5">
+        <View className="min-w-0 flex-1">
           {itemName ? (
-            <Eyebrow numberOfLines={1} className="mb-1">
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-label text-text-muted"
+            >
               {itemName}
-            </Eyebrow>
+            </Text>
           ) : null}
-          <Title>{hasItem ? t('saveToList.title') : t('saveToList.new_list_title')}</Title>
-          {hasItem ? <Caption className="mt-1">{t('saveToList.subtitle')}</Caption> : null}
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-1 font-serif text-serif-lg text-text"
+          >
+            {hasItem ? t('saveToList.title') : t('saveToList.new_list_title')}
+          </Text>
+          {hasItem ? (
+            <Caption className="mt-1.5 text-pill">{t('saveToList.subtitle')}</Caption>
+          ) : null}
         </View>
-        <Pressable
-          accessibilityRole="button"
+        <IconButton
           accessibilityLabel={t('comments.close')}
           onPress={() => router.back()}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-pill bg-bg-sunk active:opacity-70"
-        >
-          <CloseIcon size={18} />
-        </Pressable>
+          icon={<CloseIcon size={18} color="text" />}
+        />
       </View>
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pt-5 pb-10"
+        contentContainerClassName="px-4 pt-5 pb-10"
       >
         {hasItem ? (
           q.isPending ? (
@@ -144,7 +167,7 @@ export default function SaveToListSheet() {
           ) : q.isError ? (
             <ErrorState onRetry={() => q.refetch()}>{t('saveToList.load_error')}</ErrorState>
           ) : lists.length > 0 ? (
-            <View className="overflow-hidden rounded-card border border-line bg-surface">
+            <Group>
               {lists.map((list, i) => {
                 const checked = Boolean(list.itemId)
                 return (
@@ -155,38 +178,47 @@ export default function SaveToListSheet() {
                     onPress={() => {
                       if (!toggle.isPending) toggle.mutate(list)
                     }}
-                    className={`min-h-[60px] flex-row items-center gap-3 px-4 active:bg-bg ${i === lists.length - 1 ? '' : 'border-line border-b'}`}
+                    className={`min-h-[60px] flex-row items-center gap-3 py-2.5 active:opacity-70 ${i === lists.length - 1 ? '' : 'border-line border-b'}`}
                   >
-                    <View className="flex-1">
-                      <Text numberOfLines={1} className="font-ui-semibold text-body text-text">
+                    <View className="min-w-0 flex-1">
+                      <Text
+                        numberOfLines={1}
+                        maxFontSizeMultiplier={MAX_SCALE}
+                        className="font-ui-semibold text-body text-text"
+                      >
                         {list.name}
                       </Text>
-                      <Caption>{t('saveToList.item_count', { n: list.itemCount })}</Caption>
+                      <Caption className="text-meta">
+                        {t('saveToList.item_count', { n: list.itemCount })}
+                      </Caption>
                     </View>
-                    <View
-                      className={`h-7 w-7 items-center justify-center rounded-pill border ${checked ? 'border-accent bg-accent-fill' : 'border-line-strong'}`}
-                    >
-                      {checked ? <CheckIcon size={15} color="on-accent" /> : null}
-                    </View>
+                    <CheckCircle on={checked} />
                   </Pressable>
                 )
               })}
-            </View>
+            </Group>
           ) : (
-            <Caption className="mb-1">{t('saveToList.no_lists')}</Caption>
+            <Caption className="mb-1 px-1">{t('saveToList.no_lists')}</Caption>
           )
         ) : null}
 
         {toggle.isError ? (
-          <Caption className="mt-2 text-danger">{t('saveToList.toggle_error')}</Caption>
+          <Caption className="mt-2 px-1 text-danger">{t('saveToList.toggle_error')}</Caption>
         ) : null}
 
         {creating ? (
-          <View className="mt-4 rounded-card border border-line bg-surface p-4">
-            {hasItem ? <Eyebrow className="mb-3">{t('saveToList.new_list_title')}</Eyebrow> : null}
+          <Card className="mt-3 p-4">
+            {hasItem ? (
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-label text-text-muted"
+              >
+                {t('saveToList.new_list_title')}
+              </Text>
+            ) : null}
             {/* Cover + name side by side, like a playlist: the photo is
                 optional (a list without one shows its latest spot's photo). */}
-            <View className="flex-row items-center gap-4">
+            <View className={`${hasItem ? 'mt-3' : ''} flex-row items-center gap-3`}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('saveToList.cover_label')}
@@ -194,7 +226,7 @@ export default function SaveToListSheet() {
                   const uri = await pickDishPhoto()
                   if (uri) setCover(uri)
                 }}
-                className="h-20 w-20 items-center justify-center overflow-hidden rounded-sm border border-dashed border-line-strong bg-bg active:opacity-70"
+                className="h-[64px] w-[64px] items-center justify-center overflow-hidden rounded-[18px] border-[1.5px] border-dashed border-line-strong active:opacity-70"
               >
                 {cover ? (
                   <Image
@@ -204,8 +236,13 @@ export default function SaveToListSheet() {
                   />
                 ) : (
                   <>
-                    <PlusIcon size={18} color="accent" />
-                    <Caption className="mt-1 text-micro">{t('saveToList.cover_add')}</Caption>
+                    <PlusIcon size={18} color="text-2" />
+                    <Text
+                      maxFontSizeMultiplier={1}
+                      className="mt-0.5 font-ui text-eyebrow text-text-muted"
+                    >
+                      {t('saveToList.cover_add')}
+                    </Text>
                   </>
                 )}
               </Pressable>
@@ -215,8 +252,11 @@ export default function SaveToListSheet() {
                 onChangeText={setDraft}
                 placeholder={t('saveToList.name_placeholder')}
                 placeholderTextColor={placeholder}
+                selectionColor={accent}
+                keyboardAppearance={keyboard}
                 maxLength={40}
                 returnKeyType="next"
+                maxFontSizeMultiplier={MAX_SCALE}
                 className="min-h-[48px] flex-1 border-line border-b font-serif text-serif-md text-text"
               />
             </View>
@@ -225,12 +265,14 @@ export default function SaveToListSheet() {
               onChangeText={setDescription}
               placeholder={t('saveToList.description_placeholder')}
               placeholderTextColor={placeholder}
+              selectionColor={accent}
+              keyboardAppearance={keyboard}
               maxLength={300}
               multiline
-              className="mt-4 min-h-[72px] rounded-sm border border-line bg-bg px-3 py-3 font-ui text-body text-text"
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-4 min-h-[72px] rounded-sm bg-bg px-3 py-3 font-ui text-body text-text"
             />
-            <Caption className="mt-3 mb-2">{t('saveToList.suggestions')}</Caption>
-            <View className="flex-row flex-wrap gap-2">
+            <View className="mt-3 flex-row flex-wrap gap-1.5">
               {SUGGESTIONS[lang].map((s) => (
                 <Chip
                   key={s}
@@ -244,22 +286,26 @@ export default function SaveToListSheet() {
             </View>
             {createError ? <Caption className="mt-3 text-danger">{createError}</Caption> : null}
             <Button
-              className="mt-4"
+              size="sm"
+              className="mt-4 w-full"
               disabled={!trimmed}
               loading={create.isPending}
               onPress={() => create.mutate(trimmed)}
             >
               {create.isPending ? t('saveToList.creating') : t('saveToList.create_button')}
             </Button>
-          </View>
+          </Card>
         ) : (
           <Pressable
             accessibilityRole="button"
             onPress={() => setCreating(true)}
-            className="mt-4 min-h-[56px] flex-row items-center gap-3 rounded-card border border-dashed border-line-strong px-4 active:opacity-70"
+            className="mt-3 min-h-[56px] flex-row items-center justify-center gap-2 rounded-group border-[1.5px] border-dashed border-line-strong px-4 active:opacity-70"
           >
-            <PlusIcon size={18} color="accent" />
-            <Text className="font-ui-semibold text-body text-accent">
+            <PlusIcon size={18} color="text-2" />
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-pill text-text-2"
+            >
               {t('saveToList.new_list_cta')}
             </Text>
           </Pressable>

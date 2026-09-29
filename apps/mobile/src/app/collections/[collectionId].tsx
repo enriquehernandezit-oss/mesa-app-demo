@@ -1,30 +1,43 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Image } from 'expo-image'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, EmptyState, ErrorState, Skeleton, Title } from '@/components/ui'
-import { ListIcon, ShareIcon } from '@/components/ui/icons'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import {
+  Body,
+  Button,
+  Caption,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  MAX_SCALE,
+  Skeleton,
+} from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { CameraIcon, MoreIcon, ShareIcon } from '@/components/ui/icons'
+import { ScoreStack } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
+import { cuisineLabel, priceLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { imageUrl } from '@/lib/media'
 import { shareListCard } from '@/lib/shareCardStore'
 import { collectionShareText } from '@/lib/shareList'
 import type { CollectionDetail, CollectionItem } from '@/lib/types'
-import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
-// One named list's full contents (M19). Restaurant items show "Ya fuiste ·
+// One named list's full contents (M19). Restaurant items show "Already went ·
 // #N" once ranked since being added — see routes/collections.ts's own
 // header for why ranking a place never drops it from a named list the way
-// it clears the master saved_places one.
+// it clears the master saved_places one. Redesign 2: the cover big and centred (tap it to change
+// it), the name in the serif, how many are saved, its description edited in place, then the
+// places as raised rows; share and "···" (delete) are round chips in the header.
 export default function CollectionDetailScreen() {
   const t = useT()
   const router = useRouter()
@@ -44,7 +57,7 @@ export default function CollectionDetailScreen() {
     onError: () => toast({ variant: 'error', message: t('saveToList.toggle_error') }),
   })
 
-  const placeholder = useColor('text-muted')
+  const lift = useLift('float')
   const [editingBio, setEditingBio] = useState(false)
   const [bio, setBio] = useState('')
   const update = useMutation({
@@ -69,6 +82,15 @@ export default function CollectionDetailScreen() {
     },
   })
 
+  // The "···" menu: Mesa's own chooser, then — for delete — the native single-destructive confirm.
+  async function openMenu() {
+    const i = await showSheet({
+      title: q.data?.name,
+      options: [{ label: t('collections.delete_list'), destructive: true }],
+    })
+    if (i === 0) await confirmDeleteList()
+  }
+
   async function confirmDeleteList() {
     const picked = await showActionSheet({
       title: t('collections.delete_confirm_title'),
@@ -81,7 +103,8 @@ export default function CollectionDetailScreen() {
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
-        <View className="gap-3 px-5">
+        <View className="items-center gap-3 px-5">
+          <Skeleton height={160} width={160} />
           <Skeleton height={64} />
           <Skeleton height={64} />
         </View>
@@ -104,9 +127,8 @@ export default function CollectionDetailScreen() {
 
   const { name, items, description, coverImageId } = q.data
   // Cover: the list's own photo, else its first item's — same fallback the
-  // lists rail uses (the API's previewImageId).
+  // lists grid uses (the API's previewImageId).
   const firstImage = items.find((i) => i.restaurant?.coverImageId)?.restaurant?.coverImageId ?? null
-  const cover = imageUrl(coverImageId ?? firstImage, { w: 480, h: 480 })
   const shareCollection = () =>
     shareListCard({
       eyebrow: name,
@@ -122,42 +144,35 @@ export default function CollectionDetailScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen options={{ title: name, headerLargeTitle: false }} />
       <ScreenHeader
         onBack={goBack}
         backLabel={t('common.back_plain')}
         right={
-          <View className="flex-row items-center gap-4">
+          <View className="flex-row items-center gap-2">
             {items.length > 0 && (
-              <Pressable
-                accessibilityRole="button"
+              <IconButton
                 accessibilityLabel={t('collections.share_label')}
                 onPress={shareCollection}
-                className="min-h-[44px] justify-center active:opacity-60"
-              >
-                <ShareIcon size={18} />
-              </Pressable>
+                icon={<ShareIcon size={18} color="text" />}
+              />
             )}
-            <Pressable
-              accessibilityRole="button"
-              onPress={confirmDeleteList}
-              className="min-h-[44px] justify-center active:opacity-60"
-            >
-              <Text className="font-ui-medium text-label text-danger">
-                {t('collections.delete_list')}
-              </Text>
-            </Pressable>
+            <IconButton
+              accessibilityLabel={t('rankings.more_actions')}
+              onPress={openMenu}
+              icon={<MoreIcon size={18} color="text" />}
+            />
           </View>
         }
       />
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="px-5 pb-10"
+        automaticallyAdjustKeyboardInsets
+        contentContainerClassName="pb-10"
       >
-        {/* Playlist-style header: a big cover (tap to change it), the name,
-            and an optional description edited in place. */}
-        <View className="mb-4 items-center">
+        {/* Playlist-style header: a big cover (tap to change it), the name, and an optional
+            description edited in place. */}
+        <View className="items-center px-6">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('saveToList.cover_label')}
@@ -165,47 +180,59 @@ export default function CollectionDetailScreen() {
               const uri = await pickDishPhoto()
               if (uri) update.mutate({ coverImageId: uri })
             }}
-            className="h-40 w-40 items-center justify-center overflow-hidden rounded-card border border-line bg-bg-sunk active:opacity-80"
+            className="active:opacity-80"
           >
-            {cover ? (
-              <Image
-                source={{ uri: cover }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-            ) : (
-              <>
-                <ListIcon size={28} color="text-muted" />
-                <Caption className="mt-2">{t('saveToList.cover_add')}</Caption>
-              </>
-            )}
+            <View className="rounded-[30px] bg-surface" style={lift}>
+              <View className="h-[160px] w-[160px] overflow-hidden rounded-[30px]">
+                <PlaceCover
+                  name={name}
+                  coverImageId={coverImageId ?? firstImage}
+                  size={{ w: 480, h: 480 }}
+                  className="h-full w-full rounded-none"
+                />
+              </View>
+            </View>
+            <View className="absolute -right-0.5 bottom-1 h-[30px] w-[30px] items-center justify-center rounded-pill border-2 border-bg bg-ink">
+              <CameraIcon size={15} color="on-ink" />
+            </View>
           </Pressable>
-          <Title className="mt-4 text-center">{name}</Title>
-          <Caption className="mt-1">{t('saveToList.item_count', { n: items.length })}</Caption>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-4 text-center font-serif text-serif-lg text-text"
+          >
+            {name}
+          </Text>
+          <Caption className="mt-1 text-pill">
+            {t('saveToList.item_count', { n: items.length })}
+          </Caption>
+        </View>
+
+        <View className="mt-2 px-5">
           {editingBio ? (
-            <View className="mt-3 w-full">
-              <TextInput
+            <View className="w-full">
+              <Field
                 autoFocus
                 value={bio}
                 onChangeText={setBio}
                 multiline
+                multilineBox
                 maxLength={300}
                 placeholder={t('saveToList.description_placeholder')}
-                placeholderTextColor={placeholder}
-                className="min-h-[72px] w-full rounded-sm border border-line bg-surface px-3 py-3 font-ui text-body text-text"
               />
               {/* Explicit Save / Cancel — it used to save silently on blur,
                   with nothing on screen saying how to commit the edit. */}
               <View className="mt-3 flex-row gap-3">
                 <Button
                   variant="secondary"
-                  className="w-auto flex-1"
+                  size="sm"
+                  className="min-h-[44px] flex-1"
                   onPress={() => setEditingBio(false)}
                 >
                   {t('common.cancel')}
                 </Button>
                 <Button
-                  className="w-auto flex-1"
+                  size="sm"
+                  className="min-h-[44px] flex-1"
                   loading={update.isPending}
                   onPress={() =>
                     update.mutate(
@@ -226,7 +253,7 @@ export default function CollectionDetailScreen() {
               }}
               className="active:opacity-70"
             >
-              <Body className="mt-3 text-center">{description}</Body>
+              <Body className="mt-1 text-center text-subhead">{description}</Body>
             </Pressable>
           ) : (
             <Pressable
@@ -235,38 +262,46 @@ export default function CollectionDetailScreen() {
                 setBio('')
                 setEditingBio(true)
               }}
-              className="mt-2 min-h-[36px] justify-center active:opacity-60"
+              className="min-h-[36px] items-center justify-center active:opacity-60"
             >
-              <Caption className="font-ui-semibold text-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-pill text-accent"
+              >
                 {t('collections.add_description')}
-              </Caption>
+              </Text>
             </Pressable>
           )}
         </View>
-        {items.length === 0 ? (
-          <EmptyState>{t('collections.empty_list')}</EmptyState>
-        ) : (
-          items.map((item) => (
-            <CollectionItemRow
-              key={item.itemId}
-              item={item}
-              removing={removeItem.isPending}
-              onRemove={() => removeItem.mutate(item.itemId)}
-            />
-          ))
-        )}
+
+        <View className="mt-4 px-4">
+          {items.length === 0 ? (
+            <EmptyState>{t('collections.empty_list')}</EmptyState>
+          ) : (
+            items.map((item) => (
+              <CollectionItemRow
+                key={item.itemId}
+                item={item}
+                removing={removeItem.isPending}
+                onRemove={() => removeItem.mutate(item.itemId)}
+              />
+            ))
+          )}
+        </View>
       </ScrollView>
     </View>
   )
 }
 
+// A raised row: the place's (or dish's) picture, its name and meta, and at the right either the
+// score you gave it since adding it ("Already went · #41") or a quiet red Remove.
 function CollectionItemRow({
   item,
   removing,
   onRemove,
 }: {
   item: CollectionItem
-  // Guards the "Quitar" Pressable below — removeItem is one shared mutation
+  // Guards the "Remove" Pressable below — removeItem is one shared mutation
   // for the whole list, so this goes true for every row while ANY of them is
   // mid-delete. A fast double-tap otherwise fired two overlapping DELETEs
   // with no feedback in between, reading as "nothing happened, tap again."
@@ -274,80 +309,79 @@ function CollectionItemRow({
   onRemove: () => void
 }) {
   const t = useT()
-  if (item.restaurant) {
-    const r = item.restaurant
-    return (
-      <Link href={`/r/${r.id}`} asChild>
-        <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
+  const lift = useLift()
+  const place = item.restaurant
+  const dish = item.dish
+  if (!place && !dish) return null
+  const name = place?.name ?? dish?.name ?? ''
+  const meta = place
+    ? [cuisineLabel(place.cuisine), place.neighborhood, priceLabel(place.priceTier)]
+        .filter(Boolean)
+        .join(' · ')
+    : null
+  const remove = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: removing }}
+      hitSlop={8}
+      // Not RN's `disabled` prop: this Pressable is nested inside a
+      // `Link asChild` Pressable, and a `disabled` inner one lets the
+      // tap fall through to the outer Link — which then navigated to
+      // the restaurant instead of doing nothing, right as the row was
+      // mid-delete. Guarding inside the handler keeps the tap here.
+      onPress={() => {
+        if (!removing) onRemove()
+      }}
+      className={`min-h-[36px] justify-center px-1 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
+    >
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-label text-danger">
+        {t('rankings.remove')}
+      </Text>
+    </Pressable>
+  )
+  return (
+    <Link href={place ? `/r/${place.id}` : `/dish/${dish?.id}`} asChild>
+      <Pressable
+        accessibilityRole="button"
+        className="mb-2 flex-row items-center gap-3 rounded-group bg-surface py-2.5 pl-3 pr-3.5 active:opacity-80"
+        style={lift}
+      >
+        <View className="h-[50px] w-[50px] overflow-hidden rounded-[15px]">
           <PlaceCover
-            name={r.name}
-            coverImageId={r.coverImageId}
-            size={{ w: 200, h: 200 }}
-            className="h-12 w-12"
+            name={name}
+            coverImageId={place?.coverImageId ?? dish?.imageId}
+            size={{ w: 150, h: 150 }}
+            className="h-full w-full rounded-none"
           />
-          <View className="flex-1">
-            <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-              {r.name}
-            </Text>
-            <Characteristics
-              priceTier={r.priceTier}
-              cuisine={r.cuisine}
-              neighborhood={r.neighborhood}
-            />
-          </View>
-          {r.myRanking ? (
-            <ScoreBadge
-              size="sm"
-              score={r.myRanking.score}
-              attribution={{ kind: 'you' }}
-              caption={t('collections.already_went', { n: r.myRanking.position })}
-            />
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: removing }}
-              hitSlop={8}
-              // Not RN's `disabled` prop: this Pressable is nested inside a
-              // `Link asChild` Pressable, and a `disabled` inner one lets the
-              // tap fall through to the outer Link — which then navigated to
-              // the restaurant instead of doing nothing, right as the row was
-              // mid-delete. Guarding inside the handler keeps the tap here.
-              onPress={() => {
-                if (!removing) onRemove()
-              }}
-              className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
-            >
-              <Caption className="text-danger">{t('rankings.remove')}</Caption>
-            </Pressable>
-          )}
-        </Pressable>
-      </Link>
-    )
-  }
-  if (item.dish) {
-    const d = item.dish
-    return (
-      <Link href={`/dish/${d.id}`} asChild>
-        <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
-          <View className="flex-1">
-            <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-              {d.name}
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: removing }}
-            hitSlop={8}
-            onPress={() => {
-              if (!removing) onRemove()
-            }}
-            className={`min-h-[36px] justify-center px-2 active:opacity-60 ${removing ? 'opacity-40' : ''}`}
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-serif-sm text-text"
           >
-            <Caption className="text-danger">{t('rankings.remove')}</Caption>
-          </Pressable>
-        </Pressable>
-      </Link>
-    )
-  }
-  return null
+            {name}
+          </Text>
+          {meta ? (
+            <Text
+              numberOfLines={2}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-0.5 font-ui text-meta text-text-muted"
+            >
+              {meta}
+            </Text>
+          ) : null}
+        </View>
+        {place?.myRanking ? (
+          <ScoreStack
+            score={place.myRanking.score}
+            size="sm"
+            label={t('collections.already_went', { n: place.myRanking.position })}
+          />
+        ) : (
+          remove
+        )}
+      </Pressable>
+    </Link>
+  )
 }

@@ -5,7 +5,6 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FollowerPicker } from '@/components/FollowerPicker'
-import { CheckCircle } from '@/components/plans/parts'
 import {
   Button,
   Caption,
@@ -17,6 +16,7 @@ import {
   Serif,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { CheckCircle } from '@/components/ui/CheckCircle'
 import { Field } from '@/components/ui/Field'
 import { SearchIcon } from '@/components/ui/icons'
 import { PlaceLine } from '@/components/ui/PlaceLine'

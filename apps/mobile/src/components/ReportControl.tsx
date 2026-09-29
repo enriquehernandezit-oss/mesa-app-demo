@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { Pressable, Text } from 'react-native'
 
-import { Caption } from '@/components/ui'
+import { Caption, MAX_SCALE } from '@/components/ui'
+import { FlagIcon } from '@/components/ui/icons'
 import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -59,8 +60,8 @@ export async function pickReportReasonNative(targetType: ReportTarget): Promise<
   return i === null ? null : (reasons[i] ?? null)
 }
 
-// A quiet "Reportar" link that opens the reason sheet, and the thank-you once it
-// lands.
+// A quiet "Report" link — a small flag and the label, muted — that opens the reason sheet, and
+// the thank-you once it lands.
 export function ReportControl({
   targetType,
   targetId,
@@ -90,9 +91,15 @@ export function ReportControl({
         const reason = await pickReportReason(targetType)
         if (reason) report.mutate(reason)
       }}
-      className="mt-2 min-h-[44px] justify-center active:opacity-60"
+      className="mt-2 min-h-[44px] flex-row items-center gap-1.5 active:opacity-60"
     >
-      <Text className="font-ui-semibold text-label text-danger">{label ?? t('report.label')}</Text>
+      <FlagIcon size={14} color="text-muted" />
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="font-ui-semibold text-label text-text-muted"
+      >
+        {label ?? t('report.label')}
+      </Text>
     </Pressable>
   )
 }

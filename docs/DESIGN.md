@@ -280,6 +280,32 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   the serif (`SheetHeader` / `SheetTitle`), one solid button at the foot — Where (a search field, picture rows
   with a pick mark, chosen spots as solid pills), When (day and time pills), With whom (a search field, a raised
   **Invite** / solid **Invited** pill per follower), Review.
+- **Lists, dishes and menus** (`app/lists/[slug].tsx`, `app/collections/*`, `app/save-to-list.tsx`,
+  `app/dish-lists/*`, `components/DishNudgeCard.tsx`, `app/dish/*`, `app/r/[restaurantId]/dishes.tsx`,
+  `app/menu/[restaurantId].tsx`). A **featured list** opens on a photo that fades into the ground under the glass back
+  and share chrome (`usePhotoPageScroll` + `PlaceTopChrome` with no score): "Featured · 10 spots", the title in the
+  serif 40, who made it (+ **How we made it**), then numbered raised rows — a serif numeral, a 50pt picture, the spot,
+  and a `ScoreStack` labelled **You** or **N friends**. **Your lists** is a 2-column grid: a dashed **New list** tile,
+  then each list as a 124pt cover (its own picture, else its latest spot's, else a name card), its name and how many
+  are saved. **One list** centres a 160pt cover (tap it to change it), the name in serif 34, "N saved" and its
+  description (edited in place), over raised rows that end in **Already went · #N** or a quiet red **Remove**; Share
+  and "···" (delete) are round chips in the header. **Save to a list** is a page sheet: the item's name, "Add to a
+  list" in the serif, one grouped card of lists with a `CheckCircle` each, and a **New list** card (a dashed 64pt
+  cover, the name on a serif line, suggestion pills, a solid Create). **Your dishes** opens with an **inverted ink
+  card** (the `solid` fill — cream at night) for the first list waiting to be ranked, then a grouped list with a
+  **Rank** chip on the unranked ones; the same card (`DishNudgeCard`) shows on the rank reveal and the composer. A
+  **dish ranking** is "Your best {dish}" with flat hairline rows (a serif numeral, a 56pt picture, the place, your words),
+  then "N to rank" dimmed and a solid **Rank N more**. **All dishes** is "Dishes" over the place's name and a 2-column
+  photo grid, each with its name and "by {name}" + the heart. A **dish** opens on its photo (else the place's, else a name
+  card) fading into the ground under glass back / heart / bookmark buttons (`CheersButton` and `SaveButton` take
+  `variant="photo"`): who posted it and when, the name in serif 40, their words as a serif quote, the place as a raised
+  card with the poster's score (`ScoreStack`), Call / Website / Directions as chips (`UtilityPill layout="chip"`), then
+  Report (a flag and a muted label) or Delete on your own. **Post a dish** is one sheet — Cancel | Post a dish, the name
+  on a serif line, Cuisine and Dish pills, a dashed Add a photo (with a photo: a 150pt square with a glass
+  "film · Candlelit" chip and the Grain pills beside it), Your comment, the linked ranking as a raised card, "Share
+  with friends only" and a solid **Post dish** pinned to the bottom. A **menu** is "{place} · Menu" in the header,
+  a rail of section pills (the current one solid), "✓ Menu verified · Sep 12, 2026", then each section under a sticky
+  serif title with its dishes as hairline rows (name, then a muted description; no prices).
 - **"How was it?"** (`components/rank/{FeelStep,FeelSlider,Flute}.tsx`, `lib/feel.ts`) is one 3-stop
   slider — _Didn't love it / It was fine / Loved it_ — under a **realistic Kir Royale flute** that goes
   flat → a slow thin stream in a misted glass → five lively streams with a ring of mousse and a fizz over

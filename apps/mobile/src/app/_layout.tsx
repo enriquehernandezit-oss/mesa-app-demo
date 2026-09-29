@@ -241,8 +241,8 @@ function MesaStack() {
       />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: t('nav.leaderboard') }} />
-      {/* Title (Seguidores/Siguiendo) is set by the screen itself, same
-          pattern as lists/[slug] below. */}
+      {/* Title (Seguidores/Siguiendo) is set by the screen itself once it
+          knows which list it is. */}
       <Stack.Screen name="people/[userId]" options={utility} />
       <Stack.Screen name="plans/index" options={{ ...utility, title: t('nav.plans') }} />
       <Stack.Screen name="friends/index" options={{ ...utility, title: t('friends.title') }} />
@@ -256,9 +256,10 @@ function MesaStack() {
       <Stack.Screen name="plans/[planId]" />
       {/* Moderator-only; the screen itself redirects non-moderators. */}
       <Stack.Screen name="moderation" options={{ ...utility, title: t('nav.moderation') }} />
-      {/* Titles for these two are set by the screens themselves once the data
-          (a list's name, a legal doc's name) is known. */}
-      <Stack.Screen name="lists/[slug]" options={utility} />
+      {/* A curated list opens on its photo under glass back/share (a bare screen, like
+          plans/[planId]); a legal doc's title is set by the screen itself once the doc is
+          known. */}
+      <Stack.Screen name="lists/[slug]" />
       {/* The member's named lists (M19) — "Tus listas" and one list's
           contents. Custom ScreenHeader, same idiom as u/[userId] and
           match/[userId]; the detail screen's native Stack.Screen title is set

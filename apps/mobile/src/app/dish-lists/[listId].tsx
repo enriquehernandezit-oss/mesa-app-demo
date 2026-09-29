@@ -1,13 +1,21 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
+import {
+  Button,
+  Caption,
+  EmptyState,
+  ErrorState,
+  IconButton,
+  MAX_SCALE,
+  Skeleton,
+} from '@/components/ui'
 import { ShareIcon } from '@/components/ui/icons'
-import { Characteristics } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { api } from '@/lib/api'
+import { cuisineLabel, priceLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import { imageUrl } from '@/lib/media'
 import { shareListCard } from '@/lib/shareCardStore'
@@ -15,10 +23,11 @@ import { dishListShareText } from '@/lib/shareList'
 import type { DishListDetail, DishListEntry } from '@/lib/types'
 import { DATA_FIGURES } from '@/theme/vars'
 
-// One dish list's full contents (M20) — "Tu mejor carbonara". Ranked
-// entries show their position; anything in `unranked` (a place that's
-// posted this dish since the last ranking, or before the member got to a
-// nudge) sits below with a CTA back into the pairwise flow.
+// One dish list's full contents (M20) — "Your best carbonara". Ranked entries show their
+// position; anything in `unranked` (a place that's posted this dish since the last ranking, or
+// before the member got to a nudge) sits below, dimmed, with a CTA back into the pairwise flow.
+// Redesign 2: a large serif title with the count under it, flat hairline rows (a serif numeral,
+// the picture, the place, your words about the dish), then "N to rank".
 export default function DishListDetailScreen() {
   const t = useT()
   const router = useRouter()
@@ -66,61 +75,73 @@ export default function DishListDetailScreen() {
 
   return (
     <View className="flex-1 bg-bg">
-      <Stack.Screen
-        options={{ title: t('dishLists.your_best', { label }), headerLargeTitle: false }}
-      />
       <ScreenHeader
         onBack={goBack}
         backLabel={t('common.back_plain')}
         right={
           ranked.length > 0 ? (
-            <Pressable
-              accessibilityRole="button"
+            <IconButton
               accessibilityLabel={t('dishLists.share_label')}
               onPress={shareDishList}
-              className="min-h-[44px] justify-center active:opacity-60"
-            >
-              <ShareIcon size={18} />
-            </Pressable>
+              icon={<ShareIcon size={18} color="text" />}
+            />
           ) : undefined
         }
       />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pb-10 pt-3">
-        {ranked.length === 0 ? (
-          <EmptyState>{t('dishLists.not_ranked_yet')}</EmptyState>
-        ) : (
-          ranked.map((entry) => <RankedRow key={entry.restaurant.id} entry={entry} />)
-        )}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
+        <View className="px-5">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-display text-text">
+            {t('dishLists.your_best', { label })}
+          </Text>
+          {ranked.length > 0 ? (
+            <Caption className="mt-1.5 text-pill">
+              {t('dishLists.ranked_count', { n: ranked.length })}
+            </Caption>
+          ) : null}
+        </View>
+
+        <View className="mt-3">
+          {ranked.length === 0 ? (
+            <EmptyState>{t('dishLists.not_ranked_yet')}</EmptyState>
+          ) : (
+            ranked.map((entry) => <RankedRow key={entry.restaurant.id} entry={entry} />)
+          )}
+        </View>
 
         {unranked.length > 0 && (
-          <View className="mt-6">
-            <Caption className="mb-2">
+          <View className="mt-4">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="px-5 pb-2 font-ui-semibold text-label text-text-muted"
+            >
               {t('dishLists.unranked_count', { n: unranked.length })}
-            </Caption>
+            </Text>
             {unranked.map((entry) => (
               <View
                 key={entry.restaurant.id}
-                className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5"
+                className="flex-row items-center gap-3 px-5 py-2 opacity-70"
               >
-                <PlaceCover
-                  name={entry.restaurant.name}
-                  coverImageId={entry.dish.imageId ?? entry.restaurant.coverImageId}
-                  size={{ w: 200, h: 200 }}
-                  className="h-12 w-12"
-                />
-                <View className="flex-1">
-                  <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                <View className="h-[48px] w-[48px] overflow-hidden rounded-[14px]">
+                  <PlaceCover
+                    name={entry.restaurant.name}
+                    coverImageId={entry.dish.imageId ?? entry.restaurant.coverImageId}
+                    size={{ w: 150, h: 150 }}
+                    className="h-full w-full rounded-none"
+                  />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-serif text-serif-sm text-text"
+                  >
                     {entry.restaurant.name}
                   </Text>
-                  <Characteristics
-                    priceTier={entry.restaurant.priceTier}
-                    cuisine={entry.restaurant.cuisine}
-                    neighborhood={entry.restaurant.neighborhood}
-                  />
+                  <EntryMeta entry={entry} />
                 </View>
               </View>
             ))}
-            <View className="mt-2">
+            <View className="px-4 pt-3">
               <Button onPress={() => router.push(`/dish-lists/rank?listId=${listId}`)}>
                 {t('dishLists.rank_more_button', { n: unranked.length })}
               </Button>
@@ -132,33 +153,67 @@ export default function DishListDetailScreen() {
   )
 }
 
+function EntryMeta({ entry }: { entry: DishListEntry }) {
+  const { restaurant } = entry
+  const meta = [
+    cuisineLabel(restaurant.cuisine),
+    restaurant.neighborhood,
+    priceLabel(restaurant.priceTier),
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  if (!meta) return null
+  return (
+    <Text
+      numberOfLines={2}
+      maxFontSizeMultiplier={MAX_SCALE}
+      className="mt-0.5 font-ui text-meta text-text-muted"
+    >
+      {meta}
+    </Text>
+  )
+}
+
 function RankedRow({ entry }: { entry: DishListEntry & { position: number } }) {
   const { restaurant, dish, position } = entry
   return (
     <Link href={`/r/${restaurant.id}`} asChild>
-      <Pressable className="mb-2 flex-row items-center gap-3 rounded-card border border-line bg-surface px-3 py-2.5 active:opacity-80">
-        <Text style={DATA_FIGURES} className="w-6 font-serif text-serif-md text-text-muted">
+      <Pressable
+        accessibilityRole="button"
+        className="mx-5 flex-row items-center gap-3 border-line border-b py-2.5 active:opacity-80"
+      >
+        <Text
+          style={DATA_FIGURES}
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="w-[28px] font-serif text-serif-xl text-text-muted"
+        >
           {position}
         </Text>
-        <PlaceCover
-          name={restaurant.name}
-          coverImageId={dish.imageId ?? restaurant.coverImageId}
-          size={{ w: 200, h: 200 }}
-          className="h-12 w-12"
-        />
-        <View className="flex-1">
-          <Text className="font-serif text-serif-md text-text" numberOfLines={1}>
+        <View className="h-[56px] w-[56px] overflow-hidden rounded-[16px]">
+          <PlaceCover
+            name={restaurant.name}
+            coverImageId={dish.imageId ?? restaurant.coverImageId}
+            size={{ w: 168, h: 168 }}
+            className="h-full w-full rounded-none"
+          />
+        </View>
+        <View className="min-w-0 flex-1">
+          <Text
+            numberOfLines={2}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-serif-sm text-text"
+          >
             {restaurant.name}
           </Text>
-          <Characteristics
-            priceTier={restaurant.priceTier}
-            cuisine={restaurant.cuisine}
-            neighborhood={restaurant.neighborhood}
-          />
+          <EntryMeta entry={entry} />
           {dish.caption ? (
-            <Body className="mt-1 text-text-2" numberOfLines={2}>
+            <Text
+              numberOfLines={2}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-0.5 font-ui text-label text-text-2"
+            >
               {dish.caption}
-            </Body>
+            </Text>
           ) : null}
         </View>
       </Pressable>

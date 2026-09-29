@@ -6,7 +6,7 @@ import { Animated, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
-import { CheckCircle, StatusBadge } from '@/components/plans/parts'
+import { StatusBadge } from '@/components/plans/parts'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Group, RowButton } from '@/components/SettingsRow'
 import {
@@ -22,6 +22,7 @@ import {
   SectionHeader,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
+import { CheckCircle } from '@/components/ui/CheckCircle'
 import { SendIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'

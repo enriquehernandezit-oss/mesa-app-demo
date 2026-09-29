@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import { Pressable, Text } from 'react-native'
 
 import { MAX_SCALE } from '@/components/ui'
+import { Glass } from '@/components/ui/Glass'
 import { BookmarkFilledIcon, BookmarkIcon } from '@/components/ui/icons'
 import { toast } from '@/components/ui/toast-store'
 import { type SaveTarget, useSave } from '@/hooks/useSave'
@@ -33,7 +34,7 @@ export function SaveButton({
   // The saved item's own name, for the toast ("Guardaste «Casaluca»").
   name: string
   size?: number
-  variant?: 'icon' | 'pill' | 'bar'
+  variant?: 'icon' | 'pill' | 'bar' | 'photo'
   // 'icon' only: a label beside the glyph (the feed card's "Quiero probar").
   text?: string
   className?: string
@@ -78,6 +79,28 @@ export function SaveButton({
         ) : (
           <BookmarkIcon size={21} color="bar" />
         )}
+      </Pressable>
+    )
+  }
+  // A frosted round control laid on a photograph (a dish's hero).
+  if (variant === 'photo') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: saved }}
+        accessibilityLabel={label}
+        onPress={onTap}
+        onLongPress={openListPicker}
+        hitSlop={4}
+        className={`active:opacity-80 ${className ?? ''}`}
+      >
+        <Glass
+          variant="panel"
+          radius={22}
+          className="h-[44px] w-[44px] items-center justify-center"
+        >
+          {saved ? <BookmarkFilledIcon size={20} /> : <BookmarkIcon size={20} color="hglass-fg" />}
+        </Glass>
       </Pressable>
     )
   }

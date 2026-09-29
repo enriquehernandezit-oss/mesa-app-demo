@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Caption, Chip, EmptyState, ErrorState, Eyebrow, Skeleton } from '@/components/ui'
+import { Chip, EmptyState, ErrorState, MAX_SCALE, Skeleton } from '@/components/ui'
+import { CheckIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
 import { dateLocale, useLanguage, useT } from '@/lib/i18n'
 import type { RestaurantMenu as RestaurantMenuData } from '@/lib/types'
@@ -14,7 +15,9 @@ import { useColor } from '@/theme/useColor'
 // its own page (M7) — a long menu (La Locanda has 83 items) was pushing the
 // social content (scores, popular dishes) off the fold, and Enrique wanted a
 // dedicated "Menú" button next to Llamar/Sitio web/Cómo llegar instead of an
-// inline, collapsible section.
+// inline, collapsible section. Redesign 2: "{place} · Menu" in the header, a rail of section
+// pills, "✓ Menu verified · date", then each section under a sticky serif title with its dishes
+// as hairline rows.
 export default function RestaurantMenuScreen() {
   const t = useT()
   const lang = useLanguage()
@@ -28,7 +31,6 @@ export default function RestaurantMenuScreen() {
   const goBack = () => (router.canGoBack() ? router.back() : router.replace(`/r/${restaurantId}`))
 
   const bg = useColor('bg')
-  const line = useColor('line')
 
   const q = useQuery({
     queryKey: ['menu', restaurantId],
@@ -110,8 +112,8 @@ export default function RestaurantMenuScreen() {
             produced its own layout jump (padding and a chip rail appearing
             at once) on top of the transition this is fixing. */}
         <View className="px-5">
-          <Skeleton height={11} width={140} className="mt-4" />
-          <Skeleton height={16} width={200} className="mt-5" />
+          <Skeleton height={14} width={170} className="mt-4" />
+          <Skeleton height={26} width={150} className="mt-5" />
           {[0, 1, 2, 3, 4].map((i) => (
             <View key={i} className="border-line border-b py-2.5">
               <Skeleton height={15} width={`${70 - i * 6}%`} />
@@ -142,16 +144,19 @@ export default function RestaurantMenuScreen() {
     )
   }
 
-  // Leading, non-sticky children (name + verified caption) shift every
-  // section header's index in the ScrollView's own children array —
+  // A leading, non-sticky child (the verified line) shifts every section
+  // header's index in the ScrollView's own children array —
   // stickyHeaderIndices addresses that array directly, so it has to be
   // computed from the same conditionals the JSX below uses, not assumed.
-  const leading = (restaurantName ? 1 : 0) + (q.data?.verifiedAt ? 1 : 0)
+  const leading = q.data?.verifiedAt ? 1 : 0
   const headerIndices = sections.map((_, i) => leading + i * 2)
+  const title = restaurantName
+    ? `${restaurantName} · ${t('restaurant.menu_title')}`
+    : t('restaurant.menu_title')
 
   return (
     <View className="flex-1 bg-bg">
-      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
+      <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} title={title} />
       {sections.length > 1 ? (
         // Not the shared ChipRail here: as the first child above the flex-1
         // content ScrollView (no sibling to size against), its row-direction
@@ -183,11 +188,7 @@ export default function RestaurantMenuScreen() {
             onMomentumScrollEnd={() => {
               railDragging.current = false
             }}
-            style={{
-              backgroundColor: bg,
-              borderBottomWidth: 1,
-              borderBottomColor: line,
-            }}
+            style={{ backgroundColor: bg }}
             contentContainerStyle={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -199,7 +200,6 @@ export default function RestaurantMenuScreen() {
             {sections.map((s, i) => (
               <Chip
                 key={s.name}
-                size="sm"
                 state={i === activeIndex ? 'selected' : 'default'}
                 onPress={() => jumpTo(i)}
                 onLayout={(e) => {
@@ -220,24 +220,35 @@ export default function RestaurantMenuScreen() {
         scrollEventThrottle={32}
         stickyHeaderIndices={headerIndices}
       >
-        {restaurantName ? <Eyebrow className="mt-4">{restaurantName}</Eyebrow> : null}
         {q.data?.verifiedAt ? (
-          <Caption className="mt-1">
-            {t('restaurant.menu_verified_on', {
-              date: new Date(q.data.verifiedAt).toLocaleDateString(dateLocale()),
-            })}
-          </Caption>
+          <View className="mt-3 flex-row items-center gap-1.5">
+            <CheckIcon size={14} color="text-muted" strokeWidth={2.2} />
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="shrink font-ui text-label text-text-muted"
+            >
+              {t('restaurant.menu_verified_on', {
+                date: new Date(q.data.verifiedAt).toLocaleDateString(dateLocale(), {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                }),
+              })}
+            </Text>
+          </View>
         ) : null}
 
         {sections.flatMap((s, i) => [
           <View
             key={`h-${s.name}`}
-            className="bg-bg pt-5 pb-1"
+            className="bg-bg pt-4 pb-1.5"
             onLayout={(e) => {
               sectionOffsets.current[i] = e.nativeEvent.layout.y
             }}
           >
-            <Eyebrow className="text-accent">{s.label[lang]}</Eyebrow>
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-title text-text">
+              {s.label[lang]}
+            </Text>
           </View>,
           <View key={`b-${s.name}`}>
             {/* Prices deliberately not shown — they drift with time and a
@@ -245,12 +256,21 @@ export default function RestaurantMenuScreen() {
                 still fetched/stored (see docs/MENUS.md); this is a display
                 decision only. */}
             {s.items.map((item) => (
-              <View key={item.id} className="border-line border-b py-2.5">
-                <Text className="font-ui text-body text-text">{item.name}</Text>
+              <View key={item.id} className="border-line border-b py-3">
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-medium text-body text-text"
+                >
+                  {item.name}
+                </Text>
                 {item.description ? (
-                  <Caption numberOfLines={2} className="mt-0.5 text-text-2">
+                  <Text
+                    numberOfLines={2}
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="mt-0.5 font-ui text-label text-text-muted"
+                  >
                     {item.description}
-                  </Caption>
+                  </Text>
                 ) : null}
               </View>
             ))}

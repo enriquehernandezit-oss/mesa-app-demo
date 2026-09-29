@@ -5,18 +5,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-  Body,
-  Button,
-  Caption,
-  Chip,
-  ErrorState,
-  Eyebrow,
-  SectionHeader,
-  Title,
-  Toggle,
-} from '@/components/ui'
-import { Characteristics, ScoreBadge } from '@/components/ui/patterns'
+import { Body, Button, Caption, Chip, ErrorState, MAX_SCALE, Toggle } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { Glass } from '@/components/ui/Glass'
+import { PlusIcon } from '@/components/ui/icons'
+import { ScoreStack } from '@/components/ui/patterns'
 import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
@@ -28,17 +21,22 @@ import {
   useDishCategories,
 } from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
-import { type Grain, grainLabel, grainOptions } from '@/lib/display'
+import { type Grain, cuisineLabel, grainLabel, grainOptions, priceLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useLanguage, useT } from '@/lib/i18n'
 import { usePreventRemove } from '@/lib/preventRemove'
 import type { DishNudge, RestaurantProfileResponse } from '@/lib/types'
+import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 
 // Post a dish (Phase 6 mocks C1–C2) — a photo attached to a place you've ranked.
 // Two steps: C1 choose the shot + treatment, C2 name/caption/toggles + link. The
 // linked ranking is required and carries the score, so it's never re-entered.
+// Redesign 2: one sheet — "Cancel | Post a dish", the name on a serif line, the two category
+// pills, a square photo with its grain pills beside it, your comment, the linked ranking as a raised
+// card, "Share with friends only", and a solid Post dish pinned to the bottom.
 // Ported from apps/app/src/screens/dish/DishCompose.tsx; the <input type=file> +
 // canvas resize become expo-image-picker + expo-image-manipulator (lib/image).
 // The grain treatment is sent as a field but not previewed (a delivery-time
@@ -51,7 +49,10 @@ export default function DishCompose() {
   const navigation = useNavigation()
   const queryClient = useQueryClient()
   const insets = useSafeAreaInsets()
-  const placeholder = useColor('text-muted')
+  const placeholder = useColor('text-faint')
+  const accent = useColor('accent')
+  const keyboard = useResolvedTheme() === 'night' ? 'dark' : 'light'
+  const lift = useLift()
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace(`/r/${restaurantId}`))
 
@@ -222,8 +223,8 @@ export default function DishCompose() {
   // way to try again.
   if (q.isError) {
     return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-        <BackBar label={t('common.back')} onPress={goBack} />
+      <View className="flex-1 bg-bg pt-4">
+        <ComposerHeader onCancel={goBack} />
         <ErrorState onRetry={() => q.refetch()}>{t('dish.load_error')}</ErrorState>
       </View>
     )
@@ -232,11 +233,14 @@ export default function DishCompose() {
   // Gate: a dish must attach to a ranking.
   if (q.isSuccess && !hasRanked) {
     return (
-      <View className="flex-1 bg-bg px-5" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-        <BackBar label={t('common.back')} onPress={goBack} />
-        <Eyebrow className="mt-3">{t('dish.post_title')}</Eyebrow>
-        <Title>{restaurant?.name ?? t('dish.default_name')}</Title>
-        <View className="mt-6 items-center gap-4">
+      <View className="flex-1 bg-bg pt-4">
+        <ComposerHeader onCancel={goBack} />
+        <View className="px-5 pt-4">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-headline text-text">
+            {restaurant?.name ?? t('dish.default_name')}
+          </Text>
+        </View>
+        <View className="mt-4 items-center gap-4 px-5">
           <Body className="text-center">{t('dish.rank_first_body')}</Body>
           <Button
             variant="primary"
@@ -254,30 +258,41 @@ export default function DishCompose() {
   // photo (still the richest post) is one optional block among several
   // rather than a gate the whole flow gets stuck behind.
   const canPost = name.trim().length > 0 && categoryId !== null && !post.isPending
+  const meta = restaurant
+    ? [
+        cuisineLabel(restaurant.cuisine),
+        restaurant.neighborhood?.name,
+        priceLabel(restaurant.priceTier),
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 12 }}>
-      <View className="px-5">
-        <BackBar label={t('dish.cancel')} onPress={goBack} />
-      </View>
+    <View className="flex-1 bg-bg pt-4">
+      <ComposerHeader onCancel={goBack} />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5 pb-8"
+        contentContainerClassName="pb-6"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          className="mt-3 border-line border-b pb-1 font-serif text-serif-md text-text"
-          placeholderTextColor={placeholder}
-          placeholder={t('dish.name_placeholder')}
-          maxLength={60}
-          value={name}
-          onChangeText={setName}
-          returnKeyType="next"
-        />
-        <Caption className="mt-1 text-micro">{t('dish.name_caption')}</Caption>
+        <View className="px-5 pt-4">
+          <TextInput
+            className="min-h-[44px] border-line border-b pb-2 font-serif text-title text-text"
+            placeholderTextColor={placeholder}
+            selectionColor={accent}
+            keyboardAppearance={keyboard}
+            placeholder={t('dish.name_placeholder')}
+            maxFontSizeMultiplier={MAX_SCALE}
+            maxLength={60}
+            value={name}
+            onChangeText={setName}
+            returnKeyType="next"
+          />
+          <Caption className="mt-1.5 text-micro">{t('dish.name_caption')}</Caption>
+        </View>
 
-        <Eyebrow className="mt-4">{t('dish.category_label')}</Eyebrow>
-        <View className="mt-2 flex-row gap-2">
+        <View className="flex-row flex-wrap gap-2 px-5 pt-3">
           <Chip size="sm" chevron state={currentGroup ? 'active' : 'default'} onPress={pickGroup}>
             {currentGroup ? groupLabel(currentGroup, lang) : t('dish.cuisine_pill')}
           </Chip>
@@ -291,57 +306,86 @@ export default function DishCompose() {
           </Chip>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={choosePhoto}
-          className="mt-4 aspect-square w-full items-center justify-center overflow-hidden rounded border border-line border-dashed bg-bg-sunk active:opacity-90"
-        >
+        <View className="flex-row gap-3 px-4 pt-4">
+          <Pressable
+            accessibilityRole="button"
+            onPress={choosePhoto}
+            className={`items-center justify-center gap-1 overflow-hidden rounded-[22px] active:opacity-90 ${image ? 'h-[150px] w-[150px]' : 'h-[112px] flex-1 border-[1.5px] border-line-strong border-dashed'}`}
+          >
+            {image ? (
+              <>
+                <Image
+                  source={{ uri: image }}
+                  style={{ width: '100%', height: '100%' }}
+                  contentFit="cover"
+                />
+                <Glass
+                  variant="photo"
+                  radius={11}
+                  className="absolute bottom-2 left-2 h-[22px] justify-center px-2"
+                >
+                  <Text
+                    maxFontSizeMultiplier={1}
+                    className="font-ui-semibold text-eyebrow text-on-photo"
+                  >
+                    film · {grainLabel(grain)}
+                  </Text>
+                </Glass>
+              </>
+            ) : (
+              <>
+                <PlusIcon size={22} color="text-2" />
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="px-2 text-center font-ui-semibold text-label text-text-2"
+                >
+                  {t('dish.add_photo')}
+                </Text>
+              </>
+            )}
+          </Pressable>
           {image ? (
-            <>
-              <Image
-                source={{ uri: image }}
-                style={{ width: '100%', height: '100%' }}
-                contentFit="cover"
-              />
-              <View className="absolute right-3 bottom-3 rounded-pill bg-surface px-2 py-1">
-                <Caption className="text-micro">film · {grainLabel(grain)}</Caption>
-              </View>
-            </>
-          ) : (
-            <Text className="font-ui-medium text-label text-text-muted">{t('dish.add_photo')}</Text>
-          )}
-        </Pressable>
-
-        {image && (
-          <View className="mt-3 flex-row gap-2">
-            {grainOptions().map((g) => (
-              <Chip
-                key={g.value}
-                size="sm"
-                state={grain === g.value ? 'selected' : 'default'}
-                onPress={() => setGrain(g.value)}
+            <View className="min-w-0 flex-1 items-start gap-2">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-meta text-text-muted"
               >
-                {g.label}
-              </Chip>
-            ))}
-          </View>
-        )}
+                {t('dish.grain_label')}
+              </Text>
+              {grainOptions().map((g) => (
+                <Chip
+                  key={g.value}
+                  size="sm"
+                  state={grain === g.value ? 'selected' : 'default'}
+                  onPress={() => setGrain(g.value)}
+                >
+                  {g.label}
+                </Chip>
+              ))}
+            </View>
+          ) : null}
+        </View>
 
-        <Eyebrow className="mt-4">{t('dish.caption_label')}</Eyebrow>
-        <TextInput
-          className="mt-2 border-line border-b pb-1 font-ui text-body text-text"
-          placeholderTextColor={placeholder}
-          ref={captionRef}
-          placeholder={t('dish.caption_placeholder')}
-          maxLength={140}
-          value={caption}
-          onChangeText={setCaption}
-          returnKeyType="done"
-        />
+        <View className="px-4 pt-4">
+          <Field
+            ref={captionRef}
+            label={t('dish.caption_label')}
+            placeholder={t('dish.caption_placeholder')}
+            maxLength={140}
+            value={caption}
+            onChangeText={setCaption}
+            returnKeyType="done"
+          />
+        </View>
 
         {myRanking && restaurant && (
-          <>
-            <SectionHeader>{t('dish.linked_ranking')}</SectionHeader>
+          <View className="px-4 pt-4">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mb-1.5 font-ui-semibold text-label text-text-muted"
+            >
+              {t('dish.linked_ranking')}
+            </Text>
             {/* router.push, not a dismiss: this only stacks the profile on
                 top — the composer (and whatever's typed so far) is still
                 there on the way back, same as the rank flow's own nested
@@ -349,52 +393,83 @@ export default function DishCompose() {
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push(`/r/${restaurant.id}`)}
-              className="flex-row items-center gap-3 rounded border border-line bg-surface p-3 active:opacity-80"
+              className="flex-row items-center gap-3 rounded-group bg-surface px-3.5 py-3 active:opacity-80"
+              style={lift}
             >
-              <View className="flex-1">
-                <Text className="font-serif text-serif-md text-text">{restaurant.name}</Text>
-                <Characteristics
-                  priceTier={restaurant.priceTier}
-                  cuisine={restaurant.cuisine}
-                  neighborhood={restaurant.neighborhood?.name}
-                />
+              <View className="min-w-0 flex-1">
+                <Text
+                  numberOfLines={2}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-serif text-serif-sm text-text"
+                >
+                  {restaurant.name}
+                </Text>
+                {meta ? (
+                  <Text
+                    numberOfLines={2}
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="mt-0.5 font-ui text-meta text-text-muted"
+                  >
+                    {meta}
+                  </Text>
+                ) : null}
               </View>
-              <ScoreBadge size="sm" score={myRanking.score} attribution={{ kind: 'you' }} />
+              <ScoreStack score={myRanking.score} size="sm" />
             </Pressable>
-          </>
+          </View>
         )}
 
-        <View className="mt-4 flex-row items-center justify-between border-line border-b py-3">
-          <Text className="flex-1 font-ui text-body text-text">{t('dish.friends_only_label')}</Text>
-          <Toggle
-            checked={friendsOnly}
-            onChange={setFriendsOnly}
-            label={t('dish.friends_only_label')}
-          />
+        <View className="mt-2 min-h-[54px] flex-row items-center justify-between gap-3 px-5">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="flex-1 font-ui text-subhead text-text">
+            {t('dish.friends_only_label')}
+          </Text>
+          <View className="justify-center self-center">
+            <Toggle
+              checked={friendsOnly}
+              onChange={setFriendsOnly}
+              label={t('dish.friends_only_label')}
+            />
+          </View>
         </View>
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
-          <Caption className="mt-3 text-danger">{t('dish.rank_first_error')}</Caption>
+          <Caption className="mt-1 px-5 text-danger">{t('dish.rank_first_error')}</Caption>
         )}
-
-        <View className="mt-6">
-          <Button variant="primary" disabled={!canPost} onPress={() => post.mutate()}>
-            {post.isPending ? t('dish.publishing') : t('dish.publish_button')}
-          </Button>
-        </View>
       </ScrollView>
+
+      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+        <Button variant="primary" disabled={!canPost} onPress={() => post.mutate()}>
+          {post.isPending ? t('dish.publishing') : t('dish.publish_button')}
+        </Button>
+      </View>
     </View>
   )
 }
 
-function BackBar({ label, onPress }: { label: string; onPress: () => void }) {
+// "Cancel | Post a dish" — the sheet's top line. The title is centred whatever the width of
+// Cancel; the right side is an empty slot the same width so it stays centred.
+function ComposerHeader({ onCancel }: { onCancel: () => void }) {
+  const t = useT()
   return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      className="min-h-[44px] self-start justify-center active:opacity-60"
-    >
-      <Text className="font-ui-medium text-label text-text-muted">{label}</Text>
-    </Pressable>
+    <View className="min-h-[44px] flex-row items-center justify-between px-5">
+      <Pressable
+        accessibilityRole="button"
+        onPress={onCancel}
+        hitSlop={8}
+        className="min-h-[44px] w-[76px] justify-center active:opacity-60"
+      >
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-medium text-body text-text">
+          {t('dish.cancel')}
+        </Text>
+      </Pressable>
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="shrink font-ui-semibold text-body text-text"
+      >
+        {t('dish.post_title')}
+      </Text>
+      <View className="w-[76px]" />
+    </View>
   )
 }

@@ -198,11 +198,15 @@ export function UtilityPill({
   children,
   href,
   onPress,
+  layout = 'tile',
 }: {
   icon?: ReactNode
   children: ReactNode
   href?: string
   onPress?: () => void
+  // 'tile': a round 54pt icon with its label under it (the place page's info row). 'chip': one
+  // raised capsule, icon then label (a dish's Call / Website / Directions row).
+  layout?: 'tile' | 'chip'
 }) {
   const theme = useResolvedTheme()
   const open = () => {
@@ -223,6 +227,25 @@ export function UtilityPill({
     if (/^(tel:|mailto:)/.test(href)) Linking.openURL(href).catch(() => {})
   }
   const lift = useLift()
+  if (layout === 'chip') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={open}
+        className="min-h-[46px] flex-1 flex-row items-center justify-center gap-1.5 rounded-pill bg-chip px-2 active:opacity-80"
+        style={lift}
+      >
+        {icon}
+        <Text
+          numberOfLines={1}
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="font-ui-semibold text-pill text-text"
+        >
+          {children}
+        </Text>
+      </Pressable>
+    )
+  }
   return (
     <Pressable
       accessibilityRole="button"
@@ -248,7 +271,7 @@ export function UtilityPill({
 }
 
 function badgeText(a: ScoreAttribution, t: ReturnType<typeof useT>): string | null {
-  if (a.kind === 'you') return 'Tú'
+  if (a.kind === 'you') return t('common.you')
   if (a.kind === 'user') return a.label
   if (a.kind === 'friends') return t('friends.count_badge', { n: a.count })
   if (a.kind === 'stated') return null
@@ -336,7 +359,17 @@ export function ScoreBadge({
 
 // The dense-row form of a score: the figure over its word, right-aligned — for ranked
 // lists and friends' notes where a capsule would crowd the row.
-export function ScoreStack({ score, size = 'md' }: { score: number; size?: 'sm' | 'md' }) {
+export function ScoreStack({
+  score,
+  size = 'md',
+  label,
+}: {
+  score: number
+  size?: 'sm' | 'md'
+  // Whose it is, in a small muted line under the word ("You", "3 friends") — for a place where
+  // the score could be read as the place's own.
+  label?: string
+}) {
   const t = useT()
   return (
     <View className="min-w-[52px] items-end">
@@ -353,6 +386,15 @@ export function ScoreStack({ score, size = 'md' }: { score: number; size?: 'sm' 
       >
         {t(scoreWordKey(score))}
       </Text>
+      {label ? (
+        <Text
+          numberOfLines={1}
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="mt-0.5 font-ui text-eyebrow text-text-muted"
+        >
+          {label}
+        </Text>
+      ) : null}
     </View>
   )
 }

@@ -81,10 +81,19 @@ export function Field({
   return (
     <View>
       {label ? (
-        <Text className="mb-1.5 font-ui-semibold text-label text-text-muted">{label}</Text>
+        <Text
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="mb-1.5 font-ui-semibold text-label text-text-muted"
+        >
+          {label}
+        </Text>
       ) : null}
       {framed}
-      {error ? <Text className="mt-1.5 font-ui text-micro text-danger">{error}</Text> : null}
+      {error ? (
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="mt-1.5 font-ui text-micro text-danger">
+          {error}
+        </Text>
+      ) : null}
     </View>
   )
 }
