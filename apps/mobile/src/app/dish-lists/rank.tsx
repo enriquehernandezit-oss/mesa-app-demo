@@ -219,7 +219,7 @@ function PairwiseFlow({
       <ScreenHeader onBack={onBack} backLabel={t('common.back_plain')} />
       <View className="mt-2 gap-4 px-5">
         <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
-          {step} de {total}
+          {t('common.n_of_total', { n: step, total })}
         </Text>
         <View className="items-center gap-1">
           <Title>{t('dishLists.compare_title', { label })}</Title>

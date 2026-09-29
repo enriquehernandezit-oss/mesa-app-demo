@@ -514,6 +514,7 @@ export const es = {
   'common.report_error': 'No se pudo enviar el reporte. Intenta de nuevo.',
   'common.error_fallback': 'Algo salió mal. Intenta de nuevo en un momento.',
   'common.any': 'Cualquiera',
+  'common.n_of_total': '{n} de {total}',
 
   // components/ReportControl.tsx
   'report.label': 'Reportar',

@@ -109,7 +109,9 @@ a stacked serif figure, or set a column of counts in the system font, where `tab
 
 | Use                                           | Size / weight                               |
 | --------------------------------------------- | ------------------------------------------- |
-| Hero place name; "mesa" on splash and auth    | serif 46                                    |
+| Hero place name                               | serif 46                                    |
+| "mesa" on landing / auth (no icon above it)   | serif 72 (splash 56)                        |
+| Onboarding step titles                        | serif 36 (`text-headline`)                  |
 | Large titles (Explore, Your list, Plans…)     | serif 40, line height 1.02                  |
 | Greeting; "How was it?" / "Which was better?" | serif 33–34                                 |
 | Feed and event card titles; podium names      | serif 28                                    |
@@ -192,6 +194,8 @@ the app and are viewed inside someone else's feed, so they look the same for eve
   `#210104` by day, cream by night** (oxblood would vanish on black). Rendered as text so it
   scales and themes cleanly.
 - **The landing and auth screens show the wordmark only.** No icon, no tile, anywhere in the app.
+  With no mark above it the wordmark carries the screen alone, so it is set at 72 (the boards, which
+  draw the M icon over a 46 word, are superseded on this point).
 - **The app icon is a capital serif `M`** — cream `#f1e8da` on an oxblood radial gradient
   (`#4d0b17` → `#2e0309` at 42% → `#210104`, centred at 30% / 18%), a full-bleed 1024 square (iOS
   applies its own ~22% corner mask). It exists on the home screen and nowhere else.

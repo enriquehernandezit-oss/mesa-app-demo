@@ -114,6 +114,7 @@ module.exports = {
         'serif-md': [21, '24px'],
         'serif-xl': [26, '29px'],
         'serif-lg': [34, '37px'],
+        headline: [36, '38px'],
       },
       // Big soft radii (docs/DESIGN.md "Shape"). DEFAULT is the field radius; the rest
       // are named for what wears them. Capsules (buttons, pills, bars) are `pill`.

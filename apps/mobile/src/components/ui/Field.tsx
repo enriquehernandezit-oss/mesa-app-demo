@@ -1,4 +1,4 @@
-import type { Ref } from 'react'
+import type { ReactNode, Ref } from 'react'
 import { Text, TextInput, View } from 'react-native'
 
 import { useResolvedTheme } from '@/theme/ThemeProvider'
@@ -31,10 +31,21 @@ type FieldProps = React.ComponentProps<typeof TextInput> & {
   label?: string
   // A red line below the input (e.g. a failed save) — also reddens the border.
   error?: string
+  // A leading glyph inside the field (mail, lock, search) — muted, non-interactive.
+  icon?: ReactNode
   ref?: Ref<TextInput>
 }
 
-export function Field({ multilineBox, label, error, className, style, ref, ...props }: FieldProps) {
+export function Field({
+  multilineBox,
+  label,
+  error,
+  icon,
+  className,
+  style,
+  ref,
+  ...props
+}: FieldProps) {
   const placeholder = useColor('text-faint')
   const accent = useColor('accent')
   const theme = useResolvedTheme()
@@ -47,20 +58,30 @@ export function Field({ multilineBox, label, error, className, style, ref, ...pr
       keyboardAppearance={theme === 'night' ? 'dark' : 'light'}
       className={`rounded border bg-surface font-ui text-body text-text ${
         error ? 'border-danger' : 'border-transparent'
-      } ${multilineBox ? 'min-h-[84px] p-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}
+      } ${multilineBox ? 'min-h-[84px] p-4' : icon ? 'min-h-[52px] pl-11 pr-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}
       style={[lift, style]}
       {...props}
     />
   )
+  const framed = icon ? (
+    <View className="justify-center">
+      {input}
+      <View pointerEvents="none" className="absolute left-4">
+        {icon}
+      </View>
+    </View>
+  ) : (
+    input
+  )
   // Bare input unless there's a label/error to frame it — keeps every existing
   // call site's own layout (gap containers, refs) untouched.
-  if (!label && !error) return input
+  if (!label && !error) return framed
   return (
     <View>
       {label ? (
         <Text className="mb-1.5 font-ui-semibold text-label text-text-muted">{label}</Text>
       ) : null}
-      {input}
+      {framed}
       {error ? <Text className="mt-1.5 font-ui text-micro text-danger">{error}</Text> : null}
     </View>
   )

@@ -1579,7 +1579,7 @@ function PlaceStep({
   return (
     <View className="mt-4 gap-4">
       <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
-        {step} de {total}
+        {t('common.n_of_total', { n: step, total })}
       </Text>
       <View className="items-center gap-1">
         <Title>{t('rank.which_was_better')}</Title>

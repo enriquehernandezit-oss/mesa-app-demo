@@ -6,6 +6,7 @@ import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { type FollowSource, useFollow } from '@/hooks/useFollow'
 import { useT } from '@/lib/i18n'
+import { useLift } from '@/theme/useLift'
 
 type PersonRowUser = {
   id: string
@@ -76,6 +77,7 @@ export function FollowPill({
   onChange?: (following: boolean) => void
 }) {
   const t = useT()
+  const lift = useLift()
   const { following, toggle, pending } = useFollow(userId, initial, from)
 
   // `onChange` is typically a fresh closure per render (callers building it
@@ -92,11 +94,11 @@ export function FollowPill({
       accessibilityState={{ selected: following, disabled: pending }}
       disabled={pending}
       onPress={toggle}
-      className={`min-h-[36px] justify-center rounded-pill border px-4 ${following ? 'border-accent bg-accent-fill' : 'border-line'} active:opacity-70`}
+      // Follow is the call to action (solid ink); Following settles to a raised chip.
+      className={`min-h-[34px] justify-center rounded-pill px-4 ${following ? 'bg-chip' : 'bg-ink'} active:opacity-70`}
+      style={following ? lift : undefined}
     >
-      <Text
-        className={`font-ui-semibold text-eyebrow ${following ? 'text-on-accent' : 'text-text-muted'}`}
-      >
+      <Text className={`font-ui-semibold text-label ${following ? 'text-text' : 'text-on-ink'}`}>
         {following ? t('activity.following_pill') : t('activity.follow_pill')}
       </Text>
     </Pressable>

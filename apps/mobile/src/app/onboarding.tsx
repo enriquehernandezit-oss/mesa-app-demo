@@ -6,13 +6,14 @@ import {
 } from '@tanstack/react-query'
 import { Redirect, useRouter } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Title } from '@/components/ui'
+import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Serif } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
-import { CheckIcon } from '@/components/ui/icons'
+import { Field } from '@/components/ui/Field'
+import { CheckIcon, PeopleIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
@@ -29,6 +30,7 @@ import { takePendingInvite } from '@/lib/pendingInvite'
 import { parseBirthdayIso } from '@/lib/time'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
+import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
 // Cold-start fix — the #1 product risk is an empty first open, so onboarding is
@@ -81,11 +83,13 @@ export default function Onboarding() {
           scroller has nothing to hide content behind it; this gives it both
           a ground of its own and a place in the stacking order. */}
       <View className="bg-bg px-5 pt-2 pb-2" style={{ zIndex: 1 }}>
-        <View className="h-1 overflow-hidden rounded-pill bg-bg-sunk">
-          <View
-            className="h-1 rounded-pill bg-accent-fill"
-            style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
-          />
+        <View className="flex-row gap-1.5">
+          {STEPS.map((s, i) => (
+            <View
+              key={s}
+              className={`h-1 flex-1 rounded-pill ${i <= stepIndex ? 'bg-ink' : 'bg-bg-sunk'}`}
+            />
+          ))}
         </View>
         <Caption className="mt-2 text-micro">
           {t('onboarding.step_progress', { step: stepIndex + 1, total: STEPS.length })}
@@ -102,7 +106,6 @@ export default function Onboarding() {
 // Step 1: identity. Name, @handle, home sector, and the EULA/terms accept a UGC
 // app needs at signup (App Store 1.2).
 function ProfileStep({ onNext }: { onNext: () => void }) {
-  const placeholder = useColor('text-muted')
   const t = useT()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
@@ -175,13 +178,10 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled"
     >
-      <Title>{t('onboarding.who_are_you')}</Title>
-      <Body className="mt-1">{t('onboarding.identity_subtitle')}</Body>
+      <StepTitle title={t('onboarding.who_are_you')} subtitle={t('onboarding.identity_subtitle')} />
 
       <Eyebrow className="mt-6 mb-2">{t('onboarding.name_label')}</Eyebrow>
-      <TextInput
-        className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-        placeholderTextColor={placeholder}
+      <Field
         placeholder={t('onboarding.name_placeholder')}
         autoComplete="name"
         textContentType="name"
@@ -190,9 +190,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       />
 
       <Eyebrow className="mt-5 mb-2">{t('onboarding.handle_label')}</Eyebrow>
-      <TextInput
-        className="min-h-[52px] rounded border border-line bg-surface px-4 font-ui text-body text-text"
-        placeholderTextColor={placeholder}
+      <Field
         placeholder={t('onboarding.handle_placeholder')}
         autoCapitalize="none"
         autoCorrect={false}
@@ -229,27 +227,24 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
 
       <Eyebrow className="mt-5 mb-2">{t('onboarding.birthday_label')}</Eyebrow>
       <View className="flex-row gap-2">
-        <TextInput
-          className="min-h-[52px] w-16 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
-          placeholderTextColor={placeholder}
+        <Field
+          className="flex-1"
           placeholder={t('onboarding.birthday_day')}
           keyboardType="number-pad"
           maxLength={2}
           value={birthDay}
           onChangeText={(v) => setBirthDay(v.replace(/\D/g, ''))}
         />
-        <TextInput
-          className="min-h-[52px] w-16 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
-          placeholderTextColor={placeholder}
+        <Field
+          className="flex-1"
           placeholder={t('onboarding.birthday_month')}
           keyboardType="number-pad"
           maxLength={2}
           value={birthMonth}
           onChangeText={(v) => setBirthMonth(v.replace(/\D/g, ''))}
         />
-        <TextInput
-          className="min-h-[52px] w-24 rounded border border-line bg-surface px-3 text-center font-ui text-body text-text"
-          placeholderTextColor={placeholder}
+        <Field
+          style={{ flex: 1.6 }}
           placeholder={t('onboarding.birthday_year')}
           keyboardType="number-pad"
           maxLength={4}
@@ -271,9 +266,9 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         className="mt-6 min-h-[44px] flex-row items-start gap-3 active:opacity-70"
       >
         <View
-          className={`h-6 w-6 items-center justify-center rounded border ${accepted ? 'border-accent bg-accent-fill' : 'border-line'}`}
+          className={`h-6 w-6 items-center justify-center rounded-[7px] border ${accepted ? 'border-transparent bg-ink' : 'border-line-strong'}`}
         >
-          {accepted && <CheckIcon size={14} color="on-accent" />}
+          {accepted && <CheckIcon size={14} color="on-ink" strokeWidth={2.6} />}
         </View>
         <Caption className="flex-1">{t('onboarding.eula_accept')}</Caption>
       </Pressable>
@@ -290,6 +285,66 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
         </Button>
       </View>
     </ScrollView>
+  )
+}
+
+// A step's title (serif 36) and the one line under it.
+function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <View>
+      <Serif className="text-headline text-text">{title}</Serif>
+      <Text className="mt-2 font-ui text-subhead text-text-muted">{subtitle}</Text>
+    </View>
+  )
+}
+
+// One spot in the "which of these have you been to?" grid: an r22 card, a photo,
+// and — once picked — a solid check and a ring in the ink colour. The ring sits on
+// an outer view because the inner one clips the photo to the corners.
+function PickCard({
+  restaurant: r,
+  on,
+  onPress,
+}: {
+  restaurant: Restaurant
+  on: boolean
+  onPress: () => void
+}) {
+  const lift = useLift()
+  const ink = useColor('ink')
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      className="w-[48.5%] rounded-group bg-surface active:opacity-80"
+      style={on ? { boxShadow: `0 0 0 2.5px ${ink}` } : lift}
+    >
+      <View className="overflow-hidden rounded-group">
+        <View className="h-[104px]">
+          <PlaceCover
+            seed={r.id}
+            name={r.name}
+            coverImageId={r.coverImageId}
+            size={{ w: 400, h: 300 }}
+            className="h-full w-full"
+          />
+          {on && (
+            <View className="absolute right-2 top-2 h-7 w-7 items-center justify-center rounded-pill border-2 border-bg bg-ink">
+              <CheckIcon size={15} color="on-ink" strokeWidth={2.6} />
+            </View>
+          )}
+        </View>
+        <View className="px-3 pb-3 pt-2">
+          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+            {r.name}
+          </Text>
+          <Caption className="text-micro" numberOfLines={1}>
+            {[cuisineLabel(r.cuisine), r.neighborhood?.name].filter(Boolean).join(' · ')}
+          </Caption>
+        </View>
+      </View>
+    </Pressable>
   )
 }
 
@@ -341,46 +396,19 @@ function RankStep({ onNext }: { onNext: () => void }) {
     return (
       <View className="flex-1">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-4">
-          <Title>{t('onboarding.which_have_you_been')}</Title>
-          <Body className="mt-1">
-            {t('onboarding.choose_range', { min: MIN_TO_RANK, max: MAX_TO_RANK })}
-          </Body>
-          <View className="mt-4 flex-row flex-wrap justify-between gap-y-4">
-            {data?.restaurants.map((r) => {
-              const on = selectedIds.includes(r.id)
-              return (
-                <Pressable
-                  key={r.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => toggle(r.id)}
-                  className={`w-[48%] overflow-hidden rounded border ${on ? 'border-accent' : 'border-line'} active:opacity-80`}
-                >
-                  <View className="h-24">
-                    <PlaceCover
-                      seed={r.id}
-                      name={r.name}
-                      coverImageId={r.coverImageId}
-                      size={{ w: 400, h: 300 }}
-                      className="h-full w-full"
-                    />
-                    {on && (
-                      <View className="absolute right-2 top-2 h-6 w-6 items-center justify-center rounded-pill bg-accent-fill">
-                        <CheckIcon size={13} color="on-accent" />
-                      </View>
-                    )}
-                  </View>
-                  <View className="p-2">
-                    <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-                      {r.name}
-                    </Text>
-                    <Caption numberOfLines={1}>
-                      {[cuisineLabel(r.cuisine), r.neighborhood?.name].filter(Boolean).join(' · ')}
-                    </Caption>
-                  </View>
-                </Pressable>
-              )
-            })}
+          <StepTitle
+            title={t('onboarding.which_have_you_been')}
+            subtitle={t('onboarding.choose_range', { min: MIN_TO_RANK, max: MAX_TO_RANK })}
+          />
+          <View className="mt-5 flex-row flex-wrap justify-between gap-y-3">
+            {data?.restaurants.map((r) => (
+              <PickCard
+                key={r.id}
+                restaurant={r}
+                on={selectedIds.includes(r.id)}
+                onPress={() => toggle(r.id)}
+              />
+            ))}
           </View>
         </ScrollView>
         <View className="px-5 pb-4">
@@ -460,22 +488,25 @@ function ComparePhase({
 
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-5 pb-10">
-      <Text style={DATA_FIGURES} className="font-ui-medium text-eyebrow text-text-muted">
-        {placed + 1} de {total}
-      </Text>
-      <Title className="mt-1 text-center">{t('rank.which_was_better')}</Title>
+      <View className="items-center">
+        <Text style={DATA_FIGURES} className="font-ui-semibold text-label text-text-muted">
+          {t('common.n_of_total', { n: placed + 1, total })}
+        </Text>
+        <Serif className="mt-1.5 text-center text-serif-lg text-text">
+          {t('rank.which_was_better')}
+        </Serif>
+      </View>
 
       <View className="mt-4 gap-3">
         <CompareCard item={toItem(comparison.current)} onPress={() => pick(true)} />
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          className="min-h-[40px] self-center"
           onPress={() => setState((s) => tie(s))}
-          className="min-h-[44px] items-center justify-center rounded-pill border border-line active:opacity-70"
         >
-          <Text className="font-ui-semibold text-eyebrow text-text-muted uppercase tracking-eyebrow">
-            {t('rank.roughly_equal')}
-          </Text>
-        </Pressable>
+          {t('rank.roughly_equal')}
+        </Button>
         <CompareCard item={toItem(comparison.pivot)} onPress={() => pick(false)} />
       </View>
 
@@ -484,7 +515,7 @@ function ComparePhase({
         onPress={() => setState((s) => skip(s))}
         className="mt-5 min-h-[44px] items-center justify-center active:opacity-60"
       >
-        <Text className="font-ui text-eyebrow text-text-muted uppercase tracking-eyebrow">
+        <Text className="font-ui-semibold text-label text-text-muted">
           {t('onboarding.havent_been_swap')}
         </Text>
       </Pressable>
@@ -497,6 +528,7 @@ function ComparePhase({
 // 5.1). Following is optimistic — both API calls are idempotent.
 function FriendsStep({ onFinish }: { onFinish: () => void }) {
   const t = useT()
+  const lift = useLift()
   const queryClient = useQueryClient()
   // Membership only, not a source of truth for the toggle itself — each row
   // owns its own `useFollow` now (optimistic + rollback + a real error
@@ -570,13 +602,16 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
   return (
     <View className="flex-1">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-4">
-        <Title>{t('onboarding.follow_some_friends')}</Title>
-        <Body className="mt-1">{t('onboarding.follow_subtitle')}</Body>
+        <StepTitle
+          title={t('onboarding.follow_some_friends')}
+          subtitle={t('onboarding.follow_subtitle')}
+        />
 
         {contactsAvailable() && (
-          <View className="mt-4">
+          <View className="mt-5">
             <Button
               variant="secondary"
+              icon={<PeopleIcon size={18} />}
               disabled={contactMatch.isPending}
               onPress={() => contactMatch.mutate()}
             >
@@ -586,12 +621,17 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
         )}
         {contactMsg && <Caption className="mt-2">{contactMsg}</Caption>}
 
-        <View className="mt-4">
-          {suggested.isPending && <Body>{t('onboarding.finding_people')}</Body>}
-          {list.map((u) => (
+        {suggested.isPending && <Body className="mt-4">{t('onboarding.finding_people')}</Body>}
+        {/* The people, as one grouped white card with hairlines between rows. */}
+        <View
+          className={list.length > 0 ? 'mt-4 rounded-group bg-surface px-4' : ''}
+          style={list.length > 0 ? lift : undefined}
+        >
+          {list.map((u, i) => (
             <PersonRow
               key={u.id}
               user={u}
+              last={i === list.length - 1}
               right={
                 <FollowPill
                   userId={u.id}

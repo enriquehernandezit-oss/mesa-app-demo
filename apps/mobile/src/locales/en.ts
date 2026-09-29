@@ -474,6 +474,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'common.report_error': "Couldn't send the report. Try again.",
   'common.error_fallback': 'Something went wrong. Try again in a moment.',
   'common.any': 'Any',
+  'common.n_of_total': '{n} of {total}',
 
   'report.label': 'Report',
   'report.reason_spam': 'Spam',

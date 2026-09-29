@@ -68,7 +68,7 @@ export function GoogleSignInButton({
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
-      className="h-[52px] w-full flex-row items-center justify-center gap-3 rounded-pill active:opacity-80"
+      className="h-[54px] w-full flex-row items-center justify-center gap-3 rounded-pill active:opacity-80"
       style={{
         backgroundColor: dark ? DARK_BG : LIGHT_BG,
         borderWidth: 1,

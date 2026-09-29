@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Text,
   type TextInput,
   View,
 } from 'react-native'
@@ -20,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
+import { LockIcon, MailIcon } from '@/components/ui/icons'
 import { track } from '@/lib/analytics'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
@@ -37,10 +39,18 @@ function BlinkingCursor() {
   }, [o])
   const style = useAnimatedStyle(() => ({ opacity: o.value }))
   return (
-    <Animated.Text style={style} className="font-serif text-serif-sm text-text">
+    <Animated.Text style={style} className="font-serif text-serif-md text-text">
       _
     </Animated.Text>
   )
+}
+
+// "Already have an account? Sign in" → the question, then the action in bold. Both
+// locales' switch strings put a "? " between the two; a string without one is all
+// action.
+function splitAction(label: string): [string, string] {
+  const i = label.indexOf('? ')
+  return i < 0 ? ['', label] : [label.slice(0, i + 2), label.slice(i + 2)]
 }
 
 // Sign-in — email + password (the launch method) plus Sign in with Apple and
@@ -210,30 +220,35 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   if (suspended) {
     return (
       <SafeAreaView className="flex-1 bg-bg">
-        <View className="flex-1 items-center justify-center gap-4 px-5">
+        <View className="flex-1 items-center justify-center gap-3 px-8">
           <Wordmark size={64} />
-          <Eyebrow className="uppercase tracking-eyebrow text-accent">
-            {t('auth.suspended_title')}
-          </Eyebrow>
-          <Serif className="text-title text-center">{t('auth.suspended_headline')}</Serif>
-          <Body className="max-w-[19rem] text-center">{t('auth.suspended_body')}</Body>
-          <View className="mt-4 w-full">
-            <Button
-              variant="secondary"
-              onPress={async () => {
-                await signOut().catch(() => {})
-                clearAuthLost()
-              }}
-            >
-              {t('auth.back_to_start')}
-            </Button>
-          </View>
+          <Eyebrow className="mt-4 text-danger">{t('auth.suspended_title')}</Eyebrow>
+          <Serif className="text-center text-serif-lg text-text">
+            {t('auth.suspended_headline')}
+          </Serif>
+          <Body className="text-center text-subhead text-text-muted">
+            {t('auth.suspended_body')}
+          </Body>
+        </View>
+        <View className="px-5 pb-6">
+          <Button
+            variant="secondary"
+            onPress={async () => {
+              await signOut().catch(() => {})
+              clearAuthLost()
+            }}
+          >
+            {t('auth.back_to_start')}
+          </Button>
         </View>
       </SafeAreaView>
     )
   }
 
   const canSubmit = email.includes('@') && password.length >= 8
+  const [lead, action] = splitAction(
+    mode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup'),
+  )
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
@@ -258,27 +273,28 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
             onPress={Keyboard.dismiss}
             className="flex-grow justify-center gap-5 px-5 py-6"
           >
-            <View className="items-center gap-2">
-              <Wordmark size={84} />
-              <View className="items-center">
-                <Eyebrow className="uppercase tracking-eyebrow text-accent">
-                  Revolución gastronómica
-                </Eyebrow>
+            {/* The wordmark alone carries the screen: the capital-M app icon lives on
+                the home screen and is never drawn in the app. */}
+            <View className="items-center gap-3">
+              <Wordmark size={72} />
+              <View className="items-center gap-1">
+                <Eyebrow className="uppercase tracking-eyebrow">Revolución gastronómica</Eyebrow>
                 <View className="flex-row items-baseline">
-                  <Serif className="text-serif-sm text-text">Primer objetivo: SDQ</Serif>
+                  <Serif className="text-serif-md text-text">Primer objetivo: SDQ</Serif>
                   <BlinkingCursor />
                 </View>
               </View>
             </View>
 
             <View className="gap-3">
-              <Eyebrow>
+              <Eyebrow className="pl-1">
                 {mode === 'signup' ? t('auth.create_account_eyebrow') : t('auth.welcome_back')}
               </Eyebrow>
               {/* textContentType is what actually turns on iCloud Keychain: username
               + newPassword is the pair iOS looks for to offer a strong password
               on sign-up and to save the credential afterwards. */}
               <Field
+                icon={<MailIcon size={18} color="text-muted" />}
                 value={email}
                 onChangeText={setEmail}
                 placeholder={t('auth.email_placeholder')}
@@ -294,6 +310,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               />
               <Field
                 ref={passwordRef}
+                icon={<LockIcon size={18} color="text-muted" />}
                 value={password}
                 onChangeText={setPassword}
                 placeholder={t('auth.password_placeholder')}
@@ -333,26 +350,33 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                 <Caption className="text-center text-text-2">{t('auth.reset_sent')}</Caption>
               ) : (
                 mode === 'signin' && (
-                  <Button
-                    variant="ghost"
+                  <Pressable
+                    accessibilityRole="button"
                     disabled={busy || !email.includes('@')}
                     onPress={sendReset}
+                    className="min-h-[40px] items-center justify-center active:opacity-70 disabled:opacity-45"
                   >
-                    {t('auth.forgot_password')}
-                  </Button>
+                    <Text className="font-ui-semibold text-pill text-text">
+                      {t('auth.forgot_password')}
+                    </Text>
+                  </Pressable>
                 )
               )}
 
-              <Button
-                variant="ghost"
+              <Pressable
+                accessibilityRole="button"
                 onPress={() => {
                   setMode(mode === 'signup' ? 'signin' : 'signup')
                   setError(null)
                   setResetSent(false)
                 }}
+                className="min-h-[40px] items-center justify-center active:opacity-70"
               >
-                {mode === 'signup' ? t('auth.switch_to_signin') : t('auth.switch_to_signup')}
-              </Button>
+                <Text className="text-center font-ui text-pill text-text-muted">
+                  {lead}
+                  <Text className="font-ui-semibold text-text">{action}</Text>
+                </Text>
+              </Pressable>
 
               {((Platform.OS === 'ios' && appleAvailable) || googleAvailable) && (
                 <View className="my-1 flex-row items-center gap-3">
@@ -369,8 +393,8 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                       ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
                       : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
                   }
-                  cornerRadius={26}
-                  style={{ height: 52, width: '100%' }}
+                  cornerRadius={27}
+                  style={{ height: 54, width: '100%' }}
                   onPress={appleAuth}
                 />
               )}

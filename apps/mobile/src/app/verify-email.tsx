@@ -57,10 +57,10 @@ export default function VerifyEmail() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg">
-      <View className="flex-1 justify-center gap-4 px-5">
-        <View className="items-center gap-2">
+      <View className="flex-1 justify-center px-8">
+        <View className="items-center gap-3">
           <Wordmark size={64} />
-          <Eyebrow className="text-accent">
+          <Eyebrow className="mt-4">
             {state === 'done'
               ? t('auth.verify_confirmed_eyebrow')
               : t('auth.verify_pending_eyebrow')}
@@ -70,8 +70,10 @@ export default function VerifyEmail() {
 
           {state === 'done' && (
             <>
-              <Serif className="text-title text-center">{t('auth.verify_done_title')}</Serif>
-              <Body className="max-w-[19rem] text-center text-text-2">
+              <Serif className="text-center text-serif-lg text-text">
+                {t('auth.verify_done_title')}
+              </Serif>
+              <Body className="max-w-[19rem] text-center text-subhead text-text-muted">
                 {t('auth.verify_done_body')}
               </Body>
             </>
@@ -79,10 +81,10 @@ export default function VerifyEmail() {
 
           {(state === 'expired' || state === 'missing') && (
             <>
-              <Serif className="text-title text-center">
+              <Serif className="text-center text-serif-lg text-text">
                 {state === 'missing' ? t('auth.verify_missing_token') : t('auth.INVALID_TOKEN')}
               </Serif>
-              <Body className="max-w-[19rem] text-center text-text-2">
+              <Body className="max-w-[19rem] text-center text-subhead text-text-muted">
                 {t('auth.verify_expired_body')}
               </Body>
               {error && (
@@ -93,12 +95,11 @@ export default function VerifyEmail() {
             </>
           )}
         </View>
-
-        <View className="mt-4">
-          <Button variant="primary" onPress={enter}>
-            {state === 'done' ? t('auth.verify_enter_done') : t('auth.verify_enter_pending')}
-          </Button>
-        </View>
+      </View>
+      <View className="px-5 pb-6">
+        <Button variant="primary" onPress={enter}>
+          {state === 'done' ? t('auth.verify_enter_done') : t('auth.verify_enter_pending')}
+        </Button>
       </View>
     </SafeAreaView>
   )

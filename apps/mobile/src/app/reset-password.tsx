@@ -11,8 +11,9 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { Body, Button, Caption, Eyebrow, Serif, Wordmark } from '@/components/ui'
+import { Body, Button, Caption, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
+import { LockIcon } from '@/components/ui/icons'
 import { authClient } from '@/lib/auth-client'
 import { useT } from '@/lib/i18n'
 
@@ -66,7 +67,9 @@ export default function ResetPassword() {
           >
             <View className="items-center gap-2">
               <Wordmark size={56} />
-              <Eyebrow>{t('auth.reset_title')}</Eyebrow>
+              <Serif className="mt-3 text-center text-serif-lg text-text">
+                {t('auth.reset_title')}
+              </Serif>
             </View>
 
             {!token ? (
@@ -89,6 +92,7 @@ export default function ResetPassword() {
             ) : (
               <View className="gap-3">
                 <Field
+                  icon={<LockIcon size={18} color="text-muted" />}
                   placeholder={t('auth.reset_new_password_placeholder')}
                   secureTextEntry
                   autoComplete="new-password"
@@ -102,6 +106,7 @@ export default function ResetPassword() {
                 />
                 <Field
                   ref={confirmRef}
+                  icon={<LockIcon size={18} color="text-muted" />}
                   placeholder={t('auth.reset_confirm_placeholder')}
                   secureTextEntry
                   autoComplete="new-password"

@@ -336,3 +336,16 @@ export const LocateIcon = (p: IconProps) => (
     <Path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22" />
   </Icon>
 )
+// Form-field glyphs (sign-in, reset password).
+export const MailIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <Path d="m4 7 8 6 8-6" />
+  </Icon>
+)
+export const LockIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <Rect x="5" y="10.5" width="14" height="10" rx="2.5" />
+    <Path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+  </Icon>
+)
