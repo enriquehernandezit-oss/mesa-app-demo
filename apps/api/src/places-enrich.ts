@@ -34,7 +34,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
-import { db, haversineM, pool, schema } from '@mesa/db'
+import { db, pool, schema } from '@mesa/db'
 import { eq } from 'drizzle-orm'
 
 import { inBounds, namesAgree } from './import-top100'
@@ -49,84 +49,13 @@ import {
   toMesaFields,
 } from './lib/googlePlaces'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './lib/placeContacts'
+import { type EnrichPatch, type EnrichRow, enrichPatch, pinDistanceM } from './lib/placeFacts'
 
 const { restaurants, neighborhoods } = schema
 
 const CACHE_PATH = new URL('../data/places-enrich-google.json', import.meta.url).pathname
 // Google lets place_id be stored forever but everything else for 30 days.
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
-// A pin closer than this to Google's is left where it is: it is the same spot, and moving it
-// would only churn coordinates.
-export const PIN_MOVE_MIN_M = 50
-
-export interface EnrichRow {
-  id: string
-  name: string
-  lat: number
-  lng: number
-  neighborhoodId: string
-  googlePlaceId: string | null
-  phone: string | null
-  website: string | null
-  address: string | null
-  locality: string | null
-  priceTier: number | null
-  closesAt: string | null
-  cuisine: string | null
-}
-
-// Only the columns that change. phone/website can become null (a fake cleared); the rest only
-// ever fill, except the pin (lat/lng + its neighborhood) and closedAt, which follow Google.
-export interface EnrichPatch {
-  phone?: string | null
-  website?: string | null
-  address?: string
-  locality?: string
-  priceTier?: number
-  closesAt?: string
-  cuisine?: string
-  googlePlaceId?: string
-  lat?: number
-  lng?: number
-  neighborhoodId?: string
-}
-
-// The fill rule above, pure. `hoodId` is the neighborhood Google's location resolves to; it is
-// only adopted when the pin itself moves.
-export function enrichPatch(
-  row: EnrichRow,
-  fields: MesaFieldsFromGoogle,
-  googlePlaceId: string,
-  hoodId: string,
-): EnrichPatch {
-  const patch: EnrichPatch = {}
-  if (isPlaceholderPhone(row.phone)) patch.phone = fields.phone
-  else if (row.phone == null && fields.phone) patch.phone = fields.phone
-  if (isPlaceholderWebsite(row.name, row.website)) patch.website = fields.website
-  else if (row.website == null && fields.website) patch.website = fields.website
-  if (row.address == null && fields.address) patch.address = fields.address
-  if (row.locality == null && fields.locality) patch.locality = fields.locality
-  if (row.priceTier == null && fields.priceTier != null) patch.priceTier = fields.priceTier
-  if (row.closesAt == null && fields.closesAt) patch.closesAt = fields.closesAt
-  if (row.cuisine == null && fields.cuisine) patch.cuisine = fields.cuisine
-  if (row.googlePlaceId == null) patch.googlePlaceId = googlePlaceId
-
-  const hasLocation = fields.lat !== 0 || fields.lng !== 0
-  if (hasLocation && pinDistanceM(row, fields) > PIN_MOVE_MIN_M) {
-    patch.lat = fields.lat
-    patch.lng = fields.lng
-    if (hoodId !== row.neighborhoodId) patch.neighborhoodId = hoodId
-  }
-  return patch
-}
-
-export function pinDistanceM(
-  row: Pick<EnrichRow, 'lat' | 'lng'>,
-  fields: Pick<MesaFieldsFromGoogle, 'lat' | 'lng'>,
-): number {
-  return haversineM(row.lat, row.lng, fields.lat, fields.lng)
-}
-
 export type MatchVerdict =
   | { ok: true; distanceM: number }
   | { ok: false; reason: 'no_location' | 'out_of_bounds' | 'name_mismatch' | 'not_food' }
@@ -366,7 +295,7 @@ async function main() {
     (o) => (o.kind === 'unmatched' ? ` — ${o.reason}: Google returned ${o.googleName}` : ''),
   )
   listFor(
-    'Google id already belongs to another row (a duplicate — left untouched):',
+    'Google id already belongs to another row (a duplicate — left untouched; `bun run places:merge` merges them):',
     'duplicate',
     (o) => (o.kind === 'duplicate' ? ` — same place as "${o.ownerName}"` : ''),
   )

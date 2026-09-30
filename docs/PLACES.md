@@ -94,8 +94,8 @@ was matched by name, and how far its pin moves.
 | list                                         | what it means                                                                                                                                                                                                               | what to do                                                                                                |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | **Google found no restaurant by that name**  | The hit failed a test, and the line shows what Google returned: `name_mismatch` (a different business), `not_food` (a shop or condo), `out_of_bounds` (another city — Segundo Muelle's only Google entry is in Panama City) | Untouched. Google has no such place under that name; it may be renamed or not real. Leave or fix by hand. |
-| **Google id already belongs to another row** | Google's answer is a place Mesa already has under another row — a **duplicate** (a seed row and its real catalog twin)                                                                                                      | Untouched. Decide which row survives; merging rows (their rankings, saves, lists) is separate work.       |
-| **Google says this is not a restaurant**     | A row already carrying a Google id whose Google type is a shop, not somewhere to eat — usually a wrong import by name (a bookstore, a liquor store)                                                                         | Untouched. Check whether it belongs in a restaurant app at all.                                           |
+| **Google id already belongs to another row** | Google's answer is a place Mesa already has under another row — a **duplicate** (a seed row and its real catalog twin)                                                                                                      | Untouched. Merge them with `places:merge` (below).                                                        |
+| **Google says this is not a restaurant**     | A row already carrying a Google id whose Google type is a shop, not somewhere to eat — usually a wrong import by name (a bookstore, a liquor store)                                                                         | Untouched. If it does not belong, `places:remove` deletes it (below).                                     |
 
 ### After enrich: clear what it couldn't fix
 
@@ -115,6 +115,69 @@ That nulls exactly the invented phones and homepages and nothing else. Then run
 close them: a place with no price level, no website (it may only have Instagram), or no
 phone stays empty. `places:audit` shows how many.
 
+## Merging duplicates
+
+The same restaurant often exists twice — a seed row and its real catalog twin, or two spellings.
+`places:merge` folds them into the one worth keeping. **Never bare-`DELETE` the twin you don't
+want:** thirteen tables point at a restaurant, so deleting one would cascade away members'
+rankings and leave a hole in their ranked lists (positions are dense 1..n and scores derive from
+position), and it would destroy the menu, Google id and real pin that usually sit on the _other_
+twin.
+
+```bash
+DATABASE_URL="<url>" bun run places:merge "<name>" ["<name>" …] [--rename "<name>"] --dry-run
+DATABASE_URL="<url>" bun run places:merge "<name>" ["<name>" …] [--rename "<name>"]
+```
+
+Name the rows of **one** duplicate group. A name that matches two rows ("Laurel", once as the
+seed row and once as the catalog row) contributes both.
+
+**Which row is kept:** the one with the most reviews (rankings), then the one with a photo, then
+the oldest. If it lacks the photo it takes it from the row being dropped. **What comes across**,
+so nothing of the dropped row is lost:
+
+| what                                                                      | how                                                                                                                                                         |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| members' rankings                                                         | carried over in the same slot; a member who ranked **both** keeps their better entry (with its dishes, cheers, comments), and their list is rewritten dense |
+| vibe notes                                                                | a member with a note on both keeps the newer                                                                                                                |
+| saves, collection entries, curated-list / dish-list entries, plan options | carried over; where both twins were in the same list the survivor keeps the better position and the list is renumbered                                      |
+| dishes, events, notifications, plan votes, a plan's chosen place          | repointed                                                                                                                                                   |
+| the menu                                                                  | moves if the survivor has none (a menu is owned whole by whatever wrote it)                                                                                 |
+| Google id, real pin, neighborhood, address, contacts                      | taken from a Google-backed twin, the way `places:enrich` would; an invented phone/website is replaced, never handed on                                      |
+
+`--dry-run` does the whole merge inside a transaction and **rolls it back**, so its counts are
+exactly what the real run would do. The whole group is one transaction: it either all happens or
+none of it does. It refuses on a name that matches nothing, on a single row, and on rows that
+carry two _different_ Google ids (two Google places are not duplicates).
+
+The seven duplicates Google confirmed (Ichiban and Shibuya are both Shibuya Ichiban):
+
+```bash
+bun run places:merge "Buche' Perico" "Buche Perico"
+bun run places:merge "Ichiban" "Shibuya" "Shibuya Ichiban" --rename "Shibuya Ichiban"
+bun run places:merge "Il Bacareto"
+bun run places:merge "Laurel"
+bun run places:merge "LILA - Modern Cuisine"
+bun run places:merge "Restaurante Gijón" "Restaurante Gijon"
+```
+
+Run each with `--dry-run` first. Use the exact spelling; the script refuses a name it can't find.
+
+## Removing a place
+
+```bash
+DATABASE_URL="<url>" bun run places:remove "<exact name>" --dry-run
+DATABASE_URL="<url>" bun run places:remove "<exact name>"
+```
+
+Unlike `restaurant:close`, which only hides a place that closed, this **deletes** the row and
+everything attached to it, and rewrites each affected member's list so it has no hole. It
+matches the exact name and refuses unless exactly one live row has it. It also **refuses if any
+member has ranked the place**, unless you pass `--force` — so a row that turns out to have
+real reviews is not deleted by accident. Removing a row does not stop the Top 100 importer
+re-adding it from the sheet, so drop its entry from `apps/api/data/top100.json` too (Mamey
+Librería Café, rank 42, was removed that way).
+
 ## Cost
 
 Place Details on the fields Mesa requests is billed on Google's **Enterprise** SKU, and
@@ -127,5 +190,18 @@ console before a production run.
 ## Shipping order
 
 This is API and database only: push → Railway runs `db:migrate` before the deploy →
-`curl /health` → then run the three commands against production, with the production
-`DATABASE_URL` — never from a session that isn't yours.
+`curl /health` → then, against production with the production `DATABASE_URL` (never from a
+session that isn't yours), in this order:
+
+1. `places:audit` — the starting picture.
+2. `places:merge` — each duplicate group, `--dry-run` first. Merging first means the
+   enrichment below has no duplicates to trip over, and each survivor already carries its
+   twin's Google facts and menu.
+3. `places:remove` — anything that should not be in Mesa, `--dry-run` first.
+4. `places:enrich --dry-run` → read the change list → `places:enrich`.
+5. `catalog:clean --dry-run` → `catalog:clean` — clears the invented contacts left on places
+   Google could not match.
+6. `places:audit` — the finishing picture.
+
+Every step that changes data has a `--dry-run` that rolls back, and every one is safe to
+re-run.
