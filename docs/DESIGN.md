@@ -280,6 +280,17 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   the serif (`SheetHeader` / `SheetTitle`), one solid button at the foot — Where (a search field, picture rows
   with a pick mark, chosen spots as solid pills), When (day and time pills), With whom (a search field, a raised
   **Invite** / solid **Invited** pill per follower), Review.
+- **Activity** (`app/activity.tsx`, `components/activity/ActivityRow.tsx`): the bell's screen, a native large
+  title over five `Chip` pills (All · Followers · Rankings · Plans · Events) and **Today / This week /
+  Earlier** groups (`GroupLabel`). Rows are flat on the ground with hairlines (no card): a 40pt face — or a
+  `chip` circle with an icon when no person is behind it (a cancelled event, a dish nudge) — the sentence
+  with names in semibold (the dictionary owns the word order: `{name}` / `{place}` tokens through
+  `lib/richText.ts`), the time in `meta` muted, and on the right a **Follow back** solid pill (`Following`
+  once followed) or the place's 46pt r14 photo. A comment adds its quote under the sentence. An **accent
+  dot in the left gutter** marks what is unread; opening the screen leaves the dots put and leaving it marks
+  everything shown as read. The bell dot in the feed header is the server's unread count
+  (`hooks/useBell.ts`). The list sits inside a plain `View`: as the screen's root the native large title
+  vanished after an overscroll.
 - **Settings, comments and share** (`app/settings/*`, `app/notifications.tsx`, `app/legal/[doc].tsx`,
   `app/moderation.tsx`, `app/photo-edit.tsx`, `app/comments/[rankingId].tsx`, `components/ShareCard.tsx`).
   **Settings** opens on a raised me card (avatar 48, name in the serif, "@handle · 143 ranked", **Edit

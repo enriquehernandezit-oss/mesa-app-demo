@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { IconButton, MAX_SCALE, Serif } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { BellIcon, SearchIcon } from '@/components/ui/icons'
+import { useUnreadCount } from '@/hooks/useBell'
 import { useProfile } from '@/hooks/useProfile'
-import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { dayPart } from '@/lib/greeting'
 import { useT } from '@/lib/i18n'
 
@@ -18,7 +18,7 @@ export function FeedHeader() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const me = useProfile(true).data?.profile
-  const unseen = useUnseenActivity()
+  const unseen = useUnreadCount()
   const part = dayPart()
   const first = (me?.name || me?.handle || '').trim().split(/\s+/)[0]
   const greeting = first

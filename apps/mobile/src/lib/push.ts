@@ -190,3 +190,19 @@ export function onNotificationTapped(
     sub?.remove()
   }
 }
+
+// The bell's live refresh: fires when a push arrives while the app is open, so the badge
+// updates without waiting for the next foreground. Same lazy-subscribe shape as the tap
+// listener above.
+export function onNotificationReceived(cb: () => void): () => void {
+  let sub: { remove: () => void } | null = null
+  let cancelled = false
+  loadNotifications().then((Notifications) => {
+    if (!Notifications || cancelled) return
+    sub = Notifications.addNotificationReceivedListener(() => cb())
+  })
+  return () => {
+    cancelled = true
+    sub?.remove()
+  }
+}

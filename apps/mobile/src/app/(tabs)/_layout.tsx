@@ -4,8 +4,8 @@ import { useRef } from 'react'
 import { View } from 'react-native'
 
 import { MesaTabBar } from '@/components/MesaTabBar'
+import { useBellRefresh, useUnreadCount } from '@/hooks/useBell'
 import { usePushRouting } from '@/hooks/usePushRouting'
-import { useUnseenActivity } from '@/hooks/useUnseenActivity'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
 import { tapLight } from '@/lib/haptics'
@@ -38,6 +38,8 @@ export default function TabsLayout() {
   // here since this is the first authed layout, not a splash effect. See
   // usePushRouting's own header.
   usePushRouting(useRouter())
+  // The bell's badge stays current: refreshed on foreground and when a push lands.
+  useBellRefresh()
   if (authLost) return <Redirect href="/sign-in" />
   if (!isPending && !session?.user) return <Redirect href="/sign-in" />
   return NATIVE_TABS ? <NativeShell /> : <CustomShell />
@@ -46,7 +48,7 @@ export default function TabsLayout() {
 function NativeShell() {
   const theme = useResolvedTheme()
   const c = themeColors[theme]
-  const unseen = useUnseenActivity()
+  const unseen = useUnreadCount()
   const router = useRouter()
 
   // The center item is a `disabled` trigger, not a real destination: iOS still

@@ -76,7 +76,7 @@ export default function UserRankings() {
       for (const key of [
         'feed',
         'people',
-        'activity',
+        'notifications',
         'user-rankings',
         'explore',
         'leaderboard',

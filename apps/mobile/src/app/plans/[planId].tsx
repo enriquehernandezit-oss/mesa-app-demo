@@ -64,7 +64,7 @@ export default function PlanDetailScreen() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['plan', planId] })
     queryClient.invalidateQueries({ queryKey: ['plans'] })
-    queryClient.invalidateQueries({ queryKey: ['activity'] })
+    queryClient.invalidateQueries({ queryKey: ['notifications'] })
   }
 
   const reply = useMutation({

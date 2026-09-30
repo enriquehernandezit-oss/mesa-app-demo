@@ -11,6 +11,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { ShareCardHost } from '@/components/ShareCardHost'
 import { SheetHost } from '@/components/ui/Sheet'
 import { Toaster } from '@/components/ui/Toast'
+import { useLocaleSync } from '@/hooks/useLocaleSync'
 import { identifyUser, initAnalytics, resetAnalytics, trackScreen } from '@/lib/analytics'
 import { useSession } from '@/lib/auth-client'
 import { initToken } from '@/lib/auth-token'
@@ -55,6 +56,13 @@ function AnalyticsIdentity() {
   return null
 }
 
+// Keeps the server's idea of this member's language current (see hooks/useLocaleSync.ts).
+// Renders nothing, and lives inside QueryClientProvider for the same reason as above.
+function LocaleSync() {
+  useLocaleSync()
+  return null
+}
+
 export default function RootLayout() {
   // useFonts discards nothing here on purpose: `fontError` used to be dropped,
   // which meant a single failed font load left `loaded` false forever and the
@@ -93,6 +101,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AnalyticsIdentity />
+            <LocaleSync />
             <MesaStack />
             <Toaster />
             <SheetHost />

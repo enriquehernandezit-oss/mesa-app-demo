@@ -222,7 +222,7 @@ export default function NewPlanScreen() {
         : 0
       track('plan_created', { options: spots.length, invitees: invitees.size, daysAhead })
       queryClient.invalidateQueries({ queryKey: ['plans'] })
-      queryClient.invalidateQueries({ queryKey: ['activity'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       // Contextual push-permission prompt (M17) — see rank.tsx's own comment.
       void registerForPush()
       router.replace(`/plans/${id}`)
