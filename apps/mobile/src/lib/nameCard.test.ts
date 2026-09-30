@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { nameCardFontSize, nameCardLines } from './nameCard'
+import { heroNameSize, nameCardFontSize, nameCardLines } from './nameCard'
 
 describe('nameCardLines', () => {
   test('a short name is one line', () => {
@@ -37,5 +37,30 @@ describe('nameCardFontSize', () => {
     const size = nameCardFontSize('Asadero Los Argentinos', 58, 62)
     expect(size).toBeLessThan(12)
     expect(size).toBeGreaterThanOrEqual(9)
+  })
+})
+
+describe('heroNameSize', () => {
+  const column = 330 // a 402pt screen less the hero's side padding and the panel's
+
+  test('a short name is set at the full size', () => {
+    expect(heroNameSize('Cantábrico', column, 46)).toBe(46)
+    expect(heroNameSize('Mesa', column, 40)).toBe(40)
+  })
+
+  test('a long name steps down until it fits two lines', () => {
+    const size = heroNameSize("Pat'e Palo European Brasserie", column, 46)
+    expect(size).toBeLessThan(46)
+    expect(size).toBeGreaterThanOrEqual(24)
+    expect(nameCardLines("Pat'e Palo European Brasserie", size, column)).toBeLessThanOrEqual(2)
+  })
+
+  test('a larger text-size setting makes room for fewer characters', () => {
+    const name = 'Restaurante La Casa del Pescador'
+    expect(heroNameSize(name, column, 46, 1.35)).toBeLessThan(heroNameSize(name, column, 46, 1))
+  })
+
+  test('never below the floor, however long', () => {
+    expect(heroNameSize('x'.repeat(200), column, 46)).toBe(24)
   })
 })

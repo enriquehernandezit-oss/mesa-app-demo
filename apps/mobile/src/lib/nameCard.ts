@@ -44,3 +44,16 @@ export function nameCardFontSize(name: string, boxW: number, boxH: number): numb
   }
   return MIN
 }
+
+// The place page's name on its frosted panel: the biggest size up to `max` at which it wraps into
+// at most two lines in a `width`-wide column, given that the text-size setting scales type by
+// `scale`. Set from the name rather than by iOS's shrink-to-fit, which on iPhones running iOS 18
+// drew this name a few points tall — the same failure the name cards left it for.
+const HERO_MIN = 24
+
+export function heroNameSize(name: string, width: number, max: number, scale = 1): number {
+  for (let size = max; size > HERO_MIN; size--) {
+    if (nameCardLines(name, size * scale, width) <= 2) return size
+  }
+  return HERO_MIN
+}

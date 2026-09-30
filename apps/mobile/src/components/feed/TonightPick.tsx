@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 
 import { PhotoChip, photoChipText } from '@/components/feed/PhotoChip'
-import { Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
+import { MAX_SCALE, SectionHeader } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
 import { ScoreBadge } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
@@ -14,7 +14,9 @@ import { useColor } from '@/theme/useColor'
 
 // "Tonight's pick": what stands in for the event card on a night with no events — the
 // place still open late that a friend of yours ranked highest. Same card as an event's,
-// a little shorter (300 tall), with the friend's score in the panel.
+// a little shorter (300 tall), with the friend's score in the panel. The header says only
+// "Tonight": a "No events today" beside a card that is itself the answer read as a fault, and
+// the card's own chip already says what it is.
 //
 // Picture rule: with no photo the card is the place's NAME CARD, and the panel then leaves
 // the name out — it would only say it twice.
@@ -35,9 +37,7 @@ export function TonightPick({ pick }: { pick: Pick }) {
   return (
     <View>
       <View className="px-5">
-        <SectionHeader action={<Caption>{t('home.tonight_none')}</Caption>}>
-          {t('home.tonight')}
-        </SectionHeader>
+        <SectionHeader>{t('home.tonight')}</SectionHeader>
       </View>
       <Pressable
         accessibilityRole="button"

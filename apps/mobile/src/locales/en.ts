@@ -542,7 +542,6 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'home.six_trending': 'Trending now',
   'home.tonight': 'Tonight',
   'home.tonight_events': { one: '1 event', other: '{n} events' },
-  'home.tonight_none': 'No events today',
   'home.tonight_pick': "Tonight's pick · open late",
   'home.pick_by_friend': '{name} ranked it',
   'home.pick_by_friends': '{name} +{n} ranked it',
@@ -636,6 +635,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.rank_this_spot': 'Rank this spot',
   // The place page (Redesign 2).
   'place.rank_it': 'Rank it',
+  // The rank bar's Directions pill — short, because it shares a row with Rank and Save.
+  'place.directions_short': 'Directions',
   'place.hint': 'Friends, dishes and menu below',
   'place.who_mesa': 'Mesa',
   'place.who_friends': 'Friends',

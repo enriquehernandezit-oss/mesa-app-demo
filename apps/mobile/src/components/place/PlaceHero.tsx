@@ -1,9 +1,10 @@
 import { type ReactNode } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View, useWindowDimensions } from 'react-native'
 
 import { MAX_SCALE } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
 import { ChevronIcon, PinIcon } from '@/components/ui/icons'
+import { heroNameSize } from '@/lib/nameCard'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
 
@@ -21,14 +22,14 @@ export type PlaceTag = {
 // frosted panel of tags, and a hint that there is more below. The photo itself is the page's
 // fixed backdrop; this block scrolls up over it and away as the details sheet rises. The place
 // page and the event page share it: the chip's `icon` (a pin for a place, the kind's icon for an
-// event) and the name's size (`titleClass`) are the two things that differ.
+// event) and the name's largest size (`titleSize`) are the two things that differ.
 //
 // `bottom` is the room to leave under the hint for the floating bar.
 export function PlaceHero({
   name,
   category,
   icon,
-  titleClass = 'text-hero',
+  titleSize = 46,
   sub,
   tags,
   hint,
@@ -37,7 +38,7 @@ export function PlaceHero({
   name: string
   category: string
   icon?: ReactNode
-  titleClass?: string
+  titleSize?: number
   sub: string
   tags: PlaceTag[]
   hint: string
@@ -45,6 +46,10 @@ export function PlaceHero({
 }) {
   const lift = useLift('float')
   const shade = useColor('photo-scrim')
+  // The name's size is worked out from the name and the room (see heroNameSize), not left to iOS
+  // shrink-to-fit. The room is the screen less the hero's 18pt sides and the panel's 18pt padding.
+  const { width, fontScale } = useWindowDimensions()
+  const nameSize = heroNameSize(name, width - 72, titleSize, Math.min(fontScale, MAX_SCALE))
   return (
     <View className="flex-1 justify-end px-[18px]" style={{ paddingBottom: bottom }}>
       <View className="mb-3 items-center">
@@ -65,11 +70,10 @@ export function PlaceHero({
 
       <Glass variant="panel" radius={30} className="items-center px-[18px] pb-[18px] pt-5">
         <Text
-          numberOfLines={2}
-          adjustsFontSizeToFit
-          minimumFontScale={0.7}
+          numberOfLines={3}
           maxFontSizeMultiplier={MAX_SCALE}
-          className={`text-center font-serif text-hglass-fg ${titleClass}`}
+          style={{ fontSize: nameSize, lineHeight: Math.round(nameSize * 1.05) }}
+          className="text-center font-serif text-hglass-fg"
         >
           {name}
         </Text>

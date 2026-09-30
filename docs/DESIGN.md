@@ -107,6 +107,11 @@ line height in px. The wordmark is `<Wordmark>` (`components/ui`), `font-serif t
 **Numerals.** Instrument Serif's digits are lining but **proportional** and the font has no `tnum`
 feature (measured from the font file), so `tabular-nums` does nothing on serif numerals — right-align
 a stacked serif figure, or set a column of counts in the system font, where `tabular-nums` works.
+Two more Instrument Serif rules, both learned on a phone: a **big numeral needs ~1.25× line height**
+(the podium's 168 / 90 / 70 numerals sat in a box as tall as the font size, and iOS shaved the tops off the
+1, 2 and 3 — the box is now 210 / 112 / 88), and a **name is never shrunk to fit by iOS**
+(`adjustsFontSizeToFit`): on iOS 18 it drew a place's name a few points tall. Names are sized from the name
+and the room (`lib/nameCard.ts`: `nameCardFontSize` for name cards, `heroNameSize` for the place page's panel).
 
 | Use                                           | Size / weight                               |
 | --------------------------------------------- | ------------------------------------------- |
@@ -171,7 +176,10 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
 - **Screen headers** (`ScreenHeader`): a 42pt round `chip` back button, an optional centered 16/600
   title, an optional right slot.
 - **Rank bar (place page):** a dark floating pill — burgundy **Rank it** (**Rank again** once
-  ranked), a cream save circle, and **Directions**.
+  ranked), a cream save circle, and **Directions**. Three things share one 370pt row, so the copy is
+  short: the bar has its own Directions label (`place.directions_short`: "Ruta" in Spanish — "Cómo llegar"
+  beside "Rankear otra vez" spilled out of the pill) and the ranking label truncates inside its pill at any
+  text size rather than overflow.
 - **Place page** (`app/r/[restaurantId].tsx`, `components/place/*`): the photo _is_ the page — a fixed
   full-bleed backdrop (the place's photo, else a MapBox map of where it is), a category chip, a frosted **name
   panel** (serif 46) and **tag panel** (where you stand, friends who ranked it or want to try it, the lists it is
@@ -189,7 +197,8 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   "You saved it"; hidden under two places, an odd count drops its last) and **Tonight** (a 372pt r32 photo card
   per event, swiped with a peek of the next and pager dots: glass time chip and save on the photo, a frosted
   panel with the title, place · price, faces, and **I'm going**; on a night with no events, **Tonight's pick**
-  — 300pt, the place still open late that a friend ranked highest). Both come from one `GET /home`, cached
+  — 300pt, the place still open late that a friend ranked highest; the header stays just "Tonight", with no
+  "No events today" beside a card that is itself the answer). Both come from one `GET /home`, cached
   until 5 AM Santo Domingo. Then friend cards in three shapes by the picture rule; a "People you may know"
   shelf and a **New near you** shelf (150-wide cards with a "New" pill) follow the first six; "You're caught
   up · older below" marks where you'd stopped (SecureStore `mesa.feed_seen`, read once per visit); the end

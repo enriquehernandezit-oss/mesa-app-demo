@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { ScrollView, Text, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { FollowPill } from '@/components/PersonRow'
 import { Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
@@ -10,7 +10,9 @@ import type { FriendSuggestion } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
 
 // "People you may know": a shelf of person tiles between friend cards. Each says why
-// they're here — followed by someone you follow, a taste match, or just popular.
+// they're here — followed by someone you follow, a taste match, or just popular. The face,
+// the name and the reason open the person's profile — look before you follow — and the pill
+// under them follows.
 export function PeopleShelf({ people }: { people: FriendSuggestion[] }) {
   const t = useT()
   const router = useRouter()
@@ -45,17 +47,24 @@ export function PeopleShelf({ people }: { people: FriendSuggestion[] }) {
             className="w-[138px] items-center gap-1.5 rounded-card bg-surface px-3 pb-3 pt-4"
             style={lift}
           >
-            <Avatar name={u.name || u.handle || 'm'} src={u.image} size={56} />
-            <Text
-              numberOfLines={1}
-              maxFontSizeMultiplier={MAX_SCALE}
-              className="mt-1 font-serif text-serif-sm text-text"
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={u.name || u.handle || undefined}
+              onPress={() => router.push(`/u/${u.id}`)}
+              className="w-full items-center gap-1.5 active:opacity-80"
             >
-              {u.name || u.handle}
-            </Text>
-            <Caption numberOfLines={2} className="h-[30px] text-center text-micro">
-              {reasonLine(t, u.reason)}
-            </Caption>
+              <Avatar name={u.name || u.handle || 'm'} src={u.image} size={56} />
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="mt-1 font-serif text-serif-sm text-text"
+              >
+                {u.name || u.handle}
+              </Text>
+              <Caption numberOfLines={2} className="h-[30px] text-center text-micro">
+                {reasonLine(t, u.reason)}
+              </Caption>
+            </Pressable>
             <FollowPill userId={u.id} initial={false} from="feed_shelf" />
           </View>
         ))}

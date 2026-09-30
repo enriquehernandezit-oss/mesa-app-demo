@@ -101,9 +101,9 @@ function BigTile({ ranking }: { ranking: Ranking }) {
           {
             position: 'absolute',
             left: 14,
-            bottom: -16,
+            bottom: -40,
             fontSize: 168,
-            lineHeight: 168,
+            lineHeight: 210,
             opacity: tile.numeralOpacity,
           },
         ]}
@@ -189,9 +189,9 @@ function HalfTile({ ranking, mini }: { ranking: Ranking; mini?: boolean }) {
           {
             position: 'absolute',
             left: 12,
-            bottom: mini ? 58 : -8,
+            bottom: mini ? 46 : -20,
             fontSize: mini ? 70 : 90,
-            lineHeight: mini ? 70 : 90,
+            lineHeight: mini ? 88 : 112,
             opacity: tile.numeralOpacity,
           },
         ]}

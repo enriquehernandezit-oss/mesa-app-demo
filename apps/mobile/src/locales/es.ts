@@ -584,7 +584,6 @@ export const es = {
   'home.six_trending': 'En tendencia',
   'home.tonight': 'Esta noche',
   'home.tonight_events': { one: '1 evento', other: '{n} eventos' },
-  'home.tonight_none': 'Sin eventos hoy',
   'home.tonight_pick': 'La elección de esta noche · abierto hasta tarde',
   'home.pick_by_friend': '{name} lo rankeó',
   'home.pick_by_friends': '{name} +{n} lo rankearon',
@@ -685,6 +684,8 @@ export const es = {
   'restaurant.rank_this_spot': 'Rankear este spot',
   // The place page (Redesign 2).
   'place.rank_it': 'Rankear',
+  // The rank bar's Directions pill — short, because it shares a row with Rank and Save.
+  'place.directions_short': 'Ruta',
   'place.hint': 'Amigos, platos y menú abajo',
   'place.who_mesa': 'Mesa',
   'place.who_friends': 'Amigos',

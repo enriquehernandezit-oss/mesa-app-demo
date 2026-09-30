@@ -257,7 +257,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
               name={e.title}
               category={chip}
               icon={<CategoryIcon cat={cat} size={15} color="text" />}
-              titleClass="text-display"
+              titleSize={40}
               sub={`${e.restaurant.name} · ${when}`}
               tags={tags}
               hint={t('events.hint')}
