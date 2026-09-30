@@ -34,6 +34,7 @@ import { Field } from '@/components/ui/Field'
 import { CloseIcon, MapIcon, SearchIcon, SlidersIcon, SortIcon } from '@/components/ui/icons'
 import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
+import { useScrollTopOffset } from '@/hooks/useScrollTopOffset'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
@@ -280,9 +281,11 @@ export default function ExploreScreen() {
   // still covers both views: they share this list, Events riding in its
   // header and Places as the rows (see the render below).
   const listRef = useRef<FlatList<ExploreHit>>(null)
+  // Not offset 0 — the list rests a large-title header lower than that (useScrollTopOffset).
+  const topOffset = useScrollTopOffset()
   useResetOnTabPress(
     useCallback(() => {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true })
+      listRef.current?.scrollToOffset({ offset: topOffset, animated: true })
       // A silent refetch, not onRefresh(): flipping RefreshControl's
       // `refreshing` on programmatically (not from an actual pull) shifts
       // the scroll offset down to reveal the spinner and doesn't reliably
@@ -291,7 +294,7 @@ export default function ExploreScreen() {
       // instead of at the top. A real pull-to-refresh gesture is untouched
       // — only this synthetic trigger skips the visible spinner.
       void results.refetch()
-    }, [results]),
+    }, [results, topOffset]),
     { nested: true },
   )
 
@@ -512,6 +515,8 @@ export default function ExploreScreen() {
         contentContainerClassName="px-5"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
         contentInsetAdjustmentBehavior="automatic"
+        // Lets scrollToOffset go to the negative top offset (see useScrollTopOffset); by default RN clamps it to 0.
+        scrollToOverflowEnabled
         keyboardDismissMode="interactive"
         keyboardShouldPersistTaps="handled"
         // The search field is the native header UISearchBar (see the header
