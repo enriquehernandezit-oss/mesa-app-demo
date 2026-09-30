@@ -64,6 +64,7 @@ const linkEmailSchema = z.object({
 })
 
 const phoneSchema = z.object({ phone: z.string().trim().min(1).max(32) })
+const localeSchema = z.object({ locale: z.enum(['es', 'en']) })
 
 // Unset -> the contacts find-friends feature is dark: PUT refuses rather than
 // hashing with no secret (an empty/undefined HMAC key would be a real
@@ -241,6 +242,19 @@ export const meRoutes = new Hono<AuthedEnv>()
   // do with the rest of that form and forcing every profile save to also
   // carry it would be the wrong coupling. `date` mode is 'string' (see
   // schema.ts), so this is a plain YYYY-MM-DD round trip, no Date object.
+  // The language this member's pushes are written in — the app sends it on sign-in and
+  // whenever the member changes language (users.locale).
+  .patch('/locale', async (c) => {
+    const me = c.get('user')
+    const parsed = localeSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    await db
+      .update(schema.user)
+      .set({ locale: parsed.data.locale })
+      .where(eq(schema.user.id, me.id))
+    return c.json({ ok: true })
+  })
+
   .patch('/birthday', async (c) => {
     const current = c.get('user')
     const parsed = z

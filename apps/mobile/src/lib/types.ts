@@ -404,6 +404,48 @@ export interface ActivityItem {
   others?: number // event_going: how many other people you follow are going too
 }
 
+// GET /notifications/inbox (N1) — the stored inbox behind the bell, which replaces
+// ActivityItem's live queries. Mirrors apps/api/src/routes/notifications.ts's NotificationItem.
+export type NotificationKind =
+  | 'follow'
+  | 'cheers'
+  | 'dish_cheer'
+  | 'comment'
+  | 'saved_ranked'
+  | 'plan_invite'
+  | 'plan_reply'
+  | 'event_going'
+  | 'event_cancelled'
+  | 'dish_nudge'
+
+export interface NotificationItem {
+  id: string
+  kind: NotificationKind
+  createdAt: string
+  read: boolean
+  actor: { id: string; name: string; handle: string | null; image: string | null } | null
+  restaurant: { id: string; name: string; coverImageId: string | null } | null
+  rankingId: string | null // cheers / comment: the ranking (a comment opens its thread)
+  planId: string | null
+  dishListId: string | null
+  dish: { id: string; name: string } | null
+  event: { id: string; title: string; startsAt: string } | null
+  data: {
+    excerpt?: string // comment: the first ~80 characters
+    reply?: 'going' | 'maybe' | 'declined' | null // plan_reply (null: only a vote changed)
+    vote?: boolean // plan_reply: a vote came with it
+    label?: string // dish_nudge
+    count?: number // dish_nudge: how many places
+  } | null
+  followsBack: boolean // follow rows: do I already follow them back?
+  others: number // event_going: how many other people you follow are going too
+}
+
+export interface NotificationsPage {
+  notifications: NotificationItem[]
+  nextBefore: string | null // pass as ?before= for the next page
+}
+
 export interface SavedPlace {
   restaurant: RestaurantRef & { coverImageId?: string | null }
   neighborhood: string | null

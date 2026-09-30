@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -24,7 +24,10 @@ const {
   dishCheers,
   dishLists,
   dishListItems,
+  notifications,
 } = schema
+
+const dishCheerKey = (dishId: string, actorId: string) => `dish_cheer:${dishId}:${actorId}`
 
 // What "popular" means on a restaurant's dish rail (M22): a like is a
 // stronger, one-tap-per-person signal than a name that just happens to
@@ -397,7 +400,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
 
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, dishId), isNull(dishes.removedAt)),
-      columns: { id: true, userId: true, name: true },
+      columns: { id: true, userId: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
 
@@ -414,21 +417,17 @@ export const dishesRoutes = new Hono<AuthedEnv>()
 
     await db.insert(dishCheers).values({ userId: me.id, dishId }).onConflictDoNothing()
 
-    if (found.userId !== me.id) {
-      // Hour-bucketed key, same "≤1 push per dish per hour" throttle as the
-      // ranking cheer's trigger.
-      const hourBucket = new Date().toISOString().slice(0, 13)
-      sendPush([
-        {
-          userId: found.userId,
-          key: `dish-cheer:${dishId}:${hourBucket}`,
-          category: 'social',
-          title: 'Mesa',
-          body: `${me.name || 'Alguien'} le dio like a tu ${found.name}`,
-          data: { type: 'dish', dishId },
-        },
-      ])
-    }
+    // Same shape as the ranking cheer: one inbox row per (dish, friend), the push
+    // throttled to ≤1 per dish per hour in KIND_RULES.
+    notify([
+      {
+        userId: found.userId,
+        kind: 'dish_cheer',
+        dedupeKey: dishCheerKey(dishId, me.id),
+        actorId: me.id,
+        dishId,
+      },
+    ])
 
     return c.json({ ok: true })
   })
@@ -439,6 +438,19 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     await db
       .delete(dishCheers)
       .where(and(eq(dishCheers.userId, me.id), eq(dishCheers.dishId, dishId)))
+    // An un-like takes its bell entry with it (the poster's row, found through the dish and
+    // the unique key).
+    await db
+      .delete(notifications)
+      .where(
+        and(
+          eq(notifications.dedupeKey, dishCheerKey(dishId, me.id)),
+          inArray(
+            notifications.userId,
+            db.select({ id: dishes.userId }).from(dishes).where(eq(dishes.id, dishId)),
+          ),
+        ),
+      )
     return c.json({ ok: true })
   })
 

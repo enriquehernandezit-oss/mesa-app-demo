@@ -1,6 +1,6 @@
 // The allow-listed deep links a push's `data` payload can open — matches
-// exactly what apps/api/src/lib/push.ts's triggers send. Anything else is
-// ignored rather than guessed at. Split out of push.ts (which pulls in
+// exactly what apps/api/src/lib/notifyCopy.ts's pushPayload (and the event-reminder
+// sweep) send. Anything else is ignored rather than guessed at. Split out of push.ts (which pulls in
 // expo-notifications/expo-secure-store and so can't be unit-tested without an
 // RN runtime — see that file's own header) so this pure mapping can be, the
 // same way deepLinks.ts is split from its own caller.

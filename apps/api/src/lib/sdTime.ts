@@ -1,6 +1,6 @@
 // Santo Domingo wall-clock helpers. SD has no DST (fixed UTC-4), so a fixed offset
-// is exact — no timezone library. Shared by the events routes and GET /home; the
-// push sweeps keep their own hour-of-day check (lib/push.ts), a different question.
+// is exact — no timezone library. Shared by the events routes, GET /home and the push
+// sweeps' send window (lib/pushSweep.ts).
 export const SD_UTC_OFFSET_HOURS = 4
 
 // A Date whose UTC getters read as Santo Domingo wall-clock fields — NOT a real

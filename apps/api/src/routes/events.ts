@@ -4,8 +4,8 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
-import { goingAnnouncedKey, goingPushKey, isUpcoming } from '../lib/eventPush'
-import { sendPush } from '../lib/push'
+import { isUpcoming } from '../lib/eventPush'
+import { notify } from '../lib/notify'
 import { sdLocalNow, sdMidnight, tonightLateWindow } from '../lib/sdTime'
 import { blockedByMe, blockedMe, followerIds, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -15,7 +15,7 @@ import { requireAuth } from '../middleware/session'
 // weekend/upcoming), one event's detail, RSVP, and Save (the bookmark,
 // independent of RSVP; see GET /saved) — schema-level rules
 // (never delete a row, soft-cancel instead) live on `events` in schema.ts.
-const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user, pushLog } = schema
+const { events, eventRsvps, savedEvents, restaurants, neighborhoods, user } = schema
 
 // The three Explore browse windows, each as [start, end) in real UTC
 // instants over startsAt — `start: null` / `end: null` mean no bound. `start`
@@ -370,10 +370,9 @@ export const eventsRoutes = new Hono<AuthedEnv>()
 
   // Set (or change) my RSVP. Idempotent: re-sending the same status is a
   // harmless overwrite. When I FIRST say 'going' to an event that hasn't ended,
-  // everyone who follows me is told (one push per follower per event per few
-  // hours — lib/eventPush.ts — however many friends sign up); a later toggle
-  // away and back never re-notifies, because the announcement is claimed once
-  // per (me, event) in push_log. The same "friend going" line is in Activity.
+  // everyone who follows me gets it in their inbox (one push per follower per event per
+  // few hours — lib/eventPush.ts — however many friends sign up); a later toggle away and
+  // back never re-notifies, because the inbox row is unique per (follower, me, event).
   .put('/:id/rsvp', async (c) => {
     const me = c.get('user')
     const eventId = c.req.param('id')
@@ -383,7 +382,7 @@ export const eventsRoutes = new Hono<AuthedEnv>()
 
     const found = await db.query.events.findFirst({
       where: and(eq(events.id, eventId), isNull(events.cancelledAt)),
-      columns: { id: true, title: true, startsAt: true, endsAt: true },
+      columns: { id: true, title: true, startsAt: true, endsAt: true, restaurantId: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
 
@@ -401,29 +400,18 @@ export const eventsRoutes = new Hono<AuthedEnv>()
         set: { status: parsed.data.status, updatedAt: new Date() },
       })
 
-    const now = new Date()
-    if (parsed.data.status === 'going' && !wasGoing && isUpcoming(found, now)) {
-      // Once per (me, event), ever: the marker row is mine, so a second "going" after
-      // toggling off and on finds it already there and stays quiet.
-      const first = await db
-        .insert(pushLog)
-        .values({ userId: me.id, key: goingAnnouncedKey(eventId) })
-        .onConflictDoNothing()
-        .returning({ userId: pushLog.userId })
-      if (first.length > 0) {
-        const recipients = await eventGoingRecipients(me)
-        const key = goingPushKey(eventId, now)
-        sendPush(
-          recipients.map((userId) => ({
-            userId,
-            key,
-            category: 'events' as const,
-            title: 'Mesa',
-            body: `${me.name || 'Alguien'} va a ${found.title}`,
-            data: { type: 'event', eventId },
-          })),
-        )
-      }
+    if (parsed.data.status === 'going' && !wasGoing && isUpcoming(found, new Date())) {
+      const recipients = await eventGoingRecipients(me)
+      notify(
+        recipients.map((userId) => ({
+          userId,
+          kind: 'event_going' as const,
+          dedupeKey: `event_going:${eventId}:${me.id}`,
+          actorId: me.id,
+          eventId,
+          restaurantId: found.restaurantId,
+        })),
+      )
     }
 
     return c.json({ ok: true })

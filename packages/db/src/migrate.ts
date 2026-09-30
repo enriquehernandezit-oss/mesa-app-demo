@@ -1,8 +1,8 @@
-import { lt } from 'drizzle-orm'
+import { and, isNotNull, lt } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 
 import { db, pool } from './client'
-import { authEvent, pushLog } from './schema'
+import { authEvent, notifications, pushLog } from './schema'
 
 // Applies generated migrations from ./drizzle against the pooled client.
 // Run with: bun run --env-file=.env src/migrate.ts  (or `bun db:migrate`).
@@ -28,9 +28,22 @@ const prunedPushLog = await db
   .where(lt(pushLog.sentAt, new Date(Date.now() - PUSH_LOG_RETENTION_MS)))
   .returning({ userId: pushLog.userId })
 
+// Prune inbox rows (N1) that were read more than 180 days ago. Unread ones stay however
+// old: the bell should never silently lose something the member hasn't seen.
+const NOTIFICATION_RETENTION_MS = 180 * 24 * 60 * 60 * 1000
+const prunedNotifications = await db
+  .delete(notifications)
+  .where(
+    and(
+      isNotNull(notifications.readAt),
+      lt(notifications.createdAt, new Date(Date.now() - NOTIFICATION_RETENTION_MS)),
+    ),
+  )
+  .returning({ id: notifications.id })
+
 await pool.end()
 console.log(
   `migrations applied${pruned.length ? ` · pruned ${pruned.length} auth events` : ''}${
     prunedPushLog.length ? ` · pruned ${prunedPushLog.length} push log rows` : ''
-  }`,
+  }${prunedNotifications.length ? ` · pruned ${prunedNotifications.length} notifications` : ''}`,
 )

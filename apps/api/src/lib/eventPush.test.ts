@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  GOING_PUSH_WINDOW_MS,
-  collapseEventGoing,
-  goingAnnouncedKey,
-  goingPushKey,
-  isUpcoming,
-} from './eventPush'
+import { GOING_PUSH_WINDOW_MS, collapseEventGoing, goingPushKey, isUpcoming } from './eventPush'
 
 const at = (iso: string) => new Date(iso)
 
@@ -26,10 +20,6 @@ describe('goingPushKey', () => {
   test('different events never share a key', () => {
     const t = at('2026-10-01T12:00:00Z')
     expect(goingPushKey('e1', t)).not.toBe(goingPushKey('e2', t))
-  })
-
-  test('the announced marker is per event, not per window', () => {
-    expect(goingAnnouncedKey('e1')).toBe('event-going-announced:e1')
   })
 })
 

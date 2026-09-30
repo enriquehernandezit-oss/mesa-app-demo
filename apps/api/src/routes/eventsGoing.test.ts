@@ -24,11 +24,9 @@ async function localDbReachable(): Promise<boolean> {
 }
 
 async function loadDeps() {
-  const [{ db, schema }, { eventsRoutes, eventGoingRecipients }] = await Promise.all([
-    import('@mesa/db'),
-    import('./events'),
-  ])
-  return { db, schema, eventsRoutes, eventGoingRecipients }
+  const [{ db, schema }, { eventsRoutes, eventGoingRecipients }, { settleNotify }] =
+    await Promise.all([import('@mesa/db'), import('./events'), import('../lib/notify')])
+  return { db, schema, eventsRoutes, eventGoingRecipients, settleNotify }
 }
 const deps = (await localDbReachable()) ? await loadDeps() : null
 
@@ -39,7 +37,7 @@ type Detail = {
 
 describe.skipIf(!deps)('friends going on events (local DB)', () => {
   if (!deps) return
-  const { db, schema, eventsRoutes, eventGoingRecipients } = deps
+  const { db, schema, eventsRoutes, eventGoingRecipients, settleNotify } = deps
 
   const tag = `test-${crypto.randomUUID().slice(0, 8)}`
   const uid = (label: string) => `${tag}-${label}`
@@ -140,7 +138,7 @@ describe.skipIf(!deps)('friends going on events (local DB)', () => {
   })
 
   afterAll(async () => {
-    // users cascade follows, blocks, rsvps and push_log; events cascade rsvps.
+    // users cascade follows, blocks, rsvps and notifications; events cascade rsvps.
     await db.delete(schema.events).where(inArray(schema.events.id, Object.values(ids)))
     await db.delete(schema.user).where(inArray(schema.user.id, [me.id, ...allLabels.map(uid)]))
     if (restaurantId)
@@ -185,15 +183,16 @@ describe.skipIf(!deps)('friends going on events (local DB)', () => {
     expect(recipients).toEqual([uid('g1'), uid('g2')].sort())
   })
 
-  test('my first "going" to an upcoming event is announced once, however often I toggle', async () => {
-    const marker = () =>
+  test('my first "going" to an upcoming event lands in each follower\'s inbox once, however often I toggle', async () => {
+    const inbox = () =>
       db
-        .select()
-        .from(schema.pushLog)
+        .select({ userId: schema.notifications.userId })
+        .from(schema.notifications)
         .where(
           and(
-            eq(schema.pushLog.userId, me.id),
-            eq(schema.pushLog.key, `event-going-announced:${ids.upcoming}`),
+            eq(schema.notifications.kind, 'event_going'),
+            eq(schema.notifications.eventId, ids.upcoming),
+            eq(schema.notifications.actorId, me.id),
           ),
         )
     const put = (id: string) =>
@@ -202,13 +201,16 @@ describe.skipIf(!deps)('friends going on events (local DB)', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ status: 'going' }),
       })
-    expect(await marker()).toHaveLength(0)
+    expect(await inbox()).toHaveLength(0)
     expect((await put(ids.upcoming)).status).toBe(200)
-    expect(await marker()).toHaveLength(1)
-    // Away and back: the marker is still the one row (a second insert is a no-op).
+    await settleNotify()
+    // The two followers who can be told, not the banned or blocked ones.
+    expect((await inbox()).map((r) => r.userId).sort()).toEqual([uid('g1'), uid('g2')].sort())
+    // Away and back: the rows are still the same two (a second insert hits the unique key).
     await app.request(`/events/${ids.upcoming}/rsvp`, { method: 'DELETE' })
     expect((await put(ids.upcoming)).status).toBe(200)
-    expect(await marker()).toHaveLength(1)
+    await settleNotify()
+    expect(await inbox()).toHaveLength(2)
   })
 
   test('an event that has ended is not announced', async () => {
@@ -218,10 +220,11 @@ describe.skipIf(!deps)('friends going on events (local DB)', () => {
       body: JSON.stringify({ status: 'going' }),
     })
     expect(res.status).toBe(200)
+    await settleNotify()
     const rows = await db
       .select()
-      .from(schema.pushLog)
-      .where(eq(schema.pushLog.key, `event-going-announced:${ids.ended}`))
+      .from(schema.notifications)
+      .where(eq(schema.notifications.eventId, ids.ended))
     expect(rows).toHaveLength(0)
   })
 })

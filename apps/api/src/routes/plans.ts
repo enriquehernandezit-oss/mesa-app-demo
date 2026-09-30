@@ -5,7 +5,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -64,6 +64,20 @@ async function invitableIds(hostId: string, userIds: string[]): Promise<Set<stri
       ),
     )
   return new Set(rows.map((r) => r.id))
+}
+
+// The restaurant a plan's notifications show: the confirmed spot, or the first candidate
+// while it's still being voted on.
+async function planRestaurantId(plan: {
+  id: string
+  chosenRestaurantId: string | null
+}): Promise<string | null> {
+  if (plan.chosenRestaurantId) return plan.chosenRestaurantId
+  const first = await db.query.planOptions.findFirst({
+    where: and(eq(planOptions.planId, plan.id), eq(planOptions.position, 0)),
+    columns: { restaurantId: true },
+  })
+  return first?.restaurantId ?? null
 }
 
 // One query: the plan, its host, and (if I'm invited) my own reply/vote — with
@@ -186,14 +200,14 @@ export const plansRoutes = new Hono<AuthedEnv>()
       return plan.id
     })
 
-    sendPush(
+    notify(
       inviteeIds.map((userId) => ({
         userId,
-        key: `plan-invite:${id}:${userId}`,
-        category: 'plans',
-        title: 'Mesa',
-        body: `${me.name || 'Alguien'} te invitó a un plan`,
-        data: { type: 'plan', planId: id },
+        kind: 'plan_invite' as const,
+        dedupeKey: `plan_invite:${id}`,
+        actorId: me.id,
+        planId: id,
+        restaurantId: restaurantIds[0] ?? null,
       })),
     )
 
@@ -410,31 +424,20 @@ export const plansRoutes = new Hono<AuthedEnv>()
       })
       .where(and(eq(planInvites.planId, planId), eq(planInvites.userId, me.id)))
 
-    // The host is never an invite row, so this always has a real recipient.
-    // One push per call, describing whichever changed — reply wins when both
-    // did, since "declined" is the more important thing for the host to see
-    // than the vote that came with it.
-    const name = me.name || 'Alguien'
-    const replyBody =
-      reply === 'going'
-        ? `${name} va a tu plan`
-        : reply === 'maybe'
-          ? `${name} tal vez va a tu plan`
-          : reply === 'declined'
-            ? `${name} no puede ir a tu plan`
-            : null
-    const body = replyBody ?? `${name} votó en tu plan`
-    // Keyed on the resulting state, not the request time — a genuine change
-    // (going -> declined) is a new key and re-notifies the host; an accidental
-    // duplicate submit of the same reply/vote dedupes for free.
-    sendPush([
+    // The host is never an invite row, so this always has a real recipient. One
+    // notification per call, describing whichever changed — a reply wins over the vote that
+    // came with it (see pushCopy). Keyed on the resulting state, not the request time — a
+    // genuine change (going -> declined) is a new key and re-notifies the host; an
+    // accidental duplicate submit of the same reply/vote dedupes for free.
+    notify([
       {
         userId: found.plan.hostId,
-        key: `plan-reply:${planId}:${me.id}:${reply ?? ''}:${voteRestaurantId ?? ''}`,
-        category: 'plans',
-        title: 'Mesa',
-        body,
-        data: { type: 'plan', planId },
+        kind: 'plan_reply',
+        dedupeKey: `plan_reply:${planId}:${me.id}:${reply ?? ''}:${voteRestaurantId ?? ''}`,
+        actorId: me.id,
+        planId,
+        restaurantId: await planRestaurantId(found.plan),
+        data: { reply: reply ?? null, vote: voteRestaurantId !== undefined },
       },
     ])
 
@@ -464,6 +467,21 @@ export const plansRoutes = new Hono<AuthedEnv>()
       .values([...invitable].map((userId) => ({ planId, userId })))
       .onConflictDoNothing()
       .returning({ userId: planInvites.userId })
+
+    // Anyone added later is told exactly as if they'd been there from the start.
+    if (added.length > 0) {
+      const restaurantId = await planRestaurantId(found.plan)
+      notify(
+        added.map((a) => ({
+          userId: a.userId,
+          kind: 'plan_invite' as const,
+          dedupeKey: `plan_invite:${planId}`,
+          actorId: me.id,
+          planId,
+          restaurantId,
+        })),
+      )
+    }
 
     return c.json({ added: added.length })
   })

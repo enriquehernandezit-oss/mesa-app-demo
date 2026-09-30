@@ -5,7 +5,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, followerIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -393,7 +393,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
     const exists = await db.query.restaurants.findFirst({
       where: eq(restaurants.id, restaurantId),
-      columns: { id: true, name: true },
+      columns: { id: true },
     })
     if (!exists) return c.json({ error: 'unknown_restaurant' }, 400)
 
@@ -448,14 +448,13 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
             notInArray(savedPlaces.userId, blockedMe(me.id)),
           ),
         )
-      sendPush(
+      notify(
         savers.map((s) => ({
           userId: s.userId,
-          key: `saved-ranked:${restaurantId}:${s.userId}`,
-          category: 'friends',
-          title: 'Mesa',
-          body: `${me.name || 'Alguien'} rankeó ${exists.name}, que tienes guardado`,
-          data: { type: 'restaurant', restaurantId },
+          kind: 'saved_ranked' as const,
+          dedupeKey: `saved_ranked:${restaurantId}:${me.id}`,
+          actorId: me.id,
+          restaurantId,
         })),
       )
     }

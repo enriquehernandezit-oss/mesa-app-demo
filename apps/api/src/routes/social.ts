@@ -6,7 +6,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -104,14 +104,12 @@ export const socialRoutes = new Hono<AuthedEnv>()
       .returning({ followerId: schema.follows.followerId })
 
     if (inserted.length > 0) {
-      sendPush([
+      notify([
         {
           userId: targetId,
-          key: `follow:${current.id}:${targetId}`,
-          category: 'social',
-          title: 'Mesa',
-          body: `${current.name || 'Alguien'} te empezó a seguir`,
-          data: { type: 'user', userId: current.id },
+          kind: 'follow',
+          dedupeKey: `follow:${current.id}`,
+          actorId: current.id,
         },
       ])
     }

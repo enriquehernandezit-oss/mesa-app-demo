@@ -7,6 +7,7 @@ import {
   doublePrecision,
   index,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
@@ -164,6 +165,10 @@ export const user = pgTable('user', {
   phoneHash: text('phone_hash').unique(),
   // EULA acceptance is required at signup for a UGC app (App Store 1.2).
   eulaAcceptedAt: timestamp('eula_accepted_at'),
+  // The language this member's pushes are written in (N1). The app tells the API on
+  // sign-in and whenever the member switches language (PATCH /me/locale); until it has,
+  // Spanish — Mesa's home market and the language every push was already in.
+  locale: text('locale').$type<'es' | 'en'>().notNull().default('es'),
 
   // --- Moderation (App Store 1.2) ---
   // Ejected users: set on moderation action; the session middleware rejects any
@@ -1171,6 +1176,79 @@ export const pushLog = pgTable(
     sentAt: timestamp('sent_at').notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.key] })],
+)
+
+// The inbox (N1) — one row per thing a member should hear about, written by
+// lib/notify.ts's `notify()` at the moment it happens. Activity used to be seven live
+// queries with no read state; this is the stored version, so it can carry an unread
+// dot, be paged, and push from the same row.
+//
+// `dedupeKey` is what the event IS (`cheers:{rankingId}:{actor}`, `comment:{commentId}`,
+// `follow:{actor}`…), unique per recipient — so a repeat of the same event can never
+// write, or push, a second time, however long ago the first was. That replaces push_log
+// as the "already told them" record for everything that lands here (push_log keeps only
+// the short throttle windows and event reminders). Each kind's keys are listed beside its
+// trigger in routes/.
+//
+// The nullable FKs are what the row points at; they CASCADE, so un-cheering, deleting a
+// comment, or deleting the ranking/plan/event takes its notification with it. `data` is
+// the little that isn't a pointer.
+export type NotificationKind =
+  | 'follow'
+  | 'cheers'
+  | 'dish_cheer'
+  | 'comment'
+  | 'saved_ranked'
+  | 'plan_invite'
+  | 'plan_reply'
+  | 'event_going'
+  | 'event_cancelled'
+  | 'dish_nudge'
+
+export interface NotificationData {
+  // comment: the first ~80 characters of what was said.
+  excerpt?: string
+  // plan_reply: what the invitee answered (null when only a vote changed) and whether a
+  // vote came with it.
+  reply?: 'going' | 'maybe' | 'declined' | null
+  vote?: boolean
+  // dish_nudge: the dish's label and how many places it has been eaten at.
+  label?: string
+  count?: number
+}
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    // The recipient.
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    kind: text('kind').$type<NotificationKind>().notNull(),
+    dedupeKey: text('dedupe_key').notNull(),
+    actorId: text('actor_id').references(() => user.id, { onDelete: 'cascade' }),
+    restaurantId: uuid('restaurant_id').references(() => restaurants.id, { onDelete: 'cascade' }),
+    rankingId: uuid('ranking_id').references(() => rankings.id, { onDelete: 'cascade' }),
+    commentId: uuid('comment_id').references(() => rankingComments.id, { onDelete: 'cascade' }),
+    dishId: uuid('dish_id').references(() => dishes.id, { onDelete: 'cascade' }),
+    eventId: uuid('event_id').references(() => events.id, { onDelete: 'cascade' }),
+    planId: uuid('plan_id').references(() => plans.id, { onDelete: 'cascade' }),
+    dishListId: uuid('dish_list_id').references(() => dishLists.id, { onDelete: 'cascade' }),
+    data: jsonb('data').$type<NotificationData>(),
+    // Millisecond precision on purpose: the inbox pages on (created_at, id) and "mark read
+    // up to here" sends a created_at back from JSON, which only carries milliseconds.
+    createdAt: timestamp('created_at', { precision: 3 }).notNull().defaultNow(),
+    readAt: timestamp('read_at'),
+  },
+  (t) => [
+    unique('notifications_user_dedupe_uq').on(t.userId, t.dedupeKey),
+    index('notifications_user_created_idx').on(t.userId, t.createdAt),
+    // The bell's badge counts only what is unread, which is a sliver of the table.
+    index('notifications_unread_idx')
+      .on(t.userId)
+      .where(sql`${t.readAt} is null`),
+  ],
 )
 
 // ── Plans: group dinners ─────────────────────────────────────────────────

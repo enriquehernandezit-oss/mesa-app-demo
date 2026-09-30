@@ -1,14 +1,16 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, or } from 'drizzle-orm'
+import { and, eq, inArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
 import { requireAuth } from '../middleware/session'
 
 // Cheers (🥂) — the one-tap reaction to a friend's ranking. Idempotent both
 // ways; the feed carries the counts.
-const { cheers, rankings, userBlocks } = schema
+const { cheers, notifications, rankings, userBlocks } = schema
+
+const cheerKey = (rankingId: string, actorId: string) => `cheers:${rankingId}:${actorId}`
 
 export const cheersRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -19,7 +21,6 @@ export const cheersRoutes = new Hono<AuthedEnv>()
     const exists = await db.query.rankings.findFirst({
       where: eq(rankings.id, rankingId),
       columns: { id: true, userId: true, restaurantId: true },
-      with: { restaurant: { columns: { name: true } } },
     })
     if (!exists) return c.json({ error: 'not_found' }, 404)
     // A block is symmetric: if either of us blocked the other, I can't cheer
@@ -37,30 +38,38 @@ export const cheersRoutes = new Hono<AuthedEnv>()
     }
     await db.insert(cheers).values({ userId: me.id, rankingId }).onConflictDoNothing()
 
-    if (exists.userId !== me.id) {
-      // Hour-bucketed key -> the "≤1 push per ranking per hour" throttle: a
-      // burst of cheers from different friends inside the same hour claims
-      // the same push_log row, so only the first actually sends.
-      const hourBucket = new Date().toISOString().slice(0, 13)
-      sendPush([
-        {
-          userId: exists.userId,
-          key: `cheers:${rankingId}:${hourBucket}`,
-          category: 'social',
-          title: 'Mesa',
-          body: `${me.name || 'Alguien'} le dio cheers a tu ranking de ${exists.restaurant.name}`,
-          data: { type: 'restaurant', restaurantId: exists.restaurantId },
-        },
-      ])
-    }
+    // One inbox row per (ranking, friend); a repeat tap finds it there. The push is
+    // throttled to ≤1 per ranking per hour in KIND_RULES.
+    notify([
+      {
+        userId: exists.userId,
+        kind: 'cheers',
+        dedupeKey: cheerKey(rankingId, me.id),
+        actorId: me.id,
+        rankingId,
+        restaurantId: exists.restaurantId,
+      },
+    ])
 
     return c.json({ ok: true })
   })
 
   .delete('/:rankingId', async (c) => {
     const me = c.get('user')
+    const rankingId = c.req.param('rankingId')
+    await db.delete(cheers).where(and(eq(cheers.userId, me.id), eq(cheers.rankingId, rankingId)))
+    // An un-cheer takes its bell entry with it (the owner's row, found through the ranking
+    // and the unique key, so this is one indexed delete).
     await db
-      .delete(cheers)
-      .where(and(eq(cheers.userId, me.id), eq(cheers.rankingId, c.req.param('rankingId'))))
+      .delete(notifications)
+      .where(
+        and(
+          eq(notifications.dedupeKey, cheerKey(rankingId, me.id)),
+          inArray(
+            notifications.userId,
+            db.select({ id: rankings.userId }).from(rankings).where(eq(rankings.id, rankingId)),
+          ),
+        ),
+      )
     return c.json({ ok: true })
   })

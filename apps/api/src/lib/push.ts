@@ -1,53 +1,75 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, gt, inArray, isNull, lt, lte, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull } from 'drizzle-orm'
 
-// Push notifications over Expo's push service (M17). Unset EXPO_ACCESS_TOKEN
-// -> every send is a no-op (same "dark, not broken" convention as
-// GOOGLE_PLACES_API_KEY): dev and any environment without the founder's
-// token still boot and serve normally, they just never call out.
+import type { Locale } from './notifyCopy'
+
+// Push notifications over Expo's push service (M17) — the TRANSPORT. What to say and who to
+// tell lives in lib/notify.ts (inbox rows become pushes) and lib/pushSweep.ts (event
+// reminders); this file takes finished messages and gets them to phones: category
+// switches, throttle claims, tokens, Expo's send + receipt APIs. Unset EXPO_ACCESS_TOKEN ->
+// every send is a no-op (same "dark, not broken" convention as GOOGLE_PLACES_API_KEY): dev
+// and any environment without the founder's token still boot and serve normally, they just
+// never call out.
 const EXPO_ACCESS_TOKEN = process.env.EXPO_ACCESS_TOKEN
 const SEND_URL = 'https://exp.host/--/api/v2/push/send'
 const RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts'
 // Expo's own hard cap is 100 messages/request for /send (and 1000 ids for
-// /getReceipts, though sendPush's own queue never gets that deep between two
-// sweeps in practice).
+// /getReceipts, though the ticket queue never gets that deep between two sweeps in
+// practice).
 const BATCH_SIZE = 100
 
-const { pushTokens, notificationPrefs, pushLog, dishLists, dishes, events, eventRsvps } = schema
+const { pushTokens, notificationPrefs, pushLog, user } = schema
 
 export type PushCategory = 'social' | 'plans' | 'friends' | 'dishes' | 'events'
 
 export interface PushMessage {
   userId: string
-  // push_log's dedupe key for this (userId, key) pair — see notifications.ts's
-  // own header. Unique per real-world event; the cheers trigger folds an
-  // hour bucket into it for the "≤1 per ranking per hour" throttle.
-  key: string
+  // push_log's throttle/dedupe key for this (userId, key) pair: at most one push per pair
+  // ever sent. Unique per real-world event for a one-time push (a reminder offset), or
+  // with a time bucket folded in for a throttle (cheers' "≤1 per ranking per hour"). Omit
+  // it when the message needs none — inbox rows dedupe themselves through notifications'
+  // own unique key.
+  key?: string
   category: PushCategory
+  data?: Record<string, string>
+  // The words, chosen once the recipient's language is known (users.locale).
+  copy: (locale: Locale) => { title: string; body: string }
+}
+
+// One phone's message, ready for Expo.
+export interface PushEntry {
+  token: string
   title: string
   body: string
-  // Deep-link data the mobile app's notification-tap handler reads.
   data?: Record<string, string>
 }
 
-// Claims one push_log row. Returns false if it's already claimed — either a
-// duplicate event, or (for the cheers throttle) the same hour bucket as an
-// earlier cheer on the same ranking.
-async function claim(userId: string, key: string): Promise<boolean> {
-  const inserted = await db
+const pairKey = (userId: string, key: string) => `${userId}\u0000${key}`
+
+// Claims push_log rows in one statement and returns which (userId, key) pairs were free.
+// A pair that's already claimed is either a duplicate event or (for a throttle) the same
+// window as an earlier push.
+export async function claimMany(pairs: { userId: string; key: string }[]): Promise<Set<string>> {
+  if (pairs.length === 0) return new Set()
+  const claimed = await db
     .insert(pushLog)
-    .values({ userId, key })
+    .values(pairs)
     .onConflictDoNothing()
-    .returning({ userId: pushLog.userId })
-  return inserted.length > 0
+    .returning({ userId: pushLog.userId, key: pushLog.key })
+  return new Set(claimed.map((c) => pairKey(c.userId, c.key)))
 }
 
-// A missing notification_prefs row means "never touched the screen" — every
-// category defaults true (see notifications.ts). Only users who exist in the
-// table can have anything turned off.
-async function enabledUserIds(userIds: string[], category: PushCategory): Promise<Set<string>> {
-  if (userIds.length === 0) return new Set()
-  const rows = await db
+// From messages to per-phone entries, in a fixed number of queries however many people:
+//   1. prefs — a category a member switched off never even claims a push_log slot, so
+//      re-enabling it later doesn't skip a push that was silently throttled while it was off
+//      (a missing notification_prefs row means "never touched the screen": everything on);
+//   2. tokens, with each owner's language — banned members are never pushed;
+//   3. throttle claims for the messages that carry a key.
+// Exported for the DB test: it is everything that decides who is pushed, minus the call out.
+export async function buildEntries(messages: PushMessage[]): Promise<PushEntry[]> {
+  if (messages.length === 0) return []
+
+  const prefRows = await db
     .select({
       userId: notificationPrefs.userId,
       social: notificationPrefs.social,
@@ -57,9 +79,47 @@ async function enabledUserIds(userIds: string[], category: PushCategory): Promis
       events: notificationPrefs.events,
     })
     .from(notificationPrefs)
-    .where(inArray(notificationPrefs.userId, userIds))
-  const disabled = new Set(rows.filter((r) => !r[category]).map((r) => r.userId))
-  return new Set(userIds.filter((id) => !disabled.has(id)))
+    .where(inArray(notificationPrefs.userId, [...new Set(messages.map((m) => m.userId))]))
+  const prefs = new Map(prefRows.map((r) => [r.userId, r]))
+  const wanted = messages.filter((m) => prefs.get(m.userId)?.[m.category] ?? true)
+  if (wanted.length === 0) return []
+
+  const tokenRows = await db
+    .select({ token: pushTokens.token, userId: pushTokens.userId, locale: user.locale })
+    .from(pushTokens)
+    .innerJoin(user, eq(user.id, pushTokens.userId))
+    .where(
+      and(
+        inArray(pushTokens.userId, [...new Set(wanted.map((m) => m.userId))]),
+        isNull(user.bannedAt),
+      ),
+    )
+  const phones = new Map<string, { locale: Locale; tokens: string[] }>()
+  for (const row of tokenRows) {
+    const phone = phones.get(row.userId) ?? { locale: row.locale, tokens: [] }
+    phone.tokens.push(row.token)
+    phones.set(row.userId, phone)
+  }
+  const reachable = wanted.filter((m) => phones.has(m.userId))
+
+  const free = await claimMany(
+    reachable.flatMap((m) => (m.key ? [{ userId: m.userId, key: m.key }] : [])),
+  )
+  // Two messages can carry the same pair inside one batch; only the first is sent.
+  const sent = new Set<string>()
+  const entries: PushEntry[] = []
+  for (const m of reachable) {
+    if (m.key) {
+      const pair = pairKey(m.userId, m.key)
+      if (!free.has(pair) || sent.has(pair)) continue
+      sent.add(pair)
+    }
+    const phone = phones.get(m.userId)
+    if (!phone) continue
+    const { title, body } = m.copy(phone.locale)
+    for (const token of phone.tokens) entries.push({ token, title, body, data: m.data })
+  }
+  return entries
 }
 
 interface ExpoTicket {
@@ -84,10 +144,7 @@ async function deleteTokens(tokens: string[]): Promise<void> {
 }
 
 // Sends one batch of ≤100 messages' worth of tokens through Expo's push API.
-// `entries` have already been claimed and pref-checked by sendPush below.
-async function sendBatch(
-  entries: { token: string; title: string; body: string; data?: Record<string, string> }[],
-): Promise<void> {
+async function sendBatch(entries: PushEntry[]): Promise<void> {
   const res = await fetch(SEND_URL, {
     method: 'POST',
     headers: {
@@ -128,66 +185,25 @@ async function sendBatch(
   await deleteTokens(deadTokens)
 }
 
-// The write path calls this WITHOUT await — see sendPush's own comment. Runs
-// entirely after the caller's response has already gone out.
-async function sendPushInner(messages: PushMessage[]): Promise<void> {
+// Fire-and-forget by convention: every caller does `void sendPush(...)`, never `await` — a
+// push failure or a slow Expo round trip must never slow down or fail the write it's
+// attached to. Errors are swallowed here (not re-thrown) since nothing downstream awaits
+// this to observe them.
+export function sendPush(messages: PushMessage[]): void {
+  deliver(messages).catch((err) => console.error('sendPush failed', err))
+}
+
+async function deliver(messages: PushMessage[]): Promise<void> {
   if (!EXPO_ACCESS_TOKEN || messages.length === 0) return
-
-  // Prefs first: a category a user has switched off never even claims a
-  // push_log slot, so re-enabling it later doesn't skip a push that was
-  // silently throttled away while it was off.
-  const byCategory = new Map<PushCategory, PushMessage[]>()
-  for (const m of messages) {
-    const list = byCategory.get(m.category) ?? []
-    list.push(m)
-    byCategory.set(m.category, list)
-  }
-  const afterPrefs: PushMessage[] = []
-  for (const [category, list] of byCategory) {
-    const ok = await enabledUserIds([...new Set(list.map((m) => m.userId))], category)
-    afterPrefs.push(...list.filter((m) => ok.has(m.userId)))
-  }
-  if (afterPrefs.length === 0) return
-
-  const claimed: PushMessage[] = []
-  for (const m of afterPrefs) {
-    if (await claim(m.userId, m.key)) claimed.push(m)
-  }
-  if (claimed.length === 0) return
-
-  const userIds = [...new Set(claimed.map((m) => m.userId))]
-  const tokenRows = await db
-    .select({ token: pushTokens.token, userId: pushTokens.userId })
-    .from(pushTokens)
-    .where(inArray(pushTokens.userId, userIds))
-  const tokensByUser = new Map<string, string[]>()
-  for (const row of tokenRows) {
-    const list = tokensByUser.get(row.userId) ?? []
-    list.push(row.token)
-    tokensByUser.set(row.userId, list)
-  }
-
-  const entries = claimed.flatMap((m) =>
-    (tokensByUser.get(m.userId) ?? []).map((token) => ({
-      token,
-      title: m.title,
-      body: m.body,
-      data: m.data,
-    })),
-  )
+  const entries = await buildEntries(messages)
   for (let i = 0; i < entries.length; i += BATCH_SIZE) {
     await sendBatch(entries.slice(i, i + BATCH_SIZE))
   }
 }
 
-// Fire-and-forget by convention: every trigger site calls `void
-// sendPush(...)`, never `await sendPush(...)` — a push failure or a slow
-// Expo round trip must never slow down or fail the write it's attached to.
-// Errors are swallowed here (not re-thrown) since nothing downstream awaits
-// this to observe them.
-export function sendPush(messages: PushMessage[]): void {
-  sendPushInner(messages).catch((err) => console.error('sendPush failed', err))
-}
+// Whether this environment calls Expo at all — lib/notify.ts skips the name lookups when
+// it can't.
+export const pushEnabled = (): boolean => Boolean(EXPO_ACCESS_TOKEN)
 
 // lib/pushSweep.ts calls this every sweep. Drains whatever tickets are
 // pending, asks Expo which ones failed, and deletes the dead tokens — the
@@ -218,161 +234,4 @@ export async function checkReceipts(): Promise<void> {
     .filter((t) => receipts[t.ticketId]?.details?.error === 'DeviceNotRegistered')
     .map((t) => t.token)
   await deleteTokens(deadTokens)
-}
-
-// M20's repeat-dish nudge: a dish_lists row created by routes/dishes.ts's
-// POST handler (a member has posted the same dish at 3+ restaurants) that's
-// still unranked and undismissed ~20h later gets ONE push. Santo Domingo has
-// no DST (fixed UTC-4), so its local hour is a plain offset — no timezone
-// library needed. Sent only in the 11:00–21:00 window so a list that turns
-// due overnight waits for morning instead of buzzing someone at 3am.
-const DUE_AFTER_MS = 20 * 60 * 60 * 1000
-const SD_UTC_OFFSET_HOURS = 4
-const SEND_WINDOW = { start: 11, end: 21 }
-
-export async function sweepDishNudges(): Promise<void> {
-  if (!EXPO_ACCESS_TOKEN) return
-  const sdHour = (new Date().getUTCHours() + 24 - SD_UTC_OFFSET_HOURS) % 24
-  if (sdHour < SEND_WINDOW.start || sdHour >= SEND_WINDOW.end) return
-
-  const due = await db
-    .select({
-      id: dishLists.id,
-      userId: dishLists.userId,
-      nameKey: dishLists.nameKey,
-      label: dishLists.label,
-      restaurantCount: sql<number>`count(${dishes.id})::int`,
-    })
-    .from(dishLists)
-    .innerJoin(
-      dishes,
-      and(
-        eq(dishes.userId, dishLists.userId),
-        eq(dishes.nameKey, dishLists.nameKey),
-        isNull(dishes.removedAt),
-      ),
-    )
-    .where(
-      and(
-        isNull(dishLists.rankedAt),
-        isNull(dishLists.dismissedAt),
-        isNull(dishLists.pushedAt),
-        lt(dishLists.createdAt, new Date(Date.now() - DUE_AFTER_MS)),
-      ),
-    )
-    .groupBy(dishLists.id)
-    .limit(200)
-  if (due.length === 0) return
-
-  sendPush(
-    due.map((d) => ({
-      userId: d.userId,
-      key: `dish-nudge:${d.id}`,
-      category: 'dishes',
-      title: 'Mesa',
-      body: `Has comido ${d.label} en ${d.restaurantCount} lugares. ¿Cuál fue la mejor?`,
-      data: { type: 'dish-list', listId: d.id },
-    })),
-  )
-  // Marked here, not inside sendPush's own claim — pushedAt is this sweep's
-  // own "don't reconsider next tick" flag (the due query above already
-  // filters on it), separate from push_log's per-(user,key) dedupe.
-  await db
-    .update(dishLists)
-    .set({ pushedAt: new Date() })
-    .where(
-      inArray(
-        dishLists.id,
-        due.map((d) => d.id),
-      ),
-    )
-}
-
-// Reminders for an event you've RSVP'd 'going' to (M22): 24h, 3h, 2h and at
-// start. Each offset is its own push_log key (`event-reminder:{id}:{ms}`),
-// so all four fire independently and none re-fires on a later tick — unlike
-// sweepDishNudges' single pushedAt column, four columns would be needed for
-// four independent "already sent" flags, so this leans on push_log's
-// (userId, key) dedupe instead, the same tool notifications.ts already uses.
-//
-// Deliberately NO quiet-hours window (contrast sweepDishNudges' 11:00–21:00):
-// "at start" for a 10pm event has to mean 10pm.
-//
-// `startsAt` due within `offsetMs` of now, but not further than
-// REMINDER_GRACE_MS past that threshold — the grace bound keeps a long sweep
-// outage (a crash-looping deploy, say) from blasting out every stale offset
-// at once when the sweep comes back, rather than requiring precise
-// tick-to-tick window math tied to the sweep interval.
-const REMINDER_OFFSETS_MS = [24 * 3600_000, 3 * 3600_000, 2 * 3600_000, 0]
-const REMINDER_GRACE_MS = 30 * 60_000
-
-export async function sweepEventReminders(): Promise<void> {
-  if (!EXPO_ACCESS_TOKEN) return
-  const now = Date.now()
-
-  for (const offsetMs of REMINDER_OFFSETS_MS) {
-    const threshold = new Date(now + offsetMs)
-    const graceFloor = new Date(now + offsetMs - REMINDER_GRACE_MS)
-
-    const due = await db
-      .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
-      .from(eventRsvps)
-      .innerJoin(events, eq(events.id, eventRsvps.eventId))
-      .where(
-        and(
-          eq(eventRsvps.status, 'going'),
-          isNull(events.cancelledAt),
-          lte(events.startsAt, threshold),
-          gt(events.startsAt, graceFloor),
-        ),
-      )
-      .limit(500)
-    if (due.length === 0) continue
-
-    sendPush(
-      due.map((d) => ({
-        userId: d.userId,
-        key: `event-reminder:${d.eventId}:${offsetMs}`,
-        category: 'events',
-        title: 'Mesa',
-        body: reminderBody(d.title, offsetMs),
-        data: { type: 'event', eventId: d.eventId },
-      })),
-    )
-  }
-}
-
-function reminderBody(title: string, offsetMs: number): string {
-  if (offsetMs === 0) return `${title} empieza ahora.`
-  if (offsetMs === 24 * 3600_000) return `${title} es mañana.`
-  return `${title} empieza en ${Math.round(offsetMs / 3600_000)}h.`
-}
-
-// A cancelled event you'd RSVP'd 'going' to, caught by polling rather than a
-// write-time hook — cancelling is a direct SQL UPDATE per docs/EVENTS.md's
-// runbook (there is no API endpoint for it), so this sweep is the only place
-// that can ever notice cancelledAt getting set. One push per (user, event)
-// ever, via push_log's dedupe — the key carries no offset, so it doesn't
-// matter how many ticks see the row as cancelled before it's pruned.
-export async function sweepEventCancellations(): Promise<void> {
-  if (!EXPO_ACCESS_TOKEN) return
-
-  const due = await db
-    .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
-    .from(eventRsvps)
-    .innerJoin(events, eq(events.id, eventRsvps.eventId))
-    .where(and(eq(eventRsvps.status, 'going'), sql`${events.cancelledAt} is not null`))
-    .limit(500)
-  if (due.length === 0) return
-
-  sendPush(
-    due.map((d) => ({
-      userId: d.userId,
-      key: `event-cancelled:${d.eventId}`,
-      category: 'events',
-      title: 'Mesa',
-      body: `${d.title} fue cancelado.`,
-      data: { type: 'event', eventId: d.eventId },
-    })),
-  )
 }

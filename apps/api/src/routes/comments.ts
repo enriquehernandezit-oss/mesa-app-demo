@@ -5,7 +5,8 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { parseCommentBody } from '../lib/commentBody'
-import { sendPush } from '../lib/push'
+import { notify } from '../lib/notify'
+import { excerpt } from '../lib/notifyCopy'
 import { blockedByMe, blockedMe, visibleComment } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -104,20 +105,20 @@ export const commentsRoutes = new Hono<AuthedEnv>()
       })
     if (!row) throw new Error('comment insert returned no row')
 
-    if (ranking.user.id !== me.id) {
-      // Keyed per comment (not hour-bucketed like cheers): each comment is its
-      // own message worth reading, not a repeatable tap.
-      sendPush([
-        {
-          userId: ranking.user.id,
-          key: `comment:${row.id}`,
-          category: 'social',
-          title: 'Mesa',
-          body: `${me.name || 'Alguien'} comentó tu ranking de ${ranking.restaurant.name}`,
-          data: { type: 'restaurant', restaurantId: ranking.restaurant.id },
-        },
-      ])
-    }
+    // Keyed per comment (not hour-bucketed like cheers): each comment is its own message
+    // worth reading, not a repeatable tap.
+    notify([
+      {
+        userId: ranking.user.id,
+        kind: 'comment',
+        dedupeKey: `comment:${row.id}`,
+        actorId: me.id,
+        rankingId,
+        commentId: row.id,
+        restaurantId: ranking.restaurant.id,
+        data: { excerpt: excerpt(body) },
+      },
+    ])
 
     return c.json({
       comment: {

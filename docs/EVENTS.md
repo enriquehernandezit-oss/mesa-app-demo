@@ -34,12 +34,13 @@ going" outright. `GET /events/:id/going` returns who they are (newest sign-up fi
 at 200), and the app opens it from the event page's "Who's going" row and the Tonight card.
 
 **Telling friends.** The write that FIRST turns a member's RSVP into `going`, on an event
-that hasn't ended, pushes everyone who follows them (`events` category, `lib/eventPush.ts`):
-one push per follower per event per 6 hours however many friends sign up, and a member's
-going is announced once ever (`push_log` marker `event-going-announced:{eventId}`, claimed
-against the going member), so toggling off and on never re-notifies. Activity shows the same
-thing collapsed to one row per event — "Ana and 42 others are going to X" — and drops events
-that have ended.
+that hasn't ended, writes an `event_going` row in every follower's inbox and pushes them
+(`events` category, `lib/notify.ts`): one push per follower per event per 6 hours however many
+friends sign up (`lib/eventPush.ts`), and a member's going is announced once ever (the inbox
+row is unique per follower, going member and event: `event_going:{eventId}:{memberId}`), so
+toggling off and on never re-notifies. The inbox shows the rows collapsed to one per event —
+"Ana and 42 others are going to X". A cancelled event notifies everyone who was going
+(`event_cancelled:{eventId}`), swept every 2 minutes for events cancelled in the last week.
 
 `saved_events` is a member's **Save** (the bookmark), one row per
 (event, user), row present = saved. It is **independent of the RSVP** — a

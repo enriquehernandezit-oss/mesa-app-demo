@@ -1,20 +1,16 @@
 // The rules for "a friend of yours is going" pushes. Pure (no database), so they are
-// unit-tested in lib/eventPush.test.ts; routes/events.ts uses them on the RSVP write.
+// unit-tested in lib/eventPush.test.ts; routes/events.ts and lib/notify.ts use them.
 
 // A follower hears about a given event at most once per window, however many of the people
 // they follow sign up in it: the first friend to say "going" pushes, the next few hours of
 // sign-ups stay quiet, and a later one can push again. Everything is still in Activity.
 export const GOING_PUSH_WINDOW_MS = 6 * 60 * 60 * 1000
 
-// push_log's dedupe key for the follower's push: one per event per window. Claimed by
-// lib/push.ts's sendPush, which drops a message whose (user, key) it has already sent.
+// push_log's throttle key for the follower's push: one per event per window. Claimed by
+// lib/push.ts's buildEntries, which drops a message whose (user, key) it has already sent.
 export function goingPushKey(eventId: string, now: Date): string {
   return `event-going:${eventId}:${Math.floor(now.getTime() / GOING_PUSH_WINDOW_MS)}`
 }
-
-// The marker that makes a member's "going" a one-time announcement: toggling going off
-// and on again never re-notifies. Claimed against the GOING member, not the recipient.
-export const goingAnnouncedKey = (eventId: string): string => `event-going-announced:${eventId}`
 
 // Activity's "friends going" rows, one per EVENT: the friend who signed up most recently, and
 // how many others of the people you follow are going too — "Ana and 42 others are going to X".
