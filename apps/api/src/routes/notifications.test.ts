@@ -435,6 +435,9 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
       await notifyNow([
         { userId: me.id, kind: 'cheers', dedupeKey: 'a', actorId: ana.id, rankingId, restaurantId },
       ])
+      // created_at has millisecond precision; two rows landing in the same one fall back to the
+      // id tie-break, which is random — so make "newest" unambiguous.
+      await new Promise((r) => setTimeout(r, 5))
       await notifyNow([
         {
           userId: me.id,

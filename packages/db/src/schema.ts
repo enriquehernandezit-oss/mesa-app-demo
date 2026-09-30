@@ -634,6 +634,9 @@ export const rankings = pgTable(
     unique('rankings_user_restaurant_uq').on(t.userId, t.restaurantId),
     index('rankings_user_position_idx').on(t.userId, t.position),
     index('rankings_restaurant_idx').on(t.restaurantId), // who ranked this place
+    // Backs Explore's occasion filter (`tag = any(tags)`), which seq-scanned this table on
+    // every filtered request. Array containment is what a GIN index serves.
+    index('rankings_tags_gin_idx').using('gin', t.tags),
   ],
 )
 

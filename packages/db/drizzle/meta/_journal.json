@@ -232,6 +232,13 @@
       "when": 1790756861536,
       "tag": "0032_bumpy_bastion",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1790775438811,
+      "tag": "0033_lyrical_loners",
+      "breakpoints": true
     }
   ]
 }

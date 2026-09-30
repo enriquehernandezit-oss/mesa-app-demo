@@ -26,3 +26,6 @@ packages/db/data/
 # and holds live API responses that shouldn't be replayed as fixtures.
 # top100.json itself (the extract from the spreadsheet) IS committed.
 apps/api/data/top100-google.json
+
+# Google Places cache for places:enrich — same reasoning: live API responses, kept at most 30 days.
+apps/api/data/places-enrich-google.json

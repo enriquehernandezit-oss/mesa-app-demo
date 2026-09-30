@@ -203,12 +203,14 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // "Open now" is a demo filter over the display close-time (not real hours).
     if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
     // Occasion (A1) — at least one ranking of this place carries the tag.
-    // Same qualifying-id-subquery shape as dishMatch/rankedPool below.
+    // Same qualifying-id-subquery shape as dishMatch/rankedPool below. Written as
+    // array containment (`@>`), not `x = any(tags)`: both mean the same for one value,
+    // but only containment is served by rankings_tags_gin_idx.
     if (occasion) {
       const occasionMatch = db
         .selectDistinct({ id: rankings.restaurantId })
         .from(rankings)
-        .where(sql`${occasion} = any(${rankings.tags})`)
+        .where(sql`${rankings.tags} @> array[${occasion}]::text[]`)
       liveConds.push(inArray(restaurants.id, occasionMatch))
     }
     // Score band (A1) — friend average at or above the threshold, gated on
@@ -658,7 +660,6 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         geoPrecision: true,
         googlePlaceId: true,
         sourceRefreshedAt: true,
-        source: true,
       },
       with: { neighborhood: { columns: { slug: true, name: true } } },
     })
@@ -822,18 +823,18 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       neighborhoodId: _nid,
       googlePlaceId,
       sourceRefreshedAt: _sra,
-      source,
       ...restaurantOut
     } = restaurant
-    // "Powered by Google" is only honest for a row a MEMBER actually created
-    // from a Google result (POST /from-google, source: 'member') — a seed or
-    // Foursquare-sourced row can carry a googlePlaceId too (the match path in
-    // POST /from-google stamps one onto a curated row it recognizes), and
-    // that row's name/cover/cuisine are Mesa's own, not Google's.
+    // The "Powered by Google" line is required wherever a profile shows Google-derived
+    // data, and a row with a googlePlaceId always does: the importers and places:enrich
+    // write its address, phone, website, price and hours from Google, and the match path in
+    // POST /from-google fills a curated row's empty fields the same way. (This used to be
+    // member-created rows only, which left every catalog place showing Google's facts
+    // unattributed.)
     return c.json({
       restaurant: {
         ...restaurantOut,
-        google: googlePlaceId != null && source === 'member',
+        google: googlePlaceId != null,
         hasMenu: menuItemCount > 0,
       },
       friendsRankings,

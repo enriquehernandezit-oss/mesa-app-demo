@@ -380,6 +380,46 @@ export function toMesaFields(d: GooglePlaceDetails): MesaFieldsFromGoogle {
   }
 }
 
+// Whether Google says this is somewhere you eat or drink. A name alone is not enough to trust a
+// search hit: "Cantábrico" came back as a condominium, "El Agave" as a liquor store, "Marocha"
+// as a hair salon — all name matches, none a restaurant. Google's own types are the
+// tie-breaker, and ALL of them count, not just the primary one: a steak house is primarily
+// `steak_house` but also lists `restaurant`, and Punto y Corcho is primarily a `wholesaler`
+// while listing `wine_bar` and `restaurant`. Not `food` — liquor stores carry it — and not a
+// `_shop` suffix, which would admit barber_shop. Suffixes cover the long tail
+// (japanese_restaurant, wine_bar …); the set is the standalone ones.
+const EATING_TYPES = new Set([
+  'restaurant',
+  'bar',
+  'cafe',
+  'cafeteria',
+  'coffee_shop',
+  'night_club',
+  'bakery',
+  'pub',
+  'deli',
+  'diner',
+  'steak_house',
+  'salad_shop',
+  'pastry_shop',
+  'dessert_shop',
+  'ice_cream_shop',
+  'juice_shop',
+  'sandwich_shop',
+  'donut_shop',
+  'bagel_shop',
+  'tea_house',
+  'meal_takeaway',
+  'food_court',
+  'bar_and_grill',
+])
+export function isEatingPlace(d: Pick<GooglePlaceDetails, 'primaryType' | 'types'>): boolean {
+  const all = [d.primaryType, ...(d.types ?? [])]
+  return all.some(
+    (t) => t != null && (EATING_TYPES.has(t) || t.endsWith('_restaurant') || t.endsWith('_bar')),
+  )
+}
+
 const COMBINING_MARKS = /\p{M}/gu
 function normalizeForMatch(s: string): string {
   return s.normalize('NFD').replace(COMBINING_MARKS, '').toLowerCase().trim()

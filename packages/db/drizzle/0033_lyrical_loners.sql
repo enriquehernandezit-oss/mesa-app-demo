@@ -1,0 +1,1 @@
+CREATE INDEX "rankings_tags_gin_idx" ON "rankings" USING gin ("tags");

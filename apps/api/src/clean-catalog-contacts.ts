@@ -17,21 +17,9 @@
 import { db, pool, schema } from '@mesa/db'
 import { inArray } from 'drizzle-orm'
 
-const { restaurants } = schema
+import { isPlaceholderPhone, isPlaceholderWebsite } from './lib/placeContacts'
 
-// The seed's placeholder phone: +1809555 followed by four digits.
-const FAKE_PHONE = /^\+1809555\d{4}$/
-// The seed's invented homepage, rebuilt per row rather than pattern-matched:
-// `siteFor()` in packages/db/src/seed.ts. Matching by shape would also catch the
-// REAL homepages the Google Places import brought in (bottegafratellird.com and
-// friends), which must survive untouched — so a website is only cleared when it
-// is character-for-character the URL the seed would have written for that name.
-const seedSite = (name: string) =>
-  `https://${name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-z0-9]+/g, '')}.do`
+const { restaurants } = schema
 
 async function main() {
   const dryRun = process.argv.includes('--dry-run')
@@ -46,8 +34,8 @@ async function main() {
     .from(restaurants)
     .orderBy(restaurants.name)
 
-  const badPhones = all.filter((r) => r.phone && FAKE_PHONE.test(r.phone))
-  const badSites = all.filter((r) => r.website && r.website === seedSite(r.name))
+  const badPhones = all.filter((r) => isPlaceholderPhone(r.phone))
+  const badSites = all.filter((r) => isPlaceholderWebsite(r.name, r.website))
   const touched = new Set([...badPhones, ...badSites].map((r) => r.id))
 
   if (touched.size === 0) {
@@ -68,7 +56,7 @@ async function main() {
       .join(', ')
     console.log(`  ${r.name} — ${bits}`)
   }
-  const keptSites = all.filter((r) => r.website && r.website !== seedSite(r.name)).length
+  const keptSites = all.filter((r) => r.website && !isPlaceholderWebsite(r.name, r.website)).length
   console.log(`(${keptSites} website(s) look real and are left alone.)`)
   if (dryRun) return
 
