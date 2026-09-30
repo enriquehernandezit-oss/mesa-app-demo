@@ -169,6 +169,10 @@ export const user = pgTable('user', {
   // sign-in and whenever the member switches language (PATCH /me/locale); until it has,
   // Spanish — Mesa's home market and the language every push was already in.
   locale: text('locale').$type<'es' | 'en'>().notNull().default('es'),
+  // A private account (F1): people who don't already follow it must ask, and see only the
+  // profile's header (name, @handle, neighborhood, counts) until it says yes. Off for everyone —
+  // Mesa is social discovery, so the default is open. See follow_requests below and docs/PRIVACY.md.
+  isPrivate: boolean('is_private').notNull().default(false),
 
   // --- Moderation (App Store 1.2) ---
   // Ejected users: set on moderation action; the session middleware rejects any
@@ -1032,6 +1036,30 @@ export const friendSuggestionDismissals = pgTable(
   ],
 )
 
+// A request to follow a PRIVATE account (F1), waiting for its owner to accept or delete it.
+// Deliberately its own table rather than a status on `follows`: every existing read treats a
+// `follows` row as "may see their content" (the feed, friends' notes, plan invites, the
+// leaderboard's friends scope…), so a pending row there would leak content to someone not yet
+// approved. Accepting moves the pair into `follows`; declining or cancelling just deletes it.
+export const followRequests = pgTable(
+  'follow_requests',
+  {
+    requesterId: text('requester_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    targetId: text('target_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.requesterId, t.targetId] }),
+    // The owner's request list, newest first.
+    index('follow_requests_target_idx').on(t.targetId, t.createdAt),
+    check('follow_requests_no_self', sql`${t.requesterId} <> ${t.targetId}`),
+  ],
+)
+
 // ── Growth: invites ──────────────────────────────────────────────────────
 
 // Invites. Deliberately NOT scarce: one permanent, reusable code per member,
@@ -1195,6 +1223,8 @@ export const pushLog = pgTable(
 // the little that isn't a pointer.
 export type NotificationKind =
   | 'follow'
+  | 'follow_request'
+  | 'follow_accepted'
   | 'cheers'
   | 'dish_cheer'
   | 'comment'

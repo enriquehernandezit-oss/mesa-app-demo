@@ -8,6 +8,8 @@ import { type NotificationRow, excerpt, pushCopy, pushPayload, reminderCopy } fr
 // copy and payload are covered by the loops below.
 const KINDS: Record<schema.NotificationKind, true> = {
   follow: true,
+  follow_request: true,
+  follow_accepted: true,
   cheers: true,
   dish_cheer: true,
   comment: true,
@@ -42,6 +44,9 @@ describe('pushCopy', () => {
     expect(pushCopy('cheers', 'es', ctx).body).toBe('Ana le dio cheers a tu ranking de Lumbre')
     expect(pushCopy('cheers', 'en', ctx).body).toBe('Ana cheered your ranking of Lumbre')
     expect(pushCopy('follow', 'en', ctx).body).toBe('Ana started following you')
+    expect(pushCopy('follow_request', 'en', ctx).body).toBe('Ana requested to follow you')
+    expect(pushCopy('follow_request', 'es', ctx).body).toBe('Ana quiere seguirte')
+    expect(pushCopy('follow_accepted', 'en', ctx).body).toBe('Ana accepted your follow request')
   })
 
   test("a missing actor or place falls back to a plain word, in the reader's language", () => {

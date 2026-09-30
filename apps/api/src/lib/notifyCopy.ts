@@ -36,6 +36,14 @@ const BODY: Record<Kind, Record<Locale, (w: Words) => string>> = {
     es: (w) => `${w.name} te empezó a seguir`,
     en: (w) => `${w.name} started following you`,
   },
+  follow_request: {
+    es: (w) => `${w.name} quiere seguirte`,
+    en: (w) => `${w.name} requested to follow you`,
+  },
+  follow_accepted: {
+    es: (w) => `${w.name} aceptó tu solicitud`,
+    en: (w) => `${w.name} accepted your follow request`,
+  },
   cheers: {
     es: (w) => `${w.name} le dio cheers a tu ranking de ${w.place}`,
     en: (w) => `${w.name} cheered your ranking of ${w.place}`,
@@ -119,6 +127,8 @@ export function pushCopy(
 export function pushPayload(n: NotificationRow): Record<string, string> | undefined {
   switch (n.kind) {
     case 'follow':
+    case 'follow_request':
+    case 'follow_accepted':
       return n.actorId ? { type: 'user', userId: n.actorId } : undefined
     case 'cheers':
     case 'comment':

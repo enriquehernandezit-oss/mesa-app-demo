@@ -85,9 +85,11 @@ async function scoredDishesForRestaurant(me: { id: string }, restaurantId: strin
         isNull(user.bannedAt),
         notInArray(dishes.userId, blockedByMe(me.id)),
         notInArray(dishes.userId, blockedMe(me.id)),
+        // A dish marked public is still a private account's content (F1): shown only to its
+        // approved followers, like the rest of what they post.
         or(
           eq(dishes.userId, me.id),
-          eq(dishes.visibility, 'public'),
+          and(eq(dishes.visibility, 'public'), eq(user.isPrivate, false)),
           inArray(dishes.userId, followingIds(me.id)),
         ),
       ),
@@ -476,6 +478,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         grain: dishes.grain,
         createdAt: dishes.createdAt,
         visibility: dishes.visibility,
+        posterPrivate: user.isPrivate,
         user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
         score: rankings.score,
         restaurant: {
@@ -510,7 +513,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     // could already act on any dish blind via DELETE /moderation/dishes/:id;
     // this only lets them see it first.
     const posterIsMe = row.user.id === me.id
-    if (!posterIsMe && !me.isModerator && row.visibility !== 'public') {
+    if (!posterIsMe && !me.isModerator && (row.visibility !== 'public' || row.posterPrivate)) {
       const [f] = await db
         .select({ id: follows.followingId })
         .from(follows)
@@ -552,7 +555,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .from(dishCheers)
       .where(eq(dishCheers.dishId, id))
 
-    const { visibility: _v, ...dish } = row
+    const { visibility: _v, posterPrivate: _p, ...dish } = row
     return c.json({
       dish: {
         ...dish,

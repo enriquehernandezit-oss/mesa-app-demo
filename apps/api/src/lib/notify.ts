@@ -28,6 +28,13 @@ const hourBucket = (d: Date) => d.toISOString().slice(0, 13)
 // gates it (and notifyCopy.ts, which says what it reads).
 export const KIND_RULES: Record<Kind, KindRule> = {
   follow: { category: 'social' },
+  // Asking to follow a private account — one push per (asker, recipient) an hour, so
+  // request / cancel / request can't be used to ping someone over and over.
+  follow_request: {
+    category: 'social',
+    throttle: (n) => `follow-request:${n.actorId}:${hourBucket(n.createdAt)}`,
+  },
+  follow_accepted: { category: 'social' },
   // "≤1 push per ranking per hour": a burst of cheers from different friends inside one
   // hour claims the same push_log row, so only the first pushes. Every cheer still lands
   // in the inbox.

@@ -115,23 +115,27 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     const inviter = await db.query.user.findFirst({
       where: eq(user.id, invite.userId),
-      columns: { name: true, handle: true, bannedAt: true },
+      columns: { name: true, handle: true, bannedAt: true, isPrivate: true },
       with: { neighborhood: { columns: { name: true } } },
     })
     if (!inviter || inviter.bannedAt) return c.html(notFound(canonical), 404)
 
-    const rows = await db
-      .select({
-        position: rankings.position,
-        score: rankings.score,
-        name: restaurants.name,
-        coverImageId: restaurants.coverImageId,
-      })
-      .from(rankings)
-      .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
-      .where(eq(rankings.userId, invite.userId))
-      .orderBy(asc(rankings.position))
-      .limit(3)
+    // The invitation still works for a private account, but its top spots are not put on a
+    // public page (F1).
+    const rows = inviter.isPrivate
+      ? []
+      : await db
+          .select({
+            position: rankings.position,
+            score: rankings.score,
+            name: restaurants.name,
+            coverImageId: restaurants.coverImageId,
+          })
+          .from(rankings)
+          .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
+          .where(eq(rankings.userId, invite.userId))
+          .orderBy(asc(rankings.position))
+          .limit(3)
 
     const who = inviter.name || (inviter.handle ? `@${inviter.handle}` : 'Alguien')
     const hood = inviter.neighborhood?.name ?? 'Santo Domingo'
@@ -180,10 +184,11 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     const target = await db.query.user.findFirst({
       where: eq(user.handle, handle),
-      columns: { id: true, name: true, handle: true, bannedAt: true },
+      columns: { id: true, name: true, handle: true, bannedAt: true, isPrivate: true },
       with: { neighborhood: { columns: { name: true } } },
     })
-    if (!target || target.bannedAt) return c.html(notFound(canonical), 404)
+    // A private account has no public page (F1): its list is for approved followers, in the app.
+    if (!target || target.bannedAt || target.isPrivate) return c.html(notFound(canonical), 404)
 
     const rows = await db
       .select({
@@ -284,7 +289,13 @@ export const sharePagesRoutes = new Hono<AppEnv>()
       )
       .innerJoin(user, eq(user.id, vibeNotes.userId))
       .where(
-        and(eq(vibeNotes.restaurantId, id), isNull(vibeNotes.removedAt), isNull(user.bannedAt)),
+        and(
+          eq(vibeNotes.restaurantId, id),
+          isNull(vibeNotes.removedAt),
+          isNull(user.bannedAt),
+          // Never quote a private account on a public page (F1).
+          eq(user.isPrivate, false),
+        ),
       )
       .orderBy(asc(rankings.position))
       .limit(1)
@@ -453,9 +464,10 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     const owner = await db.query.user.findFirst({
       where: eq(user.id, collection.userId),
-      columns: { name: true, handle: true, bannedAt: true },
+      columns: { name: true, handle: true, bannedAt: true, isPrivate: true },
     })
-    if (!owner || owner.bannedAt) return c.html(notFound(canonical), 404)
+    // A private account's lists are not public either (F1).
+    if (!owner || owner.bannedAt || owner.isPrivate) return c.html(notFound(canonical), 404)
 
     const rawRows = await db
       .select({
@@ -540,9 +552,10 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     const owner = await db.query.user.findFirst({
       where: eq(user.id, list.userId),
-      columns: { name: true, handle: true, bannedAt: true },
+      columns: { name: true, handle: true, bannedAt: true, isPrivate: true },
     })
-    if (!owner || owner.bannedAt) return c.html(notFound(canonical), 404)
+    // A private account's lists are not public either (F1).
+    if (!owner || owner.bannedAt || owner.isPrivate) return c.html(notFound(canonical), 404)
 
     const rows = await db
       .select({

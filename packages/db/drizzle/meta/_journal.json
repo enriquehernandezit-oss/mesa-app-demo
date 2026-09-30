@@ -225,6 +225,13 @@
       "when": 1790752414122,
       "tag": "0031_clumsy_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1790756861536,
+      "tag": "0032_bumpy_bastion",
+      "breakpoints": true
     }
   ]
 }

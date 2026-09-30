@@ -227,6 +227,10 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
         and(
           eq(notifications.userId, me.id),
           visibleRow(me.id),
+          // A follow request is not a row in the list: it lives behind Activity's pinned "Follow
+          // requests" row (GET /social/requests). Its notification exists so the bell counts it
+          // and a push can be sent — which is why the unread count below still includes it.
+          ne(notifications.kind, 'follow_request'),
           cursor
             ? or(
                 lt(notifications.createdAt, cursor.at),

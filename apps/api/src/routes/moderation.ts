@@ -9,7 +9,8 @@ import { requireAuth, requireModerator } from '../middleware/session'
 // UGC moderation (App Store 1.2). Every user can report content and block
 // abusive accounts; moderators can remove content and eject users. A block hides
 // content both ways; a removed note and a banned user disappear from all reads.
-const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, user } = schema
+const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, followRequests, user } =
+  schema
 
 const reportSchema = z.object({
   // Dishes are first-class UGC (photo + name + caption), so they must be
@@ -87,6 +88,15 @@ export const moderationRoutes = new Hono<AuthedEnv>()
           or(
             and(eq(follows.followerId, me.id), eq(follows.followingId, userId)),
             and(eq(follows.followerId, userId), eq(follows.followingId, me.id)),
+          ),
+        )
+      // A pending follow request either way goes too (F1) — a block leaves nothing to approve.
+      await tx
+        .delete(followRequests)
+        .where(
+          or(
+            and(eq(followRequests.requesterId, me.id), eq(followRequests.targetId, userId)),
+            and(eq(followRequests.requesterId, userId), eq(followRequests.targetId, me.id)),
           ),
         )
     })

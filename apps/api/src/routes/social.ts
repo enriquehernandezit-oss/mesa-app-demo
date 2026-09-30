@@ -7,7 +7,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { notify } from '../lib/notify'
-import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, canSeeContent, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The social graph write side. Follow/unfollow is used first during onboarding
@@ -38,13 +38,13 @@ const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
 async function resolveGraphTarget(
   c: Context<AuthedEnv>,
   me: { id: string },
-): Promise<string | null> {
+): Promise<{ id: string; locked: boolean } | null> {
   const targetId = c.req.query('userId') || me.id
-  if (targetId === me.id) return targetId
+  if (targetId === me.id) return { id: targetId, locked: false }
 
   const target = await db.query.user.findFirst({
     where: eq(schema.user.id, targetId),
-    columns: { bannedAt: true },
+    columns: { bannedAt: true, isPrivate: true },
   })
   if (!target || target.bannedAt) return null
 
@@ -57,7 +57,10 @@ async function resolveGraphTarget(
   })
   if (blocked) return null
 
-  return targetId
+  // A private account's followers and following are for its approved followers (F1): anyone
+  // else gets `locked` and an empty list, while the counts on the profile stay visible.
+  const locked = !(await canSeeContent(me.id, { id: targetId, isPrivate: target.isPrivate }))
+  return { id: targetId, locked }
 }
 
 export const socialRoutes = new Hono<AuthedEnv>()
@@ -80,7 +83,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
     // a block exists, just that following isn't possible.
     const target = await db.query.user.findFirst({
       where: eq(schema.user.id, targetId),
-      columns: { bannedAt: true },
+      columns: { bannedAt: true, isPrivate: true },
     })
     if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
 
@@ -92,6 +95,37 @@ export const socialRoutes = new Hono<AuthedEnv>()
       columns: { blockerId: true },
     })
     if (blocked) return c.json({ error: 'not_found' }, 404)
+
+    // A private account (F1) doesn't get followed, it gets asked: the request waits in
+    // follow_requests until its owner accepts (POST /requests/:userId/accept). Someone who
+    // already follows it stays following; asking twice is one request.
+    if (target.isPrivate) {
+      const [already] = await db
+        .select({ x: schema.follows.followerId })
+        .from(schema.follows)
+        .where(
+          and(eq(schema.follows.followerId, current.id), eq(schema.follows.followingId, targetId)),
+        )
+        .limit(1)
+      if (already) return c.json({ ok: true, status: 'following' })
+
+      const asked = await db
+        .insert(schema.followRequests)
+        .values({ requesterId: current.id, targetId })
+        .onConflictDoNothing()
+        .returning({ requesterId: schema.followRequests.requesterId })
+      if (asked.length > 0) {
+        notify([
+          {
+            userId: targetId,
+            kind: 'follow_request',
+            dedupeKey: `follow_request:${current.id}`,
+            actorId: current.id,
+          },
+        ])
+      }
+      return c.json({ ok: true, status: 'requested' })
+    }
 
     // Idempotent: following someone you already follow is a no-op, not an
     // error — and `.returning()` is how the push trigger tells "new follow"
@@ -114,21 +148,153 @@ export const socialRoutes = new Hono<AuthedEnv>()
       ])
     }
 
-    return c.json({ ok: true })
+    return c.json({ ok: true, status: 'following' })
   })
 
+  // Unfollow — and, for a private account, withdraw a pending request (and the request's row in
+  // its owner's notifications, so the bell doesn't count something that no longer exists).
   .delete('/follow/:userId', async (c) => {
     const current = c.get('user')
+    const targetId = c.req.param('userId')
 
     await db
       .delete(schema.follows)
       .where(
+        and(eq(schema.follows.followerId, current.id), eq(schema.follows.followingId, targetId)),
+      )
+    await db
+      .delete(schema.followRequests)
+      .where(
         and(
-          eq(schema.follows.followerId, current.id),
-          eq(schema.follows.followingId, c.req.param('userId')),
+          eq(schema.followRequests.requesterId, current.id),
+          eq(schema.followRequests.targetId, targetId),
+        ),
+      )
+    await db
+      .delete(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.userId, targetId),
+          eq(schema.notifications.dedupeKey, `follow_request:${current.id}`),
         ),
       )
 
+    return c.json({ ok: true })
+  })
+
+  // The follow requests waiting on ME (F1) — the list behind Activity's pinned "Follow
+  // requests" row: who asked, when, and whether I already follow them back. Newest first; banned
+  // and blocked askers are left out (a block also deletes the request, this is belt and braces).
+  .get('/requests', async (c) => {
+    const me = c.get('user')
+    const back = alias(schema.follows, 'back')
+    const rows = await db
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        handle: schema.user.handle,
+        image: schema.user.image,
+        neighborhood: schema.neighborhoods.name,
+        requestedAt: schema.followRequests.createdAt,
+        isFollowing: sql<boolean>`${back.followerId} is not null`,
+      })
+      .from(schema.followRequests)
+      .innerJoin(schema.user, eq(schema.user.id, schema.followRequests.requesterId))
+      .leftJoin(schema.neighborhoods, eq(schema.neighborhoods.id, schema.user.neighborhoodId))
+      .leftJoin(
+        back,
+        and(eq(back.followerId, me.id), eq(back.followingId, schema.followRequests.requesterId)),
+      )
+      .where(
+        and(
+          eq(schema.followRequests.targetId, me.id),
+          isNull(schema.user.bannedAt),
+          notInArray(schema.user.id, blockedByMe(me.id)),
+          notInArray(schema.user.id, blockedMe(me.id)),
+        ),
+      )
+      .orderBy(desc(schema.followRequests.createdAt))
+      .limit(100)
+    return c.json({
+      requests: rows.map((r) => ({ ...r, requestedAt: r.requestedAt.toISOString() })),
+      count: rows.length,
+    })
+  })
+
+  // Accept: the asker becomes an approved follower (a `follows` row — from here on the whole
+  // app treats them as following me) and is told. 404 when there is no such request, so a
+  // stale tap can't approve someone who cancelled.
+  .post('/requests/:userId/accept', async (c) => {
+    const me = c.get('user')
+    const requesterId = c.req.param('userId')
+    const accepted = await db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(schema.followRequests)
+        .where(
+          and(
+            eq(schema.followRequests.requesterId, requesterId),
+            eq(schema.followRequests.targetId, me.id),
+          ),
+        )
+        .returning({ requesterId: schema.followRequests.requesterId })
+      if (removed.length === 0) return false
+      await tx
+        .insert(schema.follows)
+        .values({ followerId: requesterId, followingId: me.id })
+        .onConflictDoNothing()
+      await tx
+        .delete(schema.notifications)
+        .where(
+          and(
+            eq(schema.notifications.userId, me.id),
+            eq(schema.notifications.dedupeKey, `follow_request:${requesterId}`),
+          ),
+        )
+      return true
+    })
+    if (!accepted) return c.json({ error: 'not_found' }, 404)
+
+    // Clear a previous "accepted" row first, so accepting the same person a second time (they
+    // unfollowed and asked again) is news again rather than swallowed by the unique key.
+    await db
+      .delete(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.userId, requesterId),
+          eq(schema.notifications.dedupeKey, `follow_accepted:${me.id}`),
+        ),
+      )
+    notify([
+      {
+        userId: requesterId,
+        kind: 'follow_accepted',
+        dedupeKey: `follow_accepted:${me.id}`,
+        actorId: me.id,
+      },
+    ])
+    return c.json({ ok: true })
+  })
+
+  // Delete a request. Quiet on purpose: the asker is not told, and it is idempotent.
+  .post('/requests/:userId/decline', async (c) => {
+    const me = c.get('user')
+    const requesterId = c.req.param('userId')
+    await db
+      .delete(schema.followRequests)
+      .where(
+        and(
+          eq(schema.followRequests.requesterId, requesterId),
+          eq(schema.followRequests.targetId, me.id),
+        ),
+      )
+    await db
+      .delete(schema.notifications)
+      .where(
+        and(
+          eq(schema.notifications.userId, me.id),
+          eq(schema.notifications.dedupeKey, `follow_request:${requesterId}`),
+        ),
+      )
     return c.json({ ok: true })
   })
 
@@ -249,8 +415,10 @@ export const socialRoutes = new Hono<AuthedEnv>()
   // "Seguidores" stat and M3's follower-invite picker.
   .get('/followers', async (c) => {
     const me = c.get('user')
-    const targetId = await resolveGraphTarget(c, me)
-    if (!targetId) return c.json({ error: 'not_found' }, 404)
+    const graph = await resolveGraphTarget(c, me)
+    if (!graph) return c.json({ error: 'not_found' }, 404)
+    if (graph.locked) return c.json({ users: [], locked: true })
+    const targetId = graph.id
 
     // `back` answers "do I (the caller) already follow this row's user" —
     // the same join shape as activity.ts's new-followers section, just keyed
@@ -542,8 +710,10 @@ export const socialRoutes = new Hono<AuthedEnv>()
   // /followers — same block/ban filtering, same shape.
   .get('/following', async (c) => {
     const me = c.get('user')
-    const targetId = await resolveGraphTarget(c, me)
-    if (!targetId) return c.json({ error: 'not_found' }, 404)
+    const graph = await resolveGraphTarget(c, me)
+    if (!graph) return c.json({ error: 'not_found' }, 404)
+    if (graph.locked) return c.json({ users: [], locked: true })
+    const targetId = graph.id
 
     const back = alias(schema.follows, 'back')
     const users = await db

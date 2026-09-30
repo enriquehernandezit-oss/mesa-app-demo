@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
+import { notify } from '../lib/notify'
 import { citywideRank } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -65,6 +66,7 @@ const linkEmailSchema = z.object({
 
 const phoneSchema = z.object({ phone: z.string().trim().min(1).max(32) })
 const localeSchema = z.object({ locale: z.enum(['es', 'en']) })
+const privacySchema = z.object({ isPrivate: z.boolean() })
 
 // Unset -> the contacts find-friends feature is dark: PUT refuses rather than
 // hashing with no secret (an empty/undefined HMAC key would be a real
@@ -104,6 +106,8 @@ export const meRoutes = new Hono<AuthedEnv>()
         instagramHandle: true,
         website: true,
         favoriteCuisines: true,
+        // Private account (F1) — the member's own switch, read back by Settings → Privacy.
+        isPrivate: true,
       },
       with: {
         neighborhood: { columns: { slug: true, name: true } },
@@ -253,6 +257,58 @@ export const meRoutes = new Hono<AuthedEnv>()
       .set({ locale: parsed.data.locale })
       .where(eq(schema.user.id, me.id))
     return c.json({ ok: true })
+  })
+
+  // The private-account switch (F1). Turning it ON leaves everyone who already follows as they
+  // are; turning it OFF approves every request still waiting (there is nothing left to guard) and
+  // tells those people, the same as if they had been accepted one by one.
+  .patch('/privacy', async (c) => {
+    const me = c.get('user')
+    const parsed = privacySchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const { isPrivate } = parsed.data
+
+    const approved = await db.transaction(async (tx) => {
+      await tx.update(schema.user).set({ isPrivate }).where(eq(schema.user.id, me.id))
+      if (isPrivate) return []
+      const pending = await tx
+        .delete(schema.followRequests)
+        .where(eq(schema.followRequests.targetId, me.id))
+        .returning({ requesterId: schema.followRequests.requesterId })
+      if (pending.length > 0) {
+        await tx
+          .insert(schema.follows)
+          .values(pending.map((p) => ({ followerId: p.requesterId, followingId: me.id })))
+          .onConflictDoNothing()
+        await tx
+          .delete(schema.notifications)
+          .where(
+            and(
+              eq(schema.notifications.userId, me.id),
+              eq(schema.notifications.kind, 'follow_request'),
+            ),
+          )
+        await tx.delete(schema.notifications).where(
+          and(
+            inArray(
+              schema.notifications.userId,
+              pending.map((p) => p.requesterId),
+            ),
+            eq(schema.notifications.dedupeKey, `follow_accepted:${me.id}`),
+          ),
+        )
+      }
+      return pending.map((p) => p.requesterId)
+    })
+    notify(
+      approved.map((requesterId) => ({
+        userId: requesterId,
+        kind: 'follow_accepted' as const,
+        dedupeKey: `follow_accepted:${me.id}`,
+        actorId: me.id,
+      })),
+    )
+    return c.json({ isPrivate })
   })
 
   .patch('/birthday', async (c) => {

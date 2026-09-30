@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
-import { blockedByMe, blockedMe, followerIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The ranking loop — Mesa's atomic unit. A user keeps one ordered list of
@@ -15,8 +15,17 @@ import { requireAuth } from '../middleware/session'
 // pairwise comparisons, never a star input. Vibe notes are the one-line "why"
 // attached to a ranking — Mesa's identity, and the app's only UGC in Phase 1.
 
-const { rankings, vibeNotes, restaurants, neighborhoods, userBlocks, user, follows, savedPlaces } =
-  schema
+const {
+  rankings,
+  vibeNotes,
+  restaurants,
+  neighborhoods,
+  userBlocks,
+  user,
+  follows,
+  followRequests,
+  savedPlaces,
+} = schema
 
 // Vibe notes are deliberately short — one line, not a review.
 const VIBE_MAX = 140
@@ -167,7 +176,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
     const target = await db.query.user.findFirst({
       where: eq(user.id, targetId),
-      columns: { id: true, name: true, handle: true, image: true, bannedAt: true },
+      columns: { id: true, name: true, handle: true, image: true, bannedAt: true, isPrivate: true },
       with: { neighborhood: { columns: { name: true } } },
     })
     if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
@@ -183,6 +192,43 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       )
       .limit(1)
     if (block.length > 0) return c.json({ error: 'not_found' }, 404)
+
+    // Follow state, counts and — for a private account — whether I have already asked (F1).
+    // These are the header of the profile and are visible to everyone; what follows the header
+    // (the list, the match) is for approved followers only.
+    const [amFollowing] = await db
+      .select({ x: follows.followerId })
+      .from(follows)
+      .where(and(eq(follows.followerId, me.id), eq(follows.followingId, targetId)))
+      .limit(1)
+    const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
+    const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
+    let requested = false
+    if (target.isPrivate && !amFollowing && targetId !== me.id) {
+      const [req] = await db
+        .select({ x: followRequests.requesterId })
+        .from(followRequests)
+        .where(and(eq(followRequests.requesterId, me.id), eq(followRequests.targetId, targetId)))
+        .limit(1)
+      requested = Boolean(req)
+    }
+    const followStatus = amFollowing ? 'following' : requested ? 'requested' : 'none'
+
+    const { bannedAt: _drop, ...profile } = target
+    if (!(await canSeeContent(me.id, target))) {
+      return c.json({
+        user: profile,
+        locked: true,
+        rankings: [],
+        rankedCount: await db.$count(rankings, eq(rankings.userId, targetId)),
+        isFollowing: false,
+        followStatus,
+        followerCount,
+        followingCount,
+        matchPercent: null,
+        sharedCount: 0,
+      })
+    }
 
     const rows = await db
       .select({
@@ -216,15 +262,6 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       .where(eq(rankings.userId, targetId))
       .orderBy(asc(rankings.position))
 
-    // Follow state + counts, so the passport can show a Follow button (M4).
-    const [amFollowing] = await db
-      .select({ x: follows.followerId })
-      .from(follows)
-      .where(and(eq(follows.followerId, me.id), eq(follows.followingId, targetId)))
-      .limit(1)
-    const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
-    const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
-
     // Match % (taste compatibility) — see tasteMatch.ts for the formula.
     // One query: count + avg gap over restaurants we've both ranked.
     const mine = aliasedTable(rankings, 'mine')
@@ -241,11 +278,13 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       .where(eq(mine.userId, me.id))
     const matchPercent = match ? tasteMatch(match.avgDiff, match.shared) : null
 
-    const { bannedAt: _drop, ...profile } = target
     return c.json({
       user: profile,
+      locked: false,
       rankings: rows,
+      rankedCount: rows.length,
       isFollowing: Boolean(amFollowing),
+      followStatus,
       followerCount,
       followingCount,
       matchPercent,
@@ -270,7 +309,14 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       }),
       db.query.user.findFirst({
         where: eq(user.id, targetId),
-        columns: { id: true, name: true, handle: true, image: true, bannedAt: true },
+        columns: {
+          id: true,
+          name: true,
+          handle: true,
+          image: true,
+          bannedAt: true,
+          isPrivate: true,
+        },
       }),
     ])
     if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
@@ -286,6 +332,8 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       )
       .limit(1)
     if (block.length > 0) return c.json({ error: 'not_found' }, 404)
+    // The pair page lists the places we both ranked, i.e. their list — approved followers only (F1).
+    if (!(await canSeeContent(me.id, target))) return c.json({ error: 'not_found' }, 404)
 
     const mine = aliasedTable(rankings, 'mine')
     const sharedRows = await db

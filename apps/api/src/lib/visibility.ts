@@ -1,5 +1,6 @@
 import { db, schema } from '@mesa/db'
-import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
+import type { PgColumn } from 'drizzle-orm/pg-core'
 
 const { follows, userBlocks, rankingComments, rankings, user } = schema
 
@@ -51,6 +52,9 @@ export async function citywideRank(viewerId: string, myCount: number): Promise<n
         sql`${user.handle} is not null`,
         notInArray(user.id, blockedByMe(viewerId)),
         notInArray(user.id, blockedMe(viewerId)),
+        // Private accounts count only for the people they have approved (F1) — the leaderboard's
+        // own rule, so the two ranks still agree.
+        authorVisibleTo(viewerId, user.id, user.isPrivate),
       ),
     )
     .groupBy(rankings.userId)
@@ -69,3 +73,27 @@ export const visibleComment = (viewerId: string) =>
     notInArray(rankingComments.userId, blockedByMe(viewerId)),
     notInArray(rankingComments.userId, blockedMe(viewerId)),
   )
+
+// Private accounts (F1): a private member's content — their list, notes, dishes, taste match,
+// who they follow — is for themselves and the people they've approved (`follows` rows only ever
+// exist for approved followers; a pending request lives in `follow_requests`). Everything else
+// about them (name, @handle, neighborhood, counts) stays visible so there is something to tap
+// "Follow" on.
+export async function canSeeContent(
+  viewerId: string,
+  target: { id: string; isPrivate: boolean },
+): Promise<boolean> {
+  if (!target.isPrivate || target.id === viewerId) return true
+  const [row] = await db
+    .select({ x: follows.followerId })
+    .from(follows)
+    .where(and(eq(follows.followerId, viewerId), eq(follows.followingId, target.id)))
+    .limit(1)
+  return Boolean(row)
+}
+
+// The same rule for a list query: rows whose author is open, is the viewer, or is followed by
+// the viewer. `authorPrivate` is the author's `user.isPrivate` — the query has to join `user`
+// for it (most already do, for the ban check).
+export const authorVisibleTo = (viewerId: string, authorId: PgColumn, authorPrivate: PgColumn) =>
+  or(eq(authorPrivate, false), eq(authorId, viewerId), inArray(authorId, followingIds(viewerId)))

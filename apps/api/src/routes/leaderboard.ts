@@ -3,7 +3,14 @@ import { and, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
-import { blockedByMe, blockedMe, citywideRank, followerIds, followingIds } from '../lib/visibility'
+import {
+  authorVisibleTo,
+  blockedByMe,
+  blockedMe,
+  citywideRank,
+  followerIds,
+  followingIds,
+} from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Citywide leaderboard (Beli-style): who has ranked the most places, all-time or
@@ -44,6 +51,8 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
         // vice versa).
         notInArray(user.id, blockedByMe(me.id)),
         notInArray(user.id, blockedMe(me.id)),
+        // A private account is on the board only for the people it has approved (F1).
+        authorVisibleTo(me.id, user.id, user.isPrivate),
         scope === 'friends'
           ? or(
               inArray(user.id, followingIds(me.id)),
