@@ -25,5 +25,6 @@ export function pushDeepLink(data: Record<string, unknown> | undefined): string 
   if (type === 'list' && typeof data.slug === 'string') return `/lists/${data.slug}`
   if (type === 'menu' && typeof data.restaurantId === 'string') return `/menu/${data.restaurantId}`
   if (type === 'activity') return '/activity'
+  if (type === 'follow-requests') return '/follow-requests'
   return null
 }

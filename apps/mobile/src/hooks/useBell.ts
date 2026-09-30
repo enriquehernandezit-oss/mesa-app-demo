@@ -4,11 +4,23 @@ import { AppState } from 'react-native'
 
 import { api } from '@/lib/api'
 import { onNotificationReceived } from '@/lib/push'
+import type { FollowRequest } from '@/lib/types'
 
 // The bell's two queries live under one ['notifications'] prefix, so a single
 // invalidateQueries({ queryKey: ['notifications'] }) refreshes the list and the badge.
 export const INBOX_KEY = ['notifications', 'inbox'] as const
 export const UNREAD_KEY = ['notifications', 'unread'] as const
+export const REQUESTS_KEY = ['notifications', 'requests'] as const
+
+// The follow requests waiting on me (F1) — behind Activity's pinned row and the requests list.
+// Empty for anyone without a private account, so it is one cheap query.
+export function useFollowRequests() {
+  return useQuery({
+    queryKey: REQUESTS_KEY,
+    queryFn: () => api.get<{ requests: FollowRequest[]; count: number }>('/social/requests'),
+    staleTime: 60_000,
+  })
+}
 
 // How many rows in the inbox are still unread — the number behind the feed's bell dot and the
 // tab bar's badge. The server counts (it knows what the inbox would show), so this is one

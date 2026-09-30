@@ -25,6 +25,8 @@ const href = (kind: NotificationItem['kind'], over: Partial<NotificationItem> = 
 describe('notificationHref', () => {
   test('each kind opens the screen it is about', () => {
     expect(href('follow')).toBe('/u/u1')
+    expect(href('follow_accepted')).toBe('/u/u1')
+    expect(href('follow_request')).toBe('/follow-requests')
     expect(href('cheers')).toBe('/r/r1')
     expect(href('saved_ranked')).toBe('/r/r1')
     expect(href('comment')).toBe('/comments/k1')

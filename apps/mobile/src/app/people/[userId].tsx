@@ -24,7 +24,8 @@ export default function PeopleScreen() {
 
   const q = useQuery({
     queryKey: ['follow-list', userId, tab],
-    queryFn: () => api.get<{ users: FollowUser[] }>(`/social/${tab}?userId=${userId}`),
+    queryFn: () =>
+      api.get<{ users: FollowUser[]; locked?: boolean }>(`/social/${tab}?userId=${userId}`),
   })
 
   const inviteFriends = async () => {
@@ -65,6 +66,9 @@ export default function PeopleScreen() {
         ) : (
           <ErrorState onRetry={() => q.refetch()}>{t('people.load_error')}</ErrorState>
         )
+      ) : q.data?.locked ? (
+        // A private account you don't follow: its counts show on the profile, its lists don't.
+        <EmptyState body={t('people.locked_body')}>{t('people.locked_title')}</EmptyState>
       ) : (
         <FlatList
           data={q.data?.users ?? []}

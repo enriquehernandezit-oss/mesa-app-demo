@@ -42,7 +42,7 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
-import { useFollow } from '@/hooks/useFollow'
+import { followLabelKey, useFollow } from '@/hooks/useFollow'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { api } from '@/lib/api'
 import { type FeedRow, buildFeedRows } from '@/lib/feedRows'
@@ -454,7 +454,7 @@ function EmptyFeed() {
 
 function SuggestedRow({ user: u, last }: { user: SuggestedUser; last: boolean }) {
   const t = useT()
-  const { following, toggle, pending } = useFollow(u.id, false, 'empty_feed')
+  const { status, toggle, pending } = useFollow(u.id, false, 'empty_feed')
   return (
     <PersonRow
       user={u}
@@ -464,13 +464,13 @@ function SuggestedRow({ user: u, last }: { user: SuggestedUser; last: boolean })
         .join(' · ')}
       right={
         <Button
-          variant={following ? 'secondary' : 'primary'}
+          variant={status !== 'none' ? 'secondary' : 'primary'}
           size="sm"
           className="min-h-[34px] px-4"
           onPress={toggle}
           disabled={pending}
         >
-          {following ? t('activity.following_pill') : t('activity.follow_pill')}
+          {t(followLabelKey(status))}
         </Button>
       }
     />

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { bucketOf, groupByBucket, matchesFilter } from './activityGroups'
+import { bucketOf, groupByBucket, isKnownKind, matchesFilter } from './activityGroups'
 import type { NotificationItem } from './types'
 
 // Local-time dates, since the buckets are the member's own calendar days.
@@ -34,6 +34,13 @@ describe('matchesFilter', () => {
     expect(matchesFilter('plan_reply', 'plans')).toBe(true)
     expect(matchesFilter('event_cancelled', 'events')).toBe(true)
     expect(matchesFilter('event_going', 'plans')).toBe(false)
+    expect(matchesFilter('follow_accepted', 'followers')).toBe(true)
+  })
+
+  test('a kind from a newer server is unknown, not a crash', () => {
+    expect(isKnownKind('cheers')).toBe(true)
+    expect(isKnownKind('follow_accepted')).toBe(true)
+    expect(isKnownKind('mention')).toBe(false)
   })
 })
 

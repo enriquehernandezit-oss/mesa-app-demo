@@ -147,6 +147,24 @@ export const es = {
   'activity.follow_back': 'Seguir también',
   'activity.following_pill': 'Siguiendo',
   'activity.follow_pill': 'Seguir',
+  'activity.requested_pill': 'Solicitado',
+  'activity.follow_request': '{name} quiere seguirte',
+  'activity.follow_accepted': '{name} aceptó tu solicitud',
+
+  // app/follow-requests.tsx + the pinned row on Activity (F1, private accounts).
+  'requests.title': 'Solicitudes de seguimiento',
+  'requests.row_single': '{name} quiere seguirte',
+  'requests.row_many': {
+    one: '{name} y 1 más quieren seguirte',
+    other: '{name} y {n} más quieren seguirte',
+  },
+  'requests.confirm': 'Confirmar',
+  'requests.delete': 'Eliminar',
+  'requests.accepted': 'Aceptada',
+  'requests.empty_title': 'Sin solicitudes',
+  'requests.empty_body': 'Cuando alguien pida seguir tu cuenta privada, aparecerá aquí.',
+  'requests.load_error': 'No se pudieron cargar tus solicitudes.',
+  'requests.answer_error': 'No se pudo responder a esa solicitud. Inténtalo de nuevo.',
 
   // hooks/useFollow.ts — shared by onboarding, the empty feed, Activity and a
   // member's passport, not just app/friends.
@@ -477,6 +495,8 @@ export const es = {
 
   // app/people/[userId].tsx
   'people.invite_link_error': 'No se pudo abrir el enlace de invitación.',
+  'people.locked_title': 'Esta lista es privada',
+  'people.locked_body': 'Sigue a esta cuenta para ver quién la sigue y a quién sigue.',
   'people.followers_title': 'Seguidores',
   'people.following_title': 'Siguiendo',
   'people.not_available': 'Este perfil no está disponible.',
@@ -866,6 +886,10 @@ export const es = {
     other: 'Rankea {n} spots más en común para ver su match',
   },
   'passport.following_button': 'Siguiendo',
+  'passport.requested_button': 'Solicitado',
+  'passport.private_title': 'Esta cuenta es privada',
+  'passport.private_body': 'Sigue a {name} para ver su lista, notas y platos.',
+  'passport.private_requested': 'Tu solicitud está esperando que {name} la acepte.',
   'passport.follow_button': 'Seguir',
   'passport.report': 'Reportar',
   'passport.block_confirm_title': '¿Bloquear a {name}?',
@@ -927,6 +951,16 @@ export const es = {
   'settings.theme_night': 'Noche',
   'settings.appearance_auto_hint':
     'Auto pasa a Noche al anochecer o si tu iPhone está en modo oscuro.',
+  'settings.private_account': 'Cuenta privada',
+  'settings.private_account_hint':
+    'Solo las personas que apruebes pueden ver tu lista, notas y platos. Quienes ya te siguen mantienen el acceso.',
+  'settings.private_error': 'No se pudo cambiar. Inténtalo de nuevo.',
+  'settings.private_off_title': '¿Hacer tu cuenta pública?',
+  'settings.private_off_body': {
+    one: 'Cualquiera verá tu lista, y la solicitud pendiente se aprueba.',
+    other: 'Cualquiera verá tu lista, y las {n} solicitudes pendientes se aprueban.',
+  },
+  'settings.private_off_confirm': 'Hacer pública',
   'settings.friends_only_scores': 'Puntuaciones solo de amigos',
   'settings.friends_only_scores_hint':
     'Muestra solo las puntuaciones de tus amigos, no el promedio de todos.',

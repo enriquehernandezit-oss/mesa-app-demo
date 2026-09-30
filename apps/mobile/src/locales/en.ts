@@ -136,6 +136,24 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'activity.follow_back': 'Follow back',
   'activity.following_pill': 'Following',
   'activity.follow_pill': 'Follow',
+  'activity.requested_pill': 'Requested',
+  'activity.follow_request': '{name} requested to follow you',
+  'activity.follow_accepted': '{name} accepted your follow request',
+
+  // app/follow-requests.tsx + the pinned row on Activity (F1, private accounts).
+  'requests.title': 'Follow requests',
+  'requests.row_single': '{name} wants to follow you',
+  'requests.row_many': {
+    one: '{name} and 1 other want to follow you',
+    other: '{name} and {n} others want to follow you',
+  },
+  'requests.confirm': 'Confirm',
+  'requests.delete': 'Delete',
+  'requests.accepted': 'Accepted',
+  'requests.empty_title': 'No requests',
+  'requests.empty_body': 'When someone asks to follow your private account, it shows up here.',
+  'requests.load_error': "Couldn't load your requests.",
+  'requests.answer_error': "Couldn't answer that request. Try again.",
 
   // hooks/useFollow.ts — shared by onboarding, the empty feed, Activity and a
   // member's passport, not just app/friends.
@@ -444,6 +462,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
     "Available in Spanish for now — the legal text hasn't been translated yet.",
 
   'people.invite_link_error': "Couldn't open the invite link.",
+  'people.locked_title': 'This list is private',
+  'people.locked_body': 'Follow this account to see who follows it and who it follows.',
   'people.followers_title': 'Followers',
   'people.following_title': 'Following',
   'people.not_available': "This profile isn't available.",
@@ -808,6 +828,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
     other: 'Rank {n} more shared spots to see your match',
   },
   'passport.following_button': 'Following',
+  'passport.requested_button': 'Requested',
+  'passport.private_title': 'This account is private',
+  'passport.private_body': 'Follow {name} to see their list, notes and dishes.',
+  'passport.private_requested': 'Your request is waiting for {name} to accept.',
   'passport.follow_button': 'Follow',
   'passport.report': 'Report',
   'passport.block_confirm_title': 'Block {name}?',
@@ -866,6 +890,16 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.theme_night': 'Night',
   'settings.appearance_auto_hint':
     'Auto switches to Night after dark, or when your iPhone is in dark mode.',
+  'settings.private_account': 'Private account',
+  'settings.private_account_hint':
+    'Only people you approve can see your list, notes and dishes. People who already follow you keep access.',
+  'settings.private_error': "Couldn't change that. Try again.",
+  'settings.private_off_title': 'Make your account public?',
+  'settings.private_off_body': {
+    one: 'Anyone will see your list, and the 1 waiting request is approved.',
+    other: 'Anyone will see your list, and the {n} waiting requests are approved.',
+  },
+  'settings.private_off_confirm': 'Make public',
   'settings.friends_only_scores': 'Friends-only scores',
   'settings.friends_only_scores_hint': "Show only your friends' scores, not everyone's average.",
   'settings.theme_auto_sub': 'Follows the evening',

@@ -6,9 +6,14 @@ export interface Neighborhood {
   name: string
 }
 
+// Where a Follow stands (F1): `requested` is a request to a private account, still unanswered.
+export type FollowStatus = 'none' | 'requested' | 'following'
+
 export interface MeResponse {
   profile: {
     id: string
+    // Private account (F1): only people you approve see your list, notes and dishes.
+    isPrivate: boolean
     name: string
     handle: string | null
     bio: string | null
@@ -105,6 +110,17 @@ export interface ContactMatchUser {
 }
 
 // GET /social/followers and /following — a member row in someone's graph.
+// GET /social/requests (F1) — the follow requests waiting on me.
+export interface FollowRequest {
+  id: string
+  name: string
+  handle: string | null
+  image: string | null
+  neighborhood: string | null
+  requestedAt: string
+  isFollowing: boolean // do I already follow them back?
+}
+
 export interface FollowUser {
   id: string
   name: string
@@ -408,6 +424,8 @@ export interface ActivityItem {
 // ActivityItem's live queries. Mirrors apps/api/src/routes/notifications.ts's NotificationItem.
 export type NotificationKind =
   | 'follow'
+  | 'follow_request'
+  | 'follow_accepted'
   | 'cheers'
   | 'dish_cheer'
   | 'comment'
@@ -567,8 +585,13 @@ export interface UserRankingsResponse {
     handle: string | null
     image: string | null
     neighborhood: { name: string } | null
+    isPrivate: boolean
   }
+  // A private account you don't follow (F1): the header and counts only — no list, no match.
+  locked: boolean
   rankings: TheirRanking[]
+  rankedCount: number
+  followStatus: FollowStatus
   isFollowing: boolean
   followerCount: number
   followingCount: number

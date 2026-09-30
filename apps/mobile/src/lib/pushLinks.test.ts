@@ -15,6 +15,7 @@ describe('pushDeepLink', () => {
     expect(pushDeepLink({ type: 'list', slug: 'la-dolce-vita' })).toBe('/lists/la-dolce-vita')
     expect(pushDeepLink({ type: 'menu', restaurantId: 'r1' })).toBe('/menu/r1')
     expect(pushDeepLink({ type: 'activity' })).toBe('/activity')
+    expect(pushDeepLink({ type: 'follow-requests' })).toBe('/follow-requests')
   })
   test('rejects an unknown type', () => {
     expect(pushDeepLink({ type: 'nope', userId: 'u1' })).toBeNull()

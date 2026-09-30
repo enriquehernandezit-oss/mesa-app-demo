@@ -40,6 +40,7 @@ export type MesaEvent =
   | 'collection_item_added'
   // social
   | 'follow_added'
+  | 'follow_requested'
   | 'follow_removed'
   | 'cheers_given'
   // discovery

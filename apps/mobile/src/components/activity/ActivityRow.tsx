@@ -2,11 +2,11 @@ import { type Href, useRouter } from 'expo-router'
 import { Fragment, type ReactNode, memo } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
+import { FollowBackPill } from '@/components/FollowBackPill'
 import { Caption, MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CalendarIcon, ForkKnifeIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
-import { useFollow } from '@/hooks/useFollow'
 import { useT } from '@/lib/i18n'
 import { notificationHref } from '@/lib/notificationHref'
 import { splitTemplate } from '@/lib/richText'
@@ -20,6 +20,10 @@ function templateFor(n: NotificationItem, t: T): string {
   switch (n.kind) {
     case 'follow':
       return t('activity.follow')
+    case 'follow_request':
+      return t('activity.follow_request')
+    case 'follow_accepted':
+      return t('activity.follow_accepted')
     case 'cheers':
       return t('activity.cheers')
     case 'dish_cheer':
@@ -60,7 +64,6 @@ function templateFor(n: NotificationItem, t: T): string {
 export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationItem }) {
   const t = useT()
   const router = useRouter()
-  const { following, toggle, pending } = useFollow(n.actor?.id ?? '', n.followsBack, 'activity')
   const href = notificationHref(n)
   const open = (to: string) => router.push(to as Href)
 
@@ -127,20 +130,7 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
         <Caption className="mt-[3px] text-meta">{timeAgo(n.createdAt)}</Caption>
       </View>
       {n.kind === 'follow' && n.actor ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: following, disabled: pending }}
-          disabled={pending}
-          onPress={toggle}
-          className={`h-[32px] justify-center rounded-pill px-4 active:opacity-70 ${following ? 'bg-chip' : 'bg-ink'}`}
-        >
-          <Text
-            maxFontSizeMultiplier={MAX_SCALE}
-            className={`font-ui-semibold text-meta ${following ? 'text-text-muted' : 'text-on-ink'}`}
-          >
-            {following ? t('activity.following_pill') : t('activity.follow_back')}
-          </Text>
-        </Pressable>
+        <FollowBackPill userId={n.actor.id} initial={n.followsBack} from="activity" />
       ) : n.restaurant ? (
         <View className="h-[46px] w-[46px] overflow-hidden rounded-sm">
           <PlaceCover

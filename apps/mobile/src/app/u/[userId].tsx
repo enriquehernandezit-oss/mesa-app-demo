@@ -18,7 +18,7 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { CheckIcon, MoreIcon, UserPlusIcon } from '@/components/ui/icons'
+import { CheckIcon, ClockIcon, LockIcon, MoreIcon, UserPlusIcon } from '@/components/ui/icons'
 import { ScoreStack } from '@/components/ui/patterns'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { showSheet } from '@/components/ui/Sheet'
@@ -49,6 +49,7 @@ export default function UserRankings() {
   const t = useT()
   const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
+  const lift = useLift()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
 
   // "Rankeados" in the stats trio jumps straight to the list below — expand it
@@ -93,11 +94,13 @@ export default function UserRankings() {
   })
   // `initial` starts false before `q.data` resolves and re-syncs the instant
   // it does — see useFollow's own comment on why that's race-free.
+  // A private account shows Requested until its owner answers (F1): the response says whether
+  // this one is private, so the button can flip straight to it.
   const {
-    following: isFollowing,
+    status: followStatus,
     toggle: toggleFollow,
     pending: followPending,
-  } = useFollow(userId, Boolean(q.data?.isFollowing), 'passport')
+  } = useFollow(userId, q.data?.followStatus ?? 'none', 'passport', q.data?.user.isPrivate)
 
   const reportUser = useMutation({
     mutationFn: (reason: string) =>
@@ -137,9 +140,18 @@ export default function UserRankings() {
     )
   }
 
-  // isFollowing comes from useFollow above, not q.data directly — it stays in
+  // The follow state comes from useFollow above, not q.data directly — it stays in
   // sync with the server value but flips optimistically on tap.
-  const { user, rankings, matchPercent, sharedCount, followerCount, followingCount } = q.data
+  const {
+    user,
+    rankings,
+    matchPercent,
+    sharedCount,
+    followerCount,
+    followingCount,
+    locked,
+    rankedCount,
+  } = q.data
   const firstName = (user.name || user.handle || '').split(' ')[0] || t('passport.someone_fallback')
   const neighborhood = user.neighborhood?.name
   const shown = expanded ? rankings : rankings.slice(0, 4)
@@ -234,29 +246,36 @@ export default function UserRankings() {
         <View className="mt-5">
           <ProfileStats
             items={[
+              // Counts are for everyone; the lists behind them are not, on a private account.
               {
                 n: String(followerCount),
                 l: t('profile.followers'),
-                go: () => router.push(`/people/${userId}?tab=followers`),
+                go: locked ? undefined : () => router.push(`/people/${userId}?tab=followers`),
               },
               {
                 n: String(followingCount),
                 l: t('profile.following'),
-                go: () => router.push(`/people/${userId}?tab=following`),
+                go: locked ? undefined : () => router.push(`/people/${userId}?tab=following`),
               },
-              { n: String(rankings.length), l: t('profile.ranked'), go: jumpToRankings },
+              {
+                n: String(rankedCount),
+                l: t('profile.ranked'),
+                go: locked ? undefined : jumpToRankings,
+              },
             ]}
           />
         </View>
 
         <View className="mt-4 items-center">
           <Button
-            variant={isFollowing ? 'secondary' : 'primary'}
+            variant={followStatus === 'none' ? 'primary' : 'secondary'}
             size="sm"
             className="min-h-[46px] px-6"
             icon={
-              isFollowing ? (
+              followStatus === 'following' ? (
                 <CheckIcon size={17} color="text" />
+              ) : followStatus === 'requested' ? (
+                <ClockIcon size={17} color="text" />
               ) : (
                 <UserPlusIcon size={17} color="on-ink" />
               )
@@ -264,11 +283,37 @@ export default function UserRankings() {
             disabled={followPending}
             onPress={toggleFollow}
           >
-            {isFollowing ? t('passport.following_button') : t('passport.follow_button')}
+            {followStatus === 'following'
+              ? t('passport.following_button')
+              : followStatus === 'requested'
+                ? t('passport.requested_button')
+                : t('passport.follow_button')}
           </Button>
         </View>
 
-        {rankings.length === 0 ? (
+        {locked ? (
+          // A private account you don't follow: the header and counts above, and this instead of
+          // the list, the notes and the match.
+          <View className="mx-4 mt-6 items-center rounded-group bg-surface px-6 py-6" style={lift}>
+            <View className="h-[48px] w-[48px] items-center justify-center rounded-pill bg-chip">
+              <LockIcon size={22} />
+            </View>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-3 text-center font-serif text-serif-md text-text"
+            >
+              {t('passport.private_title')}
+            </Text>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="mt-1 text-center font-ui text-subhead text-text-muted"
+            >
+              {followStatus === 'requested'
+                ? t('passport.private_requested', { name: firstName })
+                : t('passport.private_body', { name: firstName })}
+            </Text>
+          </View>
+        ) : rankings.length === 0 ? (
           <EmptyState>{t('passport.no_rankings')}</EmptyState>
         ) : (
           <View

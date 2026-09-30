@@ -300,6 +300,12 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   everything shown as read. The bell dot in the feed header is the server's unread count
   (`hooks/useBell.ts`). The list sits inside a plain `View`: as the screen's root the native large title
   vanished after an overscroll.
+- **Private accounts** (`docs/PRIVACY.md` has the rules): the follow pill has three states — solid `ink`
+  **Follow**, a raised chip **Requested** / **Following**. A private profile you don't follow keeps its header,
+  counts and Follow button and replaces the list with a raised r22 card: a `chip` lock circle, the serif line
+  "This account is private", and one muted sentence. Activity pins **Follow requests** above the day groups
+  (a 40pt face with a burgundy count, then the sentence, then a chevron); the list behind it is flat hairline
+  rows with a solid **Confirm** and a `chip` **Delete**, and a confirmed row swaps them for **Follow back**.
 - **Settings, comments and share** (`app/settings/*`, `app/notifications.tsx`, `app/legal/[doc].tsx`,
   `app/moderation.tsx`, `app/photo-edit.tsx`, `app/comments/[rankingId].tsx`, `components/ShareCard.tsx`).
   **Settings** opens on a raised me card (avatar 48, name in the serif, "@handle · 143 ranked", **Edit

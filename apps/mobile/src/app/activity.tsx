@@ -1,15 +1,23 @@
-import { type InfiniteData, useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshControl, SectionList, View } from 'react-native'
 
 import { ActivityRow } from '@/components/activity/ActivityRow'
+import { FollowRequestsRow } from '@/components/activity/FollowRequestsRow'
 import { GroupLabel } from '@/components/SettingsRow'
 import { Button, Chip, ChipRail, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
-import { INBOX_KEY, UNREAD_KEY } from '@/hooks/useBell'
-import { type ActivityFilter, FILTERS, groupByBucket, matchesFilter } from '@/lib/activityGroups'
+import { INBOX_KEY, useFollowRequests } from '@/hooks/useBell'
+import {
+  type ActivityFilter,
+  FILTERS,
+  groupByBucket,
+  isKnownKind,
+  matchesFilter,
+} from '@/lib/activityGroups'
 import { api } from '@/lib/api'
 import { useLanguage, useT } from '@/lib/i18n'
+import { markNotificationsRead } from '@/lib/markRead'
 import { registerForPush } from '@/lib/push'
 import type { NotificationItem, NotificationsPage } from '@/lib/types'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
@@ -55,39 +63,34 @@ export default function ActivityScreen() {
   // Read state moves on the way OUT, not in: opening the screen must not clear the dots while
   // someone is still looking at them. `before` is the newest row this visit showed, so anything
   // that arrives while it is open stays unread.
+  const requests = useFollowRequests()
+  // A pending request's own notification is created just after the request itself, so read
+  // through a few seconds past it — otherwise the bell would keep counting a request you have
+  // already seen.
+  const newestRequest = requests.data?.requests[0]?.requestedAt
+  const requestThrough = newestRequest
+    ? new Date(Date.parse(newestRequest) + 5000).toISOString()
+    : null
+  const inboxNewest = q.data?.pages[0]?.notifications[0]?.createdAt ?? null
   const newest = useRef<string | null>(null)
-  newest.current = q.data?.pages[0]?.notifications[0]?.createdAt ?? null
+  newest.current =
+    inboxNewest && requestThrough
+      ? inboxNewest > requestThrough
+        ? inboxNewest
+        : requestThrough
+      : (inboxNewest ?? requestThrough)
   useFocusEffect(
     useCallback(() => {
       return () => {
-        const before = newest.current
-        if (!before) return
-        queryClient.setQueryData<InfiniteData<NotificationsPage>>(INBOX_KEY, (data) =>
-          data
-            ? {
-                ...data,
-                pages: data.pages.map((page) => ({
-                  ...page,
-                  notifications: page.notifications.map((n) =>
-                    n.createdAt <= before ? { ...n, read: true } : n,
-                  ),
-                })),
-              }
-            : data,
-        )
-        queryClient.setQueryData(UNREAD_KEY, { count: 0 })
-        api
-          .post('/notifications/read', { before })
-          .then(() => queryClient.invalidateQueries({ queryKey: UNREAD_KEY }))
-          .catch(() => queryClient.invalidateQueries({ queryKey: UNREAD_KEY }))
+        if (newest.current) markNotificationsRead(queryClient, newest.current)
       }
     }, [queryClient]),
   )
 
   const shown = useMemo(
     () =>
-      (q.data?.pages.flatMap((page) => page.notifications) ?? []).filter((n) =>
-        matchesFilter(n.kind, filter),
+      (q.data?.pages.flatMap((page) => page.notifications) ?? []).filter(
+        (n) => isKnownKind(n.kind) && matchesFilter(n.kind, filter),
       ),
     [q.data, filter],
   )
@@ -162,18 +165,26 @@ export default function ActivityScreen() {
         renderSectionHeader={({ section }) => <GroupLabel>{section.title}</GroupLabel>}
         renderItem={({ item }) => <ActivityRow n={item} />}
         ListHeaderComponent={
-          <ChipRail className="mb-1">
-            {FILTERS.map((f) => (
-              <Chip
-                key={f}
-                size="sm"
-                state={filter === f ? 'selected' : 'default'}
-                onPress={() => setFilter(f)}
-              >
-                {filterLabel[f]}
-              </Chip>
-            ))}
-          </ChipRail>
+          <>
+            <ChipRail className="mb-1">
+              {FILTERS.map((f) => (
+                <Chip
+                  key={f}
+                  size="sm"
+                  state={filter === f ? 'selected' : 'default'}
+                  onPress={() => setFilter(f)}
+                >
+                  {filterLabel[f]}
+                </Chip>
+              ))}
+            </ChipRail>
+            {/* Follow requests (F1): pinned above everything, where followers belong. */}
+            {(filter === 'all' || filter === 'followers') &&
+            requests.data &&
+            requests.data.count > 0 ? (
+              <FollowRequestsRow requests={requests.data.requests} count={requests.data.count} />
+            ) : null}
+          </>
         }
         ListEmptyComponent={empty}
         ListFooterComponent={isFetchingNextPage ? <RowsSkeleton rows={2} /> : null}

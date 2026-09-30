@@ -6,7 +6,11 @@ import type { NotificationItem } from './types'
 export function notificationHref(n: NotificationItem): string | null {
   switch (n.kind) {
     case 'follow':
+    case 'follow_accepted':
       return n.actor ? `/u/${n.actor.id}` : null
+    // Asked to follow you: the requests list (the inbox doesn't list these rows itself).
+    case 'follow_request':
+      return '/follow-requests'
     case 'cheers':
     case 'saved_ranked':
       return n.restaurant ? `/r/${n.restaurant.id}` : null

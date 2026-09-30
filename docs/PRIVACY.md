@@ -57,3 +57,20 @@ allowed) · `GET /rankings/user/:id/match` · `GET /social/followers|following` 
 `/p/u`, `/p/collection`, `/p/dish-list`, `/p/spot` (note), `/p/i`.
 The feed, home, Popular, events-going, plans and place friend notes already read `follows` only, so a
 pending request cannot leak through them.
+
+## In the app (F2)
+
+- **Settings → Privacy → Private account:** the switch (`PATCH /me/privacy`). Turning it off with requests
+  waiting asks first ("the N waiting requests are approved").
+- **Follow pill** (`hooks/useFollow.ts`, three states — Follow / **Requested** / Following): on a private
+  account a tap asks and the pill becomes Requested; tapping Requested withdraws it. A suggestion or search
+  row doesn't know the account is private, so it waits for the server's answer instead of flashing "Following".
+- **A private profile you don't follow** (`app/u/[userId].tsx`): name, @handle, neighborhood and the three
+  counts, the Follow / Requested button, and in place of the list a lock card ("Follow {name} to see their
+  list, notes and dishes" / "Your request is waiting for {name} to accept"). No taste match. The counts
+  are not tappable, and the followers/following screen says the list is private.
+- **Activity → pinned "Follow requests" row** (`components/activity/FollowRequestsRow.tsx`): the newest
+  asker's face with the count, "Héctor and 1 other want to follow you", a chevron into
+  `app/follow-requests.tsx`: **Confirm** / **Delete** per person; a confirmed row stays and becomes
+  **Follow back** (or Following/Requested) until you leave. Leaving the list or Activity marks the requests read.
+- An unknown notification kind from a newer server is dropped by Activity (`isKnownKind`), never rendered blank.

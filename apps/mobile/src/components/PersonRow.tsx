@@ -4,8 +4,9 @@ import { Pressable, Text, View } from 'react-native'
 
 import { Caption } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
-import { type FollowSource, useFollow } from '@/hooks/useFollow'
+import { type FollowSource, followLabelKey, useFollow } from '@/hooks/useFollow'
 import { useT } from '@/lib/i18n'
+import type { FollowStatus } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
 
 type PersonRowUser = {
@@ -72,13 +73,13 @@ export function FollowPill({
   onChange,
 }: {
   userId: string
-  initial: boolean
+  initial: boolean | FollowStatus
   from: FollowSource
   onChange?: (following: boolean) => void
 }) {
   const t = useT()
   const lift = useLift()
-  const { following, toggle, pending } = useFollow(userId, initial, from)
+  const { status, following, toggle, pending } = useFollow(userId, initial, from)
 
   // `onChange` is typically a fresh closure per render (callers building it
   // inline inside a `.map()`); only `following` itself should re-trigger this.
@@ -91,15 +92,17 @@ export function FollowPill({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected: following, disabled: pending }}
+      accessibilityState={{ selected: status !== 'none', disabled: pending }}
       disabled={pending}
       onPress={toggle}
-      // Follow is the call to action (solid ink); Following settles to a raised chip.
-      className={`min-h-[34px] justify-center rounded-pill px-4 ${following ? 'bg-chip' : 'bg-ink'} active:opacity-70`}
-      style={following ? lift : undefined}
+      // Follow is the call to action (solid ink); Following and Requested settle to a raised chip.
+      className={`min-h-[34px] justify-center rounded-pill px-4 ${status !== 'none' ? 'bg-chip' : 'bg-ink'} ${pending ? 'opacity-60' : ''} active:opacity-70`}
+      style={status !== 'none' ? lift : undefined}
     >
-      <Text className={`font-ui-semibold text-label ${following ? 'text-text' : 'text-on-ink'}`}>
-        {following ? t('activity.following_pill') : t('activity.follow_pill')}
+      <Text
+        className={`font-ui-semibold text-label ${status !== 'none' ? 'text-text' : 'text-on-ink'}`}
+      >
+        {t(followLabelKey(status))}
       </Text>
     </Pressable>
   )

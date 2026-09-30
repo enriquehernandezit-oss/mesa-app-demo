@@ -8,6 +8,8 @@ export const FILTERS: ActivityFilter[] = ['all', 'followers', 'rankings', 'plans
 // One home per kind — a Record, so a new NotificationKind doesn't compile until it has one.
 const FILTER_OF: Record<NotificationKind, Exclude<ActivityFilter, 'all'>> = {
   follow: 'followers',
+  follow_request: 'followers',
+  follow_accepted: 'followers',
   cheers: 'rankings',
   dish_cheer: 'rankings',
   comment: 'rankings',
@@ -21,6 +23,10 @@ const FILTER_OF: Record<NotificationKind, Exclude<ActivityFilter, 'all'>> = {
 
 export const matchesFilter = (kind: NotificationKind, filter: ActivityFilter): boolean =>
   filter === 'all' || FILTER_OF[kind] === filter
+
+// A kind this build has never heard of — a newer server, an older app. Such a row is left out
+// rather than rendered as a blank (or worse, crashed on): the app never sees more than it can draw.
+export const isKnownKind = (kind: string): kind is NotificationKind => kind in FILTER_OF
 
 export type ActivityBucket = 'today' | 'week' | 'earlier'
 

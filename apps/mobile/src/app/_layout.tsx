@@ -249,6 +249,7 @@ function MesaStack() {
         options={{ ...utility, headerLargeTitle: false, title: t('settings.notifications') }}
       />
       <Stack.Screen name="activity" options={{ ...utility, title: t('nav.activity') }} />
+      <Stack.Screen name="follow-requests" options={{ ...utility, title: t('requests.title') }} />
       <Stack.Screen name="leaderboard" options={{ ...utility, title: t('nav.leaderboard') }} />
       {/* Title (Seguidores/Siguiendo) is set by the screen itself once it
           knows which list it is. */}
