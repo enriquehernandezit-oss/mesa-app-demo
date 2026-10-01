@@ -1669,7 +1669,7 @@ function FindStep({
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
-  // Google — any restaurant in the DR, for every real query. Deduped against
+  // Google — any restaurant (Santo Domingo first, then the rest of the DR, then the world), for every real query. Deduped against
   // results + lead group so a spot you already have isn't re-offered; tapping
   // continues the rank flow with the new place. Shared with Explore
   // (useExternalPlaceSearch), which is where the always-on rationale lives —
@@ -1679,6 +1679,10 @@ function FindStep({
     suggestions,
     create: createFromGoogle,
     creatingId,
+    where,
+    setWhere,
+    active: googleActive,
+    nothingFound,
   } = useExternalPlaceSearch({
     query: wantOnly ? '' : query,
     catalogNames: [...results.map((r) => r.name), ...leadGroup.map((r) => r.name)],
@@ -1817,6 +1821,10 @@ function FindStep({
               suggestions={suggestions}
               creatingId={creatingId}
               onPick={createFromGoogle}
+              where={where}
+              onWhere={setWhere}
+              active={googleActive}
+              nothingFound={nothingFound}
             />
           </View>
         )}

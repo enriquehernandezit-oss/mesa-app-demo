@@ -353,6 +353,10 @@ export interface ExternalSuggestion {
   name: string // structuredFormat.mainText
   secondaryText: string | null // structuredFormat.secondaryText (address-ish)
 }
+// How far a Google place search looks. Results always come ordered Santo Domingo, then the rest of
+// the Dominican Republic, then the world; this only narrows how far down that list it goes. 'world'
+// is the default (apps/api lib/placeSearch.ts).
+export type SearchWhere = 'sd' | 'do' | 'world'
 export interface NewRestaurant {
   id: string
   name: string

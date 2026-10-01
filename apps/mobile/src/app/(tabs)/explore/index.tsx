@@ -243,7 +243,8 @@ export default function ExploreScreen() {
   const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
   const showOpenChip = openNow || hoursCoverage >= 0.4
 
-  // Google — any restaurant in the DR, for every real query, not just the ones
+  // Google — any restaurant, Santo Domingo first then the Dominican Republic then the world
+  // (the pills under "En Google" narrow that), for every real query, not just the ones
   // Mesa's own catalog misses; tapping one creates a full profile and lands on
   // it. Memoized: the hook normalizes every one of these names to dedupe
   // Google's results against the catalog, and a fresh array each render made it
@@ -253,6 +254,10 @@ export default function ExploreScreen() {
     suggestions,
     create: createFromGoogle,
     creatingId,
+    where,
+    setWhere,
+    active: googleActive,
+    nothingFound,
   } = useExternalPlaceSearch({
     query: q,
     catalogNames: catalogNames,
@@ -505,6 +510,10 @@ export default function ExploreScreen() {
               suggestions={suggestions}
               creatingId={creatingId}
               onPick={createFromGoogle}
+              where={where}
+              onWhere={setWhere}
+              active={googleActive}
+              nothingFound={nothingFound}
             />
           ) : null
         }

@@ -5,9 +5,10 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { ensureArea, placeIn } from '../lib/geo'
-import { autocomplete, placeDetails, toMesaFields } from '../lib/googlePlaces'
+import { placeDetails, toMesaFields } from '../lib/googlePlaces'
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
+import { parseWhere, searchPlaces } from '../lib/placeSearch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -291,7 +292,11 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .from(restaurants)
         .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
         .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
-        .where(and(...liveConds))
+        // Browsing is the Dominican Republic: Santo Domingo's sectors and the cities around the
+        // country (Punta Cana, Santiago…). A place a member added from Miami is a real place with a
+        // real page — it shows up here by NAME (the branch above is not scoped), on the member's own
+        // list and in friends' activity, but not among everyone's default browse.
+        .where(and(...liveConds, eq(neighborhoods.countryCode, 'do')))
         .groupBy(restaurants.id)
         .orderBy(
           sort === 'name'
@@ -523,7 +528,10 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // call (POST /from-google), Google bills these autocomplete requests at
     // zero. Omitting it still works — it's purely a cost optimization.
     const sessionToken = c.req.query('s') || undefined
-    const suggestions = await autocomplete(q, sessionToken)
+    // `where` narrows the search: 'sd' = Santo Domingo only, 'do' = + the rest of the Dominican
+    // Republic, 'world' (the default) = + the world. Always ordered Santo Domingo → DR → world; see
+    // lib/placeSearch.ts for how, and what it costs.
+    const suggestions = await searchPlaces(q, parseWhere(c.req.query('where')), sessionToken)
     return c.json({ suggestions })
   })
   // Tap a Google suggestion → a real, populated Mesa profile (M9). Fetches

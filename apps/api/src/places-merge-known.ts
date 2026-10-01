@@ -1,6 +1,6 @@
-// Merge the duplicate places Google confirmed (2026-09-30) in one command, skipping any that are
-// not in the database you point it at — production may not match your local copy, or a group may
-// already be merged.
+// Merge the duplicate places Google confirmed (2026-09-30, plus the one the founder confirmed on
+// 2026-10-01) in one command, skipping any that are not in the database you point it at —
+// production may not match your local copy, or a group may already be merged.
 //
 //   DATABASE_URL="<url>" bun run places:merge-known --dry-run
 //   DATABASE_URL="<url>" bun run places:merge-known
@@ -24,6 +24,11 @@ export const KNOWN_DUPLICATES: { names: string[]; rename?: string }[] = [
   { names: ['Laurel'] },
   { names: ['LILA - Modern Cuisine'] },
   { names: ['Restaurante Gijón', 'Restaurante Gijon'] },
+  // Not a Google finding: the seed's bare "SBG" (no address, no Google id, ~100 m from Sophia's pin)
+  // is Sophia's Bar & Grill, which Google names "SBG Sophia's Bar & Grill". The founder confirmed it.
+  // The other SBG venues (Café SBG, SBG Kitchen, Atrium, Punta Cana, Casa de Campo) are different
+  // places and stay separate.
+  { names: ['SBG', "Sophia's Bar & Grill"] },
 ]
 
 async function main() {

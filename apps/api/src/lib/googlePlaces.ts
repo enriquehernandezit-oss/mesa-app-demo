@@ -24,15 +24,19 @@ export interface ExternalSuggestion {
   secondaryText: string | null
 }
 
-// Places Autocomplete — field-masked to placeId + display text only, which
-// keeps it on the cheapest SKU and means no coordinates are ever returned.
-// sessionToken (when passed by both this and placeDetails) bills the
-// autocomplete requests in that session at zero once a Details call in the
-// same session lands (M9) — optional, harmless to omit.
-export async function autocomplete(
-  q: string,
-  sessionToken?: string,
-): Promise<ExternalSuggestion[]> {
+// What one autocomplete request returned. `distanceM` is measured from the `origin` the request
+// carried (lib/placeSearch.ts sends Santo Domingo's centre) — it is how the search orders places that
+// no tier claimed. It never leaves the API: ExternalSuggestion is what the app receives.
+export interface Prediction extends ExternalSuggestion {
+  distanceM: number | null
+}
+
+// Places Autocomplete — ONE request; lib/placeSearch.ts builds the body, because WHERE to look is
+// the whole point of it. Field-masked to placeId + display text + distance, which keeps it on the
+// cheapest SKU and means no coordinates are ever returned. sessionToken (when the body carries one,
+// and POST /from-google passes the same one to Place Details) bills the autocomplete requests in
+// that session at zero once a Details call lands (M9) — optional, harmless to omit.
+export async function autocompleteRequest(body: Record<string, unknown>): Promise<Prediction[]> {
   if (!GOOGLE_PLACES_KEY) return []
   try {
     const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
@@ -41,25 +45,12 @@ export async function autocomplete(
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
         'X-Goog-FieldMask':
-          'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat',
+          'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat,suggestions.placePrediction.distanceMeters',
       },
-      body: JSON.stringify({
-        input: q,
-        // Dominican Republic only (founder's call after testing worldwide on
-        // device). includedRegionCodes IS a hard filter, unlike regionCode
-        // below, which is only a formatting hint (phone/unit conventions).
-        // This deliberately reverses M23's "members travel, let them log a
-        // place from Miami or Madrid" reasoning: Mesa's first objective is
-        // SDQ, and foreign results were mostly noise in the Explore search
-        // bar. Widening it again later is this one line.
-        includedRegionCodes: ['do'],
-        includedPrimaryTypes: ['restaurant', 'bar', 'night_club', 'cafe'],
-        languageCode: 'es',
-        regionCode: 'do',
-        ...(sessionToken ? { sessionToken } : {}),
-      }),
-      // Google is on the user's critical path here; don't let a stall hang
-      // the rank/explore flow. Degrades to "no external results" below.
+      body: JSON.stringify(body),
+      // Google is on the user's critical path here; don't let a stall hang the rank/explore flow.
+      // Degrades to "no external results" below. A search makes up to three of these at once, so
+      // the slowest one is the wait.
       signal: AbortSignal.timeout(4000),
     })
     if (!res.ok) {
@@ -71,6 +62,7 @@ export async function autocomplete(
       suggestions?: {
         placePrediction?: {
           placeId?: string
+          distanceMeters?: number
           structuredFormat?: { mainText?: { text?: string }; secondaryText?: { text?: string } }
         }
       }[]
@@ -85,6 +77,7 @@ export async function autocomplete(
         providerPlaceId: p.placeId as string,
         name: p.structuredFormat?.mainText?.text as string,
         secondaryText: p.structuredFormat?.secondaryText?.text ?? null,
+        distanceM: p.distanceMeters ?? null,
       }))
   } catch (err) {
     console.error('[places] autocomplete threw:', err)

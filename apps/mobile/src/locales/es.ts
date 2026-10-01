@@ -516,6 +516,12 @@ export const es = {
   // components/ExternalResults.tsx
   'external.on_google': 'En Google',
   'external.creating_profile': 'Creando perfil…',
+  'external.where_label': 'Buscar en',
+  'external.where_sd': 'Santo Domingo',
+  'external.where_do': 'RD',
+  'external.where_world': 'Mundo',
+  'external.nothing_in': 'Nada en {where}. Prueba con una zona más amplia.',
+  'external.none': 'Google no encontró nada.',
 
   // components/MesaTabBar.tsx
   'tabs.feed': 'Feed',

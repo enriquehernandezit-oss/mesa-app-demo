@@ -480,6 +480,12 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'external.on_google': 'On Google',
   'external.creating_profile': 'Creating profile…',
+  'external.where_label': 'Search in',
+  'external.where_sd': 'Santo Domingo',
+  'external.where_do': 'DR',
+  'external.where_world': 'World',
+  'external.nothing_in': 'Nothing in {where}. Try a wider area.',
+  'external.none': 'Nothing found on Google.',
 
   'tabs.feed': 'Feed',
   'tabs.explore': 'Explore',

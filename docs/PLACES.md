@@ -42,6 +42,38 @@ An unlisted area is a **label, not a choice**:
 To show a city as a real choice later — say "Punta Cana" as a filter pill — set its
 `listed` column to true. Nothing else changes.
 
+## Searching for a place to add — Santo Domingo first, then the country, then the world
+
+The search bar's "En Google" list (Explore, and the rank flow's find step) searches **anywhere in
+the world**, but always lists **Santo Domingo first, then the rest of the Dominican Republic, then
+everywhere else**. Three small pills under "En Google" — **Santo Domingo · RD · Mundo** — narrow how
+far down that list it goes; **Mundo** (the widest) is the default.
+
+Why it takes three searches: Google returns at most **five** places per request and ranks them its
+own way, so one request cannot be told "these first". Mesa asks up to three, at once, merges them in
+order and drops repeats (`apps/api/src/lib/placeSearch.ts`):
+
+| search | what it asks Google                                      | pill that includes it |
+| ------ | -------------------------------------------------------- | --------------------- |
+| 1      | inside the Santo Domingo box (the same one used to file) | all three             |
+| 2      | anywhere in the Dominican Republic                       | RD, Mundo             |
+| 3      | anywhere at all                                          | Mundo                 |
+
+Anything only the third search found is listed nearest to Santo Domingo first, so a Dominican place
+the second search missed still comes before Curaçao and London. (Santo Domingo's own matches can
+fill the second search's five slots: for "sbg" it returns four Santo Domingo venues and Casa de
+Campo, and only the third finds Punta Cana. Typing "sbg punta cana" finds it in every scope.) The list
+stops at **eight**: for a generic word like "pizza", Santo Domingo alone fills most of it.
+
+The Dominican **region hint** is sent on the first two searches only. It formats Dominican results
+without their country, but it also ranks — with it, the third search returned the same five
+Dominican places and never reached anywhere else.
+
+Tapping a result adds the place, filed as described above. **Explore's browse list is the Dominican
+Republic** (Santo Domingo's sectors and the cities around the country); a place from Miami is found
+by **name**, and shows on the member's own list and in friends' activity, but not in everyone's
+default browse.
+
 ## What Google does not give us, so nobody re-litigates it
 
 - **No menu.** A read of Café SBG with every field requested (`X-Goog-FieldMask: *`)
@@ -264,7 +296,8 @@ DATABASE_URL="<url>" bun run places:merge-known
 
 Its list is in `apps/api/src/places-merge-known.ts`: Buche' Perico, Ichiban + Shibuya + Shibuya
 Ichiban (both seed rows are Google's "Shibuya Ichiban", so the kept row is renamed to it),
-Il Bacareto, Laurel, LILA - Modern Cuisine, Restaurante Gijón. Each group is its own
+Il Bacareto, Laurel, LILA - Modern Cuisine, Restaurante Gijón, and the seed's bare "SBG" into
+Sophia's Bar & Grill (the other SBG venues are different places). Each group is its own
 transaction, so one that is missing is skipped and the rest go on; anything _wrong_ (two
 different Google ids in one group) stops the run with the earlier groups already merged. For a
 duplicate that is not on the list, use `places:merge` with its names, `--dry-run` first.
@@ -296,6 +329,13 @@ calls it is about to make before it makes any, and **refuses more than 400 witho
 a database far larger than you expected can't quietly spend. Run `places:audit` first: its total
 is the number of calls. Confirm the free allowance against your own billing console before a
 large run.
+
+**The search bar costs more per search than it used to.** Each search is Google's "Autocomplete
+Request" SKU (about $2.83 per 1,000 after **10,000 free a month**, at the time of writing — check
+Google's pricing page), and **Mundo asks three times** where the app used to ask once (RD asks twice,
+Santo Domingo once). A search that ends in someone adding the place is billed as a free _session_
+instead, because the app passes the same session token to Place Details. Set a **budget alert** in
+Google Cloud so a surprise shows up as an email, not a bill.
 
 ## Running it in production
 

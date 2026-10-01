@@ -73,7 +73,12 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
   }
   let sectorId = ''
   let areaId = ''
-  const placeIds: Record<'inSector' | 'inArea', string> = { inSector: '', inArea: '' }
+  let usAreaId = ''
+  const placeIds: Record<'inSector' | 'inArea' | 'inUs', string> = {
+    inSector: '',
+    inArea: '',
+    inUs: '',
+  }
 
   beforeAll(async () => {
     await db
@@ -91,6 +96,16 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
       .returning({ id: schema.neighborhoods.id })
     sectorId = sector?.id ?? ''
     areaId = (await geo.ensureArea(draft)).id
+    usAreaId = (
+      await geo.ensureArea({
+        slug: `${tag}-us-miami-beach`,
+        name: 'Miami Beach',
+        city: 'Miami Beach',
+        countryCode: 'us',
+        lat: 25.7691,
+        lng: -80.135,
+      })
+    ).id
 
     const fresh = new Date() // keeps GET /:id from starting a background Google refresh
     const base = { isDemo: true, source: 'seed' as const, sourceRefreshedAt: fresh }
@@ -99,10 +114,13 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
       .values([
         { ...base, name: `${tag} in sector`, neighborhoodId: sectorId, lat: 18.47, lng: -69.93 },
         { ...base, name: `${tag} in area`, neighborhoodId: areaId, lat: 18.5584, lng: -68.3827 },
+        { ...base, name: `${tag} in us`, neighborhoodId: usAreaId, lat: 25.7691, lng: -80.135 },
       ])
       .returning({ id: schema.restaurants.id, name: schema.restaurants.name })
     for (const r of rows) {
-      placeIds[r.name.endsWith('in sector') ? 'inSector' : 'inArea'] = r.id
+      placeIds[
+        r.name.endsWith('in sector') ? 'inSector' : r.name.endsWith('in us') ? 'inUs' : 'inArea'
+      ] = r.id
     }
     // Both ranked, so the Map's "worth plotting" pool holds both and only the area can exclude one.
     await db.insert(schema.rankings).values([
@@ -189,14 +207,25 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
       )
       expect(inSector.json.restaurant.neighborhood?.city).toBe('Santo Domingo')
     })
+  })
 
-    test('a place in an area is still found by name in Explore', async () => {
-      const { json } = await request<{ restaurants: { id: string }[] }>(
-        '/restaurants',
-        restaurantRoutes,
-        `?q=${encodeURIComponent(`${tag} in area`)}`,
+  describe('GET /restaurants (Explore)', () => {
+    type Explore = { restaurants: { id: string }[] }
+    const explore = async (query = '') =>
+      (await request<Explore>('/restaurants', restaurantRoutes, query)).json.restaurants.map(
+        (r) => r.id,
       )
-      expect(json.restaurants.map((r) => r.id)).toContain(placeIds.inArea)
+
+    test('browsing is the Dominican Republic: Santo Domingo and the cities around the country', async () => {
+      const browse = await explore()
+      expect(browse).toContain(placeIds.inSector)
+      expect(browse).toContain(placeIds.inArea) // Punta Cana
+      expect(browse).not.toContain(placeIds.inUs) // Miami Beach
+    })
+
+    test('a place anywhere is still found by name', async () => {
+      expect(await explore(`?q=${encodeURIComponent(`${tag} in us`)}`)).toContain(placeIds.inUs)
+      expect(await explore(`?q=${encodeURIComponent(`${tag} in area`)}`)).toContain(placeIds.inArea)
     })
   })
 })
