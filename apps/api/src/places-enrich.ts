@@ -5,9 +5,12 @@
 // opens).
 //
 //   GOOGLE_PLACES_API_KEY=... DATABASE_URL="<url>" \
-//     bun run places:enrich [--dry-run] [--refresh] [--only=<id|name>] [--limit=N]
+//     bun run places:enrich [--dry-run] [--refresh] [--only=<id|name>] [--limit=N] [--all]
 //
-// Always --dry-run first and read the report. Google is the source of truth here, with one
+// Always --dry-run first and read the report. NOTE the dry run is what calls Google (it needs the
+// answers to plan from) and caches them, so the real run right after makes no further calls; it says
+// how many it will make before it starts, and refuses more than 400 without --all. Google is the
+// source of truth here, with one
 // safeguard: a hit is only believed if Google itself says it is somewhere you eat or drink.
 //
 //   • Empty fields are filled from Google; a field that already has a value is never
@@ -38,6 +41,7 @@ import { db, pool, schema } from '@mesa/db'
 import { eq } from 'drizzle-orm'
 
 import { inBounds, namesAgree } from './import-top100'
+import { databaseLabel } from './lib/databaseLabel'
 import {
   type GooglePlaceDetails,
   type MesaFieldsFromGoogle,
@@ -56,6 +60,14 @@ const { restaurants, neighborhoods } = schema
 const CACHE_PATH = new URL('../data/places-enrich-google.json', import.meta.url).pathname
 // Google lets place_id be stored forever but everything else for 30 days.
 const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000
+// Every place costs one Google call (a Place Details, or a Text Search for a place with no id yet),
+// billed by Google. A run bigger than this asks for --all, so a database far larger than expected
+// can't quietly spend.
+export const CONFIRM_ABOVE = 400
+
+// The cache key of a row's Google call: by id when it has one, else by name.
+export const callKey = (row: Pick<EnrichRow, 'name' | 'googlePlaceId'>): string =>
+  row.googlePlaceId == null ? `q:${row.name}` : `id:${row.googlePlaceId}`
 export type MatchVerdict =
   | { ok: true; distanceM: number }
   | { ok: false; reason: 'no_location' | 'out_of_bounds' | 'name_mismatch' | 'not_food' }
@@ -110,6 +122,7 @@ const show = (v: string | number | null | undefined) => (v == null ? '—' : Str
 const km = (m: number) => (m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`)
 
 async function main() {
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
   const dryRun = process.argv.includes('--dry-run')
   const refresh = process.argv.includes('--refresh')
   const only = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length)
@@ -167,11 +180,21 @@ async function main() {
   let liveCalls = 0
   let cachedCalls = 0
 
+  // Say what this will cost BEFORE spending it. The dry run is what talks to Google — it needs the
+  // answers to plan from — and the real run right after is served from the cache it fills.
+  const toCall = rows.filter((r) => !fresh(cache[callKey(r)])).length
+  console.log(`Google calls this run will make: ${toCall} (${rows.length - toCall} already cached)`)
+  if (toCall > CONFIRM_ABOVE && !process.argv.includes('--all')) {
+    throw new Error(
+      `That is more than ${CONFIRM_ABOVE} Google calls, each billed by Google. If that is what you expect, re-run with --all; or do a batch with --limit=N.`,
+    )
+  }
+
   const outcomes: Outcome[] = []
   for (const [i, row] of rows.entries()) {
     if (i > 0 && i % 25 === 0) console.log(`  …${i}/${rows.length}`)
     const searched = row.googlePlaceId == null
-    const key = searched ? `q:${row.name}` : `id:${row.googlePlaceId}`
+    const key = callKey(row)
     let details: GooglePlaceDetails | null = null
     if (fresh(cache[key])) {
       details = cache[key].details

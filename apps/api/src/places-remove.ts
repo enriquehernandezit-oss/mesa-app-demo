@@ -14,6 +14,7 @@
 import { db, pool, schema } from '@mesa/db'
 import { and, isNull, sql } from 'drizzle-orm'
 
+import { databaseLabel } from './lib/databaseLabel'
 import { removeRestaurant } from './lib/restaurantMerge'
 
 const { restaurants } = schema
@@ -21,6 +22,7 @@ const { restaurants } = schema
 class DryRun extends Error {}
 
 async function main() {
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')

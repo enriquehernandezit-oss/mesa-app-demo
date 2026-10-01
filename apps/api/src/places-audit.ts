@@ -11,6 +11,7 @@
 import { db, pool, schema } from '@mesa/db'
 import { and, isNull } from 'drizzle-orm'
 
+import { databaseLabel } from './lib/databaseLabel'
 import { isPlaceholderPhone, isPlaceholderWebsite, isSocialSite } from './lib/placeContacts'
 
 const { restaurants } = schema
@@ -92,6 +93,7 @@ const pct = (n: number, of: number) =>
   of === 0 ? '  —' : `${Math.round((n / of) * 100)}%`.padStart(4)
 
 async function main() {
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
   const rows = await db
     .select({
       source: restaurants.source,

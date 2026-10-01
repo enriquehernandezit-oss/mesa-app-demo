@@ -21,13 +21,15 @@
 // the whole group is one transaction.
 //
 // Refuses unless every name matches at least one live row, there are at least two rows, and they
-// do not carry two DIFFERENT Google ids (two Google places are not duplicates).
+// do not carry two DIFFERENT Google ids (two Google places are not duplicates). For the duplicates
+// already known, `bun run places:merge-known` runs them all and skips any that are not there.
 import { db, pool, schema } from '@mesa/db'
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 
+import { databaseLabel } from './lib/databaseLabel'
 import { type MergeReport, mergeInto, pickSurvivor } from './lib/restaurantMerge'
 
-const { restaurants } = schema
+const { restaurants, neighborhoods } = schema
 
 export function parseArgs(argv: string[]): { names: string[]; rename?: string; dryRun: boolean } {
   const renameAt = argv.indexOf('--rename')
@@ -43,15 +45,25 @@ export function parseArgs(argv: string[]): { names: string[]; rename?: string; d
 // Thrown after a dry run's merge to roll its transaction back.
 class DryRun extends Error {}
 
-async function main() {
-  const { names, rename, dryRun } = parseArgs(process.argv.slice(2))
-  if (names.length === 0 || (process.argv.includes('--rename') && !rename)) {
-    console.error(
-      'usage: bun run places:merge "<name>" ["<name>" …] [--rename "<name>"] [--dry-run]',
-    )
-    process.exit(1)
-  }
+export type GroupResult =
+  | { kind: 'done'; kept: string; merged: number; dryRun: boolean }
+  // Nothing to merge here: a name that matches no live row, or fewer than two rows.
+  | { kind: 'skipped'; reason: string }
 
+const idList = (ids: string[]) =>
+  sql.join(
+    ids.map((id) => sql`${id}`),
+    sql`, `,
+  )
+
+// Merge one duplicate group. Returns 'skipped' when there is nothing to merge (so a batch can go
+// on to the next group) and THROWS for something wrong, such as two different Google ids.
+export async function mergeGroup(
+  names: string[],
+  opts: { rename?: string; dryRun: boolean; log?: (line: string) => void },
+): Promise<GroupResult> {
+  const say = opts.log ?? console.log
+  const { rename, dryRun } = opts
   const lowered = names.map((n) => n.toLowerCase())
   const rows = await db
     .select({
@@ -61,8 +73,11 @@ async function main() {
       googlePlaceId: restaurants.googlePlaceId,
       coverImageId: restaurants.coverImageId,
       createdAt: restaurants.createdAt,
+      address: restaurants.address,
+      hood: neighborhoods.name,
     })
     .from(restaurants)
+    .innerJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
     .where(
       and(
         isNull(restaurants.removedAt),
@@ -70,32 +85,33 @@ async function main() {
         inArray(sql`lower(${restaurants.name})`, lowered),
       ),
     )
-  for (const [i, name] of lowered.entries()) {
-    if (!rows.some((r) => r.name.toLowerCase() === name)) {
-      throw new Error(`No live restaurant named "${names[i]}" — check the exact spelling.`)
+  const missing = names.filter((n) => !rows.some((r) => r.name.toLowerCase() === n.toLowerCase()))
+  if (missing.length > 0) {
+    return {
+      kind: 'skipped',
+      reason: `No live restaurant named ${missing.map((n) => `"${n}"`).join(', ')} — check the exact spelling.`,
     }
   }
   if (rows.length < 2) {
-    throw new Error(`Found only ${rows.length} live row — a merge needs at least two.`)
+    return {
+      kind: 'skipped',
+      reason: `Found only ${rows.length} live row — a merge needs at least two.`,
+    }
   }
   const googleIds = new Set(rows.map((r) => r.googlePlaceId).filter((g) => g != null))
   if (googleIds.size > 1) {
-    throw new Error('These rows carry different Google ids, so they are different places.')
+    throw new Error(
+      `${names.join(' + ')}: these rows carry different Google ids, so they are different places.`,
+    )
   }
 
   // Reviews and menu items for the whole group, one query each (hard rule 3).
   const rowIds = rows.map((r) => r.id)
   const reviewRows = await db.execute(
-    sql`select restaurant_id as id, count(*)::int as n from rankings where restaurant_id in (${sql.join(
-      rowIds.map((id) => sql`${id}`),
-      sql`, `,
-    )}) group by restaurant_id`,
+    sql`select restaurant_id as id, count(*)::int as n from rankings where restaurant_id in (${idList(rowIds)}) group by restaurant_id`,
   )
   const menuRows = await db.execute(
-    sql`select restaurant_id as id, count(*)::int as n from menu_items where restaurant_id in (${sql.join(
-      rowIds.map((id) => sql`${id}`),
-      sql`, `,
-    )}) group by restaurant_id`,
+    sql`select restaurant_id as id, count(*)::int as n from menu_items where restaurant_id in (${idList(rowIds)}) group by restaurant_id`,
   )
   const tally = (res: { rows: unknown[] }) =>
     new Map((res.rows as { id: string; n: number }[]).map((r) => [r.id, r.n]))
@@ -111,16 +127,18 @@ async function main() {
   const survivor = pickSurvivor(group)
   const losers = group.filter((r) => r.id !== survivor.id)
 
-  console.log(`${group.length} rows are one place. ${dryRun ? '(DRY RUN)' : ''}\n`)
+  say(`${group.length} rows are one place. ${dryRun ? '(DRY RUN)' : ''}\n`)
   for (const r of [survivor, ...losers]) {
     const bits = [
       r.source,
+      // Where each row says it is — so it is plain whether two rows are really the same place.
+      `${r.hood}${r.address ? `, ${r.address}` : ''}`,
       `${r.reviews} review${r.reviews === 1 ? '' : 's'}`,
       r.hasPhoto ? 'photo' : 'no photo',
       r.googlePlaceId ? 'Google id' : 'no Google id',
       r.menuItems > 0 ? `${r.menuItems} menu items` : null,
     ].filter(Boolean)
-    console.log(`  ${r.id === survivor.id ? 'KEEP ' : 'merge'}  ${r.name}  —  ${bits.join(', ')}`)
+    say(`  ${r.id === survivor.id ? 'KEEP ' : 'merge'}  ${r.name}  —  ${bits.join(', ')}`)
   }
 
   const reports: { name: string; report: MergeReport }[] = []
@@ -142,22 +160,36 @@ async function main() {
     const carried = Object.entries(report.moved)
       .filter(([, n]) => n > 0)
       .map(([table, n]) => `${n} ${table.replace(/_/g, ' ')}`)
-    console.log(`\n"${name}" → "${survivor.name}"`)
-    console.log(`  rankings carried over: ${report.rankingsMoved}`)
+    say(`\n"${name}" → "${survivor.name}"`)
+    say(`  rankings carried over: ${report.rankingsMoved}`)
     if (report.rankingsMerged > 0) {
-      console.log(
+      say(
         `  members who had ranked both: ${report.rankingsMerged} (their better entry kept, list rewritten)`,
       )
     }
-    if (carried.length > 0) console.log(`  also carried: ${carried.join(', ')}`)
-    if (report.adopted.length > 0) console.log(`  took its facts: ${report.adopted.join(', ')}`)
+    if (carried.length > 0) say(`  also carried: ${carried.join(', ')}`)
+    if (report.adopted.length > 0) say(`  took its facts: ${report.adopted.join(', ')}`)
   }
-  if (rename) console.log(`\nrenamed the kept row to "${rename}"`)
-  console.log(
+  if (rename) say(`\nrenamed the kept row to "${rename}"`)
+  say(
     dryRun
       ? '\ndry run — rolled back, nothing changed'
       : `\ndone: ${losers.length} row(s) merged into "${rename ?? survivor.name}".`,
   )
+  return { kind: 'done', kept: rename ?? survivor.name, merged: losers.length, dryRun }
+}
+
+async function main() {
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
+  const { names, rename, dryRun } = parseArgs(process.argv.slice(2))
+  if (names.length === 0 || (process.argv.includes('--rename') && !rename)) {
+    console.error(
+      'usage: bun run places:merge "<name>" ["<name>" …] [--rename "<name>"] [--dry-run]',
+    )
+    process.exit(1)
+  }
+  const result = await mergeGroup(names, { rename, dryRun })
+  if (result.kind === 'skipped') throw new Error(result.reason)
 }
 
 if (import.meta.main) {

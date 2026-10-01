@@ -17,11 +17,13 @@
 import { db, pool, schema } from '@mesa/db'
 import { inArray } from 'drizzle-orm'
 
+import { databaseLabel } from './lib/databaseLabel'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './lib/placeContacts'
 
 const { restaurants } = schema
 
 async function main() {
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
   const dryRun = process.argv.includes('--dry-run')
 
   const all = await db

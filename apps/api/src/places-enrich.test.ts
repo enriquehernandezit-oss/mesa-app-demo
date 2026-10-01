@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { MesaFieldsFromGoogle } from './lib/googlePlaces'
-import { acceptSearchHit } from './places-enrich'
+import { CONFIRM_ABOVE, acceptSearchHit, callKey } from './places-enrich'
 
 // acceptSearchHit decides whether a Google hit is the restaurant we searched for at all — a wrong
 // answer attaches a stranger's id and phone number to a real place.
@@ -72,5 +72,17 @@ describe('acceptSearchHit', () => {
       ok: false,
       reason: 'no_location',
     })
+  })
+})
+
+describe('the Google call a row costs', () => {
+  test('a row with an id is fetched by id, one without is searched by name', () => {
+    expect(callKey({ name: 'Laurel', googlePlaceId: 'ChIJ-1' })).toBe('id:ChIJ-1')
+    expect(callKey({ name: 'Laurel', googlePlaceId: null })).toBe('q:Laurel')
+  })
+
+  test('a run bigger than a few hundred places has to be confirmed', () => {
+    // This database is a couple of hundred places; a run past this is a surprise worth a flag.
+    expect(CONFIRM_ABOVE).toBe(400)
   })
 })
