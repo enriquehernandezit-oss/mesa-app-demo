@@ -21,7 +21,8 @@ export function SaveButton({
   initial,
   name,
   size = 20,
-  // 'icon': plain bookmark glyph (feed, dish detail). 'pill': the
+  // 'chip': a filled round button for a card's corner (the feed's ranking posts), as visible as
+  // the cheers and comment chips beside it. 'icon': plain bookmark glyph (dish detail). 'pill': the
   // restaurant page's bordered circle — same on/off treatment as its old
   // hand-rolled CheckIcon toggle, now going through the shared save state
   // and list-picker instead of a page-local mutation.
@@ -34,7 +35,7 @@ export function SaveButton({
   // The saved item's own name, for the toast ("Guardaste «Casaluca»").
   name: string
   size?: number
-  variant?: 'icon' | 'pill' | 'bar' | 'photo'
+  variant?: 'icon' | 'pill' | 'bar' | 'photo' | 'chip'
   // 'icon' only: a label beside the glyph (the feed card's "Quiero probar").
   text?: string
   className?: string
@@ -101,6 +102,21 @@ export function SaveButton({
         >
           {saved ? <BookmarkFilledIcon size={20} /> : <BookmarkIcon size={20} color="hglass-fg" />}
         </Glass>
+      </Pressable>
+    )
+  }
+  if (variant === 'chip') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: saved }}
+        accessibilityLabel={label}
+        onPress={onTap}
+        onLongPress={openListPicker}
+        hitSlop={4}
+        className={`h-9 w-9 items-center justify-center rounded-pill bg-bg active:opacity-80 ${className ?? ''}`}
+      >
+        {saved ? <BookmarkFilledIcon size={18} /> : <BookmarkIcon size={18} color="text-2" />}
       </Pressable>
     )
   }

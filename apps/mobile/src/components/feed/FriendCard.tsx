@@ -120,10 +120,31 @@ export const FriendCard = memo(function FriendCard({
     </View>
   )
 
-  const social = (
-    <View className="mt-1.5 flex-row items-center gap-3">
+  // The actions are filled chips, so they read at a glance — the first version was 15pt grey
+  // outlines on the card and was close to invisible. SAVE sits in the card's bottom-right
+  // corner: over the photo (frosted, like the dish hero's) or the name card for those shapes,
+  // and at the end of this row for the words-only shape, whose row already spans that corner.
+  const save = (variant: 'photo' | 'chip') =>
+    isDish && item.dishId ? (
+      <SaveButton
+        variant={variant}
+        target={{ kind: 'dish', id: item.dishId }}
+        initial={item.dishSaved ?? false}
+        name={item.dishName || item.restaurant.name}
+      />
+    ) : (
+      <SaveButton
+        variant={variant}
+        target={{ kind: 'restaurant', id: item.restaurant.id }}
+        initial={item.restaurantSaved ?? false}
+        name={item.restaurant.name}
+      />
+    )
+
+  const actions = (saveInRow: boolean) => (
+    <View className="mt-2 flex-row items-center gap-2">
       <CheersButton
-        compact
+        variant="chip"
         target={{ kind: 'ranking', id: item.rankingId }}
         count={item.cheersCount ?? 0}
         cheered={item.cheeredByMe ?? false}
@@ -132,36 +153,26 @@ export const FriendCard = memo(function FriendCard({
         accessibilityRole="button"
         accessibilityLabel={t('comments.open')}
         onPress={openComments}
-        hitSlop={{ top: 12, bottom: 12 }}
-        className="min-w-[32px] flex-row items-center gap-1.5 active:opacity-70"
+        hitSlop={4}
+        className="h-9 min-w-[44px] flex-row items-center justify-center gap-1.5 rounded-pill bg-bg px-3 active:opacity-70"
       >
-        <CommentIcon size={15} color="text-muted" />
+        <CommentIcon size={18} color="text-2" />
         {commentCount > 0 ? (
           <Text
             style={DATA_FIGURES}
             maxFontSizeMultiplier={MAX_SCALE}
-            className="font-ui-medium text-micro text-text-muted"
+            className="font-ui-semibold text-label text-text-2"
           >
             {commentCount}
           </Text>
         ) : null}
       </Pressable>
-      <View className="flex-1" />
-      {isDish && item.dishId ? (
-        <SaveButton
-          target={{ kind: 'dish', id: item.dishId }}
-          initial={item.dishSaved ?? false}
-          name={item.dishName || item.restaurant.name}
-          size={16}
-        />
-      ) : (
-        <SaveButton
-          target={{ kind: 'restaurant', id: item.restaurant.id }}
-          initial={item.restaurantSaved ?? false}
-          name={item.restaurant.name}
-          size={16}
-        />
-      )}
+      {saveInRow ? (
+        <>
+          <View className="flex-1" />
+          {save('chip')}
+        </>
+      ) : null}
     </View>
   )
 
@@ -223,8 +234,9 @@ export const FriendCard = memo(function FriendCard({
               >
                 {item.note || item.neighborhood}
               </Text>
-              {social}
+              {actions(false)}
             </View>
+            <View className="absolute bottom-2.5 right-2.5">{save('photo')}</View>
           </View>
         </Pressable>
       ) : item.note ? (
@@ -258,7 +270,7 @@ export const FriendCard = memo(function FriendCard({
             {atPlace[1]}
             {item.neighborhood ? ` · ${item.neighborhood}` : ''}
           </Text>
-          {social}
+          {actions(true)}
         </Pressable>
       ) : (
         // Nothing to show or say: the place's name card, with the score under its name.
@@ -277,8 +289,9 @@ export const FriendCard = memo(function FriendCard({
               <View className="mt-1.5 flex-row">
                 <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
               </View>
-              {social}
+              {actions(false)}
             </View>
+            <View className="absolute bottom-3 right-3">{save('chip')}</View>
           </View>
         </Pressable>
       )}

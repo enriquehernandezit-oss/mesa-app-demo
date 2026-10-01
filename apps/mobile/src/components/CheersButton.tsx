@@ -43,8 +43,10 @@ export function CheersButton({
   className?: string
   // A smaller glyph and count, for a card's dense social line.
   compact?: boolean
-  // 'photo': a frosted round control laid on a photograph (a dish's hero).
-  variant?: 'default' | 'photo'
+  // 'photo': a frosted round control laid on a photograph (a dish's hero). 'chip': a pill in the
+  // ground colour (so it shows on a white card) with a clear glyph and count, for a feed post's
+  // action row — the 15pt muted-grey outline it replaced was close to invisible.
+  variant?: 'default' | 'photo' | 'chip'
 }) {
   const t = useT()
   const [on, setOn] = useState(cheered)
@@ -163,6 +165,32 @@ export function CheersButton({
             </Text>
           ) : null}
         </Glass>
+      </Pressable>
+    )
+  }
+
+  if (variant === 'chip') {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: on }}
+        accessibilityLabel={on ? t('cheers.remove') : t('cheers.give')}
+        onPress={onTap}
+        hitSlop={4}
+        className={`h-9 min-w-[44px] flex-row items-center justify-center gap-1.5 rounded-pill bg-bg px-3 active:opacity-70 ${className ?? ''}`}
+      >
+        <Animated.View style={style}>
+          {on ? <HeartFilledIcon size={18} /> : <HeartIcon size={18} color="text-2" />}
+        </Animated.View>
+        {n > 0 ? (
+          <Text
+            style={DATA_FIGURES}
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-text-2"
+          >
+            {n}
+          </Text>
+        ) : null}
       </Pressable>
     )
   }
