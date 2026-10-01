@@ -18,6 +18,8 @@ const row = (over: Partial<AuditRow> = {}): AuditRow => ({
   cuisine: 'Italian',
   coverImageId: null,
   sourceRefreshedAt: new Date(NOW - DAY),
+  lat: 18.4688,
+  lng: -69.9374,
   ...over,
 })
 
@@ -79,6 +81,15 @@ describe('auditRows', () => {
       row({ googlePlaceId: null, sourceRefreshedAt: null }),
     ])
     expect(a.staleFromGoogle).toBe(2)
+  })
+
+  test('lists places whose pin is outside Santo Domingo', () => {
+    const a = single([
+      row({ name: 'Piantini place' }),
+      row({ name: 'Casa de Campo place', lat: 18.401, lng: -68.9 }),
+      row({ name: 'Miami place', lat: 25.7617, lng: -80.1918 }),
+    ])
+    expect(a.outsideSantoDomingo).toEqual(['Casa de Campo place', 'Miami place'])
   })
 
   test('an empty catalog audits to nothing', () => {

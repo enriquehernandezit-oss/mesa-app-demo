@@ -11,6 +11,7 @@
 import { db, pool, schema } from '@mesa/db'
 import { and, isNull } from 'drizzle-orm'
 
+import { inBounds } from './import-top100'
 import { databaseLabel } from './lib/databaseLabel'
 import { isPlaceholderPhone, isPlaceholderWebsite, isSocialSite } from './lib/placeContacts'
 
@@ -29,6 +30,8 @@ export interface AuditRow {
   cuisine: string | null
   coverImageId: string | null
   sourceRefreshedAt: Date | null
+  lat: number
+  lng: number
 }
 
 export const FACTS = [
@@ -53,6 +56,10 @@ export interface SourceAudit {
   socialSites: number
   // Has a Google id but has never been refreshed from it, or not for 30 days.
   staleFromGoogle: number
+  // Places whose pin is outside Santo Domingo. Mesa has seven Santo Domingo sectors and nowhere
+  // else, so such a place is filed under the NEAREST sector — a Casa de Campo restaurant shows
+  // as "Zona Colonial".
+  outsideSantoDomingo: string[]
 }
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
@@ -71,6 +78,7 @@ export function auditRows(rows: AuditRow[], now = Date.now()): SourceAudit[] {
         fakeSites: 0,
         socialSites: 0,
         staleFromGoogle: 0,
+        outsideSantoDomingo: [],
       }
       bySource.set(r.source, a)
     }
@@ -79,6 +87,7 @@ export function auditRows(rows: AuditRow[], now = Date.now()): SourceAudit[] {
     if (isPlaceholderPhone(r.phone)) a.fakePhones++
     if (isPlaceholderWebsite(r.name, r.website)) a.fakeSites++
     if (isSocialSite(r.website)) a.socialSites++
+    if (!inBounds(r.lat, r.lng)) a.outsideSantoDomingo.push(r.name)
     if (
       r.googlePlaceId &&
       (r.sourceRefreshedAt == null || now - r.sourceRefreshedAt.getTime() > STALE_MS)
@@ -108,6 +117,8 @@ async function main() {
       cuisine: restaurants.cuisine,
       coverImageId: restaurants.coverImageId,
       sourceRefreshedAt: restaurants.sourceRefreshedAt,
+      lat: restaurants.lat,
+      lng: restaurants.lng,
     })
     .from(restaurants)
     .where(and(isNull(restaurants.removedAt), isNull(restaurants.closedAt)))
@@ -122,7 +133,13 @@ async function main() {
     console.log(`    invented phones     ${a.fakePhones}`)
     console.log(`    invented websites   ${a.fakeSites}`)
     console.log(`    social-only sites   ${a.socialSites}  (real, kept — the app labels them)`)
-    console.log(`    not refreshed 30d+  ${a.staleFromGoogle}  (have a Google id)\n`)
+    console.log(`    not refreshed 30d+  ${a.staleFromGoogle}  (have a Google id)`)
+    if (a.outsideSantoDomingo.length > 0) {
+      console.log(
+        `    outside Santo Domingo  ${a.outsideSantoDomingo.length}: ${a.outsideSantoDomingo.join(', ')}`,
+      )
+    }
+    console.log('')
   }
   console.log('Next: places:enrich --dry-run')
 }
