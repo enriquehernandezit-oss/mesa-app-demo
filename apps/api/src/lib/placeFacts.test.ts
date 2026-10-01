@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
+import type { AreaDraft } from './geo'
 import type { MesaFieldsFromGoogle } from './googlePlaces'
-import { type EnrichRow, PIN_MOVE_MIN_M, enrichPatch } from './placeFacts'
+import { type EnrichRow, PIN_MOVE_MIN_M, type Target, enrichPatch } from './placeFacts'
 
 // enrichPatch decides what places:enrich and places:merge write to a real row. A wrong answer
 // destroys a real value or keeps a fake one, so the rules are pinned here rather than only via a
@@ -42,8 +43,10 @@ const google = (over: Partial<MesaFieldsFromGoogle> = {}): MesaFieldsFromGoogle 
   ...over,
 })
 
+const sector = (hoodId: string): Target => ({ kind: 'sector', hoodId })
+
 const patchFor = (r: EnrichRow, g: MesaFieldsFromGoogle, hood = HOOD) =>
-  enrichPatch(r, g, 'ChIJ-existing', hood)
+  enrichPatch(r, g, 'ChIJ-existing', sector(hood))
 
 describe('enrichPatch — a complete row', () => {
   test('is left completely alone: nothing already filled is overwritten', () => {
@@ -107,12 +110,12 @@ describe('enrichPatch — invented contacts', () => {
 describe('enrichPatch — the Google id', () => {
   test('is attached when the row had none', () => {
     expect(
-      enrichPatch(row({ googlePlaceId: null }), google(), 'ChIJ-new', HOOD).googlePlaceId,
+      enrichPatch(row({ googlePlaceId: null }), google(), 'ChIJ-new', sector(HOOD)).googlePlaceId,
     ).toBe('ChIJ-new')
   })
 
   test('is never replaced once there', () => {
-    expect(enrichPatch(row(), google(), 'ChIJ-other', HOOD).googlePlaceId).toBeUndefined()
+    expect(enrichPatch(row(), google(), 'ChIJ-other', sector(HOOD)).googlePlaceId).toBeUndefined()
   })
 })
 
@@ -155,10 +158,49 @@ describe('enrichPatch — idempotence', () => {
       lng: -69.9,
     })
     const fields = google()
-    const patch = enrichPatch(before, fields, 'ChIJ-new', 'hood-naco')
+    const patch = enrichPatch(before, fields, 'ChIJ-new', sector('hood-naco'))
     expect(patch.lat).toBe(fields.lat)
     expect(patch.neighborhoodId).toBe('hood-naco')
     const after = { ...before, ...patch } as EnrichRow
-    expect(enrichPatch(after, fields, 'ChIJ-new', 'hood-naco')).toEqual({})
+    expect(enrichPatch(after, fields, 'ChIJ-new', sector('hood-naco'))).toEqual({})
+  })
+})
+
+// A place outside Santo Domingo is filed under the area for its city — and, unlike a sector, that
+// does not wait for the pin to move: it was only ever under a Santo Domingo sector because that was
+// the nearest thing to file it under.
+describe('enrichPatch — a place outside Santo Domingo', () => {
+  const draft: AreaDraft = {
+    slug: 'do-punta-cana',
+    name: 'Punta Cana',
+    city: 'Punta Cana',
+    countryCode: 'do',
+    lat: 18.56,
+    lng: -68.37,
+  }
+  const puntaCana = google({ lat: draft.lat, lng: draft.lng })
+  const misfiled = row({ lat: draft.lat, lng: draft.lng, neighborhoodId: HOOD })
+
+  test('an area that does not exist yet is asked for, even though the pin did not move', () => {
+    const target: Target = { kind: 'area', hoodId: null, draft }
+    expect(enrichPatch(misfiled, puntaCana, 'ChIJ-existing', target)).toEqual({ area: draft })
+  })
+
+  test('an area that exists is adopted by id', () => {
+    const target: Target = { kind: 'area', hoodId: 'area-punta-cana', draft }
+    expect(enrichPatch(misfiled, puntaCana, 'ChIJ-existing', target)).toEqual({
+      neighborhoodId: 'area-punta-cana',
+    })
+  })
+
+  test('a place already under its area is left alone', () => {
+    const target: Target = { kind: 'area', hoodId: 'area-punta-cana', draft }
+    const filed = row({ lat: draft.lat, lng: draft.lng, neighborhoodId: 'area-punta-cana' })
+    expect(enrichPatch(filed, puntaCana, 'ChIJ-existing', target)).toEqual({})
+  })
+
+  test('no location from Google files nothing, in any direction', () => {
+    const target: Target = { kind: 'area', hoodId: null, draft }
+    expect(enrichPatch(misfiled, google({ lat: 0, lng: 0 }), 'ChIJ-existing', target)).toEqual({})
   })
 })

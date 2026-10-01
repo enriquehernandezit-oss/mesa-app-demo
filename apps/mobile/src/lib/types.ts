@@ -719,7 +719,9 @@ export interface RestaurantProfileResponse {
     website: string | null
     closesAt: string | null
     priceTier: number | null
-    neighborhood: { slug: string; name: string } | null
+    // `city` is the city the place is in: Santo Domingo for a sector, the place's own city for
+    // one filed outside Santo Domingo (then it equals `name`).
+    neighborhood: { slug: string; name: string; city: string } | null
     // M9: populated when the profile was created (or enriched) from a Google
     // Places result.
     address: string | null

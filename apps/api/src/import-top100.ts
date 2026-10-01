@@ -34,8 +34,9 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { db, haversineM, mesaNorm, pool, schema, trigramSimilarity } from '@mesa/db'
-import { isNull, sql } from 'drizzle-orm'
+import { eq, isNull, sql } from 'drizzle-orm'
 
+import { inSantoDomingo } from './lib/geo'
 import {
   type GooglePlaceDetails,
   type MesaFieldsFromGoogle,
@@ -94,18 +95,9 @@ export function mapCuisine(cuisineRaw: string | null): string | null {
 }
 
 // --- geocode acceptance: a Text Search hit is only trustworthy once it's
-// both somewhere in the city Mesa covers AND plausibly the same name — Text
-// Search on a distinctive-enough query rarely returns a wrong city, but a
-// generic name ("Mimosa") can pull an unrelated business anywhere. ---
-const SD_BOUNDS = { minLat: 18.3, maxLat: 18.65, minLng: -70.1, maxLng: -69.6 }
-export function inBounds(lat: number, lng: number): boolean {
-  return (
-    lat >= SD_BOUNDS.minLat &&
-    lat <= SD_BOUNDS.maxLat &&
-    lng >= SD_BOUNDS.minLng &&
-    lng <= SD_BOUNDS.maxLng
-  )
-}
+// both somewhere in the city Mesa covers AND plausibly the same name (the
+// box is lib/geo.ts's; this is the name the importers and scripts use). ---
+export const inBounds = inSantoDomingo
 // Looser than the 0.55 catalog-merge threshold on purpose — this only asks
 // "is this geocode plausibly the restaurant we searched for," not "should we
 // merge it into an existing row" (that's findCatalogMatch below, which is
@@ -297,6 +289,9 @@ async function run() {
       lng: neighborhoods.lng,
     })
     .from(neighborhoods)
+    // Santo Domingo's sectors only — an area created for a place elsewhere (lib/geo.ts) is never a
+    // candidate for a place the importer has already checked is inside Santo Domingo.
+    .where(eq(neighborhoods.listed, true))
   if (hoods.length === 0) throw new Error('no neighborhoods seeded — run db:seed first')
 
   // --- Classify every restaurant: matched (enrich), new (insert), skipped

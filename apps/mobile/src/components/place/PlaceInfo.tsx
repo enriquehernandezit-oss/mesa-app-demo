@@ -23,6 +23,7 @@ import { openDirections } from '@/lib/directions'
 import { cuisineLabel } from '@/lib/display'
 import { closesLabel } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
+import { placeWhere } from '@/lib/placeWhere'
 import type { RestaurantProfileResponse } from '@/lib/types'
 
 // The practical half of the details sheet: four round tiles (Menu · Call · Website ·
@@ -69,7 +70,7 @@ export function PlaceInfo({
         <InfoRow
           icon={<PinIcon size={18} color="text-2" />}
           title={restaurant.address ?? ''}
-          sub={[hood, 'Santo Domingo'].filter(Boolean).join(', ')}
+          sub={placeWhere(hood, restaurant.neighborhood?.city)}
           onPress={onOpenMap}
           last={last}
         />

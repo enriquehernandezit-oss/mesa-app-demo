@@ -9,13 +9,13 @@
 // after places:enrich to see the gap close.
 
 import { db, pool, schema } from '@mesa/db'
-import { and, isNull } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { inBounds } from './import-top100'
 import { databaseLabel } from './lib/databaseLabel'
 import { isPlaceholderPhone, isPlaceholderWebsite, isSocialSite } from './lib/placeContacts'
 
-const { restaurants } = schema
+const { restaurants, neighborhoods } = schema
 
 export interface AuditRow {
   source: string
@@ -32,6 +32,9 @@ export interface AuditRow {
   sourceRefreshedAt: Date | null
   lat: number
   lng: number
+  // Filed under one of Santo Domingo's sectors (a listed neighborhood), as opposed to the area for
+  // a city elsewhere.
+  listed: boolean
 }
 
 export const FACTS = [
@@ -56,10 +59,9 @@ export interface SourceAudit {
   socialSites: number
   // Has a Google id but has never been refreshed from it, or not for 30 days.
   staleFromGoogle: number
-  // Places whose pin is outside Santo Domingo. Mesa has seven Santo Domingo sectors and nowhere
-  // else, so such a place is filed under the NEAREST sector — a Casa de Campo restaurant shows
-  // as "Zona Colonial".
-  outsideSantoDomingo: string[]
+  // Places filed under a Santo Domingo sector whose pin is outside Santo Domingo — a Casa de Campo
+  // restaurant showing as "Zona Colonial". places:enrich re-files them under their own city.
+  misfiled: string[]
 }
 
 const STALE_MS = 30 * 24 * 60 * 60 * 1000
@@ -78,7 +80,7 @@ export function auditRows(rows: AuditRow[], now = Date.now()): SourceAudit[] {
         fakeSites: 0,
         socialSites: 0,
         staleFromGoogle: 0,
-        outsideSantoDomingo: [],
+        misfiled: [],
       }
       bySource.set(r.source, a)
     }
@@ -87,7 +89,7 @@ export function auditRows(rows: AuditRow[], now = Date.now()): SourceAudit[] {
     if (isPlaceholderPhone(r.phone)) a.fakePhones++
     if (isPlaceholderWebsite(r.name, r.website)) a.fakeSites++
     if (isSocialSite(r.website)) a.socialSites++
-    if (!inBounds(r.lat, r.lng)) a.outsideSantoDomingo.push(r.name)
+    if (r.listed && !inBounds(r.lat, r.lng)) a.misfiled.push(r.name)
     if (
       r.googlePlaceId &&
       (r.sourceRefreshedAt == null || now - r.sourceRefreshedAt.getTime() > STALE_MS)
@@ -119,8 +121,10 @@ async function main() {
       sourceRefreshedAt: restaurants.sourceRefreshedAt,
       lat: restaurants.lat,
       lng: restaurants.lng,
+      listed: neighborhoods.listed,
     })
     .from(restaurants)
+    .innerJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
     .where(and(isNull(restaurants.removedAt), isNull(restaurants.closedAt)))
 
   console.log(`places:audit — ${rows.length} live place(s)\n`)
@@ -134,9 +138,9 @@ async function main() {
     console.log(`    invented websites   ${a.fakeSites}`)
     console.log(`    social-only sites   ${a.socialSites}  (real, kept — the app labels them)`)
     console.log(`    not refreshed 30d+  ${a.staleFromGoogle}  (have a Google id)`)
-    if (a.outsideSantoDomingo.length > 0) {
+    if (a.misfiled.length > 0) {
       console.log(
-        `    outside Santo Domingo  ${a.outsideSantoDomingo.length}: ${a.outsideSantoDomingo.join(', ')}`,
+        `    filed under a Santo Domingo sector but outside it  ${a.misfiled.length}: ${a.misfiled.join(', ')}  (places:enrich re-files them)`,
       )
     }
     console.log('')

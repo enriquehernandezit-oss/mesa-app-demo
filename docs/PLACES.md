@@ -17,6 +17,31 @@ any of this: every screen already hides a button whose field is empty.
 | tags ("date night", "terraza"…)                      | **members only**, via the rank flow. Deliberately not taken from Google         |
 | scores                                               | members only. A place never gets a bare rating of its own (`docs/FEATURES.md`)  |
 
+## Where a place is filed — Santo Domingo, or somewhere else
+
+Mesa curates one city. Santo Domingo's seven sectors (Piantini, Naco, Bella Vista…) are the
+**listed** neighborhoods: they are what the neighborhood pickers, the Explore filter pills and
+the Map offer, and a place inside Santo Domingo is filed under whichever of them Google says
+(`lib/geo.ts`: the box is lat 18.30–18.65, lng −70.10 to −69.60, Haina to Boca Chica).
+
+A member can add a place from anywhere Google knows. Anything **outside that box** is filed
+under an **unlisted area for its city** — "Punta Cana", "Miami Beach" — made the first time a
+place needs it, from Google's own address (`locality`, falling back to the administrative levels,
+in its country). It used to be filed under the Santo Domingo sector it happened to be nearest to,
+so a Punta Cana restaurant read "Zona Colonial".
+
+An unlisted area is a **label, not a choice**:
+
+- the place page says the city ("Punta Cana"), never "Santo Domingo" for a place that is not;
+- the Map shows Santo Domingo's sectors only — plotting a Punta Cana pin would zoom the map out
+  to fit it and squash every Santo Domingo pin into a corner (the place still has its own map);
+- it is still found by name in Explore, still rankable, still on friends' lists and the feed;
+- `places:audit` lists any place **filed under a Santo Domingo sector but outside it**, and
+  `places:enrich` re-files those under their own city (run it dry first, as always).
+
+To show a city as a real choice later — say "Punta Cana" as a filter pill — set its
+`listed` column to true. Nothing else changes.
+
 ## What Google does not give us, so nobody re-litigates it
 
 - **No menu.** A read of Café SBG with every field requested (`X-Goog-FieldMask: *`)
@@ -155,7 +180,9 @@ condominium, "El Agave" a liquor store, "La Alpargatería" a shoe shop, "Marocha
 - **The map pin follows Google.** The seed's hand-placed pins were often far off (up to
   5.6 km), which sends "Cómo llegar" to the wrong place. A pin more than 50 m from Google's
   moves to it, and the **neighborhood is re-resolved** the way the importer does for a new
-  place. (Catalog places were imported from Google, so their pins already match.)
+  place. (Catalog places were imported from Google, so their pins already match.) A place
+  **outside Santo Domingo** is filed under its city's area whether or not its pin moved — see
+  "Where a place is filed" above.
 - **A place Google reports permanently closed is closed** — the same call the 30-day refresh
   already makes. Nothing is deleted; `restaurant:close "<name>" --reopen` undoes it.
 - A place with no `google_place_id` is found by name (Text Search) and must be inside Santo

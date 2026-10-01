@@ -20,6 +20,7 @@ const row = (over: Partial<AuditRow> = {}): AuditRow => ({
   sourceRefreshedAt: new Date(NOW - DAY),
   lat: 18.4688,
   lng: -69.9374,
+  listed: true,
   ...over,
 })
 
@@ -83,13 +84,21 @@ describe('auditRows', () => {
     expect(a.staleFromGoogle).toBe(2)
   })
 
-  test('lists places whose pin is outside Santo Domingo', () => {
+  test('lists places filed under a Santo Domingo sector whose pin is outside Santo Domingo', () => {
     const a = single([
       row({ name: 'Piantini place' }),
       row({ name: 'Casa de Campo place', lat: 18.401, lng: -68.9 }),
       row({ name: 'Miami place', lat: 25.7617, lng: -80.1918 }),
     ])
-    expect(a.outsideSantoDomingo).toEqual(['Casa de Campo place', 'Miami place'])
+    expect(a.misfiled).toEqual(['Casa de Campo place', 'Miami place'])
+  })
+
+  test('a place outside Santo Domingo that is filed under its own city is not misfiled', () => {
+    const a = single([
+      row({ name: 'Punta Cana place', lat: 18.5601, lng: -68.3725, listed: false }),
+      row({ name: 'Piantini place' }),
+    ])
+    expect(a.misfiled).toEqual([])
   })
 
   test('an empty catalog audits to nothing', () => {

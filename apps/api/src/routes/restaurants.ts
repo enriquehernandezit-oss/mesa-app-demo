@@ -4,7 +4,8 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
-import { autocomplete, placeDetails, resolveNeighborhood, toMesaFields } from '../lib/googlePlaces'
+import { ensureArea, placeIn } from '../lib/geo'
+import { autocomplete, placeDetails, toMesaFields } from '../lib/googlePlaces'
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
@@ -485,6 +486,10 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         and(
           isNull(restaurants.removedAt),
           isNull(restaurants.closedAt),
+          // Santo Domingo's own sectors. A place in Punta Cana or Miami is a real place with a real
+          // page, but the Map frames one city: plotting it would zoom out to fit it and squash every
+          // Santo Domingo pin into a corner.
+          eq(neighborhoods.listed, true),
           or(
             inArray(restaurants.id, rankedPool),
             inArray(restaurants.id, savedByMe),
@@ -569,11 +574,17 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // specific to creating one from a search that then hides it.)
     if (fields.closedAt) return c.json({ error: 'place_closed' }, 409)
 
-    const hoods = await db.query.neighborhoods.findMany({
+    // Inside Santo Domingo → one of its sectors (the listed neighborhoods). Anywhere else → the area
+    // for its city, created below only if a row is actually inserted: a place that matches one already
+    // in the catalog keeps the neighborhood it has.
+    const sectors = await db.query.neighborhoods.findMany({
       columns: { id: true, name: true, lat: true, lng: true },
+      where: eq(neighborhoods.listed, true),
     })
-    if (hoods.length === 0) return c.json({ error: 'unknown_neighborhood' }, 400)
-    const hood = resolveNeighborhood(details, hoods)
+    if (sectors.length === 0) return c.json({ error: 'unknown_neighborhood' }, 400)
+    const placing = placeIn(details, sectors)
+    // Google gave no location or no country: nothing honest to file it under.
+    if (!placing) return c.json({ error: 'google_unavailable' }, 502)
 
     // Match against Mesa's catalog before inserting. Google-specific matcher,
     // not the plain name/distance one: Google varies a place's display name
@@ -610,6 +621,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       const r = await adopt(existing.id)
       if (r) return r
     }
+
+    const hood = placing.kind === 'sector' ? placing.hood : await ensureArea(placing.area)
 
     const [created] = await db
       .insert(restaurants)
@@ -661,7 +674,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         googlePlaceId: true,
         sourceRefreshedAt: true,
       },
-      with: { neighborhood: { columns: { slug: true, name: true } } },
+      with: { neighborhood: { columns: { slug: true, name: true, city: true } } },
     })
     if (!restaurant) return c.json({ error: 'not_found' }, 404)
 

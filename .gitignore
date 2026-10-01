@@ -29,3 +29,7 @@ apps/api/data/top100-google.json
 
 # Google Places cache for places:enrich — same reasoning: live API responses, kept at most 30 days.
 apps/api/data/places-enrich-google.json
+
+# Database dumps (pg_dump). A production backup holds every member's email, phone and session
+# data — it must never be committed, so keep it outside the repo and ignore any that strays in.
+*.dump

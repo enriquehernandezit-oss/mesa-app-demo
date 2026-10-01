@@ -48,10 +48,12 @@ function overContactBudget(userId: string, count: number, now: number): boolean 
 export const onboardingRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
-  // The five target neighborhoods, for the profile picker.
+  // Santo Domingo's sectors, for every neighborhood picker and filter. Not the areas made for places
+  // elsewhere (lib/geo.ts) — those are labels, not choices.
   .get('/neighborhoods', async (c) => {
     const rows = await db.query.neighborhoods.findMany({
       columns: { slug: true, name: true },
+      where: (n, { eq }) => eq(n.listed, true),
       orderBy: (n, { asc }) => asc(n.name),
     })
     return c.json({ neighborhoods: rows })

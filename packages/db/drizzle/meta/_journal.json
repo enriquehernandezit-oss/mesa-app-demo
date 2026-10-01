@@ -239,6 +239,13 @@
       "when": 1790775438811,
       "tag": "0033_lyrical_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1790868889758,
+      "tag": "0034_dry_cannonball",
+      "breakpoints": true
     }
   ]
 }

@@ -18,7 +18,7 @@
 // Idempotent: a re-run finds the same restaurants already inserted last time
 // via findCatalogMatch's googlePlaceId short-circuit, so nothing duplicates.
 import { db, mesaNorm, pool, schema } from '@mesa/db'
-import { isNull, sql } from 'drizzle-orm'
+import { eq, isNull, sql } from 'drizzle-orm'
 
 import { type ExistingRow, findCatalogMatch, inBounds, nameOnlyUniqueMatch } from './import-top100'
 import {
@@ -162,6 +162,8 @@ async function run() {
       lng: neighborhoods.lng,
     })
     .from(neighborhoods)
+    // Santo Domingo's sectors only (see import-top100.ts).
+    .where(eq(neighborhoods.listed, true))
   if (hoods.length === 0) throw new Error('no neighborhoods seeded — run db:seed first')
 
   // --- Classify: already-in-catalog (skip) vs genuinely new (insert).

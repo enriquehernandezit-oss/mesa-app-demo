@@ -21,6 +21,10 @@
 //   • The MAP PIN follows Google. The seed's hand-placed pins were often far off (up to 5 km),
 //     which sends "Cómo llegar" to the wrong place. A pin more than 50 m from Google's moves to
 //     it, and the neighborhood is re-resolved the way the importer does for a new place.
+//   • A place OUTSIDE Santo Domingo is filed under the area for its city (Punta Cana, Miami…),
+//     created the first time it is needed — not under the Santo Domingo sector it is nearest to.
+//     This runs whether or not the pin moved, so it also repairs a place a member added before
+//     Mesa knew any city but Santo Domingo.
 //   • A place Google reports CLOSED_PERMANENTLY is closed — the same call the 30-day refresh
 //     already makes. Nothing is deleted, and `restaurant:close "<name>" --reopen` undoes it.
 //   • A row with no googlePlaceId is matched by name via Text Search. The hit must be inside
@@ -42,18 +46,24 @@ import { eq } from 'drizzle-orm'
 
 import { inBounds, namesAgree } from './import-top100'
 import { databaseLabel } from './lib/databaseLabel'
+import { type AreaDraft, ensureArea, placeIn } from './lib/geo'
 import {
   type GooglePlaceDetails,
   type MesaFieldsFromGoogle,
   hasGooglePlacesKey,
   isEatingPlace,
   placeDetails,
-  resolveNeighborhood,
   searchText,
   toMesaFields,
 } from './lib/googlePlaces'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './lib/placeContacts'
-import { type EnrichPatch, type EnrichRow, enrichPatch, pinDistanceM } from './lib/placeFacts'
+import {
+  type EnrichPatch,
+  type EnrichRow,
+  type Target,
+  enrichPatch,
+  pinDistanceM,
+} from './lib/placeFacts'
 
 const { restaurants, neighborhoods } = schema
 
@@ -159,12 +169,18 @@ async function main() {
   const hoods = await db
     .select({
       id: neighborhoods.id,
+      slug: neighborhoods.slug,
       name: neighborhoods.name,
       lat: neighborhoods.lat,
       lng: neighborhoods.lng,
+      listed: neighborhoods.listed,
     })
     .from(neighborhoods)
   const hoodName = new Map(hoods.map((h) => [h.id, h.name]))
+  // Santo Domingo's sectors are what a place inside Santo Domingo resolves among; the areas made
+  // for places elsewhere are looked up by slug, so a city's second place reuses its first's area.
+  const sectors = hoods.filter((h) => h.listed)
+  const areaIdBySlug = new Map(hoods.filter((h) => !h.listed).map((h) => [h.slug, h.id]))
 
   const idOwner = new Map<string, string>()
   for (const r of all) if (r.googlePlaceId) idOwner.set(r.googlePlaceId, r.name)
@@ -254,8 +270,18 @@ async function main() {
       continue
     }
 
-    const hoodId = resolveNeighborhood(details, hoods).id
-    const patch = enrichPatch(row, fields, details.id, hoodId)
+    const placing = placeIn(details, sectors)
+    const target: Target =
+      placing == null
+        ? { kind: 'sector', hoodId: row.neighborhoodId }
+        : placing.kind === 'sector'
+          ? { kind: 'sector', hoodId: placing.hood.id }
+          : {
+              kind: 'area',
+              hoodId: areaIdBySlug.get(placing.area.slug) ?? null,
+              draft: placing.area,
+            }
+    const patch = enrichPatch(row, fields, details.id, target)
     outcomes.push(
       Object.keys(patch).length === 0
         ? { kind: 'unchanged', row }
@@ -289,6 +315,13 @@ async function main() {
     if (closes) bits.push('CLOSED — Google says permanently closed')
     for (const [col, next] of Object.entries(patch)) {
       if (col === 'lat' || col === 'lng' || col === 'googlePlaceId') continue
+      if (col === 'area') {
+        const draft = next as AreaDraft
+        bits.push(
+          `neighborhood ${hoodName.get(row.neighborhoodId) ?? '—'} → ${draft.name} (new area, outside Santo Domingo)`,
+        )
+        continue
+      }
       if (col === 'neighborhoodId') {
         bits.push(
           `neighborhood ${hoodName.get(row.neighborhoodId) ?? '—'} → ${hoodName.get(next as string) ?? '—'}`,
@@ -350,10 +383,12 @@ async function main() {
   // One UPDATE per changed row — bounded by the number of changes, and each is independent, so
   // an interruption just leaves the rest for the next (idempotent) run.
   for (const { row, patch, closes } of updates) {
+    const { area, ...columns } = patch
     await db
       .update(restaurants)
       .set({
-        ...patch,
+        ...columns,
+        ...(area ? { neighborhoodId: (await ensureArea(area)).id } : {}),
         ...(patch.lat != null ? { geoPrecision: 'exact' as const } : {}),
         ...(closes ? { closedAt: new Date() } : { sourceRefreshedAt: new Date() }),
       })

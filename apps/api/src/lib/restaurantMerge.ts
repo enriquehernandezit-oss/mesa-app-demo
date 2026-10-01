@@ -87,7 +87,10 @@ export function adoptFacts(survivor: MergeRow, loser: MergeRow): MergePatch {
     // The loser IS Google's view of this place — it was imported or enriched from Google — so the
     // survivor takes it the way places:enrich would: id, real pin and neighborhood, real contacts,
     // and any facts it was missing.
-    patch = enrichPatch(survivor, factsOf(loser), loser.googlePlaceId, loser.neighborhoodId)
+    patch = enrichPatch(survivor, factsOf(loser), loser.googlePlaceId, {
+      kind: 'sector',
+      hoodId: loser.neighborhoodId,
+    })
     if (loser.sourceRefreshedAt) patch.sourceRefreshedAt = loser.sourceRefreshedAt
   } else {
     // No Google behind the loser: only fill the survivor's gaps. Its pin is just as hand-placed as

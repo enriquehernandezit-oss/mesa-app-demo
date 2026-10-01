@@ -198,6 +198,9 @@ async function run() {
   const hoods: NeighborhoodRow[] = await db
     .select({ id: neighborhoods.id, lat: neighborhoods.lat, lng: neighborhoods.lng })
     .from(neighborhoods)
+    // Santo Domingo's sectors only: an area made for a place elsewhere (apps/api lib/geo.ts) is a
+    // label, not somewhere an imported place is filed by being nearest to it.
+    .where(eq(neighborhoods.listed, true))
   if (hoods.length === 0) throw new Error('no neighborhoods seeded — run db:seed first')
 
   // --- classify every Foursquare row ---

@@ -22,6 +22,7 @@ import { cuisineLabel } from '@/lib/display'
 import { closesLabel } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
 import { imageUrl, mapboxStaticUrl } from '@/lib/media'
+import { placeWhere } from '@/lib/placeWhere'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type {
@@ -150,6 +151,7 @@ export default function RestaurantProfile() {
   // circle. Client-side because it's purely a display filter.
   const showMesa = !friendsOnly && allMesa.avg != null
   const hood = restaurant.neighborhood?.name
+  const where = placeWhere(hood, restaurant.neighborhood?.city)
   const closes = closesLabel(restaurant.closesAt)
 
   const photo = imageUrl(restaurant.coverImageId, { w: 1200, h: 2000 })
@@ -287,13 +289,9 @@ export default function RestaurantProfile() {
             <PlaceHero
               name={restaurant.name}
               category={
-                [cuisineLabel(restaurant.cuisine), hood].filter(Boolean).join(' · ') ||
-                'Santo Domingo'
+                [cuisineLabel(restaurant.cuisine), hood].filter(Boolean).join(' · ') || where
               }
-              sub={[
-                closes ? t('place.open_until', { time: closes }) : null,
-                [hood, 'Santo Domingo'].filter(Boolean).join(', '),
-              ]
+              sub={[closes ? t('place.open_until', { time: closes }) : null, where]
                 .filter(Boolean)
                 .join(' · ')}
               tags={tags}

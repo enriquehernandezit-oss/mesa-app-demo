@@ -8,9 +8,13 @@
 //     none. A fake is worse than nothing.
 //   • The MAP PIN follows the source (and the neighborhood with it), because the seed's
 //     hand-placed pins were up to 5 km off.
+//   • A place OUTSIDE Santo Domingo is filed under the area for its city (lib/geo.ts), whether or
+//     not its pin moved: it was only ever under a Santo Domingo sector because that was the
+//     nearest thing to file it under.
 
 import { haversineM } from '@mesa/db'
 
+import type { AreaDraft } from './geo'
 import type { MesaFieldsFromGoogle } from './googlePlaces'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './placeContacts'
 
@@ -48,15 +52,24 @@ export interface EnrichPatch {
   lat?: number
   lng?: number
   neighborhoodId?: string
+  // File the place under this area, creating it first if it does not exist yet. Set instead of
+  // neighborhoodId when the area is new, so the pure function never has to touch the database.
+  area?: AreaDraft
 }
 
-// The fill rule above, pure. `hoodId` is the neighborhood Google's location resolves to; it is
-// only adopted when the pin itself moves.
+// Where Google's location puts the row. `sector`: inside Santo Domingo — the sector it resolves
+// to, adopted only when the pin moves. `area`: anywhere else — the area for its city, and its id
+// when that area already exists (null when it has yet to be created).
+export type Target =
+  | { kind: 'sector'; hoodId: string }
+  | { kind: 'area'; hoodId: string | null; draft: AreaDraft }
+
+// The fill rule above, pure.
 export function enrichPatch(
   row: EnrichRow,
   fields: MesaFieldsFromGoogle,
   googlePlaceId: string,
-  hoodId: string,
+  target: Target,
 ): EnrichPatch {
   const patch: EnrichPatch = {}
   if (isPlaceholderPhone(row.phone)) patch.phone = fields.phone
@@ -71,10 +84,19 @@ export function enrichPatch(
   if (row.googlePlaceId == null) patch.googlePlaceId = googlePlaceId
 
   const hasLocation = fields.lat !== 0 || fields.lng !== 0
-  if (hasLocation && pinDistanceM(row, fields) > PIN_MOVE_MIN_M) {
-    patch.lat = fields.lat
-    patch.lng = fields.lng
-    if (hoodId !== row.neighborhoodId) patch.neighborhoodId = hoodId
+  if (hasLocation) {
+    const moved = pinDistanceM(row, fields) > PIN_MOVE_MIN_M
+    if (moved) {
+      patch.lat = fields.lat
+      patch.lng = fields.lng
+    }
+    if (target.kind === 'sector') {
+      if (moved && target.hoodId !== row.neighborhoodId) patch.neighborhoodId = target.hoodId
+    } else if (target.hoodId == null) {
+      patch.area = target.draft
+    } else if (target.hoodId !== row.neighborhoodId) {
+      patch.neighborhoodId = target.hoodId
+    }
   }
   return patch
 }

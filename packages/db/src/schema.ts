@@ -105,6 +105,15 @@ export const neighborhoods = pgTable('neighborhoods', {
   lat: doublePrecision('lat').notNull(),
   lng: doublePrecision('lng').notNull(),
   radiusM: integer('radius_m').notNull(),
+  // Where in the world. The seven rows above the seed ships are Santo Domingo's sectors: listed,
+  // curated, and what every picker, filter pill and the Map offer. A place a member adds from
+  // Google OUTSIDE Santo Domingo is filed under an UNLISTED area for its city, created on demand
+  // (lib/geo.ts) — so a restaurant in Punta Cana or Miami is never labelled with the nearest
+  // Santo Domingo sector, and never stretches the Map across the Atlantic. `name` is the city for
+  // such an area. The defaults are what every pre-existing row is.
+  countryCode: text('country_code').notNull().default('do'), // lowercase ISO 3166-1 alpha-2
+  city: text('city').notNull().default('Santo Domingo'),
+  listed: boolean('listed').notNull().default(true),
 })
 
 // ── Auth (Better Auth) ───────────────────────────────────────────────────
