@@ -118,7 +118,19 @@ You can **delete your own dish post**; anyone else's is reportable.
   `friends` switch like any other, with no quiet hours. Friends ranking a place you have _not_ saved is
   deliberately not announced. Before the first deploy, run `bun run --filter @mesa/api taste:backfill`
   once on production so existing matches are recorded silently instead of announced.
+
+  **@-mentions** (API; the app's `@` autocomplete and tappable handles come next): a handle in a
+  ranking note, a comment, or a new dish's caption tells that person — once per place it was said, so
+  editing a note tells only the newly added names. Up to 5 names per text; case-insensitive, a trailing
+  dot or comma is not part of the handle, and an `@` inside a word (an email) is not a mention. Never the
+  author, a banned member, anyone blocked either way, or — for a private account's own notes and
+  captions, or comments under its rankings — anyone who is not the owner or one of their approved
+  followers. A comment's ranking owner gets the comment, not a second "mentioned you". It rides the
+  `social` switch. There is no mentions table: the text plus the inbox row is the record.
+  `GET /social/mention-search?q=` serves the autocomplete: people you follow first, then everyone else
+  by handle prefix (never you, a block, or a ban); with nothing typed, just who you follow.
   Grouped by day, with a local read watermark that clears the bell badge.
+
 - **Contact matching** — optional, just-in-time. Phone numbers are hashed before they leave the
   phone and the list is never stored.
 

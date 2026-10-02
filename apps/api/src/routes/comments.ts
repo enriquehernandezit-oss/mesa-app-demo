@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { parseCommentBody } from '../lib/commentBody'
+import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
 import { excerpt } from '../lib/notifyCopy'
 import { blockedByMe, blockedMe, visibleComment } from '../lib/visibility'
@@ -119,6 +120,18 @@ export const commentsRoutes = new Hono<AuthedEnv>()
         data: { excerpt: excerpt(body) },
       },
     ])
+
+    // Anyone @-tagged in it, except the ranking's owner, who is already told about the comment itself.
+    notifyMentions({
+      authorId: me.id,
+      ownerId: ranking.user.id,
+      text: body,
+      key: `comment:${row.id}`,
+      skip: [ranking.user.id],
+      rankingId,
+      commentId: row.id,
+      restaurantId: ranking.restaurant.id,
+    })
 
     return c.json({
       comment: {

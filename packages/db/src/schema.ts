@@ -1248,9 +1248,10 @@ export type NotificationKind =
   | 'dish_nudge'
   | 'friends_love'
   | 'taste_match'
+  | 'mention'
 
 export interface NotificationData {
-  // comment: the first ~80 characters of what was said.
+  // comment / mention: the first ~80 characters of what was said.
   excerpt?: string
   // plan_reply: what the invitee answered (null when only a vote changed) and whether a
   // vote came with it.

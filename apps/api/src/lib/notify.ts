@@ -69,6 +69,9 @@ export const KIND_RULES: Record<Kind, KindRule> = {
     throttle: (n) => `friends-love:${n.createdAt.toISOString().slice(0, 10)}`,
   },
   taste_match: { category: 'friends' },
+  // Each mention is its own message (keyed by where it was said), so no throttle — but it is the one
+  // thing here a stranger-to-be can send you, so it rides the social switch like comments do.
+  mention: { category: 'social' },
 }
 
 export interface NotifyInput {

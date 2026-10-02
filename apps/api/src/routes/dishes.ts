@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
+import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -305,6 +306,18 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         })
         .returning({ id: dishes.id })
       dishId = dish?.id
+    }
+
+    // A caption that @-tags someone, on a dish that is new (a re-post of the same dish adds no caption).
+    if (created && caption && dishId) {
+      notifyMentions({
+        authorId: me.id,
+        ownerId: me.id,
+        text: caption,
+        key: `dish:${dishId}`,
+        dishId,
+        restaurantId,
+      })
     }
 
     // Optional: also set this as the ranking's favorite dish (no schema change —

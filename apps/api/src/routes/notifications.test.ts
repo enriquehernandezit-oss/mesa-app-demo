@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 
 import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
@@ -33,6 +33,7 @@ async function loadDeps() {
     { meRoutes },
     { plansRoutes },
     { rankingsRoutes },
+    { dishesRoutes },
     { socialRoutes },
     { notificationsRoutes },
     { notifyNow, pushMessagesFor, settleNotify },
@@ -45,6 +46,7 @@ async function loadDeps() {
     import('./me'),
     import('./plans'),
     import('./rankings'),
+    import('./dishes'),
     import('./social'),
     import('./notifications'),
     import('../lib/notify'),
@@ -59,6 +61,7 @@ async function loadDeps() {
     meRoutes,
     plansRoutes,
     rankingsRoutes,
+    dishesRoutes,
     socialRoutes,
     notificationsRoutes,
     notifyNow,
@@ -96,6 +99,7 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
     meRoutes,
     plansRoutes,
     rankingsRoutes,
+    dishesRoutes,
     socialRoutes,
     notificationsRoutes,
     notifyNow,
@@ -134,6 +138,7 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
       .route('/me', meRoutes)
       .route('/plans', plansRoutes)
       .route('/rankings', rankingsRoutes)
+      .route('/dishes', dishesRoutes)
       .route('/social', socialRoutes)
       .route('/notifications', notificationsRoutes)
   const asMe = appAs(me)
@@ -583,6 +588,158 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
       expect(await rowsOf('taste_match')).toHaveLength(1)
       expect(await rowsFor(uid('ana'), 'taste_match')).toHaveLength(1)
       await cleanup(ids)
+    })
+  })
+
+  describe('mentions', () => {
+    // A handle is a–z, 0–9, "_" and "." — the test users' own handles (with dashes) cannot be tagged.
+    const h = (label: string) => `mt${tag.slice(5)}${label}`
+    const people = ['me', ...labels] as const
+    const idOf = (label: string) => (label === 'me' ? me.id : uid(label))
+    const said = (userId: string) => rowsFor(userId, 'mention')
+
+    beforeAll(async () => {
+      for (const l of people) {
+        await db
+          .update(schema.user)
+          .set({ handle: h(l) })
+          .where(eq(schema.user.id, idOf(l)))
+      }
+    })
+    afterEach(async () => {
+      await db.delete(schema.follows).where(inArray(schema.follows.followingId, people.map(idOf)))
+      await db.delete(schema.follows).where(inArray(schema.follows.followerId, people.map(idOf)))
+      await db.delete(schema.userBlocks).where(eq(schema.userBlocks.blockerId, me.id))
+      await db.delete(schema.userBlocks).where(eq(schema.userBlocks.blockedId, me.id))
+      await db.update(schema.user).set({ isPrivate: false }).where(eq(schema.user.id, me.id))
+      await db.delete(notifications).where(inArray(notifications.userId, labels.map(uid)))
+      await db.delete(schema.dishes).where(eq(schema.dishes.userId, me.id))
+      await db.delete(schema.rankingComments).where(eq(schema.rankingComments.rankingId, rankingId))
+      await db.delete(schema.vibeNotes).where(eq(schema.vibeNotes.userId, me.id))
+    })
+
+    test('a comment tells the people it tags, pointing at the thread, and not the ranking owner twice', async () => {
+      const res = await post(appAs(ana), `/comments/ranking/${rankingId}`, {
+        body: `cenamos con @${h('bo')} y @${h('cy')}. @${h('me')} tú también`,
+      })
+      expect(res.status).toBe(200)
+      await settleNotify()
+      const [bo] = await said(uid('bo'))
+      expect(bo).toEqual(
+        expect.objectContaining({
+          actorId: ana.id,
+          rankingId,
+          restaurantId,
+          data: { excerpt: expect.stringContaining(`@${h('bo')}`) },
+        }),
+      )
+      expect(bo?.commentId).not.toBeNull()
+      expect(bo?.dedupeKey).toBe(`mention:comment:${bo?.commentId}`)
+      expect(await said(uid('cy'))).toHaveLength(1)
+      // the owner got the comment, and no second row for being tagged in it
+      expect(await rowsOf('comment')).toHaveLength(1)
+      expect(await rowsOf('mention')).toHaveLength(0)
+    })
+
+    test('a note tags once per person: editing it tells only the newcomer', async () => {
+      await post(asMe, '/rankings', {
+        restaurantId,
+        position: 1,
+        vibeNote: `con @${h('bo')} y @${h('ana')}`,
+      })
+      await settleNotify()
+      expect(await said(uid('bo'))).toHaveLength(1)
+      expect(await said(uid('ana'))).toHaveLength(1)
+      expect((await said(uid('bo')))[0]?.dedupeKey).toBe(`mention:note:${rankingId}`)
+
+      const patch = await asMe.request(`/rankings/${rankingId}/note`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ body: `con @${h('bo')}, @${h('ana')} y @${h('cy')}` }),
+      })
+      expect(patch.status).toBe(200)
+      await settleNotify()
+      expect(await said(uid('bo'))).toHaveLength(1)
+      expect(await said(uid('ana'))).toHaveLength(1)
+      expect(await said(uid('cy'))).toHaveLength(1)
+    })
+
+    test('a dish caption tags people, once, and opens the dish', async () => {
+      const res = await post(asMe, '/dishes', {
+        restaurantId,
+        name: `${tag} pulpo`,
+        caption: `pídelo, @${h('bo')}`,
+      })
+      expect(res.status).toBe(200)
+      await settleNotify()
+      const [row] = await said(uid('bo'))
+      expect(row?.dishId).not.toBeNull()
+      expect(row?.dedupeKey).toBe(`mention:dish:${row?.dishId}`)
+      // posting the same dish again (a new caption, say) adds no second row
+      await post(asMe, '/dishes', { restaurantId, name: `${tag} pulpo`, caption: `@${h('cy')}` })
+      await settleNotify()
+      expect(await said(uid('bo'))).toHaveLength(1)
+      expect(await said(uid('cy'))).toHaveLength(0)
+    })
+
+    test('never the author, a banned member, anyone blocked either way, or a handle nobody has', async () => {
+      await db.insert(schema.userBlocks).values([
+        { blockerId: me.id, blockedId: uid('blocked') },
+        { blockerId: uid('blocker'), blockedId: me.id },
+      ])
+      await post(asMe, '/rankings', {
+        restaurantId,
+        position: 1,
+        vibeNote: [`@${h('bo')}`, '@nobody_has_this']
+          .concat(['blocked', 'blocker', 'banned'].map((l) => `@${h(l)}`))
+          .join(' '),
+      })
+      await settleNotify()
+      expect(await said(uid('blocked'))).toHaveLength(0)
+      expect(await said(uid('blocker'))).toHaveLength(0)
+      expect(await said(uid('banned'))).toHaveLength(0)
+      expect(await said(me.id)).toHaveLength(0)
+      // …and the one ordinary name among them still got its row
+      expect(await said(uid('bo'))).toHaveLength(1)
+    })
+
+    test("a private account's note reaches only its approved followers", async () => {
+      await db.update(schema.user).set({ isPrivate: true }).where(eq(schema.user.id, me.id))
+      await db.insert(schema.follows).values({ followerId: uid('cy'), followingId: me.id })
+      await post(asMe, '/rankings', {
+        restaurantId,
+        position: 1,
+        vibeNote: `@${h('bo')} @${h('cy')}`,
+      })
+      await settleNotify()
+      expect(await said(uid('bo'))).toHaveLength(0)
+      expect(await said(uid('cy'))).toHaveLength(1)
+    })
+
+    test('the autocomplete offers people I follow first, then the rest by handle, never me, a block or a ban', async () => {
+      await db.insert(schema.follows).values({ followerId: me.id, followingId: uid('cy') })
+      await db.insert(schema.userBlocks).values([
+        { blockerId: me.id, blockedId: uid('blocked') },
+        { blockerId: uid('blocker'), blockedId: me.id },
+      ])
+      type Found = { users: { id: string; handle: string; following: boolean }[] }
+      const search = async (q: string) =>
+        (
+          (await (
+            await asMe.request(`/social/mention-search?q=${encodeURIComponent(q)}`)
+          ).json()) as Found
+        ).users
+
+      const found = await search(`mt${tag.slice(5)}`)
+      // banned members and the one I blocked are left out; the person who blocked ME is too
+      expect(found.map((u) => u.id)).toEqual([uid('cy'), uid('ana'), uid('bo')])
+      expect(found[0]?.following).toBe(true)
+      // narrower, with and without the @
+      expect((await search(`@${h('b')}`)).map((u) => u.id)).toEqual([uid('bo')])
+      // nothing typed yet: just who I follow
+      expect((await search('')).map((u) => u.id)).toEqual([uid('cy')])
+      // not a handle at all
+      expect(await search('a b')).toEqual([])
     })
   })
 

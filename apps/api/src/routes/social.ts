@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { parseHandlePrefix } from '../lib/mentions'
 import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, canSeeContent, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -409,6 +410,45 @@ export const socialRoutes = new Hono<AuthedEnv>()
     if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)
 
     return c.json({ userId: target.id })
+  })
+
+  // The @-autocomplete: members whose @handle starts with what was typed after the "@" — the people I
+  // follow first, then everyone else, alphabetically. An empty prefix is just my own following list. Not me,
+  // not banned, no block either way. Everyone with a handle can be found (name and @handle are public
+  // even on a private account); whether a mention then REACHES them is the notification's own rule.
+  .get('/mention-search', async (c) => {
+    const me = c.get('user')
+    const prefix = parseHandlePrefix(c.req.query('q'))
+    if (prefix === null) return c.json({ users: [] })
+    const users = await db
+      .select({
+        id: schema.user.id,
+        name: schema.user.name,
+        handle: schema.user.handle,
+        image: schema.user.image,
+        following: sql<boolean>`${schema.user.id} in (select following_id from follows where follower_id = ${me.id})`,
+      })
+      .from(schema.user)
+      .where(
+        and(
+          sql`${schema.user.handle} is not null`,
+          prefix ? sql`starts_with(${schema.user.handle}, ${prefix})` : undefined,
+          // With nothing typed yet, only the people I follow make sense to offer.
+          prefix ? undefined : inArray(schema.user.id, followingIds(me.id)),
+          ne(schema.user.id, me.id),
+          isNull(schema.user.bannedAt),
+          notInArray(schema.user.id, blockedByMe(me.id)),
+          notInArray(schema.user.id, blockedMe(me.id)),
+        ),
+      )
+      .orderBy(
+        desc(
+          sql`${schema.user.id} in (select following_id from follows where follower_id = ${me.id})`,
+        ),
+        schema.user.handle,
+      )
+      .limit(8)
+    return c.json({ users })
   })
 
   // Who follows the target (me by default, or ?userId=). Feeds the tappable

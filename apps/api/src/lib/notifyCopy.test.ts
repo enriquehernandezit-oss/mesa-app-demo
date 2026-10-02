@@ -21,6 +21,7 @@ const KINDS: Record<schema.NotificationKind, true> = {
   dish_nudge: true,
   friends_love: true,
   taste_match: true,
+  mention: true,
 }
 const kinds = Object.keys(KINDS) as schema.NotificationKind[]
 
@@ -105,6 +106,14 @@ describe('pushCopy', () => {
     )
   })
 
+  test('a mention quotes what was said, and still reads without it', () => {
+    const said = { ...ctx, data: { excerpt: 'cenamos con @bo' } }
+    expect(pushCopy('mention', 'en', said).body).toBe('Ana mentioned you: “cenamos con @bo”')
+    expect(pushCopy('mention', 'es', said).body).toBe('Ana te mencionó: “cenamos con @bo”')
+    expect(pushCopy('mention', 'en', ctx).body).toBe('Ana mentioned you')
+    expect(pushCopy('mention', 'es', ctx).body).toBe('Ana te mencionó')
+  })
+
   test('a taste match names the person and the percent', () => {
     const match = { ...ctx, data: { percent: 93 } }
     expect(pushCopy('taste_match', 'en', match).body).toBe('You and Ana are now a 93% taste match')
@@ -153,6 +162,12 @@ describe('pushPayload', () => {
       type: 'restaurant',
       restaurantId: 'r1',
     })
+    // A mention opens the thread it was said in (or the dish)
+    expect(pushPayload(row('mention', { rankingId: 'k1', dishId: 'd1' }))).toEqual({
+      type: 'comment',
+      rankingId: 'k1',
+    })
+    expect(pushPayload(row('mention', { dishId: 'd1' }))).toEqual({ type: 'dish', dishId: 'd1' })
     // The match page is the other person's.
     expect(pushPayload(row('taste_match', { actorId: 'u2' }))).toEqual({
       type: 'match',

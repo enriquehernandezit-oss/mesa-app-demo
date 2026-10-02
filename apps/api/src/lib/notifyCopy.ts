@@ -109,6 +109,13 @@ const BODY: Record<Kind, Record<Locale, (w: Words) => string>> = {
         ? `The people you follow love ${w.place}, a place you've been`
         : `The people you follow love ${w.place}. You should go.`,
   },
+  // Said where a person was @-tagged — a note, a comment or a dish caption — quoting the start of it.
+  mention: {
+    es: (w) =>
+      w.data.excerpt ? `${w.name} te mencionó: “${w.data.excerpt}”` : `${w.name} te mencionó`,
+    en: (w) =>
+      w.data.excerpt ? `${w.name} mentioned you: “${w.data.excerpt}”` : `${w.name} mentioned you`,
+  },
   taste_match: {
     es: (w) => `Tú y ${w.name} ya tienen ${w.data.percent ?? 90}% de match`,
     en: (w) => `You and ${w.name} are now a ${w.data.percent ?? 90}% taste match`,
@@ -163,6 +170,14 @@ export function pushPayload(n: NotificationRow): Record<string, string> | undefi
     // The taste-match page for that person (apps/mobile/src/lib/pushLinks.ts already opens it).
     case 'taste_match':
       return n.actorId ? { type: 'match', userId: n.actorId } : undefined
+    // A mention opens where it was said: the thread under a ranking (its note and its comments),
+    // or the dish.
+    case 'mention':
+      return n.rankingId
+        ? { type: 'comment', rankingId: n.rankingId }
+        : n.dishId
+          ? { type: 'dish', dishId: n.dishId }
+          : undefined
   }
 }
 

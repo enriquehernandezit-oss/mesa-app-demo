@@ -6,7 +6,8 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { signalsAfterRanking } from '../lib/friendSignals'
-import { notify } from '../lib/notify'
+import { notifyMentions } from '../lib/mentionNotify'
+import { background, notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -43,6 +44,31 @@ const placeSchema = z.object({
   // un-reloaded dev client still sends one, rather than erroring.
 })
 const noteSchema = z.object({ body: z.string().trim().max(VIBE_MAX) })
+
+// @-mentions in a vibe note: told once per ranking and person, pointing at the ranking's thread.
+// `rankingId` is known on the edit route; the create route only has the place, so it looks it up.
+function mentionNote(userId: string, restaurantId: string, text: string, rankingId?: string) {
+  if (!text.includes('@')) return
+  background(async () => {
+    const id =
+      rankingId ??
+      (
+        await db.query.rankings.findFirst({
+          where: and(eq(rankings.userId, userId), eq(rankings.restaurantId, restaurantId)),
+          columns: { id: true },
+        })
+      )?.id
+    if (!id) return
+    notifyMentions({
+      authorId: userId,
+      ownerId: userId,
+      text,
+      key: `note:${id}`,
+      rankingId: id,
+      restaurantId,
+    })
+  }, 'note mention failed')
+}
 
 export const rankingsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -511,6 +537,8 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
     // The friends signals (a place the people you follow love; a taste match that crossed 90).
     signalsAfterRanking(me.id, restaurantId)
+    // …and anyone @-tagged in the note that came with it.
+    if (vibeNote && vibeNote.includes('@')) mentionNote(me.id, restaurantId, vibeNote)
 
     return c.json({ ok: true })
   })
@@ -541,6 +569,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         target: [vibeNotes.userId, vibeNotes.restaurantId],
         set: { body, removedAt: null, updatedAt: new Date() },
       })
+    mentionNote(me.id, ranking.restaurantId, body, c.req.param('id'))
     return c.json({ ok: true, note: body })
   })
 
