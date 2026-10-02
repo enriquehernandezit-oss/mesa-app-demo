@@ -38,6 +38,20 @@ import { uploadsRoutes } from './routes/uploads'
 
 const app = new Hono<AppEnv>()
 
+// Slow-request log. Nothing else says how long a request took in production, so a "the app froze for a
+// moment" report had nothing to look at. Only requests over a second are written (a line per request would
+// be noise), with the method, the route PATTERN (never the URL — ids and query strings stay out of the
+// log) and the status. Read it in Railway → @mesa/api → Deploy Logs.
+const SLOW_REQUEST_MS = 1000
+app.use('*', async (c, next) => {
+  const started = performance.now()
+  await next()
+  const ms = Math.round(performance.now() - started)
+  if (ms >= SLOW_REQUEST_MS) {
+    console.warn(`slow request: ${c.req.method} ${c.req.routePath} ${c.res.status} ${ms}ms`)
+  }
+})
+
 // Security response headers. First middleware, so it also covers the Better Auth
 // handler below and anything app.onError returns. Headers are applied on the way
 // OUT (after next()), so a middleware registered earlier wraps a later one and

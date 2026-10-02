@@ -473,9 +473,14 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     })
     if (!exists) return c.json({ error: 'unknown_restaurant' }, 400)
 
+    // Where the time goes, written only when a save is slow (see the slow-request log in index.ts, which
+    // says THAT it was slow; this says which part): waiting for the list lock, the rewrite, or the rest.
+    const startedAt = performance.now()
+    let lockedAt = startedAt
     let isFirstRanking = false
     await db.transaction(async (tx) => {
       await lockUserList(tx, me.id)
+      lockedAt = performance.now()
       const before = await currentOrder(tx, me.id)
       isFirstRanking = !before.includes(restaurantId)
       const order = before.filter((id) => id !== restaurantId)
@@ -535,6 +540,13 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       )
     }
 
+    const doneAt = performance.now()
+    if (doneAt - startedAt >= 700) {
+      console.warn(
+        `slow ranking save: waited ${Math.round(lockedAt - startedAt)}ms for the list lock, ` +
+          `${Math.round(doneAt - lockedAt)}ms for the rest`,
+      )
+    }
     // The friends signals (a place the people you follow love; a taste match that crossed 90).
     signalsAfterRanking(me.id, restaurantId)
     // …and anyone @-tagged in the note that came with it.
