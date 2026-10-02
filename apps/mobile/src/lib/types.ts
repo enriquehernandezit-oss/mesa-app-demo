@@ -468,6 +468,9 @@ export interface NotificationItem {
     percent?: number // taste_match: the match, 0–100
   } | null
   followsBack: boolean // follow rows: do I already follow them back?
+  // The full answer, including a pending request to a private account. Optional: an older API
+  // sends only followsBack.
+  followStatus?: FollowStatus
   others: number // event_going: how many other people you follow are going too
 }
 

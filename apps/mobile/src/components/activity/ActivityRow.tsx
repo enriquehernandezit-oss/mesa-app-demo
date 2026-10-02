@@ -139,7 +139,11 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
         <Caption className="mt-[3px] text-meta">{timeAgo(n.createdAt)}</Caption>
       </View>
       {n.kind === 'follow' && n.actor ? (
-        <FollowBackPill userId={n.actor.id} initial={n.followsBack} from="activity" />
+        <FollowBackPill
+          userId={n.actor.id}
+          initial={n.followStatus ?? n.followsBack}
+          from="activity"
+        />
       ) : n.restaurant ? (
         <View className="h-[46px] w-[46px] overflow-hidden rounded-sm">
           <PlaceCover

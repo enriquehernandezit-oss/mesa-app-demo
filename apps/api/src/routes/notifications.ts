@@ -28,7 +28,7 @@ import { requireAuth } from '../middleware/session'
 // what an inbox row is.
 
 const { pushTokens, notificationPrefs, notifications, user, restaurants, events, dishes } = schema
-const { rankingComments, follows } = schema
+const { rankingComments, follows, followRequests } = schema
 
 // NOTE: duplicated by hand in apps/mobile/src/lib/types.ts (that app can't import this —
 // see that file's own note on why). Keep the two in sync.
@@ -47,6 +47,9 @@ export interface NotificationItem {
   data: schema.NotificationData | null
   // follow rows: do I already follow them back?
   followsBack: boolean
+  // …and the full answer: a private account I have asked to follow is 'requested', which
+  // followsBack (a plain boolean) cannot say.
+  followStatus: 'none' | 'following' | 'requested'
   // event_going rows: how many OTHER people I follow are going to the same event.
   others: number
 }
@@ -192,6 +195,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
     if (cursor === 'invalid') return c.json({ error: 'invalid_cursor' }, 400)
 
     const back = alias(follows, 'back')
+    const asked = alias(followRequests, 'asked')
     const rows = await db
       .select({
         id: notifications.id,
@@ -215,6 +219,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
         dishId: dishes.id,
         dishName: dishes.name,
         followsBack: sql<boolean>`${back.followerId} is not null`,
+        requested: sql<boolean>`${asked.requesterId} is not null`,
       })
       .from(notifications)
       .leftJoin(user, eq(user.id, notifications.actorId))
@@ -223,6 +228,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
       .leftJoin(dishes, and(eq(dishes.id, notifications.dishId), isNull(dishes.removedAt)))
       .leftJoin(rankingComments, eq(rankingComments.id, notifications.commentId))
       .leftJoin(back, and(eq(back.followerId, me.id), eq(back.followingId, notifications.actorId)))
+      .leftJoin(asked, and(eq(asked.requesterId, me.id), eq(asked.targetId, notifications.actorId)))
       .where(
         and(
           eq(notifications.userId, me.id),
@@ -287,6 +293,7 @@ export const notificationsRoutes = new Hono<AuthedEnv>()
           : null,
       data: r.data,
       followsBack: r.followsBack,
+      followStatus: r.followsBack ? 'following' : r.requested ? 'requested' : 'none',
       others: r.eventId ? Math.max((goingCounts.get(r.eventId) ?? 1) - 1, 0) : 0,
     }))
     const last = page[page.length - 1]

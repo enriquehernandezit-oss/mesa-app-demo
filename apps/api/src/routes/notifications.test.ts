@@ -81,6 +81,7 @@ type Item = {
   event: { id: string; title: string } | null
   data: { excerpt?: string; label?: string; count?: number } | null
   followsBack: boolean
+  followStatus: 'none' | 'following' | 'requested'
   others: number
 }
 type Page = { notifications: Item[]; nextBefore: string | null }
@@ -315,8 +316,19 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
       expect(row?.dedupeKey).toBe(`follow:${ana.id}`)
       expect((await inbox()).notifications[0]?.followsBack).toBe(false)
 
+      expect((await inbox()).notifications[0]?.followStatus).toBe('none')
+
+      // I asked to follow her (a private account): not following yet, but not "none" either
+      await db.insert(schema.followRequests).values({ requesterId: me.id, targetId: ana.id })
+      const asked = (await inbox()).notifications[0]
+      expect(asked?.followsBack).toBe(false)
+      expect(asked?.followStatus).toBe('requested')
+      await db.delete(schema.followRequests).where(eq(schema.followRequests.requesterId, me.id))
+
       await db.insert(schema.follows).values({ followerId: me.id, followingId: ana.id })
-      expect((await inbox()).notifications[0]?.followsBack).toBe(true)
+      const following = (await inbox()).notifications[0]
+      expect(following?.followsBack).toBe(true)
+      expect(following?.followStatus).toBe('following')
       await db.delete(schema.follows).where(eq(schema.follows.followerId, me.id))
       await db.delete(schema.follows).where(eq(schema.follows.followerId, ana.id))
     })
