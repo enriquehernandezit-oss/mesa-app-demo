@@ -12,7 +12,10 @@
 //   world  anywhere, no restriction. This is what finds a Dominican place the `do` search crowded out
 //          (a brand with four Santo Domingo branches hides its Punta Cana one) and every foreign one.
 //
-// `where` narrows how many are asked: 'sd' asks only the first, 'do' the first two, 'world' all three.
+// `where` narrows how many are asked: 'sd' asks only the first, 'do' the first two, 'world' all three,
+// 'none' none of them. On top of that, every CITY the member picked (lib/cities.ts) is one more
+// request, restricted to that city's box, listed after the tiers: an explicit choice is never
+// crowded out by the broader ones.
 //
 // Billing: each is an "Autocomplete Request"; a session that ends in Place Details (POST
 // /from-google, with the same sessionToken) bills them at zero. Three per search in 'world' is the
@@ -21,15 +24,13 @@
 import { db, schema } from '@mesa/db'
 import { and, inArray, isNull } from 'drizzle-orm'
 
+import type { Rect } from './cities'
 import { SD_BOUNDS } from './geo'
 import { type ExternalSuggestion, type Prediction, autocompleteRequest } from './googlePlaces'
 
-export type SearchWhere = 'sd' | 'do' | 'world'
-
-// Anything but the two narrower scopes is the widest, so an older app that sends nothing gets it.
-export function parseWhere(v: string | undefined): SearchWhere {
-  return v === 'sd' || v === 'do' ? v : 'world'
-}
+// 'none': no preset at all — only the cities the member picked.
+export type SearchWhere = 'sd' | 'do' | 'world' | 'none'
+type Tier = 'sd' | 'do' | 'world'
 
 // Where distances are measured from: Santo Domingo's centre (Piantini).
 const SD_ORIGIN = { latitude: 18.4682, longitude: -69.9388 }
@@ -43,7 +44,7 @@ const PRIMARY_TYPES = ['restaurant', 'bar', 'night_club', 'cafe']
 // five slots with Dominican places. That suits the first two searches and ruins the third: asked
 // for "sbg" with the hint, the worldwide search returned the same five Dominican places and never
 // reached Curaçao or London. So the worldwide search goes without it, and shows every country.
-export function autocompleteBody(q: string, tier: SearchWhere, sessionToken?: string) {
+export function autocompleteBody(q: string, tier: Tier, sessionToken?: string) {
   return {
     input: q,
     includedPrimaryTypes: PRIMARY_TYPES,
@@ -65,6 +66,24 @@ export function autocompleteBody(q: string, tier: SearchWhere, sessionToken?: st
   }
 }
 
+// One picked city: the same request, restricted to that city's box. The Dominican region hint stays
+// (formatting only — every result is already inside the box).
+export function autocompleteBodyForRect(q: string, rect: Rect, sessionToken?: string) {
+  return {
+    input: q,
+    includedPrimaryTypes: PRIMARY_TYPES,
+    languageCode: 'es',
+    regionCode: 'do',
+    locationRestriction: {
+      rectangle: {
+        low: { latitude: rect.minLat, longitude: rect.minLng },
+        high: { latitude: rect.maxLat, longitude: rect.maxLng },
+      },
+    },
+    ...(sessionToken ? { sessionToken } : {}),
+  }
+}
+
 // More than this is a longer list than a search bar wants, and the tail is the least relevant: for a
 // generic word ("pizza") Santo Domingo alone fills most of it, and the rest is the world's noise.
 const MAX_RESULTS = 8
@@ -77,41 +96,65 @@ export function mergeTiers(tiers: {
   sd: Prediction[]
   dr: Prediction[]
   world: Prediction[]
+  // One list per picked city, in the order they were picked.
+  cities?: Prediction[][]
 }): ExternalSuggestion[] {
-  const seen = new Set<string>()
-  const out: Prediction[] = []
-  const take = (list: Prediction[]) => {
+  const take = (list: Prediction[], seen: Set<string>, into: Prediction[]) => {
     for (const p of list) {
       if (seen.has(p.providerPlaceId)) continue
       seen.add(p.providerPlaceId)
-      out.push(p)
+      into.push(p)
     }
   }
   const far = Number.MAX_SAFE_INTEGER
-  take(tiers.sd)
-  take(tiers.dr)
-  take([...tiers.world].sort((a, b) => (a.distanceM ?? far) - (b.distanceM ?? far)))
+  const tierPicks: Prediction[] = []
+  const tierSeen = new Set<string>()
+  take(tiers.sd, tierSeen, tierPicks)
+  take(tiers.dr, tierSeen, tierPicks)
+  take(
+    [...tiers.world].sort((a, b) => (a.distanceM ?? far) - (b.distanceM ?? far)),
+    tierSeen,
+    tierPicks,
+  )
+  // The cap is for the broad tiers. A city the member picked is an explicit choice, so its results
+  // come after, uncapped (five at most each — Google's limit), and are only ever de-duplicated.
+  const head = tierPicks.slice(0, MAX_RESULTS)
+  const seen = new Set(head.map((p) => p.providerPlaceId))
+  const tail: Prediction[] = []
+  for (const list of tiers.cities ?? []) take(list, seen, tail)
   // Drop the distance: it is the API's, not the app's.
-  return out.slice(0, MAX_RESULTS).map(({ distanceM: _distance, ...suggestion }) => suggestion)
+  return [...head, ...tail].map(({ distanceM: _distance, ...suggestion }) => suggestion)
 }
 
 // Which of the three searches a scope asks: the narrower the scope, the fewer requests.
-export function tiersFor(where: SearchWhere): SearchWhere[] {
-  return where === 'sd' ? ['sd'] : where === 'do' ? ['sd', 'do'] : ['sd', 'do', 'world']
+export function tiersFor(where: SearchWhere): Tier[] {
+  return where === 'none'
+    ? []
+    : where === 'sd'
+      ? ['sd']
+      : where === 'do'
+        ? ['sd', 'do']
+        : ['sd', 'do', 'world']
 }
 
 export async function searchPlaces(
   q: string,
   where: SearchWhere,
   sessionToken?: string,
+  cities: Rect[] = [],
 ): Promise<ExternalSuggestion[]> {
   const asked = tiersFor(where)
-  const ask = (tier: SearchWhere) =>
+  const ask = (tier: Tier) =>
     asked.includes(tier)
       ? autocompleteRequest(autocompleteBody(q, tier, sessionToken))
       : Promise.resolve<Prediction[]>([])
-  const [sd, dr, world] = await Promise.all([ask('sd'), ask('do'), ask('world')])
-  return mergeTiers({ sd, dr, world })
+  const [sd, dr, world, ...inCities] = await Promise.all([
+    ask('sd'),
+    ask('do'),
+    ask('world'),
+    ...cities.map((rect) => autocompleteRequest(autocompleteBodyForRect(q, rect, sessionToken))),
+  ])
+  return mergeTiers({ sd, dr, world, cities: inCities })
 }
 
 // A place Mesa already has, found by Google's own id.

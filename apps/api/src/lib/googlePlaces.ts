@@ -133,6 +133,34 @@ const PLACE_FIELDS = [
   'businessStatus',
 ]
 
+// The box Google draws around a place — for a city, the area it covers. Only ever fetched for a city
+// a member picked in the location filter, on the cheapest Place Details tier (`id`, `viewport`).
+export interface GoogleViewport {
+  low?: { latitude?: number; longitude?: number }
+  high?: { latitude?: number; longitude?: number }
+}
+export async function cityViewport(placeId: string): Promise<GoogleViewport | null> {
+  if (!GOOGLE_PLACES_KEY) return null
+  try {
+    const res = await fetch(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?languageCode=es`,
+      {
+        headers: { 'X-Goog-Api-Key': GOOGLE_PLACES_KEY, 'X-Goog-FieldMask': 'id,viewport' },
+        signal: AbortSignal.timeout(5000),
+      },
+    )
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '')
+      console.error(`[places] city viewport failed (${res.status}): ${detail.slice(0, 300)}`)
+      return null
+    }
+    return ((await res.json()) as { viewport?: GoogleViewport }).viewport ?? null
+  } catch (err) {
+    console.error('[places] city viewport threw:', err)
+    return null
+  }
+}
+
 // Place Details — called ONLY when a member taps a suggestion (M9), never for
 // the typeahead itself.
 export async function placeDetails(

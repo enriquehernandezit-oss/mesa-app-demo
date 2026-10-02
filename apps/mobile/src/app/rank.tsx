@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
+import { LocationFilter } from '@/components/LocationFilter'
 import { FeelStep } from '@/components/rank/FeelStep'
 import { MiniFeel } from '@/components/rank/MiniFeel'
 import { RankHeader } from '@/components/rank/RankHeader'
@@ -1669,7 +1670,8 @@ function FindStep({
   const leadIds = new Set(leadGroup.map((r) => r.id))
   const results = leadIds.size ? filtered.filter((r) => !leadIds.has(r.id)) : filtered
 
-  // Google — any restaurant (Santo Domingo first, then the rest of the DR, then the world), for every real query. Deduped against
+  // Google — any restaurant (Santo Domingo first, then the rest of the DR, then the world, then any
+  // cities picked in the location filter), for every real query. Deduped against
   // results + lead group so a spot you already have isn't re-offered; tapping
   // continues the rank flow with the new place. Shared with Explore
   // (useExternalPlaceSearch), which is where the always-on rationale lives —
@@ -1680,8 +1682,6 @@ function FindStep({
     inMesa,
     create: createFromGoogle,
     creatingId,
-    where,
-    setWhere,
     active: googleActive,
     nothingFound,
   } = useExternalPlaceSearch({
@@ -1790,6 +1790,12 @@ function FindStep({
           autoCorrect={false}
         />
       </View>
+      {/* Where to look: scopes the Google results below (and the places Mesa already has among
+          them). The same filter as Explore's — where you are looking does not change because you
+          changed screens. */}
+      <View className="px-4 pt-2">
+        <LocationFilter />
+      </View>
       <View className="px-5">
         <ChipRail className="mt-3">
           <Chip
@@ -1861,8 +1867,6 @@ function FindStep({
               suggestions={suggestions}
               creatingId={creatingId}
               onPick={createFromGoogle}
-              where={where}
-              onWhere={setWhere}
               active={googleActive}
               nothingFound={nothingFound}
             />

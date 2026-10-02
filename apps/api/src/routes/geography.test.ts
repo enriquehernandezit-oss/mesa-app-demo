@@ -24,13 +24,15 @@ async function localDbReachable(): Promise<boolean> {
 }
 
 async function loadDeps() {
-  const [{ db, schema }, { restaurantRoutes }, { onboardingRoutes }, geo] = await Promise.all([
-    import('@mesa/db'),
-    import('./restaurants'),
-    import('./onboarding'),
-    import('../lib/geo'),
-  ])
-  return { db, schema, restaurantRoutes, onboardingRoutes, geo }
+  const [{ db, schema }, { restaurantRoutes }, { onboardingRoutes }, geo, location] =
+    await Promise.all([
+      import('@mesa/db'),
+      import('./restaurants'),
+      import('./onboarding'),
+      import('../lib/geo'),
+      import('../lib/location'),
+    ])
+  return { db, schema, restaurantRoutes, onboardingRoutes, geo, location }
 }
 const deps = (await localDbReachable()) ? await loadDeps() : null
 
@@ -38,7 +40,7 @@ type Me = AuthedEnv['Variables']['user']
 
 describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
   if (!deps) return
-  const { db, schema, restaurantRoutes, onboardingRoutes, geo } = deps
+  const { db, schema, restaurantRoutes, onboardingRoutes, geo, location } = deps
 
   const tag = `test-${crypto.randomUUID().slice(0, 8)}`
   const ana: Me = {
@@ -223,9 +225,106 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
       expect(browse).not.toContain(placeIds.inUs) // Miami Beach
     })
 
-    test('a place anywhere is still found by name', async () => {
+    test('an app that sends no location filter still finds a place anywhere by name', async () => {
       expect(await explore(`?q=${encodeURIComponent(`${tag} in us`)}`)).toContain(placeIds.inUs)
       expect(await explore(`?q=${encodeURIComponent(`${tag} in area`)}`)).toContain(placeIds.inArea)
+    })
+  })
+
+  // The location filter scopes Mesa's own places, in browsing and in a name search alike.
+  describe('GET /restaurants?where= — the location filter', () => {
+    type Explore = { restaurants: { id: string }[] }
+    const explore = async (query: string) =>
+      (await request<Explore>('/restaurants', restaurantRoutes, query)).json.restaurants.map(
+        (r) => r.id,
+      )
+    const byName = (who: string, where: string) =>
+      `?q=${encodeURIComponent(`${tag} in ${who}`)}&where=${where}`
+
+    test('Santo Domingo is its own sectors: not Punta Cana, not Miami', async () => {
+      const browse = await explore('?where=sd')
+      expect(browse).toContain(placeIds.inSector)
+      expect(browse).not.toContain(placeIds.inArea)
+      expect(browse).not.toContain(placeIds.inUs)
+    })
+
+    test('the Dominican Republic adds the cities around the country, still not Miami', async () => {
+      const browse = await explore('?where=do')
+      expect(browse).toContain(placeIds.inSector)
+      expect(browse).toContain(placeIds.inArea)
+      expect(browse).not.toContain(placeIds.inUs)
+    })
+
+    test('the world is everywhere', async () => {
+      const browse = await explore('?where=world')
+      for (const id of [placeIds.inSector, placeIds.inArea, placeIds.inUs]) {
+        expect(browse).toContain(id)
+      }
+    })
+
+    test('a name search obeys it too — a Miami place is not found from Santo Domingo', async () => {
+      expect(await explore(byName('us', 'sd'))).not.toContain(placeIds.inUs)
+      expect(await explore(byName('us', 'do'))).not.toContain(placeIds.inUs)
+      expect(await explore(byName('us', 'world'))).toContain(placeIds.inUs)
+      expect(await explore(byName('area', 'sd'))).not.toContain(placeIds.inArea)
+      expect(await explore(byName('area', 'do'))).toContain(placeIds.inArea)
+    })
+
+    test('"only my cities" with none Google could place is Santo Domingo, not an empty search', async () => {
+      const browse = await explore('?where=none')
+      expect(browse).toContain(placeIds.inSector)
+      expect(browse).not.toContain(placeIds.inUs)
+    })
+
+    test('a picked city is the places whose pin is inside its box', async () => {
+      const inBox = async (rect: {
+        minLat: number
+        maxLat: number
+        minLng: number
+        maxLng: number
+      }) => {
+        const cond = location.locationCondition({ scope: 'none', rects: [rect] })
+        const rows = await db
+          .select({ id: schema.restaurants.id })
+          .from(schema.restaurants)
+          .leftJoin(
+            schema.neighborhoods,
+            eq(schema.neighborhoods.id, schema.restaurants.neighborhoodId),
+          )
+          .where(cond)
+        return rows.map((r) => r.id)
+      }
+      const miami = await inBox({ minLat: 25.66, maxLat: 25.86, minLng: -80.29, maxLng: -80.09 })
+      expect(miami).toContain(placeIds.inUs)
+      expect(miami).not.toContain(placeIds.inArea)
+      expect(miami).not.toContain(placeIds.inSector)
+      const puntaCana = await inBox({
+        minLat: 18.36,
+        maxLat: 18.76,
+        minLng: -68.52,
+        maxLng: -68.22,
+      })
+      expect(puntaCana).toContain(placeIds.inArea)
+      expect(puntaCana).not.toContain(placeIds.inUs)
+    })
+
+    test('a city plus Santo Domingo is both places, and nothing else', async () => {
+      const cond = location.locationCondition({
+        scope: 'sd',
+        rects: [{ minLat: 25.66, maxLat: 25.86, minLng: -80.29, maxLng: -80.09 }],
+      })
+      const rows = await db
+        .select({ id: schema.restaurants.id })
+        .from(schema.restaurants)
+        .leftJoin(
+          schema.neighborhoods,
+          eq(schema.neighborhoods.id, schema.restaurants.neighborhoodId),
+        )
+        .where(cond)
+      const ids = rows.map((r) => r.id)
+      expect(ids).toContain(placeIds.inSector)
+      expect(ids).toContain(placeIds.inUs)
+      expect(ids).not.toContain(placeIds.inArea)
     })
   })
 })

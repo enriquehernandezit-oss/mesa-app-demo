@@ -18,6 +18,7 @@ import { MemberRow } from '@/components/explore/MemberRow'
 import { TrendingRail } from '@/components/explore/TrendingRail'
 import { type ExploreFilterValues, ExploreFilters } from '@/components/ExploreFilters'
 import { ExternalResults } from '@/components/ExternalResults'
+import { LocationFilter } from '@/components/LocationFilter'
 import { useTabBarClearance } from '@/components/MesaTabBar'
 import {
   Button,
@@ -40,6 +41,13 @@ import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
+import {
+  type LocationFilter as Location,
+  isDefaultLocation,
+  locationQuery,
+  resetLocation,
+  useLocationFilter,
+} from '@/lib/locationFilter'
 import type { ExploreHit, ExploreMember, ExploreResponse, Neighborhood } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
@@ -69,11 +77,34 @@ const NO_MEMBERS: ExploreMember[] = []
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
 // screen reads once those filters are applied.
-function exploreKey(q: string, f: ExploreFilterValues, openNow: boolean, sort: SortKey) {
-  return ['explore', q, f.hood, f.cuisine, f.price, openNow, f.occasion, f.minScore, sort]
+function exploreKey(
+  q: string,
+  f: ExploreFilterValues,
+  openNow: boolean,
+  sort: SortKey,
+  loc: Location,
+) {
+  return [
+    'explore',
+    q,
+    f.hood,
+    f.cuisine,
+    f.price,
+    openNow,
+    f.occasion,
+    f.minScore,
+    sort,
+    locationQuery(loc),
+  ]
 }
-function fetchExplore(q: string, f: ExploreFilterValues, openNow: boolean, sort: SortKey) {
-  const params = new URLSearchParams()
+function fetchExplore(
+  q: string,
+  f: ExploreFilterValues,
+  openNow: boolean,
+  sort: SortKey,
+  loc: Location,
+) {
+  const params = new URLSearchParams(locationQuery(loc))
   if (q.length >= 2) params.set('q', q)
   if (f.hood) params.set('neighborhood', f.hood)
   if (f.cuisine) params.set('cuisine', f.cuisine)
@@ -124,6 +155,8 @@ export default function ExploreScreen() {
   // Places-only concepts with no events equivalent.
   const [view, setView] = useState<'places' | 'events'>('places')
   const [eventsVisited, setEventsVisited] = useState(false)
+  // Bumped when Explore starts over, so the location panel closes with it.
+  const [locationReset, setLocationReset] = useState(0)
   if (view === 'events' && !eventsVisited) setEventsVisited(true)
   // Seeds the filter panel from a deep link — the restaurant profile's
   // neighborhood tap lands here with `?neighborhood=<slug>` already applied,
@@ -214,9 +247,11 @@ export default function ExploreScreen() {
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
   const filterValues = { hood, cuisine, price, occasion, minScore }
+  // WHERE to look — Santo Domingo by default — scopes Mesa's own places here and Google's below.
+  const location = useLocationFilter()
   const results = useQuery({
-    queryKey: exploreKey(debouncedQ, filterValues, openNow, sort),
-    queryFn: () => fetchExplore(debouncedQ, filterValues, openNow, sort),
+    queryKey: exploreKey(debouncedQ, filterValues, openNow, sort, location),
+    queryFn: () => fetchExplore(debouncedQ, filterValues, openNow, sort, location),
     // Keep the current results up while a new search/filter loads, instead of
     // collapsing the list to a skeleton (and jumping the page) on every change.
     placeholderData: keepPreviousData,
@@ -237,7 +272,8 @@ export default function ExploreScreen() {
     price == null &&
     !openNow &&
     !occasion &&
-    minScore == null
+    minScore == null &&
+    isDefaultLocation(location)
 
   // "Abierto ahora" filters on closesAt (null for imported rows) — hide the chip
   // when few current hits have hours; keep it while active. (M7)
@@ -245,7 +281,7 @@ export default function ExploreScreen() {
   const showOpenChip = openNow || hoursCoverage >= 0.4
 
   // Google — any restaurant, Santo Domingo first then the Dominican Republic then the world
-  // (the pills under "En Google" narrow that), for every real query, not just the ones
+  // (the location filter narrows or widens that), for every real query, not just the ones
   // Mesa's own catalog misses; tapping one creates a full profile and lands on
   // it. Memoized: the hook normalizes every one of these names to dedupe
   // Google's results against the catalog, and a fresh array each render made it
@@ -256,8 +292,6 @@ export default function ExploreScreen() {
     inMesa,
     create: createFromGoogle,
     creatingId,
-    where,
-    setWhere,
     active: googleActive,
     nothingFound,
   } = useExternalPlaceSearch({
@@ -302,7 +336,7 @@ export default function ExploreScreen() {
     useCallback(
       (wasActive: boolean) => {
         // Pressing Explore while you are ALREADY on it starts over: no search, no filters, the
-        // default sort, the Places view, the widest Google scope, the keyboard away. (Coming
+        // default sort, the Places view, Santo Domingo again, the keyboard away. (Coming
         // from another tab keeps your search — only the scroll position is refreshed.)
         if (wasActive) {
           Keyboard.dismiss()
@@ -310,7 +344,8 @@ export default function ExploreScreen() {
           clearFilters()
           setSort('score')
           setView('places')
-          setWhere('world')
+          resetLocation()
+          setLocationReset((n) => n + 1)
         }
         listRef.current?.scrollToOffset({ offset: topOffset, animated: true })
         // A silent refetch, not onRefresh(): flipping RefreshControl's
@@ -322,7 +357,7 @@ export default function ExploreScreen() {
         // — only this synthetic trigger skips the visible spinner.
         void results.refetch()
       },
-      [results, topOffset, clearFilters, setWhere],
+      [results, topOffset, clearFilters],
     ),
     { nested: true },
   )
@@ -358,6 +393,12 @@ export default function ExploreScreen() {
           autoCapitalize="none"
         />
       </View>
+      {/* Where to look. Places only: Events has no place to scope. */}
+      {view === 'places' ? (
+        <View className="mt-2">
+          <LocationFilter resetKey={locationReset} />
+        </View>
+      ) : null}
       <Segmented
         className="mt-3"
         value={view}
@@ -534,8 +575,6 @@ export default function ExploreScreen() {
               suggestions={suggestions}
               creatingId={creatingId}
               onPick={createFromGoogle}
-              where={where}
-              onWhere={setWhere}
               active={googleActive}
               nothingFound={nothingFound}
             />
@@ -576,8 +615,8 @@ export default function ExploreScreen() {
         neighborhoods={neighborhoods.data?.neighborhoods ?? []}
         cuisines={cuisines.data?.cuisines ?? []}
         countQuery={(d) => ({
-          queryKey: exploreKey(debouncedQ, d, openNow, sort),
-          queryFn: () => fetchExplore(debouncedQ, d, openNow, sort),
+          queryKey: exploreKey(debouncedQ, d, openNow, sort, location),
+          queryFn: () => fetchExplore(debouncedQ, d, openNow, sort, location),
         })}
       />
     </View>

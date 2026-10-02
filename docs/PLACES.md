@@ -42,31 +42,49 @@ An unlisted area is a **label, not a choice**:
 To show a city as a real choice later — say "Punta Cana" as a filter pill — set its
 `listed` column to true. Nothing else changes.
 
-## Searching for a place to add — Santo Domingo first, then the country, then the world
+## Searching — where to look, and the order Google's answers come in
 
-The search bar's "En Google" list (Explore, and the rank flow's find step) searches **anywhere in
-the world**, but always lists **Santo Domingo first, then the rest of the Dominican Republic, then
-everywhere else**. Three small pills under "En Google" — **Santo Domingo · RD · Mundo** — narrow how
-far down that list it goes; **Mundo** (the widest) is the default.
+**The location filter** is a field under the search bar (Explore, and the rank flow's find step): it
+says where Mesa is looking — **"Santo Domingo, RD" by default** — and it scopes **both** halves of a
+search, Mesa's own places and Google's. Tap it and it opens inline into the places you have chosen,
+each a chip you can remove; quick additions (**República Dominicana**, **Todo el mundo**); and a
+search for **any city in the world**, several at once (up to five). It is Beli's location field with
+more than one place.
 
-Why it takes three searches: Google returns at most **five** places per request and ranks them its
-own way, so one request cannot be told "these first". Mesa asks up to three, at once, merges them in
-order and drops repeats (`apps/api/src/lib/placeSearch.ts`):
+- **Santo Domingo** is Mesa's own sectors (the listed neighborhoods) — not Punta Cana, not Miami.
+- **República Dominicana** adds every place filed in the country. It contains Santo Domingo, so
+  adding it replaces that chip; **Todo el mundo** replaces everything, and picking a city narrows
+  "everywhere" back to that city.
+- **A city** is the box Google draws around it, never smaller than about 22 km a side (so "La Romana"
+  includes Casa de Campo), matched against each place's pin. City boxes are looked up once per city
+  and kept in memory for up to 30 days — the longest Google lets coordinates be cached.
+- Removing the last place is not "nowhere": it goes back to Santo Domingo. Pressing Explore's tab
+  again resets it too.
+- An app that sends no filter (an older build) keeps the old behavior: browsing is the Dominican
+  Republic, a name search is everywhere.
 
-| search | what it asks Google                                      | pill that includes it |
-| ------ | -------------------------------------------------------- | --------------------- |
-| 1      | inside the Santo Domingo box (the same one used to file) | all three             |
-| 2      | anywhere in the Dominican Republic                       | RD, Mundo             |
-| 3      | anywhere at all                                          | Mundo                 |
+**Google's answers are listed Santo Domingo first, then the rest of the Dominican Republic, then the
+world, then each picked city** — whatever the filter, it only decides how many of those are asked.
+Why several searches: Google returns at most **five** places per request and ranks them its own way,
+so one request cannot be told "these first". Mesa asks them at once, merges them in order and drops
+repeats (`apps/api/src/lib/placeSearch.ts`):
 
-Anything only the third search found is listed nearest to Santo Domingo first, so a Dominican place
+| search                 | what it asks Google                                      | asked when the filter has |
+| ---------------------- | -------------------------------------------------------- | ------------------------- |
+| Santo Domingo          | inside the Santo Domingo box (the same one used to file) | Santo Domingo, DR, world  |
+| the Dominican Republic | anywhere in the Dominican Republic                       | DR, world                 |
+| the world              | anywhere at all                                          | world                     |
+| each picked city       | inside that city's box (one request per city)            | every city picked         |
+
+Anything only the world search found is listed nearest to Santo Domingo first, so a Dominican place
 the second search missed still comes before Curaçao and London. (Santo Domingo's own matches can
 fill the second search's five slots: for "sbg" it returns four Santo Domingo venues and Casa de
-Campo, and only the third finds Punta Cana. Typing "sbg punta cana" finds it in every scope.) The list
-stops at **eight**: for a generic word like "pizza", Santo Domingo alone fills most of it.
+Campo, and only the world search finds Punta Cana. Typing "sbg punta cana" finds it either way.) The
+broad searches stop at **eight** results — for a generic word like "pizza", Santo Domingo alone fills
+most of it — while a city you picked is an explicit choice and is never cut.
 
 The Dominican **region hint** is sent on the first two searches only. It formats Dominican results
-without their country, but it also ranks — with it, the third search returned the same five
+without their country, but it also ranks — with it, the world search returned the same five
 Dominican places and never reached anywhere else.
 
 **A place Mesa already has never shows under "En Google".** Each result is matched to Mesa by
@@ -77,10 +95,9 @@ A permanently closed match is dropped from both. This only works for a place tha
 id: the few seed rows without one (`places:audit` lists them) can still be offered again, and the
 app's old by-name check remains as a fallback for those.
 
-Tapping a result adds the place, filed as described above. **Explore's browse list is the Dominican
-Republic** (Santo Domingo's sectors and the cities around the country); a place from Miami is found
-by **name**, and shows on the member's own list and in friends' activity, but not in everyone's
-default browse.
+Tapping a result adds the place, filed as described above. A place from Miami is found by **name**
+whenever the filter includes Miami (or the world), and shows on the member's own list and in
+friends' activity whatever the filter says.
 
 ## What Google does not give us, so nobody re-litigates it
 
@@ -340,8 +357,10 @@ large run.
 
 **The search bar costs more per search than it used to.** Each search is Google's "Autocomplete
 Request" SKU (about $2.83 per 1,000 after **10,000 free a month**, at the time of writing — check
-Google's pricing page), and **Mundo asks three times** where the app used to ask once (RD asks twice,
-Santo Domingo once). A search that ends in someone adding the place is billed as a free _session_
+Google's pricing page), and a search asks **once per place in the location filter's reach**: the
+default (Santo Domingo) asks once, the Dominican Republic twice, the whole world three times, and
+each picked city adds one. The city search itself is one request per pause in typing, and a city's
+box is one cheap Place Details call the first time that city is picked. A search that ends in someone adding the place is billed as a free _session_
 instead, because the app passes the same session token to Place Details. Set a **budget alert** in
 Google Cloud so a surprise shows up as an email, not a bill.
 

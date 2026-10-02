@@ -516,12 +516,18 @@ export const es = {
   // components/ExternalResults.tsx
   'external.on_google': 'En Google',
   'external.creating_profile': 'Creando perfil…',
-  'external.where_label': 'Buscar en',
-  'external.where_sd': 'Santo Domingo',
-  'external.where_do': 'RD',
-  'external.where_world': 'Mundo',
-  'external.nothing_in': 'Nada en {where}. Prueba con una zona más amplia.',
+  'external.nothing_in': 'Nada en {where}. Prueba otra ciudad o amplía la ubicación.',
   'external.none': 'Google no encontró nada.',
+  'location.label': 'Ubicación',
+  'location.home': 'Santo Domingo, RD',
+  'location.sd': 'Santo Domingo',
+  'location.do': 'República Dominicana',
+  'location.world': 'Todo el mundo',
+  'location.remove': 'Quitar',
+  'location.add_quick': 'Agregar',
+  'location.search_placeholder': 'Busca una ciudad…',
+  'location.no_cities': 'Ninguna ciudad con ese nombre.',
+  'location.max_cities': 'Hasta 5 ciudades.',
 
   // components/MesaTabBar.tsx
   'tabs.feed': 'Feed',

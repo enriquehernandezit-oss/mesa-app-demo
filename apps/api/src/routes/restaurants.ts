@@ -4,11 +4,13 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { cityRects, parseCityIds, searchCities } from '../lib/cities'
 import { ensureArea, placeIn } from '../lib/geo'
 import { placeDetails, toMesaFields } from '../lib/googlePlaces'
+import { locationCondition, normalizeLocation, parseScope } from '../lib/location'
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
-import { ownedByGoogleId, parseWhere, partitionByMesa, searchPlaces } from '../lib/placeSearch'
+import { ownedByGoogleId, partitionByMesa, searchPlaces } from '../lib/placeSearch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -231,7 +233,20 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
 
     const following = followingIds(me.id)
 
+    // The location filter — Santo Domingo by default, a preset, and/or cities the member picked —
+    // scopes Mesa's own places exactly as it scopes Google's. Null when the app sent none (an
+    // older app), which keeps the old behavior: browsing is the Dominican Republic, a name
+    // search is everywhere.
+    const scope = parseScope(c.req.query('where'))
+    const cityIds = parseCityIds(c.req.query('cities'))
+    const location =
+      scope == null && cityIds.length === 0
+        ? null
+        : normalizeLocation(scope ?? 'none', await cityRects(cityIds))
+
     const liveConds = [isNull(restaurants.removedAt), isNull(restaurants.closedAt)]
+    const where = location ? locationCondition(location) : undefined
+    if (where) liveConds.push(where)
     if (hood) liveConds.push(eq(neighborhoods.slug, hood))
     if (price) liveConds.push(eq(restaurants.priceTier, price))
     // Cuisine facet — the chip value is the exact stored English cuisine (from
@@ -327,11 +342,12 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .from(restaurants)
         .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
         .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
-        // Browsing is the Dominican Republic: Santo Domingo's sectors and the cities around the
-        // country (Punta Cana, Santiago…). A place a member added from Miami is a real place with a
-        // real page — it shows up here by NAME (the branch above is not scoped), on the member's own
-        // list and in friends' activity, but not among everyone's default browse.
-        .where(and(...liveConds, eq(neighborhoods.countryCode, 'do')))
+        // An app that sends no location filter browses the Dominican Republic: Santo Domingo's
+        // sectors and the cities around the country (Punta Cana, Santiago…). A place a member added
+        // from Miami is a real place with a real page — found by NAME, on the member's own list and
+        // in friends' activity, but not among everyone's default browse. One that does send a
+        // filter is scoped by it (above), in this branch and in the search branch alike.
+        .where(and(...liveConds, ...(location ? [] : [eq(neighborhoods.countryCode, 'do')])))
         .groupBy(restaurants.id)
         .orderBy(
           sort === 'name'
@@ -525,6 +541,15 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   // derived beyond the id can land here. Registered before '/:id' so the param
   // route doesn't capture "search-external". Gated on the key; degrades to an
   // empty list on any miss so it can never break the rank flow.
+  // The location filter's city search: Google's cities, Dominican ones first. Same per-user cost guard
+  // as the place search, and the same posture on a miss — an empty list, never an error.
+  .get('/search-cities', async (c) => {
+    const me = c.get('user')
+    const q = (c.req.query('q') ?? '').trim()
+    if (q.length < 2) return c.json({ cities: [] })
+    if (extRateLimited(me.id, Date.now())) return c.json({ error: 'rate_limited' }, 429)
+    return c.json({ cities: await searchCities(q) })
+  })
   .get('/search-external', async (c) => {
     const me = c.get('user')
     const q = (c.req.query('q') ?? '').trim()
@@ -534,10 +559,16 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // call (POST /from-google), Google bills these autocomplete requests at
     // zero. Omitting it still works — it's purely a cost optimization.
     const sessionToken = c.req.query('s') || undefined
-    // `where` narrows the search: 'sd' = Santo Domingo only, 'do' = + the rest of the Dominican
-    // Republic, 'world' (the default) = + the world. Always ordered Santo Domingo → DR → world; see
-    // lib/placeSearch.ts for how, and what it costs.
-    const found = await searchPlaces(q, parseWhere(c.req.query('where')), sessionToken)
+    // The location filter: `where` is a preset — 'sd' Santo Domingo only, 'do' + the rest of the
+    // Dominican Republic, 'world' + the world (also what an app that sends nothing gets) — or 'none',
+    // and `cities` are Google place ids the member picked, each one more request restricted to that
+    // city's box. Always ordered Santo Domingo → DR → world, then the cities; see lib/placeSearch.ts
+    // for how, and what it costs.
+    const location = normalizeLocation(
+      parseScope(c.req.query('where')) ?? 'world',
+      await cityRects(parseCityIds(c.req.query('cities'))),
+    )
+    const found = await searchPlaces(q, location.scope, sessionToken, location.rects)
     // A place Mesa already has is not "new on Google": it leaves this list (matched by Google's id,
     // not by name) and comes back as `inMesa`, a full Explore row for the app to show among Mesa's
     // own results — so searching "sbg" finds Sophia's Bar & Grill with its photo and reviews.

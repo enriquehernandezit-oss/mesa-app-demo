@@ -4,9 +4,9 @@ import { SD_BOUNDS } from './geo'
 import type { Prediction } from './googlePlaces'
 import {
   autocompleteBody,
+  autocompleteBodyForRect,
   mergeTiers,
   type MesaPlace,
-  parseWhere,
   partitionByMesa,
   tiersFor,
 } from './placeSearch'
@@ -188,12 +188,62 @@ describe('scope', () => {
     expect(tiersFor('world')).toEqual(['sd', 'do', 'world'])
   })
 
-  test('anything but the two narrow scopes is the widest, so an older app gets the world', () => {
-    expect(parseWhere('sd')).toBe('sd')
-    expect(parseWhere('do')).toBe('do')
-    expect(parseWhere('world')).toBe('world')
-    expect(parseWhere(undefined)).toBe('world')
-    expect(parseWhere('moon')).toBe('world')
+  test('"none" — only the cities the member picked — asks none of the broad searches', () => {
+    expect(tiersFor('none')).toEqual([])
+  })
+})
+
+describe('picked cities', () => {
+  const miami = { minLat: 25.66, maxLat: 25.86, minLng: -80.29, maxLng: -80.09 }
+
+  test('are one request each, restricted to that city’s box', () => {
+    const body = autocompleteBodyForRect('joes', miami, 'tok-1')
+    expect(body.locationRestriction).toEqual({
+      rectangle: {
+        low: { latitude: 25.66, longitude: -80.29 },
+        high: { latitude: 25.86, longitude: -80.09 },
+      },
+    })
+    expect(body.input).toBe('joes')
+    expect(body.includedPrimaryTypes).toEqual(['restaurant', 'bar', 'night_club', 'cafe'])
+    expect(body.sessionToken).toBe('tok-1')
+    expect(autocompleteBodyForRect('joes', miami)).not.toHaveProperty('sessionToken')
+  })
+
+  test('come after the broad tiers, in the order they were picked', () => {
+    const merged = mergeTiers({
+      sd: [sophias],
+      dr: [],
+      world: [],
+      cities: [
+        [p('mia', "Joe's Stone Crab", 'Miami Beach', null)],
+        [p('mad', 'Botín', 'Madrid', null)],
+      ],
+    })
+    expect(names(merged)).toEqual(["SBG Sophia's Bar & Grill", "Joe's Stone Crab", 'Botín'])
+  })
+
+  test('are never crowded out by the cap on the broad tiers', () => {
+    const many = Array.from({ length: 9 }, (_, i) => p(`w${i}`, `World ${i}`, 'x', 1_000_000 + i))
+    const merged = mergeTiers({
+      sd: [],
+      dr: [],
+      world: many,
+      cities: [[p('mia', "Joe's Stone Crab", 'Miami Beach', null)]],
+    })
+    // the broad tiers keep their eight; the picked city still gets its place after them
+    expect(merged).toHaveLength(9)
+    expect(names(merged).at(-1)).toBe("Joe's Stone Crab")
+  })
+
+  test('a place two cities both found is listed once', () => {
+    const shared = p('shared', 'Border Grill', 'x', null)
+    const merged = mergeTiers({ sd: [], dr: [], world: [], cities: [[shared], [shared]] })
+    expect(names(merged)).toEqual(['Border Grill'])
+  })
+
+  test('with only cities picked and nothing found, the list is empty', () => {
+    expect(mergeTiers({ sd: [], dr: [], world: [], cities: [[], []] })).toEqual([])
   })
 })
 
