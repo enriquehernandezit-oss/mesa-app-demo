@@ -13,6 +13,7 @@ export function notificationHref(n: NotificationItem): string | null {
       return '/follow-requests'
     case 'cheers':
     case 'saved_ranked':
+    case 'friends_love':
       return n.restaurant ? `/r/${n.restaurant.id}` : null
     // A comment opens its thread.
     case 'comment':
@@ -31,5 +32,8 @@ export function notificationHref(n: NotificationItem): string | null {
       return n.event ? `/events/${n.event.id}` : null
     case 'dish_nudge':
       return n.dishListId ? `/dish-lists/${n.dishListId}` : null
+    // The taste-match page with that person.
+    case 'taste_match':
+      return n.actor ? `/match/${n.actor.id}` : null
   }
 }

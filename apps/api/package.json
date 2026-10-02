@@ -11,6 +11,7 @@
     "import:events": "bun run src/import-events.ts",
     "import:top100": "bun run src/import-top100.ts",
     "places:audit": "bun run src/places-audit.ts",
+    "taste:backfill": "bun run src/taste-backfill.ts",
     "places:enrich": "bun run src/places-enrich.ts",
     "places:merge": "bun run src/places-merge.ts",
     "places:merge-known": "bun run src/places-merge-known.ts",

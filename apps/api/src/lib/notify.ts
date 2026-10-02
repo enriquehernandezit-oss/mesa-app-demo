@@ -62,6 +62,13 @@ export const KIND_RULES: Record<Kind, KindRule> = {
   },
   event_cancelled: { category: 'events' },
   dish_nudge: { category: 'dishes' },
+  // At most one friends-love push a day however many places cross the line (the rest wait in the
+  // inbox).
+  friends_love: {
+    category: 'friends',
+    throttle: (n) => `friends-love:${n.createdAt.toISOString().slice(0, 10)}`,
+  },
+  taste_match: { category: 'friends' },
 }
 
 export interface NotifyInput {
@@ -160,7 +167,13 @@ const inFlight = new Set<Promise<unknown>>()
 // or fail the write it's attached to. Errors are logged, not thrown.
 export function notify(inputs: NotifyInput[]): void {
   if (inputs.length === 0) return
-  const p = notifyNow(inputs).catch((err) => console.error('notify failed', err))
+  background(() => notifyNow(inputs), 'notify failed')
+}
+
+// Work that decides WHAT to notify (a query first, then notify) is fire-and-forget too, and
+// settleNotify must wait for it as well — so it registers here instead of floating free.
+export function background(work: () => Promise<unknown>, failure: string): void {
+  const p = work().catch((err) => console.error(failure, err))
   inFlight.add(p)
   void p.finally(() => inFlight.delete(p))
 }

@@ -35,6 +35,9 @@ describe('matchesFilter', () => {
     expect(matchesFilter('event_cancelled', 'events')).toBe(true)
     expect(matchesFilter('event_going', 'plans')).toBe(false)
     expect(matchesFilter('follow_accepted', 'followers')).toBe(true)
+    // About places, and about a person you follow
+    expect(matchesFilter('friends_love', 'rankings')).toBe(true)
+    expect(matchesFilter('taste_match', 'followers')).toBe(true)
   })
 
   test('a kind from a newer server is unknown, not a crash', () => {

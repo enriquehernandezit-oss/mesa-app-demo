@@ -110,6 +110,14 @@ You can **delete your own dish post**; anyone else's is reportable.
   from your own data (_"Comes sobre todo italiana, casi siempre en Piantini."_), routes into your
   lists, and two stat cards (Rank en RD, racha).
 - **Activity** — cheers, new followers, friends ranking a spot you saved, friends out-ranking you.
+  Two friend signals. **A place your friends love**: 3 or more of the people you follow gave it 8.0+ in
+  the last 30 days — said once per place, with different words if you have been, and at most one such
+  push a day (the rest wait in the inbox). **A taste match**: two people who **follow each other** cross
+  **90%** — each is told about the other, once; a one-way follow never triggers it, and 90 needs a long
+  shared history (8+ places in the same order). Both always land in the inbox; the push needs the
+  `friends` switch like any other, with no quiet hours. Friends ranking a place you have _not_ saved is
+  deliberately not announced. Before the first deploy, run `bun run --filter @mesa/api taste:backfill`
+  once on production so existing matches are recorded silently instead of announced.
   Grouped by day, with a local read watermark that clears the bell badge.
 - **Contact matching** — optional, just-in-time. Phone numbers are hashed before they leave the
   phone and the list is never stored.

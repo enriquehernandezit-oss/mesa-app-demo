@@ -19,6 +19,8 @@ const KINDS: Record<schema.NotificationKind, true> = {
   event_going: true,
   event_cancelled: true,
   dish_nudge: true,
+  friends_love: true,
+  taste_match: true,
 }
 const kinds = Object.keys(KINDS) as schema.NotificationKind[]
 
@@ -85,6 +87,29 @@ describe('pushCopy', () => {
       "You've had pizza at 4 places. Which was best?",
     )
   })
+
+  test('friends-love is about the place, and says so differently when you have been', () => {
+    const not = { ...ctx, actor: null, data: { count: 3, went: false } }
+    const been = { ...ctx, actor: null, data: { count: 3, went: true } }
+    expect(pushCopy('friends_love', 'en', not).body).toBe(
+      'The people you follow love Lumbre. You should go.',
+    )
+    expect(pushCopy('friends_love', 'es', not).body).toBe(
+      'A la gente que sigues le encanta Lumbre. Deberías ir.',
+    )
+    expect(pushCopy('friends_love', 'en', been).body).toBe(
+      "The people you follow love Lumbre, a place you've been",
+    )
+    expect(pushCopy('friends_love', 'es', been).body).toBe(
+      'A la gente que sigues le encanta Lumbre, donde ya fuiste',
+    )
+  })
+
+  test('a taste match names the person and the percent', () => {
+    const match = { ...ctx, data: { percent: 93 } }
+    expect(pushCopy('taste_match', 'en', match).body).toBe('You and Ana are now a 93% taste match')
+    expect(pushCopy('taste_match', 'es', match).body).toBe('Tú y Ana ya tienen 93% de match')
+  })
 })
 
 describe('pushPayload', () => {
@@ -123,6 +148,15 @@ describe('pushPayload', () => {
     expect(pushPayload(row('dish_nudge', { dishListId: 'l1' }))).toEqual({
       type: 'dish-list',
       listId: 'l1',
+    })
+    expect(pushPayload(row('friends_love', { restaurantId: 'r1' }))).toEqual({
+      type: 'restaurant',
+      restaurantId: 'r1',
+    })
+    // The match page is the other person's.
+    expect(pushPayload(row('taste_match', { actorId: 'u2' }))).toEqual({
+      type: 'match',
+      userId: 'u2',
     })
   })
 

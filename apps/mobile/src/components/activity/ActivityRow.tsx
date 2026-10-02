@@ -52,6 +52,10 @@ function templateFor(n: NotificationItem, t: T): string {
       return t('activity.event_cancelled')
     case 'dish_nudge':
       return t('activity.dish_nudge', { n: n.data?.count ?? 3 })
+    case 'friends_love':
+      return n.data?.went ? t('activity.friends_love_went') : t('activity.friends_love')
+    case 'taste_match':
+      return t('activity.taste_match')
   }
 }
 
@@ -88,6 +92,7 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
     dish: bold(n.dish?.name ?? t('activity.a_dish')),
     event: bold(n.event?.title ?? t('activity.an_event')),
     label: bold(n.data?.label ?? ''),
+    percent: bold(`${n.data?.percent ?? 90}%`),
   }
   const sentence = splitTemplate(templateFor(n, t)).map((part, i) => (
     <Fragment key={i}>{'token' in part ? tokens[part.token] : part.text}</Fragment>
@@ -108,7 +113,11 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
         <Avatar name={n.actor.name || n.actor.handle || 'm'} src={n.actor.image} size={40} />
       ) : (
         <View className="h-[40px] w-[40px] items-center justify-center rounded-pill bg-chip">
-          {n.kind === 'dish_nudge' ? <ForkKnifeIcon size={18} /> : <CalendarIcon size={18} />}
+          {n.kind === 'dish_nudge' || n.kind === 'friends_love' ? (
+            <ForkKnifeIcon size={18} />
+          ) : (
+            <CalendarIcon size={18} />
+          )}
         </View>
       )}
       <View className="min-w-0 flex-1">

@@ -430,6 +430,150 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
     })
   })
 
+  describe('friend signals', () => {
+    const place = async (name: string) => {
+      const [r] = await db
+        .insert(schema.restaurants)
+        .values({ name: `${tag}-${name}`, neighborhoodId, lat: 18.47, lng: -69.93, isDemo: true })
+        .returning({ id: schema.restaurants.id })
+      return r!.id
+    }
+    const cleanup = async (placeIds: string[]) => {
+      await db.delete(schema.follows).where(inArray(schema.follows.followerId, labels.map(uid)))
+      await db.delete(schema.follows).where(eq(schema.follows.followerId, me.id))
+      await db.delete(schema.rankings).where(inArray(schema.rankings.restaurantId, placeIds))
+      await db.delete(schema.restaurants).where(inArray(schema.restaurants.id, placeIds))
+      await db.delete(notifications).where(inArray(notifications.userId, labels.map(uid)))
+    }
+    const love = (userId: string, id: string, score = 85) => ({
+      userId,
+      restaurantId: id,
+      position: 1,
+      score,
+    })
+
+    test('a place three of the people I follow love tells the people who follow me, once', async () => {
+      const loved = await place('loved')
+      // bo follows me, ana and cy; ana and cy rank it 8.5 — and then I do.
+      await db.insert(schema.follows).values([
+        { followerId: uid('bo'), followingId: me.id },
+        { followerId: uid('bo'), followingId: uid('ana') },
+        { followerId: uid('bo'), followingId: uid('cy') },
+      ])
+      await db.insert(schema.rankings).values([love(uid('ana'), loved), love(uid('cy'), loved)])
+      await post(asMe, '/rankings', { restaurantId: loved, position: 1 })
+      await settleNotify()
+
+      const rows = await rowsFor(uid('bo'), 'friends_love')
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toEqual(
+        expect.objectContaining({
+          dedupeKey: `friends_love:${loved}`,
+          restaurantId: loved,
+          actorId: null,
+          data: { count: 3, went: false },
+        }),
+      )
+      // ranking it again (or any later ranking) never tells bo twice
+      await post(asMe, '/rankings', { restaurantId: loved, position: 1 })
+      await settleNotify()
+      expect(await rowsFor(uid('bo'), 'friends_love')).toHaveLength(1)
+      await cleanup([loved])
+    })
+
+    test('two friends is not enough, a banned one does not count, and I am not told about my own place', async () => {
+      const two = await place('two')
+      await db.insert(schema.follows).values([
+        { followerId: uid('bo'), followingId: me.id },
+        { followerId: uid('bo'), followingId: uid('ana') },
+        { followerId: uid('bo'), followingId: uid('banned') },
+      ])
+      await db.insert(schema.rankings).values([love(uid('ana'), two), love(uid('banned'), two)])
+      await post(asMe, '/rankings', { restaurantId: two, position: 1 })
+      await settleNotify()
+      // me + ana + banned = three rows, but the banned one is not a friend worth counting
+      expect(await rowsFor(uid('bo'), 'friends_love')).toHaveLength(0)
+      expect(await rowsFor(me.id, 'friends_love')).toHaveLength(0)
+      await cleanup([two])
+    })
+
+    test('someone who has been there is told in the "been" words', async () => {
+      const been = await place('been')
+      await db.insert(schema.follows).values([
+        { followerId: uid('bo'), followingId: me.id },
+        { followerId: uid('bo'), followingId: uid('ana') },
+        { followerId: uid('bo'), followingId: uid('cy') },
+      ])
+      await db
+        .insert(schema.rankings)
+        .values([love(uid('ana'), been), love(uid('cy'), been), love(uid('bo'), been, 60)])
+      await post(asMe, '/rankings', { restaurantId: been, position: 1 })
+      await settleNotify()
+      const [row] = await rowsFor(uid('bo'), 'friends_love')
+      expect(row?.data).toEqual({ count: 3, went: true })
+      await cleanup([been])
+    })
+
+    test('a taste match crossing 90 tells both people of a mutual follow, once — never a one-way follow', async () => {
+      // I rank eight places; ana ranks the same eight with my exact scores.
+      const ids: string[] = []
+      for (let i = 0; i < 8; i++) {
+        const id = await place(`m${i}`)
+        ids.push(id)
+        await post(asMe, '/rankings', { restaurantId: id, position: 1 })
+      }
+      await settleNotify()
+      await db.delete(notifications).where(eq(notifications.userId, me.id))
+      const mine = await db
+        .select({
+          restaurantId: schema.rankings.restaurantId,
+          position: schema.rankings.position,
+          score: schema.rankings.score,
+        })
+        .from(schema.rankings)
+        .where(and(eq(schema.rankings.userId, me.id), inArray(schema.rankings.restaurantId, ids)))
+      await db.insert(schema.rankings).values(
+        mine.map((m, i) => ({
+          userId: uid('ana'),
+          restaurantId: m.restaurantId,
+          position: i + 1,
+          score: m.score,
+        })),
+      )
+      // re-rank the top place where it already is: the order, and so every score, is unchanged
+      const top = mine.find((m) => m.position === Math.min(...mine.map((x) => x.position)))!
+      const rerank = async () => {
+        await post(asMe, '/rankings', { restaurantId: top.restaurantId, position: top.position })
+        await settleNotify()
+      }
+
+      // I follow ana, ana does not follow me: nothing, for either of us
+      await db.insert(schema.follows).values({ followerId: me.id, followingId: uid('ana') })
+      await rerank()
+      expect(await rowsOf('taste_match')).toHaveLength(0)
+      expect(await rowsFor(uid('ana'), 'taste_match')).toHaveLength(0)
+
+      // ana follows back: each is told about the other
+      await db.insert(schema.follows).values({ followerId: uid('ana'), followingId: me.id })
+      await rerank()
+      const [mineRow] = await rowsOf('taste_match')
+      expect(mineRow).toEqual(
+        expect.objectContaining({ dedupeKey: `taste_match:${uid('ana')}`, actorId: uid('ana') }),
+      )
+      expect(mineRow?.data?.percent).toBeGreaterThanOrEqual(90)
+      const [anaRow] = await rowsFor(uid('ana'), 'taste_match')
+      expect(anaRow).toEqual(
+        expect.objectContaining({ dedupeKey: `taste_match:${me.id}`, actorId: me.id }),
+      )
+
+      // a repeat tells nobody again
+      await rerank()
+      expect(await rowsOf('taste_match')).toHaveLength(1)
+      expect(await rowsFor(uid('ana'), 'taste_match')).toHaveLength(1)
+      await cleanup(ids)
+    })
+  })
+
   describe('the inbox', () => {
     test('reads newest first with the actor, place and event attached', async () => {
       await notifyNow([

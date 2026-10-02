@@ -443,6 +443,8 @@ export type NotificationKind =
   | 'event_going'
   | 'event_cancelled'
   | 'dish_nudge'
+  | 'friends_love'
+  | 'taste_match'
 
 export interface NotificationItem {
   id: string
@@ -461,7 +463,9 @@ export interface NotificationItem {
     reply?: 'going' | 'maybe' | 'declined' | null // plan_reply (null: only a vote changed)
     vote?: boolean // plan_reply: a vote came with it
     label?: string // dish_nudge
-    count?: number // dish_nudge: how many places
+    count?: number // dish_nudge: how many places; friends_love: how many of your friends
+    went?: boolean // friends_love: you have been there too
+    percent?: number // taste_match: the match, 0–100
   } | null
   followsBack: boolean // follow rows: do I already follow them back?
   others: number // event_going: how many other people you follow are going too

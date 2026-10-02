@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { signalsAfterRanking } from '../lib/friendSignals'
 import { notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
@@ -507,6 +508,9 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         })),
       )
     }
+
+    // The friends signals (a place the people you follow love; a taste match that crossed 90).
+    signalsAfterRanking(me.id, restaurantId)
 
     return c.json({ ok: true })
   })

@@ -1246,6 +1246,8 @@ export type NotificationKind =
   | 'event_going'
   | 'event_cancelled'
   | 'dish_nudge'
+  | 'friends_love'
+  | 'taste_match'
 
 export interface NotificationData {
   // comment: the first ~80 characters of what was said.
@@ -1257,6 +1259,10 @@ export interface NotificationData {
   // dish_nudge: the dish's label and how many places it has been eaten at.
   label?: string
   count?: number
+  // friends_love: whether the recipient has been to the place too.
+  went?: boolean
+  // taste_match: the match, 0–100, when the pair crossed the line.
+  percent?: number
 }
 
 export const notifications = pgTable(

@@ -98,6 +98,21 @@ const BODY: Record<Kind, Record<Locale, (w: Words) => string>> = {
     es: (w) => `${w.event} fue cancelado.`,
     en: (w) => `${w.event} was cancelled.`,
   },
+  // Told about a PLACE, not a person: three or more of the people you follow love it.
+  friends_love: {
+    es: (w) =>
+      w.data.went
+        ? `A la gente que sigues le encanta ${w.place}, donde ya fuiste`
+        : `A la gente que sigues le encanta ${w.place}. Deberías ir.`,
+    en: (w) =>
+      w.data.went
+        ? `The people you follow love ${w.place}, a place you've been`
+        : `The people you follow love ${w.place}. You should go.`,
+  },
+  taste_match: {
+    es: (w) => `Tú y ${w.name} ya tienen ${w.data.percent ?? 90}% de match`,
+    en: (w) => `You and ${w.name} are now a ${w.data.percent ?? 90}% taste match`,
+  },
   dish_nudge: {
     es: (w) =>
       `Has comido ${w.data.label ?? w.dish} en ${w.data.count ?? 3} lugares. ¿Cuál fue el mejor?`,
@@ -133,6 +148,7 @@ export function pushPayload(n: NotificationRow): Record<string, string> | undefi
     case 'cheers':
     case 'comment':
     case 'saved_ranked':
+    case 'friends_love':
       return n.restaurantId ? { type: 'restaurant', restaurantId: n.restaurantId } : undefined
     case 'dish_cheer':
       return n.dishId ? { type: 'dish', dishId: n.dishId } : undefined
@@ -144,6 +160,9 @@ export function pushPayload(n: NotificationRow): Record<string, string> | undefi
       return n.eventId ? { type: 'event', eventId: n.eventId } : undefined
     case 'dish_nudge':
       return n.dishListId ? { type: 'dish-list', listId: n.dishListId } : undefined
+    // The taste-match page for that person (apps/mobile/src/lib/pushLinks.ts already opens it).
+    case 'taste_match':
+      return n.actorId ? { type: 'match', userId: n.actorId } : undefined
   }
 }
 
