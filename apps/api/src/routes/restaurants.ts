@@ -227,6 +227,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     const price = Number(c.req.query('price')) || null
     const openNow = c.req.query('open') === '1'
     const occasion = (c.req.query('occasion') ?? '').trim()
+    const highlight = (c.req.query('highlight') ?? '').trim()
     const minScore = Number(c.req.query('minScore')) || null
     const sort = c.req.query('sort') === 'name' ? 'name' : 'score'
     const hasQuery = q.length >= 2
@@ -254,16 +255,18 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     if (cuisine) liveConds.push(eq(restaurants.cuisine, cuisine))
     // "Open now" is a demo filter over the display close-time (not real hours).
     if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
-    // Occasion (A1) — at least one ranking of this place carries the tag.
-    // Same qualifying-id-subquery shape as dishMatch/rankedPool below. Written as
-    // array containment (`@>`), not `x = any(tags)`: both mean the same for one value,
-    // but only containment is served by rankings_tags_gin_idx.
-    if (occasion) {
-      const occasionMatch = db
+    // Occasion (A1) and highlight ("What stood out?", P2) — at least one ranking of this place
+    // carries the tag. Both live in rankings.tags, so they are the same filter on two params; with
+    // both set a place needs a ranking for each. Same qualifying-id-subquery shape as
+    // dishMatch/rankedPool below. Written as array containment (`@>`), not `x = any(tags)`: both
+    // mean the same for one value, but only containment is served by rankings_tags_gin_idx.
+    for (const tagValue of [occasion, highlight]) {
+      if (!tagValue) continue
+      const tagMatch = db
         .selectDistinct({ id: rankings.restaurantId })
         .from(rankings)
-        .where(sql`${rankings.tags} @> array[${occasion}]::text[]`)
-      liveConds.push(inArray(restaurants.id, occasionMatch))
+        .where(sql`${rankings.tags} @> array[${tagValue}]::text[]`)
+      liveConds.push(inArray(restaurants.id, tagMatch))
     }
     // Score band (A1) — friend average at or above the threshold, gated on
     // `following` the same way phase 2's friendAvg column is. A restaurant no

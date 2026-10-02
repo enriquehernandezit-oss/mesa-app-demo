@@ -193,4 +193,23 @@ describe.skipIf(!deps)('restaurant facts and the occasion filter (local DB)', ()
       expect(await occasion(romantica)).not.toContain(ids.member)
     })
   })
+
+  describe('GET /restaurants?highlight=', () => {
+    type Explore = { restaurants: { id: string }[] }
+    const ids_ = async (query: string) =>
+      (await get<Explore>(ana, `/restaurants?${query}`)).json.restaurants.map((r) => r.id).sort()
+    const q = (k: string, v: string) => `${k}=${encodeURIComponent(v)}`
+
+    test('is the same filter as occasion, on its own param', async () => {
+      expect(await ids_(q('highlight', terraza))).toEqual([ids.catalog])
+      expect(await ids_(q('highlight', romantica))).toEqual([ids.catalog, ids.seed].sort())
+    })
+
+    test('with both set, a place needs a ranking for each', async () => {
+      expect(await ids_(`${q('occasion', romantica)}&${q('highlight', terraza)}`)).toEqual([
+        ids.catalog,
+      ])
+      expect(await ids_(`${q('occasion', terraza)}&${q('highlight', `${tag} nunca`)}`)).toEqual([])
+    })
+  })
 })

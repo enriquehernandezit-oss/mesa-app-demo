@@ -18,7 +18,7 @@ import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { BookmarkIcon, ListIcon, PeopleIcon, TrophyIcon } from '@/components/ui/icons'
 import { SpotCard, SpotRail } from '@/components/ui/patterns'
 import { ApiError, api, apiOrigin } from '@/lib/api'
-import { cuisineLabel } from '@/lib/display'
+import { cuisineLabel, tagLabel } from '@/lib/display'
 import { closesLabel } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
 import { imageUrl, mapboxStaticUrl } from '@/lib/media'
@@ -228,7 +228,7 @@ export default function RestaurantProfile() {
       label: l.title,
       onPress: () => router.push(`/lists/${l.slug}`),
     })),
-    ...occasionTags.slice(0, 3).map((tag) => ({ key: `tag:${tag}`, label: tag })),
+    ...occasionTags.slice(0, 3).map((tag) => ({ key: `tag:${tag}`, label: tagLabel(tag) })),
   ]
 
   const stats: Stat[] = [

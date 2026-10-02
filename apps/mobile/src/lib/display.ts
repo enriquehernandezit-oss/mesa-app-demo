@@ -150,6 +150,13 @@ const TAG_EN: Record<string, string> = {
   'Alta cocina': 'Fine dining',
   Informal: 'Casual',
   Trasnoche: 'Late night',
+  // Highlights (below)
+  Cócteles: 'Cocktails',
+  'Comedor privado': 'Private dining',
+  Terraza: 'Terrace',
+  'Carta de vinos': 'Wine list',
+  'Música en vivo': 'Live music',
+  'Buen servicio': 'Great service',
 }
 export function tagLabel(tag: string): string {
   const canonical = TAG_ES[tag] ?? tag
@@ -173,6 +180,22 @@ export const OCCASION_TAGS = [
   'Informal',
   'Trasnoche',
 ]
+
+// "What stood out?" in the rank flow's note step: the vibe tags Google has no honest field for, so
+// they come only from members. They ride the same rankings.tags column as the occasions (so the place
+// page's tag line and Explore's filter need no new storage), Spanish stored values, kept in lockstep
+// with seed-extra.ts's TAGS like OCCASION_TAGS. A tag only surfaces on a place once 2+ people pick it.
+export const HIGHLIGHT_TAGS = [
+  'Cócteles',
+  'Comedor privado',
+  'Terraza',
+  'Carta de vinos',
+  'Música en vivo',
+  'Buen servicio',
+]
+
+// A ranking carries at most this many tags, occasions and highlights together (the API allows the same).
+export const MAX_RANK_TAGS = 6
 
 // Dish-photo grain treatment — shown as a "film · <grain>" tag and as a
 // picker chip label (DishCompose, and the inline photo step in the rank flow).

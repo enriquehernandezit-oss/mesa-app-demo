@@ -38,7 +38,7 @@ labelled as your circle's.
    for a tie. A binary insertion sort, so a 100-place list settles in ~7 taps.
 4. **The reveal** — your score, derived from the final position (0–100 stored, shown 7.2–9.6).
    **The ranking is committed here**, not at the end, so an interrupted flow never loses it.
-5. **The note step** — a one-line vibe note (140 chars), occasion tags (8 Spanish values), and
+5. **The note step** — a one-line vibe note (140 chars), occasion tags (8 Spanish values) and **"What stood out?"** highlights (Cócteles, Comedor privado, Terraza, Carta de vinos, Música en vivo, Buen servicio — member-only vibe tags, the same `rankings.tags` column; at most 6 tags in all; a tag shows on a place once 2+ people pick it; Explore's **Destaca por** filter reads them), and
    _Qué pedir_: a chip search over dishes already logged at the place (or "+ Agregar" a new one),
    up to 3, each with a category (auto-guessed, correctable) and an optional sentiment
    (_Me encantó · Estuvo bien · No me convenció_). Optionally attach a photo to the first one.

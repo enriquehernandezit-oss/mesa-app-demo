@@ -385,7 +385,7 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   26pt knob, **unset until touched** (a dish's feeling is optional; once set it can be changed, not cleared —
   remove the dish to start over) — and a dashed Add a photo on the first; then "Your friends · avg." and a
   bar with **Add a note** and **Done** (out of the way while the dish field has the keyboard). **Note:**
-  the place, "Your note", the occasion pills, a pinned **Save note**. **Finish:** no stamp screen — Done
+  the place, "Your note", the occasion pills and a second row, **What stood out**, a pinned **Save note**. **Finish:** no stamp screen — Done
   leaves for Your list and a toast says "{place} landed at #{n} on your list." (raised as the screen
   unmounts: a toast started while the native modal is up never shows). The share-my-top-5 card lives on
   Your list's share chip.

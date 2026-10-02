@@ -499,6 +499,13 @@ export const TAGS = [
   'Alta cocina',
   'Informal',
   'Trasnoche',
+  // "What stood out?" highlights (apps/mobile/src/lib/display.ts HIGHLIGHT_TAGS)
+  'Cócteles',
+  'Comedor privado',
+  'Terraza',
+  'Carta de vinos',
+  'Música en vivo',
+  'Buen servicio',
 ]
 
 export interface GeneratedUser {

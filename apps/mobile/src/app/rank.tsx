@@ -57,6 +57,8 @@ import { mesaNorm } from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import {
   type Grain,
+  HIGHLIGHT_TAGS,
+  MAX_RANK_TAGS,
   OCCASION_TAGS,
   displayScore,
   grainOptions,
@@ -1388,25 +1390,36 @@ function NoteStep({
         </View>
         <KeyboardDone id="rank-note" />
 
-        <Eyebrow className="px-5 pb-2 pt-5">{t('rank.occasion')}</Eyebrow>
-        <View className="flex-row flex-wrap gap-2 px-5">
-          {OCCASION_TAGS.map((tag) => {
-            const on = tags.includes(tag)
-            return (
-              <Chip
-                key={tag}
-                state={on ? 'selected' : 'default'}
-                onPress={() =>
-                  setTags((cur) =>
-                    on ? cur.filter((x) => x !== tag) : cur.length < 4 ? [...cur, tag] : cur,
-                  )
-                }
-              >
-                {tagLabel(tag)}
-              </Chip>
-            )
-          })}
-        </View>
+        {[
+          { label: t('rank.occasion'), options: OCCASION_TAGS },
+          { label: t('rank.highlights'), options: HIGHLIGHT_TAGS },
+        ].map((group) => (
+          <View key={group.label}>
+            <Eyebrow className="px-5 pb-2 pt-5">{group.label}</Eyebrow>
+            <View className="flex-row flex-wrap gap-2 px-5">
+              {group.options.map((tag) => {
+                const on = tags.includes(tag)
+                return (
+                  <Chip
+                    key={tag}
+                    state={on ? 'selected' : 'default'}
+                    onPress={() =>
+                      setTags((cur) =>
+                        on
+                          ? cur.filter((x) => x !== tag)
+                          : cur.length < MAX_RANK_TAGS
+                            ? [...cur, tag]
+                            : cur,
+                      )
+                    }
+                  >
+                    {tagLabel(tag)}
+                  </Chip>
+                )
+              })}
+            </View>
+          </View>
+        ))}
       </ScrollView>
 
       <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 4 }}>

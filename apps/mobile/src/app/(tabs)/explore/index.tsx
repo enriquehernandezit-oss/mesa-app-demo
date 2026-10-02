@@ -92,6 +92,7 @@ function exploreKey(
     f.price,
     openNow,
     f.occasion,
+    f.highlight,
     f.minScore,
     sort,
     locationQuery(loc),
@@ -111,6 +112,7 @@ function fetchExplore(
   if (f.price) params.set('price', String(f.price))
   if (openNow) params.set('open', '1')
   if (f.occasion) params.set('occasion', f.occasion)
+  if (f.highlight) params.set('highlight', f.highlight)
   if (f.minScore) params.set('minScore', String(f.minScore))
   params.set('sort', sort)
   return api.get<ExploreResponse>(`/restaurants?${params}`)
@@ -185,6 +187,7 @@ export default function ExploreScreen() {
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)
   const [occasion, setOccasion] = useState<string | null>(null)
+  const [highlight, setHighlight] = useState<string | null>(null)
   const [minScore, setMinScore] = useState<number | null>(null)
   const [sort, setSort] = useState<SortKey>('score')
 
@@ -222,7 +225,9 @@ export default function ExploreScreen() {
   }
 
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const panelCount = [hood, cuisine, price, occasion, minScore].filter((v) => v != null).length
+  const panelCount = [hood, cuisine, price, occasion, highlight, minScore].filter(
+    (v) => v != null,
+  ).length
   const activeCount = panelCount + (openNow ? 1 : 0)
   const clearFilters = useCallback(() => {
     setHood(null)
@@ -230,6 +235,7 @@ export default function ExploreScreen() {
     setPrice(null)
     setOpenNow(false)
     setOccasion(null)
+    setHighlight(null)
     setMinScore(null)
   }, [])
 
@@ -246,7 +252,7 @@ export default function ExploreScreen() {
 
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
-  const filterValues = { hood, cuisine, price, occasion, minScore }
+  const filterValues = { hood, cuisine, price, occasion, highlight, minScore }
   // WHERE to look — Santo Domingo by default — scopes Mesa's own places here and Google's below.
   const location = useLocationFilter()
   const results = useQuery({
@@ -272,6 +278,7 @@ export default function ExploreScreen() {
     price == null &&
     !openNow &&
     !occasion &&
+    !highlight &&
     minScore == null &&
     isDefaultLocation(location)
 
@@ -480,6 +487,9 @@ export default function ExploreScreen() {
             {occasion ? (
               <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
             ) : null}
+            {highlight ? (
+              <RemovablePill label={tagLabel(highlight)} onRemove={() => setHighlight(null)} />
+            ) : null}
             {minScore != null ? (
               <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
             ) : null}
@@ -604,12 +614,13 @@ export default function ExploreScreen() {
       <ExploreFilters
         visible={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        value={{ hood, cuisine, price, occasion, minScore }}
+        value={{ hood, cuisine, price, occasion, highlight, minScore }}
         onApply={(f) => {
           setHood(f.hood)
           setCuisine(f.cuisine)
           setPrice(f.price)
           setOccasion(f.occasion)
+          setHighlight(f.highlight)
           setMinScore(f.minScore)
         }}
         neighborhoods={neighborhoods.data?.neighborhoods ?? []}

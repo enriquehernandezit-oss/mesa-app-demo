@@ -35,7 +35,8 @@ const placeSchema = z.object({
   // 1-based slot in the user's list, as the pairwise flow settled it.
   position: z.number().int().min(1),
   vibeNote: z.string().trim().max(VIBE_MAX).optional(),
-  tags: z.array(z.string().trim().min(1).max(24)).max(4).optional(),
+  // Up to 4 occasions + highlights; the server checks shape, not vocabulary.
+  tags: z.array(z.string().trim().min(1).max(24)).max(6).optional(),
   // favoriteDish is NOT accepted here as of M11 — it's derived entirely from
   // POST /dishes' `alsoFavorite` flag now. zod strips the unknown key if an
   // un-reloaded dev client still sends one, rather than erroring.

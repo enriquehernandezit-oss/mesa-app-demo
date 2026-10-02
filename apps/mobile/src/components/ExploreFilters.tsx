@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Caption, Chip, IconButton, MAX_SCALE, Segmented } from '@/components/ui'
 import { ChevronIcon, CloseIcon } from '@/components/ui/icons'
-import { OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
+import { HIGHLIGHT_TAGS, OCCASION_TAGS, cuisineLabel, tagLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
 import type { Neighborhood } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
@@ -22,6 +22,7 @@ export type ExploreFilterValues = {
   cuisine: string | null
   price: number | null
   occasion: string | null
+  highlight: string | null
   minScore: number | null
 }
 
@@ -30,6 +31,7 @@ export const NO_EXPLORE_FILTERS: ExploreFilterValues = {
   cuisine: null,
   price: null,
   occasion: null,
+  highlight: null,
   minScore: null,
 }
 
@@ -53,6 +55,7 @@ const openSections = (v: ExploreFilterValues): Record<SectionKey, boolean> => ({
   hood: v.hood != null,
   cuisine: v.cuisine != null,
   occasion: v.occasion != null,
+  highlight: v.highlight != null,
 })
 
 // Explore's filters as ONE panel (founder's mock, Sept 2026): every dimension
@@ -276,6 +279,27 @@ export function ExploreFilters({
                       size="sm"
                       state={draft.occasion === tag ? 'selected' : 'default'}
                       onPress={() => set('occasion', draft.occasion === tag ? null : tag)}
+                    >
+                      {tagLabel(tag)}
+                    </Chip>
+                  ))}
+                </ChipWrap>
+              </Group>
+
+              <Group
+                label={t('explore.highlights')}
+                value={draft.highlight ? tagLabel(draft.highlight) : t('common.any')}
+                active={draft.highlight != null}
+                open={open.highlight}
+                onToggle={() => toggle('highlight')}
+              >
+                <ChipWrap>
+                  {HIGHLIGHT_TAGS.map((tag) => (
+                    <Chip
+                      key={tag}
+                      size="sm"
+                      state={draft.highlight === tag ? 'selected' : 'default'}
+                      onPress={() => set('highlight', draft.highlight === tag ? null : tag)}
                     >
                       {tagLabel(tag)}
                     </Chip>
