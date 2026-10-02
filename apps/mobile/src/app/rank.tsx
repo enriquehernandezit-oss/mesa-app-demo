@@ -262,6 +262,9 @@ export default function RankAPlace() {
   const commitInitial = useMutation({
     mutationFn: (pos: number) => api.post('/rankings', { restaurantId: pickedId, position: pos }),
     retry: 2,
+    // A failed first try (a patchy connection) retries after 0.4 s then 0.8 s, not TanStack's default 1 s
+    // then 2 s: "Listo" waits for this save, so the default added up to 3 s of "Guardando…" on a hiccup.
+    retryDelay: (attempt) => 400 * (attempt + 1),
     onSuccess: () => {
       track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
       invalidateAfterRanking(pickedId)
