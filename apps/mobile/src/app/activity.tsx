@@ -81,6 +81,10 @@ export default function ActivityScreen() {
       : (inboxNewest ?? requestThrough)
   useFocusEffect(
     useCallback(() => {
+      // Coming back to Activity (from a profile, the followers list…) refreshes whatever has gone
+      // stale or been invalidated meanwhile — a follow made elsewhere flips its "Follow back"
+      // here — rather than trusting the copy this screen last drew.
+      void queryClient.refetchQueries({ queryKey: INBOX_KEY, stale: true })
       return () => {
         if (newest.current) markNotificationsRead(queryClient, newest.current)
       }
