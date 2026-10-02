@@ -1,15 +1,7 @@
 import { type InfiniteData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
-import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native'
+import { Alert, FlatList, Pressable, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MentionText } from '@/components/MentionText'
@@ -18,6 +10,7 @@ import { EmptyState, ErrorState, IconButton, MAX_SCALE, RowsSkeleton } from '@/c
 import { Avatar } from '@/components/ui/Avatar'
 import { CloseIcon, MoreIcon, SendIcon } from '@/components/ui/icons'
 import { ScoreBadge } from '@/components/ui/patterns'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { useMentionField } from '@/hooks/useMentionField'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
@@ -45,6 +38,8 @@ export default function CommentsSheet() {
   const t = useT()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  // The keyboard's cover of the screen's bottom — this sheet's composer sits on that edge.
+  const keyboardInset = useKeyboardInset()
   const queryClient = useQueryClient()
   const placeholder = useColor('text-faint')
   const accent = useColor('accent')
@@ -147,7 +142,7 @@ export default function CommentsSheet() {
   const post = q.data?.ranking
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-bg" keyboardVerticalOffset={0}>
+    <View className="flex-1 bg-bg" style={{ paddingBottom: keyboardInset }}>
       {/* Header — title centered, close on the right, like the mock */}
       <View className="min-h-[52px] items-center justify-center px-5 pt-3 pb-2">
         <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-body text-text">
@@ -248,7 +243,8 @@ export default function CommentsSheet() {
       {/* Composer */}
       <View
         className="flex-row items-center gap-2.5 border-line border-t px-3.5 pt-2.5"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+        // With the keyboard up the home-indicator inset is under it, so only the small gap is left.
+        style={{ paddingBottom: keyboardInset > 0 ? 8 : Math.max(insets.bottom, 12) }}
       >
         <Avatar name={me?.name || me?.handle || 'm'} src={me?.image ?? null} size={34} />
         <TextInput
@@ -275,6 +271,6 @@ export default function CommentsSheet() {
           <SendIcon size={19} color={canSend ? 'on-accent' : 'text-faint'} />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
