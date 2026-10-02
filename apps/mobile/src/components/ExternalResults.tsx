@@ -3,7 +3,6 @@ import { Pressable, Text, View } from 'react-native'
 
 import { Caption, Eyebrow, MAX_SCALE } from '@/components/ui'
 import { useT } from '@/lib/i18n'
-import { locationParams, useLocationFilter } from '@/lib/locationFilter'
 import type { ExternalSuggestion } from '@/lib/types'
 import { useLocationLabel } from '@/lib/useLocationLabel'
 
@@ -31,11 +30,9 @@ export function ExternalResults({
   nothingFound: boolean
 }) {
   const t = useT()
-  const location = useLocationFilter()
   const label = useLocationLabel()
   if (!active) return null
   const busy = creatingId !== null
-  const everywhere = locationParams(location).where === 'world'
   return (
     <View>
       {heading ?? <Eyebrow className="pb-1 pt-4">{t('external.on_google')}</Eyebrow>}
@@ -63,9 +60,7 @@ export function ExternalResults({
       {suggestions.length > 0 ? (
         <Caption className="mt-2.5 text-micro text-text-faint">Powered by Google</Caption>
       ) : nothingFound ? (
-        <Caption className="py-3 text-meta">
-          {everywhere ? t('external.none') : t('external.nothing_in', { where: label })}
-        </Caption>
+        <Caption className="py-3 text-meta">{t('external.nothing_in', { where: label })}</Caption>
       ) : null}
     </View>
   )

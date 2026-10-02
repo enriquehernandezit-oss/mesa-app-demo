@@ -17,6 +17,7 @@ import { useSession } from '@/lib/auth-client'
 import { initToken } from '@/lib/auth-token'
 import { captureError, setErrorUser } from '@/lib/errors'
 import { initLanguage, useT } from '@/lib/i18n'
+import { initLocationDefault } from '@/lib/locationDefault'
 import { queryClient } from '@/lib/query'
 import { ThemeProvider, initThemeChoice, useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
@@ -85,7 +86,9 @@ export default function RootLayout() {
     // Warming the analytics client here means the first real event doesn't also
     // pay for init. No-ops without a key.
     initAnalytics()
-    Promise.all([initToken(), initThemeChoice(), initLanguage()]).finally(() => setPreloaded(true))
+    Promise.all([initToken(), initThemeChoice(), initLanguage(), initLocationDefault()]).finally(
+      () => setPreloaded(true),
+    )
   }, [])
 
   const ready = (loaded || Boolean(fontError)) && preloaded

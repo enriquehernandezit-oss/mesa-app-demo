@@ -251,6 +251,8 @@ export default function NewPlanScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
         keyboardShouldPersistTaps="handled"
+        // Scrolling the spot results hides the keyboard, like the other search lists.
+        keyboardDismissMode="on-drag"
       >
         {step === 'spots' && (
           <SpotsStep

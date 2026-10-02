@@ -13,9 +13,13 @@
 import { db, pool, schema } from '@mesa/db'
 import { eq, sql } from 'drizzle-orm'
 
+import { databaseLabel } from './lib/databaseLabel'
+
 const { restaurants, rankings } = schema
 
 async function main() {
+  // First line, like every other script that can touch production: which database this is about to change.
+  console.log(`Database: ${databaseLabel(process.env.DATABASE_URL)}`)
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
   const reopen = args.includes('--reopen')

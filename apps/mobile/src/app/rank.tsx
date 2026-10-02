@@ -1842,6 +1842,8 @@ function FindStep({
         contentContainerClassName="pb-10"
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
+        // Scrolling the results hides the keyboard, like the other search lists.
+        keyboardDismissMode="on-drag"
       >
         {nothing ? (
           <Body className="px-5 pt-4">

@@ -45,20 +45,23 @@ To show a city as a real choice later — say "Punta Cana" as a filter pill — 
 ## Searching — where to look, and the order Google's answers come in
 
 **The location filter** is a field under the search bar (Explore, and the rank flow's find step): it
-says where Mesa is looking — **"Santo Domingo, RD" by default** — and it scopes **both** halves of a
-search, Mesa's own places and Google's. Tap it and it opens inline into the places you have chosen,
-each a chip you can remove; quick additions (**República Dominicana**, **Todo el mundo**); and a
-search for **any city in the world**, several at once (up to five). It is Beli's location field with
-more than one place.
+says where Mesa is looking — **"Santo Domingo, RD" until you change it** — and it scopes **both**
+halves of a search, Mesa's own places and Google's. Tap it and it opens inline into the cities you have
+chosen, each a chip you can remove, and a search for **any city in the world**; tap a result to add it,
+several at once (up to five places in all). It is Beli's location field with more than one place. There
+are no "whole country" or "worldwide" options in the app: it is a city search, nothing else.
+
+**The default city** is the city every search starts from — Santo Domingo until the member picks another in
+**Settings → Preferences → Ciudad predeterminada** (a city search, with "Santo Domingo, RD" one tap away).
+It is remembered on the phone (SecureStore `mesa.default_city`), starts the search that is open when it
+changes, and is where Explore's tab press and an emptied filter return to. (The API still understands
+`where=do` / `where=world` — older builds send them — the app just never offers them.)
 
 - **Santo Domingo** is Mesa's own sectors (the listed neighborhoods) — not Punta Cana, not Miami.
-- **República Dominicana** adds every place filed in the country. It contains Santo Domingo, so
-  adding it replaces that chip; **Todo el mundo** replaces everything, and picking a city narrows
-  "everywhere" back to that city.
 - **A city** is the box Google draws around it, never smaller than about 22 km a side (so "La Romana"
   includes Casa de Campo), matched against each place's pin. City boxes are looked up once per city
   and kept in memory for up to 30 days — the longest Google lets coordinates be cached.
-- Removing the last place is not "nowhere": it goes back to Santo Domingo. Pressing Explore's tab
+- Removing the last place is not "nowhere": it goes back to the default city. Pressing Explore's tab
   again resets it too.
 - An app that sends no filter (an older build) keeps the old behavior: browsing is the Dominican
   Republic, a name search is everywhere.

@@ -423,7 +423,7 @@ export default function ExploreScreen() {
           one scroll container on this screen. */}
       {eventsVisited ? (
         <View style={{ display: view === 'events' ? 'flex' : 'none' }}>
-          <EventsBrowse />
+          <EventsBrowse gutter={16} />
         </View>
       ) : null}
 
@@ -435,13 +435,13 @@ export default function ExploreScreen() {
         {/* The chips scroll; "Limpiar todo" is pinned OUTSIDE the scroll at
           the right edge. As the rail's last item it slid off-screen as
           soon as a filter pill was added — only "Lim" was left showing. */}
-        <View className="-mx-5 mt-2 mb-2 flex-row items-center pt-2">
+        <View className="-mx-4 mt-2 mb-2 flex-row items-center pt-2">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             className="flex-1"
-            contentContainerClassName={`gap-2 pl-5 ${activeCount > 0 ? 'pr-3' : 'pr-5'}`}
+            contentContainerClassName={`gap-2 pl-4 ${activeCount > 0 ? 'pr-3' : 'pr-4'}`}
           >
             <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
               {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
@@ -495,7 +495,7 @@ export default function ExploreScreen() {
             ) : null}
           </ScrollView>
           {activeCount > 0 && (
-            <View className="border-line border-l pr-5 pl-2">
+            <View className="border-line border-l pr-4 pl-2">
               <Pressable
                 accessibilityRole="button"
                 onPress={clearFilters}
@@ -594,12 +594,16 @@ export default function ExploreScreen() {
         initialNumToRender={8}
         maxToRenderPerBatch={8}
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-5"
+        // 16pt, not the usual 24: the native large title ("Explora") sits ~16pt in and cannot be moved, so the
+        // search field, filters and cards line up with it.
+        contentContainerClassName="px-4"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
         contentInsetAdjustmentBehavior="automatic"
         // Lets scrollToOffset go to the negative top offset (see useScrollTopOffset); by default RN clamps it to 0.
         scrollToOverflowEnabled
-        keyboardDismissMode="interactive"
+        // Dragging the results hides the keyboard at once (Instagram, WhatsApp) — they are what you
+        // are reading — and automaticallyAdjustKeyboardInsets (below) leaves room to scroll to the last one.
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         // The search field is the native header UISearchBar (see the header
         // note above), not a TextInput inside this list — but this still

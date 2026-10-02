@@ -1,16 +1,17 @@
 import { useSyncExternalStore } from 'react'
 
-// The location filter: WHERE Mesa is searching, for both Mesa's own places and Google's. It is a
-// short list of places, each one a chip you can remove — Santo Domingo by default, then whatever you
-// add: the whole Dominican Republic, the world, or any cities. (Beli's location field, with several.)
+// The city filter: WHERE Mesa is searching, for both Mesa's own places and Google's. It is a short list of
+// cities, each a chip you can remove — your default city to start (Santo Domingo until you change it in
+// Settings), then whatever you add. Search for a city, tap it, add as many as you like (up to MAX_LOCATIONS).
 //
-// A list rather than a single value because the three presets are not equals: the Dominican
-// Republic contains Santo Domingo and the world contains everything, so adding the bigger one drops
-// the smaller. Cities are always additive, up to MAX_CITIES.
+// "Santo Domingo" is a built-in item, not a Google city: it means Mesa's listed Santo Domingo sectors
+// (the area the whole catalog is filed under), which no single Google city boundary matches. Every other
+// city is a Google place the member searched for.
 //
-// The state is one module-level value shared by every screen that searches (Explore, the rank
-// flow's find step): where you are looking does not change because you changed screens. Explore
-// resets it to the default when its tab is pressed again.
+// The state is one module-level value shared by every screen that searches (Explore, the rank flow's find
+// step): where you are looking does not change because you changed screens. Explore resets it to the
+// default when its tab is pressed again. The DEFAULT is remembered on the phone (SecureStore), like the
+// language.
 
 export interface City {
   placeId: string
@@ -19,55 +20,47 @@ export interface City {
   subtitle: string
 }
 
-export type LocationItem =
-  | { kind: 'sd' }
-  | { kind: 'do' }
-  | { kind: 'world' }
-  | ({ kind: 'city' } & City)
+export type LocationItem = { kind: 'sd' } | ({ kind: 'city' } & City)
 
 export type LocationFilter = LocationItem[]
 
+// What a member starts with, before they choose a default of their own.
 export const DEFAULT_LOCATION: LocationFilter = [{ kind: 'sd' }]
 
 // More than this is a country, not a place to look — and each city is a Google request per search.
-export const MAX_CITIES = 5
+export const MAX_LOCATIONS = 5
 
 export const itemKey = (i: LocationItem): string =>
   i.kind === 'city' ? `city:${i.placeId}` : i.kind
 
-export function isDefaultLocation(f: LocationFilter): boolean {
-  return f.length === 1 && f[0]?.kind === 'sd'
-}
+export const sameLocation = (a: LocationFilter, b: LocationFilter): boolean =>
+  a.length === b.length && a.every((x, i) => b[i] !== undefined && itemKey(x) === itemKey(b[i]))
 
-export const cityCount = (f: LocationFilter): number => f.filter((i) => i.kind === 'city').length
-
-// Add a place. The bigger preset swallows the smaller: "everywhere" replaces the list, the Dominican
-// Republic replaces Santo Domingo, and Santo Domingo is not added inside either. A city narrows
-// "everywhere" (you are now looking somewhere in particular), so it replaces that.
+// Add a place, up to MAX_LOCATIONS; one already there changes nothing.
 export function addItem(f: LocationFilter, item: LocationItem): LocationFilter {
   if (f.some((x) => itemKey(x) === itemKey(item))) return f
-  if (item.kind === 'world') return [item]
-  const narrowed = f.filter((x) => x.kind !== 'world')
-  if (item.kind === 'do') return [item, ...narrowed.filter((x) => x.kind !== 'sd')]
-  if (item.kind === 'sd')
-    return narrowed.some((x) => x.kind === 'do') ? narrowed : [item, ...narrowed]
-  return cityCount(narrowed) >= MAX_CITIES ? narrowed : [...narrowed, item]
+  return f.length >= MAX_LOCATIONS ? f : [...f, item]
 }
 
 // Remove one. An empty filter is not "nowhere" — it is the default.
-export function removeItem(f: LocationFilter, key: string): LocationFilter {
+export function removeItem(
+  f: LocationFilter,
+  key: string,
+  def: LocationFilter = DEFAULT_LOCATION,
+): LocationFilter {
   const next = f.filter((x) => itemKey(x) !== key)
-  return next.length === 0 ? DEFAULT_LOCATION : next
+  return next.length === 0 ? def : next
 }
 
-export type Where = 'sd' | 'do' | 'world' | 'none'
+export type Where = 'sd' | 'none'
 
-// What the API takes: the widest preset in the list ('none' when there is none — only cities), and
-// the cities' Google ids.
+// What the API takes: 'sd' when Santo Domingo is in the list ('none' otherwise — only cities), and the
+// cities' Google ids. (The API still understands wider areas; the app no longer offers them.)
 export function locationParams(f: LocationFilter): { where: Where; cities: string[] } {
-  const has = (k: LocationItem['kind']) => f.some((i) => i.kind === k)
-  const where: Where = has('world') ? 'world' : has('do') ? 'do' : has('sd') ? 'sd' : 'none'
-  return { where, cities: f.flatMap((i) => (i.kind === 'city' ? [i.placeId] : [])) }
+  return {
+    where: f.some((i) => i.kind === 'sd') ? 'sd' : 'none',
+    cities: f.flatMap((i) => (i.kind === 'city' ? [i.placeId] : [])),
+  }
 }
 
 // `where=sd&cities=a,b` — appended to a search URL, and a cache key for the search it scopes.
@@ -77,27 +70,30 @@ export function locationQuery(f: LocationFilter): string {
 }
 
 export interface LocationWords {
-  // The default, said in full: "Santo Domingo, RD".
+  // Santo Domingo, said in full when it is the only place: "Santo Domingo, RD".
   home: string
   sd: string
-  do: string
-  world: string
 }
 
 // The one-line summary on the collapsed field.
 export function locationLabel(f: LocationFilter, words: LocationWords): string {
-  if (isDefaultLocation(f)) return words.home
-  return f.map((i) => (i.kind === 'city' ? i.name : words[i.kind])).join(' · ')
+  const [only] = f
+  if (f.length === 1 && only?.kind === 'sd') return words.home
+  return f.map((i) => (i.kind === 'city' ? i.name : words.sd)).join(' · ')
 }
 
-// ── the shared value ─────────────────────────────────────────────────────────────────────────────
+// ── the shared values ────────────────────────────────────────────────────────────────────────────
 
+let defaultFilter: LocationFilter = DEFAULT_LOCATION
 let current: LocationFilter = DEFAULT_LOCATION
 const listeners = new Set<() => void>()
+const emit = () => {
+  for (const l of listeners) l()
+}
 const set = (next: LocationFilter) => {
   if (next === current) return
   current = next
-  for (const l of listeners) l()
+  emit()
 }
 const subscribe = (l: () => void) => {
   listeners.add(l)
@@ -107,10 +103,48 @@ const subscribe = (l: () => void) => {
 }
 
 export const getLocation = (): LocationFilter => current
+export const getDefaultLocation = (): LocationFilter => defaultFilter
+export const isDefaultLocation = (f: LocationFilter): boolean => sameLocation(f, defaultFilter)
 export const addLocation = (item: LocationItem) => set(addItem(current, item))
-export const removeLocation = (key: string) => set(removeItem(current, key))
-export const resetLocation = () => set(DEFAULT_LOCATION)
+export const removeLocation = (key: string) => set(removeItem(current, key, defaultFilter))
+export const resetLocation = () => set(defaultFilter)
 
 export function useLocationFilter(): LocationFilter {
   return useSyncExternalStore(subscribe, getLocation, getLocation)
+}
+
+// The member's default city, for Settings.
+export function useDefaultLocation(): LocationFilter {
+  return useSyncExternalStore(subscribe, getDefaultLocation, getDefaultLocation)
+}
+
+// Makes this the default city — and what is being searched right now. (Storing it is locationDefault.ts.)
+export function applyDefaultLocation(item: LocationItem): void {
+  defaultFilter = [item]
+  current = defaultFilter
+  emit()
+}
+
+// What was stored, or null when it is missing or not a valid item (a stale or hand-edited value never
+// breaks the filter: it just falls back to Santo Domingo).
+export function parseStoredDefault(raw: string | null): LocationItem | null {
+  if (!raw) return null
+  try {
+    const v: unknown = JSON.parse(raw)
+    if (typeof v !== 'object' || v === null) return null
+    const o = v as Record<string, unknown>
+    if (o.kind === 'sd') return { kind: 'sd' }
+    if (
+      o.kind === 'city' &&
+      typeof o.placeId === 'string' &&
+      o.placeId.length > 0 &&
+      typeof o.name === 'string' &&
+      typeof o.subtitle === 'string'
+    ) {
+      return { kind: 'city', placeId: o.placeId, name: o.name, subtitle: o.subtitle }
+    }
+  } catch {
+    // fall through
+  }
+  return null
 }

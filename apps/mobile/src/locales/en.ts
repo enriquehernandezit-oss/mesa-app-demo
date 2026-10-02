@@ -86,6 +86,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'time.now': 'now',
 
+  'settings.default_city': 'Default city',
+  'settings.default_city_help':
+    'Where your searches start. You can add more cities while you search.',
+  'settings.default_city_pick': 'Choose another city',
   'settings.language': 'Language',
   'settings.language.es': 'Español',
   'settings.language.en': 'English',
@@ -485,15 +489,11 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'external.on_google': 'On Google',
   'external.creating_profile': 'Creating profile…',
-  'external.nothing_in': 'Nothing in {where}. Try another city or widen the location.',
-  'external.none': 'Nothing found on Google.',
+  'external.nothing_in': 'Nothing in {where}. Try another city or add more cities.',
   'location.label': 'Location',
   'location.home': 'Santo Domingo, DR',
   'location.sd': 'Santo Domingo',
-  'location.do': 'Dominican Republic',
-  'location.world': 'Worldwide',
   'location.remove': 'Remove',
-  'location.add_quick': 'Add',
   'location.search_placeholder': 'Search a city…',
   'location.no_cities': 'No city by that name.',
   'location.max_cities': 'Up to 5 cities.',

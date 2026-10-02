@@ -94,6 +94,10 @@ export const es = {
   'time.now': 'ahora',
 
   // components/ui/LanguagePicker.tsx
+  'settings.default_city': 'Ciudad predeterminada',
+  'settings.default_city_help':
+    'Donde empiezan tus búsquedas. Mientras buscas puedes agregar más ciudades.',
+  'settings.default_city_pick': 'Elige otra ciudad',
   'settings.language': 'Idioma',
   'settings.language.es': 'Español',
   'settings.language.en': 'English',
@@ -521,15 +525,11 @@ export const es = {
   // components/ExternalResults.tsx
   'external.on_google': 'En Google',
   'external.creating_profile': 'Creando perfil…',
-  'external.nothing_in': 'Nada en {where}. Prueba otra ciudad o amplía la ubicación.',
-  'external.none': 'Google no encontró nada.',
+  'external.nothing_in': 'Nada en {where}. Prueba otra ciudad o agrega más ciudades.',
   'location.label': 'Ubicación',
   'location.home': 'Santo Domingo, RD',
   'location.sd': 'Santo Domingo',
-  'location.do': 'República Dominicana',
-  'location.world': 'Todo el mundo',
   'location.remove': 'Quitar',
-  'location.add_quick': 'Agregar',
   'location.search_placeholder': 'Busca una ciudad…',
   'location.no_cities': 'Ninguna ciudad con ese nombre.',
   'location.max_cities': 'Hasta 5 ciudades.',

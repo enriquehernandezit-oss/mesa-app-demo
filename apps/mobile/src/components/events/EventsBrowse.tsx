@@ -66,8 +66,10 @@ const EMPTY_EVENTS: EventSummary[] = []
 // every keystroke in the search bar (setQ updates that screen's state on each
 // one, well before the debounced query fires) re-rendered this whole tree —
 // day strip, category rail, featured carousel — for a query it doesn't read.
-// It takes no props, so memo makes those re-renders free.
-export const EventsBrowse = memo(function EventsBrowse() {
+// Its one prop is the side padding of the list it sits in (24 in the Feed, 16 in Explore): the rails
+// bleed out to the screen's edges by that much, then pad themselves back in to line up with the content.
+// A number, so memo still makes the keystroke re-renders free.
+export const EventsBrowse = memo(function EventsBrowse({ gutter = 24 }: { gutter?: number }) {
   const t = useT()
   const now = useNow()
   const [sel, setSel] = useState<DayRange>(null)
@@ -174,8 +176,10 @@ export const EventsBrowse = memo(function EventsBrowse() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="-mx-5 mt-3"
-        contentContainerClassName="gap-2 px-5 pb-1"
+        className="mt-3"
+        style={{ marginHorizontal: -gutter }}
+        contentContainerClassName="gap-2 pb-1"
+        contentContainerStyle={{ paddingHorizontal: gutter }}
       >
         <Chip
           state={cat === 'all' ? 'selected' : 'default'}
@@ -228,8 +232,8 @@ export const EventsBrowse = memo(function EventsBrowse() {
           {featured.length > 0 ? (
             <View className="mt-4">
               <Eyebrow className="pb-2">{t('events.featured')}</Eyebrow>
-              {/* The pager runs edge to edge; this list pads its content 20. */}
-              <View className="-mx-5">
+              {/* The pager runs edge to edge; the list around it pads its content by `gutter`. */}
+              <View style={{ marginHorizontal: -gutter }}>
                 <EventHeroPager events={featured} height={330} now={now} dated />
               </View>
             </View>
