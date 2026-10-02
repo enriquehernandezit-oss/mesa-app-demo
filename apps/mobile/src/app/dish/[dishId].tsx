@@ -24,6 +24,7 @@ import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
 import { timeAgo } from '@/lib/time'
 import type { DishDetail as DishDetailData } from '@/lib/types'
+import { socialLabelKey } from '@/lib/websiteKind'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
 
@@ -248,7 +249,7 @@ export default function DishDetail() {
           ) : null}
           {restaurant.website ? (
             <UtilityPill layout="chip" icon={<WebIcon size={18} />} href={restaurant.website}>
-              {t('dish.website')}
+              {t(socialLabelKey(restaurant.website) ?? 'dish.website')}
             </UtilityPill>
           ) : null}
           <UtilityPill

@@ -25,14 +25,7 @@ import { closesLabel } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
 import { placeWhere } from '@/lib/placeWhere'
 import type { RestaurantProfileResponse } from '@/lib/types'
-import { websiteKind } from '@/lib/websiteKind'
-
-// What the website pill says — an Instagram or Facebook page is not "a website".
-const WEBSITE_LABEL = {
-  instagram: 'restaurant.instagram',
-  facebook: 'restaurant.facebook',
-  website: 'restaurant.website',
-} as const
+import { socialLabelKey } from '@/lib/websiteKind'
 
 // The practical half of the details sheet: four round tiles (Menu · Call · Website ·
 // Directions — each only when there is something behind it), a grouped list of facts
@@ -143,7 +136,7 @@ export function PlaceInfo({
         ) : null}
         {restaurant.website ? (
           <UtilityPill icon={<WebIcon size={18} />} href={restaurant.website}>
-            {t(WEBSITE_LABEL[websiteKind(restaurant.website)])}
+            {t(socialLabelKey(restaurant.website) ?? 'restaurant.website')}
           </UtilityPill>
         ) : null}
         <UtilityPill

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { websiteKind } from './websiteKind'
+import { socialLabelKey, websiteKind } from './websiteKind'
 
 describe('websiteKind', () => {
   test('names the social pages that fill the website field', () => {
@@ -14,5 +14,13 @@ describe('websiteKind', () => {
     expect(websiteKind('https://notinstagram.com')).toBe('website')
     expect(websiteKind('https://instagram.com.evil.example')).toBe('website')
     expect(websiteKind('not a url')).toBe('website')
+  })
+})
+
+describe('socialLabelKey', () => {
+  test('is the label key for a social page, null for a plain website', () => {
+    expect(socialLabelKey('https://instagram.com/x')).toBe('restaurant.instagram')
+    expect(socialLabelKey('https://es-la.facebook.com/x')).toBe('restaurant.facebook')
+    expect(socialLabelKey('https://segundomuelle.do')).toBeNull()
   })
 })

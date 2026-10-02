@@ -14,3 +14,14 @@ export function websiteKind(url: string): 'instagram' | 'facebook' | 'website' {
   if (is('facebook.com') || is('fb.com') || is('fb.me')) return 'facebook'
   return 'website'
 }
+
+// The locale key for a social page's label, or null for a plain website — each screen keeps its own
+// word for that ("Website" on a place page, "Sitio web" on a dish page).
+export function socialLabelKey(url: string): 'restaurant.instagram' | 'restaurant.facebook' | null {
+  const kind = websiteKind(url)
+  return kind === 'instagram'
+    ? 'restaurant.instagram'
+    : kind === 'facebook'
+      ? 'restaurant.facebook'
+      : null
+}
