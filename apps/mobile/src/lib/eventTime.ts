@@ -58,6 +58,27 @@ export function isImminent(c: Countdown): boolean {
   return c.kind === 'live' || c.kind === 'minutes' || c.kind === 'hours'
 }
 
+// "This week" is the next seven Santo Domingo days, today included — not the calendar week, which
+// would be nearly empty by Saturday.
+export const WEEK_DAYS = 7
+
+// The events worth a shelf slot: not over yet, and starting by the end of the seventh day. One that
+// began earlier and is still on counts (it is on NOW); `skip` leaves out what the screen already
+// shows elsewhere. Keeps the order it was given (the API sends soonest first).
+export function eventsThisWeek<E extends { id: string; startsAt: string; endsAt: string | null }>(
+  events: E[],
+  now: Date = new Date(),
+  skip: ReadonlySet<string> = new Set(),
+): E[] {
+  const last = addDays(sdDayKey(now), WEEK_DAYS - 1)
+  return events.filter(
+    (e) =>
+      !skip.has(e.id) &&
+      sdDayKey(e.startsAt) <= last &&
+      countdown(e.startsAt, e.endsAt, now).kind !== 'ended',
+  )
+}
+
 // ── The Eventos date selection (the day strip + the calendar picker) ────────
 // One value, so the strip and the calendar can never disagree: `null` is
 // "every upcoming day", `start === end` is one day, `start !== end` is an

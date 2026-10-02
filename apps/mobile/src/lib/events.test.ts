@@ -10,6 +10,7 @@ import {
 import {
   countdown,
   daysBetween,
+  eventsThisWeek,
   inDayRange,
   monthCells,
   nextDays,
@@ -76,6 +77,52 @@ describe('eventTime', () => {
     expect(countdown('2026-09-18T19:00:00-04:00', '2026-09-18T22:00:00-04:00', now)).toEqual({
       kind: 'ended',
     })
+  })
+})
+
+describe('eventsThisWeek', () => {
+  // Thursday 1 Oct 2026, 8:37 PM in Santo Domingo — so "this week" is Thu 1 … Wed 7 Oct.
+  const now = new Date('2026-10-01T20:37:00-04:00')
+  const ev = (id: string, startsAt: string, endsAt: string | null = null) => ({
+    id,
+    startsAt,
+    endsAt,
+  })
+  const ids = (list: { id: string }[]) => list.map((e) => e.id)
+
+  test('keeps what is on tonight, later this week, and the seventh day — in the order given', () => {
+    const list = [
+      ev('tonight', '2026-10-01T22:00:00-04:00'),
+      ev('tomorrow', '2026-10-02T19:00:00-04:00'),
+      // 23:00 on the 7th is 03:00 UTC on the 8th, and still the seventh day here
+      ev('last-night', '2026-10-07T23:00:00-04:00'),
+    ]
+    expect(ids(eventsThisWeek(list, now))).toEqual(['tonight', 'tomorrow', 'last-night'])
+  })
+
+  test('drops the eighth day onward, and anything that is over', () => {
+    const list = [
+      ev('over', '2026-10-01T18:00:00-04:00', '2026-10-01T20:00:00-04:00'),
+      ev('next-week', '2026-10-08T00:30:00-04:00'),
+      ev('later', '2026-10-15T19:30:00-04:00'),
+      ev('ok', '2026-10-03T21:00:00-04:00'),
+    ]
+    expect(ids(eventsThisWeek(list, now))).toEqual(['ok'])
+  })
+
+  test('an event that began earlier and is still on counts', () => {
+    const late = new Date('2026-10-02T01:00:00-04:00')
+    const list = [ev('past-midnight', '2026-10-01T23:00:00-04:00', '2026-10-02T02:00:00-04:00')]
+    expect(ids(eventsThisWeek(list, late))).toEqual(['past-midnight'])
+  })
+
+  test('leaves out what the caller already shows', () => {
+    const list = [ev('a', '2026-10-01T22:00:00-04:00'), ev('b', '2026-10-02T19:00:00-04:00')]
+    expect(ids(eventsThisWeek(list, now, new Set(['a'])))).toEqual(['b'])
+  })
+
+  test('nothing in, nothing out', () => {
+    expect(eventsThisWeek([], now)).toEqual([])
   })
 })
 

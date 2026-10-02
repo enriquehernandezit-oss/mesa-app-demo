@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { CaughtUp } from '@/components/feed/CaughtUp'
+import { EventsShelf } from '@/components/feed/EventsShelf'
 import { FeedEnd } from '@/components/feed/FeedEnd'
 import { FeedHeader } from '@/components/feed/FeedHeader'
 import { type FeedView, FeedPills } from '@/components/feed/FeedPills'
@@ -44,12 +45,15 @@ import {
 import { Glass } from '@/components/ui/Glass'
 import { followLabelKey, useFollow } from '@/hooks/useFollow'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
+import { useUpcomingEvents } from '@/hooks/useUpcomingEvents'
 import { api } from '@/lib/api'
+import { eventsThisWeek } from '@/lib/eventTime'
 import { type FeedRow, buildFeedRows } from '@/lib/feedRows'
 import { readFeedSeen, writeFeedSeen } from '@/lib/feedSeen'
 import { msUntilHomeRefresh } from '@/lib/homeCache'
 import { useT } from '@/lib/i18n'
 import type {
+  EventSummary,
   FeedItem,
   FriendSuggestion,
   HomeResponse,
@@ -66,7 +70,8 @@ import { useColor } from '@/theme/useColor'
 // Lists. "For you" and "Friends" are friends' rankings as cards; "Popular" is the whole
 // city's places, ranked (GET /popular, a page at a time); "Events" and "Lists" host what
 // used to be rails. For you also opens with "Your six" and "Tonight" (GET /home, cached
-// until 5 AM) and, among the cards, the "People you may know" and "New near you" shelves.
+// until 5 AM) and, among the cards, the "Events this week", "People you may know" and "New near
+// you" shelves.
 // Once the inline pills scroll away, a glass bar pins them to the top.
 //
 // One persistent FlatList, not a ternary across load states: that swapped the element
@@ -82,7 +87,7 @@ interface FeedPage {
 // The Popular view's rows sit beside the friend feed's in one list: a ranked place, and a
 // divider where the week's top places give way to the all-time favorites.
 type Row =
-  | FeedRow<FeedItem, FriendSuggestion>
+  | FeedRow<FeedItem, FriendSuggestion, EventSummary>
   | { type: 'popular'; key: string; item: PopularItem; rank: number }
   | { type: 'popular_tail'; key: 'popular_tail' }
 
@@ -170,6 +175,24 @@ export default function DiscoverTab() {
   })
   const newNearYou = home.data?.newNearYou
 
+  // This week's events, for the "Events this week" shelves — the Events view's own list (one cache
+  // entry), without what the Tonight card above already shows. Like the People shelf, only For you
+  // has them, and only once there is a feed to put them in.
+  const upcoming = useUpcomingEvents({
+    staleTime: 120_000,
+    enabled: view === 'for_you' && feed.isSuccess && items.length > 0,
+  })
+  const tonight = home.data?.tonight
+  const weekEvents = useMemo(
+    () =>
+      eventsThisWeek(
+        upcoming.data?.events ?? [],
+        new Date(),
+        new Set(tonight?.kind === 'events' ? tonight.events.map((e) => e.id) : []),
+      ),
+    [upcoming.data, tonight],
+  )
+
   // How far the member had read last time — read ONCE, so the "caught up" divider
   // stays where it was while they scroll and only moves on the next visit.
   const [seenAt, setSeenAt] = useState<string | null | undefined>(undefined)
@@ -206,12 +229,13 @@ export default function DiscoverTab() {
           ? buildFeedRows({
               items,
               people: suggestions.data?.users ?? [],
+              events: weekEvents,
               seenAt,
               shelves: view === 'for_you',
               nearYou: view === 'for_you' && (newNearYou?.length ?? 0) > 0,
             })
           : [],
-    [friendsView, view, items, popularItems, suggestions.data, seenAt, newNearYou],
+    [friendsView, view, items, popularItems, suggestions.data, weekEvents, seenAt, newNearYou],
   )
 
   const refetchCurrent = useCallback(
@@ -223,11 +247,20 @@ export default function DiscoverTab() {
           : view === 'popular'
             ? popular.refetch()
             : view === 'for_you'
-              ? Promise.all([feed.refetch(), home.refetch()])
+              ? Promise.all([feed.refetch(), home.refetch(), upcoming.refetch()])
               : feed.refetch(),
-    [view, queryClient, feed, home, popular],
+    [view, queryClient, feed, home, upcoming, popular],
   )
   const { refreshing, onRefresh } = usePullToRefresh(refetchCurrent)
+
+  const listRef = useRef<FlatList<Row>>(null)
+  // "See all" on an Events shelf: over to the Events view, from the top of the page so the Events
+  // pill is seen to be the one chosen (the shelf sits far down the For you list, and the Events
+  // view is a different, shorter one).
+  const seeAllEvents = useCallback(() => {
+    setView('events')
+    listRef.current?.scrollToOffset({ offset: 0, animated: false })
+  }, [])
 
   // Stable across renders, so a screen-level re-render (pull-to-refresh, the next page,
   // one cheers tap) doesn't make FlatList treat every mounted cell as changed.
@@ -235,15 +268,16 @@ export default function DiscoverTab() {
     ({ item: row, index }: { item: Row; index: number }) => {
       if (row.type === 'card') return <FriendCard item={row.item} index={index} />
       if (row.type === 'shelf') return <PeopleShelf people={row.people} />
+      if (row.type === 'events_shelf')
+        return <EventsShelf events={row.events} onSeeAll={seeAllEvents} />
       if (row.type === 'new_near_you') return <NewNearYou places={newNearYou ?? []} />
       if (row.type === 'popular') return <PopularRow item={row.item} rank={row.rank} />
       if (row.type === 'popular_tail') return <PopularTail />
       return <CaughtUp />
     },
-    [newNearYou],
+    [newNearYou, seeAllEvents],
   )
 
-  const listRef = useRef<FlatList<Row>>(null)
   useResetOnTabPress(
     useCallback(
       (wasActive: boolean) => {
@@ -261,9 +295,12 @@ export default function DiscoverTab() {
           return
         }
         void feed.refetch()
-        if (showing === 'for_you') void home.refetch()
+        if (showing === 'for_you') {
+          void home.refetch()
+          void upcoming.refetch()
+        }
       },
-      [feed, home, popular, view],
+      [feed, home, popular, upcoming, view],
     ),
   )
 

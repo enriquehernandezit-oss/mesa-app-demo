@@ -199,8 +199,12 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   panel with the title, place · price, faces, and **I'm going**; on a night with no events, **Tonight's pick**
   — 300pt, the place still open late that a friend ranked highest; the header stays just "Tonight", with no
   "No events today" beside a card that is itself the answer). Both come from one `GET /home`, cached
-  until 5 AM Santo Domingo. Then friend cards in three shapes by the picture rule; a "People you may know"
-  shelf and a **New near you** shelf (150-wide cards with a "New" pill) follow the first six; "You're caught
+  until 5 AM Santo Domingo. Then friend cards in three shapes by the picture rule, with shelves between them:
+  **Events this week** after the third card (Eventos' compact 192pt card — date badge, countdown, the kind's
+  icon, title, place · time — for the next seven Santo Domingo days, today included, soonest first; whatever
+  the Tonight card above already shows is left out; "See all" opens the Events view; a busy week gets another
+  shelf with the _next_ events after card 9, 15 …, never the same card twice), then a "People you may know"
+  shelf and a **New near you** shelf (150-wide cards with a "New" pill) after the first six; "You're caught
   up · older below" marks where you'd stopped (SecureStore `mesa.feed_seen`, read once per visit); the end
   card offers Explore and Find friends. Once the inline pills scroll away, a solid bar pins them to the top.
 - **Popular** (`GET /popular`, the pill's view): _Popular this week_ (serif 28) with what it counts, a row

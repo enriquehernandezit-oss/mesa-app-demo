@@ -595,6 +595,7 @@ export const es = {
   'feed.newest_first': 'Lo más nuevo primero',
   'feed.caught_up': 'Estás al día · más abajo lo anterior',
   'feed.people_you_may_know': 'Gente que quizás conoces',
+  'feed.events_this_week': 'Eventos esta semana',
   'feed.see_all': 'Ver todo',
   'feed.at_place': 'en {place}',
   'feed.end_title': 'Eso es todo lo que rankearon tus amigos.',

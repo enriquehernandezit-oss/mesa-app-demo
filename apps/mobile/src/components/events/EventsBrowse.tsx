@@ -18,6 +18,7 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { CalendarIcon, CloseIcon } from '@/components/ui/icons'
+import { useUpcomingEvents } from '@/hooks/useUpcomingEvents'
 import { api } from '@/lib/api'
 import { CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
 import {
@@ -72,10 +73,7 @@ export const EventsBrowse = memo(function EventsBrowse() {
   const [sel, setSel] = useState<DayRange>(null)
   const [picking, setPicking] = useState(false)
   const [cat, setCat] = useState<CatKey | 'all'>('all')
-  const q = useQuery({
-    queryKey: ['events', 'upcoming'],
-    queryFn: () => api.get<{ events: EventSummary[] }>('/events?when=upcoming'),
-  })
+  const q = useUpcomingEvents()
   const all = q.data?.events ?? EMPTY_EVENTS
   // The member's own RSVPs. This used to be a fourth tab under Saved in
   // Rankings, which read as a list of places you'd bookmarked rather than

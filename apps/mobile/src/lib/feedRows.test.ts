@@ -125,6 +125,99 @@ describe('buildFeedRows', () => {
   })
 })
 
+describe('buildFeedRows — Events this week', () => {
+  const events = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `e${i}` }))
+  const build = (cards: number, evs: number, extra: { people?: number; nearYou?: boolean } = {}) =>
+    buildFeedRows({
+      items: items(cards),
+      people: people(extra.people ?? 0),
+      events: events(evs),
+      seenAt: null,
+      shelves: true,
+      nearYou: extra.nearYou,
+    })
+
+  test('one shelf after the third card, halfway between People shelves', () => {
+    const rows = build(13, 3, { people: 7 })
+    expect(types(rows)).toEqual([
+      ...Array(3).fill('card'),
+      'events_shelf', // after card 3
+      ...Array(3).fill('card'),
+      'shelf', // after card 6 — People
+      ...Array(6).fill('card'),
+      'shelf', // after card 12 — People
+      'card',
+    ])
+    const shelf = rows[3]
+    expect(shelf?.type === 'events_shelf' && shelf.events.map((e) => e.id)).toEqual([
+      'e0',
+      'e1',
+      'e2',
+    ])
+  })
+
+  test('a busy week gets another shelf with the NEXT events, never the same card twice', () => {
+    const rows = build(10, 8)
+    const shelves = rows.filter((r) => r.type === 'events_shelf')
+    expect(shelves.map((r) => r.key)).toEqual(['events:0', 'events:1'])
+    const [a, b] = shelves
+    expect(a?.type === 'events_shelf' && a.events.map((e) => e.id)).toEqual([
+      'e0',
+      'e1',
+      'e2',
+      'e3',
+      'e4',
+      'e5',
+    ])
+    expect(b?.type === 'events_shelf' && b.events.map((e) => e.id)).toEqual(['e6', 'e7'])
+    expect(rows[3]?.type).toBe('events_shelf') // after card 3
+    expect(rows[10]?.type).toBe('events_shelf') // after card 9 (row 10: card 3 + shelf + 6 more)
+  })
+
+  test('before "New near you": the first six cards run card×3, Events, card×3, People, New near you', () => {
+    const rows = build(7, 2, { people: 3, nearYou: true })
+    expect(types(rows)).toEqual([
+      ...Array(3).fill('card'),
+      'events_shelf',
+      ...Array(3).fill('card'),
+      'shelf',
+      'new_near_you',
+      'card',
+    ])
+  })
+
+  test('a feed shorter than three cards gets it at the end, ahead of "New near you"', () => {
+    expect(types(build(2, 2, { nearYou: true }))).toEqual([
+      'card',
+      'card',
+      'events_shelf',
+      'new_near_you',
+    ])
+    // three to five cards reach the slot itself
+    expect(types(build(4, 1, { nearYou: true }))).toEqual([
+      'card',
+      'card',
+      'card',
+      'events_shelf',
+      'card',
+      'new_near_you',
+    ])
+  })
+
+  test('no events, no shelf; nothing on an empty feed; nothing on the Friends view', () => {
+    expect(build(8, 0).some((r) => r.type === 'events_shelf')).toBe(false)
+    expect(build(0, 4)).toEqual([])
+    const friends = buildFeedRows({
+      items: items(8),
+      people: [],
+      events: events(4),
+      seenAt: null,
+      shelves: false,
+    })
+    expect(friends.some((r) => r.type === 'events_shelf')).toBe(false)
+  })
+})
+
 describe('dayPart', () => {
   const at = (h: number) => new Date(2026, 8, 29, h, 0, 0)
   test('morning, afternoon, evening', () => {

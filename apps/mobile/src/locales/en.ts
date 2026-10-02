@@ -554,6 +554,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'feed.newest_first': 'Newest first',
   'feed.caught_up': "You're caught up · older below",
   'feed.people_you_may_know': 'People you may know',
+  'feed.events_this_week': 'Events this week',
   'feed.see_all': 'See all',
   'feed.at_place': 'at {place}',
   'feed.end_title': "That's everything your friends ranked.",
