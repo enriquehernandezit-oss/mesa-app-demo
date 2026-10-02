@@ -1677,6 +1677,7 @@ function FindStep({
   // one you can't rank without Google.
   const {
     suggestions,
+    inMesa,
     create: createFromGoogle,
     creatingId,
     where,
@@ -1689,13 +1690,49 @@ function FindStep({
     onCreated: onGoogleCreated,
   })
 
-  const renderRow = (r: Item) => {
+  // A place Google found that Mesa already has (matched by Google's id: "SBG Sophia's Bar & Grill"
+  // is Mesa's "Sophia's Bar & Grill") is listed here with Mesa's own places, after them — never
+  // offered again under "En Google" as if it were new. If you've ranked it, it carries your score.
+  const listed = new Set([...results, ...leadGroup].map((r) => r.id))
+  const promoted: Item[] = wantOnly
+    ? []
+    : inMesa
+        .filter((h) => !listed.has(h.id))
+        .map(
+          (h) =>
+            existing.find((e) => e.id === h.id) ?? {
+              id: h.id,
+              name: h.name,
+              cuisine: h.cuisine,
+              coverImageId: h.coverImageId,
+              neighborhood: h.neighborhood,
+              priceTier: h.priceTier,
+              closesAt: h.closesAt,
+            },
+        )
+  // Picking one: a place the flow already knows (a candidate, or on your list) goes through
+  // onPick like any other row; otherwise it continues as a just-added place, exactly as a tap on
+  // its Google result used to.
+  const pickPromoted = (r: Item) => {
+    if (candList.some((c) => c.id === r.id) || existing.some((e) => e.id === r.id)) onPick(r.id)
+    else
+      onGoogleCreated({
+        id: r.id,
+        name: r.name,
+        cuisine: r.cuisine,
+        priceTier: r.priceTier ?? null,
+        coverImageId: r.coverImageId ?? null,
+        neighborhood: r.neighborhood,
+      })
+  }
+
+  const renderRow = (r: Item, onPress: () => void = () => onPick(r.id)) => {
     const dist = distanceOf(r)
     return (
       <Pressable
         key={r.id}
         accessibilityRole="button"
-        onPress={() => onPick(r.id)}
+        onPress={onPress}
         className="px-5 py-2 active:opacity-80"
       >
         <PlaceLine
@@ -1722,7 +1759,9 @@ function FindStep({
     )
   }
 
-  const nothing = wantOnly ? wantList.length === 0 : leadGroup.length === 0 && results.length === 0
+  const nothing = wantOnly
+    ? wantList.length === 0
+    : leadGroup.length === 0 && results.length === 0 && promoted.length === 0
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: Math.max(insets.top, 12) + 8 }}>
@@ -1799,18 +1838,19 @@ function FindStep({
                 : t('rank.ranked_everything')}
           </Body>
         ) : wantOnly ? (
-          <View className="pt-2">{wantList.map(renderRow)}</View>
+          <View className="pt-2">{wantList.map((r) => renderRow(r))}</View>
         ) : (
           <>
             {leadGroup.length > 0 && (
               <>
                 <Eyebrow className="px-5 pb-1 pt-4">{t('rank.want_to_try')}</Eyebrow>
-                {leadGroup.map(renderRow)}
+                {leadGroup.map((r) => renderRow(r))}
                 <Eyebrow className="px-5 pb-1 pt-4">{t('rank.all')}</Eyebrow>
               </>
             )}
             {leadGroup.length === 0 && <View className="h-2" />}
-            {results.map(renderRow)}
+            {results.map((r) => renderRow(r))}
+            {promoted.map((r) => renderRow(r, () => pickPromoted(r)))}
           </>
         )}
 

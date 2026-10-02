@@ -18,6 +18,9 @@
 // /from-google, with the same sessionToken) bills them at zero. Three per search in 'world' is the
 // price of the ordering — see docs/PLACES.md, "Cost".
 
+import { db, schema } from '@mesa/db'
+import { and, inArray, isNull } from 'drizzle-orm'
+
 import { SD_BOUNDS } from './geo'
 import { type ExternalSuggestion, type Prediction, autocompleteRequest } from './googlePlaces'
 
@@ -109,4 +112,40 @@ export async function searchPlaces(
       : Promise.resolve<Prediction[]>([])
   const [sd, dr, world] = await Promise.all([ask('sd'), ask('do'), ask('world')])
   return mergeTiers({ sd, dr, world })
+}
+
+// A place Mesa already has, found by Google's own id.
+export type MesaPlace = { id: string; closed: boolean }
+
+// Which of these Google ids Mesa already has — one query. A removed row is not a place Mesa has;
+// a permanently closed one is, but is never offered (see partitionByMesa).
+export async function ownedByGoogleId(googleIds: string[]): Promise<Map<string, MesaPlace>> {
+  const owned = new Map<string, MesaPlace>()
+  if (googleIds.length === 0) return owned
+  const { restaurants } = schema
+  const rows = await db
+    .select({ id: restaurants.id, gid: restaurants.googlePlaceId, closedAt: restaurants.closedAt })
+    .from(restaurants)
+    .where(and(inArray(restaurants.googlePlaceId, googleIds), isNull(restaurants.removedAt)))
+  for (const r of rows) if (r.gid) owned.set(r.gid, { id: r.id, closed: r.closedAt != null })
+  return owned
+}
+
+// The search's results split by whether Mesa already has the place — matched on GOOGLE'S ID, never on
+// a name: "SBG Sophia's Bar & Grill" and "Sophia's Bar & Grill" are one place, and offering it under
+// "En Google" as if it were new was a bug. The ones Mesa has leave that list and come back as Mesa
+// ids, in the search's own order (Santo Domingo first…), for the app to show among Mesa's results.
+// A closed place is dropped from both: Explore hides closed places, and nobody should add one.
+export function partitionByMesa(
+  found: ExternalSuggestion[],
+  owned: Map<string, MesaPlace>,
+): { fresh: ExternalSuggestion[]; mesaIds: string[] } {
+  const fresh: ExternalSuggestion[] = []
+  const mesaIds: string[] = []
+  for (const s of found) {
+    const mine = owned.get(s.providerPlaceId)
+    if (!mine) fresh.push(s)
+    else if (!mine.closed) mesaIds.push(mine.id)
+  }
+  return { fresh, mesaIds }
 }

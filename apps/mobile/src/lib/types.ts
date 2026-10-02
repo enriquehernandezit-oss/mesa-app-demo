@@ -353,6 +353,14 @@ export interface ExternalSuggestion {
   name: string // structuredFormat.mainText
   secondaryText: string | null // structuredFormat.secondaryText (address-ish)
 }
+// GET /restaurants/search-external: the places Google found that Mesa does NOT have yet, and — as
+// full Explore rows — the ones it already has, matched by Google's own id (so "SBG Sophia's Bar &
+// Grill" on Google IS Mesa's "Sophia's Bar & Grill", and is not offered again as if it were new).
+export interface ExternalSearchResponse {
+  suggestions: ExternalSuggestion[]
+  inMesa: ExploreHit[]
+}
+
 // How far a Google place search looks. Results always come ordered Santo Domingo, then the rest of
 // the Dominican Republic, then the world; this only narrows how far down that list it goes. 'world'
 // is the default (apps/api lib/placeSearch.ts).

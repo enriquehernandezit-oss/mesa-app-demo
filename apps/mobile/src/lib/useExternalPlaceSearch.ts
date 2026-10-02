@@ -5,7 +5,13 @@ import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
 import { dedupeExternal } from '@/lib/dedupeExternal'
 import { useT } from '@/lib/i18n'
-import type { ExternalSuggestion, NewRestaurant, SearchWhere } from '@/lib/types'
+import type {
+  ExploreHit,
+  ExternalSearchResponse,
+  ExternalSuggestion,
+  NewRestaurant,
+  SearchWhere,
+} from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useGoogleSession } from '@/lib/useGoogleSession'
 
@@ -33,6 +39,8 @@ export function useExternalPlaceSearch(opts: {
   onCreated: (restaurant: NewRestaurant) => void
 }): {
   suggestions: ExternalSuggestion[]
+  // Places Google found that Mesa already has: shown among Mesa's own results, not under "En Google".
+  inMesa: ExploreHit[]
   create: (placeId: string) => void
   creatingId: string | null
   // The scope pills: how far the search looks, whether there is a search to scope at all (3+
@@ -57,7 +65,7 @@ export function useExternalPlaceSearch(opts: {
   const external = useQuery({
     queryKey: ['search-external', debounced, where],
     queryFn: () =>
-      api.get<{ suggestions: ExternalSuggestion[] }>(
+      api.get<ExternalSearchResponse>(
         `/restaurants/search-external?q=${encodeURIComponent(debounced)}&where=${where}&s=${session.token}`,
       ),
     enabled: wantExternal,
@@ -66,6 +74,8 @@ export function useExternalPlaceSearch(opts: {
   const suggestions = wantExternal
     ? dedupeExternal(external.data?.suggestions ?? [], catalogNames)
     : []
+  // (`?? []`: an API that predates `inMesa` simply has none.)
+  const inMesa = wantExternal ? (external.data?.inMesa ?? []) : []
 
   const create = useMutation({
     mutationFn: (placeId: string) =>
@@ -94,11 +104,16 @@ export function useExternalPlaceSearch(opts: {
 
   return {
     suggestions,
+    inMesa,
     create: create.mutate,
     creatingId: create.isPending ? (create.variables ?? null) : null,
     where,
     setWhere,
     active: wantExternal,
-    nothingFound: wantExternal && external.isSuccess && external.data.suggestions.length === 0,
+    nothingFound:
+      wantExternal &&
+      external.isSuccess &&
+      external.data.suggestions.length === 0 &&
+      (external.data.inMesa ?? []).length === 0,
   }
 }

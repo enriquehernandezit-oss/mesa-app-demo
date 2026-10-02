@@ -16,6 +16,12 @@ import { useEffect } from 'react'
 // there, or the tabPress event never arrives (it's emitted for the outer
 // tab route's key, not the inner stack screen's).
 //
+// The callback is told `wasActive`: true when this tab was ALREADY the one showing — a re-press,
+// the "start over" gesture (clear the search, the filters, the view) — and false when the press
+// is switching to it from another tab, where the member's place should be kept and only the
+// scroll position refreshed. `tabPress` fires BEFORE the navigation changes, so isFocused() is
+// still the answer to "was it showing?".
+//
 // `tabPress` is a real event MesaTabBar.tsx already emits (`navigation.emit
 // ({ type: 'tabPress', ... })`) — useNavigation()'s generic return type just
 // doesn't know about it (that event map only exists once the navigator is
@@ -24,15 +30,19 @@ import { useEffect } from 'react'
 // `any`.
 interface TabPressListener {
   addListener(event: 'tabPress', callback: () => void): () => void
+  isFocused(): boolean
 }
 
-export function useResetOnTabPress(onPress: () => void, opts?: { nested?: boolean }): void {
+export function useResetOnTabPress(
+  onPress: (wasActive: boolean) => void,
+  opts?: { nested?: boolean },
+): void {
   const navigation = useNavigation()
   const target = (opts?.nested ? navigation.getParent() : navigation) as
     | TabPressListener
     | undefined
   useEffect(() => {
     if (!target) return
-    return target.addListener('tabPress', onPress)
+    return target.addListener('tabPress', () => onPress(target.isFocused()))
   }, [target, onPress])
 }

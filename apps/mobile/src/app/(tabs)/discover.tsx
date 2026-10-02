@@ -245,19 +245,26 @@ export default function DiscoverTab() {
 
   const listRef = useRef<FlatList<Row>>(null)
   useResetOnTabPress(
-    useCallback(() => {
-      listRef.current?.scrollToOffset({ offset: 0, animated: true })
-      // A silent refetch, not onRefresh(): flipping RefreshControl's `refreshing` on
-      // programmatically shifts the scroll offset down to reveal the spinner and
-      // doesn't reliably restore it (usePullToRefresh's own header), which raced the
-      // scrollToOffset above. A real pull-to-refresh gesture is untouched.
-      if (view === 'popular') {
-        void popular.refetch()
-        return
-      }
-      void feed.refetch()
-      if (view === 'for_you') void home.refetch()
-    }, [feed, home, popular, view]),
+    useCallback(
+      (wasActive: boolean) => {
+        // Pressing Feed while you are ALREADY on it starts over: back to "Para ti", at the top.
+        // (Coming from another tab keeps the view you were on.)
+        if (wasActive) setView('for_you')
+        listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        // A silent refetch, not onRefresh(): flipping RefreshControl's `refreshing` on
+        // programmatically shifts the scroll offset down to reveal the spinner and
+        // doesn't reliably restore it (usePullToRefresh's own header), which raced the
+        // scrollToOffset above. A real pull-to-refresh gesture is untouched.
+        const showing = wasActive ? 'for_you' : view
+        if (showing === 'popular') {
+          void popular.refetch()
+          return
+        }
+        void feed.refetch()
+        if (showing === 'for_you') void home.refetch()
+      },
+      [feed, home, popular, view],
+    ),
   )
 
   // The pinned pill bar: once the inline pills have scrolled up under the status bar.

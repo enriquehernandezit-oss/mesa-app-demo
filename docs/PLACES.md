@@ -69,6 +69,14 @@ The Dominican **region hint** is sent on the first two searches only. It formats
 without their country, but it also ranks — with it, the third search returned the same five
 Dominican places and never reached anywhere else.
 
+**A place Mesa already has never shows under "En Google".** Each result is matched to Mesa by
+**Google's own place id** — never by name, because Google names a place its own way ("SBG Sophia's Bar
+& Grill" is Mesa's "Sophia's Bar & Grill", with its photo and reviews). A match leaves the "En Google"
+list and comes back as a normal Mesa result, so searching "sbg" finds Sophia's among Mesa's places.
+A permanently closed match is dropped from both. This only works for a place that carries a Google
+id: the few seed rows without one (`places:audit` lists them) can still be offered again, and the
+app's old by-name check remains as a fallback for those.
+
 Tapping a result adds the place, filed as described above. **Explore's browse list is the Dominican
 Republic** (Santo Domingo's sectors and the cities around the country); a place from Miami is found
 by **name**, and shows on the member's own list and in friends' activity, but not in everyone's

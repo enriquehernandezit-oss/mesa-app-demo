@@ -3,6 +3,7 @@ import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-rou
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FlatList,
+  Keyboard,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -190,14 +191,14 @@ export default function ExploreScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const panelCount = [hood, cuisine, price, occasion, minScore].filter((v) => v != null).length
   const activeCount = panelCount + (openNow ? 1 : 0)
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setHood(null)
     setCuisine(null)
     setPrice(null)
     setOpenNow(false)
     setOccasion(null)
     setMinScore(null)
-  }
+  }, [])
 
   // Holds off the Mesa search request itself until typing pauses — a request
   // per keystroke used to hit the API (and re-fire the analytics event below)
@@ -252,6 +253,7 @@ export default function ExploreScreen() {
   const catalogNames = useMemo(() => hits.map((h) => h.name), [hits])
   const {
     suggestions,
+    inMesa,
     create: createFromGoogle,
     creatingId,
     where,
@@ -263,6 +265,14 @@ export default function ExploreScreen() {
     catalogNames: catalogNames,
     onCreated: (restaurant) => router.push(`/r/${restaurant.id}`),
   })
+  // A place Google found that Mesa already has (matched by Google's id: "SBG Sophia's Bar & Grill"
+  // is Mesa's "Sophia's Bar & Grill") is shown here with Mesa's own results, after the ones Mesa's
+  // own search found — not offered again under "En Google" as if it were new.
+  const shownHits = useMemo(() => {
+    if (inMesa.length === 0) return hits
+    const have = new Set(hits.map((h) => h.id))
+    return [...hits, ...inMesa.filter((h) => !have.has(h.id))]
+  }, [hits, inMesa])
 
   // The map, as the bar's one action. Memoized (responsiveness audit): written inline, this object
   // got a brand new `headerRight` function on every render — including every keystroke via setQ —
@@ -289,17 +299,31 @@ export default function ExploreScreen() {
   // Not offset 0 — the list rests a large-title header lower than that (useScrollTopOffset).
   const topOffset = useScrollTopOffset()
   useResetOnTabPress(
-    useCallback(() => {
-      listRef.current?.scrollToOffset({ offset: topOffset, animated: true })
-      // A silent refetch, not onRefresh(): flipping RefreshControl's
-      // `refreshing` on programmatically (not from an actual pull) shifts
-      // the scroll offset down to reveal the spinner and doesn't reliably
-      // restore it (usePullToRefresh's own header), which raced the
-      // scrollTo above and left a tab re-press landing scrolled down
-      // instead of at the top. A real pull-to-refresh gesture is untouched
-      // — only this synthetic trigger skips the visible spinner.
-      void results.refetch()
-    }, [results, topOffset]),
+    useCallback(
+      (wasActive: boolean) => {
+        // Pressing Explore while you are ALREADY on it starts over: no search, no filters, the
+        // default sort, the Places view, the widest Google scope, the keyboard away. (Coming
+        // from another tab keeps your search — only the scroll position is refreshed.)
+        if (wasActive) {
+          Keyboard.dismiss()
+          setQ('')
+          clearFilters()
+          setSort('score')
+          setView('places')
+          setWhere('world')
+        }
+        listRef.current?.scrollToOffset({ offset: topOffset, animated: true })
+        // A silent refetch, not onRefresh(): flipping RefreshControl's
+        // `refreshing` on programmatically (not from an actual pull) shifts
+        // the scroll offset down to reveal the spinner and doesn't reliably
+        // restore it (usePullToRefresh's own header), which raced the
+        // scrollTo above and left a tab re-press landing scrolled down
+        // instead of at the top. A real pull-to-refresh gesture is untouched
+        // — only this synthetic trigger skips the visible spinner.
+        void results.refetch()
+      },
+      [results, topOffset, clearFilters, setWhere],
+    ),
     { nested: true },
   )
 
@@ -451,7 +475,7 @@ export default function ExploreScreen() {
             </>
           )}
 
-          {members.length > 0 && hits.length > 0 && (
+          {members.length > 0 && shownHits.length > 0 && (
             <Eyebrow className="pb-2 pt-3">{t('explore.spots')}</Eyebrow>
           )}
         </View>
@@ -499,7 +523,7 @@ export default function ExploreScreen() {
           scroller. */}
       <FlatList
         ref={listRef}
-        data={view === 'places' ? hits : NO_HITS}
+        data={view === 'places' ? shownHits : NO_HITS}
         keyExtractor={keyExtractor}
         renderItem={renderHit}
         ListHeaderComponent={listHeader}

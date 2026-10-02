@@ -390,18 +390,30 @@ export default function RankingsTab() {
   const savedListRef = useRef<FlatList<SavedItem>>(null)
   const barriosScrollRef = useRef<ScrollView>(null)
   useResetOnTabPress(
-    useCallback(() => {
-      if (tab === 'mine') {
-        mineListRef.current?.scrollToOffset({ offset: 0, animated: true })
-        void mine.refetch()
-      } else if (tab === 'saved') {
-        savedListRef.current?.scrollToOffset({ offset: 0, animated: true })
-        void activeSaved.refetch()
-      } else {
-        barriosScrollRef.current?.scrollTo({ y: 0, animated: true })
-        void mine.refetch()
-      }
-    }, [tab, activeSaved, mine]),
+    useCallback(
+      (wasActive: boolean) => {
+        // Pressing your list while you are ALREADY on it starts over: Mine, no filters, the default
+        // sort, the places you saved to try. (Coming from another tab keeps where you were.)
+        if (wasActive) {
+          setTab('mine')
+          setSavedKind('restaurants')
+          setSort('position')
+          setFilters(NO_FILTERS)
+        }
+        const showing = wasActive ? 'mine' : tab
+        if (showing === 'mine') {
+          mineListRef.current?.scrollToOffset({ offset: 0, animated: true })
+          void mine.refetch()
+        } else if (showing === 'saved') {
+          savedListRef.current?.scrollToOffset({ offset: 0, animated: true })
+          void activeSaved.refetch()
+        } else {
+          barriosScrollRef.current?.scrollTo({ y: 0, animated: true })
+          void mine.refetch()
+        }
+      },
+      [tab, activeSaved, mine],
+    ),
   )
 
   // Nothing to show under the head: still loading, failed, no list yet, or a filter that

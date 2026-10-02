@@ -231,11 +231,16 @@ export default function ProfileTab() {
   // silent refetch — same posture as rankings.tsx's Saved/Barrios tabs.
   const viewScrollRef = useRef<ScrollView>(null)
   useResetOnTabPress(
-    useCallback(() => {
-      viewScrollRef.current?.scrollTo({ y: 0, animated: true })
-      stats.refetch()
-      rankings.refetch()
-    }, [stats, rankings]),
+    useCallback(
+      (wasActive: boolean) => {
+        // Pressing Profile while you are ALREADY on it starts over: out of the editor, at the top.
+        if (wasActive) setEditing(false)
+        viewScrollRef.current?.scrollTo({ y: 0, animated: true })
+        stats.refetch()
+        rankings.refetch()
+      },
+      [stats, rankings],
+    ),
   )
 
   if (editing) {

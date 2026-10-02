@@ -2,7 +2,14 @@ import { describe, expect, test } from 'bun:test'
 
 import { SD_BOUNDS } from './geo'
 import type { Prediction } from './googlePlaces'
-import { autocompleteBody, mergeTiers, parseWhere, tiersFor } from './placeSearch'
+import {
+  autocompleteBody,
+  mergeTiers,
+  type MesaPlace,
+  parseWhere,
+  partitionByMesa,
+  tiersFor,
+} from './placeSearch'
 
 // The three searches, as Google actually answered the query "sbg" on 2026-10-01 (names, addresses
 // and distances from Santo Domingo's centre, in metres). Each search returns at most five places,
@@ -187,5 +194,46 @@ describe('scope', () => {
     expect(parseWhere('world')).toBe('world')
     expect(parseWhere(undefined)).toBe('world')
     expect(parseWhere('moon')).toBe('world')
+  })
+})
+
+describe('partitionByMesa — a place Mesa already has is not new on Google', () => {
+  const suggestion = (id: string, name: string) => ({
+    provider: 'google' as const,
+    providerPlaceId: id,
+    name,
+    secondaryText: null,
+  })
+  const found = [
+    suggestion('g-sophias', "SBG Sophia's Bar & Grill"),
+    suggestion('g-kitchen', 'SBG KITCHEN'),
+    suggestion('g-cafe', 'Café SBG BlueMall'),
+    suggestion('g-closed', 'SBG Old Place'),
+  ]
+  const owned = new Map<string, MesaPlace>([
+    ['g-sophias', { id: 'mesa-1', closed: false }],
+    ['g-cafe', { id: 'mesa-2', closed: false }],
+    ['g-closed', { id: 'mesa-3', closed: true }],
+  ])
+
+  test('is matched on Google’s id, so "SBG Sophia’s" and "Sophia’s" are one place', () => {
+    const { fresh } = partitionByMesa(found, owned)
+    expect(fresh.map((s) => s.name)).toEqual(['SBG KITCHEN'])
+  })
+
+  test('hands back the Mesa ids in the search’s own order', () => {
+    expect(partitionByMesa(found, owned).mesaIds).toEqual(['mesa-1', 'mesa-2'])
+  })
+
+  test('a permanently closed place is dropped from both: nobody should add it, Explore hides it', () => {
+    const { fresh, mesaIds } = partitionByMesa(found, owned)
+    expect(fresh.map((s) => s.providerPlaceId)).not.toContain('g-closed')
+    expect(mesaIds).not.toContain('mesa-3')
+  })
+
+  test('with nothing in Mesa the list is untouched', () => {
+    const { fresh, mesaIds } = partitionByMesa(found, new Map())
+    expect(fresh).toEqual(found)
+    expect(mesaIds).toEqual([])
   })
 })

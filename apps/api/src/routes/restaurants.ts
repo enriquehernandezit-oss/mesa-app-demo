@@ -8,7 +8,7 @@ import { ensureArea, placeIn } from '../lib/geo'
 import { placeDetails, toMesaFields } from '../lib/googlePlaces'
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
-import { parseWhere, searchPlaces } from '../lib/placeSearch'
+import { ownedByGoogleId, parseWhere, partitionByMesa, searchPlaces } from '../lib/placeSearch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -161,6 +161,41 @@ async function refreshFromGoogle(restaurantId: string, googlePlaceId: string): P
   }
 }
 
+// Explore's display row for exactly these ids, in the order given: the place, plus how the people
+// you follow and everyone on Mesa have ranked it. Recomputed fresh rather than reusing phase 1's
+// aggregate — cheap over a few hundred rows, and it keeps the row shape identical whichever way the
+// id list was made (the Explore query, or the Google search promoting places Mesa already has).
+async function exploreRows(ids: string[], following: ReturnType<typeof followingIds>) {
+  if (ids.length === 0) return []
+  const rowsUnordered = await db
+    .select({
+      id: restaurants.id,
+      name: restaurants.name,
+      cuisine: restaurants.cuisine,
+      coverImageId: restaurants.coverImageId,
+      neighborhood: neighborhoods.name,
+      priceTier: restaurants.priceTier,
+      closesAt: restaurants.closesAt,
+      address: restaurants.address,
+      friendAvg: sql<
+        number | null
+      >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})::float`,
+      friendCount: sql<number>`count(${rankings.id}) filter (where ${inArray(rankings.userId, following)})::int`,
+      mesaCount: sql<number>`count(${rankings.id})::int`,
+    })
+    .from(restaurants)
+    .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+    .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
+    .where(inArray(restaurants.id, ids))
+    .groupBy(restaurants.id, neighborhoods.name)
+  // `WHERE id = ANY(...)` doesn't preserve the order of the ids — reorder in JS rather than a
+  // gnarly array_position SQL expression.
+  const order = new Map(ids.map((id, i) => [id, i]))
+  return rowsUnordered
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
+    .map((r) => ({ ...r, isNew: r.mesaCount === 0 }))
+}
+
 export const restaurantRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
@@ -309,38 +344,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       ids = idRows.map((r) => r.id)
     }
 
-    // Phase 2 — the actual display row, for exactly those ids. Recomputed
-    // fresh rather than reusing phase 1's aggregate: cheap over ≤30 rows, and
-    // keeps the row shape identical whichever phase produced the id list.
-    const rowsUnordered = ids.length
-      ? await db
-          .select({
-            id: restaurants.id,
-            name: restaurants.name,
-            cuisine: restaurants.cuisine,
-            coverImageId: restaurants.coverImageId,
-            neighborhood: neighborhoods.name,
-            priceTier: restaurants.priceTier,
-            closesAt: restaurants.closesAt,
-            address: restaurants.address,
-            friendAvg: sql<
-              number | null
-            >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})::float`,
-            friendCount: sql<number>`count(${rankings.id}) filter (where ${inArray(rankings.userId, following)})::int`,
-            mesaCount: sql<number>`count(${rankings.id})::int`,
-          })
-          .from(restaurants)
-          .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-          .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
-          .where(inArray(restaurants.id, ids))
-          .groupBy(restaurants.id, neighborhoods.name)
-      : []
-    // `WHERE id = ANY(...)` doesn't preserve phase 1's order — reorder in JS
-    // rather than a gnarly array_position SQL expression for ≤30 rows.
-    const order = new Map(ids.map((id, i) => [id, i]))
-    const rows = rowsUnordered
-      .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
-      .map((r) => ({ ...r, isNew: r.mesaCount === 0 }))
+    // Phase 2 — the actual display row, for exactly those ids (shared with the Google search,
+    // which promotes the places Mesa already has: exploreRows, above).
+    const rows = await exploreRows(ids, following)
 
     // Members half of "place, dish, or member" — only when there's a query.
     let members: {
@@ -531,8 +537,15 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // `where` narrows the search: 'sd' = Santo Domingo only, 'do' = + the rest of the Dominican
     // Republic, 'world' (the default) = + the world. Always ordered Santo Domingo → DR → world; see
     // lib/placeSearch.ts for how, and what it costs.
-    const suggestions = await searchPlaces(q, parseWhere(c.req.query('where')), sessionToken)
-    return c.json({ suggestions })
+    const found = await searchPlaces(q, parseWhere(c.req.query('where')), sessionToken)
+    // A place Mesa already has is not "new on Google": it leaves this list (matched by Google's id,
+    // not by name) and comes back as `inMesa`, a full Explore row for the app to show among Mesa's
+    // own results — so searching "sbg" finds Sophia's Bar & Grill with its photo and reviews.
+    const { fresh, mesaIds } = partitionByMesa(
+      found,
+      await ownedByGoogleId(found.map((s) => s.providerPlaceId)),
+    )
+    return c.json({ suggestions: fresh, inMesa: await exploreRows(mesaIds, followingIds(me.id)) })
   })
   // Tap a Google suggestion → a real, populated Mesa profile (M9). Fetches
   // Place Details ONLY here, never for the typeahead — one billable call per
