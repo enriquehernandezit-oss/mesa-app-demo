@@ -8,15 +8,7 @@ import {
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native'
+import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -50,6 +42,7 @@ import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { ScoreBadge, ScoreStack } from '@/components/ui/patterns'
 import { PlaceLine } from '@/components/ui/PlaceLine'
 import { toast } from '@/components/ui/toast-store'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
@@ -875,6 +868,8 @@ function RevealStep({
   onAddNote: () => void
 }) {
   const insets = useSafeAreaInsets()
+  // The keyboard's cover of the screen's bottom (this sheet's bottom bar sits on that edge).
+  const keyboardInset = useKeyboardInset()
   const lift = useLift()
   const t = useT()
   // The dish field has the keyboard: the Add a note / Done bar steps aside.
@@ -940,10 +935,7 @@ function RevealStep({
     .filter(Boolean)
     .join(' · ')
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-bg"
-    >
+    <View className="flex-1 bg-bg" style={{ paddingBottom: keyboardInset }}>
       {/* "Done" is held back while the commit hasn't settled or the dish queue is still
           draining — finishing used to jump ahead of a ranking (or a dish) that then failed
           to save. A tap that lands while it saves is remembered (see `finish`). */}
@@ -1278,7 +1270,7 @@ function RevealStep({
       {searching ? null : (
         <View
           className="flex-row gap-2.5 px-4 pt-2"
-          style={{ paddingBottom: Math.max(insets.bottom, 12) + 4 }}
+          style={{ paddingBottom: keyboardInset > 0 ? 8 : Math.max(insets.bottom, 12) + 4 }}
         >
           <Button
             variant="secondary"
@@ -1298,7 +1290,7 @@ function RevealStep({
           </Button>
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 
@@ -1328,13 +1320,12 @@ function NoteStep({
   onSave: () => void
 }) {
   const insets = useSafeAreaInsets()
+  // The keyboard's cover of the screen's bottom (this sheet's bottom bar sits on that edge).
+  const keyboardInset = useKeyboardInset()
   const t = useT()
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-bg"
-    >
+    <View className="flex-1 bg-bg" style={{ paddingBottom: keyboardInset }}>
       <RankHeader
         onBack={onBack}
         right={
@@ -1423,12 +1414,15 @@ function NoteStep({
         ))}
       </ScrollView>
 
-      <View className="px-4 pt-2" style={{ paddingBottom: Math.max(insets.bottom, 12) + 4 }}>
+      <View
+        className="px-4 pt-2"
+        style={{ paddingBottom: keyboardInset > 0 ? 8 : Math.max(insets.bottom, 12) + 4 }}
+      >
         <Button variant="primary" disabled={saving} onPress={onSave}>
           {saving ? t('common.saving') : t('rank.save_note')}
         </Button>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 

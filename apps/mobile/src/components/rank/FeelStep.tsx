@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native'
+import { Pressable, Text, View } from 'react-native'
 import Animated, {
   type SharedValue,
   useAnimatedStyle,
@@ -11,6 +11,7 @@ import { IconButton, MAX_SCALE, Serif } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { ArrowRightIcon, CloseIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { STOP_SENTIMENT, sentimentToStop, wordOpacity } from '@/lib/feel'
 import { useT } from '@/lib/i18n'
 import type { Sentiment } from '@/lib/pairwise'
@@ -50,6 +51,8 @@ export function FeelStep({
 }) {
   const t = useT()
   const insets = useSafeAreaInsets()
+  // The keyboard's cover of the screen's bottom (this sheet's bottom bar sits on that edge).
+  const keyboardInset = useKeyboardInset()
   const lift = useLift()
   const start = sentimentToStop(initial)
   const level = useSharedValue<number>(start)
@@ -68,10 +71,7 @@ export function FeelStep({
   const next = useCallback(() => onNext(STOP_SENTIMENT[stop] ?? 'fine'), [onNext, stop])
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-bg"
-    >
+    <View className="flex-1 bg-bg" style={{ paddingBottom: keyboardInset }}>
       <View className="flex-1" style={{ paddingTop: Math.max(insets.top, 12) + 8 }}>
         <View className="flex-row items-center justify-between px-4">
           <IconButton
@@ -161,7 +161,7 @@ export function FeelStep({
 
       <View
         className="mx-[18px] h-[62px] flex-row items-center rounded-[31px] bg-chip pl-[22px] pr-1.5"
-        style={[lift, { marginBottom: Math.max(insets.bottom, 12) + 4 }]}
+        style={[lift, { marginBottom: keyboardInset > 0 ? 8 : Math.max(insets.bottom, 12) + 4 }]}
       >
         <Pressable
           accessibilityRole="button"
@@ -191,7 +191,7 @@ export function FeelStep({
           <ArrowRightIcon size={17} color="on-ink" strokeWidth={2.2} />
         </Pressable>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 

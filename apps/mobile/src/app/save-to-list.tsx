@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
 import { Group } from '@/components/SettingsRow'
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui'
 import { CheckCircle } from '@/components/ui/CheckCircle'
 import { CloseIcon, PlusIcon } from '@/components/ui/icons'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
@@ -48,6 +49,8 @@ const SUGGESTIONS = {
 
 export default function SaveToListSheet() {
   const t = useT()
+  // The keyboard's cover of the screen's bottom — this page sheet's content sits on that edge.
+  const keyboardInset = useKeyboardInset()
   const router = useRouter()
   const queryClient = useQueryClient()
   const placeholder = useColor('text-muted')
@@ -127,7 +130,7 @@ export default function SaveToListSheet() {
   const trimmed = draft.trim()
 
   return (
-    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-bg">
+    <View className="flex-1 bg-bg" style={{ paddingBottom: keyboardInset }}>
       <View className="flex-row items-start justify-between gap-3 px-5 pt-5">
         <View className="min-w-0 flex-1">
           {itemName ? (
@@ -311,6 +314,6 @@ export default function SaveToListSheet() {
           </Pressable>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   )
 }
