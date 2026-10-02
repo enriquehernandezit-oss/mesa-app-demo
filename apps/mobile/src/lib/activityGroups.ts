@@ -17,6 +17,7 @@ const FILTER_OF: Record<NotificationKind, Exclude<ActivityFilter, 'all'>> = {
   dish_nudge: 'rankings',
   friends_love: 'rankings',
   taste_match: 'followers',
+  mention: 'rankings',
   plan_invite: 'plans',
   plan_reply: 'plans',
   event_going: 'events',

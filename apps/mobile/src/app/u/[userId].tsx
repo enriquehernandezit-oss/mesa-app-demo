@@ -3,6 +3,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { MentionText } from '@/components/MentionText'
 import { ProfileStats } from '@/components/profile/ProfileStats'
 import { pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
@@ -442,7 +443,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
               maxFontSizeMultiplier={MAX_SCALE}
               className="mt-1 font-serif text-serif-xs text-text"
             >
-              “{ranking.note}”
+              “<MentionText text={ranking.note} />”
             </Text>
           ) : null}
         </View>

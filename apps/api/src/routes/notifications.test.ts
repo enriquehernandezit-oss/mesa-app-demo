@@ -740,6 +740,30 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
       expect((await search('')).map((u) => u.id)).toEqual([uid('cy')])
       // not a handle at all
       expect(await search('a b')).toEqual([])
+
+      // by name, any word, accents ignored — but only for people I am connected to. A handle that does
+      // not start with what is typed is found through the name alone.
+      const rename = (label: 'ana' | 'bo' | 'cy', name: string) =>
+        db
+          .update(schema.user)
+          .set({ name })
+          .where(eq(schema.user.id, uid(label)))
+      await rename('cy', `Xqzfirst Lúcida Núñez ${tag}`) // I follow cy
+      await rename('ana', `Xqzfirst Lúcida Núñez ${tag}`) // ana follows me
+      await rename('bo', `Xqzfirst Lúcida Núñez ${tag}`) // bo is a stranger
+      await db.insert(schema.follows).values({ followerId: uid('ana'), followingId: me.id })
+      try {
+        // following first, then the one who follows me; the stranger is not offered by name
+        for (const typed of ['lucid', 'nunez', 'xqzf']) {
+          expect((await search(typed)).map((u) => u.id)).toEqual([uid('cy'), uid('ana')])
+        }
+        // the middle of a word is not a match
+        expect(await search('ucida')).toEqual([])
+        // …but the stranger is still found by their handle
+        expect((await search(h('bo'))).map((u) => u.id)).toEqual([uid('bo')])
+      } finally {
+        for (const l of ['ana', 'bo', 'cy'] as const) await rename(l, `Person ${l}`)
+      }
     })
   })
 

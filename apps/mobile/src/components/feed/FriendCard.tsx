@@ -7,6 +7,7 @@ import { Pressable, Text, View } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 
 import { CheersButton } from '@/components/CheersButton'
+import { MentionText } from '@/components/MentionText'
 import { pickReportReason } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
 import { MAX_SCALE } from '@/components/ui'
@@ -232,7 +233,7 @@ export const FriendCard = memo(function FriendCard({
                 maxFontSizeMultiplier={MAX_SCALE}
                 className="mt-0.5 font-ui text-label text-text-2"
               >
-                {item.note || item.neighborhood}
+                {item.note ? <MentionText text={item.note} /> : item.neighborhood}
               </Text>
               {actions(false)}
             </View>
@@ -258,7 +259,7 @@ export const FriendCard = memo(function FriendCard({
             maxFontSizeMultiplier={MAX_SCALE}
             className="mt-2 font-serif text-serif-md text-text"
           >
-            “{item.note}”
+            “<MentionText text={item.note} />”
           </Text>
           <Text
             numberOfLines={1}

@@ -5,8 +5,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { MentionField } from '@/components/MentionField'
 import { Body, Button, Caption, Chip, ErrorState, MAX_SCALE, Toggle } from '@/components/ui'
-import { Field } from '@/components/ui/Field'
 import { Glass } from '@/components/ui/Glass'
 import { PlusIcon } from '@/components/ui/icons'
 import { ScoreStack } from '@/components/ui/patterns'
@@ -367,13 +367,13 @@ export default function DishCompose() {
         </View>
 
         <View className="px-4 pt-4">
-          <Field
+          <MentionField
             ref={captionRef}
             label={t('dish.caption_label')}
             placeholder={t('dish.caption_placeholder')}
             maxLength={140}
             value={caption}
-            onChangeText={setCaption}
+            onValue={setCaption}
             returnKeyType="done"
           />
         </View>

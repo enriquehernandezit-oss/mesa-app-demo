@@ -38,12 +38,14 @@ describe('matchesFilter', () => {
     // About places, and about a person you follow
     expect(matchesFilter('friends_love', 'rankings')).toBe(true)
     expect(matchesFilter('taste_match', 'followers')).toBe(true)
+    expect(matchesFilter('mention', 'rankings')).toBe(true)
   })
 
   test('a kind from a newer server is unknown, not a crash', () => {
     expect(isKnownKind('cheers')).toBe(true)
     expect(isKnownKind('follow_accepted')).toBe(true)
-    expect(isKnownKind('mention')).toBe(false)
+    expect(isKnownKind('mention')).toBe(true)
+    expect(isKnownKind('some_future_kind')).toBe(false)
   })
 })
 

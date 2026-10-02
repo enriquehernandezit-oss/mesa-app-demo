@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { MentionText } from '@/components/MentionText'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import {
   Button,
@@ -212,7 +213,7 @@ function RankedRow({ entry }: { entry: DishListEntry & { position: number } }) {
               maxFontSizeMultiplier={MAX_SCALE}
               className="mt-0.5 font-ui text-label text-text-2"
             >
-              {dish.caption}
+              <MentionText text={dish.caption} />
             </Text>
           ) : null}
         </View>

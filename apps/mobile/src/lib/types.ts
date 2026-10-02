@@ -445,6 +445,7 @@ export type NotificationKind =
   | 'dish_nudge'
   | 'friends_love'
   | 'taste_match'
+  | 'mention'
 
 export interface NotificationItem {
   id: string
@@ -459,7 +460,7 @@ export interface NotificationItem {
   dish: { id: string; name: string } | null
   event: { id: string; title: string; startsAt: string } | null
   data: {
-    excerpt?: string // comment: the first ~80 characters
+    excerpt?: string // comment / mention: the first ~80 characters
     reply?: 'going' | 'maybe' | 'declined' | null // plan_reply (null: only a vote changed)
     vote?: boolean // plan_reply: a vote came with it
     label?: string // dish_nudge
@@ -472,6 +473,15 @@ export interface NotificationItem {
   // sends only followsBack.
   followStatus?: FollowStatus
   others: number // event_going: how many other people you follow are going too
+}
+
+// One row of the @-autocomplete (GET /social/mention-search).
+export interface MentionCandidate {
+  id: string
+  name: string
+  handle: string
+  image: string | null
+  following: boolean
 }
 
 export interface NotificationsPage {

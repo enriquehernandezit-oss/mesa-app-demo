@@ -24,6 +24,9 @@ export function notificationHref(n: NotificationItem): string | null {
           : null
     case 'dish_cheer':
       return n.dish ? `/dish/${n.dish.id}` : null
+    // Where it was said: the thread under a ranking (its note and comments), or the dish.
+    case 'mention':
+      return n.rankingId ? `/comments/${n.rankingId}` : n.dish ? `/dish/${n.dish.id}` : null
     case 'plan_invite':
     case 'plan_reply':
       return n.planId ? `/plans/${n.planId}` : null

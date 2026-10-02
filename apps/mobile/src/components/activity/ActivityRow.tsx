@@ -56,6 +56,8 @@ function templateFor(n: NotificationItem, t: T): string {
       return n.data?.went ? t('activity.friends_love_went') : t('activity.friends_love')
     case 'taste_match':
       return t('activity.taste_match')
+    case 'mention':
+      return t('activity.mention')
   }
 }
 
@@ -127,7 +129,7 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
         >
           {sentence}
         </Text>
-        {n.kind === 'comment' && n.data?.excerpt ? (
+        {(n.kind === 'comment' || n.kind === 'mention') && n.data?.excerpt ? (
           <Text
             numberOfLines={2}
             maxFontSizeMultiplier={MAX_SCALE}

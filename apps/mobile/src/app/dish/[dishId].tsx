@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { CheersButton } from '@/components/CheersButton'
+import { MentionText } from '@/components/MentionText'
 import { HeroButton } from '@/components/place/PlaceTopChrome'
 import { ReportControl } from '@/components/ReportControl'
 import { SaveButton } from '@/components/SaveButton'
@@ -195,7 +196,7 @@ export default function DishDetail() {
               maxFontSizeMultiplier={MAX_SCALE}
               className="mt-2 font-serif text-serif-md text-text-2"
             >
-              “{dish.caption}”
+              “<MentionText text={dish.caption} />”
             </Text>
           ) : null}
         </View>

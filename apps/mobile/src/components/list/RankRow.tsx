@@ -3,8 +3,8 @@ import { Link, useRouter } from 'expo-router'
 import { memo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
+import { MentionField } from '@/components/MentionField'
 import { MAX_SCALE } from '@/components/ui'
-import { Field } from '@/components/ui/Field'
 import { MoreIcon } from '@/components/ui/icons'
 import { ScoreStack } from '@/components/ui/patterns'
 import { PlaceLine } from '@/components/ui/PlaceLine'
@@ -103,13 +103,13 @@ export const RankRow = memo(function RankRow({
         </View>
         {editing ? (
           <View className="mt-2 gap-1 pl-9">
-            <Field
+            <MentionField
               autoFocus
               multilineBox
               placeholder={t('rankings.note_placeholder')}
               maxLength={140}
               value={draft}
-              onChangeText={setDraft}
+              onValue={setDraft}
             />
             <View className="flex-row gap-5">
               <NoteAction disabled={saveNote.isPending} onPress={() => saveNote.mutate()}>

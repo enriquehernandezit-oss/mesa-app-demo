@@ -12,11 +12,13 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { MentionText } from '@/components/MentionText'
 import { pickReportReasonNative } from '@/components/ReportControl'
 import { EmptyState, ErrorState, IconButton, MAX_SCALE, RowsSkeleton } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CloseIcon, MoreIcon, SendIcon } from '@/components/ui/icons'
 import { ScoreBadge } from '@/components/ui/patterns'
+import { useMentionField } from '@/hooks/useMentionField'
 import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { api } from '@/lib/api'
@@ -51,6 +53,7 @@ export default function CommentsSheet() {
   const { rankingId } = useLocalSearchParams<{ rankingId: string }>()
   const me = useProfile(true, 5 * 60_000).data?.profile
   const [draft, setDraft] = useState('')
+  const mention = useMentionField({ value: draft, onChange: setDraft, maxLength: MAX_LEN })
   const listRef = useRef<FlatList<RankingComment>>(null)
 
   const key = ['comments', rankingId]
@@ -191,7 +194,7 @@ export default function CommentsSheet() {
                     maxFontSizeMultiplier={MAX_SCALE}
                     className="mt-1 font-serif text-serif-sm text-text"
                   >
-                    “{post.note}”
+                    “<MentionText text={post.note} />”
                   </Text>
                 ) : null}
               </View>
@@ -219,7 +222,7 @@ export default function CommentsSheet() {
                   maxFontSizeMultiplier={MAX_SCALE}
                   className="mt-0.5 font-ui text-subhead leading-[21px] text-text"
                 >
-                  {c.body}
+                  <MentionText text={c.body} />
                 </Text>
               </View>
               {/* One action per row, so the label names it outright rather than
@@ -239,6 +242,9 @@ export default function CommentsSheet() {
         />
       )}
 
+      {/* Who you might be tagging, above the composer — tap one to finish the @handle. */}
+      {mention.suggestions ? <View className="px-3.5 pb-2">{mention.suggestions}</View> : null}
+
       {/* Composer */}
       <View
         className="flex-row items-center gap-2.5 border-line border-t px-3.5 pt-2.5"
@@ -246,8 +252,7 @@ export default function CommentsSheet() {
       >
         <Avatar name={me?.name || me?.handle || 'm'} src={me?.image ?? null} size={34} />
         <TextInput
-          value={draft}
-          onChangeText={setDraft}
+          {...mention.inputProps}
           placeholder={t('comments.placeholder')}
           placeholderTextColor={placeholder}
           selectionColor={accent}

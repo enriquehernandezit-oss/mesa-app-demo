@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
+import { MentionText } from '@/components/MentionText'
 import { pickReportReason } from '@/components/ReportControl'
 import { Body, MAX_SCALE, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -99,7 +100,7 @@ function NoteRow({ fr, first }: { fr: FriendRanking; first: boolean }) {
             maxFontSizeMultiplier={MAX_SCALE}
             className="mt-0.5 font-serif text-serif-sm text-text"
           >
-            “{fr.note}”
+            “<MentionText text={fr.note} />”
           </Text>
         ) : null}
       </View>

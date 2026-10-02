@@ -127,8 +127,14 @@ You can **delete your own dish post**; anyone else's is reportable.
   captions, or comments under its rankings — anyone who is not the owner or one of their approved
   followers. A comment's ranking owner gets the comment, not a second "mentioned you". It rides the
   `social` switch. There is no mentions table: the text plus the inbox row is the record.
-  `GET /social/mention-search?q=` serves the autocomplete: people you follow first, then everyone else
-  by handle prefix (never you, a block, or a ban); with nothing typed, just who you follow.
+  **Tagging in the app** works like Instagram's: type `@` and the start of a name or @handle in a comment,
+  a ranking note (in the rank flow or edited from Your list) or a dish caption, and the people you might
+  mean appear under the field (above it, for comments) — tap one and it becomes `@handle `, or keep typing
+  the whole handle. `GET /social/mention-search?q=` serves it: a handle prefix finds anyone; the start of any
+  word of a **name** (accents ignored: "lucia" finds "Lucía") finds only people you follow or who follow you.
+  Ordered: people you follow, then your followers, then the rest; never you, a block, or a ban. With nothing
+  typed after the `@`, just who you follow. Tagged handles in shown notes, comments and captions are tappable
+  (they open that member's profile); a mention lands in Activity under Rankings, quoting the text.
   Grouped by day, with a local read watermark that clears the bell badge.
 
 - **Contact matching** — optional, just-in-time. Phone numbers are hashed before they leave the

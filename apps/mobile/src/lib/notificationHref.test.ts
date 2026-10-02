@@ -38,6 +38,8 @@ describe('notificationHref', () => {
     expect(href('dish_nudge')).toBe('/dish-lists/l1')
     expect(href('friends_love', { actor: null })).toBe('/r/r1')
     expect(href('taste_match')).toBe('/match/u1')
+    expect(href('mention')).toBe('/comments/k1')
+    expect(href('mention', { rankingId: null })).toBe('/dish/d1')
   })
 
   test('a comment without its ranking falls back to the place', () => {
@@ -54,5 +56,6 @@ describe('notificationHref', () => {
     expect(href('dish_nudge', { dishListId: null })).toBeNull()
     expect(href('friends_love', { restaurant: null })).toBeNull()
     expect(href('taste_match', { actor: null })).toBeNull()
+    expect(href('mention', { rankingId: null, dish: null })).toBeNull()
   })
 })

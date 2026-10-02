@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DishNudgeCard } from '@/components/DishNudgeCard'
 import { ExternalResults } from '@/components/ExternalResults'
 import { LocationFilter } from '@/components/LocationFilter'
+import { MentionField } from '@/components/MentionField'
 import { FeelStep } from '@/components/rank/FeelStep'
 import { MiniFeel } from '@/components/rank/MiniFeel'
 import { RankHeader } from '@/components/rank/RankHeader'
@@ -1379,13 +1380,13 @@ function NoteStep({
 
         <Eyebrow className="px-5 pb-2 pt-5">{t('rank.your_note')}</Eyebrow>
         <View className="px-4">
-          <Field
+          <MentionField
             multilineBox
             placeholder={t('rank.note_placeholder')}
             maxLength={140}
             inputAccessoryViewID="rank-note"
             value={note}
-            onChangeText={setNote}
+            onValue={setNote}
           />
         </View>
         <KeyboardDone id="rank-note" />

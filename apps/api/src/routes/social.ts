@@ -64,6 +64,9 @@ async function resolveGraphTarget(
   return { id: targetId, locked }
 }
 
+// A handle prefix has only a–z, 0–9, "_" and "." in it; of those, "_" is LIKE's one-character wildcard.
+const likeEscape = (prefix: string) => prefix.replace(/_/g, '\\_')
+
 export const socialRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
@@ -412,29 +415,49 @@ export const socialRoutes = new Hono<AuthedEnv>()
     return c.json({ userId: target.id })
   })
 
-  // The @-autocomplete: members whose @handle starts with what was typed after the "@" — the people I
-  // follow first, then everyone else, alphabetically. An empty prefix is just my own following list. Not me,
-  // not banned, no block either way. Everyone with a handle can be found (name and @handle are public
-  // even on a private account); whether a mention then REACHES them is the notification's own rule.
+  // The @-autocomplete, Instagram style. What was typed after the "@" is matched against the start of the
+  // @handle — for anyone, so a full handle always finds its owner — and against the start of any word in the
+  // NAME ("enr" finds "Enrique Hernández"; "her" finds him by surname; accents ignored) — but only for people
+  // I am connected to: someone I follow or who follows me. Strangers are not offered by name. Ordered: the
+  // people I follow, then those who follow me, then the rest; handle matches before name matches; then
+  // alphabetically. An empty prefix is just my own following list. Not me, not banned, no block either way.
+  // (Name and @handle are public even on a private account; whether a mention then REACHES someone is the
+  // notification's own rule.)
   .get('/mention-search', async (c) => {
     const me = c.get('user')
     const prefix = parseHandlePrefix(c.req.query('q'))
     if (prefix === null) return c.json({ users: [] })
+    // The name as typed on a keyboard without accents: lowercase, á→a, ñ→n …
+    const plainName = sql`translate(lower(${schema.user.name}), 'áéíóúüñàèìòù', 'aeiouunaeiou')`
+    const iFollow = sql`${schema.user.id} in (select following_id from follows where follower_id = ${me.id})`
+    const followsMe = sql`${schema.user.id} in (select follower_id from follows where following_id = ${me.id})`
+    const wordStart = `% ${likeEscape(prefix)}%`
+    const nameStart = `${likeEscape(prefix)}%`
     const users = await db
       .select({
         id: schema.user.id,
         name: schema.user.name,
         handle: schema.user.handle,
         image: schema.user.image,
-        following: sql<boolean>`${schema.user.id} in (select following_id from follows where follower_id = ${me.id})`,
+        following: sql<boolean>`${iFollow}`,
       })
       .from(schema.user)
       .where(
         and(
           sql`${schema.user.handle} is not null`,
-          prefix ? sql`starts_with(${schema.user.handle}, ${prefix})` : undefined,
-          // With nothing typed yet, only the people I follow make sense to offer.
-          prefix ? undefined : inArray(schema.user.id, followingIds(me.id)),
+          prefix
+            ? or(
+                sql`starts_with(${schema.user.handle}, ${prefix})`,
+                and(
+                  or(iFollow, followsMe),
+                  or(
+                    sql`${plainName} like ${nameStart} escape '\\'`,
+                    sql`${plainName} like ${wordStart} escape '\\'`,
+                  ),
+                ),
+              )
+            : // With nothing typed yet, only the people I follow make sense to offer.
+              iFollow,
           ne(schema.user.id, me.id),
           isNull(schema.user.bannedAt),
           notInArray(schema.user.id, blockedByMe(me.id)),
@@ -442,9 +465,9 @@ export const socialRoutes = new Hono<AuthedEnv>()
         ),
       )
       .orderBy(
-        desc(
-          sql`${schema.user.id} in (select following_id from follows where follower_id = ${me.id})`,
-        ),
+        desc(iFollow),
+        desc(followsMe),
+        desc(sql`starts_with(${schema.user.handle}, ${prefix})`),
         schema.user.handle,
       )
       .limit(8)
