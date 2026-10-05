@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
@@ -68,6 +68,9 @@ export function useExternalPlaceSearch(opts: {
       ),
     enabled: wantExternal,
     staleTime: 300_000,
+    // Keep the last results on screen while the next keystroke's search runs, so the list
+    // doesn't empty and refill (the rows above it jump) on every pause in typing.
+    placeholderData: keepPreviousData,
   })
   const suggestions = wantExternal
     ? dedupeExternal(external.data?.suggestions ?? [], catalogNames)
@@ -109,6 +112,7 @@ export function useExternalPlaceSearch(opts: {
     nothingFound:
       wantExternal &&
       external.isSuccess &&
+      !external.isPlaceholderData &&
       external.data.suggestions.length === 0 &&
       (external.data.inMesa ?? []).length === 0,
   }

@@ -4,11 +4,9 @@ import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 
-// Explore gets its own stack purely so it can own a real UINavigationBar — that
-// is what `headerSearchBarOptions` attaches to, and a search field pinned to the
-// bar (focus, cancel, keyboard, scroll behavior all managed by UIKit) is the one
-// piece of this screen a JS TextInput can only imitate. The map screen it pushes
-// to keeps its own immersive presentation.
+// Explore gets its own stack so it owns a real UINavigationBar with a large title.
+// The search field is Mesa's own Field at the top of the results list, not a native
+// search bar. The map screen it pushes to keeps its own immersive presentation.
 export default function ExploreLayout() {
   const t = useT()
   const theme = useResolvedTheme()

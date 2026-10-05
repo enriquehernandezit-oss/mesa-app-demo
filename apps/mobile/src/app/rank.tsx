@@ -38,7 +38,6 @@ import { Avatar } from '@/components/ui/Avatar'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { Field } from '@/components/ui/Field'
 import { CameraIcon, CheckIcon, CloseIcon, SearchIcon } from '@/components/ui/icons'
-import { KeyboardDone } from '@/components/ui/KeyboardDone'
 import { ScoreBadge, ScoreStack } from '@/components/ui/patterns'
 import { PlaceLine } from '@/components/ui/PlaceLine'
 import { toast } from '@/components/ui/toast-store'
@@ -1355,6 +1354,9 @@ function NoteStep({
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
         keyboardShouldPersistTaps="handled"
+        // The note's return key is a newline and the sheet has no keyboard accessory bar, so
+        // dragging the page is the way to put the keyboard away (the buttons above and below save).
+        keyboardDismissMode="on-drag"
       >
         <View className="border-b border-line px-5 pb-4 pt-3.5">
           <PlaceLine
@@ -1381,12 +1383,10 @@ function NoteStep({
             multilineBox
             placeholder={t('rank.note_placeholder')}
             maxLength={140}
-            inputAccessoryViewID="rank-note"
             value={note}
             onValue={setNote}
           />
         </View>
-        <KeyboardDone id="rank-note" />
 
         {[
           { label: t('rank.occasion'), options: OCCASION_TAGS },

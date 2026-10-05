@@ -605,11 +605,10 @@ export default function ExploreScreen() {
         // are reading — and automaticallyAdjustKeyboardInsets (below) leaves room to scroll to the last one.
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        // The search field is the native header UISearchBar (see the header
-        // note above), not a TextInput inside this list — but this still
-        // works (M23): it reacts to the keyboard's own on-screen frame, not
-        // to which view is first responder, so results at the bottom of a
-        // long list are no longer hidden behind the keyboard.
+        // The search field is a Field in this list's header. This reacts to the keyboard's
+        // on-screen frame, so results at the bottom of a long list aren't hidden behind it.
+        // No field in the app has an input accessory view (see Field.tsx): with one, React
+        // Native also shifts the offset of every list that sets this prop, mounted or not.
         automaticallyAdjustKeyboardInsets
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
