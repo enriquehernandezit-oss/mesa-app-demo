@@ -67,7 +67,7 @@ import { captureError } from '@/lib/errors'
 import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
-import { invalidateAfterRanking } from '@/lib/invalidateAfterRanking'
+import { invalidateRankingNow, invalidateRankingRest } from '@/lib/invalidateAfterRanking'
 import {
   type PairwiseState,
   type Sentiment,
@@ -267,7 +267,8 @@ export default function RankAPlace() {
     retryDelay: (attempt) => 400 * (attempt + 1),
     onSuccess: () => {
       track('rank_placed', { rerank: isRerank, listSize: existingForCompare.length })
-      invalidateAfterRanking(pickedId)
+      // Only what is visible now; the rest waits for the sheet to close (lib/invalidateAfterRanking.ts).
+      invalidateRankingNow(pickedId)
       // Contextual push-permission prompt (M17) — a member who just placed a
       // ranking has demonstrated real intent, unlike a cold-launch prompt.
       // No-op if already decided (granted just re-registers the token,
@@ -506,7 +507,7 @@ export default function RankAPlace() {
         sentimentCount: selectedDishes.filter((d) => d.sentiment !== null).length,
         hasPhoto: Boolean(dishImage),
       })
-      invalidateAfterRanking(pickedId)
+      invalidateRankingNow(pickedId)
       finishToRankings()
     },
     onError: (err, pos) => {
@@ -595,6 +596,8 @@ export default function RankAPlace() {
       // a still-presented native modal (rank IS one; a toast started while it is up never shows),
       // but this fires from the unmount cleanup, i.e. as the modal is already going away, so it
       // lands the moment the sheet is actually gone.
+      // The refresh the flow held back, now that the sheet is closing: the feed, home, Explore, Popular…
+      if (positionRef.current !== null && commitSucceededRef.current) invalidateRankingRest()
       if (positionRef.current !== null && commitSucceededRef.current && pickedRef.current) {
         toast({
           message: t('rank.landed', {
