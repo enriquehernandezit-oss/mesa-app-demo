@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { MentionText } from '@/components/MentionText'
+import { MutualLine } from '@/components/MutualLine'
 import { ProfileStats } from '@/components/profile/ProfileStats'
 import { pickReportReason } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
@@ -150,6 +151,7 @@ export default function UserRankings() {
     sharedCount,
     followerCount,
     followingCount,
+    mutual,
     locked,
     rankedCount,
   } = q.data
@@ -266,6 +268,12 @@ export default function UserRankings() {
             ]}
           />
         </View>
+
+        {mutual.count > 0 ? (
+          <View className="mt-3 items-center px-6">
+            <MutualLine userId={userId} mutual={mutual} ring="bg" center />
+          </View>
+        ) : null}
 
         <View className="mt-4 items-center">
           <Button

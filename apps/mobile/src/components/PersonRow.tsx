@@ -31,33 +31,40 @@ export function PersonRow({
   user,
   subtitle,
   right,
+  below,
   last,
 }: {
   user: PersonRowUser
   subtitle?: string
   right?: ReactNode
+  // A line under the name, outside the profile link (so it can be a control of its own) —
+  // the "Followed by …" line.
+  below?: ReactNode
   last?: boolean
 }) {
   const caption =
     subtitle ??
     [user.handle ? `@${user.handle}` : null, user.neighborhood].filter(Boolean).join(' · ')
   return (
-    <View className={`flex-row items-center gap-3 py-3 ${last ? '' : 'border-line border-b'}`}>
-      <Link href={`/u/${user.id}`} asChild>
-        <Pressable
-          accessibilityRole="button"
-          className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80"
-        >
-          <Avatar name={user.name || user.handle || 'm'} src={user.image} size={42} />
-          <View className="min-w-0 flex-1">
-            <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
-              {user.name || user.handle}
-            </Text>
-            <Caption numberOfLines={1}>{caption}</Caption>
-          </View>
-        </Pressable>
-      </Link>
-      {right}
+    <View className={`py-3 ${last ? '' : 'border-line border-b'}`}>
+      <View className="flex-row items-center gap-3">
+        <Link href={`/u/${user.id}`} asChild>
+          <Pressable
+            accessibilityRole="button"
+            className="min-w-0 flex-1 flex-row items-center gap-3 active:opacity-80"
+          >
+            <Avatar name={user.name || user.handle || 'm'} src={user.image} size={42} />
+            <View className="min-w-0 flex-1">
+              <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+                {user.name || user.handle}
+              </Text>
+              <Caption numberOfLines={1}>{caption}</Caption>
+            </View>
+          </Pressable>
+        </Link>
+        {right}
+      </View>
+      {below ? <View className="mt-1.5 pl-[54px]">{below}</View> : null}
     </View>
   )
 }

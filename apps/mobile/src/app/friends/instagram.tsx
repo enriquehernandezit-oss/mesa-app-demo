@@ -2,6 +2,7 @@ import { File } from 'expo-file-system'
 import { useState } from 'react'
 import { ScrollView, Text, View } from 'react-native'
 
+import { MutualLine } from '@/components/MutualLine'
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Group } from '@/components/SettingsRow'
 import { Body, Button, Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
@@ -112,6 +113,7 @@ export default function InstagramImportScreen() {
                   key={u.id}
                   user={u}
                   subtitle={t('instagram.matched_subtitle', { handle: u.handle ?? '' })}
+                  below={<MutualLine userId={u.id} mutual={u.mutual} />}
                   right={<FollowPill userId={u.id} initial={false} from="find_friends" />}
                   last={i === matches.length - 1}
                 />

@@ -267,7 +267,11 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   "···" chip. **The match page** is the two faces, "You and Diego", the percentage in the serif at 86, the shared
   cuisines and neighbourhoods as white pills, then Where you agree / Where you don't as raised rows with both scores
   (yours, theirs) at the right. **Followers / Following** is one Followers|Following segmented control over a grouped
-  white list (42pt faces, a solid Follow or a raised Following). **Find friends** is raised cards — Invite (an accent
+  white list (42pt faces, a solid Follow or a raised Following); on someone else's profile a third **Mutual** segment
+  lists which of the people you follow, or who follow you, also follow them (it appears only when there is someone).
+  Wherever a person is offered to follow — People you may know, contact and Instagram matches, the shelf tiles, the
+  member profile under its stats — a **MutualLine** (`components/MutualLine.tsx`) says it: up to three overlapping
+  22pt faces and "Followed by Ana, Luis and 3 more", the whole line opening the Mutual list. **Find friends** is raised cards — Invite (an accent
   round button), Contacts (a switch and Search my contacts), Instagram — then People you may know as one grouped list
   with a ✕ and a Follow each; **Import from Instagram** is the serif title, a card of four numbered steps and a solid
   Choose file. **Edit profile** is a back chip and title, the photo, labelled fields (icons for Instagram and Website),

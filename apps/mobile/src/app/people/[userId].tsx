@@ -15,18 +15,31 @@ import type { FollowUser } from '@/lib/types'
 // stats trio (Seguidores / Siguiendo) and a member's own passport point to.
 // Neither existed before M2: the counts were plain, untappable text, so a
 // member could see they had 14 followers and never find out who.
-type Tab = 'followers' | 'following'
+//
+// "Mutual" is the third tab on someone else's profile: which of the people I follow or who follow
+// me also follow them — the list behind "Followed by Ana and 3 more". It is only offered when
+// there is someone in it (or when that is where the link pointed).
+type Tab = 'followers' | 'following' | 'mutual'
 
 export default function PeopleScreen() {
   const t = useT()
   const { userId, tab: tabParam } = useLocalSearchParams<{ userId: string; tab?: string }>()
-  const [tab, setTab] = useState<Tab>(tabParam === 'following' ? 'following' : 'followers')
+  const [tab, setTab] = useState<Tab>(
+    tabParam === 'following' ? 'following' : tabParam === 'mutual' ? 'mutual' : 'followers',
+  )
 
   const q = useQuery({
     queryKey: ['follow-list', userId, tab],
     queryFn: () =>
       api.get<{ users: FollowUser[]; locked?: boolean }>(`/social/${tab}?userId=${userId}`),
   })
+  // Whether to offer the Mutual tab at all: fetched once, so the tab appears (or not) before it
+  // is tapped. On your own list, and when nobody is in common, it stays out of the way.
+  const mutualPeek = useQuery({
+    queryKey: ['follow-list', userId, 'mutual'],
+    queryFn: () => api.get<{ users: FollowUser[] }>(`/social/mutuals?userId=${userId}`),
+  })
+  const showMutual = tab === 'mutual' || (mutualPeek.data?.users.length ?? 0) > 0
 
   const inviteFriends = async () => {
     try {
@@ -43,7 +56,12 @@ export default function PeopleScreen() {
     <View className="flex-1 bg-bg">
       <Stack.Screen
         options={{
-          title: tab === 'followers' ? t('people.followers_title') : t('people.following_title'),
+          title:
+            tab === 'followers'
+              ? t('people.followers_title')
+              : tab === 'mutual'
+                ? t('people.mutual_title')
+                : t('people.following_title'),
           headerLargeTitle: false,
         }}
       />
@@ -54,6 +72,7 @@ export default function PeopleScreen() {
           options={[
             { value: 'followers', label: t('people.followers_title') },
             { value: 'following', label: t('people.following_title') },
+            ...(showMutual ? [{ value: 'mutual' as const, label: t('people.mutual_title') }] : []),
           ]}
         />
       </View>
@@ -98,7 +117,9 @@ export default function PeopleScreen() {
               body={
                 tab === 'followers'
                   ? t('people.followers_empty_body')
-                  : t('people.following_empty_body')
+                  : tab === 'mutual'
+                    ? t('people.mutual_empty_body')
+                    : t('people.following_empty_body')
               }
               action={
                 tab === 'followers' ? (

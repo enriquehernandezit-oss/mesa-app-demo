@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { MutualLine } from '@/components/MutualLine'
 import { FollowPill, PersonRow } from '@/components/PersonRow'
 import { Group } from '@/components/SettingsRow'
 import {
@@ -214,6 +215,7 @@ function ContactsCard() {
               key={user.id}
               user={user}
               subtitle={t('friends.contact_match_subtitle', { name: contactName })}
+              below={<MutualLine userId={user.id} mutual={user.mutual} />}
               right={<FollowPill userId={user.id} initial={false} from="find_friends" />}
               last={i === matches.length - 1}
             />
@@ -324,7 +326,10 @@ export default function FriendsScreen() {
             <PersonRow
               key={u.id}
               user={u}
-              subtitle={reasonLine(t, u.reason)}
+              // Someone follows them in common: the faces and "Followed by …" say it, so the line
+              // under the name is the person's @handle. Otherwise the reason (taste, popular).
+              subtitle={u.mutual.count > 0 ? undefined : reasonLine(t, u.reason)}
+              below={<MutualLine userId={u.id} mutual={u.mutual} />}
               right={
                 <View className="flex-row items-center gap-2">
                   <Pressable

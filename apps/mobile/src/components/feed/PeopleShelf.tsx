@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
+import { MutualFaces } from '@/components/MutualLine'
 import { FollowPill } from '@/components/PersonRow'
 import { Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
@@ -65,6 +66,18 @@ export function PeopleShelf({ people }: { people: FriendSuggestion[] }) {
                 {reasonLine(t, u.reason)}
               </Caption>
             </Pressable>
+            {u.mutual.count > 0 ? (
+              // The people you both know, as faces — a tap opens who they are.
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('friends.mutual_a11y')}
+                onPress={() => router.push(`/people/${u.id}?tab=mutual`)}
+                hitSlop={6}
+                className="active:opacity-70"
+              >
+                <MutualFaces mutual={u.mutual} size={20} />
+              </Pressable>
+            ) : null}
             <FollowPill userId={u.id} initial={false} from="feed_shelf" />
           </View>
         ))}
