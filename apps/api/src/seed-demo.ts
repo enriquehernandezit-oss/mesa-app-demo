@@ -13,6 +13,7 @@
 // Idempotent — re-running deletes and recreates the account cleanly.
 
 import { db, pool, schema, scoreFor } from '@mesa/db'
+import { refuseRemoteDatabase } from '@mesa/db/localDatabase'
 import { asc, eq, inArray, sql } from 'drizzle-orm'
 
 import { auth } from './auth'
@@ -37,6 +38,7 @@ function mulberry32(seed: number): () => number {
 }
 
 async function main() {
+  refuseRemoteDatabase('seed:demo')
   const { user, rankings, follows, neighborhoods, restaurants, savedPlaces } = schema
 
   // 1) Clean slate — delete any prior demo account (cascades everything).

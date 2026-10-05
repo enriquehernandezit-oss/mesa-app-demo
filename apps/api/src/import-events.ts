@@ -28,6 +28,7 @@
 import { readFileSync } from 'node:fs'
 
 import { db, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { eq } from 'drizzle-orm'
 
 const { events, restaurants } = schema
@@ -75,6 +76,7 @@ export function bookingFields(
 }
 
 async function run() {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
 
   const raw = readFileSync(new URL('../data/events.json', import.meta.url), 'utf-8')

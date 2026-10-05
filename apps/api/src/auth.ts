@@ -34,11 +34,12 @@ import { resetPasswordUrl, verifyEmailUrl } from './lib/publicPage'
 // enough that it should only happen when the environment says so outright.
 const isDevEnv = ['development', 'dev', 'test'].includes(process.env.NODE_ENV ?? '')
 
-// SMS is not wired, so phone sign-in cannot complete. Rather than leave an
-// endpoint that answers "code sent" for a code nobody receives, the routes are
-// turned off until a provider key exists — the same env-gating as Apple and
-// Instagram, so setting the key turns them back on with no code change.
-const hasSms = Boolean(process.env.SMS_PROVIDER_API_KEY)
+// Phone sign-in needs a way to deliver the code, and the code has no SMS sender yet: sendOTP below
+// can only log it, which is a development convenience and nothing a member could use. So the routes
+// are on in development only. Setting SMS_PROVIDER_API_KEY does NOT turn them on — it used to, and
+// every send then threw, so a "working" phone login failed for the one person who tried it. When a
+// sender is written, this is the one line to change (and docs/DEPLOY.md's phone note with it).
+const hasSms = isDevEnv
 
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 // Both GOOGLE_CLIENT_ID (the Web client, paired with the secret) and
@@ -354,9 +355,8 @@ If you didn't create a Mesa account, you can ignore this email.`,
       : {}),
   },
 
-  // Phone sign-in is off until an SMS provider exists. disabledPaths keeps the
-  // plugin, its schema and the client wiring intact, so this is one env var away
-  // from working rather than a revert.
+  // Phone sign-in is off outside development until an SMS sender exists. disabledPaths keeps the
+  // plugin, its schema and the client wiring intact, so turning it on is one line, not a revert.
   disabledPaths: hasSms
     ? []
     : [

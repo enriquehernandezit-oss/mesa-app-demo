@@ -6,6 +6,7 @@
 // Run this against production (with the founder's own DATABASE_URL) after
 // every renormalize, and any time the ranking/onboarding routes change.
 import { pool } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 
 const SAMPLE = 10
 
@@ -27,6 +28,7 @@ function toResult(name: string, rows: { user_id: string }[]): CheckResult {
 }
 
 async function run(): Promise<void> {
+  announceDatabase()
   const results: CheckResult[] = []
 
   // Each check below selects the DISTINCT offending user_ids in a subquery

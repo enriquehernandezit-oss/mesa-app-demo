@@ -34,6 +34,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 import { db, haversineM, mesaNorm, pool, schema, trigramSimilarity } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { eq, isNull, sql } from 'drizzle-orm'
 
 import { inSantoDomingo } from './lib/geo'
@@ -210,6 +211,7 @@ function chunk<T>(rows: T[], size: number): T[][] {
 }
 
 async function run() {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
   const refresh = process.argv.includes('--refresh')
 

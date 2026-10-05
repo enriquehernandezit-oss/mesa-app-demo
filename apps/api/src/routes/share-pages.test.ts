@@ -210,6 +210,23 @@ describe.skipIf(!deps)('share pages: curated list / collection / dish list (loca
     await db.delete(schema.user).where(inArray(schema.user.id, userIds))
   })
 
+  describe('GET /p/spot/:restaurantId', () => {
+    test('says how many members ranked it, never a citywide average, and skips banned members', async () => {
+      const [r0] = restaurantIds
+      const [bannedRanking] = await db
+        .insert(schema.rankings)
+        .values({ userId: bannedOwnerId, restaurantId: r0 as string, position: 1, score: 20 })
+        .returning({ id: schema.rankings.id })
+      if (bannedRanking) rankingIds.push(bannedRanking.id)
+      const res = await get(`/p/spot/${r0}`)
+      expect(res.status).toBe(200)
+      const html = await res.text()
+      // Two rankings exist (the owner's and a banned member's); only the owner's counts.
+      expect(html).toContain('1 persona ha rankeado')
+      expect(html).not.toContain('promedio')
+    })
+  })
+
   describe('GET /p/list/:slug', () => {
     test('renders the title and both items in position order', async () => {
       const res = await get(`/p/list/${listSlug}`)

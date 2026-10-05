@@ -246,7 +246,7 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   a **search field** — Mesa's own `Field` in the page, not the native navigation-bar search (on iOS 26 that
   folds into the bottom toolbar, behind the floating tab bar, and stacked under the title it takes the
   system's colours, unreadable at Night) — then the **Places / Events** switcher, and the **Map** as a chip in
-  the bar. **Places:** pills Score ▾ / Filters (a bottom sheet of grouped rows, "Show N places") / Open now /
+  the bar. **Places:** pills Score ▾ / Filters (a bottom sheet of grouped rows, "Show N places") /
   Neighborhood ▾ (a bottom-sheet chooser; once set it becomes a solid pill with a ×); a Trending rail (a flame
   and the cheer count on a photo — never a score) in the default browse state; rows are raised r22 cards —
   rank, 54pt picture, serif name, meta, "N friends" — with the friends' `ScoreStack` (or "Be the first").
@@ -388,7 +388,7 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   comparison searches; scores stay by list position.
 - **The rest of the rank flow** (`app/rank.tsx`, `components/rank/{RankHeader,PlaceLine,MiniFeel}.tsx`)
   is one modal, one look. **Find the spot:** serif 33 title with a Close chip, a search field, pills
-  Nearby / Open now / Want to try (the saved places on their own), rows of a 52pt picture + serif name +
+  Nearby / Want to try (the saved places on their own), rows of a 52pt picture + serif name +
   one meta line + `ScoreStack` (or "Not ranked"). **Compare:** Back and Close chips with "1 of 6" between
   them, "Which was better?" serif 34, two r28 `CompareCard`s with **About the same** (a chip) between; no
   "swap it" — both places are on your own list. **Reveal:** "Your score" over the number in serif 84 and its

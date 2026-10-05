@@ -1,10 +1,10 @@
 # Mesa — what the app does today
 
-**Status as of 2026-09-14.** This document describes the product _as built_, not as planned.
-Where `docs/BUILD_PLAN.md`, `docs/APPSTORE.md` and `docs/SUBMISSION.md` disagree with this file,
-this file is right — those three still describe the retired Vite/Capacitor stack.
+**Status as of 2026-10-05.** This document describes the product _as built_, not as planned.
+Where `docs/BUILD_PLAN.md` disagrees with this file, this file is right — that plan is the
+original build order for the retired Vite/Capacitor app, kept as history.
 
-At a glance: **27 screens · 64 API endpoints · 25 tables · 14 migrations.**
+At a glance: **51 screens · 167 API endpoints (27 route files) · 45 tables · 38 migrations.**
 iOS-only, Spanish-only, no web app (the sole web surface is the API's server-rendered `/p/*`
 share pages).
 
@@ -69,13 +69,13 @@ verified with `bun run rankings:check` (read-only) and repaired with `bun run ra
 | Screen                                          | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Feed** (`discover.tsx`)                       | Friends' rankings and dish posts, newest first, infinite scroll + pull-to-refresh. Flat, compact rows (M9) — no card box, just a hairline under the text column. Ranking rows carry the attributed score; no `#N en su lista`. Dish posts carry the photo. Cheers on any row. Featured-lists carousel on top.                                                                                                                                                                                                                                                       |
-| **Explore** (`explore/index.tsx`)               | Searches your circle's rankings — not the open internet. Native search bar in the nav bar. Filters: score/open-now/price, sector, cuisine. Also returns **members** and dish matches. Falls through to Google when Mesa has fewer than 3 hits.                                                                                                                                                                                                                                                                                                                      |
+| **Explore** (`explore/index.tsx`)               | Searches your circle's rankings — not the open internet. A search field under the title. Filters: score, price, sector, cuisine, occasion, highlight (there is no "open now" — Mesa stores a usual closing time, not opening hours). Also returns **members** and dish matches. Falls through to Google when Mesa has fewer than 3 hits.                                                                                                                                                                                                                            |
 | **Trending rail**                               | "Sonando esta semana" — 14-day cheer velocity, in Explore's default browse state only. Shows **only a cheer count**, never a score. Self-hides under 4 qualifying spots.                                                                                                                                                                                                                                                                                                                                                                                            |
 | **Restaurant profile** (`r/[restaurantId].tsx`) | The payoff surface: hero photo or tinted map, characteristics, the attributed score trio, occasion tags, popular dishes, friends who ranked it with their notes, similar-spots rail, list membership pills. Sticky condensed header on scroll. Save, share, rank. Action row shows a **Menú** button when the place has one, next to Llamar/Sitio web/Cómo llegar — opens the full menu page (`menu/[restaurantId].tsx`: sticky section headers, a chip rail to jump between them). See `docs/MENUS.md` for how to add a menu to a place that doesn't have one yet. |
 | **Map** (`map.tsx`)                             | Every spot at real coordinates; friend-ranked places lit brass. Degrades to a message without a Mapbox token.                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | **Place map** (`place-map.tsx`)                 | One place, full-screen, pannable, with directions handoff.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **Lists** (`lists/[slug].tsx`)                  | Editorial lists in curated order, each with the friend signal.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| **Leaderboard**                                 | City ranking by places ranked, all-time or monthly.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| **Leaderboard**                                 | City ranking by places ranked, all-time or this month (the Santo Domingo calendar month).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 **Directions** hand off to Apple Maps, Google Maps or Waze via a chooser that remembers your last
 choice.
@@ -92,8 +92,8 @@ anchor** — carrying the poster's attributed score, because a dish is never fre
 
 The first dish logged on a ranking becomes that ranking's "Qué pedir" pick automatically — there
 is no separate free-text field for it anymore. See `docs/DISHES.md` for the full schema, API and
-taxonomy detail; dish-level ranking and cross-restaurant "best dish" lists are a later milestone,
-not built yet.
+taxonomy detail. **Dish lists** (`dish-lists/`) rank the same dish across places — "best tostones" —
+and have their own public page.
 
 You can **delete your own dish post**; anyone else's is reportable.
 
@@ -137,8 +137,13 @@ You can **delete your own dish post**; anyone else's is reportable.
   (they open that member's profile); a mention lands in Activity under Rankings, quoting the text.
   Grouped by day, with a local read watermark that clears the bell badge.
 
-- **Contact matching** — optional, just-in-time. Phone numbers are hashed before they leave the
-  phone and the list is never stored.
+- **Contact matching** — optional, just-in-time. The numbers are sent over TLS and hashed **on the
+  server** with a secret key (HMAC, `PHONE_MATCH_SECRET`), matched in the same request and never
+  stored. There is a daily budget per member. Being findable by your own number is a separate opt-in
+  (`PHONE_OPT_IN`), off until a number can be verified by SMS.
+- **Mutual connections** — a suggestion or a profile shows which of your people (anyone you follow or
+  who follows you) also follow that person, with a Mutual tab for the full list. Private accounts you
+  don't follow, banned members and blocks never count.
 
 ---
 
@@ -191,24 +196,31 @@ Complete, both directions:
   dinner.
 - **Public share pages** (`/p/u/:handle`, `/p/spot/:id`, `/p/i/:code`) — server-rendered, zero
   JavaScript, with Open Graph meta so links unfurl properly in WhatsApp and iMessage.
-- **Universal links** rewrite public paths to in-app screens, so a tap opens the app on the real
-  screen rather than a web page.
+- **App links** rewrite public paths (`/p/spot`, `/p/u`, `/p/plan`, `/p/list`, `/p/collection`,
+  `/p/dish-list`, invites and the two auth links) to in-app screens, so a tap opens the app on the real
+  screen rather than a web page. Two things must exist first, and neither does yet: a **domain**, and
+  the Apple team id (`APPLE_TEAM_ID`) so the API can serve `/.well-known/apple-app-site-association`;
+  the build also needs `APP_LINK_DOMAIN`. Until then the `mesa://` form works, and a link tapped on a
+  phone opens Safari. An invite link records the invite only when it opens the app — there is no
+  deferred attribution for someone who installs afterwards.
 
 ---
 
 ## 9. Account
 
-|                        |                                                                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| **Email + password**   | Live. 8-char minimum, breach-checked against Have I Been Pwned, Spanish error copy.                                   |
-| **Sign in with Apple** | Built, env-gated — turns on with Apple credentials.                                                                   |
-| **Instagram OAuth**    | Built server-side; no client UI. The Instagram handle is a display string only.                                       |
-| **Phone OTP**          | Built, disabled (no SMS provider).                                                                                    |
-| **Email verification** | Sent on signup, not a gate. Resend from Settings.                                                                     |
-| **Password reset**     | Emailed link, opens the app via universal link.                                                                       |
-| **Sessions**           | 30 days. Bearer tokens in the iOS Keychain, not cookies. Change password and "sign out other devices" both available. |
-| **Account deletion**   | In-app, cascading, irreversible. Requires your password, or a session younger than 24h.                               |
-| **Data export**        | Your rankings as JSON, via the share sheet.                                                                           |
+|                         |                                                                                                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Email + password**    | Live. 8-char minimum, breach-checked against Have I Been Pwned, Spanish error copy.                                                                                                                                 |
+| **Sign in with Apple**  | Built, env-gated — turns on with Apple credentials.                                                                                                                                                                 |
+| **Sign in with Google** | Built, env-gated — the native button, verified against the Web and iOS client ids.                                                                                                                                  |
+| **Instagram**           | No sign-in. The Instagram handle is a display string only; the server-side OAuth plugin has no app UI.                                                                                                              |
+| **Phone OTP**           | Built, off outside development — there is no SMS sender in the code, whatever `SMS_PROVIDER_API_KEY` says.                                                                                                          |
+| **Email verification**  | Sent on signup, not a gate. Resend from Settings.                                                                                                                                                                   |
+| **Password reset**      | Emailed link, opens the app via universal link.                                                                                                                                                                     |
+| **Sessions**            | 30 days. Bearer tokens in the iOS Keychain, not cookies. Change password and "sign out other devices" both available.                                                                                               |
+| **Account deletion**    | In-app, cascading, irreversible. Requires your password (guesses are throttled), or a session younger than 24h. Erases your photos from storage and the rows keyed by your email. Apple's token is not yet revoked. |
+| **Terms**               | Accepted in onboarding and enforced on the server: posting, commenting and following need it.                                                                                                                       |
+| **Data export**         | Your rankings as JSON, via the share sheet.                                                                                                                                                                         |
 
 **Onboarding** is three steps — profile + neighbourhood + EULA, a starter pairwise ranking, then
 finding friends. Nothing is gated behind invites, contacts, or a ranking count.
@@ -217,7 +229,7 @@ finding friends. Nothing is gated behind invites, contacts, or a ranking count.
 
 ## 10. Design
 
-Two first-class themes — **Afternoon** (light paper) and **Candlelit** (dark oxblood) — plus Auto,
+Two first-class themes — **Day** (cream) and **Night** (black with a bit of burgundy) — plus Auto,
 which flips at 6pm regardless of the OS setting. Everything resolves through a semantic token
 layer; no raw colour exists outside it.
 
@@ -231,13 +243,12 @@ The governing line is **content is Mesa, chrome is iOS**:
   transparency stayed visible against real content — so the shipped bar (`components/MesaTabBar.tsx`)
   is Mesa-drawn, tokened chrome instead of the native component, sized and opaque on purpose.
 
-Typography: Cormorant Garamond (serif) and Plus Jakarta Sans, the one UI family — it carries body,
-metadata, eyebrows and pill labels (JetBrains Mono held the metadata voice until it was retired
-2026-09-15). Data numerals use lining + tabular figures so scores sit on the baseline and columns
-align; prose keeps Cormorant's oldstyle figures.
+Typography: Instrument Serif (upright, never italic) for display and the iOS system font for
+everything else. The wordmark is the lowercase `mesa`; the capital-M icon lives on the home screen
+only. Data numerals use tabular figures so scores sit on the baseline and columns align.
 
 Other details: haptics taxonomy, skeleton loaders shaped like the content they replace, Dynamic
-Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove with undo.
+Type capped on the shared type primitives, 44pt touch targets on the main controls (a few small ones are still under), swipe-to-remove with undo.
 
 ---
 
@@ -245,22 +256,27 @@ Type capped on the shared type primitives, 44pt touch targets, swipe-to-remove w
 
 **Wired:**
 
-- **CI** — GitHub Actions on every push: typecheck (API, db, mobile), lint, tests, and an
+- **CI** — GitHub Actions on every push: typecheck (API, db, mobile), lint, format, the tests —
+  the database-backed route tests run against a throwaway Postgres with the real migrations — and an
   `expo export` bundle check that catches what `tsc` can't.
 - **Analytics** — PostHog, 17 typed loop events, screen views, no PII by contract.
 - **Crash reporting** — PostHog on both the app and the API.
 - **Email** — Resend, for verification and password reset. Production refuses to boot without it.
-- **Rate limiting** — Better Auth's limiter (DB-backed), a per-account sign-in throttle, and cost
-  guards on the Google proxy and contact matching.
+- **Rate limiting** — Better Auth's limiter (DB-backed), a per-account sign-in throttle, and durable
+  daily budgets on contact matching. The Google proxy has no spending cap yet.
 - **Security headers** — two CSP policies (a strict one for JSON, a scriptless one for `/p/*`),
   HSTS, `X-Frame-Options: DENY`.
 - **Deploy** — Railway, migrations run automatically before each deploy.
 
-**Env-gated, degrade gracefully:** Mapbox, R2, Google Places, Apple, Instagram, SMS,
-PostHog. Missing keys mean a missing feature, never a crash.
+**Env-gated, degrade gracefully:** Mapbox, R2, Google Places, Apple, Google sign-in, PostHog. Missing
+keys mean a missing feature, never a crash. (Phone sign-in is off outside development, and the
+Instagram server plugin has no app UI, whatever keys are set.)
 
-**Not built yet:** server-side caching · background jobs · route tests (there is exactly
-**one** test file) · a web admin panel (the moderator screen is in-app by design).
+**Tests:** 46 API test files, 5 database, 25 mobile — pure logic, the route handlers against a real
+Postgres, and the screens' helper libraries. There are no screen or component render tests.
+
+**Not built yet:** server-side caching · a web admin panel (the moderator screen is in-app by
+design). Background work is a single in-process sweep for reminders and push (`lib/pushSweep.ts`).
 
 ---
 
@@ -278,8 +294,7 @@ Refusing these is a design position, not a backlog:
   and events shipped: see `docs/EVENTS.md`; the Feed's Events pill shows friends' plans, Explore → Events the
   catalogue.)
 
-One control still says "pronto": **Notifications**, which becomes real with push. Stealth mode and
-DMs were removed rather than left as dated promises.
+Stealth mode and DMs were removed rather than left as dated promises.
 
 ---
 
@@ -299,11 +314,14 @@ but nothing proves the mirror still matches the server.
 
 ## 14. What's blocking launch
 
-| Blocker                      | Needs                                                          |
-| ---------------------------- | -------------------------------------------------------------- |
-| First device build           | Apple Developer approval (enrolled, pending)                   |
-| Push notifications           | Apple approval, then build                                     |
-| Signed image uploads         | ✅ shipped — needs R2 credentials in the founder's Railway env |
-| Analytics actually reporting | PostHog key (mobile + Railway)                                 |
-| Legal pages                  | Founder + counsel review of the drafted copy                   |
-| App Store listing            | Screenshots (needs a build), description, privacy label        |
+| Blocker                            | Needs                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain                             | Buying one — then `PUBLIC_WEB_URL`, `APP_LINK_DOMAIN` and `APPLE_TEAM_ID` (app links), the support email on the legal pages, and the App Store listing's URLs |
+| Apple token revocation             | An Apple `.p8` key, so deleting an account also revokes the Sign in with Apple grant                                                                          |
+| Phone sign-in / findable-by-number | An SMS sender and a verification step; both stay off until then                                                                                               |
+| Analytics actually reporting       | PostHog key (mobile + Railway)                                                                                                                                |
+| Legal pages                        | Founder + counsel review of the drafted copy                                                                                                                  |
+| App Store listing                  | Screenshots, description, privacy label, and the app name ("Mesa" is taken)                                                                                   |
+| Push on a real device              | A check on a TestFlight build — the code and the Expo token are in place                                                                                      |
+
+The first device build is done (TestFlight since 2026-09-23); updates since then ship over the air.

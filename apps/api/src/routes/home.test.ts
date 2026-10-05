@@ -355,8 +355,10 @@ describe.skipIf(!deps)('GET /home (local DB)', () => {
     const res = await lonelyApp.request('/home')
     expect(res.status).toBe(200)
     const h = (await res.json()) as Home
-    // no friends → none of MY six; only the crowd may fill, never one of the blocked places
-    expect(sixIds(h)).not.toContain(places.F!)
+    // no friends → none of MY six; only the crowd may fill. The stranger blocked nobody, so F (ranked
+    // only by someone *I* blocked) is fair crowd material — whether it makes the top six depends on how
+    // many other places the database holds, which is why this used to pass on a busy database and fail
+    // on an empty one. What can never appear for anyone is a place only a banned member ranked.
     expect(sixIds(h)).not.toContain(places.H!)
   })
 })

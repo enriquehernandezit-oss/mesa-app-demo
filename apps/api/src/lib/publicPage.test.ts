@@ -1,6 +1,6 @@
-import { describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, test } from 'bun:test'
 
-import { displayScore, layout, notFound, scoreChip, scoreWord } from './publicPage'
+import { ctaHref, displayScore, layout, notFound, scoreChip, scoreWord } from './publicPage'
 
 // The shell every public page shares. Pure functions — no DB — so these run everywhere, CI
 // included. What they guard: a score reads as a NUMBER + a WORD exactly as in the app
@@ -69,5 +69,31 @@ describe('layout', () => {
     const missing = notFound('https://example.test/p/x')
     expect(missing).toContain('<div class="mark">mesa</div>')
     expect(missing).toContain('No encontrado')
+  })
+})
+
+describe('ctaHref', () => {
+  const saved = { web: process.env.PUBLIC_WEB_URL, origins: process.env.APP_ORIGINS }
+  afterEach(() => {
+    for (const [k, v] of [
+      ['PUBLIC_WEB_URL', saved.web],
+      ['APP_ORIGINS', saved.origins],
+    ] as const) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
+  })
+
+  test('points at the landing page when one is configured', () => {
+    process.env.PUBLIC_WEB_URL = 'https://mesa.example'
+    expect(ctaHref('https://api.example/p/spot/abc')).toBe('https://mesa.example')
+  })
+
+  test('without one it opens the app on this very page, never the API root', () => {
+    delete process.env.PUBLIC_WEB_URL
+    delete process.env.APP_ORIGINS
+    expect(ctaHref('https://api.example/p/spot/abc')).toBe('mesa://p/spot/abc')
+    expect(ctaHref('https://api.example/p/u/camila?x=1')).toBe('mesa://p/u/camila?x=1')
+    expect(ctaHref('not a url')).toBe('mesa://')
   })
 })

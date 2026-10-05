@@ -77,20 +77,13 @@ const NO_MEMBERS: ExploreMember[] = []
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
 // screen reads once those filters are applied.
-function exploreKey(
-  q: string,
-  f: ExploreFilterValues,
-  openNow: boolean,
-  sort: SortKey,
-  loc: Location,
-) {
+function exploreKey(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location) {
   return [
     'explore',
     q,
     f.hood,
     f.cuisine,
     f.price,
-    openNow,
     f.occasion,
     f.highlight,
     f.minScore,
@@ -98,19 +91,12 @@ function exploreKey(
     locationQuery(loc),
   ]
 }
-function fetchExplore(
-  q: string,
-  f: ExploreFilterValues,
-  openNow: boolean,
-  sort: SortKey,
-  loc: Location,
-) {
+function fetchExplore(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location) {
   const params = new URLSearchParams(locationQuery(loc))
   if (q.length >= 2) params.set('q', q)
   if (f.hood) params.set('neighborhood', f.hood)
   if (f.cuisine) params.set('cuisine', f.cuisine)
   if (f.price) params.set('price', String(f.price))
-  if (openNow) params.set('open', '1')
   if (f.occasion) params.set('occasion', f.occasion)
   if (f.highlight) params.set('highlight', f.highlight)
   if (f.minScore) params.set('minScore', String(f.minScore))
@@ -199,7 +185,6 @@ export default function ExploreScreen() {
     }, [params.view, router]),
   )
   const [price, setPrice] = useState<number | null>(null)
-  const [openNow, setOpenNow] = useState(false)
   const [occasion, setOccasion] = useState<string | null>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const [minScore, setMinScore] = useState<number | null>(null)
@@ -242,12 +227,11 @@ export default function ExploreScreen() {
   const panelCount = [hood, cuisine, price, occasion, highlight, minScore].filter(
     (v) => v != null,
   ).length
-  const activeCount = panelCount + (openNow ? 1 : 0)
+  const activeCount = panelCount
   const clearFilters = useCallback(() => {
     setHood(null)
     setCuisine(null)
     setPrice(null)
-    setOpenNow(false)
     setOccasion(null)
     setHighlight(null)
     setMinScore(null)
@@ -270,8 +254,8 @@ export default function ExploreScreen() {
   // WHERE to look — Santo Domingo by default — scopes Mesa's own places here and Google's below.
   const location = useLocationFilter()
   const results = useQuery({
-    queryKey: exploreKey(debouncedQ, filterValues, openNow, sort, location),
-    queryFn: () => fetchExplore(debouncedQ, filterValues, openNow, sort, location),
+    queryKey: exploreKey(debouncedQ, filterValues, sort, location),
+    queryFn: () => fetchExplore(debouncedQ, filterValues, sort, location),
     // Keep the current results up while a new search/filter loads, instead of
     // collapsing the list to a skeleton (and jumping the page) on every change.
     placeholderData: keepPreviousData,
@@ -290,16 +274,10 @@ export default function ExploreScreen() {
     !hood &&
     !cuisine &&
     price == null &&
-    !openNow &&
     !occasion &&
     !highlight &&
     minScore == null &&
     isDefaultLocation(location)
-
-  // "Abierto ahora" filters on closesAt (null for imported rows) — hide the chip
-  // when few current hits have hours; keep it while active. (M7)
-  const hoursCoverage = hits.length ? hits.filter((h) => h.closesAt).length / hits.length : 1
-  const showOpenChip = openNow || hoursCoverage >= 0.4
 
   // Google — any restaurant, Santo Domingo first then the Dominican Republic then the world
   // (the location filter narrows or widens that), for every real query, not just the ones
@@ -443,7 +421,7 @@ export default function ExploreScreen() {
 
       <View style={{ display: view === 'places' ? 'flex' : 'none' }}>
         {/* Sort, one "Filtros" pill that opens the combined panel
-          (ExploreFilters), Abierto ahora, then one pill per ACTIVE
+          (ExploreFilters), then one pill per ACTIVE
           filter with a small × in its corner to drop just that one,
           and "Limpiar todo" once anything is set. */}
         {/* The chips scroll; "Limpiar todo" is pinned OUTSIDE the scroll at
@@ -470,15 +448,6 @@ export default function ExploreScreen() {
                 ? `${t('explore.filters_chip')} · ${panelCount}`
                 : t('explore.filters_chip')}
             </Chip>
-            {showOpenChip && (
-              <Chip
-                size="sm"
-                state={openNow ? 'selected' : 'default'}
-                onPress={() => setOpenNow((v) => !v)}
-              >
-                {t('explore.open_now')}
-              </Chip>
-            )}
             {hood ? (
               <RemovablePill
                 label={neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood}
@@ -643,8 +612,8 @@ export default function ExploreScreen() {
         neighborhoods={neighborhoods.data?.neighborhoods ?? []}
         cuisines={cuisines.data?.cuisines ?? []}
         countQuery={(d) => ({
-          queryKey: exploreKey(debouncedQ, d, openNow, sort, location),
-          queryFn: () => fetchExplore(debouncedQ, d, openNow, sort, location),
+          queryKey: exploreKey(debouncedQ, d, sort, location),
+          queryFn: () => fetchExplore(debouncedQ, d, sort, location),
         })}
       />
     </View>

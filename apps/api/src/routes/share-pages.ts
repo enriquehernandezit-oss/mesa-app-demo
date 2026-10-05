@@ -4,15 +4,7 @@ import { Hono } from 'hono'
 
 import type { AppEnv } from '../context'
 import { isUuid } from '../lib/ids'
-import {
-  displayScore,
-  esc,
-  layout,
-  notFound,
-  publicOrigin,
-  scoreChip,
-  scoreWord,
-} from '../lib/publicPage'
+import { esc, layout, notFound, publicOrigin, scoreChip } from '../lib/publicPage'
 
 // PUBLIC share pages — the growth loop's return path. When a user shares their
 // ranking, the share text carries a link here. These pages are server-rendered
@@ -266,13 +258,14 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     })
     if (!r) return c.html(notFound(canonical), 404)
 
+    // How many members ranked it — a head count, never a score. A score on Mesa always belongs to a
+    // person (a friend's, yours), so a bare citywide average has no place on a page a stranger sees; and
+    // a suspended member's ranking does not count.
     const [agg] = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-        avg: sql<number>`avg(${rankings.score})`,
-      })
+      .select({ count: sql<number>`count(*)::int` })
       .from(rankings)
-      .where(eq(rankings.restaurantId, id))
+      .innerJoin(user, eq(user.id, rankings.userId))
+      .where(and(eq(rankings.restaurantId, id), isNull(user.bannedAt)))
 
     // The note from whoever ranks it highest (lowest position) — the most
     // credible one-line "why".
@@ -306,14 +299,11 @@ export const sharePagesRoutes = new Hono<AppEnv>()
       .filter(Boolean)
       .join(' · ')
     const count = agg?.count ?? 0
-    const avg = agg?.avg != null ? Number(agg.avg) : null
     const cover = absoluteCover(r.coverImageId)
 
     const statLine =
       count > 0
-        ? `${count} ${count === 1 ? 'persona ha' : 'personas han'} rankeado${
-            avg != null ? ` · promedio ${displayScore(avg)} · ${scoreWord(avg)}` : ''
-          }`
+        ? `${count} ${count === 1 ? 'persona ha' : 'personas han'} rankeado`
         : 'Aún nadie lo ha rankeado. Sé el primero.'
 
     const title = `${r.name} en Mesa`

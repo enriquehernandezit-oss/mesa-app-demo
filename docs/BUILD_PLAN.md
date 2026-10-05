@@ -1,5 +1,11 @@
 # Mesa — Build Plan
 
+> **History, not the current plan.** This is the original build order, written when the client was
+> a Vite web app wrapped in Capacitor. That client was replaced by the Expo / React Native app in
+> `apps/mobile`, and `apps/app` no longer exists. For what the product does today read
+> `docs/FEATURES.md`; for how it must look, `docs/DESIGN.md`. The milestone discipline and the
+> core-loop reasoning below still hold; the stack details and milestone contents do not.
+
 This is the roadmap. Phase 1 is broken into milestones you build one at a time,
 in order. Phases 2 and 3 are outlined so the schema and structure don't fight
 them later, but **do not build Phase 2/3 work now.**

@@ -18,6 +18,7 @@
 // form isn't in this map, so `TAG_ES[tag] ?? tag` is a no-op for it — a
 // re-run only ever touches rows that still have a legacy English tag left.
 import { db, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { isNotNull, sql } from 'drizzle-orm'
 
 const { rankings } = schema
@@ -33,6 +34,7 @@ const TAG_ES: Record<string, string> = {
 }
 
 async function run() {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
   console.log(`tags:normalize ${dryRun ? '(DRY RUN)' : ''}`)
   console.log('='.repeat(40))

@@ -33,8 +33,21 @@ export function publicOrigin(): string {
   )
 }
 
-function ctaHref(): string {
-  return webOrigin() ?? '/'
+// Where the call to action points. With a landing page configured, there. Without one the old
+// fallback was "/" — the API root, a JSON 404 — so the button went nowhere. A person who has the
+// app is better served by opening it on this very page (the mesa:// form of the path, which
+// lib/deepLinks.ts in the app already understands), and the button is only an offer: iOS ignores it
+// when the app is not installed. Production should set PUBLIC_WEB_URL to the landing/App Store page
+// (a boot warning in index.ts says so).
+export function ctaHref(canonical: string): string {
+  const web = webOrigin()
+  if (web) return web
+  try {
+    const u = new URL(canonical)
+    return `mesa://${u.pathname.replace(/^\/+/, '')}${u.search}`
+  } catch {
+    return 'mesa://'
+  }
 }
 
 // A score is a NUMBER + a WORD, same as in the app (apps/mobile/src/lib/score.ts — keep the
@@ -79,7 +92,7 @@ export function layout(opts: {
     : '<meta name="twitter:card" content="summary" />'
   const foot =
     footer ??
-    `<a class="cta" href="${esc(ctaHref())}">Ábrelo en Mesa</a>
+    `<a class="cta" href="${esc(ctaHref(canonical))}">Ábrelo en Mesa</a>
     <p class="tagline">where your friends actually eat</p>`
   return `<!doctype html>
 <html lang="es">

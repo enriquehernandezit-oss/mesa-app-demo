@@ -13,6 +13,7 @@
 // from someone who can't see the post is a thread nobody could have written.
 
 import { COMMENT_TEMPLATES, db, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { sql } from 'drizzle-orm'
 
 const DRY = process.argv.includes('--dry-run')
@@ -35,6 +36,7 @@ function seededRandom(key: string): () => number {
 }
 
 async function main() {
+  announceDatabase()
   const { rankings, rankingComments, follows, restaurants } = schema
 
   // One pass for the three things a thread needs: the post, who follows its

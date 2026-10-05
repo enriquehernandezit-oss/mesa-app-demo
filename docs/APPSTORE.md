@@ -1,10 +1,8 @@
 # Mesa — App Store Compliance
 
 Mesa ships to iOS as an **Expo / React Native app** (`apps/mobile`) — see
-`docs/FEATURES.md` for what's built as of the native rewrite; this file predates
-that rewrite and still frames some sections against the retired Vite/Capacitor
-client (noted inline below where it matters). A social app with user content and
-social login triggers several hard requirements regardless of the client stack.
+`docs/FEATURES.md` for what's built. A social app with user content and social
+login triggers several hard requirements regardless of the client stack.
 Treat this as a build constraint, not a submission-day checklist — the starred
 items are architectural and are built during Phase 1, not bolted on at the end.
 
@@ -12,11 +10,10 @@ items are architectural and are built during Phase 1, not bolted on at the end.
 
 ### 4.8 — Sign in with Apple is required (build in M1/M2)
 
-Because Mesa offers **Instagram login**, Apple requires an equivalent
-privacy-focused login option. Sign in with Apple qualifies. It must be offered
-wherever Instagram login is offered, with equal prominence. Wire it in Better
-Auth alongside Instagram from the first auth commit — retrofitting a second
-identity provider later is painful.
+Because Mesa offers a third-party login (**Google**), Apple requires an equivalent
+privacy-focused login option. Sign in with Apple qualifies. It is offered beside
+Google with equal prominence, both wired in Better Auth. (Instagram is not a login
+method: it is only an optional @handle shown on a profile.)
 
 ### 1.2 — User-generated content controls (build in M3)
 
@@ -37,12 +34,11 @@ across their data. Put it in profile settings.
 
 ## Submission-day requirements (verify in M5)
 
-### 4.2 — Minimum functionality (WebView apps)
+### 4.2 — Minimum functionality
 
-A Capacitor app must not read as "just a website." Mesa clears this via real
-native capability: contact import, push notifications, native share, MapBox
-maps, camera/photo picker. Keep at least a few of these genuinely native so the
-app is clearly more than a wrapped web page.
+Mesa is a native app (React Native), not a wrapped website, and uses real native
+capability: contact matching, push notifications, native share, Mapbox maps,
+the camera and photo picker.
 
 ### 5.1 — Privacy
 
@@ -58,9 +54,10 @@ app is clearly more than a wrapped web page.
 
 ### 4.5 — Third-party login / API terms
 
-Instagram/Facebook login must comply with Meta's platform terms and use their
-official OAuth. No scraping of Instagram data — use the sanctioned graph/login
-scopes only. (This also matches the app's own privacy posture.)
+Google sign-in uses Google's official native SDK and token verification. Mesa does
+not log in with Instagram and does not scrape it: the friends import reads the
+member's own Instagram data export, picked from the phone and parsed on it, and
+only the handles are matched.
 
 ### 3.1.1 — Payments (relevant in Phase 2, not now)
 
@@ -85,15 +82,15 @@ if an ad/attribution SDK is ever added.
 Status as of the end of Phase 1 build (M5). ✅ = built & verified in-app; ⬜ = a
 config/account action that happens at submission (see `docs/SUBMISSION.md`).
 
-- [x] Sign in with Apple present next to Instagram — auth screen, equal prominence (env-gated, turns on with Apple creds)
+- [x] Sign in with Apple present next to Google — auth screen, equal prominence (env-gated, turns on with the provider credentials)
 - [x] Report content + block user + remove/eject working — verified end to end (M3)
 - [x] EULA accepted at signup — required checkbox in onboarding; recorded server-side
 - [x] In-app account deletion (cascading) — Profile → Danger zone → DELETE /me, cascade verified (M5)
 - [x] Privacy policy + terms URLs live — real copy, written against what the app actually does, in the app (`/legal/privacy`, `/legal/terms`, `/legal/eula`) and hosted publicly by the API at the same paths (`<API origin>/legal/…`, no auth). Canonical text: `apps/api/src/lib/legalCopy.ts`, mirrored in `apps/mobile/src/app/legal/[doc].tsx`. Still wants a lawyer's read before the public release
 - [ ] App Privacy nutrition label filled in App Store Connect — declare: account info, contacts (matched, not stored), usage
-- [~] All `Info.plist` purpose strings written — drafted in `docs/NATIVE.md`; paste after `cap add ios`
-- [x] App demonstrably more than a WebView — Contacts (live), reserve handoff, MapBox map, camera/photo (staged) satisfy 4.2
-- [x] Official Meta OAuth, no scraping — Instagram via Better Auth generic-oauth to Meta endpoints
-- [ ] TestFlight build green, seeded with a dense friend cluster — needs Xcode + Apple Developer (see SUBMISSION.md)
+- [x] All `Info.plist` purpose strings written — as the Expo plugin options in `apps/mobile/app.json` (location, photos, camera, contacts); each is a real sentence naming the why
+- [x] App demonstrably more than a WebView — it is a native app: contacts, push, Mapbox maps, camera/photo, share sheet satisfy 4.2
+- [x] No Instagram login and no scraping — the handle is display text; the friends import reads the member's own export on the phone
+- [x] TestFlight build live (since 2026-09-23) — seeding it with a dense friend cluster is the open part (see SUBMISSION.md)
 
 See **`docs/SUBMISSION.md`** for the exact remaining steps and what each needs.

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 
 import { db, pool } from './client'
+import { refuseRemoteDatabase } from './localDatabase'
 import * as schema from './schema'
 import { scoreFor } from './score'
 import { seedCuration } from './seed-curation'
@@ -74,6 +75,9 @@ const siteFor = (name: string): string =>
     .replace(/[^a-z0-9]+/g, '')}.do`
 
 async function seed() {
+  // The seed TRUNCATEs users and places. The catalog-row check below only notices some imported data, so
+  // the first line of defence is that it never runs against anything but a local database.
+  refuseRemoteDatabase('db:seed')
   console.log('seeding…')
 
   // Guard: seed TRUNCATEs the whole catalog (and cascades through every ranking

@@ -91,6 +91,14 @@ describe('toAppPath', () => {
     })
   })
 
+  test('shared list, collection and dish list links open their screens', () => {
+    expect(toAppPath('https://mesa.app/p/list/best-tacos')).toEqual({ path: '/lists/best-tacos' })
+    expect(toAppPath('https://mesa.app/p/collection/abc-123')).toEqual({
+      path: '/collections/abc-123',
+    })
+    expect(toAppPath('mesa://p/dish-list/abc-123')).toEqual({ path: '/dish-lists/abc-123' })
+  })
+
   test('member link by handle', () => {
     expect(toAppPath('https://mesa.app/p/u/@camila')).toEqual({ path: '/u/handle/camila' })
   })

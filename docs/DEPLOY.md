@@ -69,11 +69,31 @@ stray space makes the origin silently fail (`403 INVALID_ORIGIN`).
 **Do NOT set `PORT`.** Railway injects it and the API already reads
 `process.env.PORT`. Setting it yourself will break the bind.
 
-Leave these unset until you actually have the accounts — the code is env-gated
-and simply keeps those features off:
-`APPLE_*`, `INSTAGRAM_*` (social login), `SMS_PROVIDER_API_KEY`
-(phone-OTP login won't work in prod without it), `R2_*` (see .env.example —
-photo uploads), `MAPBOX_*`.
+Everything below is optional in the sense that the API still boots without it —
+the code is env-gated and keeps that feature off — but a real launch wants most
+of them. `apps/api/.env.example` has the full list with comments; this is what
+each one does and what happens without it.
+
+| Variable                                                                                       | What it does                                                                                       | Without it                                                                                      |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `EMAIL_PROVIDER_API_KEY`, `EMAIL_FROM`                                                         | Resend: verification and password-reset email                                                      | **production refuses to boot without both**; in development the links print to the console      |
+| `PHONE_MATCH_SECRET`                                                                           | HMAC key for contacts matching and the opt-in phone number                                         | contacts matching returns no matches and the opt-in number route is off                         |
+| `PHONE_OPT_IN`                                                                                 | `on` lets members register their number to be findable                                             | off (it stays off until SMS verification exists)                                                |
+| `APPLE_CLIENT_ID`, `APPLE_CLIENT_SECRET`, `APPLE_APP_BUNDLE_ID`                                | Sign in with Apple                                                                                 | the provider is off                                                                             |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CLIENT_ID_IOS`                             | Google sign-in (Web pair, plus the iOS client as an accepted audience)                             | the provider is off                                                                             |
+| `GOOGLE_PLACES_API_KEY`                                                                        | search of places not yet in Mesa, and place enrichment                                             | "En Google" results are empty                                                                   |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | photo uploads, and erasing a deleted account's photos                                              | uploads report `available: false` and the app falls back; erased accounts' photos are not swept |
+| `EXPO_ACCESS_TOKEN`                                                                            | Expo push delivery                                                                                 | pushes are skipped                                                                              |
+| `POSTHOG_API_KEY`                                                                              | the API's own error reports                                                                        | no-op                                                                                           |
+| `DB_POOL_MAX`                                                                                  | Postgres pool size (default 10)                                                                    | default                                                                                         |
+| `PUBLIC_API_URL`                                                                               | this API's own public URL (cover images on share pages, links in emails)                           | falls back to `BETTER_AUTH_URL`                                                                 |
+| `PUBLIC_WEB_URL`                                                                               | where "Ábrelo en Mesa" sends someone without the app (landing or App Store page)                   | the button opens the app on that page instead; a warning is logged at boot                      |
+| `APPLE_TEAM_ID`                                                                                | turns on `/.well-known/apple-app-site-association` for app links (needs a domain; see FEATURES §8) | the file answers 404                                                                            |
+| `INSTAGRAM_*`                                                                                  | a server-side OAuth plugin with no app UI                                                          | nothing changes                                                                                 |
+
+`SMS_PROVIDER_API_KEY` is **not** read: phone sign-in is off outside development
+because the code has no SMS sender, so setting the key would change nothing. The
+API reads no `MAPBOX_*` variable — Mapbox tokens belong to the mobile build (EAS).
 
 ## Step 4 — Get the public URL, then finish auth config
 
@@ -104,8 +124,8 @@ it's wired in `apps/api/src/auth.ts` (the `bearer()` plugin) and the app's
 ## Step 5 — First deploy
 
 Push to `main` (or hit **Deploy**). On each deploy Railway runs, in order:
-`bun install` → `bun run db:migrate` (applies Drizzle migrations 0000–0004) →
-starts the API. Verify it's up:
+`bun install` → `bun run db:migrate` (applies every Drizzle migration in
+`packages/db/drizzle/`, and prunes expired audit, push and throttle rows) → starts the API. Verify it's up:
 
 ```bash
 curl https://YOUR-API-URL/health
@@ -132,16 +152,13 @@ curl https://YOUR-API-URL/p/u/demo
 
 ## Seeding the demo data (optional, ONE time only)
 
-The seed makes the app look alive (40 users, 35 restaurants, 545 rankings). But
-`bun run db:seed` **TRUNCATES every table first** — only ever run it against a
-fresh/empty database, never once real users exist.
-
-To seed the Railway DB once, from your machine (uses the public `DATABASE_URL`
-from the Postgres service's Variables tab):
-
-```bash
-DATABASE_URL="postgres://...from railway..." bun run db:seed
-```
+The seed makes the app look alive (40 users, 35 restaurants, 545 rankings) — for
+a **local** database. `bun run db:seed` TRUNCATES users and places first, so it
+now **refuses to run against anything but localhost** (`packages/db/src/localDatabase.ts`),
+and so does `seed:demo` (the demo account has a published password). Production
+never gets demo data. The scripts meant for production (`backfill:dishes`,
+`user:delete`, `rankings:check`, …) print which database they are about to touch
+as their first line; read it for the word `REMOTE` before a real run.
 
 ---
 
@@ -171,9 +188,10 @@ and deployed.
 
 ## Three gotchas to expect
 
-1. **Phone login won't work in prod** until you add an SMS provider
-   (`SMS_PROVIDER_API_KEY`). Everything else runs without it. For a first live
-   smoke test, hitting `/health` and the read endpoints is enough.
+1. **Phone login is off in prod** — there is no SMS sender in the code, so the
+   `/phone-number/*` routes are disabled outside development whatever keys are set.
+   Everything else runs without it. For a first live smoke test, hitting
+   `/health` and the read endpoints is enough.
 2. **Cross-origin auth "works but doesn't stick."** If sign-in hangs — most
    visibly on an iPhone — it's the browser refusing the cross-site session
    cookie. This is already solved by Bearer-token auth (see "How auth crosses
@@ -221,9 +239,8 @@ letting anyone but yourself sign in, close the gap in this order:
      errors, it logs `[email] send failed…` / `[email] NOT SENT…` and returns,
      so a mail outage never 500s signup or reset. Watch the logs for those lines;
      they mean mail isn't going out even though the request succeeded.
-2. **Wire the SMS provider** if you want phone login: `SMS_PROVIDER_API_KEY`.
-   Until it's set, phone `send-otp` returns `200` but only logs the code — it is
-   not a working login path for real users.
+2. **Phone login** is not a launch path: the routes are off outside development
+   (see the gotcha above). Skip this step.
 3. **Then set `NODE_ENV=production`** on the `mesa-api` service. This turns off
    the dev fallbacks (no more secrets/links in logs). Do this step _after_ #1 so
    verification-on-signup has a real sender; the best-effort `sendMail` means a
@@ -236,8 +253,8 @@ letting anyone but yourself sign in, close the gap in this order:
    cookies for the web build.
 
 Env-gated features that stay safely off until you add their keys — the code
-simply skips them: `APPLE_*`, `INSTAGRAM_*` (social login), `R2_*`
-(image upload), `MAPBOX_*` (maps).
+simply skips them: `APPLE_*`, `GOOGLE_*` (sign-in), `R2_*` (image upload),
+`GOOGLE_PLACES_API_KEY`, `EXPO_ACCESS_TOKEN` (push). See the table in Step 3.
 
 ## What is NOT on Railway (Phase 1)
 

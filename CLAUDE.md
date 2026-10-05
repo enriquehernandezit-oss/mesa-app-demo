@@ -1,9 +1,10 @@
 # Mesa — Project Guide for Claude Code
 
 Read this file in full before writing any code. It is the source of truth for
-how this project is built. `docs/BUILD_PLAN.md` is what to build and in what
-order. `docs/DESIGN.md` is how it must look and feel. `docs/APPSTORE.md` is the
-App Store compliance the build must satisfy.
+how this project is built. `docs/FEATURES.md` is what the product does today.
+`docs/DESIGN.md` is how it must look and feel. `docs/APPSTORE.md` is the App
+Store compliance the build must satisfy. `docs/BUILD_PLAN.md` is the original
+build order, kept as history (it still describes the retired Vite/Capacitor app).
 
 ## What Mesa is
 
@@ -23,10 +24,11 @@ feature is not load-bearing for that loop, it is not Phase 1.
 - **Backend API:** Hono (typed, runs on Bun)
 - **Database:** PostgreSQL (hosted on Railway)
 - **ORM:** Drizzle — schema-first, the schema is the single source of truth
-- **Auth:** Better Auth — email + password, phone (OTP), Sign in with Apple, and
-  Instagram OAuth. Instagram is optional (a display @handle, set in onboarding),
-  never required for membership. (Email+password was added post-Phase-6 by founder
-  decision, alongside the original phone/OAuth methods.)
+- **Auth:** Better Auth — email + password, Sign in with Apple and Google sign-in.
+  Phone (OTP) is built but off outside development until an SMS sender exists.
+  Instagram is not a login method: it is an optional display @handle, set in
+  onboarding, never required for membership. (Email+password was added
+  post-Phase-6 by founder decision.)
 - **App:** **Expo / React Native** (`apps/mobile`), iOS-first. **NativeWind** for
   styling, **Expo Router** for navigation, TanStack Query (data/cache). Native
   access (contacts, location, camera, haptics, secure storage, maps) via Expo
@@ -44,7 +46,7 @@ feature is not load-bearing for that loop, it is not Phase 1.
 
 **App Store compliance is a build constraint, not a submission step.** Read
 `docs/APPSTORE.md`. Three items are architectural and must be built in early:
-Sign in with Apple alongside Instagram (required by 4.8), UGC moderation
+Sign in with Apple alongside Google (required by 4.8), UGC moderation
 (report/block/remove per 1.2), and in-app account deletion (5.1.1).
 
 ## Repo shape (Bun workspaces monorepo)
@@ -58,7 +60,7 @@ mesa-app-demo/
 │                     # (see its bunfig.toml linker="hoisted").
 ├─ packages/
 │  └─ db/             # Drizzle schema + client — SHARED by api and app types
-├─ docs/              # BUILD_PLAN.md, DESIGN.md
+├─ docs/              # FEATURES.md, DESIGN.md, DEPLOY.md, … (BUILD_PLAN.md is history)
 ├─ assets/            # brand/ and moodboard/ references
 └─ .claude/           # settings
 ```
@@ -94,7 +96,7 @@ workspace setup minimal — do not add tooling that isn't earning its place.
 
 ## Milestone discipline
 
-Build **one milestone at a time** (see `docs/BUILD_PLAN.md`). After each
+Build **one milestone at a time**. After each
 milestone: show how to run/verify it, commit, and stop for review before
 starting the next. Do not run ahead into later milestones unprompted.
 

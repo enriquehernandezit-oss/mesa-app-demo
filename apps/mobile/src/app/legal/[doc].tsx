@@ -27,7 +27,7 @@ type Doc = 'terms' | 'eula' | 'privacy'
 
 type Section = { heading: string; paragraphs: string[] }
 
-const UPDATED = 'Última actualización: 21 de septiembre de 2026'
+const UPDATED = 'Última actualización: 5 de octubre de 2026'
 
 const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }> = {
   privacy: {
@@ -44,9 +44,10 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Tu cuenta',
         paragraphs: [
-          'Puedes entrar con correo y contraseña, con tu cuenta de Apple o con Instagram. Guardamos lo mínimo para sostener el método que elijas: tu correo y tu contraseña guardada como hash —nunca en texto plano—, o el identificador que nos devuelve Apple o Instagram. Nunca vemos tu contraseña de Apple ni la de Instagram.',
+          'Puedes entrar con correo y contraseña, con tu cuenta de Apple o con tu cuenta de Google. Guardamos lo mínimo para sostener el método que elijas: tu correo y tu contraseña guardada como hash —nunca en texto plano—, o el identificador que nos devuelve Apple o Google. Nunca vemos tu contraseña de Apple ni la de Google.',
           'Si usas Iniciar sesión con Apple y escondes tu correo, lo único que recibimos es la dirección de reenvío que Apple genera.',
           'Si el inicio de sesión por teléfono está disponible y lo usas, tu número queda guardado en tu cuenta como forma de entrar.',
+          'Si quieres, puedes añadir tu usuario de Instagram a tu perfil. Es solo un texto que otros ven; Mesa no se conecta a tu cuenta de Instagram.',
         ],
       },
       {
@@ -107,7 +108,7 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Con quién compartimos',
         paragraphs: [
-          'Railway aloja el servidor y la base de datos. Cloudflare R2 guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog recibe lo descrito arriba cuando está configurado. Apple e Instagram intervienen solo si eliges entrar con ellos.',
+          'Railway aloja el servidor y la base de datos. Cloudflare R2 guarda y entrega imágenes. MapBox dibuja los mapas. Expo y Apple entregan las notificaciones. Resend envía los correos de verificación y de recuperación de contraseña. Google Places nos sugiere lugares cuando buscas un sitio que todavía no está en Mesa, lo que significa que el texto de esa búsqueda llega a Google. PostHog recibe lo descrito arriba cuando está configurado. Apple y Google intervienen solo si eliges entrar con ellos.',
           'Cada uno recibe únicamente lo que necesita para su parte. También entregaríamos datos si una autoridad competente nos lo exigiera legalmente.',
           'No vendemos tus datos, no los alquilamos y no los cambiamos por publicidad.',
         ],
@@ -121,7 +122,7 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Eliminar tu cuenta',
         paragraphs: [
-          'Perfil → Ajustes → Tu cuenta → Eliminar cuenta. Te pedimos tu contraseña, o un inicio de sesión reciente si entras con Apple o Instagram, porque esto no se puede deshacer.',
+          'Perfil → Ajustes → Tu cuenta → Eliminar cuenta. Te pedimos tu contraseña, o un inicio de sesión reciente si entras con Apple o Google, porque esto no se puede deshacer.',
           'Al confirmar borramos la cuenta y todo lo que cuelga de ella: rankings, notas, fotos, comentarios, listas, seguidores, bloqueos, reportes, sesiones y tokens de notificación. Es un borrado real, no una desactivación.',
           'Lo que no podemos recoger: si alguien guardó una captura o abrió un enlace que compartiste, eso ya vive fuera de Mesa. Las copias de respaldo y los registros del servidor pueden conservar restos por poco tiempo antes de rotar.',
         ],

@@ -1,30 +1,32 @@
 # Mesa — TestFlight & App Store submission
 
-What is left to get Mesa in front of external testers, in order. This replaces
-the Capacitor-era version of this file: the app is Expo / React Native
-(`apps/mobile`), built with **EAS**, and the API is already live on Railway.
+What is left to get Mesa from testers to the App Store, in order. The app is Expo /
+React Native (`apps/mobile`), built with **EAS**; the API is live on Railway; a
+production build has been on TestFlight since 2026-09-23, and JS-only changes now
+ship over the air (`eas update`). Sections below that describe first-build steps
+are kept as the checklist for the next signed build and for App Store review.
 Anything marked **founder** needs an account, a key or a legal decision that
 can't be done from the dev environment.
 
 ## Where it stands
 
-|           |                                                                                                            |
-| --------- | ---------------------------------------------------------------------------------------------------------- |
-| API       | live on Railway, `/health` 200, migrations run on deploy (`railway.json` `preDeployCommand`)               |
-| Auth      | email+password, Sign in with Apple (configured on prod — the server answers as a live provider), phone OTP |
-| 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped                                            |
-| 5.1.1     | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`)                            |
-| Builds    | `development` and `preview` profiles have built; **`production` has never run**                            |
-| Checks    | tsc, oxlint and tests green across mobile / api / db                                                       |
+|           |                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------- |
+| API       | live on Railway, `/health` 200, migrations run on deploy (`railway.json` `preDeployCommand`)             |
+| Auth      | email+password, Sign in with Apple, Google sign-in. Phone OTP is off outside development (no SMS sender) |
+| 1.2 (UGC) | report + block + moderator queue + EULA acceptance, all shipped                                          |
+| 5.1.1     | in-app account deletion, hard delete with cascade (`apps/api/src/routes/me.ts`)                          |
+| Builds    | `production` is on TestFlight; `expo-updates` is in, so fixes ship as OTA updates                        |
+| Checks    | tsc, oxlint and tests green across mobile / api / db                                                     |
 
 ## 1. Founder: accounts and keys
 
-| What                             | Why                                                                                                                                                                                                                       | How                                                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId`                                                                                                                                                                             | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app`                                                  |
-| **PostHog key**                  | product analytics AND crash/error reports (`lib/analytics.ts`, `lib/errors.ts`); without it both no-op, and the `posthog-react-native/expo` plugin (native crash capture + readable stack traces) isn't registered either | `eas env:create production --name EXPO_PUBLIC_POSTHOG_KEY --value <key>` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
-| **PostHog key on Railway**       | the API's own error reports (`apps/api/src/lib/errors.ts`); without it the server no-ops the same way                                                                                                                     | set `POSTHOG_API_KEY` on the API service in Railway's dashboard                                                        |
-| **Domain** (deferred)            | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains`                                                                                                                                       | buy, then set the env var and host `apple-app-site-association`                                                        |
+| What                             | Why                                                                                                                                                                                                                                                      | How                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **App Store Connect app record** | TestFlight needs it; it issues the `ascAppId`                                                                                                                                                                                                            | appstoreconnect.apple.com → Apps → + → bundle id `com.mesasocial.app`                                                  |
+| **PostHog key**                  | product analytics AND crash/error reports (`lib/analytics.ts`, `lib/errors.ts`); without it both no-op, and the `posthog-react-native/expo` plugin (native crash capture + readable stack traces) isn't registered either                                | `eas env:create production --name EXPO_PUBLIC_POSTHOG_KEY --value <key>` (+ `EXPO_PUBLIC_POSTHOG_HOST` if self-hosted) |
+| **PostHog key on Railway**       | the API's own error reports (`apps/api/src/lib/errors.ts`); without it the server no-ops the same way                                                                                                                                                    | set `POSTHOG_API_KEY` on the API service in Railway's dashboard                                                        |
+| **Domain** (deferred)            | universal links + a support address; `APP_LINK_DOMAIN` turns on `associatedDomains` in the build, and `APPLE_TEAM_ID` on the API makes it serve the `apple-app-site-association` file; `PUBLIC_WEB_URL` is where share pages send people without the app | buy, then set the env var and host `apple-app-site-association`                                                        |
 
 Set secrets with a shell that does not echo them:
 
@@ -85,7 +87,9 @@ but it is a review).
 
 ## 5. After the first green build
 
-- Add **`expo-updates`** so JS-only fixes reach testers without a new build.
+- `expo-updates` is already in: publish JS-only fixes with `eas update --channel production`,
+  after the API change they depend on is deployed. Anything native (a new module, a config
+  change) changes the fingerprint and needs a new build.
 - Seed the beta with **one dense friend cluster**, not scattered testers —
   cold-start is the product risk, not the build.
 - Watch PostHog's error tracking for the first crash-free-session number before widening.

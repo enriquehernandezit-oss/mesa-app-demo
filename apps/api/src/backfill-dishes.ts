@@ -25,6 +25,7 @@
 // no longer 'otro' — so it's a no-op the moment nothing's left to improve,
 // safe to re-run after any future taxonomy change.
 import { DISH_CATEGORIES, db, guessDishCategory, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 
 const { dishes, rankings } = schema
@@ -173,6 +174,7 @@ function printDistribution(dist: Map<string, number>): void {
 }
 
 async function run(): Promise<void> {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
   const recategorize = process.argv.includes('--recategorize-otro')
 

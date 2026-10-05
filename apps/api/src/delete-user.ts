@@ -12,11 +12,13 @@
 // packages/db/src/schema.ts's `user` table), so this takes their rankings, notes,
 // comments, saves, RSVPs, follows and push tokens with it. It cannot be undone.
 import { db, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { eq, sql } from 'drizzle-orm'
 
 const { user, rankings, vibeNotes, rankingComments } = schema
 
 async function main() {
+  announceDatabase()
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
   const email = args.find((a) => !a.startsWith('--'))?.trim()

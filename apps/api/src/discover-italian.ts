@@ -18,6 +18,7 @@
 // Idempotent: a re-run finds the same restaurants already inserted last time
 // via findCatalogMatch's googlePlaceId short-circuit, so nothing duplicates.
 import { db, mesaNorm, pool, schema } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { eq, isNull, sql } from 'drizzle-orm'
 
 import { type ExistingRow, findCatalogMatch, inBounds, nameOnlyUniqueMatch } from './import-top100'
@@ -51,6 +52,7 @@ const QUERIES = [
 ]
 
 async function run() {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
   if (!hasGooglePlacesKey()) {
     throw new Error(

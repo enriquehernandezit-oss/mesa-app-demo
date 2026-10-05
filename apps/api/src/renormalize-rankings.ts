@@ -8,6 +8,7 @@
 //
 // Always --dry-run first and read the report before a real run.
 import { db, pool, schema, scoreFor } from '@mesa/db'
+import { announceDatabase } from '@mesa/db/localDatabase'
 import { asc, eq } from 'drizzle-orm'
 
 import { lockUserList, rewrite } from './lib/rankingOrder'
@@ -15,6 +16,7 @@ import { lockUserList, rewrite } from './lib/rankingOrder'
 const { rankings } = schema
 
 async function run(): Promise<void> {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
 
   const userIds = await db

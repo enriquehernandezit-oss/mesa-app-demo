@@ -1,7 +1,7 @@
 name: CI
 
 # Every push and PR gets the same checks the founder runs by hand:
-# typecheck → lint → test → the Metro bundle actually builds.
+# typecheck → lint → format → test (against a real Postgres) → the Metro bundle actually builds.
 #
 # Two installs, deliberately: apps/mobile is NOT a workspace member (it needs a
 # flat node_modules for Metro — see its bunfig.toml linker="hoisted"), so the
@@ -20,8 +20,31 @@ concurrency:
 
 jobs:
   api:
-    name: API · db (typecheck, lint, test)
+    name: API · db (typecheck, lint, format, test)
     runs-on: ubuntu-latest
+
+    # A throwaway Postgres for the route tests. Fourteen-plus of them talk to a real database and
+    # SKIP themselves when none is reachable, so without this service CI stayed green while checking
+    # nothing about privacy, moderation or ranking order. The tests only run against a localhost
+    # URL (see the gate at the top of any *.test.ts that opens a pool), which is exactly this one.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: mesa
+          POSTGRES_PASSWORD: mesa
+          POSTGRES_DB: mesa_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mesa -d mesa_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://mesa:mesa@localhost:5432/mesa_test
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,18 +57,25 @@ jobs:
 
       # Covers apps/api and packages/db. Not apps/mobile (see header).
       - name: Typecheck
-        run: bun run typecheck
+        run: bun run --filter '*' typecheck
 
-      # Biome runs over the whole repo from root, so this DOES cover
+      # oxlint runs over the whole repo from root, so this DOES cover
       # apps/mobile's source even though its deps aren't installed here.
       - name: Lint
         run: bun run lint
 
+      - name: Format
+        run: bun run format:check
+
+      # The same migrations production runs on every deploy, applied to the empty service database.
+      - name: Migrate
+        run: bun run db:migrate
+
       - name: Test
-        run: bun run test
+        run: bun run --filter '*' test
 
   mobile:
-    name: Mobile (typecheck, bundle)
+    name: Mobile (typecheck, test, bundle)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +96,10 @@ jobs:
       - name: Typecheck
         working-directory: apps/mobile
         run: bunx tsc --noEmit
+
+      - name: Test
+        working-directory: apps/mobile
+        run: bun run test
 
       # The check tsc cannot do: an unknown NativeWind class or an import Metro
       # can't resolve fails silently in tsc but breaks the bundle. No Xcode

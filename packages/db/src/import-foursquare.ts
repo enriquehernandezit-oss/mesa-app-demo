@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { and, eq, isNull, notInArray, sql } from 'drizzle-orm'
 
 import { db, pool } from './client'
+import { announceDatabase } from './localDatabase'
 import { haversineM, mesaNorm, trigramSimilarity } from './placeMatchPure'
 import * as schema from './schema'
 
@@ -140,6 +141,7 @@ function chunk<T>(rows: T[], size: number): T[][] {
 }
 
 async function run() {
+  announceDatabase()
   const dryRun = process.argv.includes('--dry-run')
   const skipReconcile = process.argv.includes('--skip-reconcile')
 

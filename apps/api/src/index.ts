@@ -7,6 +7,7 @@ import { auth } from './auth'
 import type { AppEnv } from './context'
 import { requestBodyLimit } from './lib/bodyLimit'
 import { captureApiError } from './lib/errors'
+import { webOrigin } from './lib/publicPage'
 import { startPushSweep } from './lib/pushSweep'
 import { R2_PUBLIC_BASE_URL } from './lib/r2'
 import { sessionMiddleware } from './middleware/session'
@@ -36,6 +37,7 @@ import { savedRoutes } from './routes/saved'
 import { sharePagesRoutes } from './routes/share-pages'
 import { socialRoutes } from './routes/social'
 import { uploadsRoutes } from './routes/uploads'
+import { wellKnownRoutes } from './routes/well-known'
 
 const app = new Hono<AppEnv>()
 
@@ -167,6 +169,9 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 app.route('/p', authPagesRoutes)
 app.route('/p', sharePagesRoutes)
 
+// The universal-link file (404 until APPLE_TEAM_ID is set) — pre-session, Apple's fetch has no cookie.
+app.route('/.well-known', wellKnownRoutes)
+
 // PUBLIC legal pages (privacy / terms / EULA) — the hosted URLs App Store
 // Connect asks for, same text as the app's own legal screens. Pre-session for
 // the same reason: a reviewer opening the privacy policy has no account.
@@ -230,6 +235,14 @@ app.onError((err, c) => {
   captureApiError(err, { method: c.req.method, path: new URL(c.req.url).pathname })
   return c.json({ error: 'internal_error' }, 500)
 })
+
+// A share page's "get Mesa" button needs somewhere to go. Unset, it falls back to opening the app (so it
+// is never a dead link), but a stranger without the app has nowhere to land: say so once at boot.
+if (process.env.NODE_ENV === 'production' && !webOrigin()) {
+  console.warn(
+    'PUBLIC_WEB_URL is not set: share pages cannot send people without the app anywhere. Set it to the landing or App Store page.',
+  )
+}
 
 startPushSweep()
 

@@ -72,6 +72,17 @@ export function toAppPath(url: string): DeepLinkResult | null {
   const plan = path.match(/^\/p\/plan\/([\w-]+)/)
   if (plan?.[1]) return { path: `/plans/${plan[1]}` }
 
+  // Shared lists, collections and dish lists. The public pages are keyed the way their app screens
+  // are (a list by slug, the other two by id), so each is a straight hand-off.
+  const list = path.match(/^\/p\/list\/([\w-]+)/)
+  if (list?.[1]) return { path: `/lists/${list[1]}` }
+
+  const collection = path.match(/^\/p\/collection\/([\w-]+)/)
+  if (collection?.[1]) return { path: `/collections/${collection[1]}` }
+
+  const dishList = path.match(/^\/p\/dish-list\/([\w-]+)/)
+  if (dishList?.[1]) return { path: `/dish-lists/${dishList[1]}` }
+
   // Shared profiles address people by @handle; every in-app profile route is
   // keyed by id, so this hands off to a resolver route.
   const member = path.match(/^\/p\/u\/@?([\w.-]+)/)
