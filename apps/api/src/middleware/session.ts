@@ -37,3 +37,16 @@ export const requireModerator = createMiddleware<AuthedEnv>(async (c, next) => {
   if (!user.isModerator) return c.json({ error: 'forbidden' }, 403)
   await next()
 })
+
+// Guard for the writes that put content in front of other people (rank, comment, post a dish,
+// upload, plan, list, add a place): the member must have accepted the terms. Onboarding asks for
+// that acceptance, but until now only the app checked it — a client calling the API directly could
+// skip onboarding and still post (App Store 1.2 wants the agreement in place before UGC).
+// Deliberately not on reporting or blocking: someone who has not accepted must still be able to
+// protect themselves. Must run after requireAuth.
+export const requireEula = createMiddleware<AuthedEnv>(async (c, next) => {
+  const user = c.get('user')
+  if (!user) return c.json({ error: 'unauthorized' }, 401)
+  if (!user.eulaAcceptedAt) return c.json({ error: 'eula_required' }, 403)
+  await next()
+})

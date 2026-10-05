@@ -117,6 +117,8 @@ describe.skipIf(!deps)('notification inbox (local DB)', () => {
     name: `Person ${label}`,
     email: `${tag}-${label}@example.test`,
     emailVerified: false,
+    // Terms accepted — the write routes require it (middleware/session.ts requireEula).
+    eulaAcceptedAt: new Date(),
     image: null,
     createdAt: new Date(),
     updatedAt: new Date(),

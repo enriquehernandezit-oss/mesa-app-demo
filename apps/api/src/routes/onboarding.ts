@@ -1,10 +1,11 @@
-import { db, schema } from '@mesa/db'
+import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
+import { spendMatchBudget } from '../lib/usageBudget'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -12,38 +13,18 @@ import { requireAuth } from '../middleware/session'
 // first open, so these endpoints exist to make a brand-new profile immediately
 // non-empty and non-friendless (BUILD_PLAN M2).
 
+// Unset -> contact matching is fully dark, same convention as routes/social.ts.
+const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
+
 const rankingsSchema = z.object({
   // Ordered best-first, as the pairwise comparisons settled them.
   restaurantIds: z.array(z.string().uuid()).min(1).max(20),
 })
 
 const contactsSchema = z.object({
-  phoneNumbers: z.array(z.string()).max(1000),
+  // A real address book can run past the old 1000; the budget, not the request size, bounds the day.
+  phoneNumbers: z.array(z.string().max(32)).max(3000),
 })
-
-// Contact-match is an identity oracle: submit a phone number, learn whether it
-// belongs to a Mesa user and who. Legitimate use is matching your own address
-// book once at onboarding, so a per-user daily budget on how many numbers can
-// be probed bounds bulk phone→identity enumeration without hurting the real
-// flow. Best-effort in-memory sliding window (single Railway instance, resets
-// on deploy) — a rate limiter, not a security boundary; the real defense is
-// that matches are exact-only and the caller must already hold the numbers.
-const CONTACT_MATCH_WINDOW_MS = 24 * 60 * 60 * 1000
-const CONTACT_MATCH_DAILY_BUDGET = 2000
-const contactProbes = new Map<string, { at: number; n: number }[]>()
-function overContactBudget(userId: string, count: number, now: number): boolean {
-  const recent = (contactProbes.get(userId) ?? []).filter(
-    (p) => now - p.at < CONTACT_MATCH_WINDOW_MS,
-  )
-  const used = recent.reduce((sum, p) => sum + p.n, 0)
-  if (used + count > CONTACT_MATCH_DAILY_BUDGET) {
-    contactProbes.set(userId, recent)
-    return true
-  }
-  recent.push({ at: now, n: count })
-  contactProbes.set(userId, recent)
-  return false
-}
 
 export const onboardingRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -186,20 +167,27 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
     return c.json({ users: rows })
   })
 
-  // Match a device's contact phone numbers against Mesa users (App Store 5.1:
-  // the client asks for contacts permission just-in-time before calling this).
-  // We match on the exact stored phone number and never persist the uploaded
-  // list. One round trip via inArray.
+  // Match a device's contact phone numbers against Mesa users who chose to be found (App Store
+  // 5.1: the client asks for contacts permission just-in-time before calling this). The numbers
+  // are normalised and hashed here, in the request, and never stored — the same matcher and the
+  // same daily budget as POST /social/contacts/match, with the same exclusions: banned accounts
+  // and anyone blocked either way never appear. (This route used to compare the raw strings to
+  // the sign-in phone column, which missed most contacts and ignored blocks.)
   .post('/contacts/match', async (c) => {
     const current = c.get('user')
+    if (!PHONE_MATCH_SECRET) return c.json({ users: [] })
 
     const parsed = contactsSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     }
-    const numbers = [...new Set(parsed.data.phoneNumbers.map((n) => n.trim()))].filter(Boolean)
-    if (numbers.length === 0) return c.json({ users: [] })
-    if (overContactBudget(current.id, numbers.length, Date.now())) {
+    const hashes = new Set<string>()
+    for (const raw of parsed.data.phoneNumbers) {
+      const e164 = normalizePhone(raw.trim())
+      if (e164) hashes.add(hashPhone(e164, PHONE_MATCH_SECRET))
+    }
+    if (hashes.size === 0) return c.json({ users: [] })
+    if (!(await spendMatchBudget(current.id, hashes.size))) {
       return c.json({ error: 'rate_limited' }, 429)
     }
 
@@ -211,12 +199,13 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
         image: schema.user.image,
       })
       .from(schema.user)
-      // Banned accounts are never surfaced, even by an exact phone match.
       .where(
         and(
-          inArray(schema.user.phoneNumber, numbers),
+          inArray(schema.user.phoneHash, [...hashes]),
           ne(schema.user.id, current.id),
           isNull(schema.user.bannedAt),
+          notInArray(schema.user.id, blockedByMe(current.id)),
+          notInArray(schema.user.id, blockedMe(current.id)),
         ),
       )
       .limit(200)

@@ -1,9 +1,9 @@
 import { requireOptionalNativeModule } from 'expo'
 import Constants from 'expo-constants'
-import * as SecureStore from 'expo-secure-store'
 import { Platform } from 'react-native'
 
 import { api } from './api'
+import { cachedPushToken, forgetPushToken, rememberPushToken } from './pushToken'
 
 export { pushDeepLink } from './pushLinks'
 
@@ -51,8 +51,6 @@ function pushNativeLinked(): boolean {
   )
 }
 
-const TOKEN_KEY = 'mesa.push_token'
-
 type NotificationsModule = typeof import('expo-notifications')
 
 let cached: NotificationsModule | null | undefined
@@ -79,14 +77,6 @@ async function loadNotifications(): Promise<NotificationsModule | null> {
     cached = null
   }
   return cached
-}
-
-async function cachedToken(): Promise<string | null> {
-  try {
-    return await SecureStore.getItemAsync(TOKEN_KEY)
-  } catch {
-    return null
-  }
 }
 
 export type PushPermission = 'granted' | 'denied' | 'undetermined' | 'unsupported'
@@ -135,10 +125,10 @@ export async function registerForPush(): Promise<boolean> {
       projectId ? { projectId } : undefined,
     )
 
-    const prev = await cachedToken()
+    const prev = await cachedPushToken()
     if (prev !== token) {
       await api.post('/notifications/token', { token }).catch(() => {})
-      await SecureStore.setItemAsync(TOKEN_KEY, token).catch(() => {})
+      await rememberPushToken(token)
     }
     return true
   } catch {
@@ -150,10 +140,10 @@ export async function registerForPush(): Promise<boolean> {
 // shouldn't keep receiving another session's pushes. Best-effort: a failed
 // DELETE never blocks the sign-out/deletion it's attached to.
 export async function unregisterPush(): Promise<void> {
-  const token = await cachedToken()
+  const token = await cachedPushToken()
   if (!token) return
   await api.del('/notifications/token', { token }).catch(() => {})
-  await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {})
+  await forgetPushToken()
 }
 
 // usePushRouting's cold-start check — the data payload of whatever

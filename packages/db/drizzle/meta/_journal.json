@@ -246,6 +246,20 @@
       "when": 1790868889758,
       "tag": "0034_dry_cannonball",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791216306213,
+      "tag": "0035_usage_counter",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791216308800,
+      "tag": "0036_eula_backfill",
+      "breakpoints": true
     }
   ]
 }

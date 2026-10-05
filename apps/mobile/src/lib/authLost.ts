@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from 'react'
 
 import { clearToken, getToken } from './auth-token'
+import { forgetPushToken } from './pushToken'
 import { queryClient } from './query'
 
 export type AuthLostReason = 'unauthorized' | 'account_suspended'
@@ -31,6 +32,9 @@ export function reportAuthLost(next: AuthLostReason): void {
   // token sitting in the Keychain; clearing it there would delete a perfectly
   // good session out from under a member who did nothing wrong.
   if (getToken()) clearToken()
+  // This device's push registration belonged to the lost session; forget it so the next sign-in
+  // registers afresh (lib/pushToken.ts).
+  void forgetPushToken()
   // Deferred: this can be reached from inside a query's error path, and
   // clearing the cache mid-render would tear down the tree that is rendering.
   queueMicrotask(() => queryClient.clear())

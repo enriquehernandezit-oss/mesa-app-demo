@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 import { auth } from '../auth'
 import type { AppEnv } from '../context'
+import { PWNED_MESSAGE } from '../lib/authMessages'
 import { esc, layout } from '../lib/publicPage'
 
 // The two pages an auth email has to land on. They used to live in the Vite web
@@ -116,11 +117,15 @@ export const authPagesRoutes = new Hono<AppEnv>()
         body: { newPassword: password, token },
         headers: c.req.raw.headers,
       })
-    } catch {
+    } catch (err) {
       // Better Auth throws for a spent, unknown or expired token. It's also the
-      // breached-password rejection (the haveIBeenPwned plugin), which is worth
-      // separating out — telling someone their token expired when the real
-      // problem is their password choice sends them in a circle.
+      // breached-password rejection (the haveIBeenPwned plugin), which is a
+      // different problem: the link is fine, the password is not. Telling someone
+      // their token expired then sends them in a circle, and the token is still
+      // good, so the form comes back with the reason.
+      if (err instanceof Error && err.message === PWNED_MESSAGE) {
+        return c.html(formPage(c.req.url, token, PWNED_MESSAGE), 400)
+      }
       return c.html(tokenGone(c.req.url), 400)
     }
 

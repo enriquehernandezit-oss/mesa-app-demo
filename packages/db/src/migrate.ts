@@ -2,7 +2,7 @@ import { and, isNotNull, lt } from 'drizzle-orm'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 
 import { db, pool } from './client'
-import { authEvent, notifications, pushLog } from './schema'
+import { authEvent, authThrottle, notifications, pushLog, usageCounter } from './schema'
 
 // Applies generated migrations from ./drizzle against the pooled client.
 // Run with: bun run --env-file=.env src/migrate.ts  (or `bun db:migrate`).
@@ -41,9 +41,24 @@ const prunedNotifications = await db
   )
   .returning({ id: notifications.id })
 
+// Prune the sign-in throttle and the daily budgets once they can no longer matter: a throttle row
+// forgives itself after a day, a budget window lasts a day. Without this the failed-attempt emails
+// in auth_throttle were kept for good.
+const DAY_MS = 24 * 60 * 60 * 1000
+const prunedThrottle = await db
+  .delete(authThrottle)
+  .where(lt(authThrottle.lastFailureAt, new Date(Date.now() - 7 * DAY_MS)))
+  .returning({ key: authThrottle.key })
+const prunedBudgets = await db
+  .delete(usageCounter)
+  .where(lt(usageCounter.windowStart, new Date(Date.now() - 2 * DAY_MS)))
+  .returning({ key: usageCounter.key })
+
 await pool.end()
 console.log(
   `migrations applied${pruned.length ? ` · pruned ${pruned.length} auth events` : ''}${
     prunedPushLog.length ? ` · pruned ${prunedPushLog.length} push log rows` : ''
-  }${prunedNotifications.length ? ` · pruned ${prunedNotifications.length} notifications` : ''}`,
+  }${prunedNotifications.length ? ` · pruned ${prunedNotifications.length} notifications` : ''}${
+    prunedThrottle.length ? ` · pruned ${prunedThrottle.length} sign-in throttle rows` : ''
+  }${prunedBudgets.length ? ` · pruned ${prunedBudgets.length} usage budgets` : ''}`,
 )

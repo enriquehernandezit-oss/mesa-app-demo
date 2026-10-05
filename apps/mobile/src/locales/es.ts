@@ -214,6 +214,8 @@ export const es = {
   },
   'friends.contacts_none_found': 'Ninguno de tus contactos está en Mesa todavía.',
   'friends.contacts_search_error': 'No se pudo buscar en tus contactos. Intenta de nuevo.',
+  'friends.contacts_rate_limited':
+    'Ya buscaste en tus contactos varias veces hoy. Intenta de nuevo mañana.',
   'friends.contact_match_subtitle': 'Coincide con tu contacto «{name}»',
 
   // Instagram card (M18)

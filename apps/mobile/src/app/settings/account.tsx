@@ -136,7 +136,8 @@ export default function AccountSettings() {
   const deleteAccount = useMutation({
     mutationFn: () => api.del('/me', { password: deletePassword || undefined }),
     onSuccess: async () => {
-      await signOut().catch(() => {})
+      // The server has already erased the account and its sessions and push tokens.
+      await signOut({ local: true }).catch(() => {})
       router.replace('/sign-in')
     },
     onError: (err) => {

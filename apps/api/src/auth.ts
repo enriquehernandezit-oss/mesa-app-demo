@@ -3,6 +3,7 @@ import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { bearer, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
 
+import { PWNED_MESSAGE } from './lib/authMessages'
 import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
 import { resetPasswordUrl, verifyEmailUrl } from './lib/publicPage'
 
@@ -294,6 +295,8 @@ If you didn't create a Mesa account, you can ignore this email.`,
       neighborhoodId: { type: 'string', required: false, input: false },
       bannedAt: { type: 'date', required: false, input: false },
       isModerator: { type: 'boolean', required: false, input: false },
+      // Read by requireEula: terms accepted, or not yet.
+      eulaAcceptedAt: { type: 'date', required: false, input: false },
     },
   },
 
@@ -370,8 +373,7 @@ If you didn't create a Mesa account, you can ignore this email.`,
     // on a small consumer app, and an 8-character minimum does nothing against
     // it. Zero new dependencies.
     haveIBeenPwned({
-      customPasswordCompromisedMessage:
-        'Esa contraseña apareció en una filtración conocida. Elige otra.',
+      customPasswordCompromisedMessage: PWNED_MESSAGE,
     }),
     // Bearer-token auth alongside cookies. On sign-in the server returns the
     // session token in a `set-auth-token` response header; the client stores it

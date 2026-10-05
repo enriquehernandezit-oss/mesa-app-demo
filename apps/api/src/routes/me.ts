@@ -5,6 +5,8 @@ import { z } from 'zod'
 
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
+import { eraseAccount } from '../lib/accountErase'
+import { clearFailures, lockedForMs, noteFailure } from '../lib/authThrottle'
 import { imageRefSchema } from '../lib/imageRef'
 import { notify } from '../lib/notify'
 import { citywideRank } from '../lib/visibility'
@@ -53,6 +55,13 @@ const profileSchema = z.object({
 
 // Matches Better Auth's session.freshAge default (1 day) — the same bar it
 // applies to its own sensitive operations.
+// Postgres unique_violation (23505), however the driver wraps it.
+function isUniqueViolation(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false
+  if ('code' in err && err.code === '23505') return true
+  return 'cause' in err && isUniqueViolation(err.cause)
+}
+
 const FRESH_SESSION_MS = 24 * 60 * 60 * 1000
 
 // Password is optional in the body because accounts without one prove identity
@@ -481,6 +490,11 @@ export const meRoutes = new Hono<AuthedEnv>()
   // sign-in identity, never the plaintext number itself.
   .put('/phone', async (c) => {
     if (!PHONE_MATCH_SECRET) return c.json({ error: 'not_available' }, 503)
+    // Off until a phone number can be PROVEN to be the member's (a texted code — Mesa has no SMS
+    // sender yet). Until then anyone could attach someone else's number to their own account, and
+    // everyone with that number in their contacts would see the impostor's name and photo as that
+    // contact. Turning it back on is one environment variable once verification exists.
+    if (process.env.PHONE_OPT_IN !== 'on') return c.json({ error: 'not_available' }, 503)
     const current = c.get('user')
     const parsed = phoneSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
@@ -488,10 +502,17 @@ export const meRoutes = new Hono<AuthedEnv>()
     const e164 = normalizePhone(parsed.data.phone)
     if (!e164) return c.json({ error: 'invalid_phone' }, 400)
 
-    await db
-      .update(schema.user)
-      .set({ phoneHash: hashPhone(e164, PHONE_MATCH_SECRET), updatedAt: new Date() })
-      .where(eq(schema.user.id, current.id))
+    try {
+      await db
+        .update(schema.user)
+        .set({ phoneHash: hashPhone(e164, PHONE_MATCH_SECRET), updatedAt: new Date() })
+        .where(eq(schema.user.id, current.id))
+    } catch (err) {
+      // One number, one account (unique phone_hash): a second member claiming it is a conflict,
+      // not a crash.
+      if (isUniqueViolation(err)) return c.json({ error: 'phone_taken' }, 409)
+      throw err
+    }
     return c.json({ ok: true })
   })
 
@@ -536,6 +557,14 @@ export const meRoutes = new Hono<AuthedEnv>()
     if (credential) {
       const password = parsed.data.password
       if (!password) return c.json({ error: 'password_required' }, 400)
+      // The password check reaches Better Auth through `auth.api`, past its HTTP rate limiter, so
+      // a stolen session token could guess it without limit — and a right guess erases the
+      // account. The same escalating backoff as sign-in, keyed to this account.
+      const throttleKey = `delete:${current.id}`
+      const waitMs = await lockedForMs(throttleKey)
+      if (waitMs > 0) {
+        return c.json({ error: 'too_many_attempts', retryAfter: Math.ceil(waitMs / 1000) }, 429)
+      }
       try {
         // Throws INVALID_PASSWORD on a mismatch. Reads the current session from
         // the forwarded headers, so it can only ever check the caller's own.
@@ -544,14 +573,18 @@ export const meRoutes = new Hono<AuthedEnv>()
           headers: c.req.raw.headers,
         })
       } catch {
+        await noteFailure(throttleKey)
         return c.json({ error: 'invalid_password' }, 403)
       }
+      await clearFailures(throttleKey)
     } else if (!session || Date.now() - session.createdAt.getTime() > FRESH_SESSION_MS) {
       // Apple/Instagram/phone accounts have no password to check, so the bar is
       // a recent sign-in instead. The client asks them to sign in again.
       return c.json({ error: 'session_not_fresh' }, 403)
     }
 
-    await db.delete(schema.user).where(eq(schema.user.id, current.id))
+    // The row and everything it owns, plus what is keyed by email or id instead (photos, failed
+    // sign-in counters, waitlist, verification links) — lib/accountErase.ts.
+    await eraseAccount({ id: current.id, email: current.email })
     return c.json({ ok: true })
   })

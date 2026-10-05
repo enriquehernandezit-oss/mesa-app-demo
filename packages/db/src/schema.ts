@@ -293,6 +293,15 @@ export const authThrottle = pgTable('auth_throttle', {
   lastFailureAt: timestamp('last_failure_at').notNull(),
 })
 
+// A durable daily budget per member and kind of work (contacts matching, Instagram matching):
+// `used` counts what has been spent since `window_start`; the window restarts a day later.
+// Persisted, so a deploy does not hand everyone a fresh allowance. See apps/api/src/lib/usageBudget.ts.
+export const usageCounter = pgTable('usage_counter', {
+  key: text('key').primaryKey(),
+  used: integer('used').notNull(),
+  windowStart: timestamp('window_start').notNull().defaultNow(),
+})
+
 // A minimal auth audit trail.
 //
 // It earns a table on one argument: when a member says "someone got into my

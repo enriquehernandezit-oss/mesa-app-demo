@@ -9,7 +9,7 @@ import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
 import { excerpt } from '../lib/notifyCopy'
 import { authorVisibleTo, blockedByMe, blockedMe, visibleComment } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Comments on a friend's ranking — the conversation half of the feed, next to
 // cheers' one-tap reaction. A thread is flat and oldest-first; the feed carries
@@ -91,7 +91,7 @@ export const commentsRoutes = new Hono<AuthedEnv>()
     })
   })
 
-  .post('/ranking/:rankingId', async (c) => {
+  .post('/ranking/:rankingId', requireEula, async (c) => {
     const me = c.get('user')
     const rankingId = c.req.param('rankingId')
     const body = parseCommentBody(await c.req.json().catch(() => null))

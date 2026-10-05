@@ -8,7 +8,7 @@ import { imageRefSchema } from '../lib/imageRef'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, followingIds, visibleDish } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
 // evidence attached to one of your own rankings — linking to a ranking is
@@ -232,7 +232,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
   // sentiment-only re-post can never blank out a photo a previous call set —
   // clearing one takes the explicit `removeImage` flag instead of bare
   // omission. The backfill script's own anti-join uses this identical rule.
-  .post('/', async (c) => {
+  .post('/', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)

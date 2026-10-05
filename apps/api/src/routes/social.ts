@@ -9,6 +9,7 @@ import type { AuthedEnv } from '../context'
 import { parseHandlePrefix } from '../lib/mentions'
 import { NO_MUTUALS, mutualCandidateCount, mutualList, mutualSummaries } from '../lib/mutuals'
 import { notify } from '../lib/notify'
+import { spendMatchBudget } from '../lib/usageBudget'
 import {
   authorVisibleTo,
   blockedByMe,
@@ -330,6 +331,10 @@ export const socialRoutes = new Hono<AuthedEnv>()
       if (!hashToPhone.has(hash)) hashToPhone.set(hash, raw)
     }
     if (hashToPhone.size === 0) return c.json({ matches: [] })
+    // A phone-to-identity lookup: bounded per member per day, shared with the other matchers.
+    if (!(await spendMatchBudget(me.id, hashToPhone.size))) {
+      return c.json({ error: 'rate_limited' }, 429)
+    }
 
     const rows = await db
       .select({
@@ -393,6 +398,9 @@ export const socialRoutes = new Hono<AuthedEnv>()
       ),
     ]
     if (handles.length === 0) return c.json({ matches: [] })
+    if (!(await spendMatchBudget(me.id, handles.length))) {
+      return c.json({ error: 'rate_limited' }, 429)
+    }
 
     const found = await db
       .select({

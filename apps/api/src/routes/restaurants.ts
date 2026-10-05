@@ -12,7 +12,7 @@ import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { ownedByGoogleId, partitionByMesa, searchPlaces } from '../lib/placeSearch'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
 // ranked it (with their scores + vibe notes), and your own state — saved or
@@ -584,7 +584,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   // Tap a Google suggestion → a real, populated Mesa profile (M9). Fetches
   // Place Details ONLY here, never for the typeahead — one billable call per
   // new place, reused across every member who taps the same suggestion after.
-  .post('/from-google', async (c) => {
+  .post('/from-google', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = z
       .object({ placeId: z.string().trim().min(1).max(300), sessionToken: z.string().optional() })
@@ -979,7 +979,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   // old hardcoded Santo Domingo city-centre fallback every member-added spot
   // used to share. Marked source='member', geoPrecision='sector' — it's real
   // UGC, but not a real geocode.
-  .post('/', async (c) => {
+  .post('/', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = z
       .object({

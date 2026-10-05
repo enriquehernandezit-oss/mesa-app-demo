@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
 import { presignUpload, r2Enabled } from '../lib/r2'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Presigned-upload issuer for member photos (dish posts, avatars, collection
 // covers) — see lib/r2.ts's own header. The phone PUTs the file straight to
@@ -16,7 +16,7 @@ import { requireAuth } from '../middleware/session'
 export const uploadsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
-  .post('/', (c) => {
+  .post('/', requireEula, (c) => {
     if (!r2Enabled()) return c.json({ available: false as const })
     const me = c.get('user')
     return c.json({ available: true as const, ...presignUpload(me.id) })

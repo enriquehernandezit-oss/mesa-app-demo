@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Group dinners. A host arms a plan — one fixed spot, or 2–3 candidates the
 // invitees vote on — and invites some of their followers. Invitees are always
@@ -138,7 +138,7 @@ export const plansRoutes = new Hono<AuthedEnv>()
   // so it's also where an invalid batch is rejected outright rather than
   // silently trimmed (POST /:id/invite, adding people later, is lenient
   // instead — see its own comment).
-  .post('/', async (c) => {
+  .post('/', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)

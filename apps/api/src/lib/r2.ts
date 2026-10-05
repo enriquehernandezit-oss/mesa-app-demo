@@ -51,3 +51,34 @@ export function presignUpload(userId: string): { uploadUrl: string; publicUrl: s
   })
   return { uploadUrl, publicUrl: `${R2_PUBLIC_BASE_URL}/${key}` }
 }
+
+// Account deletion erases the member's photos too. Everything a member uploads is keyed under
+// `u/<userId>/` (presignUpload above), so one prefix sweep finds all of it.
+export type ObjectStore = {
+  list(options: { prefix: string; maxKeys?: number }): Promise<{
+    contents?: { key: string }[]
+    isTruncated?: boolean
+  }>
+  delete(key: string): Promise<void>
+}
+
+// Deletes every object under a prefix, a page at a time. Returns how many it removed. Bounded, so a
+// misbehaving store cannot loop it forever.
+export async function deleteByPrefix(store: ObjectStore, prefix: string): Promise<number> {
+  let deleted = 0
+  for (let page = 0; page < 40; page++) {
+    const res = await store.list({ prefix, maxKeys: 500 })
+    const keys = (res.contents ?? []).map((o) => o.key)
+    if (keys.length === 0) break
+    await Promise.all(keys.map((k) => store.delete(k)))
+    deleted += keys.length
+    if (!res.isTruncated) break
+  }
+  return deleted
+}
+
+// Every photo this member ever uploaded. A no-op when uploads are off (nothing to erase).
+export async function deleteUserPhotos(userId: string): Promise<number> {
+  if (!r2Enabled()) return 0
+  return deleteByPrefix(getClient(), `u/${userId}/`)
+}

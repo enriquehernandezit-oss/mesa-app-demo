@@ -93,6 +93,8 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
     name: `Gaps ${label}`,
     email: `${tag}-${label}@example.test`,
     emailVerified: false,
+    // Terms accepted — the write routes require it (middleware/session.ts requireEula).
+    eulaAcceptedAt: new Date(),
     image: null,
     createdAt: new Date(),
     updatedAt: new Date(),

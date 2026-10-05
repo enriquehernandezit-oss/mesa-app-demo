@@ -5,6 +5,7 @@ import { createAuthClient } from 'better-auth/react'
 import { track } from '@/lib/analytics'
 
 import { clearToken, getToken, setToken } from './auth-token'
+import { clearAuthLost } from './authLost'
 import { unregisterPush } from './push'
 import { queryClient } from './query'
 
@@ -43,7 +44,12 @@ export const authClient = createAuthClient({
     auth: { type: 'Bearer', token: () => getToken() },
     onSuccess: (ctx) => {
       const token = ctx.response.headers.get('set-auth-token')
-      if (token) setToken(token)
+      if (token) {
+        setToken(token)
+        // A new session ends the "your session was lost" state. Without this, signing back in
+        // after any 401 left the route guards redirecting to /sign-in until the app was restarted.
+        clearAuthLost()
+      }
     },
   },
 })
@@ -51,14 +57,18 @@ export const authClient = createAuthClient({
 // Signing out is local-first: the device forgets the session at once, so the
 // tap always works, even offline. The server calls then run with the token
 // captured beforehand, bounded so a slow network can't hold the screen.
-export async function signOut(): Promise<void> {
+// `local` skips the server calls: after the server has itself ended the session (account deletion)
+// there is nothing to unregister, and the call would 401 and report a lost session for nothing.
+export async function signOut(options?: { local?: boolean }): Promise<void> {
   const token = getToken()
-  const server = unregisterPush()
-    .catch(() => {})
-    .then(() =>
-      authClient.signOut({ fetchOptions: { auth: { type: 'Bearer', token: () => token } } }),
-    )
-    .catch(() => {})
+  const server = options?.local
+    ? Promise.resolve()
+    : unregisterPush()
+        .catch(() => {})
+        .then(() =>
+          authClient.signOut({ fetchOptions: { auth: { type: 'Bearer', token: () => token } } }),
+        )
+        .catch(() => {})
   await Promise.race([server, new Promise((resolve) => setTimeout(resolve, 2500))])
   track('signed_out')
   // Drop the token, then the cache, and pin the session to "signed out" so

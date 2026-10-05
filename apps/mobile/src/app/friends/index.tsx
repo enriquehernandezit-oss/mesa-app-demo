@@ -144,7 +144,11 @@ function ContactsCard() {
       )
     } catch (err) {
       captureError(err, 'friends.contactsSearch')
-      setContactMsg(t('friends.contacts_search_error'))
+      setContactMsg(
+        err instanceof ApiError && err.status === 429
+          ? t('friends.contacts_rate_limited')
+          : t('friends.contacts_search_error'),
+      )
     } finally {
       setSearching(false)
     }
@@ -156,22 +160,27 @@ function ContactsCard() {
         {t('friends.contacts_title')}
       </Text>
 
-      <View className="mt-2.5 flex-row items-center gap-3">
-        <View className="min-w-0 flex-1">
-          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
-            {t('friends.contacts_findable_toggle')}
-          </Text>
-          <Caption className="mt-0.5">{t('friends.contacts_findable_body')}</Caption>
+      {/* Becoming findable needs a phone number the member can PROVE is theirs (a texted code,
+          which Mesa cannot send yet), so the switch only shows for someone already findable — to
+          turn it off. Everyone can still search their own contacts below. */}
+      {findable ? (
+        <View className="mt-2.5 flex-row items-center gap-3">
+          <View className="min-w-0 flex-1">
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
+              {t('friends.contacts_findable_toggle')}
+            </Text>
+            <Caption className="mt-0.5">{t('friends.contacts_findable_body')}</Caption>
+          </View>
+          <Toggle
+            checked={findable}
+            onChange={(v) => {
+              if (v) setEditingPhone(true)
+              else clearPhone.mutate()
+            }}
+            label={t('friends.contacts_findable_toggle')}
+          />
         </View>
-        <Toggle
-          checked={findable}
-          onChange={(v) => {
-            if (v) setEditingPhone(true)
-            else clearPhone.mutate()
-          }}
-          label={t('friends.contacts_findable_toggle')}
-        />
-      </View>
+      ) : null}
 
       {editingPhone && !findable ? (
         <View className="mt-3 flex-row items-center gap-2">

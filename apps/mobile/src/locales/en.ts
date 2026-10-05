@@ -204,6 +204,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   },
   'friends.contacts_none_found': 'None of your contacts are on Mesa yet.',
   'friends.contacts_search_error': "Couldn't search your contacts. Try again.",
+  'friends.contacts_rate_limited': "You've searched your contacts a lot today. Try again tomorrow.",
   'friends.contact_match_subtitle': 'Matches your contact "{name}"',
 
   // Instagram card (M18)

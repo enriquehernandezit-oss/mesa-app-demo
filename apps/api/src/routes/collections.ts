@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
 import { visibleDish, visibleDishIds } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // Named lists (M19) — user-created folders layered on top of the two master
 // "want to try" lists (routes/saved.ts). A list's items always ALSO live in
@@ -134,7 +134,7 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
     return c.json({ collections: rows })
   })
 
-  .post('/', async (c) => {
+  .post('/', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = createSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
@@ -151,7 +151,7 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
 
   // Rename / describe / re-cover. Only the fields sent change; null clears
   // description or cover (name can't be cleared).
-  .patch('/:id', async (c) => {
+  .patch('/:id', requireEula, async (c) => {
     const me = c.get('user')
     const found = await loadOwnedCollection(c.req.param('id'), me.id)
     if (!found) return c.json({ error: 'not_found' }, 404)

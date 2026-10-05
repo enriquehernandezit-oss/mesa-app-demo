@@ -11,7 +11,7 @@ import { NO_MUTUALS, mutualSummaries } from '../lib/mutuals'
 import { background, notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
-import { requireAuth } from '../middleware/session'
+import { requireAuth, requireEula } from '../middleware/session'
 
 // The ranking loop — Mesa's atomic unit. A user keeps one ordered list of
 // places they've been; the order (and the derived score) comes only from
@@ -468,7 +468,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
   // Place a spot into my list at the position the pairwise flow chose, with an
   // optional vibe note. Rewrites positions/scores densely in one transaction.
-  .post('/', async (c) => {
+  .post('/', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = placeSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) {
@@ -571,7 +571,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
   })
 
   // Set / replace / clear the vibe note on one of my rankings.
-  .patch('/:id/note', async (c) => {
+  .patch('/:id/note', requireEula, async (c) => {
     const me = c.get('user')
     const parsed = noteSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)

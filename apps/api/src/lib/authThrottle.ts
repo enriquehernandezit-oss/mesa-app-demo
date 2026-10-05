@@ -61,19 +61,45 @@ function emailFromBody(body: unknown): string | null {
 
 const SIGN_IN_PATH = '/sign-in/email'
 
+// The same escalating backoff, for any other guessable secret. DELETE /me asks for the password,
+// and it reaches Better Auth through `auth.api` — past the HTTP limiter and past the sign-in
+// middleware below — so without this a stolen session token could guess it without limit.
+export async function lockedForMs(key: string): Promise<number> {
+  const [row] = await db
+    .select({ failures: authThrottle.failures, lastFailureAt: authThrottle.lastFailureAt })
+    .from(authThrottle)
+    .where(eq(authThrottle.key, key))
+    .limit(1)
+  return retryAfterMs(row ?? null, Date.now())
+}
+
+export async function noteFailure(key: string): Promise<void> {
+  const now = new Date()
+  await db
+    .insert(authThrottle)
+    .values({ key, failures: 1, lastFailureAt: now })
+    .onConflictDoUpdate({
+      target: authThrottle.key,
+      set: {
+        // Restart the count when the previous failure has aged out, so the
+        // decay window is honoured on write as well as on read.
+        failures: sql`case when ${authThrottle.lastFailureAt} < ${new Date(now.getTime() - FAILURE_DECAY_MS)} then 1 else ${authThrottle.failures} + 1 end`,
+        lastFailureAt: now,
+      },
+    })
+}
+
+export async function clearFailures(key: string): Promise<void> {
+  await db.delete(authThrottle).where(eq(authThrottle.key, key))
+}
+
 // Refuse a sign-in that is currently backed off, before any password check.
 export const authThrottleBefore = createAuthMiddleware(async (ctx) => {
   if (ctx.path !== SIGN_IN_PATH) return
   const email = emailFromBody(ctx.body)
   if (!email) return
 
-  const [row] = await db
-    .select({ failures: authThrottle.failures, lastFailureAt: authThrottle.lastFailureAt })
-    .from(authThrottle)
-    .where(eq(authThrottle.key, throttleKey(email)))
-    .limit(1)
-
-  const waitMs = retryAfterMs(row ?? null, Date.now())
+  const waitMs = await lockedForMs(throttleKey(email))
   if (waitMs > 0) {
     const seconds = Math.ceil(waitMs / 1000)
     // Safe to be honest about the reason: an address with no account throttles
@@ -152,21 +178,8 @@ export const authThrottleAfter = createAuthMiddleware(async (ctx) => {
     userAgent,
   })
   if (!failed) {
-    await db.delete(authThrottle).where(eq(authThrottle.key, key))
+    await clearFailures(key)
     return
   }
-
-  const now = new Date()
-  await db
-    .insert(authThrottle)
-    .values({ key, failures: 1, lastFailureAt: now })
-    .onConflictDoUpdate({
-      target: authThrottle.key,
-      set: {
-        // Restart the count when the previous failure has aged out, so the
-        // decay window is honoured on write as well as on read.
-        failures: sql`case when ${authThrottle.lastFailureAt} < ${new Date(now.getTime() - FAILURE_DECAY_MS)} then 1 else ${authThrottle.failures} + 1 end`,
-        lastFailureAt: now,
-      },
-    })
+  await noteFailure(key)
 })
