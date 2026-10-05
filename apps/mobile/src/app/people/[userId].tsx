@@ -31,7 +31,9 @@ export default function PeopleScreen() {
   const q = useQuery({
     queryKey: ['follow-list', userId, tab],
     queryFn: () =>
-      api.get<{ users: FollowUser[]; locked?: boolean }>(`/social/${tab}?userId=${userId}`),
+      api.get<{ users: FollowUser[]; locked?: boolean }>(
+        `/social/${tab === 'mutual' ? 'mutuals' : tab}?userId=${userId}`,
+      ),
   })
   // Whether to offer the Mutual tab at all: fetched once, so the tab appears (or not) before it
   // is tapped. On your own list, and when nobody is in common, it stays out of the way.

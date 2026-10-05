@@ -10,7 +10,14 @@ import {
   stubParts,
   useNow,
 } from '@/components/events/EventTicket'
-import { Caption, EmptyState, MAX_SCALE, RowsSkeleton, SectionHeader } from '@/components/ui'
+import {
+  Caption,
+  EmptyState,
+  ErrorState,
+  MAX_SCALE,
+  RowsSkeleton,
+  SectionHeader,
+} from '@/components/ui'
 import { ChevronIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
@@ -70,6 +77,10 @@ export function FriendsEvents() {
   const [opened, setOpened] = useState<Record<string, boolean>>({})
 
   if (upcoming.isPending) return <RowsSkeleton rows={4} thumb={64} className="mt-4" />
+  // A failed load is not "nothing on": say so, and let them retry.
+  if (upcoming.isError && !all) {
+    return <ErrorState onRetry={() => upcoming.refetch()}>{t('events.load_error')}</ErrorState>
+  }
 
   if (friends.length === 0 && going.length === 0 && days.length === 0) {
     return (
