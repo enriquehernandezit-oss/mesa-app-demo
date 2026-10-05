@@ -102,6 +102,7 @@ export function FollowPill({
       accessibilityState={{ selected: status !== 'none', disabled: pending }}
       disabled={pending}
       onPress={toggle}
+      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
       // Follow is the call to action (solid ink); Following and Requested settle to a raised chip.
       className={`min-h-[34px] justify-center rounded-pill px-4 ${status !== 'none' ? 'bg-chip' : 'bg-ink'} ${pending ? 'opacity-60' : ''} active:opacity-70`}
       style={status !== 'none' ? lift : undefined}

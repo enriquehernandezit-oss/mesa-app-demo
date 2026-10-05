@@ -1,5 +1,7 @@
 import PostHog from 'posthog-react-native'
 
+import { screenName } from './screenName'
+
 // Product analytics — the instrument that makes Mesa's loops measurable. Without
 // it none of the growth work can be judged: k-factor, D30 by cohort, whether the
 // rank flow is being abandoned mid-comparison.
@@ -112,5 +114,5 @@ export function resetAnalytics(): void {
 
 /** Screen views, driven by the router — see `useScreenTracking` in _layout. */
 export function trackScreen(name: string): void {
-  getClient()?.screen(name)
+  getClient()?.screen(screenName(name))
 }

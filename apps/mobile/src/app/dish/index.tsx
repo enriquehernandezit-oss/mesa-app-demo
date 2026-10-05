@@ -25,6 +25,7 @@ import { type Grain, cuisineLabel, grainLabel, grainOptions, priceLabel } from '
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useLanguage, useT } from '@/lib/i18n'
+import { modalAlert } from '@/lib/modalAlert'
 import { usePreventRemove } from '@/lib/preventRemove'
 import type { DishNudge, RestaurantProfileResponse } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
@@ -148,6 +149,8 @@ export default function DishCompose() {
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
+      queryClient.invalidateQueries({ queryKey: ['dish-names', restaurantId] })
+      queryClient.invalidateQueries({ queryKey: ['dish-lists'] })
       // The composer closes right after this (see the effect below), so a
       // toast is the only confirmation that survives the screen going away —
       // without it, publishing reads as "a haptic, then nothing," which is
@@ -170,11 +173,7 @@ export default function DishCompose() {
     },
     onError: (err) => {
       captureError(err, 'dish.post')
-      toast({
-        variant: 'error',
-        message: t('dish.post_error'),
-        action: { label: t('common.retry'), onClick: () => post.mutate() },
-      })
+      modalAlert(t('dish.post_error'), () => post.mutate())
     },
   })
 

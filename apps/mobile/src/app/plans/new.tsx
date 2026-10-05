@@ -21,13 +21,13 @@ import { Field } from '@/components/ui/Field'
 import { SearchIcon } from '@/components/ui/icons'
 import { PlaceLine } from '@/components/ui/PlaceLine'
 import { SheetHeader, SheetTitle } from '@/components/ui/SheetHeader'
-import { toast } from '@/components/ui/toast-store'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
+import { modalAlert } from '@/lib/modalAlert'
 import { usePreventRemove } from '@/lib/preventRemove'
 import { registerForPush } from '@/lib/push'
 import { dayChipLabel, timeChipLabel } from '@/lib/time'
@@ -125,6 +125,7 @@ export default function NewPlanScreen() {
 
   const [step, setStep] = useState<Step>(prefillSpot ? 'when' : 'spots')
   const [spots, setSpots] = useState<PlanSpot[]>(prefillSpot ? [prefillSpot] : [])
+  const [created, setCreated] = useState(false)
   const [query, setQuery] = useState('')
   const today = useMemo(() => new Date(), [])
   const [day, setDay] = useState<Date>(prefillDate ?? today)
@@ -151,7 +152,10 @@ export default function NewPlanScreen() {
   // outright rather than stepping back one step — the header's Close/Back chip above
   // already does the stepping, on every step. An empty flow (no spot picked
   // yet) just closes; once a spot is picked, confirm before throwing it away.
-  usePreventRemove(spots.length > 0, ({ data }) => {
+  // `created` lifts the guard: a successful create replaces this screen with the plan, and without
+  // it that replace asked "Discard plan?" over a plan that now exists (cancelling left you on the
+  // form, one tap from creating a duplicate).
+  usePreventRemove(spots.length > 0 && !created, ({ data }) => {
     showActionSheet({
       title: t('plans.discard_title'),
       options: [{ label: t('plans.discard_button'), destructive: true }],
@@ -174,7 +178,7 @@ export default function NewPlanScreen() {
     setSpots((prev) => {
       if (prev.some((s) => s.id === item.id)) return prev.filter((s) => s.id !== item.id)
       if (prev.length >= 3) {
-        toast({ variant: 'error', message: t('plans.max_spots_toast') })
+        modalAlert(t('plans.max_spots_toast'))
         return prev
       }
       tapSelect()
@@ -216,6 +220,7 @@ export default function NewPlanScreen() {
         inviteeIds: [...invitees.keys()],
       }),
     onSuccess: ({ id }) => {
+      setCreated(true)
       tapSuccess()
       const daysAhead = resolvedDate
         ? Math.round((resolvedDate.getTime() - today.getTime()) / 86_400_000)
@@ -225,18 +230,16 @@ export default function NewPlanScreen() {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
       // Contextual push-permission prompt (M17) — see rank.tsx's own comment.
       void registerForPush()
-      router.replace(`/plans/${id}`)
+      // Next tick, so the guard above has re-rendered as lifted before the screen is replaced.
+      setTimeout(() => router.replace(`/plans/${id}`), 0)
     },
     onError: (err) => {
       captureError(err, 'plans.create')
-      const invalidInvitees = err instanceof ApiError && err.code === 'invalid_invitees'
-      toast({
-        variant: 'error',
-        message: invalidInvitees ? t('plans.invalid_invitees_error') : t('plans.create_error'),
-        action: invalidInvitees
-          ? undefined
-          : { label: t('common.retry'), onClick: () => create.mutate() },
-      })
+      const code = err instanceof ApiError ? err.code : ''
+      // Two failures that retrying cannot fix get their own message and no Retry.
+      if (code === 'invalid_invitees') return modalAlert(t('plans.invalid_invitees_error'))
+      if (code === 'invalid_date') return modalAlert(t('plans.invalid_date_error'))
+      modalAlert(t('plans.create_error'), () => create.mutate())
     },
   })
 

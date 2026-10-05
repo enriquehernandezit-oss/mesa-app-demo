@@ -79,6 +79,10 @@ export async function initThemeChoice(): Promise<void> {
   } catch {
     // Keep Auto.
   }
+  // The imperative resolved theme (native action sheets and alerts) is what the CHOSEN theme paints,
+  // not what Auto would. It was only ever set while Auto was active or after the picker was touched,
+  // so someone who had picked Night got light delete and block sheets on a daytime cold start.
+  currentResolved = resolve(cachedChoice)
 }
 
 // The resolved theme for imperative, non-React callers — system surfaces that are

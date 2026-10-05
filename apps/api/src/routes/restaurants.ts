@@ -13,7 +13,7 @@ import { locationCondition, normalizeLocation, parseScope } from '../lib/locatio
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { ownedByGoogleId, partitionByMesa, searchPlaces } from '../lib/placeSearch'
-import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
+import { bannedUserIds, blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
@@ -189,7 +189,10 @@ async function exploreRows(ids: string[], following: ReturnType<typeof following
     })
     .from(restaurants)
     .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-    .leftJoin(rankings, eq(rankings.restaurantId, restaurants.id))
+    .leftJoin(
+      rankings,
+      and(eq(rankings.restaurantId, restaurants.id), notInArray(rankings.userId, bannedUserIds())),
+    )
     .where(inArray(restaurants.id, ids))
     .groupBy(restaurants.id, neighborhoods.name)
   // `WHERE id = ANY(...)` doesn't preserve the order of the ids — reorder in JS rather than a
@@ -512,7 +515,11 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(
         rankings,
-        and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
+        and(
+          eq(rankings.restaurantId, restaurants.id),
+          inArray(rankings.userId, following),
+          notInArray(rankings.userId, bannedUserIds()),
+        ),
       )
       .where(
         and(
@@ -857,6 +864,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       SELECT t AS tag
       FROM ${rankings}, unnest(${rankings.tags}) AS t
       WHERE ${rankings.restaurantId} = ${id}
+        AND ${rankings.userId} NOT IN (SELECT id FROM "user" WHERE banned_at IS NOT NULL)
       GROUP BY t
       HAVING count(*) >= 2
       ORDER BY count(*) DESC
@@ -872,7 +880,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         count: sql<number>`count(*)::int`,
       })
       .from(rankings)
-      .where(eq(rankings.restaurantId, id))
+      .where(and(eq(rankings.restaurantId, id), notInArray(rankings.userId, bannedUserIds())))
     const allMesa = { avg: mesaAgg?.avg ?? null, count: mesaAgg?.count ?? 0 }
 
     // Editorial lists this place belongs to → the "▤ Mesa Best" membership pills.

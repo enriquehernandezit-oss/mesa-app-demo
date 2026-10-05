@@ -1,5 +1,7 @@
 import * as Location from 'expo-location'
 
+import { getLanguage } from './i18n'
+
 export type LatLng = { lat: number; lng: number }
 
 const EARTH_RADIUS_M = 6371000
@@ -16,10 +18,11 @@ export function haversineM(a: LatLng, b: LatLng): number {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(s))
 }
 
-// "350 m" / "1,2 km" — Spanish decimal comma. Ported verbatim.
+// "350 m" / "1,2 km" in Spanish (decimal comma), "350 m" / "1.2 km" in English.
 export function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)} m`
-  return `${(meters / 1000).toFixed(1).replace('.', ',')} km`
+  const km = (meters / 1000).toFixed(1)
+  return `${getLanguage() === 'en' ? km : km.replace('.', ',')} km`
 }
 
 const POSITION_TIMEOUT_MS = 10_000

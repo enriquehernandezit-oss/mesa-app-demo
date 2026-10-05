@@ -12,6 +12,7 @@ import { api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
+import { modalAlert } from '@/lib/modalAlert'
 import type { PlanDetail } from '@/lib/types'
 
 // Inviting more people to a plan that already exists — the host's own
@@ -44,7 +45,7 @@ export default function InviteScreen() {
     },
     onError: (err) => {
       captureError(err, 'plans.invite')
-      toast({ variant: 'error', message: t('plans.invite_error') })
+      modalAlert(t('plans.invite_error'))
     },
   })
 

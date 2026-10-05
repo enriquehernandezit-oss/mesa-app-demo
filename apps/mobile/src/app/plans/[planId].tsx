@@ -101,7 +101,7 @@ export default function PlanDetailScreen() {
       track('plan_cancelled')
       invalidate()
       toast({ message: t('plans.cancelled_toast') })
-      router.back()
+      goBack()
     },
     onError: (err) => {
       captureError(err, 'plans.cancel')

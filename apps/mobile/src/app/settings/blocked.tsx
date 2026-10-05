@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { Group, Row } from '@/components/SettingsRow'
@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import { invalidateAfterBlockChange } from '@/lib/invalidateAfterSocial'
 import type { BlockedUser } from '@/lib/types'
 
 // Cuentas bloqueadas (M15) — its own screen now (was a conditionally-shown
@@ -14,14 +15,13 @@ import type { BlockedUser } from '@/lib/types'
 // error rather than showing one — see the isError branch below).
 export default function BlockedAccounts() {
   const t = useT()
-  const queryClient = useQueryClient()
   const blocks = useQuery({
     queryKey: ['blocks'],
     queryFn: () => api.get<{ blocked: BlockedUser[] }>('/moderation/blocks'),
   })
   const unblock = useMutation({
     mutationFn: (userId: string) => api.del(`/moderation/blocks/${userId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['blocks'] }),
+    onSuccess: () => invalidateAfterBlockChange(),
     onError: () => toast({ variant: 'error', message: t('settings.unblock_error') }),
   })
   const blocked = blocks.data?.blocked ?? []

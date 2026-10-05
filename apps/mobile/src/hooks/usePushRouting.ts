@@ -12,13 +12,20 @@ import { lastNotificationDeepLinkData, onNotificationTapped, pushDeepLink } from
 // directly — see that file's own header for why a direct import here would
 // crash this hook (and the whole tab shell) on a binary built before the
 // founder's EAS rebuild.
+// The notification that launched the app is acted on once per process. The tab shell mounts again
+// after a sign-out and sign-in, and without this the same launch notification routed a second time.
+let launchNotificationHandled = false
+
 export function usePushRouting(router: ReturnType<typeof useRouter>): void {
   useEffect(() => {
     // The tap that actually launched the app (cold start) — checked once.
-    lastNotificationDeepLinkData().then((data) => {
-      const href = pushDeepLink(data)
-      if (href) router.push(href as Parameters<typeof router.push>[0])
-    })
+    if (!launchNotificationHandled) {
+      launchNotificationHandled = true
+      lastNotificationDeepLinkData().then((data) => {
+        const href = pushDeepLink(data)
+        if (href) router.push(href as Parameters<typeof router.push>[0])
+      })
+    }
 
     // Taps while the app is already running (foreground or backgrounded).
     const unsubscribe = onNotificationTapped((data) => {

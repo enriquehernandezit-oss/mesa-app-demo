@@ -23,6 +23,8 @@ import { ApiError, api } from '@/lib/api'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import { captureError } from '@/lib/errors'
 import { useLanguage, useT } from '@/lib/i18n'
+import { invalidateAfterSavedDish, invalidateAfterSavedPlace } from '@/lib/invalidateAfterSocial'
+import { modalAlert } from '@/lib/modalAlert'
 import type { CollectionSummary } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -61,7 +63,17 @@ export default function SaveToListSheet() {
     id?: string
     name?: string
   }>()
-  const itemName = name ? decodeURIComponent(name) : ''
+  // The router has usually decoded the param already; decoding again throws on a "%" that is part of
+  // the name ("100% Natural") and crashed the sheet. Try, and keep the text as it is if it is not
+  // an encoded string.
+  const itemName = (() => {
+    if (!name) return ''
+    try {
+      return decodeURIComponent(name)
+    } catch {
+      return name
+    }
+  })()
   const hasItem = Boolean(kind && id)
   const [creating, setCreating] = useState(!hasItem)
   const [draft, setDraft] = useState('')
@@ -83,6 +95,11 @@ export default function SaveToListSheet() {
     queryClient.invalidateQueries({ queryKey: ['collections'] })
     queryClient.invalidateQueries({ queryKey: ['saved'] })
     queryClient.invalidateQueries({ queryKey: ['saved-dishes'] })
+    // And the place or dish page behind this sheet, which shows whether it is saved.
+    if (id) {
+      if (kind === 'dish') invalidateAfterSavedDish(id)
+      else invalidateAfterSavedPlace(id)
+    }
   }
 
   const toggle = useMutation({
@@ -93,6 +110,12 @@ export default function SaveToListSheet() {
     onSuccess: (_data, list) => {
       if (!list.itemId) track('collection_item_added')
       invalidate()
+    },
+    // A native modal: a toast would not show, so the failure was invisible and the checkmark simply
+    // did not change.
+    onError: (err) => {
+      captureError(err, 'saveToList.toggle')
+      modalAlert(t('saveToList.toggle_error'))
     },
   })
 
@@ -106,8 +129,15 @@ export default function SaveToListSheet() {
     onSuccess: async (created) => {
       track('collection_created')
       if (hasItem) {
-        await api.post(`/collections/${created.id}/items`, { [filterParam]: id })
-        track('collection_item_added')
+        try {
+          await api.post(`/collections/${created.id}/items`, { [filterParam]: id })
+          track('collection_item_added')
+        } catch (err) {
+          // The list exists now; only filing the item failed. Saying "couldn't create" here sent
+          // people back to retry and hit "name already taken". Keep the new list, say what failed.
+          captureError(err, 'saveToList.addToNew')
+          modalAlert(t('saveToList.toggle_error'))
+        }
       }
       setDraft('')
       setDescription('')

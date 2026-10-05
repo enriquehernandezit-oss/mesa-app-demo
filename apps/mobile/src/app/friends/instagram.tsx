@@ -8,7 +8,7 @@ import { Group } from '@/components/SettingsRow'
 import { Body, Button, Caption, MAX_SCALE, SectionHeader } from '@/components/ui'
 import { DownloadIcon } from '@/components/ui/icons'
 import { useInviteLink } from '@/hooks/useInviteLink'
-import { api } from '@/lib/api'
+import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
 import { parseInstagramExport } from '@/lib/instagramImport'
@@ -22,6 +22,8 @@ import { useLift } from '@/theme/useLift'
 // Instagram export can't prove who owns a Mesa handle), so every result is
 // framed as a suggestion — Seguir, never an auto-follow. Redesign 2: the serif title, one raised
 // card with the four steps, a solid Choose file, and the matches as one grouped list.
+const HANDLE_BATCH = 2000
+
 export default function InstagramImportScreen() {
   const t = useT()
   const invite = useInviteLink()
@@ -48,15 +50,26 @@ export default function InstagramImportScreen() {
         return
       }
 
-      const { matches: found } = await api.post<{ matches: ContactMatchUser[] }>(
-        '/social/instagram/match',
-        { handles },
-      )
+      // The server refuses a handle over 60 characters (the whole request with it, so one stray
+      // value in a big export used to turn the import into a generic error) and a batch over 5000.
+      // Send what it can read, in batches.
+      const sendable = handles.filter((h) => h.length <= 60)
+      const found: ContactMatchUser[] = []
+      for (let i = 0; i < sendable.length; i += HANDLE_BATCH) {
+        const res = await api.post<{ matches: ContactMatchUser[] }>('/social/instagram/match', {
+          handles: sendable.slice(i, i + HANDLE_BATCH),
+        })
+        found.push(...res.matches)
+      }
       setMatches(found)
-      setUnmatchedCount(handles.length - found.length)
+      setUnmatchedCount(Math.max(0, handles.length - found.length))
     } catch (err) {
       captureError(err, 'friends.instagramImport')
-      setError(t('instagram.import_error'))
+      setError(
+        err instanceof ApiError && err.status === 429
+          ? t('friends.contacts_rate_limited')
+          : t('instagram.import_error'),
+      )
     } finally {
       setPicking(false)
     }

@@ -443,6 +443,7 @@ export const es = {
   'plans.max_spots_toast': 'Máximo tres spots',
   'plans.invalid_invitees_error': 'Alguien ya no te sigue — revisa la lista.',
   'plans.create_error': 'No se pudo crear la mesa.',
+  'plans.invalid_date_error': 'Elige una fecha futura, dentro de los próximos 90 días.',
   'plans.new_table': 'Nueva mesa',
   'plans.where_title': '¿Dónde?',
   'plans.search_spot_placeholder': 'Busca un spot…',
@@ -553,6 +554,7 @@ export const es = {
   // "Cancelar" without colliding.
   'common.cancel': 'Cancelar',
   'common.retry': 'Intentar de nuevo',
+  'common.ok': 'Entendido',
   'common.done': 'Listo',
   'common.saving': 'Guardando…',
   'common.you': 'Tú',
@@ -737,6 +739,8 @@ export const es = {
   'place.directions_short': 'Ruta',
   'place.hint': 'Amigos, platos y menú abajo',
   'place.who_mesa': 'Mesa',
+  'place.share_text': '{name} en Mesa 🥂',
+  'share.more_rows': '+ {n} más',
   'place.who_friends': 'Amigos',
   'place.stat_everyone': 'Todos · {n}',
   'place.stat_friends': 'Amigos · {n}',
@@ -746,7 +750,8 @@ export const es = {
   'place.n_ranked_it': { one: '1 lo rankeó', other: '{n} lo rankearon' },
   'place.friends_ranked': { one: '1 amigo lo rankeó', other: '{n} amigos lo rankearon' },
   'place.on_your_list': 'Nº {n} en tu lista',
-  'place.open_until': 'Abierto hasta {time}',
+  // Mesa stores a place's usual closing time, not its opening hours, so it cannot say "open now".
+  'place.open_until': 'Cierra {time}',
   'place.in_lists': { one: 'En 1 lista', other: 'En {n} listas' },
   'place.lists_title': 'Listas',
   'place.open_map': 'Abrir mapa',
@@ -901,6 +906,7 @@ export const es = {
   'profile.favorite_neighborhoods_label': 'Sectores favoritos',
   'profile.favorite_cuisines_label': 'Cocinas favoritas',
   'profile.handle_error': 'Prueba con otro usuario.',
+  'profile.save_error': 'No se pudo guardar. Revisa tu conexión e intenta de nuevo.',
   'profile.bio_label': 'Bio',
 
   // app/u/[userId].tsx
@@ -1053,6 +1059,7 @@ export const es = {
 
   // app/notifications.tsx
   'notifications.social': 'Follows y cheers',
+  'notifications.save_error': 'No se pudo guardar el cambio. Intenta de nuevo.',
   'notifications.plans': 'Planes',
   'notifications.friends': 'Actividad de amigos',
   'notifications.dishes': 'Tus platos',

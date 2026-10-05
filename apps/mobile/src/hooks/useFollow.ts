@@ -1,10 +1,11 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
 import { toast } from '@/components/ui/toast-store'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import { invalidateAfterFollow } from '@/lib/invalidateAfterSocial'
 import type { FollowStatus } from '@/lib/types'
 
 // The one follow/unfollow implementation. Before this hook existed the same
@@ -38,8 +39,6 @@ export type FollowSource =
   | 'feed_shelf'
   | 'requests'
 
-const RELATED_QUERY_KEYS = ['feed', 'home', 'notifications', 'people', 'me-stats'] as const
-
 const toStatus = (v: boolean | FollowStatus): FollowStatus =>
   v === true ? 'following' : v === false ? 'none' : v
 
@@ -51,7 +50,6 @@ export function useFollow(
 ) {
   const [status, setStatus] = useState<FollowStatus>(toStatus(initial))
   const t = useT()
-  const queryClient = useQueryClient()
   const pendingRef = useRef(false)
   const beforeRef = useRef<FollowStatus>(status)
 
@@ -74,10 +72,7 @@ export function useFollow(
             : 'follow_added',
         { from },
       )
-      for (const key of RELATED_QUERY_KEYS) {
-        queryClient.invalidateQueries({ queryKey: [key] })
-      }
-      queryClient.invalidateQueries({ queryKey: ['user-rankings', userId] })
+      invalidateAfterFollow(userId)
     },
     onError: (_err, action) => {
       // Roll back the optimistic flip — the request never landed.

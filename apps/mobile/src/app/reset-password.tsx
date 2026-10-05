@@ -15,6 +15,7 @@ import { Body, Button, Caption, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { LockIcon } from '@/components/ui/icons'
 import { authClient } from '@/lib/auth-client'
+import { authErrorMessage } from '@/lib/authErrors'
 import { useT } from '@/lib/i18n'
 
 // Reached from the password-reset email (a universal link →
@@ -38,9 +39,14 @@ export default function ResetPassword() {
     if (!token) return
     setError(null)
     setBusy(true)
-    const { error: err } = await authClient.resetPassword({ newPassword: password, token })
+    // `.catch`: offline, the client throws instead of returning { error } and `busy` stayed true, so
+    // the button sat on "…" for good. And the message goes through the translations rather than the
+    // library's English.
+    const res = await authClient
+      .resetPassword({ newPassword: password, token })
+      .catch(() => ({ error: { code: undefined, message: undefined, status: 0 } }))
     setBusy(false)
-    if (err) return setError(err.message ?? t('auth.reset_invalid_link'))
+    if (res.error) return setError(authErrorMessage(res.error, t('auth.reset_invalid_link')))
     setDone(true)
   }
 

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Link, useRouter } from 'expo-router'
 import { memo } from 'react'
@@ -12,6 +12,7 @@ import { PlaceLine } from '@/components/ui/PlaceLine'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
+import { invalidateAfterSavedDish, invalidateAfterSavedPlace } from '@/lib/invalidateAfterSocial'
 import { imageUrl } from '@/lib/media'
 import type { EventSummary, SavedDish, SavedPlace } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
@@ -27,13 +28,12 @@ export function SavedEventTicket({ e, index }: { e: EventSummary; index: number 
 // pill, and a close to un-save it. (No swipe-to-remove here: the swipeable clips its child, and a
 // raised card's shadow lives outside its box.)
 export const SavedPlaceRow = memo(function SavedPlaceRow({ saved }: { saved: SavedPlace }) {
-  const queryClient = useQueryClient()
   const router = useRouter()
   const t = useT()
   const lift = useLift()
   const remove = useMutation({
     mutationFn: () => api.del(`/saved/${saved.restaurant.id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved'] }),
+    onSuccess: () => invalidateAfterSavedPlace(saved.restaurant.id),
     onError: () =>
       toast({
         variant: 'error',
@@ -93,11 +93,10 @@ export function SavedDishPair({ a, b }: { a: SavedDish; b?: SavedDish }) {
 }
 
 const SavedDishTile = memo(function SavedDishTile({ saved }: { saved: SavedDish }) {
-  const queryClient = useQueryClient()
   const t = useT()
   const remove = useMutation({
     mutationFn: () => api.del(`/saved/dishes/${saved.dish.id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-dishes'] }),
+    onSuccess: () => invalidateAfterSavedDish(saved.dish.id),
     onError: () =>
       toast({
         variant: 'error',

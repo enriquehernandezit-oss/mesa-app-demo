@@ -6,6 +6,8 @@ import { track } from '@/lib/analytics'
 
 import { clearToken, getToken, setToken } from './auth-token'
 import { clearAuthLost } from './authLost'
+import { clearFeedSeen } from './feedSeen'
+import { setFriendsOnlyScores } from './prefs'
 import { unregisterPush } from './push'
 import { queryClient } from './query'
 
@@ -74,6 +76,10 @@ export async function signOut(options?: { local?: boolean }): Promise<void> {
   // Drop the token, then the cache, and pin the session to "signed out" so
   // every route guard flips immediately instead of waiting on a refetch.
   clearToken()
+  // What the last person left on this phone: where they stopped reading the Feed, their
+  // "friends' scores only" switch.
+  void clearFeedSeen()
+  setFriendsOnlyScores(false)
   queryClient.clear()
   queryClient.setQueryData(['session'], null)
 }

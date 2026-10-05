@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
+import { sdMonthStart } from '../lib/sdTime'
 import {
   authorVisibleTo,
   blockedByMe,
@@ -44,7 +45,10 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
       and(
         isNull(user.bannedAt),
         sql`${user.handle} is not null`,
-        period === 'month' ? sql`${rankings.createdAt} > now() - interval '30 days'` : sql`true`,
+        // This calendar month in Santo Domingo, not a rolling 30 days (lib/sdTime.ts sdMonthStart).
+        period === 'month'
+          ? sql`${rankings.createdAt} >= ${sdMonthStart().toISOString()}::timestamp`
+          : sql`true`,
         // Block visibility is symmetric everywhere else in the API — this was
         // the one read path that filtered neither direction, so a blocked
         // user still showed up here for the person who blocked them (and

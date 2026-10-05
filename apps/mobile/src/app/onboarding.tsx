@@ -42,6 +42,7 @@ import { DATA_FIGURES } from '@/theme/vars'
 // If it did, the moment the ranking step wrote its rows the gate would see
 // onboardingComplete flip true and yank the member into the tab shell before
 // friend-find. We refresh ['me'] exactly once, at the end.
+const CONTACT_BATCH = 1000
 const STEPS = ['profile', 'rank', 'friends'] as const
 type Step = (typeof STEPS)[number]
 
@@ -568,9 +569,20 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
         setContactMsg(t('onboarding.contacts_denied'))
         return
       }
-      const { users } = await api.post<{ users: SuggestedUser[] }>('/onboarding/contacts/match', {
-        phoneNumbers: result.phoneNumbers,
-      })
+      // In batches: the server takes a few thousand numbers per request, and a long address book sent
+      // whole came back 400, shown as a generic "couldn't search". It normalises each number itself
+      // (spaces, dashes, +1), so raw numbers are right.
+      const found = new Map<string, SuggestedUser>()
+      const phones = [
+        ...new Set(result.phoneNumbers.map((p) => p.trim()).filter((p) => p.length <= 32)),
+      ]
+      for (let i = 0; i < phones.length; i += CONTACT_BATCH) {
+        const { users } = await api.post<{ users: SuggestedUser[] }>('/onboarding/contacts/match', {
+          phoneNumbers: phones.slice(i, i + CONTACT_BATCH),
+        })
+        for (const u of users) found.set(u.id, u)
+      }
+      const users = [...found.values()]
       setMatched(users)
       setContactMsg(
         users.length
@@ -580,7 +592,11 @@ function FriendsStep({ onFinish }: { onFinish: () => void }) {
     },
     onError: (err) => {
       captureError(err, 'onboarding.contactMatch')
-      setContactMsg(t('onboarding.contacts_search_error'))
+      setContactMsg(
+        err instanceof ApiError && err.status === 429
+          ? t('friends.contacts_rate_limited')
+          : t('onboarding.contacts_search_error'),
+      )
     },
   })
 

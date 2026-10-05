@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { sdHour, sdLocalNow, sdMidnight, tonightLateWindow } from './sdTime'
+import { sdHour, sdLocalNow, sdMidnight, sdMonthStart, tonightLateWindow } from './sdTime'
 
 // Santo Domingo is UTC-4 all year. 2026-09-30T20:00Z is 4:00 PM there.
 const iso = (d: Date) => d.toISOString()
@@ -47,5 +47,21 @@ describe('tonightLateWindow', () => {
       expect(w.start.getTime()).toBeLessThanOrEqual(now.getTime())
       expect(w.end.getTime()).toBeGreaterThan(now.getTime())
     }
+  })
+})
+
+describe('sdMonthStart', () => {
+  test('is midnight on the 1st in Santo Domingo, whatever time of the month it is', () => {
+    expect(iso(sdMonthStart(new Date('2026-10-15T12:00:00Z')))).toBe('2026-10-01T04:00:00.000Z')
+    expect(iso(sdMonthStart(new Date('2026-10-01T04:00:00Z')))).toBe('2026-10-01T04:00:00.000Z')
+  })
+  test('the last evening of a month there is already the next month in UTC, and still the old one here', () => {
+    // 31 Oct 21:00 SD = 1 Nov 01:00Z
+    expect(iso(sdMonthStart(new Date('2026-11-01T01:00:00Z')))).toBe('2026-10-01T04:00:00.000Z')
+    // 1 Nov 00:30 SD = 04:30Z: the new month
+    expect(iso(sdMonthStart(new Date('2026-11-01T04:30:00Z')))).toBe('2026-11-01T04:00:00.000Z')
+  })
+  test('rolls over the year', () => {
+    expect(iso(sdMonthStart(new Date('2027-01-10T12:00:00Z')))).toBe('2027-01-01T04:00:00.000Z')
   })
 })

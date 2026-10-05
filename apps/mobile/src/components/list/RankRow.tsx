@@ -46,6 +46,10 @@ export const RankRow = memo(function RankRow({
       tapLight()
       setEditing(false)
       queryClient.invalidateQueries({ queryKey: ['rankings'] })
+      // The same note is on the feed card, the place page's friends list and the profile.
+      for (const key of ['feed', 'restaurant', 'user-rankings']) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
     },
     onError: () =>
       toast({

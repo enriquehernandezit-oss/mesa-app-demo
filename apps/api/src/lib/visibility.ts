@@ -160,3 +160,13 @@ export async function followCounts(
     .where(or(eq(follows.followingId, userId), eq(follows.followerId, userId)))
   return { followers: row?.followers ?? 0, following: row?.following ?? 0 }
 }
+
+// Ids of banned accounts. A banned member's rankings must not move a place's friend average, its
+// count of rankers, "isNew", or a list's progress — their lists and profile are already hidden, so a
+// number that still counted them could not be checked against anything on screen. Small set, so it
+// composes cheaply into the aggregate queries as `notInArray(rankings.userId, bannedUserIds())`.
+export const bannedUserIds = () =>
+  db
+    .select({ id: user.id })
+    .from(user)
+    .where(sql`${user.bannedAt} is not null`)

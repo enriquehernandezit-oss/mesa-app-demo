@@ -415,6 +415,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'plans.max_spots_toast': 'Three spots max',
   'plans.invalid_invitees_error': "Someone's no longer following you — check the list.",
   'plans.create_error': "Couldn't create the table.",
+  'plans.invalid_date_error': 'Pick a future date within the next 90 days.',
   'plans.new_table': 'New table',
   'plans.where_title': 'Where?',
   'plans.search_spot_placeholder': 'Search a spot…',
@@ -512,6 +513,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   'common.cancel': 'Cancel',
   'common.retry': 'Try again',
+  'common.ok': 'OK',
   'common.done': 'Done',
   'common.saving': 'Saving…',
   'common.you': 'You',
@@ -687,6 +689,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'place.directions_short': 'Directions',
   'place.hint': 'Friends, dishes and menu below',
   'place.who_mesa': 'Mesa',
+  'place.share_text': '{name} on Mesa 🥂',
+  'share.more_rows': '+ {n} more',
   'place.who_friends': 'Friends',
   'place.stat_everyone': 'Everyone · {n}',
   'place.stat_friends': 'Friends · {n}',
@@ -696,7 +700,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'place.n_ranked_it': { one: '1 ranked it', other: '{n} ranked it' },
   'place.friends_ranked': { one: '1 friend ranked', other: '{n} friends ranked' },
   'place.on_your_list': '#{n} on your list',
-  'place.open_until': 'Open until {time}',
+  // Mesa stores a place's usual closing time, not its opening hours, so it cannot say "open now".
+  'place.open_until': 'Closes {time}',
   'place.in_lists': { one: 'In 1 list', other: 'In {n} lists' },
   'place.lists_title': 'Lists',
   'place.open_map': 'Open map',
@@ -843,6 +848,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'profile.favorite_neighborhoods_label': 'Go-to neighborhoods',
   'profile.favorite_cuisines_label': 'Favorite cuisines',
   'profile.handle_error': 'Try another username.',
+  'profile.save_error': "Couldn't save. Check your connection and try again.",
   'profile.bio_label': 'Bio',
 
   'passport.block_error': "Couldn't block. Try again.",
@@ -991,6 +997,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
 
   // app/notifications.tsx
   'notifications.social': 'Follows and cheers',
+  'notifications.save_error': "Couldn't save that change. Try again.",
   'notifications.plans': 'Plans',
   'notifications.friends': "Friends' activity",
   'notifications.dishes': 'Your dishes',

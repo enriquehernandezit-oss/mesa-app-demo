@@ -6,6 +6,7 @@ import { Linking, Text, View } from 'react-native'
 import { Group, Row } from '@/components/SettingsRow'
 import { Body, Button, Caption, Card, MAX_SCALE, Toggle } from '@/components/ui'
 import { BellIcon } from '@/components/ui/icons'
+import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 import { type PushPermission, pushPermissionStatus, registerForPush } from '@/lib/push'
@@ -49,6 +50,8 @@ export default function NotificationSettings() {
     },
     onError: (_err, _patch, context) => {
       if (context?.previous) queryClient.setQueryData(['notification-prefs'], context.previous)
+      // The switch flips back; say why, or it reads as a switch that does not work.
+      toast({ variant: 'error', message: t('notifications.save_error') })
     },
     onSuccess: (data) => queryClient.setQueryData(['notification-prefs'], data),
   })

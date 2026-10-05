@@ -67,6 +67,7 @@ import { formatDistance, haversineM } from '@/lib/geo'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
 import { invalidateRankingNow, invalidateRankingRest } from '@/lib/invalidateAfterRanking'
+import { modalAlert } from '@/lib/modalAlert'
 import {
   type PairwiseState,
   type Sentiment,
@@ -370,7 +371,7 @@ export default function RankAPlace() {
         await fn()
       } catch (err) {
         captureError(err, 'rank.dish_sync')
-        toast({ variant: 'error', message: t('rank.dish_sync_error') })
+        modalAlert(t('rank.dish_sync_error'))
       } finally {
         dishSyncCountRef.current--
         if (dishSyncCountRef.current === 0) setDishSyncPending(false)
@@ -423,7 +424,7 @@ export default function RankAPlace() {
     if (pendingDishActionRef.current.has(candidate.nameKey)) return
     if (selectedDishes.some((d) => d.nameKey === candidate.nameKey)) return
     if (selectedDishes.length >= 3) {
-      toast({ message: t('rank.dish_max') })
+      modalAlert(t('rank.dish_max'))
       return
     }
     pendingDishActionRef.current.add(candidate.nameKey)
@@ -510,12 +511,9 @@ export default function RankAPlace() {
       finishToRankings()
     },
     onError: (err, pos) => {
+      finishingRef.current = false
       captureError(err, 'rank.save')
-      toast({
-        variant: 'error',
-        message: t('rank.save_error'),
-        action: { label: t('common.retry'), onClick: () => save.mutate(pos) },
-      })
+      modalAlert(t('rank.save_error'), () => save.mutate(pos))
     },
   })
 
@@ -575,7 +573,13 @@ export default function RankAPlace() {
   const positionRef = useRef<number | null>(null)
   positionRef.current = position
   const commitSucceededRef = useRef(false)
-  commitSucceededRef.current = commitInitial.isSuccess
+  // "The ranking is saved": the first commit landed, or the final save did. After a failed first
+  // commit, a later successful save used to skip the feed/Explore refresh and the "landed at #N"
+  // confirmation, because only the first commit was counted.
+  commitSucceededRef.current = commitInitial.isSuccess || save.isSuccess
+  // One finish at a time: a second tap on Listo while the first is saving would otherwise post the
+  // ranking twice.
+  const finishingRef = useRef(false)
 
   // Fires once, on the screen's REAL exit — any path (back gesture, swipe,
   // switching tabs mid-flow), not just the in-app "Atrás" controls. An
@@ -628,10 +632,7 @@ export default function RankAPlace() {
     },
     onError: (err) => {
       const capped = err instanceof ApiError && err.status === 429
-      toast({
-        variant: 'error',
-        message: capped ? t('rank.add_place_capped') : t('rank.add_place_error'),
-      })
+      modalAlert(capped ? t('rank.add_place_capped') : t('rank.add_place_error'))
     },
   })
 
@@ -734,6 +735,8 @@ export default function RankAPlace() {
           setPosition(null)
         }}
         onDone={async () => {
+          if (finishingRef.current) return
+          finishingRef.current = true
           await dishQueueRef.current
           // A note typed on the first screen ("Add a note") must not be lost by finishing here:
           // save it with the ranking, the same POST the note step makes.

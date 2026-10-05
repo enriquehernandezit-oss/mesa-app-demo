@@ -78,6 +78,10 @@ function ContactsCard() {
   const clearPhone = useMutation({
     mutationFn: () => api.del('/me/phone'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    onError: (err) => {
+      captureError(err, 'friends.clearPhone')
+      setContactMsg(t('friends.contacts_phone_error'))
+    },
   })
 
   const [searching, setSearching] = useState(false)

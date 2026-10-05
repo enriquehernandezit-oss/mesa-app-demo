@@ -53,7 +53,11 @@ export default function CollectionDetailScreen() {
 
   const removeItem = useMutation({
     mutationFn: (itemId: string) => api.del(`/collections/${collectionId}/items/${itemId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['collection', collectionId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collection', collectionId] })
+      // The counts and covers on "Tus listas".
+      queryClient.invalidateQueries({ queryKey: ['collections'] })
+    },
     onError: () => toast({ variant: 'error', message: t('saveToList.toggle_error') }),
   })
 

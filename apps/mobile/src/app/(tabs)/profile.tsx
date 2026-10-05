@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -41,7 +41,7 @@ import { showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
-import { api } from '@/lib/api'
+import { ApiError, api } from '@/lib/api'
 import { ALL_CUISINES, cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { dateLocale, useLanguage, useT } from '@/lib/i18n'
@@ -565,6 +565,8 @@ function StatTile({
 // screen instead of living here. PATCH /me/profile for the fields, PATCH
 // /me/avatar for the photo — two endpoints, one screen. Redesign 2: a back chip and title, the
 // photo, labelled fields, pills for the choices, and one solid Save.
+const MAX_FAVORITE_CUISINES = 10
+
 function EditProfile({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient()
   const t = useT()
@@ -590,13 +592,31 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     slug ||
     neighborhoods.data?.neighborhoods.find((n) => n.name === p?.neighborhood?.name)?.slug ||
     ''
+  // The server keeps up to 10 favourite cuisines; the screen offers 28 chips, and an 11th made the
+  // whole save fail (400) with a message about the handle.
   const toggleCuisine = (c: string) =>
     setCuisines((cur) => {
       const next = new Set(cur)
       if (next.has(c)) next.delete(c)
-      else next.add(c)
+      else if (next.size < MAX_FAVORITE_CUISINES) next.add(c)
       return next
     })
+
+  // Opened before /me was cached (a `?edit=1` link, a cold start), the fields were seeded from nothing
+  // and stayed empty once the profile arrived — saving then blanked the profile. Fill them once, when
+  // the data first shows up, and never again (so typing is not overwritten by a refetch).
+  const [hydrated, setHydrated] = useState(Boolean(p))
+  useEffect(() => {
+    if (!p || hydrated) return
+    setName(p.name ?? '')
+    setHandle(p.handle ?? '')
+    setInstagramHandle(p.instagramHandle ?? '')
+    setWebsite(p.website ?? '')
+    setBio(p.bio ?? '')
+    setCuisines(new Set(p.favoriteCuisines ?? []))
+    setFavoriteSlugs(new Set((p.favoriteNeighborhoods ?? []).map((n) => n.slug)))
+    setHydrated(true)
+  }, [p, hydrated])
   const toggleFavoriteSlug = (s: string) =>
     setFavoriteSlugs((cur) => {
       const next = new Set(cur)
@@ -609,7 +629,12 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     mutationFn: () =>
       api.patch('/me/profile', {
         name: name.trim(),
-        handle: handle.trim().replace(/^@/, '') || undefined,
+        // Only sent when it was changed: an older handle that no longer passes today's rules would
+        // otherwise make every save fail, however little the member edited.
+        handle:
+          handle.trim().replace(/^@/, '') !== (p?.handle ?? '')
+            ? handle.trim().replace(/^@/, '') || undefined
+            : undefined,
         neighborhoodSlug: currentSlug,
         bio: bio.trim() || undefined,
         instagramHandle: instagramHandle.trim(),
@@ -619,9 +644,19 @@ function EditProfile({ onClose }: { onClose: () => void }) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] })
+      // The name and photo are on every feed card and comment.
+      for (const key of ['feed', 'comments', 'user-rankings']) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
       onClose()
     },
   })
+  // What went wrong, in words that match: only a taken handle is about the handle.
+  const saveError = !save.error
+    ? undefined
+    : save.error instanceof ApiError && save.error.code === 'handle_taken'
+      ? t('profile.handle_error')
+      : t('profile.save_error')
   const canSave = name.trim().length > 0 && currentSlug.length > 0 && !save.isPending
   const avatarPicker = useAvatarPicker()
 
@@ -666,7 +701,11 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             // iOS capitalizes and autocorrects this by default — it's a handle.
             autoCapitalize="none"
             autoCorrect={false}
-            error={save.error ? t('profile.handle_error') : undefined}
+            error={
+              save.error instanceof ApiError && save.error.code === 'handle_taken'
+                ? t('profile.handle_error')
+                : undefined
+            }
           />
           <Field
             label={t('profile.instagram_label')}
@@ -719,7 +758,9 @@ function EditProfile({ onClose }: { onClose: () => void }) {
             </View>
           </View>
           <View>
-            <Eyebrow className="mb-2">{t('profile.favorite_cuisines_label')}</Eyebrow>
+            <Eyebrow className="mb-2">
+              {t('profile.favorite_cuisines_label')} · {cuisines.size}/{MAX_FAVORITE_CUISINES}
+            </Eyebrow>
             <View className="flex-row flex-wrap gap-2">
               {ALL_CUISINES.map((c) => (
                 <Chip
@@ -734,6 +775,9 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           </View>
           <Field label={t('profile.bio_label')} value={bio} onChangeText={setBio} maxLength={160} />
         </View>
+        {saveError && !(save.error instanceof ApiError && save.error.code === 'handle_taken') ? (
+          <Caption className="mt-3 px-5 text-danger">{saveError}</Caption>
+        ) : null}
 
         <View className="mt-6 px-4">
           <Button

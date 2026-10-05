@@ -22,6 +22,15 @@ export function sdMidnight(sdLocal: Date, addDays: number): Date {
   return new Date(ms + SD_UTC_OFFSET_HOURS * 3600_000)
 }
 
+// The real instant the current calendar month began in Santo Domingo — midnight on the 1st. The
+// leaderboard's "this month" runs from here (it used to be a rolling 30 days, so on the 5th it still
+// counted most of last month).
+export function sdMonthStart(now: Date = new Date()): Date {
+  const local = sdLocalNow(now)
+  const ms = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), 1)
+  return new Date(ms + SD_UTC_OFFSET_HOURS * 3600_000)
+}
+
 // The hour of day (0–23) in Santo Domingo.
 export function sdHour(now: Date = new Date()): number {
   return sdLocalNow(now).getUTCHours()

@@ -131,8 +131,16 @@ export const dishListsRoutes = new Hono<AuthedEnv>()
       label: found.label,
       nameKey: found.nameKey,
       rankedAt: found.rankedAt,
-      ranked: rankedRows,
-      unranked: unrankedRows,
+      // `neighborhood` inside `restaurant` is where the app reads it (types.ts DishListEntry); the
+      // queries select it beside the restaurant. Both are sent.
+      ranked: rankedRows.map((r) => ({
+        ...r,
+        restaurant: { ...r.restaurant, neighborhood: r.neighborhood },
+      })),
+      unranked: unrankedRows.map((r) => ({
+        ...r,
+        restaurant: { ...r.restaurant, neighborhood: r.neighborhood },
+      })),
     })
   })
 

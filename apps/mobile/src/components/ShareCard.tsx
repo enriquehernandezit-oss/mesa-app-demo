@@ -197,6 +197,7 @@ function ListBody({
   req: Extract<ShareCardReq, { kind: 'list' }>
   coverH: number
 }) {
+  const t = useT()
   const truncated = req.items.length > MAX_REAL_ROWS
   const shown = truncated
     ? req.items.slice(0, MAX_REAL_ROWS_WHEN_TRUNCATED)
@@ -211,7 +212,7 @@ function ListBody({
     rows.push({
       key: 'more',
       position: null,
-      name: `+ ${req.items.length - MAX_REAL_ROWS_WHEN_TRUNCATED} más`,
+      name: t('share.more_rows', { n: req.items.length - MAX_REAL_ROWS_WHEN_TRUNCATED }),
     })
   }
 

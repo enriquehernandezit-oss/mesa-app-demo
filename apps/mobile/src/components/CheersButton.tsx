@@ -123,6 +123,9 @@ export function CheersButton({
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
 
   function onTap() {
+    // One request at a time: a quick second tap used to fire a second POST/DELETE while the first
+    // was in flight, and the feed cache was then patched from a count that did not match either.
+    if (toggle.isPending) return
     const next = !on
     if (next) track('cheers_given')
     setOn(next)

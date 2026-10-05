@@ -44,6 +44,10 @@ export function invalidateRankingRest(): void {
   queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
   queryClient.invalidateQueries({ queryKey: ['trending'] })
   queryClient.invalidateQueries({ queryKey: ['user-rankings'] })
+  // A member's match with you moves with your list; dishes and dish lists read your rankings.
+  queryClient.invalidateQueries({ queryKey: ['user-match'] })
+  queryClient.invalidateQueries({ queryKey: ['dish-lists'] })
+  queryClient.invalidateQueries({ queryKey: ['dish-names'] })
 }
 
 export function invalidateAfterRanking(restaurantId: string | null): void {

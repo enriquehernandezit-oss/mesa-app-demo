@@ -24,3 +24,12 @@ export async function writeFeedSeen(newest: string, current: string | null): Pro
     // best effort — the divider just doesn't advance
   }
 }
+
+// Signing out: the next person to use this phone must not inherit where the last one stopped reading.
+export async function clearFeedSeen(): Promise<void> {
+  try {
+    await SecureStore.deleteItemAsync(KEY)
+  } catch {
+    // best effort
+  }
+}

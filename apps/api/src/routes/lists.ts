@@ -1,9 +1,9 @@
 import { db, schema } from '@mesa/db'
-import { aliasedTable, and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { aliasedTable, and, asc, eq, inArray, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
-import { followingIds } from '../lib/visibility'
+import { bannedUserIds, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Editorial curated lists (Phase 6). The carousel shows each list with YOUR
@@ -98,7 +98,11 @@ export const listsRoutes = new Hono<AuthedEnv>()
       .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
       .leftJoin(
         rankings,
-        and(eq(rankings.restaurantId, restaurants.id), inArray(rankings.userId, following)),
+        and(
+          eq(rankings.restaurantId, restaurants.id),
+          inArray(rankings.userId, following),
+          notInArray(rankings.userId, bannedUserIds()),
+        ),
       )
       .leftJoin(mine, and(eq(mine.restaurantId, restaurants.id), eq(mine.userId, me.id)))
       .where(eq(listItems.listId, list.id))

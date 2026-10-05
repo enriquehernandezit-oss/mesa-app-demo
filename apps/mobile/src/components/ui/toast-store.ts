@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { AppState } from 'react-native'
+import { AccessibilityInfo, AppState } from 'react-native'
 
 // Module-level toast store, ported from apps/app/src/components/ui/toast-store.ts.
 // `toast()` can be called from anywhere (a mutation's onError, a plain lib);
@@ -61,6 +61,10 @@ AppState.addEventListener('change', (state) => {
     for (const t of timers.values()) {
       clearTimeout(t.handle)
       t.remaining -= Date.now() - t.startedAt
+      // iOS reports 'inactive' and then 'background' for one trip out of the app; without resetting
+      // the start time the second event subtracted the same elapsed time again, so an Undo window
+      // backgrounded at 3 s of 5 came back expired and committed the delete with no Undo.
+      t.startedAt = Date.now()
     }
   } else {
     for (const [id, t] of timers) {
@@ -83,6 +87,9 @@ export function toast(input: ToastInput): number {
   const id = nextId++
   toasts = [...toasts, { ...input, id }]
   emit()
+  // VoiceOver does not read a view that merely appears (the live-region prop is Android-only), so
+  // an error or an Undo went unheard.
+  void AccessibilityInfo.announceForAccessibility(input.message)
   const duration = input.duration ?? DEFAULT_DURATION
   if (duration > 0) {
     scheduleTimer(id, duration, () => {

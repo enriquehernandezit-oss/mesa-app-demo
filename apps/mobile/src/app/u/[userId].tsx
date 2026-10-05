@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -30,6 +30,7 @@ import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { cuisineLabel } from '@/lib/display'
 import { useT } from '@/lib/i18n'
+import { invalidateAfterBlockChange } from '@/lib/invalidateAfterSocial'
 import type { TheirRanking, UserRankingsResponse } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -49,7 +50,6 @@ export default function UserRankings() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
   const router = useRouter()
   const t = useT()
-  const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const lift = useLift()
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/discover'))
@@ -72,24 +72,9 @@ export default function UserRankings() {
   const block = useMutation({
     mutationFn: () => api.post('/moderation/blocks', { userId }),
     onSuccess: () => {
-      // Scoped, not the bare invalidateQueries() this used to be — that wiped
-      // EVERYTHING, ['session'] included, forcing a full auth round-trip and
-      // whole-app refetch over one block. Every surface a block actually
-      // changes, named instead.
-      for (const key of [
-        'feed',
-        'people',
-        'notifications',
-        'user-rankings',
-        'explore',
-        'leaderboard',
-        'trending',
-        'restaurant',
-        'list',
-        'lists',
-      ]) {
-        queryClient.invalidateQueries({ queryKey: [key] })
-      }
+      // Every surface a block changes (lib/invalidateAfterSocial.ts) — not the bare invalidateQueries()
+      // this once was, which wiped ['session'] too and forced a full auth round-trip.
+      invalidateAfterBlockChange()
       router.replace('/discover')
     },
     onError: () => toast({ variant: 'error', message: t('passport.block_error') }),

@@ -86,8 +86,14 @@ const savedByMe = sql<boolean>`${savedEvents.userId} is not null`
 // first 3, for the avatar stack); "32 friends going" is worth saying. spotsLeft
 // is derived here from that same going-count, never stored.
 async function withFriendsGoing<
-  T extends { id: string; capacity: number | null; myStatus: 'going' | 'interested' | null },
->(me: { id: string }, rows: T[]): Promise<(Omit<T, 'myStatus'> & FriendsGoingFields)[]> {
+  T extends {
+    id: string
+    capacity: number | null
+    myStatus: 'going' | 'interested' | null
+    restaurant: object
+    neighborhood: string | null
+  },
+>(me: { id: string }, rows: T[]) {
   const ids = rows.map((r) => r.id)
   if (ids.length === 0) return []
 
@@ -132,6 +138,10 @@ async function withFriendsGoing<
     const goingCount = countByEvent.get(r.id) ?? 0
     return {
       ...r,
+      // The app reads it under `restaurant` (types.ts EventSummary); the queries select it beside
+      // it, so it was always blank on the event page and the hero. Both are sent, so an app that
+      // already reads the top-level one keeps working.
+      restaurant: { ...r.restaurant, neighborhood: r.neighborhood },
       myRsvp: myStatus,
       goingCount,
       spotsLeft: r.capacity === null ? null : Math.max(0, r.capacity - goingCount),
@@ -139,13 +149,6 @@ async function withFriendsGoing<
       friendsGoingCount: friendCountByEvent.get(r.id) ?? 0,
     }
   })
-}
-type FriendsGoingFields = {
-  myRsvp: 'going' | 'interested' | null
-  goingCount: number
-  spotsLeft: number | null
-  friendsGoing: { id: string; name: string; image: string | null }[]
-  friendsGoingCount: number
 }
 
 // The people I follow who are going to an event, most recent sign-up first — the list
