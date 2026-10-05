@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { isUuid } from '../lib/ids'
 import { imageRefSchema } from '../lib/imageRef'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
@@ -275,7 +276,9 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         ),
       )
       .limit(1)
-    if (existing) {
+    // The same update, whether the dish was found above or a concurrent request created it between
+    // the check and our insert (the unique index on live (ranking, name) refuses the second row).
+    const updateExisting = async (id: string) => {
       await db
         .update(dishes)
         .set({
@@ -284,10 +287,11 @@ export const dishesRoutes = new Hono<AuthedEnv>()
           updatedAt: new Date(),
           ...(image ? { imageId: image, grain } : removeImage ? { imageId: null } : {}),
         })
-        .where(eq(dishes.id, existing.id))
-      dishId = existing.id
+        .where(eq(dishes.id, id))
+      dishId = id
       created = false
     }
+    if (existing) await updateExisting(existing.id)
 
     if (!dishId) {
       const [dish] = await db
@@ -304,8 +308,24 @@ export const dishesRoutes = new Hono<AuthedEnv>()
           grain,
           visibility,
         })
+        .onConflictDoNothing()
         .returning({ id: dishes.id })
       dishId = dish?.id
+      if (!dishId) {
+        // Lost a race with an identical post: adopt the row that won and apply this request to it.
+        const [won] = await db
+          .select({ id: dishes.id })
+          .from(dishes)
+          .where(
+            and(
+              eq(dishes.rankingId, myRanking.id),
+              eq(dishes.nameKey, mesaNorm(name)),
+              isNull(dishes.removedAt),
+            ),
+          )
+          .limit(1)
+        if (won) await updateExisting(won.id)
+      }
     }
 
     // A caption that @-tags someone, on a dish that is new (a re-post of the same dish adds no caption).
@@ -574,6 +594,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
   // dangling name.
   .delete('/:id', async (c) => {
     const me = c.get('user')
+    if (!isUuid(c.req.param('id'))) return c.json({ error: 'not_found' }, 404)
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, c.req.param('id')), eq(dishes.userId, me.id)),
       columns: { id: true, name: true, rankingId: true },

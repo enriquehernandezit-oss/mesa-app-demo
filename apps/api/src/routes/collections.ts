@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { isUuid } from '../lib/ids'
 import { imageRefSchema } from '../lib/imageRef'
 import { visibleDish, visibleDishIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
@@ -289,7 +290,7 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
   .delete('/:id/items/:itemId', async (c) => {
     const me = c.get('user')
     const found = await loadOwnedCollection(c.req.param('id'), me.id)
-    if (!found) return c.json({ error: 'not_found' }, 404)
+    if (!found || !isUuid(c.req.param('itemId'))) return c.json({ error: 'not_found' }, 404)
     await db
       .delete(collectionItems)
       .where(

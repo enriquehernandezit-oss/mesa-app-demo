@@ -45,6 +45,17 @@ function parseCursor(raw: string | undefined): { at: Date; id: string | null } |
   return { at, id: idPart || null }
 }
 
+// The cursor travels as a JS date, which has milliseconds; `rankings.created_at` has microseconds.
+// Rows written together (a member's onboarding rankings, a seed, an import) tie at the microsecond,
+// and a page boundary falling inside such a tie used to leave the rest unreachable: the cursor's
+// millisecond value matched none of the stored microsecond ones. Ordering and paging on the
+// millisecond-truncated time makes the tie real on both sides, and the id half breaks it.
+const createdMs = sql<Date>`date_trunc('milliseconds', ${rankings.createdAt})`
+
+// The cursor's instant as a literal `timestamp` (UTC, like the column), not a JS Date parameter,
+// which the driver would serialise in the server's local zone.
+const cursorAt = (at: Date) => sql`${at.toISOString()}::timestamp`
+
 export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
 
@@ -147,15 +158,15 @@ export const feedRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async 
           ? [
               before.id
                 ? or(
-                    lt(rankings.createdAt, before.at),
-                    and(eq(rankings.createdAt, before.at), lt(rankings.id, before.id)),
+                    lt(createdMs, cursorAt(before.at)),
+                    and(eq(createdMs, cursorAt(before.at)), lt(rankings.id, before.id)),
                   )
-                : lt(rankings.createdAt, before.at),
+                : lt(createdMs, cursorAt(before.at)),
             ]
           : []),
       ),
     )
-    .orderBy(desc(rankings.createdAt), desc(rankings.id))
+    .orderBy(desc(createdMs), desc(rankings.id))
     .limit(PAGE)
 
   // Cheers counts and comment summaries for this page, one query each, run

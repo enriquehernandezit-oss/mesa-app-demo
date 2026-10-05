@@ -139,3 +139,24 @@ export async function visibleDishIds(viewerId: string, ids: string[]): Promise<S
     .where(and(inArray(dishes.id, ids), dishVisibleTo(viewerId)))
   return new Set(rows.map((r) => r.id))
 }
+
+// How many people follow `userId`, and how many `userId` follows — counting only accounts that can
+// still be seen, so the number on a profile equals the length of the list behind it (the lists skip
+// banned accounts; a block already deletes the follow). One query for both.
+export async function followCounts(
+  userId: string,
+): Promise<{ followers: number; following: number }> {
+  const [row] = await db
+    .select({
+      followers: sql<number>`count(*) filter (where ${follows.followingId} = ${userId} and ${user.bannedAt} is null)::int`,
+      following: sql<number>`count(*) filter (where ${follows.followerId} = ${userId} and ${user.bannedAt} is null)::int`,
+    })
+    .from(follows)
+    // the person on the OTHER end of each edge
+    .innerJoin(
+      user,
+      sql`${user.id} = case when ${follows.followingId} = ${userId} then ${follows.followerId} else ${follows.followingId} end`,
+    )
+    .where(or(eq(follows.followingId, userId), eq(follows.followerId, userId)))
+  return { followers: row?.followers ?? 0, following: row?.following ?? 0 }
+}

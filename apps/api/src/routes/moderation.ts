@@ -125,6 +125,12 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
     const { userId } = parsed.data
     if (userId === me.id) return c.json({ error: 'cannot_block_self' }, 400)
+    // An id that is not a member used to hit the foreign key and answer 500.
+    const target = await db.query.user.findFirst({
+      where: eq(user.id, userId),
+      columns: { id: true },
+    })
+    if (!target) return c.json({ error: 'not_found' }, 404)
 
     await db.transaction(async (tx) => {
       await tx

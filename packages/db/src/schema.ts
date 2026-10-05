@@ -796,6 +796,13 @@ export const dishes = pgTable(
     // The repeat-dish nudge (M20) counts a member's own distinct restaurants
     // per nameKey on every dish POST — this is that query's index.
     index('dishes_user_name_key_idx').on(t.userId, t.nameKey),
+    // One live dish per name on a ranking. POST /dishes checks for an existing one and then inserts,
+    // and the rank flow re-posts a dish on every sentiment or photo change, so two quick requests
+    // both missed the check and made two rows (inflating the nudge count and making a dish list
+    // permanently refuse to reorder). The database now refuses the second.
+    uniqueIndex('dishes_ranking_name_live_uq')
+      .on(t.rankingId, t.nameKey)
+      .where(sql`${t.removedAt} is null`),
   ],
 )
 

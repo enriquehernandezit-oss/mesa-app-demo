@@ -7,6 +7,8 @@ import type { AuthedEnv } from '../context'
 import { cityRects, parseCityIds, searchCities } from '../lib/cities'
 import { ensureArea, placeIn } from '../lib/geo'
 import { placeDetails, toMesaFields } from '../lib/googlePlaces'
+import { isUuid } from '../lib/ids'
+import { likeEscaped } from '../lib/likeEscape'
 import { locationCondition, normalizeLocation, parseScope } from '../lib/location'
 import { menuSectionLabel } from '../lib/menuSections'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
@@ -292,14 +294,14 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .from(schema.dishes)
         .where(
           and(
-            sql`${schema.dishes.nameKey} ilike '%' || ${norm} || '%'`,
+            sql`${schema.dishes.nameKey} ilike '%' || ${likeEscaped(norm)} || '%'`,
             isNull(schema.dishes.removedAt),
           ),
         )
       const matchConds = [
         ...liveConds,
         or(
-          sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+          sql`${restaurants.nameKey} ilike '%' || ${likeEscaped(norm)} || '%'`,
           // Fuzzy name match, so a near-miss spelling still finds the place we
           // already have — "Olivia" must find "Casa Oliva". Substring alone
           // returned NOTHING there, which made Mesa's own catalog invisible and
@@ -310,8 +312,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
           // the point that catches real variants with no junk (see
           // WORD_MATCH_MIN).
           sql`word_similarity(${norm}, ${restaurants.nameKey}) >= ${WORD_MATCH_MIN}`,
-          sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
-          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
+          sql`${restaurants.cuisineKey} ilike '%' || ${likeEscaped(norm)} || '%'`,
+          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${likeEscaped(norm)} || '%'`,
           inArray(restaurants.id, dishMatch),
         ),
       ]
@@ -398,8 +400,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .where(
           and(
             or(
-              sql`mesa_norm(${user.name}) ilike '%' || ${norm} || '%'`,
-              sql`mesa_norm(${user.handle}) ilike '%' || ${norm} || '%'`,
+              sql`mesa_norm(${user.name}) ilike '%' || ${likeEscaped(norm)} || '%'`,
+              sql`mesa_norm(${user.handle}) ilike '%' || ${likeEscaped(norm)} || '%'`,
             ),
             sql`${user.handle} is not null`,
             isNull(user.bannedAt),
@@ -701,12 +703,26 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         sourceRefreshedAt: new Date(),
         isDemo: false,
       })
+      // Two taps on the same suggestion at once both miss the lookup above and both insert; the
+      // unique google_place_id refuses the second, which used to answer 500. Not a failure: the
+      // other request created it, so adopt that row.
+      .onConflictDoNothing()
       .returning(CARD_RETURNING)
+    if (!created) {
+      const won = await db.query.restaurants.findFirst({
+        where: eq(restaurants.googlePlaceId, placeId),
+        columns: { id: true },
+      })
+      const r = won ? await adopt(won.id) : null
+      if (r) return r
+      return c.json({ error: 'google_unavailable' }, 502)
+    }
     return c.json({ restaurant: { ...created, neighborhood: hood.name } }, 201)
   })
   .get('/:id', async (c) => {
     const me = c.get('user')
     const id = c.req.param('id')
+    if (!isUuid(id)) return c.json({ error: 'not_found' }, 404)
 
     const restaurant = await db.query.restaurants.findFirst({
       // A moderation-removed listing must 404 on its direct link too, not just
@@ -923,6 +939,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   // "prices verified as of" line rather than per-item dates.
   .get('/:id/menu', async (c) => {
     const id = c.req.param('id')
+    if (!isUuid(id)) return c.json({ error: 'not_found' }, 404)
     const restaurant = await db.query.restaurants.findFirst({
       where: and(eq(restaurants.id, id), isNull(restaurants.removedAt)),
       columns: { id: true },

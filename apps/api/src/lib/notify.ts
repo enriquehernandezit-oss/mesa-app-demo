@@ -4,6 +4,7 @@ import { and, inArray, isNull, or } from 'drizzle-orm'
 import { goingPushKey } from './eventPush'
 import { type NotificationRow, pushCopy, pushPayload } from './notifyCopy'
 import { type PushCategory, type PushMessage, pushEnabled, sendPush } from './push'
+import { sdLocalNow } from './sdTime'
 
 // The one way anything reaches a member's bell: `notify()` writes an inbox row (the
 // notifications table) and, for the rows it actually wrote, sends the push. Every trigger in
@@ -66,7 +67,9 @@ export const KIND_RULES: Record<Kind, KindRule> = {
   // inbox).
   friends_love: {
     category: 'friends',
-    throttle: (n) => `friends-love:${n.createdAt.toISOString().slice(0, 10)}`,
+    // The Santo Domingo day, so the cap resets at midnight there and not at 8 PM (UTC midnight),
+    // which let two arrive in one evening.
+    throttle: (n) => `friends-love:${sdLocalNow(n.createdAt).toISOString().slice(0, 10)}`,
   },
   taste_match: { category: 'friends' },
   // Each mention is its own message (keyed by where it was said), so no throttle — but it is the one
@@ -184,7 +187,9 @@ export function background(work: () => Promise<unknown>, failure: string): void 
 // Resolves once every notify() call so far has finished writing — for tests, which need to
 // see the rows a route wrote after it had already answered.
 export async function settleNotify(): Promise<void> {
-  await Promise.all(inFlight)
+  // Looped: work that decides what to notify (`background`) starts its notify() only after its own
+  // query, so a single pass over the set would miss the writes it is about to register.
+  while (inFlight.size > 0) await Promise.all(inFlight)
 }
 
 // ── push ────────────────────────────────────────────────────────────────

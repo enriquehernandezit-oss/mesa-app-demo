@@ -1,9 +1,10 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { isUuid } from '../lib/ids'
 import { dishVisibleTo, visibleDish } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
@@ -56,6 +57,17 @@ export const savedRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const parsed = saveSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    // The place must exist and be listed: an unknown id used to hit the foreign key (a 500), and a
+    // place a moderator removed or that has permanently closed is not something to save.
+    const place = await db.query.restaurants.findFirst({
+      where: and(
+        eq(restaurants.id, parsed.data.restaurantId),
+        isNull(restaurants.removedAt),
+        isNull(restaurants.closedAt),
+      ),
+      columns: { id: true },
+    })
+    if (!place) return c.json({ error: 'not_found' }, 404)
     // Idempotent: saving twice is a no-op.
     await db
       .insert(savedPlaces)
@@ -70,6 +82,7 @@ export const savedRoutes = new Hono<AuthedEnv>()
   .delete('/:restaurantId', async (c) => {
     const me = c.get('user')
     const restaurantId = c.req.param('restaurantId')
+    if (!isUuid(restaurantId)) return c.json({ error: 'not_found' }, 404)
     const myCollections = db
       .select({ id: collections.id })
       .from(collections)
@@ -126,6 +139,7 @@ export const savedRoutes = new Hono<AuthedEnv>()
   .delete('/dishes/:dishId', async (c) => {
     const me = c.get('user')
     const dishId = c.req.param('dishId')
+    if (!isUuid(dishId)) return c.json({ error: 'not_found' }, 404)
     const myCollections = db
       .select({ id: collections.id })
       .from(collections)

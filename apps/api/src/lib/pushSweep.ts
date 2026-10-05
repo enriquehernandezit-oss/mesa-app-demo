@@ -6,7 +6,7 @@ import { reminderCopy } from './notifyCopy'
 import { checkReceipts, pushEnabled, sendPush } from './push'
 import { sdHour } from './sdTime'
 
-const { dishLists, dishes, events, eventRsvps, notifications, user } = schema
+const { dishLists, dishes, events, eventRsvps, notifications, pushLog, user } = schema
 
 // The background sweeps behind the bell and the pushes that no write triggers — a timer
 // crossing a threshold, or an event cancelled by a direct SQL update. Started once from
@@ -112,27 +112,52 @@ export async function sweepDishNudges(): Promise<void> {
 const REMINDER_OFFSETS_MS = [24 * 3600_000, 3 * 3600_000, 2 * 3600_000, 0]
 const REMINDER_GRACE_MS = 30 * 60_000
 
+// The people due a reminder at this offset: RSVP'd going, the event starting within `offsetMs` but
+// not more than the grace period past it, and not already reminded (their push_log row is the
+// record). Up to 500 per call; claimed people drop out, so the next tick takes the next 500.
+export async function dueReminders(offsetMs: number, nowDate: Date) {
+  const now = nowDate.getTime()
+  const threshold = new Date(now + offsetMs)
+  const graceFloor = new Date(now + offsetMs - REMINDER_GRACE_MS)
+  return db
+    .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
+    .from(eventRsvps)
+    .innerJoin(events, eq(events.id, eventRsvps.eventId))
+    .where(
+      and(
+        eq(eventRsvps.status, 'going'),
+        isNull(events.cancelledAt),
+        lte(events.startsAt, threshold),
+        gt(events.startsAt, graceFloor),
+        // Not people already reminded at this offset. Without this, every 2-minute tick re-read
+        // the same first 500 rows (already pushed, no ORDER BY), so anyone past the 500th RSVP
+        // to a popular event never got a reminder. A person who was claimed drops out here, so
+        // the next tick moves on to the next 500 (the cancellation sweep below does the same).
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(pushLog)
+            .where(
+              and(
+                eq(pushLog.userId, eventRsvps.userId),
+                eq(
+                  pushLog.key,
+                  sql`'event-reminder:' || ${events.id}::text || ':' || ${offsetMs}::text`,
+                ),
+              ),
+            ),
+        ),
+      ),
+    )
+    .limit(500)
+}
+
 export async function sweepEventReminders(): Promise<void> {
   if (!pushEnabled()) return
   const now = Date.now()
 
   for (const offsetMs of REMINDER_OFFSETS_MS) {
-    const threshold = new Date(now + offsetMs)
-    const graceFloor = new Date(now + offsetMs - REMINDER_GRACE_MS)
-
-    const due = await db
-      .select({ eventId: events.id, userId: eventRsvps.userId, title: events.title })
-      .from(eventRsvps)
-      .innerJoin(events, eq(events.id, eventRsvps.eventId))
-      .where(
-        and(
-          eq(eventRsvps.status, 'going'),
-          isNull(events.cancelledAt),
-          lte(events.startsAt, threshold),
-          gt(events.startsAt, graceFloor),
-        ),
-      )
-      .limit(500)
+    const due = await dueReminders(offsetMs, new Date(now))
     if (due.length === 0) continue
 
     sendPush(

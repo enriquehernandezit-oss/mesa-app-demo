@@ -3,6 +3,7 @@ import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AppEnv } from '../context'
+import { isUuid } from '../lib/ids'
 import {
   displayScore,
   esc,
@@ -250,6 +251,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     const canonical = c.req.url
     c.header('Cache-Control', 'public, max-age=300')
     const id = c.req.param('restaurantId')
+    if (!isUuid(id)) return c.html(notFound(canonical), 404)
 
     const r = await db.query.restaurants.findFirst({
       // Public, unauthenticated page — a moderation-removed or permanently
@@ -338,6 +340,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     // won, if it was a vote) can change the instant the host confirms it.
     c.header('Cache-Control', 'public, max-age=60')
     const planId = c.req.param('planId')
+    if (!isUuid(planId)) return c.html(notFound(canonical), 404)
 
     const plan = await db.query.plans.findFirst({
       where: eq(plans.id, planId),
@@ -455,6 +458,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     const canonical = c.req.url
     c.header('Cache-Control', 'public, max-age=300')
     const id = c.req.param('id')
+    if (!isUuid(id)) return c.html(notFound(canonical), 404)
 
     const collection = await db.query.collections.findFirst({
       where: eq(collections.id, id),
@@ -553,6 +557,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
     const canonical = c.req.url
     c.header('Cache-Control', 'public, max-age=300')
     const id = c.req.param('id')
+    if (!isUuid(id)) return c.html(notFound(canonical), 404)
 
     const list = await db.query.dishLists.findFirst({
       where: eq(dishLists.id, id),

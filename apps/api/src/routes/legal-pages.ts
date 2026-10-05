@@ -155,7 +155,9 @@ export const legalPagesRoutes = new Hono<AppEnv>()
     // Widened to a string index so an unknown slug is `undefined` rather than a
     // cast the compiler has to be talked into.
     const byId: Record<string, LegalDoc> = LEGAL_DOCS
-    const doc = byId[c.req.param('doc')]
+    // hasOwn: a plain object also answers to "constructor" and "toString", which would throw below.
+    const slug = c.req.param('doc')
+    const doc = Object.hasOwn(byId, slug) ? byId[slug] : undefined
     if (!doc) {
       return c.html(
         page({

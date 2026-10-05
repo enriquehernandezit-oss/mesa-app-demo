@@ -9,7 +9,8 @@ import { eraseAccount } from '../lib/accountErase'
 import { clearFailures, lockedForMs, noteFailure } from '../lib/authThrottle'
 import { imageRefSchema } from '../lib/imageRef'
 import { notify } from '../lib/notify'
-import { citywideRank } from '../lib/visibility'
+import { weeklyStreak } from '../lib/streak'
+import { citywideRank, followCounts } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The authed user's own profile + onboarding gate. The app calls GET /me on
@@ -425,22 +426,14 @@ export const meRoutes = new Hono<AuthedEnv>()
       )
       .where(eq(schema.rankings.userId, current.id))
 
-    const followers = await db.$count(schema.follows, eq(schema.follows.followingId, current.id))
-    const followingCount = await db.$count(
-      schema.follows,
-      eq(schema.follows.followerId, current.id),
-    )
+    const { followers, following: followingCount } = await followCounts(current.id)
     // Want-to-try count — backs the Rankings header's third stat, which used
     // to show "prom." (your own average score, the least actionable of the
     // three numbers there) and now shows this instead.
     const saved = await db.$count(schema.savedPlaces, eq(schema.savedPlaces.userId, current.id))
 
-    // Current streak: consecutive ISO weeks (ending this week) with ≥1 ranking.
-    const WEEK = 7 * 24 * 60 * 60 * 1000
-    const weeks = new Set(mine.map((r) => Math.floor(r.createdAt.getTime() / WEEK)))
-    const thisWeek = Math.floor(Date.now() / WEEK)
-    let streak = 0
-    for (let w = thisWeek; weeks.has(w); w--) streak++
+    // Current streak: consecutive Santo Domingo weeks with ≥1 ranking (lib/streak.ts).
+    const streak = weeklyStreak(mine.map((r) => r.createdAt))
 
     const top = (values: (string | null)[]): string | null => {
       const counts = new Map<string, number>()

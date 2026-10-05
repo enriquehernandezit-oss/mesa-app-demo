@@ -5,6 +5,7 @@ import { secureHeaders } from 'hono/secure-headers'
 
 import { auth } from './auth'
 import type { AppEnv } from './context'
+import { requestBodyLimit } from './lib/bodyLimit'
 import { captureApiError } from './lib/errors'
 import { startPushSweep } from './lib/pushSweep'
 import { R2_PUBLIC_BASE_URL } from './lib/r2'
@@ -137,6 +138,8 @@ app.use(
     },
   }),
 )
+
+app.use('*', requestBodyLimit)
 
 // CORS for the Vite app / Capacitor webview. credentials:true lets the session
 // cookie ride along for same-origin/first-party web; exposeHeaders lets the

@@ -6,11 +6,13 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { signalsAfterRanking } from '../lib/friendSignals'
+import { isUuid } from '../lib/ids'
+import { likeEscaped } from '../lib/likeEscape'
 import { notifyMentions } from '../lib/mentionNotify'
 import { NO_MUTUALS, mutualSummaries } from '../lib/mutuals'
 import { background, notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
-import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, canSeeContent, followCounts, followerIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // The ranking loop — Mesa's atomic unit. A user keeps one ordered list of
@@ -157,14 +159,14 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       norm = sql`mesa_norm(${q})`
       conds.push(
         or(
-          sql`${restaurants.nameKey} ilike '%' || ${norm} || '%'`,
+          sql`${restaurants.nameKey} ilike '%' || ${likeEscaped(norm)} || '%'`,
           // Same fuzzy name match as the Explore search (WORD_MATCH_MIN in
           // routes/restaurants.ts) so "Olivia" finds "Casa Oliva" here too —
           // otherwise the rank flow's find step would offer the Google copy of a
           // place already in the catalog. Keep the two thresholds in sync.
           sql`word_similarity(${norm}, ${restaurants.nameKey}) >= 0.55`,
-          sql`${restaurants.cuisineKey} ilike '%' || ${norm} || '%'`,
-          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${norm} || '%'`,
+          sql`${restaurants.cuisineKey} ilike '%' || ${likeEscaped(norm)} || '%'`,
+          sql`mesa_norm(${neighborhoods.name}) ilike '%' || ${likeEscaped(norm)} || '%'`,
         ),
       )
     }
@@ -230,8 +232,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       .from(follows)
       .where(and(eq(follows.followerId, me.id), eq(follows.followingId, targetId)))
       .limit(1)
-    const followerCount = await db.$count(follows, eq(follows.followingId, targetId))
-    const followingCount = await db.$count(follows, eq(follows.followerId, targetId))
+    const { followers: followerCount, following: followingCount } = await followCounts(targetId)
     let requested = false
     if (target.isPrivate && !amFollowing && targetId !== me.id) {
       const [req] = await db
@@ -532,27 +533,31 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     // Recipients: people who follow ME (the one-directional "friend" this
     // app's feed already uses) and had this restaurant in their own saved
     // list, minus either direction of block.
+    // Fire-and-forget (`background`): the ranking is already committed, so a failure in this lookup
+    // must not turn a saved ranking into an error response.
     if (isFirstRanking) {
-      const savers = await db
-        .select({ userId: savedPlaces.userId })
-        .from(savedPlaces)
-        .where(
-          and(
-            eq(savedPlaces.restaurantId, restaurantId),
-            inArray(savedPlaces.userId, followerIds(me.id)),
-            notInArray(savedPlaces.userId, blockedByMe(me.id)),
-            notInArray(savedPlaces.userId, blockedMe(me.id)),
-          ),
+      background(async () => {
+        const savers = await db
+          .select({ userId: savedPlaces.userId })
+          .from(savedPlaces)
+          .where(
+            and(
+              eq(savedPlaces.restaurantId, restaurantId),
+              inArray(savedPlaces.userId, followerIds(me.id)),
+              notInArray(savedPlaces.userId, blockedByMe(me.id)),
+              notInArray(savedPlaces.userId, blockedMe(me.id)),
+            ),
+          )
+        notify(
+          savers.map((s) => ({
+            userId: s.userId,
+            kind: 'saved_ranked' as const,
+            dedupeKey: `saved_ranked:${restaurantId}:${me.id}`,
+            actorId: me.id,
+            restaurantId,
+          })),
         )
-      notify(
-        savers.map((s) => ({
-          userId: s.userId,
-          kind: 'saved_ranked' as const,
-          dedupeKey: `saved_ranked:${restaurantId}:${me.id}`,
-          actorId: me.id,
-          restaurantId,
-        })),
-      )
+      }, 'saved_ranked lookup failed')
     }
 
     const doneAt = performance.now()
@@ -575,6 +580,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const parsed = noteSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    if (!isUuid(c.req.param('id'))) return c.json({ error: 'not_found' }, 404)
 
     const ranking = await db.query.rankings.findFirst({
       where: and(eq(rankings.id, c.req.param('id')), eq(rankings.userId, me.id)),
@@ -608,6 +614,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
   // Remove a spot from my list, then re-densify the remaining positions/scores.
   .delete('/:id', async (c) => {
     const me = c.get('user')
+    if (!isUuid(c.req.param('id'))) return c.json({ error: 'not_found' }, 404)
     const ranking = await db.query.rankings.findFirst({
       where: and(eq(rankings.id, c.req.param('id')), eq(rankings.userId, me.id)),
       columns: { restaurantId: true },
