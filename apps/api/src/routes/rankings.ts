@@ -516,7 +516,13 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
           .values({ userId: me.id, restaurantId, body: vibeNote })
           .onConflictDoUpdate({
             target: [vibeNotes.userId, vibeNotes.restaurantId],
-            set: { body: vibeNote, removedAt: null, updatedAt: new Date() },
+            // A note a moderator removed stays removed until its text actually changes —
+            // saving the same words again must not put it back (App Store 1.2).
+            set: {
+              body: vibeNote,
+              removedAt: sql`case when ${vibeNotes.body} is distinct from ${vibeNote} then null else ${vibeNotes.removedAt} end`,
+              updatedAt: new Date(),
+            },
           })
       }
     })
@@ -588,7 +594,12 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       .values({ userId: me.id, restaurantId: ranking.restaurantId, body })
       .onConflictDoUpdate({
         target: [vibeNotes.userId, vibeNotes.restaurantId],
-        set: { body, removedAt: null, updatedAt: new Date() },
+        // Same rule as POST /rankings: a removed note stays removed until its text changes.
+        set: {
+          body,
+          removedAt: sql`case when ${vibeNotes.body} is distinct from ${body} then null else ${vibeNotes.removedAt} end`,
+          updatedAt: new Date(),
+        },
       })
     mentionNote(me.id, ranking.restaurantId, body, c.req.param('id'))
     return c.json({ ok: true, note: body })
@@ -606,9 +617,17 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     await db.transaction(async (tx) => {
       await lockUserList(tx, me.id)
       await tx.delete(rankings).where(eq(rankings.id, c.req.param('id')))
+      // The note goes with the ranking — except one a moderator removed, which is kept for audit
+      // so that ranking the place again with the same words cannot bring it back.
       await tx
         .delete(vibeNotes)
-        .where(and(eq(vibeNotes.userId, me.id), eq(vibeNotes.restaurantId, ranking.restaurantId)))
+        .where(
+          and(
+            eq(vibeNotes.userId, me.id),
+            eq(vibeNotes.restaurantId, ranking.restaurantId),
+            isNull(vibeNotes.removedAt),
+          ),
+        )
       const order = (await currentOrder(tx, me.id)).filter((id) => id !== ranking.restaurantId)
       await rewrite(tx, me.id, order)
     })

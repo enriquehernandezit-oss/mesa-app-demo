@@ -2,7 +2,7 @@ import { db, schema } from '@mesa/db'
 import { and, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import type { PgColumn } from 'drizzle-orm/pg-core'
 
-const { follows, userBlocks, rankingComments, rankings, user } = schema
+const { follows, userBlocks, rankingComments, rankings, user, dishes } = schema
 
 // The follow/block subqueries that gate almost every social read — the feed,
 // the activity bell, a restaurant's friend scores and dish rail, a user's
@@ -97,3 +97,45 @@ export async function canSeeContent(
 // for it (most already do, for the ban check).
 export const authorVisibleTo = (viewerId: string, authorId: PgColumn, authorPrivate: PgColumn) =>
   or(eq(authorPrivate, false), eq(authorId, viewerId), inArray(authorId, followingIds(viewerId)))
+
+// Which dishes the given viewer may see — the rule GET /dishes/:id and a restaurant's dish rail
+// already apply, in one place for everything else that points at a dish (cheering it, saving it,
+// adding it to a list, reading either back). A dish is visible when it is the viewer's own, or
+// public from a public account, or posted by someone the viewer follows; never when it was removed
+// by a moderator, its poster is banned, or a block stands between them. The query joins `user` on
+// `dishes.userId` for the poster's flags.
+export const dishVisibleTo = (viewerId: string) =>
+  and(
+    isNull(dishes.removedAt),
+    isNull(user.bannedAt),
+    notInArray(dishes.userId, blockedByMe(viewerId)),
+    notInArray(dishes.userId, blockedMe(viewerId)),
+    or(
+      eq(dishes.userId, viewerId),
+      and(eq(dishes.visibility, 'public'), eq(user.isPrivate, false)),
+      inArray(dishes.userId, followingIds(viewerId)),
+    ),
+  )
+
+// One dish, or undefined when it does not exist or is not the viewer's to see (all read as 404).
+export async function visibleDish(viewerId: string, dishId: string) {
+  const [row] = await db
+    .select({ id: dishes.id, userId: dishes.userId })
+    .from(dishes)
+    .innerJoin(user, eq(user.id, dishes.userId))
+    .where(and(eq(dishes.id, dishId), dishVisibleTo(viewerId)))
+    .limit(1)
+  return row
+}
+
+// Of these dish ids, the ones the viewer may see — one query, for filtering a list that already
+// holds dishes (a collection, the saved list).
+export async function visibleDishIds(viewerId: string, ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set()
+  const rows = await db
+    .select({ id: dishes.id })
+    .from(dishes)
+    .innerJoin(user, eq(user.id, dishes.userId))
+    .where(and(inArray(dishes.id, ids), dishVisibleTo(viewerId)))
+  return new Set(rows.map((r) => r.id))
+}

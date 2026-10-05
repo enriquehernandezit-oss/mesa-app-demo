@@ -9,7 +9,13 @@ import type { AuthedEnv } from '../context'
 import { parseHandlePrefix } from '../lib/mentions'
 import { NO_MUTUALS, mutualCandidateCount, mutualList, mutualSummaries } from '../lib/mutuals'
 import { notify } from '../lib/notify'
-import { blockedByMe, blockedMe, canSeeContent, followingIds } from '../lib/visibility'
+import {
+  authorVisibleTo,
+  blockedByMe,
+  blockedMe,
+  canSeeContent,
+  followingIds,
+} from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // The social graph write side. Follow/unfollow is used first during onboarding
@@ -639,6 +645,9 @@ export const socialRoutes = new Hono<AuthedEnv>()
           notInArray(schema.rankings.userId, dismissed),
           notBanned,
           ...notBlocked,
+          // A private member's list is theirs and their approved followers': it must not feed a
+          // taste percentage or an ordering for a stranger (F1).
+          authorVisibleTo(me.id, schema.user.id, schema.user.isPrivate),
         ),
       )
       .groupBy(schema.user.id, schema.neighborhoods.name)
@@ -780,6 +789,18 @@ export const socialRoutes = new Hono<AuthedEnv>()
       .values({ userId: me.id, dismissedUserId })
       .onConflictDoNothing()
 
+    return c.json({ ok: true })
+  })
+
+  // Take someone off my followers: they stop following me and, on a private account, lose the
+  // access that approval gave them. Idempotent, silent (no notification), and they can ask again.
+  // Only ever about people following ME — never anyone else's list.
+  .delete('/followers/:userId', async (c) => {
+    const me = c.get('user')
+    const followerId = c.req.param('userId')
+    await db
+      .delete(schema.follows)
+      .where(and(eq(schema.follows.followerId, followerId), eq(schema.follows.followingId, me.id)))
     return c.json({ ok: true })
   })
 

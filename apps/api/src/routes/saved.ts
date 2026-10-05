@@ -1,9 +1,10 @@
 import { db, schema } from '@mesa/db'
-import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { dishVisibleTo, visibleDish } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Want-to-try lists — the "Guardados" tab beside Rankings (M19). Two master
@@ -20,6 +21,7 @@ const {
   dishes,
   collections,
   collectionItems,
+  user,
 } = schema
 const saveSchema = z.object({ restaurantId: z.string().uuid() })
 const saveDishSchema = z.object({ dishId: z.string().uuid() })
@@ -99,8 +101,11 @@ export const savedRoutes = new Hono<AuthedEnv>()
       })
       .from(savedDishes)
       .innerJoin(dishes, eq(dishes.id, savedDishes.dishId))
+      .innerJoin(user, eq(user.id, dishes.userId))
       .innerJoin(restaurants, eq(restaurants.id, dishes.restaurantId))
-      .where(and(eq(savedDishes.userId, me.id), isNull(dishes.removedAt)))
+      // Saved earlier does not mean visible now: a dish that went private, was removed or whose
+      // poster was banned or blocked drops out.
+      .where(and(eq(savedDishes.userId, me.id), dishVisibleTo(me.id)))
       .orderBy(desc(savedDishes.createdAt))
     return c.json({ saved: rows })
   })
@@ -109,10 +114,7 @@ export const savedRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const parsed = saveDishSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
-    const exists = await db.query.dishes.findFirst({
-      where: and(eq(dishes.id, parsed.data.dishId), isNull(dishes.removedAt)),
-      columns: { id: true },
-    })
+    const exists = await visibleDish(me.id, parsed.data.dishId)
     if (!exists) return c.json({ error: 'not_found' }, 404)
     await db
       .insert(savedDishes)

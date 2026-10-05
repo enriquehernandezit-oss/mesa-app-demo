@@ -476,22 +476,32 @@ export const sharePagesRoutes = new Hono<AppEnv>()
         dishName: dishes.name,
         dishImage: dishes.imageId,
         dishVisibility: dishes.visibility,
+        dishPosterPrivate: user.isPrivate,
+        dishPosterBanned: user.bannedAt,
       })
       .from(collectionItems)
-      .leftJoin(restaurants, eq(restaurants.id, collectionItems.restaurantId))
-      .leftJoin(dishes, eq(dishes.id, collectionItems.dishId))
+      .leftJoin(
+        restaurants,
+        and(eq(restaurants.id, collectionItems.restaurantId), isNull(restaurants.removedAt)),
+      )
+      // A removed dish is not a list item any more.
+      .leftJoin(dishes, and(eq(dishes.id, collectionItems.dishId), isNull(dishes.removedAt)))
+      .leftJoin(user, eq(user.id, dishes.userId))
       .where(eq(collectionItems.collectionId, id))
       .orderBy(desc(collectionItems.createdAt))
       .limit(20)
 
     // No stored position (the in-app list orders by createdAt too) — the
     // display ordinal below is synthetic, same visual language as a real one.
+    // A dish shows only when it is public from a public, un-banned account — the page is public.
+    const dishShown = (r: (typeof rawRows)[number]) =>
+      r.dishVisibility === 'public' && r.dishPosterPrivate === false && r.dishPosterBanned === null
     const items = rawRows
-      .filter((r) => r.restaurantName || r.dishVisibility === 'public')
+      .filter((r) => r.restaurantName || dishShown(r))
       .map((r, i) => ({
         position: i + 1,
         name: (r.restaurantName ?? r.dishName) as string,
-        coverImageId: r.restaurantCover ?? (r.dishVisibility === 'public' ? r.dishImage : null),
+        coverImageId: r.restaurantCover ?? (dishShown(r) ? r.dishImage : null),
       }))
 
     const who = owner.name || `@${owner.handle}`

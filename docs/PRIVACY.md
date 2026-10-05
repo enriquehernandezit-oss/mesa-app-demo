@@ -58,6 +58,24 @@ allowed) · `GET /rankings/user/:id/match` · `GET /social/followers|following` 
 The feed, home, Popular, events-going, plans and place friend notes already read `follows` only, so a
 pending request cannot leak through them.
 
+Added in the October audit: holding an id is not access. `GET|POST /comments/ranking/:id` and
+`POST /cheers/:id` answer 404 for a private account's ranking unless the caller is an approved follower
+(`visibleRanking` uses `authorVisibleTo`); a dish is cheered, saved or filed in a list only if
+`visibleDish` (lib/visibility.ts) says it is the caller's to see, and saved lists and collections drop a
+dish that has since been removed or gone private; People-you-may-know's taste tier skips private
+accounts; a private account can take someone off its followers with `DELETE /social/followers/:userId`
+(no notification; they can ask again). The public collection page lists a dish only when it is public,
+from a public, un-banned account, and not removed.
+
+## Moderation rules worth knowing
+
+- A note a moderator removed **stays removed** until its text changes: saving the same words again, or
+  deleting the ranking and ranking the place again, does not bring it back (the removed row is kept for
+  audit). New words make a new note, which can be reported like any other.
+- Reports (`POST /moderation/reports`): a vibe note, dish or comment must be a real uuid that exists; you
+  cannot report yourself; the same open report twice is one; 30 a day per member (429 after that). The
+  moderator queue also ignores a malformed legacy row instead of failing for everyone.
+
 ## In the app (F2)
 
 - **Settings → Privacy → Private account:** the switch (`PATCH /me/privacy`). Turning it off with requests

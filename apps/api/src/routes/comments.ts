@@ -8,7 +8,7 @@ import { parseCommentBody } from '../lib/commentBody'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
 import { excerpt } from '../lib/notifyCopy'
-import { blockedByMe, blockedMe, visibleComment } from '../lib/visibility'
+import { authorVisibleTo, blockedByMe, blockedMe, visibleComment } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Comments on a friend's ranking — the conversation half of the feed, next to
@@ -19,7 +19,8 @@ const { rankings, rankingComments, restaurants, user, vibeNotes } = schema
 const uuid = z.string().uuid()
 
 // The ranking a thread hangs off, or undefined when it doesn't exist, its owner
-// is banned, or a block stands between us either way — all three read as 404,
+// is banned, a block stands between us either way, or it belongs to a private account we are not
+// approved on — all four read as 404,
 // so a blocked user can't probe for the ranking. One round trip; the note join
 // mirrors the feed's (the vibe note lives in its own table, keyed by
 // user + restaurant).
@@ -49,6 +50,9 @@ async function visibleRanking(meId: string, rankingId: string) {
         isNull(user.bannedAt),
         notInArray(rankings.userId, blockedByMe(meId)),
         notInArray(rankings.userId, blockedMe(meId)),
+        // A private account's rankings, and the threads under them, are for its approved
+        // followers (F1) — holding a ranking id is not enough.
+        authorVisibleTo(meId, rankings.userId, user.isPrivate),
       ),
     )
   return row

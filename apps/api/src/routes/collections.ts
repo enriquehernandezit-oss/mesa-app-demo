@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
+import { visibleDish, visibleDishIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Named lists (M19) — user-created folders layered on top of the two master
@@ -119,7 +120,9 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
       .select({
         ...headerColumns,
         createdAt: collections.createdAt,
-        itemCount: sql<number>`count(${collectionItems.id})::int`,
+        // A dish a moderator removed is not an item any more (it would count here and vanish from
+        // the list itself).
+        itemCount: sql<number>`count(${collectionItems.id}) filter (where ${collectionItems.dishId} is null or ${collectionItems.dishId} in (select id from dishes where removed_at is null))::int`,
         itemId: matchedItemId,
         previewImageId,
       })
@@ -212,12 +215,20 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
       .where(eq(collectionItems.collectionId, found.id))
       .orderBy(desc(collectionItems.createdAt))
 
+    // A dish in this list that has since been removed, or is no longer the viewer's to see
+    // (its poster went private, was banned or blocked), is left out rather than shown by name.
+    const visibleDishes = await visibleDishIds(
+      me.id,
+      rows.flatMap((r) => (r.dish?.id ? [r.dish.id] : [])),
+    )
+    const shownRows = rows.filter((r) => !r.dish?.id || visibleDishes.has(r.dish.id))
+
     return c.json({
       id: found.id,
       name: found.name,
       description: found.description,
       coverImageId: found.coverImageId,
-      items: rows.map((r) => ({
+      items: shownRows.map((r) => ({
         itemId: r.itemId,
         addedAt: r.addedAt,
         restaurant: r.restaurant?.id
@@ -258,10 +269,8 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
       })
     } else {
       const dishId = parsed.data.dishId as string
-      const exists = await db.query.dishes.findFirst({
-        where: eq(dishes.id, dishId),
-        columns: { id: true },
-      })
+      // Only a dish the member can see: a private or friends-only dish is not theirs to file.
+      const exists = await visibleDish(me.id, dishId)
       if (!exists) return c.json({ error: 'unknown_dish' }, 400)
       await db.transaction(async (tx) => {
         await tx.insert(savedDishes).values({ userId: me.id, dishId }).onConflictDoNothing()

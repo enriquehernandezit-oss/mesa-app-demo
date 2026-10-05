@@ -245,6 +245,8 @@ export const plansRoutes = new Hono<AuthedEnv>()
           or(eq(plans.hostId, me.id), sql`${mine.userId} is not null`),
           notInArray(plans.hostId, blockedByMe(me.id)),
           notInArray(plans.hostId, blockedMe(me.id)),
+          // A banned host's plans are gone from the list, as they already are from the plan itself.
+          isNull(user.bannedAt),
         ),
       )
       .groupBy(plans.id, user.id, mine.reply, mine.voteRestaurantId)

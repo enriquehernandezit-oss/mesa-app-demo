@@ -1,5 +1,5 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
@@ -12,15 +12,26 @@ import { requireAuth, requireModerator } from '../middleware/session'
 const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, followRequests, user } =
   schema
 
-const reportSchema = z.object({
-  // Dishes are first-class UGC (photo + name + caption), so they must be
-  // reportable like vibe notes and users (App Store 1.2). The enum already
-  // carries 'dish' (reportTargetType in schema.ts). Ranking comments likewise
-  // ('comment').
-  targetType: z.enum(['vibe_note', 'user', 'dish', 'comment']),
-  targetId: z.string().min(1),
-  reason: z.string().trim().min(1).max(500),
-})
+const uuid = z.string().uuid()
+// Reports one member may file in a day — a flood from one account must not bury the real ones.
+const REPORTS_PER_DAY = 30
+
+const reportSchema = z
+  .object({
+    // Dishes are first-class UGC (photo + name + caption), so they must be
+    // reportable like vibe notes and users (App Store 1.2). The enum already
+    // carries 'dish' (reportTargetType in schema.ts). Ranking comments likewise
+    // ('comment').
+    targetType: z.enum(['vibe_note', 'user', 'dish', 'comment']),
+    targetId: z.string().min(1).max(64),
+    reason: z.string().trim().min(1).max(500),
+  })
+  // Everything but a user is keyed by a uuid; a malformed id would otherwise fail the moderator
+  // queue's uuid cast for everyone.
+  .refine((b) => b.targetType === 'user' || uuid.safeParse(b.targetId).success, {
+    message: 'targetId must be a uuid',
+    path: ['targetId'],
+  })
 const blockSchema = z.object({ userId: z.string().min(1) })
 
 export const moderationRoutes = new Hono<AuthedEnv>()
@@ -34,18 +45,56 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     const me = c.get('user')
     const parsed = reportSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
-    // A comment id must name a real comment — the report path is new enough
-    // that a client bug filing garbage ids would otherwise go unnoticed.
-    if (parsed.data.targetType === 'comment') {
-      const id = parsed.data.targetId
-      const found = z.string().uuid().safeParse(id).success
+    const { targetType, targetId } = parsed.data
+    // The target must exist — a client bug (or a hand-made request) filing garbage ids would
+    // otherwise sit in the queue forever. Nobody reports themselves.
+    const found =
+      targetType === 'comment'
         ? await db.query.rankingComments.findFirst({
-            where: eq(rankingComments.id, id),
+            where: eq(rankingComments.id, targetId),
             columns: { id: true },
           })
-        : undefined
-      if (!found) return c.json({ error: 'not_found' }, 404)
-    }
+        : targetType === 'vibe_note'
+          ? await db.query.vibeNotes.findFirst({
+              where: eq(vibeNotes.id, targetId),
+              columns: { id: true },
+            })
+          : targetType === 'dish'
+            ? await db.query.dishes.findFirst({
+                where: eq(dishes.id, targetId),
+                columns: { id: true },
+              })
+            : targetId === me.id
+              ? undefined
+              : await db.query.user.findFirst({
+                  where: eq(user.id, targetId),
+                  columns: { id: true },
+                })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+
+    // Reporting the same thing twice is one report, not two: the second tap is a no-op.
+    const already = await db.query.reports.findFirst({
+      where: and(
+        eq(reports.reporterId, me.id),
+        eq(reports.targetType, targetType),
+        eq(reports.targetId, targetId),
+        eq(reports.status, 'open'),
+      ),
+      columns: { id: true },
+    })
+    if (already) return c.json({ ok: true })
+
+    const [{ n = 0 } = {}] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(reports)
+      .where(
+        and(
+          eq(reports.reporterId, me.id),
+          gt(reports.createdAt, new Date(Date.now() - 24 * 3600_000)),
+        ),
+      )
+    if (n >= REPORTS_PER_DAY) return c.json({ error: 'rate_limited' }, 429)
+
     await db.insert(reports).values({
       reporterId: me.id,
       targetType: parsed.data.targetType,
@@ -129,12 +178,15 @@ export const moderationRoutes = new Hono<AuthedEnv>()
 
     const idsOf = (t: (typeof rows)[number]['targetType']) =>
       rows.filter((r) => r.targetType === t).map((r) => r.targetId)
-    const noteIds = idsOf('vibe_note')
-    const dishIds = idsOf('dish')
+    // Filtered as well as validated at report time: a malformed row (older than that check) must
+    // not fail the whole queue's uuid cast.
+    const isUuid = (id: string) => uuid.safeParse(id).success
+    const noteIds = idsOf('vibe_note').filter(isUuid)
+    const dishIds = idsOf('dish').filter(isUuid)
     const userIds = idsOf('user')
     // Comment ids are validated as uuids at report time, but filter anyway so
     // one malformed legacy row can't fail the whole queue's uuid cast.
-    const commentIds = idsOf('comment').filter((id) => z.string().uuid().safeParse(id).success)
+    const commentIds = idsOf('comment').filter(isUuid)
 
     const [notes, dishRows, users, commentRows] = await Promise.all([
       noteIds.length
@@ -246,6 +298,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // path. Without it the queue only ever grows: every other moderator action
   // marks reports 'actioned', but an unfounded report would stay open forever.
   .post('/reports/:id/dismiss', requireModerator, async (c) => {
+    if (!uuid.safeParse(c.req.param('id')).success) return c.json({ error: 'not_found' }, 404)
     const updated = await db
       .update(reports)
       .set({ status: 'dismissed' })
@@ -259,6 +312,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // kept for audit. Any open reports pointing at it are marked actioned.
   .delete('/vibe-notes/:id', requireModerator, async (c) => {
     const id = c.req.param('id')
+    if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
     await db.transaction(async (tx) => {
       await tx
         .update(vibeNotes)
@@ -283,6 +337,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // keeps the row for audit, and marks matching open reports actioned.
   .delete('/dishes/:id', requireModerator, async (c) => {
     const id = c.req.param('id')
+    if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
     await db.transaction(async (tx) => {
       await tx
         .update(dishes)
@@ -303,7 +358,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // audit, and matching open reports are marked actioned.
   .delete('/comments/:id', requireModerator, async (c) => {
     const id = c.req.param('id')
-    if (!z.string().uuid().safeParse(id).success) return c.json({ error: 'not_found' }, 404)
+    if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
     await db.transaction(async (tx) => {
       await tx
         .update(rankingComments)

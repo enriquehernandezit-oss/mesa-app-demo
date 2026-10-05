@@ -7,7 +7,7 @@ import type { AuthedEnv } from '../context'
 import { imageRefSchema } from '../lib/imageRef'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
-import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
+import { blockedByMe, blockedMe, followingIds, visibleDish } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
@@ -413,22 +413,10 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     const dishId = c.req.param('id')
     if (!z.string().uuid().safeParse(dishId).success) return c.json({ error: 'not_found' }, 404)
 
-    const found = await db.query.dishes.findFirst({
-      where: and(eq(dishes.id, dishId), isNull(dishes.removedAt)),
-      columns: { id: true, userId: true },
-    })
+    // Only a dish the member could see: not removed, poster not banned or blocked, and a private
+    // or friends-only dish only for its approved audience.
+    const found = await visibleDish(me.id, dishId)
     if (!found) return c.json({ error: 'not_found' }, 404)
-
-    if (found.userId !== me.id) {
-      const blocked = await db.query.userBlocks.findFirst({
-        where: or(
-          and(eq(userBlocks.blockerId, me.id), eq(userBlocks.blockedId, found.userId)),
-          and(eq(userBlocks.blockerId, found.userId), eq(userBlocks.blockedId, me.id)),
-        ),
-        columns: { blockerId: true },
-      })
-      if (blocked) return c.json({ error: 'not_found' }, 404)
-    }
 
     await db.insert(dishCheers).values({ userId: me.id, dishId }).onConflictDoNothing()
 
@@ -450,6 +438,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
   .delete('/:id/cheer', async (c) => {
     const me = c.get('user')
     const dishId = c.req.param('id')
+    if (!z.string().uuid().safeParse(dishId).success) return c.json({ error: 'not_found' }, 404)
     await db
       .delete(dishCheers)
       .where(and(eq(dishCheers.userId, me.id), eq(dishCheers.dishId, dishId)))
