@@ -207,6 +207,14 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   shelf and a **New near you** shelf (150-wide cards with a "New" pill) after the first six; "You're caught
   up · older below" marks where you'd stopped (SecureStore `mesa.feed_seen`, read once per visit); the end
   card offers Explore and Find friends. Once the inline pills scroll away, a solid bar pins them to the top.
+  **The Events pill is the social view, not the catalogue** (`components/feed/FriendsEvents.tsx`; Explore → Events
+  keeps the date strip, categories and Featured). Top to bottom: _Your friends are going_ — events with at least one
+  person you follow going, the most friends first, each a photo card with the countdown chip, title, when · where, their
+  faces and names ("Ana, Luis and 3 more are going") and the save + I'm going pair; _You're going_ — your own RSVPs as one
+  grouped list; _This week_ — the next seven Santo Domingo days, a row per day (Today, Tomorrow, then "Saturday 10") with
+  its event count, the first day open and the rest a tap away, each event a 54pt picture, title, when · where and friends'
+  faces; then "See all in Explore", which opens Explore on its Events side. No friends going: a one-line prompt where the
+  cards would be, the agenda still shows.
 - **Popular** (`GET /popular`, the pill's view): _Popular this week_ (serif 28) with what it counts, a row
   of neighborhood pills (All first), then ranked rows — rank numeral, 54pt picture, serif name (+ a solid
   accent **New** pill for a place added in the last 3 weeks), `cuisine · neighborhood`, one line about the

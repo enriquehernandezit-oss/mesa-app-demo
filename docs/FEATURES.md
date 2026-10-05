@@ -274,8 +274,9 @@ Refusing these is a design position, not a backlog:
 - **No ads, no sponsored placement, ever.**
 - **No referral-locked features** — invites gate nothing.
 - **No streak-restore purchases**; streaks are weekly and free.
-- **Reservations, Tonight, events** — planned, not built. No schema exists. (Group planning
-  shipped as Planes — see §6.)
+- **Reservations** — planned, not built. (Group planning shipped as Planes — see §6. Tonight
+  and events shipped: see `docs/EVENTS.md`; the Feed's Events pill shows friends' plans, Explore → Events the
+  catalogue.)
 
 One control still says "pronto": **Notifications**, which becomes real with push. Stealth mode and
 DMs were removed rather than left as dated promises.

@@ -12,13 +12,13 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { CaughtUp } from '@/components/feed/CaughtUp'
 import { EventsShelf } from '@/components/feed/EventsShelf'
 import { FeedEnd } from '@/components/feed/FeedEnd'
 import { FeedHeader } from '@/components/feed/FeedHeader'
 import { type FeedView, FeedPills } from '@/components/feed/FeedPills'
 import { FriendCard } from '@/components/feed/FriendCard'
+import { FriendsEvents } from '@/components/feed/FriendsEvents'
 import { ListCovers } from '@/components/feed/ListCovers'
 import { NewNearYou } from '@/components/feed/NewNearYou'
 import { PeopleShelf } from '@/components/feed/PeopleShelf'
@@ -338,8 +338,8 @@ export default function DiscoverTab() {
               <FeedPills value={view} onChange={changeView} />
             </View>
             {view === 'events' ? (
-              <View className="px-5">
-                <EventsBrowse />
+              <View className="px-4">
+                <FriendsEvents />
               </View>
             ) : view === 'lists' ? (
               <ListCovers />

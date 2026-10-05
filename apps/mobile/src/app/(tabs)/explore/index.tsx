@@ -165,7 +165,12 @@ export default function ExploreScreen() {
   // for instance. Read once on mount; the filter chips own the state after
   // that (a later navigation to /explore with new params re-mounts the
   // screen, so this isn't stale).
-  const params = useLocalSearchParams<{ neighborhood?: string; cuisine?: string; focus?: string }>()
+  const params = useLocalSearchParams<{
+    neighborhood?: string
+    cuisine?: string
+    focus?: string
+    view?: string
+  }>()
   const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
   const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
   // Feed's search field hands off here with `?focus=1`: put the cursor in ours. `useFocusEffect`,
@@ -183,6 +188,15 @@ export default function ExploreScreen() {
       }, 250)
       return () => clearTimeout(id)
     }, [params.focus, router]),
+  )
+  // The Feed's Events view ends in "See all in Explore": `?view=events` lands on the Events side.
+  // Cleared once acted on, so the tab bar later brings you back to whichever side you left.
+  useFocusEffect(
+    useCallback(() => {
+      if (params.view !== 'events') return
+      setView('events')
+      router.setParams({ view: '' })
+    }, [params.view, router]),
   )
   const [price, setPrice] = useState<number | null>(null)
   const [openNow, setOpenNow] = useState(false)

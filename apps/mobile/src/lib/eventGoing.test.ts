@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { goingLabel } from './eventGoing'
+import { friendsNamedLine, goingLabel } from './eventGoing'
 
 // A stand-in translator: the key, then the count.
 const t = (key: string, vars?: { n?: number }) => `${key}|${vars?.n ?? ''}`
@@ -24,5 +24,30 @@ describe('goingLabel', () => {
 
   test('nobody yet: be the first', () => {
     expect(goingLabel(t, { friendsGoingCount: 0, goingCount: 0 })).toBe('events.be_first|')
+  })
+})
+
+describe('friendsNamedLine', () => {
+  const tn = (key: string, vars?: { a?: string; b?: string; n?: number }) =>
+    `${key}|${vars?.a ?? ''}|${vars?.b ?? ''}|${vars?.n ?? ''}`
+  const face = (name: string) => ({ id: name, name, image: null })
+
+  test('names the first friends and counts the rest', () => {
+    expect(friendsNamedLine(tn, { friendsGoing: [], friendsGoingCount: 0 })).toBeNull()
+    expect(friendsNamedLine(tn, { friendsGoing: [face('Ana Perez')], friendsGoingCount: 1 })).toBe(
+      'events.friends_named_one|Ana||',
+    )
+    expect(
+      friendsNamedLine(tn, {
+        friendsGoing: [face('Ana'), face('Luis')],
+        friendsGoingCount: 2,
+      }),
+    ).toBe('events.friends_named_two|Ana|Luis|')
+    expect(
+      friendsNamedLine(tn, {
+        friendsGoing: [face('Ana'), face('Luis'), face('Mia')],
+        friendsGoingCount: 5,
+      }),
+    ).toBe('events.friends_named_many|Ana|Luis|3')
   })
 })

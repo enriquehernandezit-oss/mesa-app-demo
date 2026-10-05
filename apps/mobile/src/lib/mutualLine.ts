@@ -6,7 +6,7 @@ import type { MutualSummary } from './types'
 //
 // Chosen by hand, not by the dictionary's plural (which keys off `n === 1`): the count that
 // matters here is how many are left over after the names shown.
-const firstName = (name: string) => name.trim().split(/\s+/)[0] || name
+export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name
 
 export function mutualLine(
   t: (

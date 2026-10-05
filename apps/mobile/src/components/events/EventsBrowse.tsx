@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { memo, startTransition, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, {
@@ -18,8 +17,8 @@ import {
   Skeleton,
 } from '@/components/ui'
 import { CalendarIcon, CloseIcon } from '@/components/ui/icons'
+import { useMyEvents } from '@/hooks/useMyEvents'
 import { useUpcomingEvents } from '@/hooks/useUpcomingEvents'
-import { api } from '@/lib/api'
 import { CAT_ORDER, type CatKey, categoryKey } from '@/lib/eventCategory'
 import {
   type DayRange,
@@ -81,10 +80,7 @@ export const EventsBrowse = memo(function EventsBrowse({ gutter = 24 }: { gutter
   // Rankings, which read as a list of places you'd bookmarked rather than
   // plans you'd made; events belong with events. Shares the ['events']
   // prefix useEventRsvp already invalidates, so an RSVP anywhere updates it.
-  const mine = useQuery({
-    queryKey: ['events', 'mine'],
-    queryFn: () => api.get<{ events: EventSummary[] }>('/events/mine'),
-  })
+  const mine = useMyEvents()
   const going = mine.data?.events ?? EMPTY_EVENTS
 
   // Keyed on the SD calendar day, not on `now` — useNow ticks every minute,
