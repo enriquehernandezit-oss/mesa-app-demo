@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { signalsAfterRanking } from '../lib/friendSignals'
 import { notifyMentions } from '../lib/mentionNotify'
+import { NO_MUTUALS, mutualSummaries } from '../lib/mutuals'
 import { background, notify } from '../lib/notify'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, canSeeContent, followerIds } from '../lib/visibility'
@@ -243,6 +244,12 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
     const followStatus = amFollowing ? 'following' : requested ? 'requested' : 'none'
 
     const { bannedAt: _drop, ...profile } = target
+    // "Followed by …": which of my people follow them. Shown even on a locked profile — it is about
+    // my own connections, not their list.
+    const mutual =
+      targetId === me.id
+        ? NO_MUTUALS
+        : ((await mutualSummaries(me.id, [targetId])).get(targetId) ?? NO_MUTUALS)
     if (!(await canSeeContent(me.id, target))) {
       return c.json({
         user: profile,
@@ -253,6 +260,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         followStatus,
         followerCount,
         followingCount,
+        mutual,
         matchPercent: null,
         sharedCount: 0,
       })
@@ -315,6 +323,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       followStatus,
       followerCount,
       followingCount,
+      mutual,
       matchPercent,
       sharedCount: match?.shared ?? 0,
     })

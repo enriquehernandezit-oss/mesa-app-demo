@@ -7,6 +7,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { parseHandlePrefix } from '../lib/mentions'
+import { NO_MUTUALS, mutualCandidateCount, mutualList, mutualSummaries } from '../lib/mutuals'
 import { notify } from '../lib/notify'
 import { blockedByMe, blockedMe, canSeeContent, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -343,10 +344,23 @@ export const socialRoutes = new Hono<AuthedEnv>()
         ),
       )
 
+    const summaries = await mutualSummaries(
+      me.id,
+      rows.map((r) => r.id),
+    )
     const matches = rows.flatMap((r) => {
       const phone = r.phoneHash ? hashToPhone.get(r.phoneHash) : undefined
       if (!phone) return []
-      return [{ phone, id: r.id, name: r.name, handle: r.handle, image: r.image }]
+      return [
+        {
+          phone,
+          id: r.id,
+          name: r.name,
+          handle: r.handle,
+          image: r.image,
+          mutual: summaries.get(r.id) ?? NO_MUTUALS,
+        },
+      ]
     })
     return c.json({ matches })
   })
@@ -374,7 +388,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
     ]
     if (handles.length === 0) return c.json({ matches: [] })
 
-    const matches = await db
+    const found = await db
       .select({
         id: schema.user.id,
         name: schema.user.name,
@@ -393,6 +407,11 @@ export const socialRoutes = new Hono<AuthedEnv>()
       )
       .limit(200)
 
+    const summaries = await mutualSummaries(
+      me.id,
+      found.map((r) => r.id),
+    )
+    const matches = found.map((r) => ({ ...r, mutual: summaries.get(r.id) ?? NO_MUTUALS }))
     return c.json({ matches })
   })
 
@@ -517,6 +536,18 @@ export const socialRoutes = new Hono<AuthedEnv>()
     return c.json({ users })
   })
 
+  // Which of MY people (the people I follow and the people who follow me) also follow ?userId=.
+  // The list behind "Followed by Ana and 3 more". Ban and block get the same 404 as everywhere;
+  // a private account does NOT lock it — these are my own people, and the ones whose follows I may
+  // not see are already left out (lib/mutuals.ts).
+  .get('/mutuals', async (c) => {
+    const me = c.get('user')
+    if (!c.req.query('userId') || c.req.query('userId') === me.id) return c.json({ users: [] })
+    const graph = await resolveGraphTarget(c, me)
+    if (!graph) return c.json({ error: 'not_found' }, 404)
+    return c.json({ users: await mutualList(me.id, graph.id) })
+  })
+
   // Find-friends suggestions (M18, rescored M9) — richer than /onboarding/
   // suggested-friends (which stays as-is for onboarding and the empty feed):
   // every row here carries a `reason` the client renders as the subtitle.
@@ -548,59 +579,38 @@ export const socialRoutes = new Hono<AuthedEnv>()
     // bounded — not a full-table scan — since each is its own ORDER BY LIMIT.
     const POOL = 30
 
-    // Mutuals: people followed by people I follow.
+    // Mutuals: people followed by my people — the people I follow AND the people who follow me
+    // (lib/mutuals.ts says what counts). The count here and the names shown below come from the
+    // same rule, so a banned or hidden mutual is in neither.
+    const cand = alias(schema.user, 'cand')
+    const mutuals = mutualCandidateCount(me.id)
     const mutualRows = await db
       .select({
-        id: schema.user.id,
-        name: schema.user.name,
-        handle: schema.user.handle,
-        image: schema.user.image,
+        id: cand.id,
+        name: cand.name,
+        handle: cand.handle,
+        image: cand.image,
         neighborhood: schema.neighborhoods.name,
-        mutualCount: sql<number>`count(distinct ${schema.follows.followerId})::int`,
+        mutualCount: mutuals.count,
       })
       .from(schema.follows)
-      .innerJoin(schema.user, eq(schema.user.id, schema.follows.followingId))
-      .leftJoin(schema.neighborhoods, eq(schema.neighborhoods.id, schema.user.neighborhoodId))
+      .innerJoin(schema.user, eq(schema.user.id, schema.follows.followerId))
+      .innerJoin(cand, eq(cand.id, schema.follows.followingId))
+      .leftJoin(schema.neighborhoods, eq(schema.neighborhoods.id, cand.neighborhoodId))
       .where(
         and(
-          inArray(schema.follows.followerId, myFollows),
-          ne(schema.follows.followingId, me.id),
-          notInArray(schema.follows.followingId, myFollows),
-          notInArray(schema.follows.followingId, dismissed),
-          notBanned,
-          ...notBlocked,
+          mutuals.where,
+          ne(cand.id, me.id),
+          notInArray(cand.id, myFollows),
+          notInArray(cand.id, dismissed),
+          isNull(cand.bannedAt),
+          notInArray(cand.id, blockedByMe(me.id)),
+          notInArray(cand.id, blockedMe(me.id)),
         ),
       )
-      .groupBy(schema.user.id, schema.neighborhoods.name)
+      .groupBy(cand.id, schema.neighborhoods.name)
       .orderBy(sql`count(distinct ${schema.follows.followerId}) desc`)
       .limit(POOL)
-
-    // One sample mutual-friend name per candidate above, for "Lo sigue(n) X
-    // (y N más)" — a single extra query over the whole pool at once, not one
-    // per candidate.
-    const mutualIds = mutualRows.map((r) => r.id)
-    const sampleMutualFriend = new Map<string, string>()
-    if (mutualIds.length > 0) {
-      const samples = await db
-        .select({
-          candidateId: schema.follows.followingId,
-          name: schema.user.name,
-          handle: schema.user.handle,
-        })
-        .from(schema.follows)
-        .innerJoin(schema.user, eq(schema.user.id, schema.follows.followerId))
-        .where(
-          and(
-            inArray(schema.follows.followingId, mutualIds),
-            inArray(schema.follows.followerId, myFollows),
-          ),
-        )
-      for (const s of samples) {
-        if (!sampleMutualFriend.has(s.candidateId)) {
-          sampleMutualFriend.set(s.candidateId, s.name || s.handle || '')
-        }
-      }
-    }
 
     // Similar taste: the M16 helper's own threshold (≥3 shared places),
     // ordered by average score gap so the closest matches come first — the
@@ -672,7 +682,6 @@ export const socialRoutes = new Hono<AuthedEnv>()
       image: string | null
       neighborhood: string | null
       mutualCount: number
-      mutualFriendName: string | null
       tasteScore: number | null
       followerCount: number
     }
@@ -693,7 +702,6 @@ export const socialRoutes = new Hono<AuthedEnv>()
         image: r.image,
         neighborhood: r.neighborhood,
         mutualCount: 0,
-        mutualFriendName: null,
         tasteScore: null,
         followerCount: 0,
       }
@@ -702,11 +710,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
     }
 
     for (const r of mutualRows) {
-      const name = sampleMutualFriend.get(r.id)
-      if (!name) continue // no follow row survived the block filter above
-      const cand = candidate(r)
-      cand.mutualCount = r.mutualCount
-      cand.mutualFriendName = name
+      candidate(r).mutualCount = r.mutualCount
     }
     for (const r of tasteRows) {
       const percent = tasteMatch(r.avgGap, r.shared)
@@ -717,7 +721,7 @@ export const socialRoutes = new Hono<AuthedEnv>()
       candidate(r).followerCount = r.followerCount
     }
 
-    const suggestions = [...byId.values()]
+    const top = [...byId.values()]
       .sort(
         (a, b) =>
           b.mutualCount - a.mutualCount ||
@@ -725,23 +729,33 @@ export const socialRoutes = new Hono<AuthedEnv>()
           b.followerCount - a.followerCount,
       )
       .slice(0, 20)
-      .map((cand) => ({
+    // Faces and names for every row — taste and popular candidates can have mutuals too.
+    const summaries = await mutualSummaries(
+      me.id,
+      top.map((cand) => cand.id),
+    )
+    const suggestions = top.map((cand) => {
+      const mutual = summaries.get(cand.id) ?? NO_MUTUALS
+      const first = mutual.sample[0]
+      return {
         id: cand.id,
         name: cand.name,
         handle: cand.handle,
         image: cand.image,
         neighborhood: cand.neighborhood,
+        mutual,
         reason:
-          cand.mutualCount > 0
+          cand.mutualCount > 0 && first
             ? {
                 kind: 'mutual' as const,
-                name: cand.mutualFriendName as string,
-                extraCount: Math.max(0, cand.mutualCount - 1),
+                name: first.name,
+                extraCount: Math.max(0, mutual.count - 1),
               }
             : cand.tasteScore != null
               ? { kind: 'taste' as const, percent: cand.tasteScore }
               : { kind: 'popular' as const },
-      }))
+      }
+    })
 
     return c.json({ users: suggestions })
   })

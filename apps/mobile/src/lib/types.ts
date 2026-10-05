@@ -91,12 +91,26 @@ export type SuggestionReason =
   | { kind: 'taste'; percent: number }
   | { kind: 'popular' }
 
+// Which of MY people (the people I follow and the people who follow me) also follow this person:
+// how many, and the first few to show as faces (people I follow first). On suggestions, contact and
+// Instagram matches and the member profile.
+export interface MutualPerson {
+  id: string
+  name: string
+  image: string | null
+}
+export interface MutualSummary {
+  count: number
+  sample: MutualPerson[]
+}
+
 export interface FriendSuggestion {
   id: string
   name: string
   handle: string | null
   image: string | null
   neighborhood: string | null
+  mutual: MutualSummary
   reason: SuggestionReason
 }
 
@@ -107,6 +121,7 @@ export interface ContactMatchUser {
   name: string
   handle: string | null
   image: string | null
+  mutual: MutualSummary
 }
 
 // GET /social/followers and /following — a member row in someone's graph.
@@ -620,6 +635,7 @@ export interface UserRankingsResponse {
   isFollowing: boolean
   followerCount: number
   followingCount: number
+  mutual: MutualSummary
   matchPercent: number | null
   sharedCount: number
 }

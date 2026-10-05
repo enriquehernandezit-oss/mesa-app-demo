@@ -132,7 +132,7 @@ function ContactsCard() {
       }
       setMatches(
         found.map((m) => ({
-          user: { id: m.id, name: m.name, handle: m.handle, image: m.image },
+          user: { id: m.id, name: m.name, handle: m.handle, image: m.image, mutual: m.mutual },
           contactName: nameByPhone.get(m.phone) ?? '',
         })),
       )
