@@ -1,5 +1,6 @@
 // Bring every live restaurant in line with Google Places: phone, website, address, locality,
-// price tier, closing hour, cuisine, WHERE IT IS on the map, and whether it has closed.
+// price tier, closing hour, weekly opening hours (the "Abierto ahora" filter), Google's sector name,
+// cuisine, WHERE IT IS on the map, and whether it has closed.
 // Complements places:audit (which shows what is missing or invented) and the 30-day
 // view-triggered refresh in routes/restaurants.ts (which only ever touches a place someone
 // opens).
@@ -161,6 +162,8 @@ async function main() {
       priceTier: restaurants.priceTier,
       closesAt: restaurants.closesAt,
       cuisine: restaurants.cuisine,
+      openingHours: restaurants.openingHours,
+      googleSublocality: restaurants.googleSublocality,
       removedAt: restaurants.removedAt,
       closedAt: restaurants.closedAt,
     })
@@ -314,7 +317,14 @@ async function main() {
     const bits: string[] = []
     if (closes) bits.push('CLOSED — Google says permanently closed')
     for (const [col, next] of Object.entries(patch)) {
-      if (col === 'lat' || col === 'lng' || col === 'googlePlaceId') continue
+      if (col === 'lat' || col === 'lng' || col === 'googlePlaceId' || col === 'openMinutes')
+        continue
+      if (col === 'openingHours') {
+        bits.push(
+          `hours ${row.openingHours ? 'updated' : 'added'} (${(next as unknown[] | null)?.length ?? 0} opening periods a week)`,
+        )
+        continue
+      }
       if (col === 'area') {
         const draft = next as AreaDraft
         bits.push(

@@ -3,6 +3,7 @@ import {
   bigint,
   boolean,
   check,
+  customType,
   date,
   doublePrecision,
   index,
@@ -95,6 +96,22 @@ export const eventRsvpStatus = pgEnum('event_rsvp_status', ['going', 'interested
 // restaurants and users FK to it and we want a display name alongside the slug.
 // Seeded with the five neighborhoods from CLAUDE.md. Declared early since
 // `user` and `restaurants` both reference it.
+// A place's weekly opening hours, as Google gives them (Places API `regularOpeningHours.periods`):
+// day 0 = Sunday, 24-hour clock, Santo Domingo wall time. A period with no `close` is open around
+// the clock. Read for display ("Cierra 12 AM", "Abre 6 PM"); `open_minutes` below is what the
+// "open now" filter queries.
+export interface OpeningPeriod {
+  open: { day: number; hour: number; minute: number }
+  close?: { day: number; hour: number; minute: number }
+}
+
+// The same hours as minutes of the week (0 = Sunday 00:00, 10080 = the next Sunday), a Postgres
+// int4multirange, so "open now" is one `@>` instead of reasoning about periods in SQL. Written only
+// through lib/openingHours.ts (apps/api), which splits a period that runs past Saturday midnight.
+const int4multirange = customType<{ data: string; driverData: string }>({
+  dataType: () => 'int4multirange',
+})
+
 export const neighborhoods = pgTable('neighborhoods', {
   id: uuid('id').primaryKey().defaultRandom(),
   slug: text('slug').notNull().unique(), // piantini, naco, bella-vista, serralles, zona-colonial
@@ -408,6 +425,13 @@ export const restaurants = pgTable(
     // without re-deriving "how old is this" from createdAt (which never
     // changes).
     sourceRefreshedAt: timestamp('source_refreshed_at'),
+    // Weekly hours from Google (see OpeningPeriod above); null when Google has none. Hours change, so
+    // these follow Google on every refresh rather than fill-only like the other copied facts.
+    openingHours: jsonb('opening_hours').$type<OpeningPeriod[]>(),
+    openMinutes: int4multirange('open_minutes'),
+    // Google's own name for the sector (its sublocality, e.g. "Ensanche Naco"), kept so places can be
+    // re-filed into Mesa's sectors without another paid Google call.
+    googleSublocality: text('google_sublocality'),
     // Who added a member-sourced row (App Store 1.2 traceability). Null for
     // seed/foursquare rows. Not cascaded — the restaurant (and any rankings
     // pointing at it) must outlive the member who added it.

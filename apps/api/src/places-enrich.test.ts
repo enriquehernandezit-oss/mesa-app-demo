@@ -19,6 +19,8 @@ const google = (over: Partial<MesaFieldsFromGoogle> = {}): MesaFieldsFromGoogle 
   cuisine: 'Pizza',
   closesAt: '1a',
   closedAt: null,
+  openingHours: null,
+  sublocality: null,
   ...over,
 })
 

@@ -11,6 +11,8 @@ import { isUuid } from '../lib/ids'
 import { likeEscaped } from '../lib/likeEscape'
 import { locationCondition, normalizeLocation, parseScope } from '../lib/location'
 import { menuSectionLabel } from '../lib/menuSections'
+import { hoursColumns, openStatus } from '../lib/openingHours'
+import { isOpenNow, openNowColumn } from '../lib/openNow'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { ownedByGoogleId, partitionByMesa, searchPlaces } from '../lib/placeSearch'
 import { bannedUserIds, blockedByMe, blockedMe, followingIds } from '../lib/visibility'
@@ -157,6 +159,8 @@ async function refreshFromGoogle(restaurantId: string, googlePlaceId: string): P
         priceTier: fields.priceTier,
         closesAt: fields.closesAt,
         closedAt: fields.closedAt,
+        ...hoursColumns(fields.openingHours),
+        googleSublocality: fields.sublocality,
         sourceRefreshedAt: new Date(),
       })
       .where(eq(restaurants.id, restaurantId))
@@ -180,6 +184,8 @@ async function exploreRows(ids: string[], following: ReturnType<typeof following
       neighborhood: neighborhoods.name,
       priceTier: restaurants.priceTier,
       closesAt: restaurants.closesAt,
+      // true / false from Google's hours, null when Mesa has none (the app then shows nothing).
+      openNow: openNowColumn(),
       address: restaurants.address,
       friendAvg: sql<
         number | null
@@ -259,7 +265,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // GET /restaurants/cuisines), so an equality is exact and correct.
     if (cuisine) liveConds.push(eq(restaurants.cuisine, cuisine))
     // "Open now" is a demo filter over the display close-time (not real hours).
-    if (openNow) liveConds.push(sql`${restaurants.closesAt} is not null`)
+    // Really open at this minute, from Google's weekly hours (lib/openNow.ts). It used to mean "has a
+    // closing time", which said nothing about now.
+    if (openNow) liveConds.push(isOpenNow())
     // Occasion (A1) and highlight ("What stood out?", P2) — at least one ranking of this place
     // carries the tag. Both live in rankings.tags, so they are the same filter on two params; with
     // both set a place needs a ranking for each. Same qualifying-id-subquery shape as
@@ -675,6 +683,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
           priceTier: existing.priceTier ?? fields.priceTier,
           closesAt: existing.closesAt ?? fields.closesAt,
           closedAt: existing.closedAt ?? fields.closedAt,
+          // Hours follow Google (they change); fill-only would keep last year's.
+          ...(fields.openingHours ? hoursColumns(fields.openingHours) : {}),
+          googleSublocality: fields.sublocality,
           ...(existing.geoPrecision === 'sector'
             ? { lat: fields.lat, lng: fields.lng, geoPrecision: 'exact' as const }
             : {}),
@@ -706,6 +717,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         priceTier: fields.priceTier,
         closesAt: fields.closesAt,
         closedAt: fields.closedAt,
+        ...hoursColumns(fields.openingHours),
+        googleSublocality: fields.sublocality,
         googlePlaceId: placeId,
         sourceRefreshedAt: new Date(),
         isDemo: false,
@@ -745,6 +758,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         phone: true,
         website: true,
         closesAt: true,
+        openingHours: true,
         priceTier: true,
         neighborhoodId: true,
         address: true,
@@ -915,6 +929,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       neighborhoodId: _nid,
       googlePlaceId,
       sourceRefreshedAt: _sra,
+      openingHours,
       ...restaurantOut
     } = restaurant
     // The "Powered by Google" line is required wherever a profile shows Google-derived
@@ -928,6 +943,8 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         ...restaurantOut,
         google: googlePlaceId != null,
         hasMenu: menuItemCount > 0,
+        // Open now and until when, or closed and when it opens (lib/openingHours.ts); null without hours.
+        openStatus: openStatus(openingHours),
       },
       friendsRankings,
       friendAvg,

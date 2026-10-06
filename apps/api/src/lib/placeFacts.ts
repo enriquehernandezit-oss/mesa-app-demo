@@ -16,6 +16,7 @@ import { haversineM } from '@mesa/db'
 
 import type { AreaDraft } from './geo'
 import type { MesaFieldsFromGoogle } from './googlePlaces'
+import { type OpeningPeriod, hoursColumns } from './openingHours'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './placeContacts'
 
 // A pin closer than this to Google's is left where it is: it is the same spot, and moving it
@@ -36,6 +37,8 @@ export interface EnrichRow {
   priceTier: number | null
   closesAt: string | null
   cuisine: string | null
+  openingHours: OpeningPeriod[] | null
+  googleSublocality: string | null
 }
 
 // Only the columns that change. phone/website can become null (a fake cleared); the rest only
@@ -48,6 +51,10 @@ export interface EnrichPatch {
   priceTier?: number
   closesAt?: string
   cuisine?: string
+  // Hours follow the source whenever it has them (they change), and always as a pair.
+  openingHours?: OpeningPeriod[] | null
+  openMinutes?: string | null
+  googleSublocality?: string
   googlePlaceId?: string
   lat?: number
   lng?: number
@@ -81,6 +88,15 @@ export function enrichPatch(
   if (row.priceTier == null && fields.priceTier != null) patch.priceTier = fields.priceTier
   if (row.closesAt == null && fields.closesAt) patch.closesAt = fields.closesAt
   if (row.cuisine == null && fields.cuisine) patch.cuisine = fields.cuisine
+  if (
+    fields.openingHours &&
+    JSON.stringify(fields.openingHours) !== JSON.stringify(row.openingHours)
+  ) {
+    Object.assign(patch, hoursColumns(fields.openingHours))
+  }
+  if (fields.sublocality && fields.sublocality !== row.googleSublocality) {
+    patch.googleSublocality = fields.sublocality
+  }
   if (row.googlePlaceId == null) patch.googlePlaceId = googlePlaceId
 
   const hasLocation = fields.lat !== 0 || fields.lng !== 0

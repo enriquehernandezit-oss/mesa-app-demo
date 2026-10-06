@@ -327,6 +327,8 @@ export interface ExploreHit {
   neighborhood: string | null
   priceTier: number | null
   closesAt?: string | null
+  // From Google's weekly hours: open at this minute, closed, or null when Mesa has no hours.
+  openNow?: boolean | null
   address?: string | null
   friendAvg: number | null
   friendCount: number
@@ -771,6 +773,9 @@ export interface RestaurantProfileResponse {
     geoPrecision: 'exact' | 'sector'
     google: boolean
     hasMenu: boolean
+    // From Google's weekly hours (apps/api/src/lib/openingHours.ts); null without hours. Times are
+    // 24-hour "HH:MM" in Santo Domingo, day 0 = Sunday. Absent from an older API.
+    openStatus?: OpenStatus | null
   }
   friendsRankings: FriendRanking[]
   friendAvg: number | null
@@ -941,3 +946,7 @@ export interface HomeResponse {
     | null
   newNearYou: HomeRestaurant[]
 }
+
+export type OpenStatus =
+  | { open: true; closesAt: { day: number; time: string } | null }
+  | { open: false; opensAt: { day: number; time: string } | null }

@@ -27,6 +27,7 @@ import { schema } from '@mesa/db'
 import { type SQL, eq, inArray, sql } from 'drizzle-orm'
 
 import type { MesaFieldsFromGoogle } from './googlePlaces'
+import { hoursColumns } from './openingHours'
 import { isPlaceholderPhone, isPlaceholderWebsite } from './placeContacts'
 import { type EnrichPatch, type EnrichRow, enrichPatch } from './placeFacts'
 import { type Executor, currentOrder, lockUserList, rewrite } from './rankingOrder'
@@ -78,6 +79,8 @@ function factsOf(row: MergeRow): MesaFieldsFromGoogle {
     cuisine: row.cuisine,
     closesAt: row.closesAt,
     closedAt: null,
+    openingHours: row.openingHours,
+    sublocality: row.googleSublocality,
   }
 }
 
@@ -104,6 +107,8 @@ export function adoptFacts(survivor: MergeRow, loser: MergeRow): MergePatch {
     if (survivor.priceTier == null && f.priceTier != null) patch.priceTier = f.priceTier
     if (survivor.closesAt == null && f.closesAt) patch.closesAt = f.closesAt
     if (survivor.cuisine == null && f.cuisine) patch.cuisine = f.cuisine
+    if (survivor.openingHours == null && f.openingHours)
+      Object.assign(patch, hoursColumns(f.openingHours))
   }
   // "Keep the one with the photo": whichever row survives, the photo does too.
   if (survivor.coverImageId == null && loser.coverImageId != null) {
@@ -288,6 +293,8 @@ export async function mergeInto(
       priceTier: restaurants.priceTier,
       closesAt: restaurants.closesAt,
       cuisine: restaurants.cuisine,
+      openingHours: restaurants.openingHours,
+      googleSublocality: restaurants.googleSublocality,
       coverImageId: restaurants.coverImageId,
       sourceRefreshedAt: restaurants.sourceRefreshedAt,
     })

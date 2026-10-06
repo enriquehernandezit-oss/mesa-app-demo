@@ -71,6 +71,8 @@ describe('adoptFacts', () => {
     cuisine: null,
     coverImageId: null,
     sourceRefreshedAt: null,
+    openingHours: null,
+    googleSublocality: null,
     ...over,
   })
   const refreshed = new Date('2026-09-01T00:00:00Z')

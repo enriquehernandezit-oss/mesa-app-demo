@@ -57,6 +57,10 @@ describe('toMesaFields — a full payload', () => {
       cuisine: 'Mediterranean',
       closesAt: '11p',
       closedAt: null,
+      openingHours: [
+        { open: { day: 1, hour: 12, minute: 0 }, close: { day: 1, hour: 23, minute: 0 } },
+      ],
+      sublocality: 'Ensanche Quisqueya',
     })
   })
 
@@ -73,6 +77,8 @@ describe('toMesaFields — a full payload', () => {
       cuisine: null,
       closesAt: null,
       closedAt: null,
+      openingHours: null,
+      sublocality: null,
     })
   })
 })

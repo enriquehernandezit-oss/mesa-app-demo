@@ -24,6 +24,8 @@ const row = (over: Partial<EnrichRow> = {}): EnrichRow => ({
   priceTier: 2,
   closesAt: '11p',
   cuisine: 'Italian',
+  openingHours: null,
+  googleSublocality: null,
   ...over,
 })
 
@@ -40,6 +42,8 @@ const google = (over: Partial<MesaFieldsFromGoogle> = {}): MesaFieldsFromGoogle 
   cuisine: 'Pizza',
   closesAt: '1a',
   closedAt: null,
+  openingHours: null,
+  sublocality: null,
   ...over,
 })
 

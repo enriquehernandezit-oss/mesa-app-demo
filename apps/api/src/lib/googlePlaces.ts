@@ -7,6 +7,8 @@
 // and toMesaFields is the one place Google's vocabulary gets translated into
 // Mesa's — keeping that translation in one file, not scattered across route
 // handlers, is the whole reason this isn't just inlined into restaurants.ts.
+import { type OpeningPeriod, normalizePeriods } from './openingHours'
+
 const GOOGLE_PLACES_KEY = process.env.GOOGLE_PLACES_API_KEY
 
 // For a caller that needs to tell "the key is unset" apart from "Google
@@ -379,6 +381,9 @@ export interface MesaFieldsFromGoogle {
   cuisine: string | null
   closesAt: string | null
   closedAt: Date | null
+  // The full weekly hours (lib/openingHours.ts) and Google's sector name (its sublocality).
+  openingHours: OpeningPeriod[] | null
+  sublocality: string | null
 }
 
 // Pure mapping — no fetch, unit-testable against a hand-written payload.
@@ -397,6 +402,11 @@ export function toMesaFields(d: GooglePlaceDetails): MesaFieldsFromGoogle {
     priceTier: d.priceLevel ? (GOOGLE_PRICE_TO_TIER[d.priceLevel] ?? null) : null,
     cuisine: mapCuisine(d.primaryType, d.types),
     closesAt: modalClosesAt(d.regularOpeningHours?.periods),
+    openingHours: normalizePeriods(d.regularOpeningHours?.periods),
+    sublocality:
+      addressComponent(d.addressComponents, 'sublocality_level_1') ??
+      addressComponent(d.addressComponents, 'sublocality') ??
+      addressComponent(d.addressComponents, 'neighborhood'),
     closedAt: d.businessStatus === 'CLOSED_PERMANENTLY' ? new Date() : null,
   }
 }

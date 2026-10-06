@@ -11,6 +11,7 @@ import { likeEscaped } from '../lib/likeEscape'
 import { notifyMentions } from '../lib/mentionNotify'
 import { NO_MUTUALS, mutualSummaries } from '../lib/mutuals'
 import { background, notify } from '../lib/notify'
+import { isOpenNow } from '../lib/openNow'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
 import { blockedByMe, blockedMe, canSeeContent, followCounts, followerIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
@@ -153,7 +154,7 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
       isNull(restaurants.removedAt),
       isNull(restaurants.closedAt),
     ]
-    if (openNow) conds.push(sql`${restaurants.closesAt} is not null`)
+    if (openNow) conds.push(isOpenNow())
     let norm: ReturnType<typeof sql> | null = null
     if (hasQuery) {
       norm = sql`mesa_norm(${q})`
