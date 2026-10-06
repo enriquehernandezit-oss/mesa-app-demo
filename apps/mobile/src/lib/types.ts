@@ -4,6 +4,9 @@
 export interface Neighborhood {
   slug: string
   name: string
+  // The sector's centre (GET /onboarding/neighborhoods) — for suggesting the nearest at sign-up.
+  lat?: number
+  lng?: number
 }
 
 // Where a Follow stands (F1): `requested` is a request to a private account, still unanswered.

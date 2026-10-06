@@ -759,6 +759,13 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'onboarding.handle_helper': "It's what people tap to share your profile. Can be your Instagram.",
   'onboarding.handle_rules': '2–30 characters: letters, numbers, _ or .',
   'onboarding.neighborhoods_error': "Couldn't load the neighborhoods.",
+  'onboarding.use_location': 'Use my location',
+  'onboarding.locating': 'Looking…',
+  'onboarding.location_picked': 'We put you in {name}. Change it if that is not your sector.',
+  'onboarding.location_no_sector': 'You are not near any of our sectors. Pick yours from the list.',
+  'onboarding.location_denied':
+    'Location is off for Mesa. Pick your sector from the list, or turn it on in Settings.',
+  'onboarding.location_failed': 'We could not read your location. Pick your sector from the list.',
   'onboarding.birthday_label': 'Birthday',
   'onboarding.birthday_day': 'DD',
   'onboarding.birthday_month': 'MM',

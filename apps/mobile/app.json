@@ -47,7 +47,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Mesa usa tu ubicación solo cuando tocas “Cerca”, para ordenar los spots por cercanía."
+          "locationWhenInUsePermission": "Mesa usa tu ubicación solo cuando tú lo pides — al tocar “Cerca”, “Ubícame” o “Usar mi ubicación” — para mostrarte lo que tienes cerca y sugerirte tu sector."
         }
       ],
       [

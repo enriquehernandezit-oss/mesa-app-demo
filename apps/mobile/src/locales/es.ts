@@ -811,6 +811,14 @@ export const es = {
   'onboarding.handle_helper': 'Sirve para compartir tu perfil. Puede ser tu Instagram.',
   'onboarding.handle_rules': '2–30 caracteres: letras, números, _ o .',
   'onboarding.neighborhoods_error': 'No se pudieron cargar los sectores.',
+  'onboarding.use_location': 'Usar mi ubicación',
+  'onboarding.locating': 'Buscando…',
+  'onboarding.location_picked': 'Te pusimos en {name}. Cámbialo si no es tu sector.',
+  'onboarding.location_no_sector':
+    'No estás cerca de ninguno de nuestros sectores. Elige el tuyo de la lista.',
+  'onboarding.location_denied':
+    'La ubicación está desactivada para Mesa. Elige tu sector de la lista, o actívala en Ajustes.',
+  'onboarding.location_failed': 'No pudimos leer tu ubicación. Elige tu sector de la lista.',
   'onboarding.birthday_label': 'Fecha de nacimiento',
   'onboarding.birthday_day': 'DD',
   'onboarding.birthday_month': 'MM',

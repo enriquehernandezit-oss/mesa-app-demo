@@ -14,7 +14,7 @@ import { SectorPicker } from '@/components/SectorPicker'
 import { Body, Button, Caption, ErrorState, Eyebrow, Serif, MAX_SCALE } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { Field } from '@/components/ui/Field'
-import { CheckIcon, PeopleIcon } from '@/components/ui/icons'
+import { CheckIcon, LocateIcon, PeopleIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useProfile } from '@/hooks/useProfile'
 import { track } from '@/lib/analytics'
@@ -26,10 +26,12 @@ import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
+import { nearestSector } from '@/lib/nearestSector'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
 import { parseBirthdayIso } from '@/lib/time'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
+import { currentLocationStatus, requestMyLocation } from '@/lib/useMyLocation'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
@@ -127,6 +129,37 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
     staleTime: Number.POSITIVE_INFINITY,
   })
 
+  // "Usar mi ubicación": suggests the nearest sector. It only pre-selects — the person can still pick
+  // another, and the note says which one it chose and why a suggestion might not be there.
+  const [locating, setLocating] = useState(false)
+  const [locationNote, setLocationNote] = useState<{ text: string; tone: 'ok' | 'bad' } | null>(
+    null,
+  )
+  const useMyLocationForSector = async () => {
+    setLocating(true)
+    setLocationNote(null)
+    const pos = await requestMyLocation()
+    setLocating(false)
+    if (!pos) {
+      setLocationNote({
+        text: t(
+          currentLocationStatus() === 'denied'
+            ? 'onboarding.location_denied'
+            : 'onboarding.location_failed',
+        ),
+        tone: 'bad',
+      })
+      return
+    }
+    const found = nearestSector(pos, data?.neighborhoods ?? [])
+    if (!found) {
+      setLocationNote({ text: t('onboarding.location_no_sector'), tone: 'bad' })
+      return
+    }
+    setNeighborhood(found.slug)
+    setLocationNote({ text: t('onboarding.location_picked', { name: found.name }), tone: 'ok' })
+  }
+
   // Instagram username — optional, stored without the "@" (it's a display
   // prefix). Blank simply omits it; the handle stays null.
   const igUser = handle.trim().replace(/@/g, '').toLowerCase()
@@ -208,6 +241,22 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       )}
 
       <Eyebrow className="mt-5 mb-2">{t('rank.sector')}</Eyebrow>
+      {/* Optional shortcut: the position is read once, here, on this tap, and only picks a sector. */}
+      <Button
+        variant="secondary"
+        size="sm"
+        className="mb-2.5 self-start px-4"
+        icon={<LocateIcon size={15} />}
+        disabled={locating || !data}
+        onPress={useMyLocationForSector}
+      >
+        {locating ? t('onboarding.locating') : t('onboarding.use_location')}
+      </Button>
+      {locationNote ? (
+        <Caption className={`mb-2.5 ${locationNote.tone === 'bad' ? 'text-danger' : ''}`}>
+          {locationNote.text}
+        </Caption>
+      ) : null}
       {neighborhoodsError ? (
         <ErrorState onRetry={() => refetchNeighborhoods()}>
           {t('onboarding.neighborhoods_error')}

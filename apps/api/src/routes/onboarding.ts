@@ -33,7 +33,8 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
   // elsewhere (lib/geo.ts) — those are labels, not choices.
   .get('/neighborhoods', async (c) => {
     const rows = await db.query.neighborhoods.findMany({
-      columns: { slug: true, name: true },
+      // lat/lng: the sector's centre, so the app can suggest the nearest one at sign-up (additive).
+      columns: { slug: true, name: true, lat: true, lng: true },
       where: (n, { eq }) => eq(n.listed, true),
       orderBy: (n, { asc }) => asc(n.name),
     })

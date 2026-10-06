@@ -27,7 +27,7 @@ type Doc = 'terms' | 'eula' | 'privacy'
 
 type Section = { heading: string; paragraphs: string[] }
 
-const UPDATED = 'Última actualización: 5 de octubre de 2026'
+const UPDATED = 'Última actualización: 6 de octubre de 2026'
 
 const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }> = {
   privacy: {
@@ -84,8 +84,8 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Ubicación',
         paragraphs: [
-          'La ubicación se pide solo cuando la pides tú: el botón «Ubícame» del mapa y el filtro de cercanía al rankear.',
-          'Se usa dentro del teléfono para ordenar sitios por distancia y centrar el mapa. No se envía a nuestro servidor, no se guarda en ningún lado y desaparece al cerrar la app.',
+          'La ubicación se pide solo cuando tú la pides: el botón «Ubícame» del mapa, «Cerca» al explorar o al rankear, y «Usar mi ubicación» al crear tu perfil.',
+          'Se usa para ordenar sitios por distancia, centrar el mapa y sugerirte tu sector. Con «Cerca» en Explorar, tu posición —redondeada a unos 100 metros— viaja con esa búsqueda para que el servidor encuentre lo que tienes cerca; no se guarda ni se registra. Lo demás ocurre solo dentro del teléfono, y la ubicación desaparece al cerrar la app.',
           'El mapa lo dibuja MapBox, que recibe la zona que estás viendo para poder servir las piezas del mapa.',
         ],
       },

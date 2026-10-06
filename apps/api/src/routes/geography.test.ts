@@ -171,14 +171,16 @@ describe.skipIf(!deps)('places outside Santo Domingo (local DB)', () => {
 
   describe('the Santo Domingo sectors stay the only choices', () => {
     test('GET /onboarding/neighborhoods offers the sector, not the area', async () => {
-      const { json } = await request<{ neighborhoods: { slug: string }[] }>(
-        '/onboarding',
-        onboardingRoutes,
-        '/neighborhoods',
-      )
+      const { json } = await request<{
+        neighborhoods: { slug: string; lat: number; lng: number }[]
+      }>('/onboarding', onboardingRoutes, '/neighborhoods')
       const slugs = json.neighborhoods.map((n) => n.slug)
       expect(slugs).toContain(`${tag}-sector`)
       expect(slugs).not.toContain(draft.slug)
+      // each carries its centre, for "use my location" at sign-up
+      expect(
+        json.neighborhoods.every((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
+      ).toBe(true)
     })
 
     test('GET /restaurants/map plots the place in the sector, not the one in the area', async () => {
