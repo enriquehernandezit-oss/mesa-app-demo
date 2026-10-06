@@ -310,6 +310,15 @@ export const es = {
   'discover.ranked_verb': 'rankeó',
 
   // app/(tabs)/explore/index.tsx
+  'explore.nearby': 'Cerca',
+  'explore.open_now': 'Abierto ahora',
+  'explore.open': 'Abierto',
+  'explore.closed': 'Cerrado',
+  'explore.sort_distance': 'Distancia',
+  'explore.location_off_title': 'Ubicación desactivada',
+  'explore.location_off_body':
+    'Para ver lo que tienes cerca, permite que Mesa use tu ubicación mientras usas la app.',
+  'explore.open_settings': 'Abrir Ajustes',
   'explore.sort_by': 'Ordenar por',
   'explore.sort_score': 'Puntuación',
   'explore.sort_name': 'Nombre',
@@ -760,6 +769,12 @@ export const es = {
   'place.friends_ranked': { one: '1 amigo lo rankeó', other: '{n} amigos lo rankearon' },
   'place.on_your_list': 'Nº {n} en tu lista',
   // Mesa stores a place's usual closing time, not its opening hours, so it cannot say "open now".
+  'place.open_closes': 'Abierto · cierra {time}',
+  'place.open_24h': 'Abierto 24 horas',
+  'place.closed_opens': 'Cerrado · abre {time}',
+  'place.closed_opens_tomorrow': 'Cerrado · abre mañana {time}',
+  'place.closed_opens_day': 'Cerrado · abre el {day} {time}',
+  'place.closed_now': 'Cerrado',
   'place.open_until': 'Cierra {time}',
   'place.in_lists': { one: 'En 1 lista', other: 'En {n} listas' },
   'place.lists_title': 'Listas',

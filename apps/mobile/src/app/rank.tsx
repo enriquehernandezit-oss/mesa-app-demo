@@ -171,6 +171,7 @@ export default function RankAPlace() {
   const [pickedId, setPickedId] = useState<string | null>(params.restaurant ?? null)
   const [addedPlace, setAddedPlace] = useState<Item | null>(null)
   const [pickQuery, setPickQuery] = useState('')
+  const [openNow, setOpenNow] = useState(false)
   const [nearby, setNearby] = useState(false)
   const me = useProfile(true, 300_000)
   const myHood = me.data?.profile.neighborhood?.name ?? null
@@ -182,11 +183,13 @@ export default function RankAPlace() {
   // the keyboard on every letter.
   const searchQ = useDebounced(pickQuery.trim(), 250)
   const candidates = useQuery({
-    queryKey: ['rankings', 'candidates', searchQ],
+    queryKey: ['rankings', 'candidates', searchQ, openNow],
     placeholderData: keepPreviousData,
     queryFn: () => {
       const p = new URLSearchParams()
       if (searchQ.length >= 2) p.set('q', searchQ)
+      // Really open this minute (Google's weekly hours), not just "lists a closing time".
+      if (openNow) p.set('open', '1')
       return api.get<{ restaurants: Item[] }>(`/rankings/candidates?${p}`)
     },
   })
@@ -687,6 +690,8 @@ export default function RankAPlace() {
         wantToTryIds={wantToTryIds}
         query={pickQuery}
         setQuery={setPickQuery}
+        openNow={openNow}
+        setOpenNow={setOpenNow}
         nearby={nearby}
         setNearby={setNearby}
         myHood={myHood}
@@ -1598,6 +1603,8 @@ function FindStep({
   wantToTryIds,
   query,
   setQuery,
+  openNow,
+  setOpenNow,
   nearby,
   setNearby,
   myHood,
@@ -1611,6 +1618,8 @@ function FindStep({
   wantToTryIds: string[]
   query: string
   setQuery: (v: string) => void
+  openNow: boolean
+  setOpenNow: Dispatch<SetStateAction<boolean>>
   nearby: boolean
   setNearby: Dispatch<SetStateAction<boolean>>
   myHood: string | null
@@ -1629,6 +1638,8 @@ function FindStep({
   // candList already comes server-pre-filtered by q; only `existing`
   // (my own list, always fetched in full) needs client filtering.
   const existingFiltered = existing.filter((r) => {
+    // My own list carries no live hours, so with "open now" on it steps aside rather than guess.
+    if (openNow) return false
     if (!q) return true
     return (
       r.name.toLowerCase().includes(q) ||
@@ -1812,6 +1823,13 @@ function FindStep({
             }}
           >
             {t('rank.nearby')}
+          </Chip>
+          <Chip
+            size="sm"
+            state={openNow ? 'selected' : 'default'}
+            onPress={() => setOpenNow((v) => !v)}
+          >
+            {t('explore.open_now')}
           </Chip>
           {(wantToTryIds.length > 0 || wantOnly) && (
             <Chip

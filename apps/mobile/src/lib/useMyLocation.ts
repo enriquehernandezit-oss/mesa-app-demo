@@ -76,6 +76,12 @@ export function requestMyLocation(): Promise<LatLng | null> {
   return inFlight
 }
 
+// The status right now, for a caller that just awaited requestMyLocation() — the hook's own value
+// is from the render before the request.
+export function currentLocationStatus(): Status {
+  return snapshot.status
+}
+
 export function useMyLocation() {
   const s = useSyncExternalStore(
     (onChange) => {

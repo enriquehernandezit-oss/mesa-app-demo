@@ -5,6 +5,7 @@ import { Pressable, Text, View } from 'react-native'
 import { MAX_SCALE } from '@/components/ui'
 import { ScoreStack } from '@/components/ui/patterns'
 import { PlaceLine } from '@/components/ui/PlaceLine'
+import { formatDistance } from '@/lib/geo'
 import { useT } from '@/lib/i18n'
 import type { ExploreHit } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
@@ -47,7 +48,16 @@ export const HitRow = memo(function HitRow({ r, index }: { r: ExploreHit; index:
             neighborhood={r.neighborhood ?? r.address}
             priceTier={r.priceTier}
             picture={54}
-            sub={ranked ? t('friends.count_badge', { n: r.friendCount }) : null}
+            // How far (only with Cerca on), open or closed (when Mesa has the hours), then friends.
+            sub={
+              [
+                r.distanceM != null ? formatDistance(r.distanceM) : null,
+                r.openNow == null ? null : r.openNow ? t('explore.open') : t('explore.closed'),
+                ranked ? t('friends.count_badge', { n: r.friendCount }) : null,
+              ]
+                .filter(Boolean)
+                .join(' · ') || null
+            }
             right={
               ranked ? (
                 <ScoreStack score={r.friendAvg as number} />

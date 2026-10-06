@@ -329,6 +329,8 @@ export interface ExploreHit {
   closesAt?: string | null
   // From Google's weekly hours: open at this minute, closed, or null when Mesa has no hours.
   openNow?: boolean | null
+  // Metres from the member — only when Explore sent a position (Cerca).
+  distanceM?: number | null
   address?: string | null
   friendAvg: number | null
   friendCount: number

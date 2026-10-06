@@ -11,6 +11,7 @@ import { isUuid } from '../lib/ids'
 import { likeEscaped } from '../lib/likeEscape'
 import { locationCondition, normalizeLocation, parseScope } from '../lib/location'
 import { menuSectionLabel } from '../lib/menuSections'
+import { type Near, distanceSql, parseNear, parseRadius } from '../lib/nearby'
 import { hoursColumns, openStatus } from '../lib/openingHours'
 import { isOpenNow, openNowColumn } from '../lib/openNow'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
@@ -173,7 +174,11 @@ async function refreshFromGoogle(restaurantId: string, googlePlaceId: string): P
 // you follow and everyone on Mesa have ranked it. Recomputed fresh rather than reusing phase 1's
 // aggregate — cheap over a few hundred rows, and it keeps the row shape identical whichever way the
 // id list was made (the Explore query, or the Google search promoting places Mesa already has).
-async function exploreRows(ids: string[], following: ReturnType<typeof followingIds>) {
+async function exploreRows(
+  ids: string[],
+  following: ReturnType<typeof followingIds>,
+  near: Near | null = null,
+) {
   if (ids.length === 0) return []
   const rowsUnordered = await db
     .select({
@@ -186,6 +191,8 @@ async function exploreRows(ids: string[], following: ReturnType<typeof following
       closesAt: restaurants.closesAt,
       // true / false from Google's hours, null when Mesa has none (the app then shows nothing).
       openNow: openNowColumn(),
+      // Metres from the member, only when they asked for Cerca.
+      distanceM: near ? sql<number | null>`round(${distanceSql(near)})::int` : sql<null>`null`,
       address: restaurants.address,
       friendAvg: sql<
         number | null
@@ -240,7 +247,12 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     const occasion = (c.req.query('occasion') ?? '').trim()
     const highlight = (c.req.query('highlight') ?? '').trim()
     const minScore = Number(c.req.query('minScore')) || null
-    const sort = c.req.query('sort') === 'name' ? 'name' : 'score'
+    // Cerca: the member's position and how far counts as near. Distance sorting needs a position.
+    const near = parseNear(c.req.query('near'))
+    const radiusM = parseRadius(c.req.query('radius'))
+    const sortParam = c.req.query('sort')
+    const sort: 'name' | 'score' | 'distance' =
+      sortParam === 'name' ? 'name' : sortParam === 'distance' && near ? 'distance' : 'score'
     const hasQuery = q.length >= 2
 
     const following = followingIds(me.id)
@@ -268,6 +280,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // Really open at this minute, from Google's weekly hours (lib/openNow.ts). It used to mean "has a
     // closing time", which said nothing about now.
     if (openNow) liveConds.push(isOpenNow())
+    if (near) liveConds.push(sql`${distanceSql(near)} <= ${radiusM}`)
     // Occasion (A1) and highlight ("What stood out?", P2) — at least one ranking of this place
     // carries the tag. Both live in rankings.tags, so they are the same filter on two params; with
     // both set a place needs a ranking for each. Same qualifying-id-subquery shape as
@@ -336,7 +349,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .orderBy(
           sort === 'name'
             ? asc(restaurants.name)
-            : sql`(${restaurants.nameKey} like ${norm} || '%') desc,
+            : sort === 'distance' && near
+              ? sql`${distanceSql(near)} asc`
+              : sql`(${restaurants.nameKey} like ${norm} || '%') desc,
                   similarity(${restaurants.nameKey}, ${norm}) desc,
                   ${restaurants.name} asc`,
         )
@@ -368,7 +383,9 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
         .orderBy(
           sort === 'name'
             ? asc(restaurants.name)
-            : sql`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)}) desc nulls last,
+            : sort === 'distance' && near
+              ? sql`${distanceSql(near)} asc`
+              : sql`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)}) desc nulls last,
                   avg(${rankings.score}) desc nulls last,
                   ${restaurants.name} asc`,
         )
@@ -378,7 +395,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
 
     // Phase 2 — the actual display row, for exactly those ids (shared with the Google search,
     // which promotes the places Mesa already has: exploreRows, above).
-    const rows = await exploreRows(ids, following)
+    const rows = await exploreRows(ids, following, near)
 
     // Members half of "place, dish, or member" — only when there's a query.
     let members: {

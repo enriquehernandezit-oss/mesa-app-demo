@@ -20,7 +20,7 @@ import { BookmarkIcon, ListIcon, PeopleIcon, TrophyIcon } from '@/components/ui/
 import { SpotCard, SpotRail } from '@/components/ui/patterns'
 import { ApiError, api, apiOrigin } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
-import { closesLabel } from '@/lib/hours'
+import { closesLabel, openStatusLine } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
 import { imageUrl, mapboxStaticUrl } from '@/lib/media'
 import { placeWhere } from '@/lib/placeWhere'
@@ -31,6 +31,7 @@ import type {
   RestaurantMenu as RestaurantMenuData,
   RestaurantProfileResponse,
 } from '@/lib/types'
+import { useOpenWords } from '@/lib/useOpenWords'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
 
@@ -49,6 +50,7 @@ export default function RestaurantProfile() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const t = useT()
+  const openWords = useOpenWords()
   const { height: winH } = useWindowDimensions()
   const theme = useResolvedTheme()
   const friendsOnly = useFriendsOnlyScores()
@@ -153,7 +155,13 @@ export default function RestaurantProfile() {
   const showMesa = !friendsOnly && allMesa.avg != null
   const hood = restaurant.neighborhood?.name
   const where = placeWhere(hood, restaurant.neighborhood?.city)
-  const closes = closesLabel(restaurant.closesAt)
+  // Real hours when Mesa has them ("Abierto · cierra 12 AM" / "Cerrado · abre 6 PM"); else the usual
+  // closing time alone.
+  const hoursLine =
+    openStatusLine(restaurant.openStatus, openWords) ??
+    (closesLabel(restaurant.closesAt)
+      ? t('place.open_until', { time: closesLabel(restaurant.closesAt) as string })
+      : null)
 
   const photo = imageUrl(restaurant.coverImageId, { w: 1200, h: 2000 })
   // With no photo the page opens on a map of where it is (MapBox needs a token; without one
@@ -292,9 +300,7 @@ export default function RestaurantProfile() {
               category={
                 [cuisineLabel(restaurant.cuisine), hood].filter(Boolean).join(' · ') || where
               }
-              sub={[closes ? t('place.open_until', { time: closes }) : null, where]
-                .filter(Boolean)
-                .join(' · ')}
+              sub={[hoursLine, where].filter(Boolean).join(' · ')}
               tags={tags}
               hint={t('place.hint')}
               bottom={barBottom + RANK_BAR_HEIGHT + 14}

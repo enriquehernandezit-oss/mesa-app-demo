@@ -72,11 +72,12 @@ describe.skipIf(!deps)('opening hours and "open now" (local DB)', () => {
   const get = async <T>(path: string) => (await (await app.request(path)).json()) as T
 
   let neighborhoodId = ''
-  const ids: Record<'open' | 'closed' | 'nohours' | 'allday', string> = {
+  const ids: Record<'open' | 'closed' | 'nohours' | 'allday' | 'far', string> = {
     open: '',
     closed: '',
     nohours: '',
     allday: '',
+    far: '',
   }
 
   beforeAll(async () => {
@@ -94,12 +95,15 @@ describe.skipIf(!deps)('opening hours and "open now" (local DB)', () => {
         { ...base, name: `${tag} open`, ...hoursColumns([periodFromNow(-60, 120)]) },
         // opens in three hours
         { ...base, name: `${tag} closed`, ...hoursColumns([periodFromNow(180, 60)]) },
-        { ...base, name: `${tag} nohours`, closesAt: '1a' },
+        // ~1.1 km north of the others
+        { ...base, name: `${tag} nohours`, closesAt: '1a', lat: 18.48 },
         {
           ...base,
           name: `${tag} allday`,
           ...hoursColumns([{ open: { day: 0, hour: 0, minute: 0 } }]),
         },
+        // ~14 km away: never "near" at the default 3 km
+        { ...base, name: `${tag} far`, lat: 18.6 },
       ])
       .returning({ id: schema.restaurants.id, name: schema.restaurants.name })
     for (const r of rows) ids[r.name.slice(tag.length + 1) as keyof typeof ids] = r.id
@@ -148,5 +152,38 @@ describe.skipIf(!deps)('opening hours and "open now" (local DB)', () => {
     expect(none.restaurant.openStatus).toBeNull()
     const allday = await get<Place>(`/restaurants/${ids.allday}`)
     expect(allday.restaurant.openStatus).toEqual({ open: true, closesAt: null })
+  })
+
+  test('Cerca keeps places within the radius, says how far, and can sort by distance', async () => {
+    type NearHit = { id: string; distanceM: number | null }
+    const q = encodeURIComponent(tag)
+    const near = await get<{ restaurants: NearHit[] }>(
+      `/restaurants?q=${q}&near=18.47,-69.93&sort=distance`,
+    )
+    const got = near.restaurants.map((r) => r.id)
+    expect(got).not.toContain(ids.far)
+    // the three on the same spot first (0 m), the one 1.1 km north last
+    expect(got[got.length - 1]).toBe(ids.nohours)
+    const north = near.restaurants.find((r) => r.id === ids.nohours)
+    expect(north?.distanceM).toBeGreaterThan(1000)
+    expect(north?.distanceM).toBeLessThan(1300)
+
+    // a wider radius reaches the far one
+    const wide = await get<{ restaurants: NearHit[] }>(
+      `/restaurants?q=${q}&near=18.47,-69.93&radius=20000`,
+    )
+    expect(wide.restaurants.map((r) => r.id)).toContain(ids.far)
+
+    // with no position there is no distance, and "distance" falls back to the normal order
+    const none = await get<{ restaurants: NearHit[] }>(`/restaurants?q=${q}&sort=distance`)
+    expect(none.restaurants.every((r) => r.distanceM === null)).toBe(true)
+    expect(none.restaurants.map((r) => r.id)).toContain(ids.far)
+  })
+
+  test('Cerca and open now combine', async () => {
+    const both = await get<{ restaurants: { id: string }[] }>(
+      `/restaurants?q=${encodeURIComponent(tag)}&near=18.47,-69.93&open=1`,
+    )
+    expect(both.restaurants.map((r) => r.id).sort()).toEqual([ids.open, ids.allday].sort())
   })
 })

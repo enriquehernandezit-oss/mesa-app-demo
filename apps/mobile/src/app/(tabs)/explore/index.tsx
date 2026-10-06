@@ -2,8 +2,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Alert,
   FlatList,
   Keyboard,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -35,11 +37,13 @@ import {
 import { Field } from '@/components/ui/Field'
 import { CloseIcon, MapIcon, SearchIcon, SlidersIcon, SortIcon } from '@/components/ui/icons'
 import { pickOne, showSheet } from '@/components/ui/Sheet'
+import { toast } from '@/components/ui/toast-store'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { useScrollTopOffset } from '@/hooks/useScrollTopOffset'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
+import type { LatLng } from '@/lib/haversine'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
 import {
   type LocationFilter as Location,
@@ -51,6 +55,7 @@ import {
 import type { ExploreHit, ExploreMember, ExploreResponse, Neighborhood } from '@/lib/types'
 import { useDebounced } from '@/lib/useDebounced'
 import { useExternalPlaceSearch } from '@/lib/useExternalPlaceSearch'
+import { currentLocationStatus, useMyLocation } from '@/lib/useMyLocation'
 import { usePullToRefresh } from '@/lib/usePullToRefresh'
 import { useColor } from '@/theme/useColor'
 
@@ -67,7 +72,11 @@ import { useColor } from '@/theme/useColor'
 // + inline panel; M14 replaced THAT with one dedicated dropdown pill per
 // dimension (Sector ▾, Cocina ▾, ...), each showing its own value directly
 // once set — Rankings' mineControls mirrors this same pill pattern.
-type SortKey = 'score' | 'name'
+type SortKey = 'score' | 'name' | 'distance'
+
+// Cerca and Abierto ahora: where the member is (only while Cerca is on) and whether to keep only places
+// open this minute.
+type Here = { near: LatLng | null; openNow: boolean }
 
 // Stable identities: a fresh [] every render would churn FlatList's own
 // diffing and defeat the memos keyed on these.
@@ -77,7 +86,7 @@ const NO_MEMBERS: ExploreMember[] = []
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
 // screen reads once those filters are applied.
-function exploreKey(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location) {
+function exploreKey(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location, here: Here) {
   return [
     'explore',
     q,
@@ -89,10 +98,19 @@ function exploreKey(q: string, f: ExploreFilterValues, sort: SortKey, loc: Locat
     f.minScore,
     sort,
     locationQuery(loc),
+    nearParam(here.near),
+    here.openNow,
   ]
 }
-function fetchExplore(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location) {
+
+// Rounded to 3 decimals (about 100 m) before it leaves the phone: "near" needs no more, and the API
+// never stores it.
+const nearParam = (p: LatLng | null) => (p ? `${p.lat.toFixed(3)},${p.lng.toFixed(3)}` : null)
+function fetchExplore(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location, here: Here) {
   const params = new URLSearchParams(locationQuery(loc))
+  const near = nearParam(here.near)
+  if (near) params.set('near', near)
+  if (here.openNow) params.set('open', '1')
   if (q.length >= 2) params.set('q', q)
   if (f.hood) params.set('neighborhood', f.hood)
   if (f.cuisine) params.set('cuisine', f.cuisine)
@@ -129,8 +147,14 @@ export default function ExploreScreen() {
   const lang = useLanguage()
   const router = useRouter()
   const tabBarClearance = useTabBarClearance()
+  // Cerca and Abierto ahora. The position is asked for only when Cerca is tapped (iOS shows its
+  // "while using the app" prompt the first time).
+  const [nearby, setNearby] = useState(false)
+  const [openNow, setOpenNow] = useState(false)
+  const { position, request: requestLocation } = useMyLocation()
   const SORT_OPTIONS: { key: SortKey; label: string }[] = [
     { key: 'score', label: t('explore.sort_score') },
+    ...(nearby ? [{ key: 'distance' as const, label: t('explore.sort_distance') }] : []),
     { key: 'name', label: t('explore.sort_name') },
   ]
   const accent = useColor('accent')
@@ -210,6 +234,30 @@ export default function ExploreScreen() {
     if (idx != null) setSort(SORT_OPTIONS[idx].key)
   }
 
+  // Cerca: on asks for the position (and sorts nearest first); off forgets it for this screen. A
+  // refusal says where to turn it back on, rather than a chip that silently does nothing.
+  const toggleNearby = async () => {
+    if (nearby) {
+      setNearby(false)
+      setSort((s) => (s === 'distance' ? 'score' : s))
+      return
+    }
+    const pos = await requestLocation()
+    if (!pos) {
+      if (currentLocationStatus() === 'denied') {
+        Alert.alert(t('explore.location_off_title'), t('explore.location_off_body'), [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('explore.open_settings'), onPress: () => Linking.openSettings() },
+        ])
+      } else {
+        toast({ variant: 'error', message: t('map.location_error') })
+      }
+      return
+    }
+    setNearby(true)
+    setSort('distance')
+  }
+
   // "Neighborhood ▾": the one filter worth a pill of its own — a bottom-sheet chooser, the same
   // pattern as Your list's. (The rest live in the Filters panel.)
   const pickHood = async () => {
@@ -227,8 +275,11 @@ export default function ExploreScreen() {
   const panelCount = [hood, cuisine, price, occasion, highlight, minScore].filter(
     (v) => v != null,
   ).length
-  const activeCount = panelCount
+  const activeCount = panelCount + (nearby ? 1 : 0) + (openNow ? 1 : 0)
   const clearFilters = useCallback(() => {
+    setNearby(false)
+    setOpenNow(false)
+    setSort((s) => (s === 'distance' ? 'score' : s))
     setHood(null)
     setCuisine(null)
     setPrice(null)
@@ -253,9 +304,10 @@ export default function ExploreScreen() {
   const filterValues = { hood, cuisine, price, occasion, highlight, minScore }
   // WHERE to look — Santo Domingo by default — scopes Mesa's own places here and Google's below.
   const location = useLocationFilter()
+  const here: Here = { near: nearby ? position : null, openNow }
   const results = useQuery({
-    queryKey: exploreKey(debouncedQ, filterValues, sort, location),
-    queryFn: () => fetchExplore(debouncedQ, filterValues, sort, location),
+    queryKey: exploreKey(debouncedQ, filterValues, sort, location, here),
+    queryFn: () => fetchExplore(debouncedQ, filterValues, sort, location, here),
     // Keep the current results up while a new search/filter loads, instead of
     // collapsing the list to a skeleton (and jumping the page) on every change.
     placeholderData: keepPreviousData,
@@ -277,6 +329,8 @@ export default function ExploreScreen() {
     !occasion &&
     !highlight &&
     minScore == null &&
+    !nearby &&
+    !openNow &&
     isDefaultLocation(location)
 
   // Google — any restaurant, Santo Domingo first then the Dominican Republic then the world
@@ -437,6 +491,16 @@ export default function ExploreScreen() {
           >
             <Chip size="sm" icon={<SortIcon size={12} />} chevron onPress={openSort}>
               {SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('explore.sort_chip')}
+            </Chip>
+            <Chip size="sm" state={nearby ? 'selected' : 'default'} onPress={toggleNearby}>
+              {t('explore.nearby')}
+            </Chip>
+            <Chip
+              size="sm"
+              state={openNow ? 'selected' : 'default'}
+              onPress={() => setOpenNow((v) => !v)}
+            >
+              {t('explore.open_now')}
             </Chip>
             <Chip
               size="sm"
@@ -612,8 +676,8 @@ export default function ExploreScreen() {
         neighborhoods={neighborhoods.data?.neighborhoods ?? []}
         cuisines={cuisines.data?.cuisines ?? []}
         countQuery={(d) => ({
-          queryKey: exploreKey(debouncedQ, d, sort, location),
-          queryFn: () => fetchExplore(debouncedQ, d, sort, location),
+          queryKey: exploreKey(debouncedQ, d, sort, location, here),
+          queryFn: () => fetchExplore(debouncedQ, d, sort, location, here),
         })}
       />
     </View>

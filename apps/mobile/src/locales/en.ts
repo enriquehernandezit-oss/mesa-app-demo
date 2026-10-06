@@ -294,6 +294,15 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'discover.posted_dish': 'posted a dish',
   'discover.ranked_verb': 'ranked',
 
+  'explore.nearby': 'Nearby',
+  'explore.open_now': 'Open now',
+  'explore.open': 'Open',
+  'explore.closed': 'Closed',
+  'explore.sort_distance': 'Distance',
+  'explore.location_off_title': 'Location is off',
+  'explore.location_off_body':
+    'To see what is near you, let Mesa use your location while you use the app.',
+  'explore.open_settings': 'Open Settings',
   'explore.sort_by': 'Sort by',
   'explore.sort_score': 'Score',
   'explore.sort_name': 'Name',
@@ -710,6 +719,12 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'place.friends_ranked': { one: '1 friend ranked', other: '{n} friends ranked' },
   'place.on_your_list': '#{n} on your list',
   // Mesa stores a place's usual closing time, not its opening hours, so it cannot say "open now".
+  'place.open_closes': 'Open · closes {time}',
+  'place.open_24h': 'Open 24 hours',
+  'place.closed_opens': 'Closed · opens {time}',
+  'place.closed_opens_tomorrow': 'Closed · opens tomorrow {time}',
+  'place.closed_opens_day': 'Closed · opens {day} {time}',
+  'place.closed_now': 'Closed',
   'place.open_until': 'Closes {time}',
   'place.in_lists': { one: 'In 1 list', other: 'In {n} lists' },
   'place.lists_title': 'Lists',
