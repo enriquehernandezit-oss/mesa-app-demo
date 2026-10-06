@@ -6,6 +6,12 @@ import { z } from 'zod'
 import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
 import { eraseAccount } from '../lib/accountErase'
+import {
+  type AppleTokens,
+  appleConfig,
+  exchangeAuthorizationCode,
+  revokeAppleTokens,
+} from '../lib/appleRevoke'
 import { clearFailures, lockedForMs, noteFailure } from '../lib/authThrottle'
 import { isReservedHandle } from '../lib/handles'
 import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
@@ -80,7 +86,12 @@ const FRESH_SESSION_MS = 24 * 60 * 60 * 1000
 
 // Password is optional in the body because accounts without one prove identity
 // with a fresh session instead.
-const deleteSchema = z.object({ password: z.string().min(1).max(128).optional() })
+const deleteSchema = z.object({
+  password: z.string().min(1).max(128).optional(),
+  // From a fresh Sign in with Apple sheet at deletion time (lib/appleRevoke.ts): proves the Apple ID
+  // and lets the server revoke Mesa's grant. Optional — an older app, or a non-Apple account, omits it.
+  appleAuthorizationCode: z.string().min(1).max(4096).optional(),
+})
 
 const linkEmailSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -158,9 +169,21 @@ export const meRoutes = new Hono<AuthedEnv>()
     const onboardingComplete =
       Boolean(neighborhoodId) && Boolean(eulaAcceptedAt) && rankings.length > 0
 
+    // Which providers this account signs in with — the delete flow asks Apple again for an Apple account.
+    const providers = (
+      await db
+        .select({ providerId: schema.account.providerId })
+        .from(schema.account)
+        .where(eq(schema.account.userId, current.id))
+    ).map((a) => a.providerId)
+
     return c.json({
       profile: {
         ...profile,
+        hasApple: providers.includes('apple'),
+        // Whether there is a password to ask for (Settings offers change-password and the delete
+        // confirmation by it) — an Apple or Google account with a real email still has none.
+        hasPassword: providers.includes('credential'),
         neighborhood: row.neighborhood,
         favoriteNeighborhoods,
         // Contacts find-friends opt-in state (M18) — never the hash itself.
@@ -570,6 +593,21 @@ export const meRoutes = new Hono<AuthedEnv>()
     const parsed = deleteSchema.safeParse(await c.req.json().catch(() => ({})))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
 
+    // An Apple-linked account that sent a fresh authorization code: trade it at Apple, and only accept it
+    // if it belongs to THIS account's Apple ID.
+    const [appleAccount] = await db
+      .select({ accountId: schema.account.accountId })
+      .from(schema.account)
+      .where(and(eq(schema.account.userId, current.id), eq(schema.account.providerId, 'apple')))
+      .limit(1)
+    const cfg = appleConfig()
+    let appleTokens: AppleTokens | null = null
+    if (appleAccount && cfg && parsed.data.appleAuthorizationCode) {
+      const got = await exchangeAuthorizationCode(parsed.data.appleAuthorizationCode, cfg)
+      if (got && got.sub === appleAccount.accountId) appleTokens = got
+    }
+    const appleProven = appleTokens !== null
+
     const [credential] = await db
       .select({ id: schema.account.id })
       .from(schema.account)
@@ -601,11 +639,18 @@ export const meRoutes = new Hono<AuthedEnv>()
         return c.json({ error: 'invalid_password' }, 403)
       }
       await clearFailures(throttleKey)
-    } else if (!session || Date.now() - session.createdAt.getTime() > FRESH_SESSION_MS) {
-      // Apple/Instagram/phone accounts have no password to check, so the bar is
-      // a recent sign-in instead. The client asks them to sign in again.
+    } else if (
+      !appleProven &&
+      (!session || Date.now() - session.createdAt.getTime() > FRESH_SESSION_MS)
+    ) {
+      // Google/phone accounts have no password to check, so the bar is a recent sign-in instead. The
+      // client asks them to sign in again. (An Apple account that sends a valid code has just proved it.)
       return c.json({ error: 'session_not_fresh' }, 403)
     }
+
+    // Sign in with Apple: take Mesa off the member's Apple ID before the account goes (5.1.1(v)). Best
+    // effort — see lib/appleRevoke.ts. Only when Apple was linked, the code was sent and the key is set.
+    if (appleTokens && cfg) await revokeAppleTokens(appleTokens, cfg)
 
     // The row and everything it owns, plus what is keyed by email or id instead (photos, failed
     // sign-in counters, waitlist, verification links) — lib/accountErase.ts.

@@ -1087,6 +1087,8 @@ export const es = {
   'settings.delete_confirm_no_password': '¿Estás seguro? Esto borra todo y no se puede deshacer.',
   'settings.your_password_placeholder': 'Tu contraseña',
   'settings.deleting': 'Eliminando…',
+  'settings.delete_confirm_apple':
+    '¿Estás seguro? Esto borra todo y no se puede deshacer. Te pediremos confirmar con Apple, y Mesa dejará de aparecer en tu Apple ID.',
   'settings.delete_confirm_button': 'Sí, eliminar todo',
   'settings.wrong_password': 'Esa contraseña no es correcta.',
   'settings.password_required_confirm': 'Escribe tu contraseña para confirmar.',

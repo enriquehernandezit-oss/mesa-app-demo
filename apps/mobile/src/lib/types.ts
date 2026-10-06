@@ -28,6 +28,10 @@ export interface MeResponse {
     // Gates the moderation queue. Set directly in the DB; nothing in the
     // product can grant it.
     isModerator?: boolean
+    // Which sign-in methods the account has. Absent from an older API (the screens then fall back to
+    // guessing from the email).
+    hasApple?: boolean
+    hasPassword?: boolean
     // Contacts find-friends opt-in (M18) — "let your contacts find you".
     // Never the phone number or its hash, just whether one is on file.
     phoneMatchEnabled: boolean

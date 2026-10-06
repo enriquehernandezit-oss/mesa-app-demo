@@ -122,7 +122,7 @@ const DOCS: Record<Doc, { title: string; updated: string; sections: Section[] }>
       {
         heading: 'Eliminar tu cuenta',
         paragraphs: [
-          'Perfil → Ajustes → Tu cuenta → Eliminar cuenta. Te pedimos tu contraseña, o un inicio de sesión reciente si entras con Apple o Google, porque esto no se puede deshacer.',
+          'Perfil → Ajustes → Tu cuenta → Eliminar cuenta. Te pedimos tu contraseña, o un inicio de sesión reciente si entras con Google, porque esto no se puede deshacer. Si entras con Apple, lo confirmas con Apple y quitamos Mesa de tu Apple ID.',
           'Al confirmar borramos la cuenta y todo lo que cuelga de ella: rankings, notas, fotos, comentarios, listas, seguidores, bloqueos, reportes, sesiones y tokens de notificación. Es un borrado real, no una desactivación.',
           'Lo que no podemos recoger: si alguien guardó una captura o abrió un enlace que compartiste, eso ya vive fuera de Mesa. Las copias de respaldo y los registros del servidor pueden conservar restos por poco tiempo antes de rotar.',
         ],

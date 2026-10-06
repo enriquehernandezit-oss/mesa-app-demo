@@ -1024,6 +1024,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
     'Are you sure? This erases everything and can’t be undone.',
   'settings.your_password_placeholder': 'Your password',
   'settings.deleting': 'Deleting…',
+  'settings.delete_confirm_apple':
+    'Are you sure? This deletes everything and cannot be undone. We will ask you to confirm with Apple, and Mesa will be removed from your Apple ID.',
   'settings.delete_confirm_button': 'Yes, delete everything',
   'settings.wrong_password': "That password isn't correct.",
   'settings.password_required_confirm': 'Enter your password to confirm.',
