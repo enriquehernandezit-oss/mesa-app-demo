@@ -10,6 +10,7 @@ import { useTabBarClearance } from '@/components/MesaTabBar'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { ProfileStats } from '@/components/profile/ProfileStats'
 import { ScreenHeader } from '@/components/ScreenHeader'
+import { SectorPicker } from '@/components/SectorPicker'
 import { Group, NavRow } from '@/components/SettingsRow'
 import {
   Button,
@@ -731,31 +732,19 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           />
           <View>
             <Eyebrow className="mb-2">{t('rank.sector')}</Eyebrow>
-            <View className="flex-row flex-wrap gap-2">
-              {neighborhoods.data?.neighborhoods.map((n) => (
-                <Chip
-                  key={n.slug}
-                  state={currentSlug === n.slug ? 'selected' : 'default'}
-                  onPress={() => setSlug(n.slug)}
-                >
-                  {n.name}
-                </Chip>
-              ))}
-            </View>
+            <SectorPicker
+              sectors={neighborhoods.data?.neighborhoods ?? []}
+              selected={new Set(currentSlug ? [currentSlug] : [])}
+              onToggle={setSlug}
+            />
           </View>
           <View>
             <Eyebrow className="mb-2">{t('profile.favorite_neighborhoods_label')}</Eyebrow>
-            <View className="flex-row flex-wrap gap-2">
-              {neighborhoods.data?.neighborhoods.map((n) => (
-                <Chip
-                  key={n.slug}
-                  state={favoriteSlugs.has(n.slug) ? 'selected' : 'default'}
-                  onPress={() => toggleFavoriteSlug(n.slug)}
-                >
-                  {n.name}
-                </Chip>
-              ))}
-            </View>
+            <SectorPicker
+              sectors={neighborhoods.data?.neighborhoods ?? []}
+              selected={favoriteSlugs}
+              onToggle={toggleFavoriteSlug}
+            />
           </View>
           <View>
             <Eyebrow className="mb-2">

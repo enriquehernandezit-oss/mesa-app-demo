@@ -10,7 +10,8 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Serif, MAX_SCALE } from '@/components/ui'
+import { SectorPicker } from '@/components/SectorPicker'
+import { Body, Button, Caption, ErrorState, Eyebrow, Serif, MAX_SCALE } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { Field } from '@/components/ui/Field'
 import { CheckIcon, PeopleIcon } from '@/components/ui/icons'
@@ -212,18 +213,12 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           {t('onboarding.neighborhoods_error')}
         </ErrorState>
       ) : (
-        <View className="flex-row flex-wrap gap-2">
-          {data?.neighborhoods.map((n) => (
-            <Chip
-              key={n.slug}
-              size="sm"
-              state={neighborhoodSlug === n.slug ? 'selected' : 'default'}
-              onPress={() => setNeighborhood(n.slug)}
-            >
-              {n.name}
-            </Chip>
-          ))}
-        </View>
+        <SectorPicker
+          sectors={data?.neighborhoods ?? []}
+          selected={new Set(neighborhoodSlug ? [neighborhoodSlug] : [])}
+          onToggle={setNeighborhood}
+          size="sm"
+        />
       )}
 
       <Eyebrow className="mt-5 mb-2">{t('onboarding.birthday_label')}</Eyebrow>

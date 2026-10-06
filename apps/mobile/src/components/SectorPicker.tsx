@@ -1,0 +1,69 @@
+import { useState } from 'react'
+import { View } from 'react-native'
+
+import { Caption, Chip } from '@/components/ui'
+import { Field } from '@/components/ui/Field'
+import { SearchIcon } from '@/components/ui/icons'
+import { useT } from '@/lib/i18n'
+import { type Sector, shownSectors } from '@/lib/sectorFilter'
+
+// A sector chooser that scales: your choice(s) first, the first few sectors, a search that narrows the
+// rest, and "see all". One or many — the caller owns what is selected and what a tap does (one sector:
+// replace; favourites: toggle). Used by onboarding, Edit profile and adding a place.
+export function SectorPicker({
+  sectors,
+  selected,
+  onToggle,
+  size,
+}: {
+  sectors: Sector[]
+  selected: ReadonlySet<string>
+  onToggle: (slug: string) => void
+  size?: 'sm'
+}) {
+  const t = useT()
+  const [query, setQuery] = useState('')
+  const [expanded, setExpanded] = useState(false)
+  const { shown, hidden } = shownSectors(sectors, selected, query, expanded)
+  // Few sectors need no search; many do.
+  const searchable = sectors.length > 8
+
+  return (
+    <View className="gap-2.5">
+      {searchable ? (
+        <Field
+          icon={<SearchIcon size={16} color="text-muted" />}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={t('sectors.search_placeholder')}
+          returnKeyType="search"
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      ) : null}
+      <View className="flex-row flex-wrap gap-2">
+        {shown.map((n) => (
+          <Chip
+            key={n.slug}
+            size={size}
+            state={selected.has(n.slug) ? 'selected' : 'default'}
+            onPress={() => onToggle(n.slug)}
+          >
+            {n.name}
+          </Chip>
+        ))}
+        {hidden > 0 ? (
+          <Chip size={size} onPress={() => setExpanded(true)}>
+            {t('sectors.see_all', { n: sectors.length })}
+          </Chip>
+        ) : null}
+        {expanded && !query && sectors.length > 8 ? (
+          <Chip size={size} onPress={() => setExpanded(false)}>
+            {t('sectors.see_less')}
+          </Chip>
+        ) : null}
+      </View>
+      {query && shown.length === 0 ? <Caption>{t('sectors.none')}</Caption> : null}
+    </View>
+  )
+}

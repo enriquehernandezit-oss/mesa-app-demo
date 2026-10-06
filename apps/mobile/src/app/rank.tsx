@@ -19,6 +19,7 @@ import { MentionField } from '@/components/MentionField'
 import { FeelStep } from '@/components/rank/FeelStep'
 import { MiniFeel } from '@/components/rank/MiniFeel'
 import { RankHeader } from '@/components/rank/RankHeader'
+import { SectorPicker } from '@/components/SectorPicker'
 import {
   Body,
   Button,
@@ -1938,18 +1939,12 @@ function AddPlaceForm({
         maxLength={80}
       />
       <Eyebrow>{t('rank.sector')}</Eyebrow>
-      <View className="flex-row flex-wrap gap-2">
-        {neighborhoods.data?.neighborhoods.map((n) => (
-          <Chip
-            key={n.slug}
-            size="sm"
-            state={slug === n.slug ? 'selected' : 'default'}
-            onPress={() => setSlug(n.slug)}
-          >
-            {n.name}
-          </Chip>
-        ))}
-      </View>
+      <SectorPicker
+        sectors={neighborhoods.data?.neighborhoods ?? []}
+        selected={new Set(slug ? [slug] : [])}
+        onToggle={setSlug}
+        size="sm"
+      />
       <View className="flex-row justify-end gap-3">
         <Button variant="secondary" size="sm" className="px-4" onPress={onCancel}>
           {t('common.cancel')}
