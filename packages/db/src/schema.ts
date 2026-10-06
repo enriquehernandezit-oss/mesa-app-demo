@@ -125,7 +125,7 @@ export const neighborhoods = pgTable('neighborhoods', {
   lat: doublePrecision('lat').notNull(),
   lng: doublePrecision('lng').notNull(),
   radiusM: integer('radius_m').notNull(),
-  // Where in the world. The seven rows above the seed ships are Santo Domingo's sectors: listed,
+  // Where in the world. The rows the seed and migrations ship (the original seven, then sectors.ts) are Santo Domingo's sectors: listed,
   // curated, and what every picker, filter pill and the Map offer. A place a member adds from
   // Google OUTSIDE Santo Domingo is filed under an UNLISTED area for its city, created on demand
   // (lib/geo.ts) — so a restaurant in Punta Cana or Miami is never labelled with the nearest
@@ -134,6 +134,13 @@ export const neighborhoods = pgTable('neighborhoods', {
   countryCode: text('country_code').notNull().default('do'), // lowercase ISO 3166-1 alpha-2
   city: text('city').notNull().default('Santo Domingo'),
   listed: boolean('listed').notNull().default(true),
+  // Other names this sector goes by — Google's sublocality for it ("Ensanche Naco" for Naco), or
+  // what locals say. A place is filed here when its Google sublocality matches the name or any alias
+  // (accents and case ignored). Seeded in migration 0040; see sectors.ts.
+  aliases: text('aliases')
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
 })
 
 // ── Auth (Better Auth) ───────────────────────────────────────────────────

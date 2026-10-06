@@ -281,6 +281,13 @@
       "when": 1791273807515,
       "tag": "0039_plain_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791277444500,
+      "tag": "0040_abnormal_human_torch",
+      "breakpoints": true
     }
   ]
 }

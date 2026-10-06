@@ -289,6 +289,7 @@ async function run() {
       name: neighborhoods.name,
       lat: neighborhoods.lat,
       lng: neighborhoods.lng,
+      aliases: neighborhoods.aliases,
     })
     .from(neighborhoods)
     // Santo Domingo's sectors only — an area created for a place elsewhere (lib/geo.ts) is never a

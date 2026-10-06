@@ -177,6 +177,7 @@ async function main() {
       lat: neighborhoods.lat,
       lng: neighborhoods.lng,
       listed: neighborhoods.listed,
+      aliases: neighborhoods.aliases,
     })
     .from(neighborhoods)
   const hoodName = new Map(hoods.map((h) => [h.id, h.name]))

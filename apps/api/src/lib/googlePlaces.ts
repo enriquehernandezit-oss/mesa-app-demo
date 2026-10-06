@@ -462,14 +462,18 @@ function normalizeForMatch(s: string): string {
 // nearest-centroid haversine over the 7 candidates (plain TS, never a
 // per-row query) when nothing matches by name.
 export function resolveNeighborhood<
-  T extends { id: string; name: string; lat: number; lng: number },
+  T extends { id: string; name: string; lat: number; lng: number; aliases?: string[] },
 >(d: GooglePlaceDetails, hoods: T[]): T {
   const named = ['sublocality_level_1', 'sublocality', 'neighborhood']
     .map((type) => addressComponent(d.addressComponents, type))
     .filter((v): v is string => v != null)
     .map(normalizeForMatch)
   for (const candidate of named) {
-    const hit = hoods.find((h) => normalizeForMatch(h.name) === candidate)
+    const hit = hoods.find(
+      (h) =>
+        normalizeForMatch(h.name) === candidate ||
+        h.aliases?.some((a) => normalizeForMatch(a) === candidate),
+    )
     if (hit) return hit
   }
 

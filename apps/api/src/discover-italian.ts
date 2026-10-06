@@ -162,6 +162,7 @@ async function run() {
       name: neighborhoods.name,
       lat: neighborhoods.lat,
       lng: neighborhoods.lng,
+      aliases: neighborhoods.aliases,
     })
     .from(neighborhoods)
     // Santo Domingo's sectors only (see import-top100.ts).

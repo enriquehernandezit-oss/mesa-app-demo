@@ -667,7 +667,7 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     // for its city, created below only if a row is actually inserted: a place that matches one already
     // in the catalog keeps the neighborhood it has.
     const sectors = await db.query.neighborhoods.findMany({
-      columns: { id: true, name: true, lat: true, lng: true },
+      columns: { id: true, name: true, lat: true, lng: true, aliases: true },
       where: eq(neighborhoods.listed, true),
     })
     if (sectors.length === 0) return c.json({ error: 'unknown_neighborhood' }, 400)

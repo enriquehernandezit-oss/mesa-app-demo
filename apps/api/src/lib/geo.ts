@@ -1,6 +1,6 @@
 // Where a place belongs in Mesa's geography.
 //
-// Mesa curates ONE city: Santo Domingo, in seven sectors — the `listed` neighborhoods, which are
+// Mesa curates ONE city: Santo Domingo, in about two dozen sectors (growing: packages/db/src/sectors.ts) — the `listed` neighborhoods, which are
 // what every picker, filter pill and the Map offer. A member can add a place from anywhere
 // Google knows, so the rest of the world is filed by CITY, in neighborhood rows created on demand
 // and left unlisted. A Punta Cana restaurant then shows as "Punta Cana" instead of the Santo
@@ -84,10 +84,9 @@ export type Placing<T> = { kind: 'sector'; hood: T } | { kind: 'area'; area: Are
 // Where a Google place goes: one of Santo Domingo's sectors when it is inside Santo Domingo, else
 // the area for its city. `sectors` must be the LISTED neighborhoods only — an unlisted area is
 // never a candidate for a Santo Domingo place. Null when it cannot be placed at all.
-export function placeIn<T extends { id: string; name: string; lat: number; lng: number }>(
-  d: GooglePlaceDetails,
-  sectors: T[],
-): Placing<T> | null {
+export function placeIn<
+  T extends { id: string; name: string; lat: number; lng: number; aliases?: string[] },
+>(d: GooglePlaceDetails, sectors: T[]): Placing<T> | null {
   const lat = d.location?.latitude
   const lng = d.location?.longitude
   if (lat == null || lng == null) return null

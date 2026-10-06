@@ -6,6 +6,7 @@ import { db, pool } from './client'
 import { refuseRemoteDatabase } from './localDatabase'
 import * as schema from './schema'
 import { scoreFor } from './score'
+import { EXISTING_SECTOR_ALIASES, NEW_SECTORS } from './sectors'
 import { seedCuration } from './seed-curation'
 import { dishPosts, friends, neighborhoods, restaurants, waitlist } from './seed-data'
 import {
@@ -109,7 +110,12 @@ async function seed() {
   // --- neighborhoods (5 curated + 2 extra) ---
   const nRows = await db
     .insert(schema.neighborhoods)
-    .values([...neighborhoods, ...extraNeighborhoods])
+    .values([
+      ...neighborhoods.map((n) => ({ ...n, aliases: EXISTING_SECTOR_ALIASES[n.slug] ?? [] })),
+      ...extraNeighborhoods,
+      // Production gets these from migration 0040; a fresh seed has to match it.
+      ...NEW_SECTORS,
+    ])
     .returning({ id: schema.neighborhoods.id, slug: schema.neighborhoods.slug })
   const neighborhoodId = new Map(nRows.map((r) => [r.slug, r.id]))
   const nid = (slug: string): string => {
