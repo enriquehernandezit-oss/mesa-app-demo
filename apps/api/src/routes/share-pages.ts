@@ -172,8 +172,10 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
   .get('/u/:handle', async (c) => {
     const canonical = c.req.url
-    c.header('Cache-Control', 'public, max-age=300')
-    const handle = c.req.param('handle').replace(/^@/, '')
+    // A minute, not five: a member who goes private or is banned should stop unfurling quickly.
+    c.header('Cache-Control', 'public, max-age=60')
+    // Handles are stored lowercase, so /p/u/Ana finds @ana instead of a 404.
+    const handle = c.req.param('handle').replace(/^@/, '').toLowerCase()
 
     const target = await db.query.user.findFirst({
       where: eq(user.handle, handle),

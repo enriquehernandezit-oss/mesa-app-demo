@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { notify } from '../lib/notify'
+import { spendPlanBudget } from '../lib/usageBudget'
 import { blockedByMe, blockedMe } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
@@ -42,7 +43,8 @@ const replySchema = z
     message: 'reply or voteRestaurantId required',
   })
 
-const inviteSchema = z.object({ userIds: z.array(z.string().min(1)).min(1).max(50) })
+const MAX_INVITEES = 50
+const inviteSchema = z.object({ userIds: z.array(z.string().min(1)).min(1).max(MAX_INVITEES) })
 const confirmSchema = z.object({ restaurantId: uuid })
 
 // Which of `userIds` the host may actually invite: followers of the host,
@@ -154,6 +156,9 @@ export const plansRoutes = new Hono<AuthedEnv>()
     ) {
       return c.json({ error: 'invalid_date' }, 400)
     }
+
+    // Each plan can notify up to 50 people, so how many one host may arm in a day is capped.
+    if (!(await spendPlanBudget(me.id))) return c.json({ error: 'rate_limited' }, 429)
 
     const validRestaurants = await db
       .select({ id: restaurants.id })
@@ -463,6 +468,15 @@ export const plansRoutes = new Hono<AuthedEnv>()
 
     const invitable = await invitableIds(me.id, parsed.data.userIds)
     if (invitable.size === 0) return c.json({ error: 'invalid_invitees' }, 400)
+
+    // The create call caps a plan at 50 people; adding "later" must not be a way round it.
+    const [counted] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(planInvites)
+      .where(eq(planInvites.planId, planId))
+    if ((counted?.n ?? 0) + invitable.size > MAX_INVITEES) {
+      return c.json({ error: 'too_many_invitees' }, 400)
+    }
 
     const added = await db
       .insert(planInvites)

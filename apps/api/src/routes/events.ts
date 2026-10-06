@@ -385,23 +385,45 @@ export const eventsRoutes = new Hono<AuthedEnv>()
 
     const found = await db.query.events.findFirst({
       where: and(eq(events.id, eventId), isNull(events.cancelledAt)),
-      columns: { id: true, title: true, startsAt: true, endsAt: true, restaurantId: true },
+      columns: {
+        id: true,
+        title: true,
+        startsAt: true,
+        endsAt: true,
+        restaurantId: true,
+        capacity: true,
+      },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
 
-    const existing = await db.query.eventRsvps.findFirst({
-      where: and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, me.id)),
-      columns: { status: true },
+    // Capacity is shown ("quedan 3 lugares") and now held: saying 'going' to a full event is refused.
+    // The event row is locked for the check-and-write so two people taking the last spot at once
+    // cannot both get it. 'interested' never takes a spot, and someone already going keeps theirs.
+    const outcome = await db.transaction(async (tx) => {
+      await tx.execute(sql`select 1 from ${events} where ${events.id} = ${eventId} for update`)
+      const [existing] = await tx
+        .select({ status: eventRsvps.status })
+        .from(eventRsvps)
+        .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, me.id)))
+      const wasGoing = existing?.status === 'going'
+      if (parsed.data.status === 'going' && !wasGoing && found.capacity !== null) {
+        const [taken] = await tx
+          .select({ n: sql<number>`count(*)::int` })
+          .from(eventRsvps)
+          .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.status, 'going')))
+        if ((taken?.n ?? 0) >= found.capacity) return { full: true as const }
+      }
+      await tx
+        .insert(eventRsvps)
+        .values({ eventId, userId: me.id, status: parsed.data.status })
+        .onConflictDoUpdate({
+          target: [eventRsvps.eventId, eventRsvps.userId],
+          set: { status: parsed.data.status, updatedAt: new Date() },
+        })
+      return { full: false as const, wasGoing }
     })
-    const wasGoing = existing?.status === 'going'
-
-    await db
-      .insert(eventRsvps)
-      .values({ eventId, userId: me.id, status: parsed.data.status })
-      .onConflictDoUpdate({
-        target: [eventRsvps.eventId, eventRsvps.userId],
-        set: { status: parsed.data.status, updatedAt: new Date() },
-      })
+    if (outcome.full) return c.json({ error: 'event_full' }, 409)
+    const { wasGoing } = outcome
 
     if (parsed.data.status === 'going' && !wasGoing && isUpcoming(found, new Date())) {
       const recipients = await eventGoingRecipients(me)

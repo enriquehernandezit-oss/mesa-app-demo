@@ -59,7 +59,13 @@ export default function AccountSettings() {
       setBirthYear('')
       toast({ message: t('settings.birthday_updated') })
     },
-    onError: () => toast({ variant: 'error', message: t('settings.birthday_error') }),
+    onError: (err) => {
+      const underAge = err instanceof ApiError && err.code === 'under_age'
+      toast({
+        variant: 'error',
+        message: t(underAge ? 'settings.birthday_under_age' : 'settings.birthday_error'),
+      })
+    },
   })
 
   const [verifySent, setVerifySent] = useState(false)

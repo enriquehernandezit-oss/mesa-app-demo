@@ -262,8 +262,11 @@ Type capped on the shared type primitives, 44pt touch targets on the main contro
 - **Analytics** — PostHog, 17 typed loop events, screen views, no PII by contract.
 - **Crash reporting** — PostHog on both the app and the API.
 - **Email** — Resend, for verification and password reset. Production refuses to boot without it.
-- **Rate limiting** — Better Auth's limiter (DB-backed), a per-account sign-in throttle, and durable
-  daily budgets on contact matching. The Google proxy has no spending cap yet.
+- **Rate limiting** — Better Auth's limiter (DB-backed), a per-account sign-in throttle (a valid
+  reset link lifts it), and durable daily budgets on contact matching (5000), photo uploads (60) and
+  new plans (10). A plan holds at most 50 invitees, and comment, mention and plan-invite pushes are
+  limited to one an hour per sender and recipient. An upload's file size is not capped (the signed
+  URL cannot carry a size range). The Google proxy has no spending cap yet.
 - **Security headers** — two CSP policies (a strict one for JSON, a scriptless one for `/p/*`),
   HSTS, `X-Frame-Options: DENY`.
 - **Deploy** — Railway, migrations run automatically before each deploy.

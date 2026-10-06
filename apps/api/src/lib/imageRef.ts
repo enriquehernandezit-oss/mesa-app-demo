@@ -21,4 +21,17 @@ export function isAllowedImageRef(s: string, base = R2_PUBLIC_BASE_URL): boolean
   return Boolean(base) && s.startsWith(`${base}/`)
 }
 
+// Stronger than the shape gate above: the photo must be one THIS member uploaded. presignUpload keys
+// every object under `u/<userId>/`, so a URL under anyone else's prefix (or under no member's, like
+// `seed/` or a bucket path nobody issued) is refused — otherwise a member could attach another member's
+// photo to their own dish, avatar or collection by guessing or scraping its URL.
+export function isOwnImageRef(s: string, userId: string, base = R2_PUBLIC_BASE_URL): boolean {
+  if (!base) return false
+  const prefix = `${base}/u/${userId}/`
+  if (!s.startsWith(prefix)) return false
+  // Exactly what presignUpload mints — `<uuid>.jpg` — so a `..` segment, a nested path or a query
+  // cannot walk out of the member's own folder once a client normalizes the URL.
+  return /^[0-9a-f-]{36}\.jpg$/i.test(s.slice(prefix.length))
+}
+
 export const imageRefSchema = z.string().refine(isAllowedImageRef, 'image must be an uploaded URL')

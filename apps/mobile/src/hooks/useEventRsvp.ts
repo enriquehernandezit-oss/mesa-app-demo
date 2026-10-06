@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
 import { toast } from '@/components/ui/toast-store'
-import { api } from '@/lib/api'
+import { ApiError, api } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { tapLight, tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
@@ -30,7 +30,9 @@ export function useEventRsvp(e: EventSummary) {
     onError: (err, _next, ctx) => {
       captureError(err, 'events.rsvp')
       setRsvp((ctx as { prev: Rsvp } | undefined)?.prev ?? e.myRsvp)
-      toast({ variant: 'error', message: t('events.rsvp_error') })
+      // 409: the last spot went while this screen was open — say so, rather than a vague failure.
+      const full = err instanceof ApiError && err.status === 409
+      toast({ variant: 'error', message: t(full ? 'events.rsvp_full' : 'events.rsvp_error') })
     },
     onMutate: () => ({ prev: rsvp }),
     onSettled: () => {

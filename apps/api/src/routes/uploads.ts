@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
 import { presignUpload, r2Enabled } from '../lib/r2'
+import { spendUploadBudget } from '../lib/usageBudget'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Presigned-upload issuer for member photos (dish posts, avatars, collection
@@ -16,8 +17,11 @@ import { requireAuth, requireEula } from '../middleware/session'
 export const uploadsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
 
-  .post('/', requireEula, (c) => {
+  .post('/', requireEula, async (c) => {
     if (!r2Enabled()) return c.json({ available: false as const })
     const me = c.get('user')
+    // A daily count per member (lib/usageBudget.ts): without one, a signed-in account could ask for
+    // presigned URLs forever and fill the bucket.
+    if (!(await spendUploadBudget(me.id))) return c.json({ error: 'rate_limited' }, 429)
     return c.json({ available: true as const, ...presignUpload(me.id) })
   })

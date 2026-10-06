@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { isUuid } from '../lib/ids'
-import { imageRefSchema } from '../lib/imageRef'
+import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
 import { visibleDish, visibleDishIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
@@ -141,6 +141,8 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
 
     const { name, description = null, coverImageId = null } = parsed.data
+    if (coverImageId && !isOwnImageRef(coverImageId, me.id))
+      return c.json({ error: 'invalid_body' }, 400)
     const [row] = await db
       .insert(collections)
       .values({ userId: me.id, name, description, coverImageId })
@@ -158,6 +160,8 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
     if (!found) return c.json({ error: 'not_found' }, 404)
     const parsed = patchSchema.safeParse(await c.req.json().catch(() => null))
     if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const cover = parsed.data.coverImageId
+    if (cover && !isOwnImageRef(cover, me.id)) return c.json({ error: 'invalid_body' }, 400)
 
     try {
       const [row] = await db

@@ -7,7 +7,8 @@ import { auth } from '../auth'
 import type { AuthedEnv } from '../context'
 import { eraseAccount } from '../lib/accountErase'
 import { clearFailures, lockedForMs, noteFailure } from '../lib/authThrottle'
-import { imageRefSchema } from '../lib/imageRef'
+import { isReservedHandle } from '../lib/handles'
+import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
 import { notify } from '../lib/notify'
 import { weeklyStreak } from '../lib/streak'
 import { citywideRank, followCounts } from '../lib/visibility'
@@ -21,6 +22,18 @@ import { requireAuth } from '../middleware/session'
 // that comes back in ONE relational round trip (the neighborhood via a join,
 // "has a ranking" via a limit-1 relation), so there is no N+1 and no extra
 // count query.
+
+const MIN_AGE = 18
+
+// Whole years between a YYYY-MM-DD birthday and `now` (UTC), counting the birthday itself.
+export function ageOn(birthday: string, now: Date): number {
+  const [y = 0, m = 0, d = 0] = birthday.split('-').map(Number)
+  let age = now.getUTCFullYear() - y
+  const beforeBirthday =
+    now.getUTCMonth() + 1 < m || (now.getUTCMonth() + 1 === m && now.getUTCDate() < d)
+  if (beforeBirthday) age -= 1
+  return age
+}
 
 const profileSchema = z.object({
   name: z.string().trim().min(1).max(60),
@@ -184,6 +197,17 @@ export const meRoutes = new Hono<AuthedEnv>()
       columns: { id: true },
     })
     if (!neighborhood) return c.json({ error: 'unknown_neighborhood' }, 400)
+
+    // A handle that reads as Mesa or its staff is refused — answered like a taken one, so the app's
+    // "ya está en uso" message already covers it. Only a NEW handle is checked: someone who already
+    // holds one keeps it (an older app resends it on every save).
+    if (handle && isReservedHandle(handle)) {
+      const [held] = await db
+        .select({ handle: schema.user.handle })
+        .from(schema.user)
+        .where(eq(schema.user.id, current.id))
+      if (held?.handle !== handle) return c.json({ error: 'handle_taken' }, 409)
+    }
 
     // Resolved up front, before any write — an unknown slug here should
     // fail the whole save the same clean way an unknown home neighborhood
@@ -349,6 +373,11 @@ export const meRoutes = new Hono<AuthedEnv>()
       return c.json({ error: 'invalid_body', issues: parsed.error.issues }, 400)
     }
 
+    // The terms say 18+ (lib/legalCopy.ts), so the server holds that line, not just the copy.
+    if (ageOn(parsed.data.birthday, new Date()) < MIN_AGE) {
+      return c.json({ error: 'under_age' }, 400)
+    }
+
     await db
       .update(schema.user)
       .set({ birthday: parsed.data.birthday, updatedAt: new Date() })
@@ -469,7 +498,9 @@ export const meRoutes = new Hono<AuthedEnv>()
     const parsed = z
       .object({ image: imageRefSchema })
       .safeParse(await c.req.json().catch(() => null))
-    if (!parsed.success) return c.json({ error: 'invalid_image' }, 400)
+    if (!parsed.success || !isOwnImageRef(parsed.data.image, current.id)) {
+      return c.json({ error: 'invalid_image' }, 400)
+    }
     await db
       .update(schema.user)
       .set({ image: parsed.data.image, updatedAt: new Date() })

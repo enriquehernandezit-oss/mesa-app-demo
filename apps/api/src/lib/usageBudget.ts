@@ -29,6 +29,18 @@ export async function spendBudget(key: string, amount: number, limit: number): P
   return (row?.used ?? amount) <= limit
 }
 
+// Photo uploads: every POST /uploads hands out a presigned URL that accepts a file, and the URL's size
+// cannot be capped from here (Bun's presign signs no length range), so the count is what bounds a day's
+// storage. A member posts a handful of dish photos a day; this is several times that, not a wall.
+export const UPLOAD_DAILY_LIMIT = 60
+export const spendUploadBudget = (userId: string) =>
+  spendBudget(`upload:${userId}`, 1, UPLOAD_DAILY_LIMIT)
+
+// Plans: a host arms a few a week. The cap is on creation, since each one can notify up to 50 people.
+export const PLAN_DAILY_LIMIT = 10
+export const spendPlanBudget = (userId: string) =>
+  spendBudget(`plan:${userId}`, 1, PLAN_DAILY_LIMIT)
+
 // Contact and Instagram matching are phone-to-identity and handle-to-identity lookups: a script
 // that can probe without limit can learn who owns which number. One shared daily budget per member
 // across all three endpoints that do it, sized for a couple of full address books.

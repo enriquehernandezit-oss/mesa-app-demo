@@ -5,10 +5,10 @@ import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { isUuid } from '../lib/ids'
-import { imageRefSchema } from '../lib/imageRef'
+import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
-import { blockedByMe, blockedMe, followingIds, visibleDish } from '../lib/visibility'
+import { blockedByMe, blockedMe, dishVisibleTo, followingIds, visibleDish } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
@@ -193,14 +193,13 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     return c.json({ groups: DISH_GROUPS, categories: DISH_CATEGORIES })
   })
 
-  // Distinct dish names already logged at a restaurant, most-common first —
-  // the chip source for the reveal's "¿Qué pediste?" step (M13). Aggregated names
-  // and counts ONLY, never dish rows or posters: a name several people have
-  // logged is catalog data, not any one person's content, so this
-  // deliberately skips the visibility/block filters every other dish query
-  // applies. One query, grouped on the same generated nameKey column the
-  // search index already uses.
+  // Distinct dish names already logged at a restaurant, most-common first — the chip source for the
+  // reveal's "¿Qué pediste?" step (M13). Aggregated names and counts ONLY, never dish rows or posters.
+  // Only dishes the viewer may see feed it (dishVisibleTo): a name that exists only on a private
+  // account's or a friends-only dish must not surface here as a suggestion to a stranger. One query,
+  // grouped on the same generated nameKey column the search index already uses.
   .get('/restaurant/:id/names', async (c) => {
+    const me = c.get('user')
     const id = c.req.param('id')
     if (!z.string().uuid().safeParse(id).success) return c.json({ names: [] })
 
@@ -213,7 +212,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       })
       .from(dishes)
       .innerJoin(user, eq(user.id, dishes.userId))
-      .where(and(eq(dishes.restaurantId, id), isNull(dishes.removedAt), isNull(user.bannedAt)))
+      .where(and(eq(dishes.restaurantId, id), dishVisibleTo(me.id)))
       .groupBy(dishes.nameKey)
       .orderBy(desc(sql`count(*)`), asc(dishes.nameKey))
       .limit(20)
@@ -250,6 +249,8 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       alsoFavorite,
     } = parsed.data
 
+    // Only a photo this member uploaded (lib/imageRef.ts) — not another member's, whatever its URL.
+    if (image && !isOwnImageRef(image, me.id)) return c.json({ error: 'invalid_body' }, 400)
     if (requestedCategoryId && !DISH_CATEGORIES.some((cat) => cat.id === requestedCategoryId)) {
       return c.json({ error: 'unknown_category' }, 400)
     }

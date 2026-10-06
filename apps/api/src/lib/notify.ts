@@ -47,13 +47,22 @@ export const KIND_RULES: Record<Kind, KindRule> = {
     category: 'social',
     throttle: (n) => `dish-cheer:${n.dishId}:${hourBucket(n.createdAt)}`,
   },
-  comment: { category: 'social' },
+  // One push per (sender, recipient) an hour for the three things a person can aim at someone else —
+  // a comment, a mention, a plan invite — so one member cannot flood another's phone. Every one still
+  // lands in the inbox; only the buzz is limited.
+  comment: {
+    category: 'social',
+    throttle: (n) => `comment:${n.actorId}:${n.userId}:${hourBucket(n.createdAt)}`,
+  },
   // One push per (recipient, place), however many friends rank it.
   saved_ranked: {
     category: 'friends',
     throttle: (n) => `saved-ranked:${n.restaurantId}:${n.userId}`,
   },
-  plan_invite: { category: 'plans' },
+  plan_invite: {
+    category: 'plans',
+    throttle: (n) => `plan-invite:${n.actorId}:${n.userId}:${hourBucket(n.createdAt)}`,
+  },
   plan_reply: { category: 'plans' },
   // A follower is pushed about a given event at most once per few hours, however many of the
   // people they follow sign up in it (lib/eventPush.ts).
@@ -72,9 +81,13 @@ export const KIND_RULES: Record<Kind, KindRule> = {
     throttle: (n) => `friends-love:${sdLocalNow(n.createdAt).toISOString().slice(0, 10)}`,
   },
   taste_match: { category: 'friends' },
-  // Each mention is its own message (keyed by where it was said), so no throttle — but it is the one
-  // thing here a stranger-to-be can send you, so it rides the social switch like comments do.
-  mention: { category: 'social' },
+  // Each mention is its own inbox row (keyed by where it was said). It is the one thing here a
+  // stranger-to-be can send you, so it rides the social switch like comments do, and shares the
+  // hourly sender→recipient push cap.
+  mention: {
+    category: 'social',
+    throttle: (n) => `mention:${n.actorId}:${n.userId}:${hourBucket(n.createdAt)}`,
+  },
 }
 
 export interface NotifyInput {

@@ -60,6 +60,7 @@ function emailFromBody(body: unknown): string | null {
 }
 
 const SIGN_IN_PATH = '/sign-in/email'
+const RESET_PATH = '/reset-password'
 
 // The same escalating backoff, for any other guessable secret. DELETE /me asks for the password,
 // and it reaches Better Auth through `auth.api` — past the HTTP limiter and past the sign-in
@@ -93,8 +94,34 @@ export async function clearFailures(key: string): Promise<void> {
   await db.delete(authThrottle).where(eq(authThrottle.key, key))
 }
 
+// A lockout must not be a weapon: twenty wrong guesses at someone's email lock THEM out for an hour.
+// Holding a valid reset link proves control of the inbox, so presenting one lifts the lock (Apple and
+// Google sign-in never touched it — only the password path is throttled). `adapter` is Better Auth's
+// internalAdapter, narrowed to the two reads this needs so a test can fake it.
+export type ResetAdapter = {
+  findVerificationValue(identifier: string): Promise<{ value: string; expiresAt: Date } | null>
+  findUserById(id: string): Promise<{ email: string } | null>
+}
+
+export async function clearLockForResetToken(adapter: ResetAdapter, token: unknown): Promise<void> {
+  if (typeof token !== 'string' || token.length === 0) return
+  const verification = await adapter.findVerificationValue(`reset-password:${token}`)
+  if (!verification || verification.expiresAt < new Date()) return
+  const owner = await adapter.findUserById(verification.value)
+  if (owner?.email) await clearFailures(throttleKey(owner.email))
+}
+
 // Refuse a sign-in that is currently backed off, before any password check.
 export const authThrottleBefore = createAuthMiddleware(async (ctx) => {
+  if (ctx.path === RESET_PATH) {
+    const body = ctx.body as { token?: unknown } | null
+    // Never let this get in the way of the reset itself.
+    await clearLockForResetToken(
+      ctx.context.internalAdapter,
+      body?.token ?? ctx.query?.token,
+    ).catch(() => undefined)
+    return
+  }
   if (ctx.path !== SIGN_IN_PATH) return
   const email = emailFromBody(ctx.body)
   if (!email) return
