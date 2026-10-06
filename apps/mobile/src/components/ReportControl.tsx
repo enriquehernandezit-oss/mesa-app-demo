@@ -21,12 +21,19 @@ const REASON_KEYS = [
   'report.reason_other',
 ] as const
 
-export type ReportTarget = 'dish' | 'vibe_note' | 'user' | 'comment'
+export type ReportTarget = 'dish' | 'vibe_note' | 'user' | 'comment' | 'plan' | 'place'
 
 const PROMPT_KEYS: Record<
   ReportTarget,
-  'report.prompt_dish' | 'report.prompt_vibe_note' | 'report.prompt_user' | 'report.prompt_comment'
+  | 'report.prompt_dish'
+  | 'report.prompt_vibe_note'
+  | 'report.prompt_user'
+  | 'report.prompt_comment'
+  | 'report.prompt_plan'
+  | 'report.prompt_place'
 > = {
+  plan: 'report.prompt_plan',
+  place: 'report.prompt_place',
   comment: 'report.prompt_comment',
   dish: 'report.prompt_dish',
   vibe_note: 'report.prompt_vibe_note',

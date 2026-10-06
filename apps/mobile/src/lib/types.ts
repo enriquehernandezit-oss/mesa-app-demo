@@ -50,7 +50,7 @@ export interface MeResponse {
 export interface ModerationReport {
   id: string
   reporterId: string
-  targetType: 'vibe_note' | 'user' | 'dish' | 'comment'
+  targetType: 'vibe_note' | 'user' | 'dish' | 'comment' | 'plan' | 'place'
   targetId: string
   reason: string
   status: 'open' | 'reviewing' | 'actioned' | 'dismissed'
@@ -60,6 +60,8 @@ export interface ModerationReport {
     | { kind: 'dish'; name: string; caption: string | null; imageId: string | null }
     | { kind: 'comment'; body: string; userId: string; rankingId: string }
     | { kind: 'user'; name: string; handle: string | null }
+    | { kind: 'plan'; note: string | null; hostId: string }
+    | { kind: 'place'; name: string; source: string }
     | null
   // True when the content was already removed/banned by someone else — the row
   // stays visible so it can be dismissed, but the remove action is pointless.

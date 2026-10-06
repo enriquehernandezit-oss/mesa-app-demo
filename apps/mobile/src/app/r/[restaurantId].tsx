@@ -13,6 +13,7 @@ import { PlaceInfo } from '@/components/place/PlaceInfo'
 import { PlaceStats, type Stat } from '@/components/place/PlaceStats'
 import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
 import { RANK_BAR_HEIGHT, RankBar, useRankBarBottom } from '@/components/place/RankBar'
+import { ReportControl } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { BookmarkIcon, ListIcon, PeopleIcon, TrophyIcon } from '@/components/ui/icons'
@@ -361,6 +362,15 @@ export default function RestaurantProfile() {
                 ))}
               </SpotRail>
             ) : null}
+          </View>
+
+          {/* A member-added place can be junk or wrong; any place can be reported (App Store 1.2). */}
+          <View className="mb-4 px-5">
+            <ReportControl
+              targetType="place"
+              targetId={restaurantId}
+              label={t('place.report_this')}
+            />
           </View>
         </View>
       </Animated.ScrollView>

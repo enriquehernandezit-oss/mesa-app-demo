@@ -1,16 +1,29 @@
 import { db, schema } from '@mesa/db'
-import { and, desc, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
+import { sendMail } from '../auth'
 import type { AuthedEnv } from '../context'
+import { alertModerators } from '../lib/moderatorAlert'
+import { background } from '../lib/notify'
 import { requireAuth, requireModerator } from '../middleware/session'
 
 // UGC moderation (App Store 1.2). Every user can report content and block
 // abusive accounts; moderators can remove content and eject users. A block hides
 // content both ways; a removed note and a banned user disappear from all reads.
-const { reports, userBlocks, vibeNotes, dishes, rankingComments, follows, followRequests, user } =
-  schema
+const {
+  reports,
+  userBlocks,
+  vibeNotes,
+  dishes,
+  rankingComments,
+  follows,
+  followRequests,
+  user,
+  plans,
+  restaurants,
+} = schema
 
 const uuid = z.string().uuid()
 // Reports one member may file in a day — a flood from one account must not bury the real ones.
@@ -22,7 +35,7 @@ const reportSchema = z
     // reportable like vibe notes and users (App Store 1.2). The enum already
     // carries 'dish' (reportTargetType in schema.ts). Ranking comments likewise
     // ('comment').
-    targetType: z.enum(['vibe_note', 'user', 'dish', 'comment']),
+    targetType: z.enum(['vibe_note', 'user', 'dish', 'comment', 'plan', 'place']),
     targetId: z.string().min(1).max(64),
     reason: z.string().trim().min(1).max(500),
   })
@@ -33,6 +46,19 @@ const reportSchema = z
     path: ['targetId'],
   })
 const blockSchema = z.object({ userId: z.string().min(1) })
+
+// Reports per page of the moderator queue.
+const QUEUE_PAGE = 50
+
+// `<iso time>_<report id>` — a UUID never contains '_', so the last one splits them.
+function parseQueueCursor(raw: string): { at: Date; id: string } | null {
+  const i = raw.lastIndexOf('_')
+  if (i === -1) return null
+  const at = new Date(raw.slice(0, i))
+  const id = raw.slice(i + 1)
+  if (Number.isNaN(at.getTime()) || !uuid.safeParse(id).success) return null
+  return { at, id }
+}
 
 export const moderationRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -49,27 +75,38 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     // The target must exist — a client bug (or a hand-made request) filing garbage ids would
     // otherwise sit in the queue forever. Nobody reports themselves.
     const found =
-      targetType === 'comment'
-        ? await db.query.rankingComments.findFirst({
-            where: eq(rankingComments.id, targetId),
+      targetType === 'plan'
+        ? // A plan's note is the host's own words; the host does not report their own plan.
+          await db.query.plans.findFirst({
+            where: and(eq(plans.id, targetId), sql`${plans.hostId} <> ${me.id}`),
             columns: { id: true },
           })
-        : targetType === 'vibe_note'
-          ? await db.query.vibeNotes.findFirst({
-              where: eq(vibeNotes.id, targetId),
+        : targetType === 'place'
+          ? await db.query.restaurants.findFirst({
+              where: and(eq(restaurants.id, targetId), isNull(restaurants.removedAt)),
               columns: { id: true },
             })
-          : targetType === 'dish'
-            ? await db.query.dishes.findFirst({
-                where: eq(dishes.id, targetId),
+          : targetType === 'comment'
+            ? await db.query.rankingComments.findFirst({
+                where: eq(rankingComments.id, targetId),
                 columns: { id: true },
               })
-            : targetId === me.id
-              ? undefined
-              : await db.query.user.findFirst({
-                  where: eq(user.id, targetId),
+            : targetType === 'vibe_note'
+              ? await db.query.vibeNotes.findFirst({
+                  where: eq(vibeNotes.id, targetId),
                   columns: { id: true },
                 })
+              : targetType === 'dish'
+                ? await db.query.dishes.findFirst({
+                    where: eq(dishes.id, targetId),
+                    columns: { id: true },
+                  })
+                : targetId === me.id
+                  ? undefined
+                  : await db.query.user.findFirst({
+                      where: eq(user.id, targetId),
+                      columns: { id: true },
+                    })
     if (!found) return c.json({ error: 'not_found' }, 404)
 
     // Reporting the same thing twice is one report, not two: the second tap is a no-op.
@@ -95,12 +132,27 @@ export const moderationRoutes = new Hono<AuthedEnv>()
       )
     if (n >= REPORTS_PER_DAY) return c.json({ error: 'rate_limited' }, 429)
 
-    await db.insert(reports).values({
-      reporterId: me.id,
-      targetType: parsed.data.targetType,
-      targetId: parsed.data.targetId,
-      reason: parsed.data.reason,
-    })
+    const [filed] = await db
+      .insert(reports)
+      .values({
+        reporterId: me.id,
+        targetType: parsed.data.targetType,
+        targetId: parsed.data.targetId,
+        reason: parsed.data.reason,
+      })
+      .returning({ id: reports.id })
+    // Tell the moderators (an email; lib/moderatorAlert.ts says when it stays quiet). After the
+    // answer, never part of it: a mail outage must not turn a filed report into an error.
+    if (filed) {
+      background(
+        () =>
+          alertModerators(
+            { id: filed.id, targetType: parsed.data.targetType, reason: parsed.data.reason },
+            sendMail,
+          ),
+        'moderator alert failed',
+      )
+    }
     return c.json({ ok: true })
   })
 
@@ -173,14 +225,43 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   // attached — a bare targetId is undecidable: nobody can judge "vibe_note
   // 3f2a… / spam" without seeing the sentence. Batched by type (five queries
   // total, whatever the report count) rather than looked up per row.
+  //
+  // Newest first, a page at a time: `?cursor=` is the `nextCursor` of the page before (the first page
+  // has none), and `total` is every open report, not just this page's. An older app sends no cursor
+  // and reads the first page, which is what it always did.
   .get('/reports', requireModerator, async (c) => {
-    const rows = await db
-      .select()
-      .from(reports)
-      .where(eq(reports.status, 'open'))
-      .orderBy(desc(reports.createdAt))
-      .limit(100)
-    if (rows.length === 0) return c.json({ reports: [] })
+    const cursorRaw = c.req.query('cursor')
+    const cursor = cursorRaw ? parseQueueCursor(cursorRaw) : null
+    if (cursorRaw && !cursor) return c.json({ error: 'invalid_cursor' }, 400)
+
+    const pageSize = Math.min(QUEUE_PAGE, Math.max(1, Number(c.req.query('limit')) || QUEUE_PAGE))
+    const createdMs = sql`date_trunc('milliseconds', ${reports.createdAt})`
+    const at = cursor ? sql`${cursor.at.toISOString()}::timestamp` : null
+    const [page, [counted]] = await Promise.all([
+      db
+        .select()
+        .from(reports)
+        .where(
+          and(
+            eq(reports.status, 'open'),
+            cursor && at
+              ? or(lt(createdMs, at), and(sql`${createdMs} = ${at}`, lt(reports.id, cursor.id)))
+              : undefined,
+          ),
+        )
+        .orderBy(desc(createdMs), desc(reports.id))
+        .limit(pageSize + 1),
+      db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(reports)
+        .where(eq(reports.status, 'open')),
+    ])
+    const hasMore = page.length > pageSize
+    const rows = hasMore ? page.slice(0, pageSize) : page
+    const last = rows[rows.length - 1]
+    const nextCursor = hasMore && last ? `${last.createdAt.toISOString()}_${last.id}` : null
+    const total = counted?.n ?? 0
+    if (rows.length === 0) return c.json({ reports: [], nextCursor: null, total })
 
     const idsOf = (t: (typeof rows)[number]['targetType']) =>
       rows.filter((r) => r.targetType === t).map((r) => r.targetId)
@@ -193,8 +274,10 @@ export const moderationRoutes = new Hono<AuthedEnv>()
     // Comment ids are validated as uuids at report time, but filter anyway so
     // one malformed legacy row can't fail the whole queue's uuid cast.
     const commentIds = idsOf('comment').filter(isUuid)
+    const planIds = idsOf('plan').filter(isUuid)
+    const placeIds = idsOf('place').filter(isUuid)
 
-    const [notes, dishRows, users, commentRows] = await Promise.all([
+    const [notes, dishRows, users, commentRows, planRows, placeRows] = await Promise.all([
       noteIds.length
         ? db
             .select({
@@ -241,12 +324,31 @@ export const moderationRoutes = new Hono<AuthedEnv>()
             .from(rankingComments)
             .where(inArray(rankingComments.id, commentIds))
         : [],
+      planIds.length
+        ? db
+            .select({ id: plans.id, note: plans.note, hostId: plans.hostId })
+            .from(plans)
+            .where(inArray(plans.id, planIds))
+        : [],
+      placeIds.length
+        ? db
+            .select({
+              id: restaurants.id,
+              name: restaurants.name,
+              source: restaurants.source,
+              removedAt: restaurants.removedAt,
+            })
+            .from(restaurants)
+            .where(inArray(restaurants.id, placeIds))
+        : [],
     ])
 
     const noteById = new Map(notes.map((n) => [n.id, n]))
     const dishById = new Map(dishRows.map((d) => [d.id, d]))
     const userById = new Map(users.map((u) => [u.id, u]))
     const commentById = new Map(commentRows.map((cm) => [cm.id, cm]))
+    const planById = new Map(planRows.map((p) => [p.id, p]))
+    const placeById = new Map(placeRows.map((p) => [p.id, p]))
 
     // `target` is null when the row is already gone (deleted account, hard
     // delete) — the queue still shows the report so it can be dismissed.
@@ -290,6 +392,23 @@ export const moderationRoutes = new Hono<AuthedEnv>()
           alreadyHandled: cm ? cm.removedAt !== null : true,
         }
       }
+      if (r.targetType === 'plan') {
+        const p = planById.get(r.targetId)
+        return {
+          ...r,
+          target: p ? { kind: 'plan' as const, note: p.note, hostId: p.hostId } : null,
+          // A plan with no note left has nothing more to remove.
+          alreadyHandled: p ? p.note === null : true,
+        }
+      }
+      if (r.targetType === 'place') {
+        const p = placeById.get(r.targetId)
+        return {
+          ...r,
+          target: p ? { kind: 'place' as const, name: p.name, source: p.source } : null,
+          alreadyHandled: p ? p.removedAt !== null : true,
+        }
+      }
       const u = userById.get(r.targetId)
       return {
         ...r,
@@ -297,7 +416,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
         alreadyHandled: u ? u.bannedAt !== null : true,
       }
     })
-    return c.json({ reports: enriched })
+    return c.json({ reports: enriched, nextCursor, total })
   })
 
   // Close a report without acting on it — the "reviewed, nothing wrong here"
@@ -376,6 +495,48 @@ export const moderationRoutes = new Hono<AuthedEnv>()
         .where(
           and(
             eq(reports.targetType, 'comment'),
+            eq(reports.targetId, id),
+            eq(reports.status, 'open'),
+          ),
+        )
+    })
+    return c.json({ ok: true })
+  })
+
+  // Clear a plan's note — the moderator action for a reported plan. The plan itself stays (people made
+  // arrangements around it); only the words are removed. Open reports on it are marked actioned.
+  .post('/plans/:id/clear-note', requireModerator, async (c) => {
+    const id = c.req.param('id')
+    if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
+    await db.transaction(async (tx) => {
+      await tx.update(plans).set({ note: null }).where(eq(plans.id, id))
+      await tx
+        .update(reports)
+        .set({ status: 'actioned' })
+        .where(
+          and(eq(reports.targetType, 'plan'), eq(reports.targetId, id), eq(reports.status, 'open')),
+        )
+    })
+    return c.json({ ok: true })
+  })
+
+  // Remove a place from Mesa (soft: `removed_at`, the flag every read already honours — the page 404s,
+  // search and lists skip it). The row, its rankings and its history stay for audit, so a mistaken
+  // removal is one UPDATE to undo. Until now this took a script run against production.
+  .delete('/places/:id', requireModerator, async (c) => {
+    const id = c.req.param('id')
+    if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
+    await db.transaction(async (tx) => {
+      await tx
+        .update(restaurants)
+        .set({ removedAt: new Date() })
+        .where(and(eq(restaurants.id, id), isNull(restaurants.removedAt)))
+      await tx
+        .update(reports)
+        .set({ status: 'actioned' })
+        .where(
+          and(
+            eq(reports.targetType, 'place'),
             eq(reports.targetId, id),
             eq(reports.status, 'open'),
           ),

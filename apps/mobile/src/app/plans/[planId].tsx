@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
 import { StatusBadge } from '@/components/plans/parts'
+import { ReportControl } from '@/components/ReportControl'
 import { ScreenHeader } from '@/components/ScreenHeader'
 import { Group, RowButton } from '@/components/SettingsRow'
 import {
@@ -222,6 +223,9 @@ export default function PlanDetailScreen() {
             >
               “{plan.note}”
             </Text>
+          ) : null}
+          {plan.note && !plan.isHost ? (
+            <ReportControl targetType="plan" targetId={planId} label={t('plans.report_note')} />
           ) : null}
           {(cancelled || past) && (
             <View className="mt-3 flex-row gap-2">

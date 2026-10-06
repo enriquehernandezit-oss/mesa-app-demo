@@ -37,6 +37,9 @@ export const reportTargetType = pgEnum('report_target_type', [
   'user',
   'dish',
   'comment',
+  // A plan's note (seen by whoever was invited) and a place (member-added ones can be junk).
+  'plan',
+  'place',
 ])
 
 // Moderation lifecycle for a report.

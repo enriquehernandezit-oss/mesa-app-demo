@@ -171,14 +171,19 @@ solo action.
 
 Complete, both directions:
 
-- **Report** a vibe note, a dish, or a member — reason picked from a native action sheet.
+- **Report** a vibe note, a dish, a comment, a member, a plan's note or a place — reason picked from a sheet. One open report per thing per reporter, and 30 a day.
 - **Block** a member — severs follow edges both ways and hides content symmetrically. Blocks are
   filtered on every read path, in **both** directions.
 - **Delete your own** dish posts and vibe notes.
 - **Moderator queue** (`moderation.tsx`) — moderator-only, gated server-side on every endpoint.
   Shows each open report **with the reported content attached** (the note text, the dish photo,
   the member), the reason, and how long it's been waiting. Actions: retirar / expulsar / descartar.
-  Greys out reports whose content another moderator already handled.
+  Greys out reports whose content another moderator already handled. The queue pages (50 at a
+  time, with the total) and opens fresh each time. A new report **emails the moderators** (once per
+  half hour of activity, not once per report). Moderators can also clear a plan's note and remove a
+  place from Mesa (soft: the row and its history stay). Collection and list names are not
+  reportable: other members cannot see them in the app, and the public share pages carry no report
+  link until there is a support address to put there.
 - **Ejected accounts** are rejected everywhere by the auth gate and their content vanishes from
   all reads.
 - The moderator flag is set **directly in the database** — nothing in the product can grant it.

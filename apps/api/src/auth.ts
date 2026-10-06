@@ -89,7 +89,7 @@ if (process.env.NODE_ENV === 'production') {
 // registered email triggers a send). Failures are logged as errors instead, so
 // a misconfiguration is loud in the server logs — the "fail loud" the original
 // design wanted, moved off the user-facing response.
-async function sendMail(to: string, subject: string, body: string) {
+export async function sendMail(to: string, subject: string, body: string) {
   if (to.endsWith('@phone.mesa.local')) return
   try {
     if (!RESEND_KEY) {

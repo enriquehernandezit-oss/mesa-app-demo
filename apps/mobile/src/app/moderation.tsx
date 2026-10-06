@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
 import { Redirect, Stack, useRouter } from 'expo-router'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -37,7 +37,11 @@ const TYPE_KEYS: Record<
   | 'moderation.type_dish'
   | 'moderation.type_user'
   | 'moderation.type_comment'
+  | 'moderation.type_plan'
+  | 'moderation.type_place'
 > = {
+  plan: 'moderation.type_plan',
+  place: 'moderation.type_place',
   vibe_note: 'moderation.type_vibe_note',
   dish: 'moderation.type_dish',
   comment: 'moderation.type_comment',
@@ -57,9 +61,18 @@ export default function ModerationQueue() {
   const { data: me, isPending: meLoading } = useProfile(true)
   const queryClient = useQueryClient()
 
-  const q = useQuery({
+  // A page at a time, newest first: the queue used to stop at the newest 100, so an older report
+  // could sit unseen past the 24 hours the terms promise.
+  const q = useInfiniteQuery({
     queryKey: ['moderation-reports'],
-    queryFn: () => api.get<{ reports: ModerationReport[] }>('/moderation/reports'),
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam }) =>
+      api.get<{ reports: ModerationReport[]; nextCursor: string | null; total: number }>(
+        `/moderation/reports${pageParam ? `?cursor=${encodeURIComponent(pageParam)}` : ''}`,
+      ),
+    getNextPageParam: (last) => last.nextCursor,
+    // Always read the queue fresh when it opens — a report that came in a minute ago is the point.
+    staleTime: 0,
     enabled: Boolean(me?.profile.isModerator),
   })
 
@@ -79,6 +92,10 @@ export default function ModerationQueue() {
           return api.del(`/moderation/dishes/${report.targetId}`)
         case 'comment':
           return api.del(`/moderation/comments/${report.targetId}`)
+        case 'plan':
+          return api.post(`/moderation/plans/${report.targetId}/clear-note`)
+        case 'place':
+          return api.del(`/moderation/places/${report.targetId}`)
         case 'user':
           return api.post(`/moderation/users/${report.targetId}/eject`)
         default:
@@ -98,6 +115,9 @@ export default function ModerationQueue() {
       // A removed comment has to leave its thread and the feed card's
       // count/latest line, which read from ['comments', rankingId].
       queryClient.invalidateQueries({ queryKey: ['comments'] })
+      // A removed place leaves search, Explore and the map; a cleared plan note leaves the plan.
+      queryClient.invalidateQueries({ queryKey: ['explore'] })
+      queryClient.invalidateQueries({ queryKey: ['plan'] })
       toast({
         message:
           action === 'dismiss' ? t('moderation.dismissed_toast') : t('moderation.removed_toast'),
@@ -118,7 +138,8 @@ export default function ModerationQueue() {
   if (meLoading) return <View className="flex-1 bg-bg" />
   if (!me?.profile.isModerator) return <Redirect href="/discover" />
 
-  const reports = q.data?.reports ?? []
+  const reports = q.data?.pages.flatMap((p) => p.reports) ?? []
+  const total = q.data?.pages[0]?.total ?? reports.length
 
   return (
     <View className="flex-1 bg-bg">
@@ -137,7 +158,7 @@ export default function ModerationQueue() {
         ) : (
           <>
             <Caption className="mb-3 mt-1 px-1 text-pill">
-              {t('moderation.open_reports_count', { n: reports.length })}
+              {t('moderation.open_reports_count', { n: total })}
             </Caption>
             {reports.map((r) => (
               <ReportRow
@@ -171,6 +192,17 @@ export default function ModerationQueue() {
                 }}
               />
             ))}
+            {q.hasNextPage ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={q.isFetchingNextPage}
+                className="mt-1 min-h-[44px]"
+                onPress={() => q.fetchNextPage()}
+              >
+                {t('moderation.load_more')}
+              </Button>
+            ) : null}
           </>
         )}
       </ScrollView>
@@ -236,6 +268,27 @@ function ReportRow({
               </Text>
             ) : null}
           </View>
+        </Pressable>
+      ) : target.kind === 'plan' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/u/${target.hostId}`)}
+          className="mt-2 active:opacity-70"
+        >
+          <Text selectable className="font-serif text-serif-sm text-text">
+            “{target.note ?? ''}”
+          </Text>
+        </Pressable>
+      ) : target.kind === 'place' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/r/${report.targetId}`)}
+          className="mt-2 active:opacity-70"
+        >
+          <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
+          {target.source === 'member' ? (
+            <Caption className="mt-0.5">{t('moderation.place_member_added')}</Caption>
+          ) : null}
         </Pressable>
       ) : target.kind === 'comment' ? (
         // Same reasoning as the note above — the body is what gets judged, and
