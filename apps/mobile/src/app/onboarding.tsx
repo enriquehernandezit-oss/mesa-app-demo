@@ -10,7 +10,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { FollowPill, PersonRow } from '@/components/PersonRow'
-import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Serif } from '@/components/ui'
+import { Body, Button, Caption, Chip, ErrorState, Eyebrow, Serif, MAX_SCALE } from '@/components/ui'
 import { CompareCard } from '@/components/ui/CompareCard'
 import { Field } from '@/components/ui/Field'
 import { CheckIcon, PeopleIcon } from '@/components/ui/icons'
@@ -294,7 +294,9 @@ function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View>
       <Serif className="text-headline text-text">{title}</Serif>
-      <Text className="mt-2 font-ui text-subhead text-text-muted">{subtitle}</Text>
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="mt-2 font-ui text-subhead text-text-muted">
+        {subtitle}
+      </Text>
     </View>
   )
 }
@@ -336,7 +338,11 @@ function PickCard({
           )}
         </View>
         <View className="px-3 pb-3 pt-2">
-          <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-serif-sm text-text"
+            numberOfLines={1}
+          >
             {r.name}
           </Text>
           <Caption className="text-micro" numberOfLines={1}>
@@ -489,7 +495,11 @@ function ComparePhase({
   return (
     <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-5 pb-10">
       <View className="items-center">
-        <Text style={DATA_FIGURES} className="font-ui-semibold text-label text-text-muted">
+        <Text
+          maxFontSizeMultiplier={MAX_SCALE}
+          style={DATA_FIGURES}
+          className="font-ui-semibold text-label text-text-muted"
+        >
           {t('common.n_of_total', { n: placed + 1, total })}
         </Text>
         <Serif className="mt-1.5 text-center text-serif-lg text-text">
@@ -515,7 +525,10 @@ function ComparePhase({
         onPress={() => setState((s) => skip(s))}
         className="mt-5 min-h-[44px] items-center justify-center active:opacity-60"
       >
-        <Text className="font-ui-semibold text-label text-text-muted">
+        <Text
+          maxFontSizeMultiplier={MAX_SCALE}
+          className="font-ui-semibold text-label text-text-muted"
+        >
           {t('onboarding.havent_been_swap')}
         </Text>
       </Pressable>

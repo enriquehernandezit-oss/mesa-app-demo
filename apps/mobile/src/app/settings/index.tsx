@@ -102,7 +102,7 @@ export default function SettingsHub() {
             reason anyone opens Settings' own header row. */}
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push('/profile?edit=1')}
+          onPress={() => router.navigate('/profile?edit=1')}
           className="mt-3 flex-row items-center gap-3 rounded-card bg-surface px-4 py-3.5 active:opacity-80"
           style={lift}
         >

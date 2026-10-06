@@ -13,9 +13,13 @@ import { type LatLng, getPosition } from './geo'
 // 'error' is everything else (a timed-out or failed fix) — the fix is "try
 // again", which is a different message and a different affordance.
 type Status = 'idle' | 'loading' | 'granted' | 'denied' | 'error'
-type Snapshot = { position: LatLng | null; status: Status }
+type Snapshot = { position: LatLng | null; status: Status; fixedAt: number }
 
-let snapshot: Snapshot = { position: null, status: 'idle' }
+// A fix is good for a few minutes. Past that, the next tap on Cerca reads the position again — before this,
+// the first fix of a session was reused forever, so "nearby" kept sorting from wherever the app was first opened.
+const FRESH_MS = 5 * 60_000
+
+let snapshot: Snapshot = { position: null, status: 'idle', fixedAt: 0 }
 let inFlight: Promise<LatLng | null> | null = null
 const listeners = new Set<() => void>()
 
@@ -45,19 +49,25 @@ Location.getForegroundPermissionsAsync()
 // treats those the same — but the store's own `status` keeps them apart, so a
 // screen that wants to say something useful (map.tsx) still can.
 export function requestMyLocation(): Promise<LatLng | null> {
-  if (snapshot.position) return Promise.resolve(snapshot.position)
+  if (snapshot.position && Date.now() - snapshot.fixedAt < FRESH_MS) {
+    return Promise.resolve(snapshot.position)
+  }
   if (snapshot.status === 'denied') return Promise.resolve(null)
   if (inFlight) return inFlight
   setSnapshot({ status: 'loading' })
   inFlight = getPosition()
     .then((pos) => {
-      setSnapshot({ position: pos, status: 'granted' })
+      setSnapshot({ position: pos, status: 'granted', fixedAt: Date.now() })
       return pos
     })
     .catch((err) => {
-      setSnapshot({
-        status: err instanceof Error && err.message === 'location-denied' ? 'denied' : 'error',
-      })
+      const denied = err instanceof Error && err.message === 'location-denied'
+      // A refresh that fails keeps the last good position rather than throwing it away.
+      if (snapshot.position && !denied) {
+        setSnapshot({ status: 'granted' })
+        return snapshot.position
+      }
+      setSnapshot({ status: denied ? 'denied' : 'error' })
       return null
     })
     .finally(() => {

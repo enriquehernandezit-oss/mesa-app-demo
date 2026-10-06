@@ -2,7 +2,7 @@ import { Link } from 'expo-router'
 import { type ReactNode, useEffect } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-import { Caption } from '@/components/ui'
+import { Caption, MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { type FollowSource, followLabelKey, useFollow } from '@/hooks/useFollow'
 import { useT } from '@/lib/i18n'
@@ -55,7 +55,11 @@ export function PersonRow({
           >
             <Avatar name={user.name || user.handle || 'm'} src={user.image} size={42} />
             <View className="min-w-0 flex-1">
-              <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-serif text-serif-sm text-text"
+                numberOfLines={1}
+              >
                 {user.name || user.handle}
               </Text>
               <Caption numberOfLines={1}>{caption}</Caption>
@@ -108,6 +112,7 @@ export function FollowPill({
       style={status !== 'none' ? lift : undefined}
     >
       <Text
+        maxFontSizeMultiplier={MAX_SCALE}
         className={`font-ui-semibold text-label ${status !== 'none' ? 'text-text' : 'text-on-ink'}`}
       >
         {t(followLabelKey(status))}

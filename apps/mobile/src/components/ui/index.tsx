@@ -370,6 +370,7 @@ export function Segmented<T extends string>({
         const on = o.value === local
         return (
           <Pressable
+            hitSlop={{ top: 2, bottom: 2, left: 0, right: 0 }}
             key={o.value}
             accessibilityRole="tab"
             accessibilityState={{ selected: on }}
@@ -520,7 +521,12 @@ export const ErrorState = ({
           onPress={onRetry}
           className="mt-3 min-h-[44px] justify-center rounded-pill border border-accent px-4 active:opacity-80"
         >
-          <Text className="font-ui-semibold text-label text-accent">{t('common.retry')}</Text>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-accent"
+          >
+            {t('common.retry')}
+          </Text>
         </Pressable>
       )}
     </View>

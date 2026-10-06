@@ -253,7 +253,7 @@ everything else. The wordmark is the lowercase `mesa`; the capital-M icon lives 
 only. Data numerals use tabular figures so scores sit on the baseline and columns align.
 
 Other details: haptics taxonomy, skeleton loaders shaped like the content they replace, Dynamic
-Type capped on the shared type primitives, 44pt touch targets on the main controls (a few small ones are still under), swipe-to-remove with undo.
+Type capped (1.35×) on every piece of text except fixed-size art (the share card, avatars, map pins), every tappable control reaches 44pt (small ones through hit slop), swipe-to-remove with undo.
 
 ---
 

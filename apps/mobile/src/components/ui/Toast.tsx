@@ -6,6 +6,7 @@ import { useTabBarClearance } from '@/components/MesaTabBar'
 import { Glass } from '@/components/ui/Glass'
 import { tapError } from '@/lib/haptics'
 
+import { MAX_SCALE } from './index'
 import { type Toast, dismiss, useToasts } from './toast-store'
 
 // Mounted once (root layout). Renders whatever toast-store holds, stacked above
@@ -60,6 +61,7 @@ function ToastItem({ toast }: { toast: Toast }) {
             Text from being the touch target, which ate taps on the card under
             the toast for its whole 3–5s. */}
         <Text
+          maxFontSizeMultiplier={MAX_SCALE}
           pointerEvents="none"
           className={`flex-1 font-ui-medium text-subhead ${error ? 'text-danger' : 'text-text'}`}
         >
@@ -74,7 +76,12 @@ function ToastItem({ toast }: { toast: Toast }) {
               dismiss(toast.id)
             }}
           >
-            <Text className="font-ui-semibold text-subhead text-accent">{toast.action.label}</Text>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-subhead text-accent"
+            >
+              {toast.action.label}
+            </Text>
           </Pressable>
         )}
       </Glass>

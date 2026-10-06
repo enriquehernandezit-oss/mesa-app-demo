@@ -281,6 +281,7 @@ export function RsvpButtons({
       </Pressable>
       <Animated.View style={goingPop.style}>
         <Pressable
+          hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
           accessibilityRole="button"
           accessibilityState={{ selected: going }}
           onPress={() => {
@@ -314,6 +315,7 @@ function SampleMark({ tone = 'muted' }: { tone?: 'muted' | 'on-photo' }) {
   const t = useT()
   return (
     <Text
+      maxFontSizeMultiplier={MAX_SCALE}
       numberOfLines={1}
       className={`font-ui text-micro ${tone === 'on-photo' ? 'text-on-photo-2' : 'text-text-muted'}`}
     >
@@ -434,10 +436,17 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
               style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
             />
             <View className="absolute top-2 left-2 items-center rounded-sm bg-accent-fill px-2 py-1">
-              <Text style={DATA_FIGURES} className="font-serif text-serif-sm text-on-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                style={DATA_FIGURES}
+                className="font-serif text-serif-sm text-on-accent"
+              >
                 {s.day}
               </Text>
-              <Text className="font-ui-semibold text-micro uppercase text-on-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-micro uppercase text-on-accent"
+              >
                 {s.month}
               </Text>
             </View>
@@ -448,11 +457,19 @@ export function EventMiniCard({ e, now }: { e: EventSummary; now: Date }) {
           <View className="px-3 pt-2 pb-3">
             <View className="flex-row items-center gap-1 pr-1">
               <CategoryIcon cat={cat} size={12} />
-              <Text numberOfLines={1} className="shrink font-ui-semibold text-micro text-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                numberOfLines={1}
+                className="shrink font-ui-semibold text-micro text-accent"
+              >
                 {eventCategoryLabel(e.category)}
               </Text>
             </View>
-            <Text numberOfLines={1} className="mt-0.5 font-serif text-serif-sm text-text">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              numberOfLines={1}
+              className="mt-0.5 font-serif text-serif-sm text-text"
+            >
               {e.title}
             </Text>
             <Caption numberOfLines={1} className="text-micro">

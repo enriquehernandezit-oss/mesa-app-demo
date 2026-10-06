@@ -1,22 +1,9 @@
 import * as Location from 'expo-location'
 
+import { type LatLng, haversineM } from './haversine'
 import { getLanguage } from './i18n'
 
-export type LatLng = { lat: number; lng: number }
-
-const EARTH_RADIUS_M = 6371000
-
-// Great-circle distance in meters — plenty accurate at city scale. Ported
-// verbatim from apps/app/src/lib/geo.ts.
-export function haversineM(a: LatLng, b: LatLng): number {
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(b.lat - a.lat)
-  const dLng = toRad(b.lng - a.lng)
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
-  return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(s))
-}
+export { type LatLng, haversineM }
 
 // "350 m" / "1,2 km" in Spanish (decimal comma), "350 m" / "1.2 km" in English.
 export function formatDistance(meters: number): string {

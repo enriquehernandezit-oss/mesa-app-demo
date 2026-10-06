@@ -200,6 +200,7 @@ function ListRow({ item: r }: { item: ListDetailItem }) {
         style={lift}
       >
         <Text
+          maxFontSizeMultiplier={MAX_SCALE}
           style={[DATA_FIGURES, { width: 18 }]}
           numberOfLines={1}
           adjustsFontSizeToFit

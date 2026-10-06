@@ -123,6 +123,7 @@ export function SaveButton({
   if (variant === 'pill') {
     return (
       <Pressable
+        hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
         accessibilityRole="button"
         accessibilityState={{ selected: saved }}
         accessibilityLabel={label}

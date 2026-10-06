@@ -209,8 +209,18 @@ function ScoreGlass({ score, who }: { score: number; who: string }) {
       >
         {displayScore(score)}
       </Text>
-      <Text className="font-ui-semibold text-label text-hglass-fg">{t(scoreWordKey(score))}</Text>
-      <Text className="font-ui text-meta text-hglass-fg opacity-60">· {who}</Text>
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="font-ui-semibold text-label text-hglass-fg"
+      >
+        {t(scoreWordKey(score))}
+      </Text>
+      <Text
+        maxFontSizeMultiplier={MAX_SCALE}
+        className="font-ui text-meta text-hglass-fg opacity-60"
+      >
+        · {who}
+      </Text>
     </Glass>
   )
 }

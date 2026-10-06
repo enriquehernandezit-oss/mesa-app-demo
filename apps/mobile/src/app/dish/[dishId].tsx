@@ -71,7 +71,9 @@ export default function DishDetail() {
       // so it needs its own line or the deleted photo lingers there.
       const restaurantId = q.data?.dish.restaurant.id
       queryClient.invalidateQueries({ queryKey: ['feed'] })
-      queryClient.invalidateQueries({ queryKey: ['dish', dishId] })
+      // Marked stale but NOT refetched: this screen is about to close, and a refetch of a just-deleted
+      // dish answers 404 and flashed "not found" for a beat before the screen was gone.
+      queryClient.invalidateQueries({ queryKey: ['dish', dishId], refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: ['restaurant'] })
       if (restaurantId) queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
       toast({ message: t('dish.deleted_toast') })

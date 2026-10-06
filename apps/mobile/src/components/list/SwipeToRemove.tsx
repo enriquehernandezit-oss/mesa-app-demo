@@ -5,6 +5,7 @@ import ReanimatedSwipeable, {
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import Animated, { LinearTransition } from 'react-native-reanimated'
 
+import { MAX_SCALE } from '@/components/ui'
 import { useT } from '@/lib/i18n'
 
 // Hoisted, not built fresh on every row's every render — a LinearTransition config is a plain
@@ -52,7 +53,12 @@ export function SwipeToRemove({
           }}
           className="w-[88px] items-center justify-center bg-danger active:opacity-80"
         >
-          <Text className="font-ui-semibold text-label text-on-accent">{t('rankings.remove')}</Text>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-label text-on-accent"
+          >
+            {t('rankings.remove')}
+          </Text>
         </Pressable>
       )}
     >

@@ -34,7 +34,10 @@ export function PlaceDishes({ restaurantId, canAdd }: { restaurantId: string; ca
                 hitSlop={8}
                 className="active:opacity-60"
               >
-                <Text className="font-ui-semibold text-pill text-accent">
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-pill text-accent"
+                >
                   {t('restaurant.add_dish')}
                 </Text>
               </Pressable>
@@ -105,7 +108,10 @@ export function PlaceDishes({ restaurantId, canAdd }: { restaurantId: string; ca
             onPress={() => router.push(`/r/${restaurantId}/dishes`)}
             className="mx-5 mt-1 min-h-[44px] items-end justify-center active:opacity-60"
           >
-            <Text className="font-ui-semibold text-pill text-accent">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-pill text-accent"
+            >
               {t('restaurant.see_all_dishes')}
             </Text>
           </Pressable>

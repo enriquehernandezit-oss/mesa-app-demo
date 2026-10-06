@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { PersonRow } from '@/components/PersonRow'
-import { Caption, EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import { Caption, EmptyState, ErrorState, RowsSkeleton, MAX_SCALE } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { SearchIcon } from '@/components/ui/icons'
 import { api } from '@/lib/api'
@@ -89,6 +89,7 @@ export function FollowerPicker({
               user={u}
               right={
                 <Pressable
+                  hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
                   accessibilityRole="button"
                   accessibilityState={{ selected: selected.has(u.id) }}
                   onPress={() => {
@@ -101,6 +102,7 @@ export function FollowerPicker({
                   style={selected.has(u.id) ? undefined : lift}
                 >
                   <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
                     className={`font-ui-semibold text-label ${
                       selected.has(u.id) ? 'text-on-ink' : 'text-text'
                     }`}

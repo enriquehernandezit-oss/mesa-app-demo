@@ -59,6 +59,7 @@ export const SavedPlaceRow = memo(function SavedPlaceRow({ saved }: { saved: Sav
         </Pressable>
       </Link>
       <Pressable
+        hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
         accessibilityRole="button"
         onPress={() => router.push(`/rank?restaurant=${saved.restaurant.id}`)}
         className="h-[34px] items-center justify-center rounded-pill bg-ink px-3.5 active:opacity-85"

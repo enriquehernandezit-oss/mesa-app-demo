@@ -61,7 +61,9 @@ export default function RankScreen() {
     mutationFn: (restaurantIds: string[]) =>
       api.put(`/dish-lists/${listId}/order`, { restaurantIds }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dish-list', listId] })
+      // Stale, not refetched here: the list is complete now, so a refetch made THIS screen flash its
+      // "nothing left to rank" state for a beat before the replace below. The list page refetches on open.
+      queryClient.invalidateQueries({ queryKey: ['dish-list', listId], refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: ['dish-lists'] })
       router.replace(`/dish-lists/${listId}`)
     },
@@ -176,7 +178,11 @@ function PairwiseFlow({
   if (done) {
     return (
       <View className="flex-1 items-center justify-center bg-bg px-5">
-        <Text style={DATA_FIGURES} className="font-serif text-display text-accent">
+        <Text
+          maxFontSizeMultiplier={MAX_SCALE}
+          style={DATA_FIGURES}
+          className="font-serif text-display text-accent"
+        >
           ✓
         </Text>
         {saveError ? (

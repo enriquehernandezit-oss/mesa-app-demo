@@ -78,7 +78,11 @@ export function SpotCard({
             className={`rounded-none ${wide ? 'h-24 w-44' : 'h-36 w-36'}`}
           />
           <View className="px-3 pt-2 pb-3">
-            <Text className="font-serif text-serif-sm text-text" numberOfLines={1}>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-serif text-serif-sm text-text"
+              numberOfLines={1}
+            >
               {name}
             </Text>
             {caption}
@@ -259,6 +263,7 @@ export function UtilityPill({
         {icon}
       </View>
       <Text
+        maxFontSizeMultiplier={MAX_SCALE}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.8}

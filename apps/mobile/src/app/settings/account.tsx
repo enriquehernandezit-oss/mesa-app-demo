@@ -191,6 +191,7 @@ export default function AccountSettings() {
                 <Caption>{t('settings.link_sent')}</Caption>
               ) : (
                 <Pressable
+                  hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
                   accessibilityRole="button"
                   disabled={verifying}
                   onPress={resendVerification}

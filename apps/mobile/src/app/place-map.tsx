@@ -77,13 +77,16 @@ export default function PlaceMapScreen() {
         {p.address || p.neighborhood ? (
           <Caption className="mb-2">{p.address || p.neighborhood}</Caption>
         ) : null}
-        <Button
-          variant="primary"
-          icon={<DirectionsIcon size={15} color="on-accent" />}
-          onPress={() => openDirections(lat, lng, p.name)}
-        >
-          {t('restaurant.directions')}
-        </Button>
+        {/* Without coordinates there is nowhere to send a maps app, so no button rather than a dead one. */}
+        {Number.isFinite(lat) && Number.isFinite(lng) ? (
+          <Button
+            variant="primary"
+            icon={<DirectionsIcon size={15} color="on-accent" />}
+            onPress={() => openDirections(lat, lng, p.name)}
+          >
+            {t('restaurant.directions')}
+          </Button>
+        ) : null}
       </View>
     </View>
   )

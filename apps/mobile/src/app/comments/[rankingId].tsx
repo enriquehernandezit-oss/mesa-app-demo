@@ -178,11 +178,13 @@ export default function CommentsSheet() {
               />
               <View className="min-w-0 flex-1">
                 <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-subhead text-text">
-                  <Text className="font-ui-semibold">
+                  <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold">
                     {(post.user.name || post.user.handle || '').split(' ')[0]}
                   </Text>{' '}
                   {t('discover.ranked_verb')}{' '}
-                  <Text className="font-ui-semibold">{post.restaurant.name}</Text>
+                  <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold">
+                    {post.restaurant.name}
+                  </Text>
                 </Text>
                 {post.note ? (
                   <Text
@@ -208,10 +210,13 @@ export default function CommentsSheet() {
               </Pressable>
               <View className="min-w-0 flex-1">
                 <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-pill">
-                  <Text className="font-ui-semibold text-text">
+                  <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-text">
                     {(c.user.name || c.user.handle || '').split(' ')[0]}
                   </Text>
-                  <Text className="text-text-muted"> {timeAgo(c.createdAt)}</Text>
+                  <Text maxFontSizeMultiplier={MAX_SCALE} className="text-text-muted">
+                    {' '}
+                    {timeAgo(c.createdAt)}
+                  </Text>
                 </Text>
                 <Text
                   maxFontSizeMultiplier={MAX_SCALE}
@@ -260,6 +265,7 @@ export default function CommentsSheet() {
           style={lift}
         />
         <Pressable
+          hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
           accessibilityRole="button"
           accessibilityLabel={t('comments.send')}
           accessibilityState={{ disabled: !canSend }}

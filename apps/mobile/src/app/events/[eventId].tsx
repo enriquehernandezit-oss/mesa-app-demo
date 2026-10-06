@@ -28,7 +28,7 @@ import { PlaceHero, type PlaceTag } from '@/components/place/PlaceHero'
 import { PlaceTopChrome, usePhotoPageScroll } from '@/components/place/PlaceTopChrome'
 import { useRankBarBottom } from '@/components/place/RankBar'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { Body, Button, Caption, ErrorState, Skeleton } from '@/components/ui'
+import { Body, Button, Caption, EmptyState, ErrorState, Skeleton, MAX_SCALE } from '@/components/ui'
 import {
   CalendarIcon,
   ChevronIcon,
@@ -95,9 +95,11 @@ export default function EventDetailScreen() {
     return (
       <View className="flex-1 bg-bg">
         <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
-        <ErrorState onRetry={notFound ? undefined : () => q.refetch()}>
-          {notFound ? t('events.not_found') : t('events.load_error')}
-        </ErrorState>
+        {notFound ? (
+          <EmptyState>{t('events.not_found')}</EmptyState>
+        ) : (
+          <ErrorState onRetry={() => q.refetch()}>{t('events.load_error')}</ErrorState>
+        )}
       </View>
     )
   }
@@ -293,7 +295,12 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
               label={t('events.when')}
               icon={<CalendarIcon size={15} color="text-muted" />}
             >
-              <Text className="mt-2 font-ui-semibold text-section text-text">{when}</Text>
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="mt-2 font-ui-semibold text-section text-text"
+              >
+                {when}
+              </Text>
               {endTime ? (
                 <Caption className="mt-0.5">{t('events.until', { time: endTime })}</Caption>
               ) : null}
@@ -440,7 +447,12 @@ function InfoCard({
       {label ? (
         <View className="flex-row items-center gap-2">
           {icon}
-          <Text className="font-ui-semibold text-meta text-text-muted">{label}</Text>
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-ui-semibold text-meta text-text-muted"
+          >
+            {label}
+          </Text>
         </View>
       ) : null}
       {children}

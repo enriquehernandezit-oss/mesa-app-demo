@@ -4,7 +4,7 @@ import { ScrollView, Text, View } from 'react-native'
 
 import { PersonRow } from '@/components/PersonRow'
 import { ScreenHeader } from '@/components/ScreenHeader'
-import { EmptyState, ErrorState, RowsSkeleton } from '@/components/ui'
+import { EmptyState, ErrorState, RowsSkeleton, MAX_SCALE } from '@/components/ui'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
 
@@ -32,9 +32,14 @@ export default function EventGoingScreen() {
       <Stack.Screen options={{ title: t('events.friends_going_title'), headerLargeTitle: false }} />
       <ScreenHeader onBack={goBack} backLabel={t('common.back_plain')} />
       <View className="px-5">
-        <Text className="font-serif text-title text-text">{t('events.friends_going_title')}</Text>
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-title text-text">
+          {t('events.friends_going_title')}
+        </Text>
         {friends.length > 0 ? (
-          <Text className="mt-1 font-ui text-label text-text-muted">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="mt-1 font-ui text-label text-text-muted"
+          >
             {t('events.friends_going_count', { n: friends.length })}
           </Text>
         ) : null}

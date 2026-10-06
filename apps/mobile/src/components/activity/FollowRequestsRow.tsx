@@ -33,7 +33,12 @@ export function FollowRequestsRow({
         <Avatar name={name} src={first.image} size={40} />
         {count > 1 ? (
           <View className="absolute -right-1 -top-1 h-[20px] min-w-[20px] items-center justify-center rounded-pill bg-accent-fill px-1">
-            <Text className="font-ui-semibold text-eyebrow text-on-accent">{count}</Text>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-eyebrow text-on-accent"
+            >
+              {count}
+            </Text>
           </View>
         ) : null}
       </View>

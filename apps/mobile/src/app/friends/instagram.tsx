@@ -157,7 +157,9 @@ function Step({ n, text }: { n: number; text: string }) {
   return (
     <View className="flex-row items-start gap-3 py-[7px]">
       <View className="h-[26px] w-[26px] items-center justify-center rounded-pill bg-ink">
-        <Text className="font-ui-semibold text-label text-on-ink">{n}</Text>
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-label text-on-ink">
+          {n}
+        </Text>
       </View>
       <Body className="flex-1 pt-[3px] text-subhead">{text}</Body>
     </View>

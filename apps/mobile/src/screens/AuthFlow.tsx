@@ -351,6 +351,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               ) : (
                 mode === 'signin' && (
                   <Pressable
+                    hitSlop={{ top: 2, bottom: 2, left: 0, right: 0 }}
                     accessibilityRole="button"
                     disabled={busy || !email.includes('@')}
                     onPress={sendReset}
@@ -367,6 +368,7 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
               )}
 
               <Pressable
+                hitSlop={{ top: 2, bottom: 2, left: 0, right: 0 }}
                 accessibilityRole="button"
                 onPress={() => {
                   setMode(mode === 'signup' ? 'signin' : 'signup')
@@ -380,7 +382,9 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
                   className="text-center font-ui text-pill text-text-muted"
                 >
                   {lead}
-                  <Text className="font-ui-semibold text-text">{action}</Text>
+                  <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui-semibold text-text">
+                    {action}
+                  </Text>
                 </Text>
               </Pressable>
 

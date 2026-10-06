@@ -14,6 +14,7 @@ import {
   Eyebrow,
   RowsSkeleton,
   Serif,
+  MAX_SCALE,
 } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CheckCircle } from '@/components/ui/CheckCircle'
@@ -508,13 +509,19 @@ function ReviewStep({
           <View>
             <Eyebrow className="mb-1">{t('plans.voting_between')}</Eyebrow>
             {spots.map((s, i) => (
-              <Text key={s.id} className="font-serif text-serif-md text-text">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                key={s.id}
+                className="font-serif text-serif-md text-text"
+              >
                 {i + 1}. {s.name}
               </Text>
             ))}
           </View>
         ) : (
-          <Text className="font-serif text-serif-md text-text">{spots[0]?.name}</Text>
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-serif-md text-text">
+            {spots[0]?.name}
+          </Text>
         )}
         {resolvedLabel ? <Caption>{resolvedLabel}</Caption> : null}
         {invitees.length > 0 ? (

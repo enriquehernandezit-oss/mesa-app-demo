@@ -43,6 +43,7 @@ export default function PlansScreen() {
       title: translate(lang, 'plans.title'),
       headerRight: () => (
         <Pressable
+          hitSlop={{ top: 2, bottom: 2, left: 0, right: 0 }}
           accessibilityRole="button"
           accessibilityLabel={translate(lang, 'plans.new_label')}
           onPress={() => router.push('/plans/new')}

@@ -106,6 +106,7 @@ export default function FollowRequestsScreen() {
             ) : (
               <View className="flex-row items-center gap-2">
                 <Pressable
+                  hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
                   accessibilityRole="button"
                   disabled={answer.isPending}
                   onPress={() => answer.mutate({ id: item.id, action: 'accept' })}
@@ -119,6 +120,7 @@ export default function FollowRequestsScreen() {
                   </Text>
                 </Pressable>
                 <Pressable
+                  hitSlop={{ top: 5, bottom: 5, left: 0, right: 0 }}
                   accessibilityRole="button"
                   disabled={answer.isPending}
                   onPress={() => answer.mutate({ id: item.id, action: 'decline' })}

@@ -14,6 +14,7 @@ import Animated, {
 import { displayScore } from '@/lib/display'
 import type { LatLng } from '@/lib/geo'
 import { HAS_MAP_TOKEN } from '@/lib/mapbox'
+import { coreOf, fitBox } from '@/lib/mapFit'
 import type { MapSpot } from '@/lib/types'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -52,28 +53,16 @@ export function MesaMap({
   const theme = useResolvedTheme()
   const styleURL = theme === 'night' ? Mapbox.StyleURL.Dark : Mapbox.StyleURL.Light
 
-  // Fit-to-bounds view: the box around every plotted point (spots + you). A
-  // box needs two DISTINCT points — one point (or several stacked on the same
-  // coordinate) collapses ne/sw to the same corner, which Mapbox resolves to
-  // an arbitrary/world-level zoom rather than "zoomed in on the one spot".
+  // Fit-to-bounds view: the box around the dense core of the plotted points (spots + you) — see
+  // lib/mapFit.ts for why not simply every point. A box needs two DISTINCT points: one point (or
+  // several stacked on the same coordinate) collapses ne/sw to the same corner, which Mapbox resolves
+  // to an arbitrary/world-level zoom rather than "zoomed in on the one spot".
   const pts = [...spots.map((s) => ({ lat: s.lat, lng: s.lng })), ...(me ? [me] : [])]
-  const lats = pts.map((p) => p.lat)
-  const lngs = pts.map((p) => p.lng)
-  const spread =
-    pts.length >= 2 &&
-    (Math.max(...lats) !== Math.min(...lats) || Math.max(...lngs) !== Math.min(...lngs))
-  const bounds =
-    !center && spread
-      ? {
-          ne: [Math.max(...lngs), Math.max(...lats)] as [number, number],
-          sw: [Math.min(...lngs), Math.min(...lats)] as [number, number],
-          paddingLeft: 48,
-          paddingRight: 48,
-          paddingTop: 48,
-          paddingBottom: 48,
-        }
-      : undefined
-  const singlePoint = !center && !spread && pts.length > 0 ? pts[0] : null
+  const box = center ? null : fitBox(pts)
+  const bounds = box
+    ? { ...box, paddingLeft: 48, paddingRight: 48, paddingTop: 48, paddingBottom: 48 }
+    : undefined
+  const singlePoint = !center && !box && pts.length > 0 ? (coreOf(pts)[0] ?? null) : null
 
   // Two layers of marks. The QUIET dots — every place nobody you follow has ranked — are one native
   // circle layer (a hundred-odd views for them was heavy, and many places share a coordinate, so

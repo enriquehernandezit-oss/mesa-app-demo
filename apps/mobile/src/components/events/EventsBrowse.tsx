@@ -15,6 +15,7 @@ import {
   IconButton,
   SectionHeader,
   Skeleton,
+  MAX_SCALE,
 } from '@/components/ui'
 import { CalendarIcon, CloseIcon } from '@/components/ui/icons'
 import { useMyEvents } from '@/hooks/useMyEvents'
@@ -141,7 +142,12 @@ export const EventsBrowse = memo(function EventsBrowse({ gutter = 24 }: { gutter
             className="flex-row items-center gap-2 active:opacity-70"
           >
             <CalendarIcon size={13} color="on-accent" />
-            <Text className="font-ui-semibold text-micro text-on-accent">{rangeLabel(sel)}</Text>
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-micro text-on-accent"
+            >
+              {rangeLabel(sel)}
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -257,7 +263,10 @@ export const EventsBrowse = memo(function EventsBrowse({ gutter = 24 }: { gutter
                   }}
                   className="mt-3 min-h-[44px] justify-center rounded-pill bg-ink px-5 active:opacity-80"
                 >
-                  <Text className="font-ui-semibold text-label text-on-ink">
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui-semibold text-label text-on-ink"
+                  >
                     {t('events.jump_next')} ·{' '}
                     {new Intl.DateTimeFormat(dateLocale(), {
                       weekday: 'short',

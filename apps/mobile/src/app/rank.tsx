@@ -1162,6 +1162,7 @@ function RevealStep({
                       contentFit="cover"
                     />
                     <Pressable
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                       accessibilityRole="button"
                       accessibilityLabel={t('rank.remove_photo')}
                       onPress={onRemovePhoto}
@@ -1261,7 +1262,10 @@ function RevealStep({
               onPress={onRetryCommit}
               className="active:opacity-60"
             >
-              <Text className="font-ui-semibold text-label text-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-label text-accent"
+              >
                 {t('rank.retry_short')}
               </Text>
             </Pressable>

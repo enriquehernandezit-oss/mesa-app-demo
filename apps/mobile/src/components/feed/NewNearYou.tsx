@@ -46,7 +46,10 @@ export function NewNearYou({ places }: { places: HomeRestaurant[] }) {
                   radius={11}
                   className="absolute left-2 top-2 h-[22px] justify-center px-2"
                 >
-                  <Text className={`font-ui-semibold text-eyebrow ${photoChipText(onPhoto)}`}>
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className={`font-ui-semibold text-eyebrow ${photoChipText(onPhoto)}`}
+                  >
                     {t('home.new_badge')}
                   </Text>
                 </PhotoChip>

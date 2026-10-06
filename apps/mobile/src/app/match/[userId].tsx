@@ -116,6 +116,7 @@ export default function MatchScreen() {
           </Caption>
 
           <Pressable
+            hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
             accessibilityRole="button"
             accessibilityState={{ expanded: howOpen }}
             onPress={() => setHowOpen((v) => !v)}

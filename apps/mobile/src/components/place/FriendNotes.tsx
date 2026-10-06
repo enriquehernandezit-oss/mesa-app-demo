@@ -27,7 +27,10 @@ export function FriendNotes({ rankings }: { rankings: FriendRanking[] }) {
       <SectionHeader
         action={
           rankings.length > 0 ? (
-            <Text className="font-ui-medium text-pill text-text-muted">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-medium text-pill text-text-muted"
+            >
               {t('place.n_ranked_it', { n: rankings.length })}
             </Text>
           ) : undefined
@@ -48,7 +51,10 @@ export function FriendNotes({ rankings }: { rankings: FriendRanking[] }) {
               onPress={() => setExpanded((v) => !v)}
               className="min-h-[44px] justify-center active:opacity-60"
             >
-              <Text className="font-ui-semibold text-pill text-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-pill text-accent"
+              >
                 {expanded
                   ? t('restaurant.show_less')
                   : t('restaurant.view_all_rankings', { n: rankings.length })}

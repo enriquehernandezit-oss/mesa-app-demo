@@ -16,6 +16,8 @@ import { getLanguage, t } from '@/lib/i18n'
 import { useLift } from '@/theme/useLift'
 import { SHADOW } from '@/theme/vars'
 
+import { MAX_SCALE } from './index'
+
 // Mesa's own themed chooser — a bottom sheet (r34, grabber, a close chip, 50pt rows;
 // Redesign 2 replaced the centered pop-up the app briefly had) — the same
 // imperative-promise shape as lib/actionSheet.ts's showActionSheet, so a call site swaps by changing one
@@ -240,12 +242,14 @@ export function SheetHost() {
               <View className="flex-row items-center justify-between px-[18px] pb-2.5">
                 <View className="h-[34px] w-[34px]" />
                 <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
                   numberOfLines={1}
                   className="flex-1 px-2 text-center font-ui-semibold text-body text-text"
                 >
                   {shown.title}
                 </Text>
                 <Pressable
+                  hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                   accessibilityRole="button"
                   accessibilityLabel={shown.cancelLabel}
                   onPress={() => resolveCurrent(null)}
@@ -257,7 +261,10 @@ export function SheetHost() {
               </View>
             ) : null}
             {shown.message ? (
-              <Text className="px-6 pb-2.5 text-center font-ui text-label text-text-muted">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="px-6 pb-2.5 text-center font-ui text-label text-text-muted"
+              >
                 {shown.message}
               </Text>
             ) : null}
@@ -284,6 +291,7 @@ export function SheetHost() {
                   }`}
                 >
                   <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
                     className={`flex-1 text-body ${active ? 'font-ui-semibold' : 'font-ui'} ${
                       o.destructive ? 'text-danger' : active ? 'text-accent' : 'text-text'
                     }`}

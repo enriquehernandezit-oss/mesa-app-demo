@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Pressable, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { MAX_SCALE } from '@/components/ui'
 import { BackIcon } from '@/components/ui/icons'
 import { useLift } from '@/theme/useLift'
 
@@ -41,7 +42,11 @@ export function ScreenHeader({
             pointerEvents="none"
             className="absolute inset-x-[70px] h-full items-center justify-center"
           >
-            <Text numberOfLines={1} className="font-ui-semibold text-body text-text">
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              numberOfLines={1}
+              className="font-ui-semibold text-body text-text"
+            >
               {title}
             </Text>
           </View>

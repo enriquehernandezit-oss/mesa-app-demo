@@ -348,6 +348,8 @@ export const es = {
   'leaderboard.scope_friends': 'Amigos',
   'leaderboard.my_rank': 'Eres #{n} en la ciudad.',
   'leaderboard.my_rank_friends': 'Eres #{n} entre tus amigos.',
+  'leaderboard.empty_month': 'Nadie ha rankeado este mes todavía. Sé el primero.',
+  'leaderboard.empty_city': 'Todavía no hay nadie en el ranking.',
   'leaderboard.empty_friends': 'Sigue a algunos amigos para ver cómo te comparas.',
   'leaderboard.load_error': 'No se pudo cargar la clasificación.',
   'leaderboard.spots': { one: 'spot', other: 'spots' },

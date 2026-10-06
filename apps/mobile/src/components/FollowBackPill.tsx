@@ -21,6 +21,7 @@ export function FollowBackPill({
   const { status, toggle, pending } = useFollow(userId, initial, from)
   return (
     <Pressable
+      hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
       accessibilityRole="button"
       accessibilityState={{ selected: status !== 'none', disabled: pending }}
       disabled={pending}

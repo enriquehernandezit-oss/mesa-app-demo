@@ -57,7 +57,10 @@ export const PopularRow = memo(function PopularRow({
           </Text>
           {item.isNew ? (
             <View className="h-[18px] justify-center rounded-[9px] bg-accent-fill px-[7px]">
-              <Text className="font-ui-semibold text-eyebrow text-on-accent">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="font-ui-semibold text-eyebrow text-on-accent"
+              >
                 {t('home.new_badge')}
               </Text>
             </View>

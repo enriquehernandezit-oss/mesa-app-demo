@@ -75,6 +75,7 @@ export const ActivityRow = memo(function ActivityRow({ n }: { n: NotificationIte
 
   const bold = (text: string, to?: string) => (
     <Text
+      maxFontSizeMultiplier={MAX_SCALE}
       className="font-ui-semibold"
       onPress={to ? () => open(to) : undefined}
       suppressHighlighting

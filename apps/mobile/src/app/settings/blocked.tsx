@@ -57,6 +57,7 @@ export default function BlockedAccounts() {
                   ) : null}
                 </View>
                 <Pressable
+                  hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
                   accessibilityRole="button"
                   disabled={unblock.isPending}
                   onPress={() => unblock.mutate(u.id)}

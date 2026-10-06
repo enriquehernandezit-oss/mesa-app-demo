@@ -243,7 +243,11 @@ function ReportRow({
           onPress={() => router.push(`/u/${target.userId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text selectable className="font-serif text-serif-sm text-text">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            selectable
+            className="font-serif text-serif-sm text-text"
+          >
             “{target.body}”
           </Text>
         </Pressable>
@@ -261,9 +265,15 @@ function ReportRow({
             />
           ) : null}
           <View className="flex-1">
-            <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-serif-sm text-text">
+              {target.name}
+            </Text>
             {target.caption ? (
-              <Text selectable className="font-serif text-serif-sm text-text-2">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                selectable
+                className="font-serif text-serif-sm text-text-2"
+              >
                 “{target.caption}”
               </Text>
             ) : null}
@@ -275,7 +285,11 @@ function ReportRow({
           onPress={() => router.push(`/u/${target.hostId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text selectable className="font-serif text-serif-sm text-text">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            selectable
+            className="font-serif text-serif-sm text-text"
+          >
             “{target.note ?? ''}”
           </Text>
         </Pressable>
@@ -285,7 +299,9 @@ function ReportRow({
           onPress={() => router.push(`/r/${report.targetId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text className="font-serif text-serif-sm text-text">{target.name}</Text>
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-serif-sm text-text">
+            {target.name}
+          </Text>
           {target.source === 'member' ? (
             <Caption className="mt-0.5">{t('moderation.place_member_added')}</Caption>
           ) : null}
@@ -299,7 +315,11 @@ function ReportRow({
           onPress={() => router.push(`/u/${target.userId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text selectable className="font-ui text-body text-text-2">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            selectable
+            className="font-ui text-body text-text-2"
+          >
             {target.body}
           </Text>
         </Pressable>
@@ -309,17 +329,23 @@ function ReportRow({
           onPress={() => router.push(`/u/${report.targetId}`)}
           className="mt-2 active:opacity-70"
         >
-          <Text className="font-ui text-body text-text">
+          <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-body text-text">
             {target.name}
             {target.handle ? (
-              <Text className="text-label text-text-2"> @{target.handle}</Text>
+              <Text maxFontSizeMultiplier={MAX_SCALE} className="text-label text-text-2">
+                {' '}
+                @{target.handle}
+              </Text>
             ) : null}
           </Text>
         </Pressable>
       )}
 
       <Caption className="mt-2">
-        {t('moderation.reason_label')} <Text className="text-text-2">{report.reason}</Text>
+        {t('moderation.reason_label')}{' '}
+        <Text maxFontSizeMultiplier={MAX_SCALE} className="text-text-2">
+          {report.reason}
+        </Text>
       </Caption>
 
       {report.alreadyHandled ? (

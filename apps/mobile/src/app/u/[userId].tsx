@@ -75,7 +75,9 @@ export default function UserRankings() {
       // Every surface a block changes (lib/invalidateAfterSocial.ts) — not the bare invalidateQueries()
       // this once was, which wiped ['session'] too and forced a full auth round-trip.
       invalidateAfterBlockChange()
-      router.replace('/discover')
+      // Back to wherever they came from (their profile is gone from it). A `replace('/discover')` here
+      // mounted a SECOND tab navigator under the first; it is only the fallback for a cold deep link.
+      goBack()
     },
     onError: () => toast({ variant: 'error', message: t('passport.block_error') }),
   })
@@ -205,6 +207,7 @@ export default function UserRankings() {
             <View className="mt-3 flex-row flex-wrap items-center justify-center gap-2">
               {/* A match % IS a control here — it opens the pair page. */}
               <Pressable
+                hitSlop={{ top: 6, bottom: 6, left: 0, right: 0 }}
                 accessibilityRole="button"
                 onPress={() => router.push(`/match/${userId}`)}
                 className="min-h-[32px] justify-center rounded-pill bg-accent-fill px-3 py-1 active:opacity-80"
@@ -389,6 +392,7 @@ function TheirRow({ ranking }: { ranking: TheirRanking }) {
       >
         {/* The position: the top three in ink, the rest quieter. */}
         <Text
+          maxFontSizeMultiplier={MAX_SCALE}
           style={[DATA_FIGURES, { width: 18 }]}
           numberOfLines={1}
           adjustsFontSizeToFit

@@ -117,8 +117,15 @@ export default function LeaderboardScreen() {
           <RowsSkeleton rows={6} thumb={38} />
         ) : q.isError ? (
           <ErrorState onRetry={() => q.refetch()}>{t('leaderboard.load_error')}</ErrorState>
-        ) : rows.length === 0 && scope === 'friends' ? (
-          <Body className="text-text-muted">{t('leaderboard.empty_friends')}</Body>
+        ) : rows.length === 0 ? (
+          // Any empty board says so — "this month" is empty on the 1st, before anyone has ranked.
+          <Body className="text-text-muted">
+            {scope === 'friends'
+              ? t('leaderboard.empty_friends')
+              : period === 'month'
+                ? t('leaderboard.empty_month')
+                : t('leaderboard.empty_city')}
+          </Body>
         ) : (
           // Row offsets are relative to this column, so its own y is added back for the "you're
           // #N" jump.

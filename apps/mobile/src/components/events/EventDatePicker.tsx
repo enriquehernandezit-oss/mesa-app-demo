@@ -208,7 +208,10 @@ export function EventDatePicker({
           <View className="mt-2 flex-row px-4">
             {weekdayInitials().map((w, i) => (
               <View key={`${i}-${w}`} className="flex-1 items-center">
-                <Text className="font-ui-semibold text-[10px] uppercase tracking-eyebrow text-text-faint">
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-[10px] uppercase tracking-eyebrow text-text-faint"
+                >
                   {w}
                 </Text>
               </View>
@@ -235,7 +238,10 @@ export function EventDatePicker({
             ))}
           </View>
 
-          <Text className="px-5 pb-3 text-center font-ui text-micro text-text-muted">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="px-5 pb-3 text-center font-ui text-micro text-text-muted"
+          >
             {draft ? rangeLabel(draft) : t('events.dates_hint')}
           </Text>
 

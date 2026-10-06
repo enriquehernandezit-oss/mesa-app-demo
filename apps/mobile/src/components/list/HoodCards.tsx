@@ -75,7 +75,11 @@ export function HoodCards({
             </Text>
             <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-label text-text-muted">
               {t('rankings.hood_stats', { n: h.count })}{' '}
-              <Text style={DATA_FIGURES} className="font-serif text-serif-xs text-text">
+              <Text
+                maxFontSizeMultiplier={MAX_SCALE}
+                style={DATA_FIGURES}
+                className="font-serif text-serif-xs text-text"
+              >
                 {displayScore(h.avg)}
               </Text>
             </Text>

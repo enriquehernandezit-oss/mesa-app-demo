@@ -191,7 +191,11 @@ function EventHeroCard({
           {[e.restaurant.name, eventPriceLabel(e.priceLabel)].filter(Boolean).join(' · ')}
         </Text>
         {!e.venueConfirmed ? (
-          <Text numberOfLines={1} className="font-ui text-eyebrow text-hglass-fg opacity-60">
+          <Text
+            maxFontSizeMultiplier={MAX_SCALE}
+            numberOfLines={1}
+            className="font-ui text-eyebrow text-hglass-fg opacity-60"
+          >
             {t('events.sample_mark')}
           </Text>
         ) : null}

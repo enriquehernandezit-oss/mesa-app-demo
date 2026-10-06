@@ -102,7 +102,7 @@ export const FriendCard = memo(function FriendCard({
           {firstName}
         </Text>
       </Pressable>
-      <Text className="font-ui text-meta text-text-muted">
+      <Text maxFontSizeMultiplier={MAX_SCALE} className="font-ui text-meta text-text-muted">
         · {isDish ? `${t('discover.posted_dish')} · ` : ''}
         {timeAgo(item.rankedAt)}
       </Text>
@@ -267,7 +267,9 @@ export const FriendCard = memo(function FriendCard({
             className="mt-1 font-ui text-label text-text-muted"
           >
             {atPlace[0]}
-            <Text className="text-text">{title}</Text>
+            <Text maxFontSizeMultiplier={MAX_SCALE} className="text-text">
+              {title}
+            </Text>
             {atPlace[1]}
             {item.neighborhood ? ` · ${item.neighborhood}` : ''}
           </Text>

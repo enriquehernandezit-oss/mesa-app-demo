@@ -324,6 +324,7 @@ export default function RankingsTab() {
       </Chip>
       {activeCount > 0 && (
         <Pressable
+          hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
           accessibilityRole="button"
           onPress={() => setFiltersAnimated(NO_FILTERS)}
           className="min-h-[36px] justify-center px-1 active:opacity-60"

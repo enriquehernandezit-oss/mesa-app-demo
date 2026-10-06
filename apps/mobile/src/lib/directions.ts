@@ -50,6 +50,8 @@ async function lastUsed(): Promise<NavApp | null> {
 }
 
 export async function openDirections(lat: number, lng: number, label?: string): Promise<void> {
+  // No coordinates (a place with none, a bad route param): a maps link to "NaN,NaN" goes nowhere.
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
   const last = await lastUsed()
   const apps = last ? [last, ...ORDER.filter((a) => a !== last)] : ORDER
 
