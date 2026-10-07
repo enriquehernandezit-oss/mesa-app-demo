@@ -227,7 +227,7 @@ Complete, both directions:
 | **Terms**               | Accepted in onboarding and enforced on the server: posting, commenting and following need it.                                                                                                                                                                                                                            |
 | **Data export**         | Your rankings as JSON, via the share sheet.                                                                                                                                                                                                                                                                              |
 
-**Onboarding** is three steps — profile + neighbourhood (pick from a searchable list, or tap "Usar mi ubicación" and Mesa suggests the nearest sector, which you can change; farther than 3 km from every sector it says so instead of guessing) + EULA, a starter pairwise ranking, then
+**Onboarding** is three steps — profile + neighbourhood (pick from a searchable list, or tap "Usar mi ubicación" and Mesa suggests the nearest sector, which you can change; farther than 3 km from every sector it says so instead of guessing; or "Otro" and type where you live, which the profile shows in place of a sector) + EULA, a starter list (the 20 most popular places; pick the 1–5 you like most — one is saved as it is, two or more are put in order by pairwise comparisons), then
 finding friends. Nothing is gated behind invites, contacts, or a ranking count.
 
 ---

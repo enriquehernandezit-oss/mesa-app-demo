@@ -41,37 +41,44 @@ export function ageOn(birthday: string, now: Date): number {
   return age
 }
 
-const profileSchema = z.object({
-  name: z.string().trim().min(1).max(60),
-  // Mesa's own unique @username, NOT Instagram (see instagramHandle below) —
-  // it's what /p/u/:handle and the leaderboard's eligibility filter key off.
-  // Optional — membership doesn't require a social identity.
-  handle: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9_.]{2,30}$/, 'handle must be 2–30 chars: a–z, 0–9, _ or .')
-    .optional(),
-  neighborhoodSlug: z.string().trim().min(1),
-  bio: z.string().trim().max(160).optional(),
-  // A real Instagram @ (M23) — display-only, no OAuth verification, not
-  // unique (two members may list the same public account). The leading "@"
-  // (if any) is stripped in the handler below, same as handle's own igUser
-  // convention on the client.
-  instagramHandle: z.string().trim().max(31).optional(),
-  website: z.string().trim().max(200).optional(),
-  favoriteCuisines: z.array(z.string().trim().min(1)).max(10).optional(),
-  favoriteNeighborhoodSlugs: z.array(z.string().trim().min(1)).max(20).optional(),
-  // z.literal(true).optional() — required and true on first-time onboarding
-  // completion (App Store 1.2), OMITTED on every later edit (this endpoint
-  // is reused for both; see the header comment above). Omitting it must
-  // never reject the save or re-stamp eulaAcceptedAt — a routine bio edit
-  // is not a fresh EULA acceptance. Fixed 2026-09 (M23): before this, the
-  // field was required unconditionally, so every edit-profile save 400'd —
-  // apps/mobile/src/app/(tabs)/profile.tsx's EditProfile never sent it,
-  // because it only ever meant to touch the fields it shows.
-  acceptEula: z.literal(true).optional(),
-})
+const profileSchema = z
+  .object({
+    name: z.string().trim().min(1).max(60),
+    // Mesa's own unique @username, NOT Instagram (see instagramHandle below) —
+    // it's what /p/u/:handle and the leaderboard's eligibility filter key off.
+    // Optional — membership doesn't require a social identity.
+    handle: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^[a-z0-9_.]{2,30}$/, 'handle must be 2–30 chars: a–z, 0–9, _ or .')
+      .optional(),
+    // The home sector — or, for someone who lives outside them, `homeArea` (free text) instead. One of the
+    // two is required; an older app always sends the slug.
+    neighborhoodSlug: z.string().trim().min(1).optional(),
+    homeArea: z.string().trim().min(2).max(60).optional(),
+    bio: z.string().trim().max(160).optional(),
+    // A real Instagram @ (M23) — display-only, no OAuth verification, not
+    // unique (two members may list the same public account). The leading "@"
+    // (if any) is stripped in the handler below, same as handle's own igUser
+    // convention on the client.
+    instagramHandle: z.string().trim().max(31).optional(),
+    website: z.string().trim().max(200).optional(),
+    favoriteCuisines: z.array(z.string().trim().min(1)).max(10).optional(),
+    favoriteNeighborhoodSlugs: z.array(z.string().trim().min(1)).max(20).optional(),
+    // z.literal(true).optional() — required and true on first-time onboarding
+    // completion (App Store 1.2), OMITTED on every later edit (this endpoint
+    // is reused for both; see the header comment above). Omitting it must
+    // never reject the save or re-stamp eulaAcceptedAt — a routine bio edit
+    // is not a fresh EULA acceptance. Fixed 2026-09 (M23): before this, the
+    // field was required unconditionally, so every edit-profile save 400'd —
+    // apps/mobile/src/app/(tabs)/profile.tsx's EditProfile never sent it,
+    // because it only ever meant to touch the fields it shows.
+    acceptEula: z.literal(true).optional(),
+  })
+  .refine((b) => Boolean(b.neighborhoodSlug) !== Boolean(b.homeArea), {
+    message: 'send a neighborhoodSlug or a homeArea, not both',
+  })
 
 // Matches Better Auth's session.freshAge default (1 day) — the same bar it
 // applies to its own sensitive operations.
@@ -125,6 +132,7 @@ export const meRoutes = new Hono<AuthedEnv>()
         email: true,
         emailVerified: true,
         neighborhoodId: true,
+        homeArea: true,
         eulaAcceptedAt: true,
         createdAt: true, // "Member since {month} {year}" on the profile (Phase 6)
         // Gates the in-app moderation queue. Flipped directly in the DB —
@@ -167,7 +175,9 @@ export const meRoutes = new Hono<AuthedEnv>()
     // Handle (Instagram) is optional, so it's no longer part of the gate —
     // a neighborhood, an accepted EULA, and at least one ranking complete it.
     const onboardingComplete =
-      Boolean(neighborhoodId) && Boolean(eulaAcceptedAt) && rankings.length > 0
+      (Boolean(neighborhoodId) || Boolean(row.homeArea)) &&
+      Boolean(eulaAcceptedAt) &&
+      rankings.length > 0
 
     // Which providers this account signs in with — the delete flow asks Apple again for an Apple account.
     const providers = (
@@ -207,6 +217,7 @@ export const meRoutes = new Hono<AuthedEnv>()
       name,
       handle,
       neighborhoodSlug,
+      homeArea,
       bio,
       instagramHandle,
       website,
@@ -215,11 +226,13 @@ export const meRoutes = new Hono<AuthedEnv>()
       acceptEula,
     } = parsed.data
 
-    const neighborhood = await db.query.neighborhoods.findFirst({
-      where: eq(schema.neighborhoods.slug, neighborhoodSlug),
-      columns: { id: true },
-    })
-    if (!neighborhood) return c.json({ error: 'unknown_neighborhood' }, 400)
+    const neighborhood = neighborhoodSlug
+      ? await db.query.neighborhoods.findFirst({
+          where: eq(schema.neighborhoods.slug, neighborhoodSlug),
+          columns: { id: true },
+        })
+      : null
+    if (neighborhoodSlug && !neighborhood) return c.json({ error: 'unknown_neighborhood' }, 400)
 
     // A handle that reads as Mesa or its staff is refused — answered like a taken one, so the app's
     // "ya está en uso" message already covers it. Only a NEW handle is checked: someone who already
@@ -262,7 +275,9 @@ export const meRoutes = new Hono<AuthedEnv>()
           .set({
             name,
             ...(handle ? { handle } : {}),
-            neighborhoodId: neighborhood.id,
+            // A sector or a place outside them — never both.
+            neighborhoodId: neighborhood?.id ?? null,
+            homeArea: neighborhood ? null : (homeArea ?? null),
             bio: bio ?? null,
             ...(instagramHandle !== undefined
               ? { instagramHandle: instagramHandle.replace(/^@/, '') || null }

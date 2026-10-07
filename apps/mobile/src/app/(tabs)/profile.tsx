@@ -280,7 +280,8 @@ export default function ProfileTab() {
   const memberSince =
     p?.createdAt &&
     new Date(p.createdAt).toLocaleDateString(dateLocale(), { month: 'short', year: 'numeric' })
-  const neighborhood = p?.neighborhood?.name
+  // A sector, or where they live when it is none of them ("Otro").
+  const neighborhood = p?.neighborhood?.name ?? p?.homeArea
   const identityLine = [
     p?.handle ? `@${p.handle}` : null,
     neighborhood,
@@ -581,7 +582,14 @@ function EditProfile({ onClose }: { onClose: () => void }) {
   const [instagramHandle, setInstagramHandle] = useState(p?.instagramHandle ?? '')
   const [website, setWebsite] = useState(p?.website ?? '')
   const [bio, setBio] = useState(p?.bio ?? '')
-  const [slug, setSlug] = useState('')
+  const [slug, setSlugState] = useState('')
+  // "Otro": lives outside the sectors, and says where instead. Seeded from the profile below.
+  const [otherArea, setOtherArea] = useState(Boolean(p?.homeArea))
+  const [homeArea, setHomeArea] = useState(p?.homeArea ?? '')
+  const setSlug = (s: string) => {
+    setSlugState(s)
+    setOtherArea(false)
+  }
   const [cuisines, setCuisines] = useState<Set<string>>(new Set(p?.favoriteCuisines ?? []))
   const [favoriteSlugs, setFavoriteSlugs] = useState<Set<string>>(
     new Set((p?.favoriteNeighborhoods ?? []).map((n) => n.slug)),
@@ -591,10 +599,11 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     queryFn: () => api.get<{ neighborhoods: Neighborhood[] }>('/onboarding/neighborhoods'),
     staleTime: Number.POSITIVE_INFINITY,
   })
-  const currentSlug =
-    slug ||
-    neighborhoods.data?.neighborhoods.find((n) => n.name === p?.neighborhood?.name)?.slug ||
-    ''
+  const currentSlug = otherArea
+    ? ''
+    : slug ||
+      neighborhoods.data?.neighborhoods.find((n) => n.name === p?.neighborhood?.name)?.slug ||
+      ''
   // The server keeps up to 10 favourite cuisines; the screen offers 28 chips, and an 11th made the
   // whole save fail (400) with a message about the handle.
   const toggleCuisine = (c: string) =>
@@ -616,6 +625,8 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     setInstagramHandle(p.instagramHandle ?? '')
     setWebsite(p.website ?? '')
     setBio(p.bio ?? '')
+    setOtherArea(Boolean(p.homeArea))
+    setHomeArea(p.homeArea ?? '')
     setCuisines(new Set(p.favoriteCuisines ?? []))
     setFavoriteSlugs(new Set((p.favoriteNeighborhoods ?? []).map((n) => n.slug)))
     setHydrated(true)
@@ -638,7 +649,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
           handle.trim().replace(/^@/, '') !== (p?.handle ?? '')
             ? handle.trim().replace(/^@/, '') || undefined
             : undefined,
-        neighborhoodSlug: currentSlug,
+        ...(otherArea ? { homeArea: homeArea.trim() } : { neighborhoodSlug: currentSlug }),
         bio: bio.trim() || undefined,
         instagramHandle: instagramHandle.trim(),
         website: website.trim(),
@@ -660,7 +671,10 @@ function EditProfile({ onClose }: { onClose: () => void }) {
     : save.error instanceof ApiError && save.error.code === 'handle_taken'
       ? t('profile.handle_error')
       : t('profile.save_error')
-  const canSave = name.trim().length > 0 && currentSlug.length > 0 && !save.isPending
+  const canSave =
+    name.trim().length > 0 &&
+    (otherArea ? homeArea.trim().length >= 2 : currentSlug.length > 0) &&
+    !save.isPending
   const avatarPicker = useAvatarPicker()
 
   return (
@@ -743,7 +757,22 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               selected={new Set(currentSlug ? [currentSlug] : [])}
               onToggle={setSlug}
               onSearchFocus={(e) => bringToTop(scrollViewHost(editScrollRef), e)}
+              other={{ selected: otherArea, onPress: () => setOtherArea(true) }}
             />
+            {otherArea ? (
+              <View className="mt-3">
+                <Field
+                  label={t('sectors.other_label')}
+                  placeholder={t('sectors.other_placeholder')}
+                  value={homeArea}
+                  onChangeText={setHomeArea}
+                  autoCapitalize="words"
+                  maxLength={60}
+                  // Room for the field's label above it.
+                  onFocus={(e) => bringToTop(scrollViewHost(editScrollRef), e, { gap: 36 })}
+                />
+              </View>
+            ) : null}
           </View>
           <View>
             <Eyebrow className="mb-2">{t('profile.favorite_neighborhoods_label')}</Eyebrow>

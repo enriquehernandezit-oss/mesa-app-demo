@@ -208,7 +208,16 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
 
     const target = await db.query.user.findFirst({
       where: eq(user.id, targetId),
-      columns: { id: true, name: true, handle: true, image: true, bannedAt: true, isPrivate: true },
+      columns: {
+        id: true,
+        name: true,
+        handle: true,
+        image: true,
+        bannedAt: true,
+        isPrivate: true,
+        // Shown where the sector goes for someone who lives outside Mesa's sectors.
+        homeArea: true,
+      },
       with: { neighborhood: { columns: { name: true } } },
     })
     if (!target || target.bannedAt) return c.json({ error: 'not_found' }, 404)

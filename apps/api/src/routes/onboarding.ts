@@ -16,6 +16,9 @@ import { requireAuth } from '../middleware/session'
 // Unset -> contact matching is fully dark, same convention as routes/social.ts.
 const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
 
+// How many places the sign-up starter list offers.
+export const STARTER_CANDIDATES = 20
+
 const rankingsSchema = z.object({
   // Ordered best-first, as the pairwise comparisons settled them.
   restaurantIds: z.array(z.string().uuid()).min(1).max(20),
@@ -75,7 +78,8 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
       )
       .groupBy(schema.restaurants.id, schema.neighborhoods.slug, schema.neighborhoods.name)
       .orderBy(sql`count(${schema.rankings.id}) desc`, asc(schema.restaurants.name))
-      .limit(15)
+      // The 20 most-ranked: sign-up asks for the 1–5 you like most among them (Beli's first-run list).
+      .limit(STARTER_CANDIDATES)
     const restaurants = rows.map(({ neighborhoodSlug, neighborhoodName, ...r }) => ({
       ...r,
       neighborhood:

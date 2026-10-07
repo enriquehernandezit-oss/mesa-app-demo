@@ -143,7 +143,8 @@ export default function UserRankings() {
     rankedCount,
   } = q.data
   const firstName = (user.name || user.handle || '').split(' ')[0] || t('passport.someone_fallback')
-  const neighborhood = user.neighborhood?.name
+  // A sector, or where they live when it is none of them ("Otro").
+  const neighborhood = user.neighborhood?.name ?? user.homeArea
   const shown = expanded ? rankings : rankings.slice(0, 4)
 
   // The moderation entry points (App Store 1.2), in the same "···" shape the

@@ -192,6 +192,10 @@ export const user = pgTable('user', {
   neighborhoodId: uuid('neighborhood_id').references(() => neighborhoods.id, {
     onDelete: 'set null',
   }),
+  // Where a member lives when it is none of Mesa's sectors ("Otro" at sign-up: Santo Domingo Este,
+  // Santiago…). Free text, shown on the profile where the sector goes. A member has one or the other:
+  // saving a sector clears it, and saving it clears the sector.
+  homeArea: text('home_area'),
   // Opt-in contacts find-friends (M18) — HMAC(PHONE_MATCH_SECRET, E.164) of a
   // number the member deliberately submitted via PUT /me/phone, NOT
   // `phoneNumber` above (that one's Better Auth's own sign-in identity, and

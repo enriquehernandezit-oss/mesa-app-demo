@@ -114,7 +114,14 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const t = useT()
   const [name, setName] = useState('')
   const [handle, setHandle] = useState('')
-  const [neighborhoodSlug, setNeighborhood] = useState('')
+  const [neighborhoodSlug, setNeighborhoodSlug] = useState('')
+  // "Otro": lives outside the sectors, and says where instead.
+  const [otherArea, setOtherArea] = useState(false)
+  const [homeArea, setHomeArea] = useState('')
+  const setNeighborhood = (slug: string) => {
+    setNeighborhoodSlug(slug)
+    setOtherArea(false)
+  }
   const [accepted, setAccepted] = useState(false)
   const [birthDay, setBirthDay] = useState('')
   const [birthMonth, setBirthMonth] = useState('')
@@ -182,7 +189,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       await api.patch('/me/profile', {
         name: name.trim(),
         ...(handleProvided ? { handle: igUser } : {}),
-        neighborhoodSlug,
+        ...(otherArea ? { homeArea: homeArea.trim() } : { neighborhoodSlug }),
         acceptEula: true,
       })
       if (!birthday) return // canSubmit already guards this; defensive only
@@ -197,7 +204,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
   const canSubmit =
     name.trim().length > 0 &&
     handleValid &&
-    neighborhoodSlug !== '' &&
+    (otherArea ? homeArea.trim().length >= 2 : neighborhoodSlug !== '') &&
     accepted &&
     birthday !== null
   const errorText =
@@ -274,8 +281,30 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           onToggle={setNeighborhood}
           size="sm"
           onSearchFocus={(e) => bringToTop(scrollViewHost(scrollRef), e)}
+          other={{
+            selected: otherArea,
+            onPress: () => {
+              setOtherArea(true)
+              setNeighborhoodSlug('')
+            },
+          }}
         />
       )}
+      {otherArea ? (
+        <View className="mt-3">
+          <Field
+            label={t('sectors.other_label')}
+            placeholder={t('sectors.other_placeholder')}
+            value={homeArea}
+            onChangeText={setHomeArea}
+            autoCapitalize="words"
+            maxLength={60}
+            autoFocus
+            // Room for the field's label above it.
+            onFocus={(e) => bringToTop(scrollViewHost(scrollRef), e, { gap: 36 })}
+          />
+        </View>
+      ) : null}
 
       <Eyebrow className="mt-5 mb-2">{t('onboarding.birthday_label')}</Eyebrow>
       <View className="flex-row gap-2">
@@ -408,8 +437,10 @@ function PickCard({
 // Step 2: the atomic mechanic. First pick the spots you've actually been to (you
 // can't rank a place you haven't visited), then place them with a few pairwise
 // comparisons. The settled order becomes the starter ranking. No stars, anywhere.
-const MIN_TO_RANK = 3
-const MAX_TO_RANK = 8
+// The most popular places on Mesa (GET /onboarding/candidates); pick the 1–5 you like most. One is
+// saved as it is — there is nothing to compare it with.
+const MIN_TO_RANK = 1
+const MAX_TO_RANK = 5
 
 function RankStep({ onNext }: { onNext: () => void }) {
   const t = useT()
@@ -455,8 +486,14 @@ function RankStep({ onNext }: { onNext: () => void }) {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-5 pt-6 pb-4">
           <StepTitle
             title={t('onboarding.which_have_you_been')}
-            subtitle={t('onboarding.choose_range', { min: MIN_TO_RANK, max: MAX_TO_RANK })}
+            subtitle={t('onboarding.choose_range', {
+              count: data?.restaurants.length ?? 0,
+              max: MAX_TO_RANK,
+            })}
           />
+          <Caption className="mt-2 font-ui-semibold">
+            {t('onboarding.picked_of', { n: selectedIds.length, max: MAX_TO_RANK })}
+          </Caption>
           <View className="mt-5 flex-row flex-wrap justify-between gap-y-3">
             {data?.restaurants.map((r) => (
               <PickCard
@@ -471,13 +508,22 @@ function RankStep({ onNext }: { onNext: () => void }) {
         <View className="px-5 pb-4">
           <Button
             variant="primary"
-            disabled={selectedIds.length < MIN_TO_RANK}
-            onPress={() => setPhase('compare')}
+            disabled={selectedIds.length < MIN_TO_RANK || save.isPending}
+            onPress={() =>
+              selectedIds.length === 1 ? save.mutate(selectedIds) : setPhase('compare')
+            }
           >
             {selectedIds.length < MIN_TO_RANK
-              ? t('onboarding.choose_more', { n: MIN_TO_RANK - selectedIds.length })
-              : t('onboarding.rank_these', { n: selectedIds.length })}
+              ? t('onboarding.choose_more')
+              : selectedIds.length === 1
+                ? t('onboarding.save_favorite')
+                : t('onboarding.rank_these', { n: selectedIds.length })}
           </Button>
+          {save.isError ? (
+            <Caption className="mt-2 text-center text-danger">
+              {t('onboarding.save_rankings_error')}
+            </Caption>
+          ) : null}
         </View>
       </View>
     )

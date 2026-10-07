@@ -332,6 +332,45 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
     })
   })
 
+  describe('living outside the sectors ("Otro")', () => {
+    const readMe = async () =>
+      (
+        (await (await send('GET', '/me')).json()) as {
+          profile: { neighborhood: { slug: string } | null; homeArea: string | null }
+        }
+      ).profile
+
+    test('a homeArea saves without a sector, and a sector later replaces it', async () => {
+      as(ana)
+      const other = await send('PATCH', '/me/profile', {
+        name: 'Ana',
+        homeArea: 'Santo Domingo Este',
+      })
+      expect(other.status).toBe(200)
+      let me = await readMe()
+      expect(me.homeArea).toBe('Santo Domingo Este')
+      expect(me.neighborhood).toBeNull()
+
+      expect(
+        (await send('PATCH', '/me/profile', { name: 'Ana', neighborhoodSlug: tag })).status,
+      ).toBe(200)
+      me = await readMe()
+      expect(me.homeArea).toBeNull()
+      expect(me.neighborhood?.slug).toBe(tag)
+    })
+
+    test('neither, both, or a one-letter place is refused', async () => {
+      as(ana)
+      for (const body of [
+        { name: 'Ana' },
+        { name: 'Ana', neighborhoodSlug: tag, homeArea: 'Santiago' },
+        { name: 'Ana', homeArea: 'S' },
+      ]) {
+        expect((await send('PATCH', '/me/profile', body)).status).toBe(400)
+      }
+    })
+  })
+
   describe('18 and older', () => {
     test('a birthday under 18 is refused; an adult one is saved', async () => {
       as(stranger)

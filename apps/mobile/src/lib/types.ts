@@ -24,6 +24,8 @@ export interface MeResponse {
     email: string | null
     emailVerified: boolean
     neighborhood: Neighborhood | null
+    // Where they live when it is none of the sectors ("Otro"); null when a sector is set.
+    homeArea?: string | null
     createdAt?: string // ISO — "Member since {month} {year}" on the profile
     // Gates the moderation queue. Set directly in the DB; nothing in the
     // product can grant it.
@@ -638,6 +640,7 @@ export interface UserRankingsResponse {
     handle: string | null
     image: string | null
     neighborhood: { name: string } | null
+    homeArea?: string | null
     isPrivate: boolean
   }
   // A private account you don't follow (F1): the header and counts only — no list, no match.

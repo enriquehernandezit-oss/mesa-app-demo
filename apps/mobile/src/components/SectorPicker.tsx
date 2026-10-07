@@ -16,6 +16,7 @@ export function SectorPicker({
   onToggle,
   size,
   onSearchFocus,
+  other,
 }: {
   sectors: Sector[]
   selected: ReadonlySet<string>
@@ -23,6 +24,9 @@ export function SectorPicker({
   size?: 'sm'
   // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
   onSearchFocus?: (e: FocusEvent) => void
+  // "Otro": an extra chip, always shown, for someone who lives outside the sectors. The caller owns
+  // what it means (a field for where they live).
+  other?: { selected: boolean; onPress: () => void }
 }) {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -56,6 +60,11 @@ export function SectorPicker({
             {n.name}
           </Chip>
         ))}
+        {other ? (
+          <Chip size={size} state={other.selected ? 'selected' : 'default'} onPress={other.onPress}>
+            {t('sectors.other')}
+          </Chip>
+        ) : null}
         {hidden > 0 ? (
           <Chip size={size} onPress={() => setExpanded(true)}>
             {t('sectors.see_all', { n: sectors.length })}
