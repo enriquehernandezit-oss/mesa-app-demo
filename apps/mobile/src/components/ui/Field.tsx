@@ -2,6 +2,7 @@ import { type ReactNode, type Ref, useState } from 'react'
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native'
 
 import { MAX_SCALE } from '@/components/ui'
+import { CloseIcon } from '@/components/ui/icons'
 import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { useColor } from '@/theme/useColor'
@@ -60,6 +61,7 @@ export function Field({
   ref,
   onFocus,
   onBlur,
+  clearButtonMode,
   ...props
 }: FieldProps) {
   const t = useT()
@@ -69,6 +71,14 @@ export function Field({
   const theme = useResolvedTheme()
   const lift = useLift()
   const searchField = props.returnKeyType === 'search' && !props.multiline
+  // The clear (×) is Mesa's own, not iOS's clearButtonMode: the native one is drawn in the system's
+  // colour for the phone's light/dark mode, not Mesa's theme, and on Day's white field it was invisible.
+  const showClear =
+    clearButtonMode !== undefined &&
+    clearButtonMode !== 'never' &&
+    Boolean(props.value) &&
+    (clearButtonMode !== 'while-editing' || focused) &&
+    props.editable !== false
   const input = (
     <TextInput
       ref={ref}
@@ -78,7 +88,9 @@ export function Field({
       maxFontSizeMultiplier={MAX_SCALE}
       className={`rounded border ${onCard ? 'bg-bg' : 'bg-surface'} font-ui text-body text-text ${
         error ? 'border-danger' : 'border-transparent'
-      } ${multilineBox ? 'min-h-[84px] p-4' : icon ? 'min-h-[52px] pl-11 pr-4' : 'min-h-[52px] px-4'} ${className ?? ''}`}
+      } ${multilineBox ? 'min-h-[84px] p-4' : icon ? 'min-h-[52px] pl-11' : 'min-h-[52px] pl-4'} ${
+        multilineBox ? '' : showClear ? 'pr-11' : 'pr-4'
+      } ${className ?? ''}`}
       style={[onCard ? undefined : lift, style]}
       {...props}
       onFocus={(e) => {
@@ -91,16 +103,31 @@ export function Field({
       }}
     />
   )
-  const framed = icon ? (
-    <View className="justify-center">
-      {input}
-      <View pointerEvents="none" className="absolute left-4">
-        {icon}
+  const clear = showClear ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('explore.clear')}
+      onPress={() => props.onChangeText?.('')}
+      hitSlop={8}
+      className="absolute right-3 h-6 w-6 items-center justify-center rounded-pill bg-chip active:opacity-60"
+    >
+      <CloseIcon size={12} color="text-muted" strokeWidth={2.4} />
+    </Pressable>
+  ) : null
+  const framed =
+    icon || clearButtonMode ? (
+      <View className="justify-center">
+        {input}
+        {icon ? (
+          <View pointerEvents="none" className="absolute left-4">
+            {icon}
+          </View>
+        ) : null}
+        {clear}
       </View>
-    </View>
-  ) : (
-    input
-  )
+    ) : (
+      input
+    )
   // A search field is always wrapped in the same row (so focusing never remounts the input);
   // the button joins it only while focused.
   const boxed = searchField ? (

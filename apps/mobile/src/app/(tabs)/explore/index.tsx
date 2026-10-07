@@ -14,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { HitRow } from '@/components/explore/HitRow'
@@ -362,8 +363,15 @@ export default function ExploreScreen() {
   // The map, as the bar's one action. Memoized (responsiveness audit): written inline, this object
   // got a brand new `headerRight` function on every render — including every keystroke via setQ —
   // and react-native-screens rebuilding the native header button mid-press could drop that tap.
+  // Searching: the field is focused, or holds a search. The navigation bar (the big "Explora" and the
+  // map button) steps away so the field sits at the top and the results fill the space above the
+  // keyboard — iOS folds a large title only under a finger, never for a scroll made in code, so the
+  // bar has to go. It comes back once the field is empty and the keyboard is down.
+  const [searchFocused, setSearchFocused] = useState(false)
+  const searching = searchFocused || q.trim().length > 0
   const headerOptions = useMemo(
     () => ({
+      headerShown: !searching,
       headerRight: () => (
         <IconButton
           accessibilityLabel={translate(lang, 'explore.map_label')}
@@ -372,7 +380,7 @@ export default function ExploreScreen() {
         />
       ),
     }),
-    [lang, router],
+    [lang, router, searching],
   )
 
   // Explore is nested one level inside its own Stack (explore/_layout.tsx),
@@ -388,6 +396,7 @@ export default function ExploreScreen() {
   // bar: iOS folds a large title only under a finger, so a field slid higher hid behind "Explora".
   const liftSearch = (e: FocusEvent, gap: number) =>
     bringToTop(flatListHost(listRef), e, { top: -topOffset, gap })
+  const insets = useSafeAreaInsets()
   useResetOnTabPress(
     useCallback(
       (wasActive: boolean) => {
@@ -443,7 +452,12 @@ export default function ExploreScreen() {
           placeholder={t('explore.search_placeholder')}
           value={q}
           onChangeText={setQ}
-          onFocus={(e) => liftSearch(e, 4)}
+          onFocus={(e) => {
+            setSearchFocused(true)
+            // The bar is leaving, so the field goes to just under the status bar.
+            bringToTop(flatListHost(listRef), e, { top: insets.top, gap: 8 })
+          }}
+          onBlur={() => setSearchFocused(false)}
           returnKeyType="search"
           clearButtonMode="while-editing"
           autoCorrect={false}
