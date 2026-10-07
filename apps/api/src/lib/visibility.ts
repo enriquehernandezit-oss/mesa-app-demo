@@ -41,6 +41,27 @@ export const blockedMe = (userId: string) =>
 // to: rankInDr counted every ranker in the table, unfiltered). Null-safe by
 // the caller: pass myCount = 0 only when you already know to treat the
 // result as "unranked", since this still returns 1 (nobody's ahead of zero).
+// Which of `userIds` follow `ownerId` and may be sent something by them: not banned, not blocked in
+// either direction. Who a plan invite or a shared event can reach — the people who chose to follow
+// you, never a stranger. One query, no loop.
+export async function followersAmong(ownerId: string, userIds: string[]): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set()
+  const rows = await db
+    .select({ id: user.id })
+    .from(follows)
+    .innerJoin(user, eq(user.id, follows.followerId))
+    .where(
+      and(
+        eq(follows.followingId, ownerId),
+        inArray(follows.followerId, userIds),
+        isNull(user.bannedAt),
+        notInArray(user.id, blockedByMe(ownerId)),
+        notInArray(user.id, blockedMe(ownerId)),
+      ),
+    )
+  return new Set(rows.map((r) => r.id))
+}
+
 export async function citywideRank(viewerId: string, myCount: number): Promise<number> {
   const ahead = await db
     .select({ userId: rankings.userId })

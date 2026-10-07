@@ -7,7 +7,14 @@ import type { AuthedEnv } from '../context'
 import { isUpcoming } from '../lib/eventPush'
 import { notify } from '../lib/notify'
 import { sdLocalNow, sdMidnight, tonightLateWindow } from '../lib/sdTime'
-import { blockedByMe, blockedMe, followerIds, followingIds } from '../lib/visibility'
+import { spendEventShareBudget } from '../lib/usageBudget'
+import {
+  blockedByMe,
+  blockedMe,
+  followerIds,
+  followersAmong,
+  followingIds,
+} from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Mesa-curated events in Explore (M21) — never member-created; see
@@ -228,6 +235,8 @@ async function browseEvents(
 // Everything on tonight (now → 4 AM Santo Domingo — lib/sdTime.ts), for GET /home.
 // A pool, not the final five: lib/home.ts's selectTonight orders and trims it.
 export const tonightEvents = (me: { id: string }) => browseEvents(me, tonightLateWindow(), 30)
+
+const shareSchema = z.object({ userIds: z.array(z.string().min(1)).min(1).max(50) })
 
 export const eventsRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
@@ -452,6 +461,42 @@ export const eventsRoutes = new Hono<AuthedEnv>()
       .delete(eventRsvps)
       .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, me.id)))
     return c.json({ ok: true })
+  })
+
+  // Send an event to people in the app ("mira esto"): each one gets it in their bell and as a push
+  // that opens the event. Only to the sender's followers (the same people a plan can invite), so it
+  // can never reach a stranger. Sending the same event to someone twice is one notification.
+  .post('/:id/share', async (c) => {
+    const me = c.get('user')
+    const eventId = c.req.param('id')
+    if (!z.string().uuid().safeParse(eventId).success) return c.json({ error: 'not_found' }, 404)
+    const parsed = shareSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const userIds = [...new Set(parsed.data.userIds)]
+
+    const found = await db.query.events.findFirst({
+      where: and(eq(events.id, eventId), isNull(events.cancelledAt)),
+      columns: { id: true },
+    })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+
+    const allowed = await followersAmong(me.id, userIds)
+    if (allowed.size !== userIds.length) return c.json({ error: 'invalid_recipients' }, 400)
+    if (!(await spendEventShareBudget(me.id, userIds.length))) {
+      return c.json({ error: 'too_many' }, 429)
+    }
+
+    notify(
+      userIds.map((userId) => ({
+        userId,
+        kind: 'event_share' as const,
+        // One per (event, sender): sending it again to the same person doesn't ping them twice.
+        dedupeKey: `event_share:${eventId}:${me.id}`,
+        actorId: me.id,
+        eventId,
+      })),
+    )
+    return c.json({ sent: userIds.length })
   })
 
   // Save an event (the bookmark) — independent of RSVP. Idempotent: saving

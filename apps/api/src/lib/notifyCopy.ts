@@ -98,6 +98,10 @@ const BODY: Record<Kind, Record<Locale, (w: Words) => string>> = {
     es: (w) => `${w.event} fue cancelado.`,
     en: (w) => `${w.event} was cancelled.`,
   },
+  event_share: {
+    es: (w) => `${w.name} te envió ${w.event}`,
+    en: (w) => `${w.name} sent you ${w.event}`,
+  },
   // Told about a PLACE, not a person: three or more of the people you follow love it.
   friends_love: {
     es: (w) =>
@@ -164,6 +168,7 @@ export function pushPayload(n: NotificationRow): Record<string, string> | undefi
       return n.planId ? { type: 'plan', planId: n.planId } : undefined
     case 'event_going':
     case 'event_cancelled':
+    case 'event_share':
       return n.eventId ? { type: 'event', eventId: n.eventId } : undefined
     case 'dish_nudge':
       return n.dishListId ? { type: 'dish-list', listId: n.dishListId } : undefined

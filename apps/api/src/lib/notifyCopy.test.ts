@@ -18,6 +18,7 @@ const KINDS: Record<schema.NotificationKind, true> = {
   plan_reply: true,
   event_going: true,
   event_cancelled: true,
+  event_share: true,
   dish_nudge: true,
   friends_love: true,
   taste_match: true,

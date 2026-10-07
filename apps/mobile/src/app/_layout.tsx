@@ -294,6 +294,8 @@ function MesaStack() {
       <Stack.Screen name="events/[eventId]" />
       {/* Who, of the people you follow, is going — the event's "32 friends going" list. */}
       <Stack.Screen name="events/[eventId]/going" />
+      {/* Sending the event to followers in the app — a sheet, like inviting to a plan. */}
+      <Stack.Screen name="events/[eventId]/send" options={{ presentation: 'modal' }} />
       <Stack.Screen name="legal/[doc]" options={utility} />
     </Stack>
   )

@@ -475,6 +475,7 @@ export type NotificationKind =
   | 'plan_reply'
   | 'event_going'
   | 'event_cancelled'
+  | 'event_share'
   | 'dish_nudge'
   | 'friends_love'
   | 'taste_match'

@@ -32,6 +32,7 @@ export function notificationHref(n: NotificationItem): string | null {
       return n.planId ? `/plans/${n.planId}` : null
     case 'event_going':
     case 'event_cancelled':
+    case 'event_share':
       return n.event ? `/events/${n.event.id}` : null
     case 'dish_nudge':
       return n.dishListId ? `/dish-lists/${n.dishListId}` : null

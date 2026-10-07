@@ -1299,6 +1299,8 @@ export type NotificationKind =
   | 'plan_reply'
   | 'event_going'
   | 'event_cancelled'
+  // A member sent an event to one of their followers ("mira esto").
+  | 'event_share'
   | 'dish_nudge'
   | 'friends_love'
   | 'taste_match'

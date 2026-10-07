@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
-import { eq, inArray, like } from 'drizzle-orm'
+import { and, eq, inArray, like } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import type { AuthedEnv } from '../context'
@@ -329,6 +329,48 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
       as(ben)
       const res = await send('PATCH', '/me/profile', body('soporte'))
       expect(res.status).toBe(200)
+    })
+  })
+
+  describe('sending an event in the app', () => {
+    const inbox = async (userId: string) => {
+      await notifyLib.settleNotify()
+      return db
+        .select({ kind: schema.notifications.kind, actorId: schema.notifications.actorId })
+        .from(schema.notifications)
+        .where(
+          and(
+            eq(schema.notifications.userId, userId),
+            eq(schema.notifications.kind, 'event_share'),
+          ),
+        )
+    }
+
+    test('reaches the followers picked, once however many times it is sent', async () => {
+      as(host)
+      const res = await send('POST', `/events/${eventId}/share`, { userIds: [id('f1'), id('f2')] })
+      expect(res.status).toBe(200)
+      await send('POST', `/events/${eventId}/share`, { userIds: [id('f1')] })
+      const rows = await inbox(id('f1'))
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.actorId).toBe(host.id)
+      expect(await inbox(id('f2'))).toHaveLength(1)
+    })
+
+    test('never reaches someone who does not follow the sender', async () => {
+      as(host)
+      const res = await send('POST', `/events/${eventId}/share`, { userIds: [stranger.id] })
+      expect(res.status).toBe(400)
+      expect(await inbox(stranger.id)).toHaveLength(0)
+    })
+
+    test('an unknown event is a 404 and an empty list is refused', async () => {
+      as(host)
+      expect(
+        (await send('POST', `/events/${crypto.randomUUID()}/share`, { userIds: [id('f3')] }))
+          .status,
+      ).toBe(404)
+      expect((await send('POST', `/events/${eventId}/share`, { userIds: [] })).status).toBe(400)
     })
   })
 

@@ -29,12 +29,15 @@ export function FollowerPicker({
   onToggle,
   exclude,
   onSearchFocus,
+  pick = 'invite',
 }: {
   selected: Set<string>
   onToggle: (user: FollowUser) => void
   exclude?: Set<string>
   // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
   onSearchFocus?: (e: FocusEvent) => void
+  // What the row's button says: inviting to a plan, or sending something (an event) to people.
+  pick?: 'invite' | 'send'
 }) {
   const t = useT()
   const lift = useLift()
@@ -111,7 +114,9 @@ export function FollowerPicker({
                       selected.has(u.id) ? 'text-on-ink' : 'text-text'
                     }`}
                   >
-                    {selected.has(u.id) ? t('plans.invited_pill') : t('plans.invite_pill')}
+                    {selected.has(u.id)
+                      ? t(pick === 'send' ? 'events.send_pill_done' : 'plans.invited_pill')
+                      : t(pick === 'send' ? 'events.send_pill' : 'plans.invite_pill')}
                   </Text>
                 </Pressable>
               }

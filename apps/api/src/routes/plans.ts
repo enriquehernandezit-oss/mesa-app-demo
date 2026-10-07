@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { notify } from '../lib/notify'
 import { spendPlanBudget } from '../lib/usageBudget'
-import { blockedByMe, blockedMe } from '../lib/visibility'
+import { blockedByMe, blockedMe, followersAmong } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Group dinners. A host arms a plan — one fixed spot, or 2–3 candidates the
@@ -15,7 +15,7 @@ import { requireAuth, requireEula } from '../middleware/session'
 // a subset of the host's followers (never mutuals, never "anyone"); the host
 // is not an invite row, so RSVP/voting endpoints refuse them explicitly.
 
-const { plans, planOptions, planInvites, restaurants, neighborhoods, user, follows } = schema
+const { plans, planOptions, planInvites, restaurants, neighborhoods, user } = schema
 
 const uuid = z.string().uuid()
 const MAX_DAYS_AHEAD = 90
@@ -47,26 +47,8 @@ const MAX_INVITEES = 50
 const inviteSchema = z.object({ userIds: z.array(z.string().min(1)).min(1).max(MAX_INVITEES) })
 const confirmSchema = z.object({ restaurantId: uuid })
 
-// Which of `userIds` the host may actually invite: followers of the host,
-// not banned, not blocked in either direction. One query, no loop — the same
-// shape POST /follow's block check uses, generalized to a batch.
-async function invitableIds(hostId: string, userIds: string[]): Promise<Set<string>> {
-  if (userIds.length === 0) return new Set()
-  const rows = await db
-    .select({ id: user.id })
-    .from(follows)
-    .innerJoin(user, eq(user.id, follows.followerId))
-    .where(
-      and(
-        eq(follows.followingId, hostId),
-        inArray(follows.followerId, userIds),
-        isNull(user.bannedAt),
-        notInArray(user.id, blockedByMe(hostId)),
-        notInArray(user.id, blockedMe(hostId)),
-      ),
-    )
-  return new Set(rows.map((r) => r.id))
-}
+// Which of `userIds` the host may actually invite: their followers (lib/visibility.ts).
+const invitableIds = followersAmong
 
 // The restaurant a plan's notifications show: the confirmed spot, or the first candidate
 // while it's still being voted on.

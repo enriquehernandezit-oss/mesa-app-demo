@@ -48,3 +48,9 @@ export const MATCH_DAILY_LIMIT = 5000
 export const matchBudgetKey = (userId: string) => `match:${userId}`
 export const spendMatchBudget = (userId: string, count: number) =>
   spendBudget(matchBudgetKey(userId), count, MATCH_DAILY_LIMIT)
+
+// Sending an event to people in the app: each recipient is a notification, so the day's budget
+// counts recipients, not sends. Generous for a night out, a wall for a script.
+export const EVENT_SHARE_DAILY_LIMIT = 200
+export const spendEventShareBudget = (userId: string, recipients: number) =>
+  spendBudget(`event-share:${userId}`, recipients, EVENT_SHARE_DAILY_LIMIT)

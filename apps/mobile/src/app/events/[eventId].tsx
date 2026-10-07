@@ -8,7 +8,6 @@ import {
   Linking,
   Pressable,
   ScrollView,
-  Share,
   Text,
   View,
   useWindowDimensions,
@@ -42,6 +41,7 @@ import {
 } from '@/components/ui/icons'
 import { PlaceLine } from '@/components/ui/PlaceLine'
 import { useEventRsvp } from '@/hooks/useEventRsvp'
+import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api } from '@/lib/api'
 import { openDirections } from '@/lib/directions'
 import { eventCategoryLabel, eventPriceLabel, eventWhenLabel } from '@/lib/display'
@@ -166,7 +166,16 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
     await openDirections(r.restaurant.lat, r.restaurant.lng, e.restaurant.name)
   }
   const shareText = t('events.share_text', { title: e.title, when, place: e.restaurant.name })
-  const share = () => Share.share({ message: shareText }).catch(() => {})
+  // Two ways to share: to people in Mesa (it lands in their bell and opens the event), or the text
+  // to WhatsApp and the rest.
+  const share = async () => {
+    const i = await showActionSheet({
+      title: t('events.share_title'),
+      options: [{ label: t('events.share_in_mesa') }, { label: t('events.share_elsewhere') }],
+    })
+    if (i === 0) router.push(`/events/${e.id}/send`)
+    else if (i === 1) shareTextWhatsAppFirst(shareText)
+  }
   const whatsapp = e.bookingWhatsapp
     ? `https://wa.me/${e.bookingWhatsapp}?text=${encodeURIComponent(
         t('events.whatsapp_msg', { title: e.title, when }),
@@ -375,7 +384,7 @@ function EventDetail({ e, onBack }: { e: EventSummary; onBack: () => void }) {
                   size="sm"
                   className="mt-3 min-h-[42px]"
                   icon={<SendIcon size={16} />}
-                  onPress={() => shareTextWhatsAppFirst(shareText)}
+                  onPress={share}
                 >
                   {t('events.invite_friends')}
                 </Button>
