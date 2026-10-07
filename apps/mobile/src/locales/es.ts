@@ -816,6 +816,12 @@ export const es = {
 
   // app/onboarding.tsx
   'onboarding.step_progress': 'Paso {step} de {total} · arma tu lista inicial',
+  'onboarding.exit': 'Salir',
+  'onboarding.exit_title': '¿Salir del registro?',
+  'onboarding.exit_body':
+    'Tu cuenta ya está creada. Puedes cerrar sesión y terminar después, o eliminarla.',
+  'onboarding.exit_sign_out': 'Cerrar sesión y terminar después',
+  'onboarding.exit_delete': 'Eliminar esta cuenta',
   'onboarding.who_are_you': '¿Quién eres en la mesa?',
   'onboarding.identity_subtitle': 'Así te encuentran y reconocen tus amigos en Mesa.',
   'onboarding.name_label': 'Nombre',
@@ -1113,6 +1119,9 @@ export const es = {
   'settings.session_not_fresh_delete':
     'Por seguridad, cierra sesión y vuelve a entrar antes de eliminar la cuenta.',
   'settings.delete_error': 'No se pudo eliminar la cuenta. Intenta de nuevo.',
+  'settings.delete_reset_sent':
+    'Te enviamos un enlace a {email} para crear una contraseña nueva. Al cambiarla se cierra tu sesión: entra con la nueva y vuelve aquí.',
+  'settings.delete_reset_error': 'No se pudo enviar el enlace. Intenta de nuevo.',
 
   // app/notifications.tsx
   'notifications.social': 'Follows y cheers',

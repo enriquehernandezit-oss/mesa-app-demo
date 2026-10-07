@@ -23,6 +23,7 @@ import { api } from '@/lib/api'
 import { signOut } from '@/lib/auth-client'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
+import { resetToSignIn } from '@/lib/resetToSignIn'
 import { shareInviteLink } from '@/lib/shareProfile'
 import type { MeStats } from '@/lib/types'
 import { useColor } from '@/theme/useColor'
@@ -73,7 +74,7 @@ export default function SettingsHub() {
     if (signingOut) return
     setSigningOut(true)
     await signOut()
-    router.replace('/sign-in')
+    resetToSignIn(router)
   }
 
   // The support inbox waits on Mesa's own domain, so the row is env-gated

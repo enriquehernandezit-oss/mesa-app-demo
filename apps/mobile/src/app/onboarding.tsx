@@ -17,9 +17,10 @@ import { Field } from '@/components/ui/Field'
 import { CheckIcon, LocateIcon, PeopleIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { useProfile } from '@/hooks/useProfile'
+import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
-import { useSession } from '@/lib/auth-client'
+import { signOut, useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
 import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { contactsAvailable, importContactPhones } from '@/lib/contacts'
@@ -30,6 +31,7 @@ import { useT } from '@/lib/i18n'
 import { nearestSector } from '@/lib/nearestSector'
 import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } from '@/lib/pairwise'
 import { takePendingInvite } from '@/lib/pendingInvite'
+import { resetToSignIn } from '@/lib/resetToSignIn'
 import { parseBirthdayIso } from '@/lib/time'
 import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { currentLocationStatus, requestMyLocation } from '@/lib/useMyLocation'
@@ -79,6 +81,25 @@ export default function Onboarding() {
 
   const stepIndex = STEPS.indexOf(step)
 
+  // A way out of sign-up at any step. The account already exists (it was made on the screen before), so
+  // "leaving" is either signing out to finish later, or deleting it — the same page as Settings uses.
+  async function leave() {
+    const i = await showActionSheet({
+      title: t('onboarding.exit_title'),
+      message: t('onboarding.exit_body'),
+      options: [
+        { label: t('onboarding.exit_sign_out') },
+        { label: t('onboarding.exit_delete'), destructive: true },
+      ],
+    })
+    if (i === 0) {
+      await signOut().catch(() => {})
+      resetToSignIn(router)
+    } else if (i === 1) {
+      router.push('/settings/delete-account')
+    }
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-bg">
       {/* Opaque and above the step below it. Each step owns a ScrollView, and
@@ -96,9 +117,24 @@ export default function Onboarding() {
             />
           ))}
         </View>
-        <Caption className="mt-2 text-micro">
-          {t('onboarding.step_progress', { step: stepIndex + 1, total: STEPS.length })}
-        </Caption>
+        <View className="mt-1 flex-row items-center justify-between">
+          <Caption className="text-micro">
+            {t('onboarding.step_progress', { step: stepIndex + 1, total: STEPS.length })}
+          </Caption>
+          <Pressable
+            accessibilityRole="button"
+            onPress={leave}
+            hitSlop={8}
+            className="min-h-[32px] justify-center pl-3 active:opacity-60"
+          >
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-label text-text-muted"
+            >
+              {t('onboarding.exit')}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {step === 'profile' && <ProfileStep onNext={() => setStep('rank')} />}

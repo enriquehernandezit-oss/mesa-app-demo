@@ -764,6 +764,12 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'restaurant.by_name': 'by {name}',
 
   'onboarding.step_progress': 'Step {step} of {total} · build your starter list',
+  'onboarding.exit': 'Leave',
+  'onboarding.exit_title': 'Leave sign-up?',
+  'onboarding.exit_body':
+    'Your account is already created. You can sign out and finish later, or delete it.',
+  'onboarding.exit_sign_out': 'Sign out and finish later',
+  'onboarding.exit_delete': 'Delete this account',
   'onboarding.who_are_you': 'Who are you at the table?',
   'onboarding.identity_subtitle': 'This is how your friends find and recognize you on Mesa.',
   'onboarding.name_label': 'Name',
@@ -1050,6 +1056,9 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.session_not_fresh_delete':
     'For security, sign out and sign back in before deleting your account.',
   'settings.delete_error': "Couldn't delete the account. Try again.",
+  'settings.delete_reset_sent':
+    'We sent a link to {email} to make a new password. Changing it signs you out: sign in with the new one and come back here.',
+  'settings.delete_reset_error': "Couldn't send the link. Try again.",
 
   // app/notifications.tsx
   'notifications.social': 'Follows and cheers',

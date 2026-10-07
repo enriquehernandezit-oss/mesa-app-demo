@@ -2,15 +2,16 @@ import { useMutation } from '@tanstack/react-query'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
-import { ScrollView, View } from 'react-native'
+import { Pressable, ScrollView, Text, View } from 'react-native'
 
-import { Body, Button, Serif } from '@/components/ui'
+import { Body, Button, Caption, MAX_SCALE, Serif } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
-import { signOut } from '@/lib/auth-client'
+import { authClient, signOut } from '@/lib/auth-client'
 import { useT } from '@/lib/i18n'
+import { resetToSignIn } from '@/lib/resetToSignIn'
 
 // Deleting the account (App Store 5.1.1): its own page, reached from the row under Sign out in Settings,
 // so it reads as a decision and not as a button someone tapped while scrolling. Plain words about what goes.
@@ -30,6 +31,17 @@ export default function DeleteAccount() {
   const hasApple = Boolean(p?.hasApple)
 
   const [password, setPassword] = useState('')
+  // Forgot it: the reset email is the way back. Resetting ends every session (auth.ts), so the member
+  // signs in again with the new password and comes back here — the copy says so.
+  const [resetState, setResetState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  async function sendReset() {
+    if (!realEmail || resetState === 'sending') return
+    setResetState('sending')
+    const res = await authClient
+      .requestPasswordReset({ email: realEmail, redirectTo: '/reset-password' })
+      .catch(() => ({ error: { message: 'network' } }))
+    setResetState('error' in res && res.error ? 'error' : 'sent')
+  }
   // Deletion is irreversible and support cannot undo it, so the server demands proof of identity: the
   // password where the account has one, an Apple confirmation for an Apple account, otherwise a
   // recently-created session.
@@ -54,7 +66,7 @@ export default function DeleteAccount() {
     onSuccess: async () => {
       // The server has already erased the account and its sessions and push tokens.
       await signOut({ local: true }).catch(() => {})
-      router.replace('/sign-in')
+      resetToSignIn(router)
     },
     onError: (err) => {
       if (err instanceof DeleteCancelled) return
@@ -103,6 +115,30 @@ export default function DeleteAccount() {
               onChangeText={setPassword}
             />
           )}
+          {hasPassword && realEmail ? (
+            resetState === 'sent' ? (
+              <Caption>{t('settings.delete_reset_sent', { email: realEmail })}</Caption>
+            ) : (
+              <>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={resetState === 'sending'}
+                  onPress={sendReset}
+                  className="min-h-[40px] justify-center self-start active:opacity-60"
+                >
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui-semibold text-label text-accent"
+                  >
+                    {resetState === 'sending' ? t('settings.sending') : t('auth.forgot_password')}
+                  </Text>
+                </Pressable>
+                {resetState === 'error' ? (
+                  <Caption className="text-danger">{t('settings.delete_reset_error')}</Caption>
+                ) : null}
+              </>
+            )
+          ) : null}
           <Button
             variant="destructive"
             loading={deleteAccount.isPending}
