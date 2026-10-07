@@ -85,7 +85,7 @@ config/account action that happens at submission (see `docs/SUBMISSION.md`).
 - [x] Sign in with Apple present next to Google — auth screen, equal prominence (env-gated, turns on with the provider credentials)
 - [x] Report content + block user + remove/eject working — verified end to end (M3)
 - [x] EULA accepted at signup — required checkbox in onboarding; recorded server-side
-- [x] In-app account deletion (cascading) — Profile → Danger zone → DELETE /me, cascade verified (M5)
+- [x] In-app account deletion (cascading) — Settings → Delete account (below Sign out) → DELETE /me, cascade verified (M5)
 - [x] Privacy policy + terms URLs live — real copy, written against what the app actually does, in the app (`/legal/privacy`, `/legal/terms`, `/legal/eula`) and hosted publicly by the API at the same paths (`<API origin>/legal/…`, no auth). Canonical text: `apps/api/src/lib/legalCopy.ts`, mirrored in `apps/mobile/src/app/legal/[doc].tsx`. Still wants a lawyer's read before the public release
 - [ ] App Privacy nutrition label filled in App Store Connect — declare: account info, contacts (matched, not stored), usage
 - [x] All `Info.plist` purpose strings written — as the Expo plugin options in `apps/mobile/app.json` (location, photos, camera, contacts); each is a real sentence naming the why

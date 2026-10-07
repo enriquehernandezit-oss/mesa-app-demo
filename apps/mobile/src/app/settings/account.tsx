@@ -1,6 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import * as AppleAuthentication from 'expo-apple-authentication'
-import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
@@ -11,19 +9,17 @@ import { CalendarIcon, CheckIcon, LockIcon, MailIcon, RotateIcon } from '@/compo
 import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { ApiError, api } from '@/lib/api'
-import { authClient, signOut } from '@/lib/auth-client'
+import { authClient } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { dateLocale, useT } from '@/lib/i18n'
 import { parseBirthdayIso } from '@/lib/time'
 
-// Account (M15) — email verification, password, ending other sessions, and
-// account deletion. Moved verbatim out of the old flat app/settings.tsx. Redesign 2: icon rows in
-// one grouped card (the inline forms open inside it), and the danger zone a ringed r22 panel.
-// The member closed Apple's confirmation sheet — nothing to report.
-class DeleteCancelled extends Error {}
+// Account (M15) — email verification, password and ending other sessions.
+// Moved verbatim out of the old flat app/settings.tsx. Redesign 2: icon rows in one grouped card
+// (the inline forms open inside it). Deleting the account lives on its own page, reached from the row
+// under Sign out in the Settings hub (settings/delete-account.tsx).
 
 export default function AccountSettings() {
-  const router = useRouter()
   const t = useT()
   const queryClient = useQueryClient()
   const { data } = useProfile(true)
@@ -35,7 +31,6 @@ export default function AccountSettings() {
   // Has a password to ask for: the API says so; an older one did not, and the email was the guess. (An
   // Apple or Google account with a real email has none — asking it for one was a dead end.)
   const hasPassword = p?.hasPassword ?? Boolean(realEmail)
-  const hasApple = Boolean(p?.hasApple)
 
   // Birthday (M23) — private, account settings only, never the public
   // profile or followers (see PATCH /me/birthday's own header). Mandatory
@@ -140,51 +135,6 @@ export default function AccountSettings() {
           t('settings.revoke_sessions_error'),
         ),
       }),
-  })
-
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [deletePassword, setDeletePassword] = useState('')
-  // Deletion is irreversible and support cannot undo it, so the server demands
-  // proof of identity: the password where the account has one, otherwise a
-  // recently-created session.
-  const deleteAccount = useMutation({
-    mutationFn: async () => {
-      // An Apple account asks Apple again (a fresh sheet): that is the proof of identity, and the code it
-      // returns lets the server revoke Mesa's grant on the member's Apple ID (App Store 5.1.1(v)).
-      let appleAuthorizationCode: string | undefined
-      if (hasApple && (await AppleAuthentication.isAvailableAsync().catch(() => false))) {
-        try {
-          const cred = await AppleAuthentication.signInAsync({ requestedScopes: [] })
-          appleAuthorizationCode = cred.authorizationCode ?? undefined
-        } catch (err) {
-          // Closing the Apple sheet is a change of mind, not a failure.
-          if ((err as { code?: string }).code === 'ERR_REQUEST_CANCELED')
-            throw new DeleteCancelled()
-          throw err
-        }
-      }
-      return api.del('/me', { password: deletePassword || undefined, appleAuthorizationCode })
-    },
-    onSuccess: async () => {
-      // The server has already erased the account and its sessions and push tokens.
-      await signOut({ local: true }).catch(() => {})
-      router.replace('/sign-in')
-    },
-    onError: (err) => {
-      if (err instanceof DeleteCancelled) return
-      const code = err instanceof ApiError ? err.code : ''
-      toast({
-        variant: 'error',
-        message:
-          code === 'invalid_password'
-            ? t('settings.wrong_password')
-            : code === 'password_required'
-              ? t('settings.password_required_confirm')
-              : code === 'session_not_fresh'
-                ? t('settings.session_not_fresh_delete')
-                : t('settings.delete_error'),
-      })
-    },
   })
 
   return (
@@ -376,81 +326,6 @@ export default function AccountSettings() {
             last
           />
         </Group>
-
-        {/* Danger zone — in-app account deletion (App Store 5.1.1). */}
-        <View className="mt-4 gap-3 rounded-group border-[1.5px] border-danger p-4">
-          <Text
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="font-ui-semibold text-label text-danger"
-          >
-            {t('settings.danger_zone')}
-          </Text>
-          {!confirmingDelete ? (
-            <>
-              <Text
-                maxFontSizeMultiplier={MAX_SCALE}
-                className="font-ui text-pill leading-[20px] text-text-2"
-              >
-                {t('settings.delete_account_warning')}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setConfirmingDelete(true)}
-                className="min-h-[44px] items-center justify-center rounded-pill border-[1.5px] border-danger active:opacity-70"
-              >
-                <Text
-                  maxFontSizeMultiplier={MAX_SCALE}
-                  className="font-ui-semibold text-subhead text-danger"
-                >
-                  {t('settings.delete_account')}
-                </Text>
-              </Pressable>
-            </>
-          ) : (
-            <>
-              <Text
-                maxFontSizeMultiplier={MAX_SCALE}
-                className="font-ui text-pill leading-[20px] text-text-2"
-              >
-                {hasPassword
-                  ? t('settings.delete_confirm_with_password')
-                  : hasApple
-                    ? t('settings.delete_confirm_apple')
-                    : t('settings.delete_confirm_no_password')}
-              </Text>
-              {hasPassword && (
-                <Field
-                  onCard
-                  placeholder={t('settings.your_password_placeholder')}
-                  secureTextEntry
-                  textContentType="password"
-                  autoComplete="current-password"
-                  value={deletePassword}
-                  onChangeText={setDeletePassword}
-                />
-              )}
-              <Button
-                variant="destructive"
-                loading={deleteAccount.isPending}
-                disabled={hasPassword && !deletePassword}
-                onPress={() => deleteAccount.mutate()}
-              >
-                {deleteAccount.isPending
-                  ? t('settings.deleting')
-                  : t('settings.delete_confirm_button')}
-              </Button>
-              <Button
-                variant="ghost"
-                onPress={() => {
-                  setConfirmingDelete(false)
-                  setDeletePassword('')
-                }}
-              >
-                {t('common.cancel')}
-              </Button>
-            </>
-          )}
-        </View>
       </ScrollView>
     </View>
   )

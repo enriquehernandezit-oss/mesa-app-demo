@@ -1026,9 +1026,9 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.birthday_error': "Couldn't save it. Try again.",
   'settings.signing_out_others': 'Signing out…',
   'settings.sign_out_others': 'Sign out on other devices',
-  'settings.danger_zone': 'Danger zone',
-  'settings.delete_account_warning':
-    'Deleting your account permanently erases your rankings, notes, follows and profile. This can’t be undone.',
+  'settings.delete_title': 'Delete your account',
+  'settings.delete_intro':
+    'Your profile, your rankings and notes, your dishes and lists, and who you follow and who follows you are erased. It is final: not even we can bring it back.',
   'settings.delete_account': 'Delete account',
   'settings.delete_confirm_with_password':
     'Are you sure? Enter your password to confirm. This erases everything and can’t be undone.',

@@ -328,8 +328,10 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   profile**), then icon groups (`NavRow`: Your account · Privacy · Preferences · Notifications · About;
   Friends; Sign out on its own) — `Group` / `Row` / `NavRow` / `GroupLabel` in `components/SettingsRow.tsx`.
   **Your account** puts email (Verified ✓), Birthday, Change password and Sign out on other devices in one
-  group — the inline forms open inside it on the ground colour (`Field onCard`) — and the **danger zone** is
-  a ringed r22 panel with a ringed Delete account pill. **Privacy**: a switch row with its explanation,
+  group — the inline forms open inside it on the ground colour (`Field onCard`). **Delete account** is a plain
+  red-labelled row under Sign out in the hub (no red panel, no "danger zone"), opening its own page: the
+  serif title, what is erased in two plain sentences, the password field where one applies, a destructive
+  button and Cancel. **Privacy**: a switch row with its explanation,
   Blocked accounts (avatar + name + @handle + Unblock), Export. **Preferences**: **three theme tiles** — Auto
   (cream | black), Day, Night — each a small literal preview (raw colour, allowed here), the chosen one ringed
   in ink, then the language as two pills. **About**: the lowercase wordmark (the logo — never the app-icon M)

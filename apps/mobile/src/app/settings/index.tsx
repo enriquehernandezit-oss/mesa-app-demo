@@ -35,7 +35,7 @@ import { useLift } from '@/theme/useLift'
 // right here since they're one or two rows each. Row/RowButton move to
 // components/SettingsRow.tsx so every screen in this directory shares them
 // instead of each redefining its own copy. Redesign 2: a raised me card (tap it to edit), then icon
-// groups — the account pages, Friends, help, the moderator queue — and Sign out on its own.
+// groups — the account pages, Friends, help, the moderator queue — and Sign out and Delete account on their own.
 export default function SettingsHub() {
   const router = useRouter()
   const t = useT()
@@ -213,6 +213,12 @@ export default function SettingsHub() {
             onPress={handleSignOut}
             disabled={signingOut}
             trailing={signingOut ? <ActivityIndicator size="small" color={accent} /> : null}
+          />
+          <NavRow
+            label={t('settings.delete_account')}
+            tone="danger"
+            chevron={false}
+            onPress={() => router.push('/settings/delete-account')}
             last
           />
         </Group>

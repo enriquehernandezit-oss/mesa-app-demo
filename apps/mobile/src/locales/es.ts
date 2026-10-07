@@ -1090,9 +1090,9 @@ export const es = {
   'settings.birthday_error': 'No se pudo guardar. Intenta de nuevo.',
   'settings.signing_out_others': 'Cerrando…',
   'settings.sign_out_others': 'Cerrar sesión en otros dispositivos',
-  'settings.danger_zone': 'Zona de peligro',
-  'settings.delete_account_warning':
-    'Eliminar tu cuenta borra permanentemente tus rankings, notas, follows y perfil. Esto no se puede deshacer.',
+  'settings.delete_title': 'Eliminar tu cuenta',
+  'settings.delete_intro':
+    'Se borran tu perfil, tus rankings y notas, tus platos y listas, y a quién sigues y quién te sigue. Es definitivo: ni nosotros podemos recuperarlo.',
   'settings.delete_account': 'Eliminar cuenta',
   'settings.delete_confirm_with_password':
     '¿Estás seguro? Escribe tu contraseña para confirmar. Esto borra todo y no se puede deshacer.',

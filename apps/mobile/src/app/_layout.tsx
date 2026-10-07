@@ -230,6 +230,10 @@ function MesaStack() {
         options={{ ...utility, headerLargeTitle: false, title: t('settings.account') }}
       />
       <Stack.Screen
+        name="settings/delete-account"
+        options={{ ...utility, headerLargeTitle: false, title: t('settings.delete_account') }}
+      />
+      <Stack.Screen
         name="settings/privacy"
         options={{ ...utility, headerLargeTitle: false, title: t('settings.privacy') }}
       />
