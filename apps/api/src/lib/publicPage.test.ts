@@ -84,12 +84,12 @@ describe('ctaHref', () => {
     }
   })
 
-  test('points at the landing page when one is configured', () => {
+  test('opens the app on this very page even when a landing page is configured', () => {
     process.env.PUBLIC_WEB_URL = 'https://mesa.example'
-    expect(ctaHref('https://api.example/p/spot/abc')).toBe('https://mesa.example')
+    expect(ctaHref('https://api.example/p/spot/abc')).toBe('mesa://p/spot/abc')
   })
 
-  test('without one it opens the app on this very page, never the API root', () => {
+  test('opens the app on this very page, never the API root', () => {
     delete process.env.PUBLIC_WEB_URL
     delete process.env.APP_ORIGINS
     expect(ctaHref('https://api.example/p/spot/abc')).toBe('mesa://p/spot/abc')

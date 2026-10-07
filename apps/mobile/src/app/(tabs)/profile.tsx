@@ -435,7 +435,8 @@ export default function ProfileTab() {
                 action={
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => router.push('/explore')}
+                    // Straight to Explore's Events side, not Places.
+                    onPress={() => router.push('/explore?view=events')}
                     hitSlop={8}
                     className="flex-row items-center gap-1 active:opacity-60"
                   >

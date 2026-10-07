@@ -17,6 +17,12 @@ const baseURL = apiBaseOrigin
 // the shareable link that rides along with a share card.
 export const apiOrigin = baseURL
 
+// The address shared links carry (profiles, places, lists, plans, invites). iOS opens the app straight
+// from a link only on the domain the build lists as its own (APP_LINK_DOMAIN → mesasocial.app); a link
+// on the API's Railway address always opened Safari. Same server either way, so the page is identical.
+// Unset (local development), links use the API address.
+export const shareOrigin = (process.env.EXPO_PUBLIC_SHARE_URL ?? apiOrigin).replace(/\/$/, '')
+
 // Requests with no response within this long are treated as failed rather than
 // left spinning forever — the fallback a flaky mobile network needs and a wall
 // socket never does.

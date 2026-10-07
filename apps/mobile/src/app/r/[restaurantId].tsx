@@ -18,7 +18,7 @@ import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { BookmarkIcon, ListIcon, PeopleIcon, TrophyIcon } from '@/components/ui/icons'
 import { SpotCard, SpotRail } from '@/components/ui/patterns'
-import { ApiError, api, apiOrigin } from '@/lib/api'
+import { ApiError, api, shareOrigin } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import { closesLabel, openStatusLine } from '@/lib/hours'
 import { useT } from '@/lib/i18n'
@@ -192,7 +192,7 @@ export default function RestaurantProfile() {
       score: myRanking?.score ?? friendsRankings[0]?.score ?? null,
       note: friendsRankings.find((f) => f.note)?.note ?? null,
       coverUrl: imageUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
-      text: `${t('place.share_text', { name: restaurant.name })}\n${apiOrigin}/p/spot/${restaurant.id}`,
+      text: `${t('place.share_text', { name: restaurant.name })}\n${shareOrigin}/p/spot/${restaurant.id}`,
     })
 
   // The score on the photo: Mesa's, or the friends' when Mesa's is hidden.

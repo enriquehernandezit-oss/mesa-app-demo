@@ -1,13 +1,13 @@
 import { track } from '@/lib/analytics'
 import { getLanguage, t } from '@/lib/i18n'
 
-import { apiOrigin } from './api'
+import { shareOrigin } from './api'
 import { shareTextWhatsAppFirst } from './shareProfile'
 import { formatPlanDate } from './time'
 import type { Plan, PlanDetail } from './types'
 
 export function planShareLink(planId: string): string {
-  return `${apiOrigin}/p/plan/${planId}`
+  return `${shareOrigin}/p/plan/${planId}`
 }
 
 // The spot line for a share text: the chosen restaurant once confirmed,

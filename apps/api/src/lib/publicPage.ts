@@ -35,21 +35,22 @@ export function publicOrigin(): string {
   )
 }
 
-// Where the call to action points. With a landing page configured, there. Without one the old
-// fallback was "/" — the API root, a JSON 404 — so the button went nowhere. A person who has the
-// app is better served by opening it on this very page (the mesa:// form of the path, which
-// lib/deepLinks.ts in the app already understands), and the button is only an offer: iOS ignores it
-// when the app is not installed. Production should set PUBLIC_WEB_URL to the landing/App Store page
-// (a boot warning in index.ts says so).
+// Where "Ábrelo en Mesa" points: the app, on this very page (the mesa:// form of the path, which
+// lib/deepLinks.ts in the app understands). It used to point at the landing page whenever one was
+// configured — so someone who HAS the app tapped it and got the website. Someone without the app gets
+// the landing page from its own link under the button (getAppHref).
 export function ctaHref(canonical: string): string {
-  const web = webOrigin()
-  if (web) return web
   try {
     const u = new URL(canonical)
     return `mesa://${u.pathname.replace(/^\/+/, '')}${u.search}`
   } catch {
     return 'mesa://'
   }
+}
+
+// "¿Aún no tienes Mesa?" — the landing page, when one is configured.
+export function getAppHref(): string | null {
+  return webOrigin()
 }
 
 // A score is a NUMBER + a WORD, same as in the app (apps/mobile/src/lib/score.ts — keep the
@@ -95,6 +96,7 @@ export function layout(opts: {
   const foot =
     footer ??
     `<a class="cta" href="${esc(ctaHref(canonical))}">Ábrelo en Mesa</a>
+    ${getAppHref() ? `<p class="get"><a href="${esc(getAppHref() ?? '')}">¿Aún no tienes Mesa? Conócela</a></p>` : ''}
     <p class="tagline">where your friends actually eat</p>
     <p class="fine"><a href="${esc(reportPageHref(canonical))}">Reportar esta página</a> · <a href="/legal/privacy">Privacidad</a> · <a href="/legal/terms">Términos</a></p>`
   return `<!doctype html>
@@ -153,6 +155,8 @@ export function layout(opts: {
     .sw { font-size: 12px; font-weight: 600; color: var(--cream); background: var(--burgundy); padding: 3px 9px; border-radius: 10px; }
     blockquote { font-family: 'Instrument Serif', Georgia, serif; font-style: normal; font-size: 24px; color: var(--cream-dim); margin: 22px auto 0; max-width: 380px; line-height: 1.25; }
     .cta { display: inline-block; margin-top: 34px; background: var(--burgundy); color: var(--cream); font-weight: 600; font-size: 16px; text-decoration: none; padding: 16px 36px; border-radius: 999px; }
+    .get { margin-top: 14px; font-size: 14px; }
+    .get a { color: var(--cream-dim); text-underline-offset: 3px; }
     .tagline { font-family: 'Instrument Serif', Georgia, serif; font-style: normal; font-size: 18px; color: var(--cream-dim); margin-top: 20px; }
     .missing { padding: 60px 0; }
     .fine { margin-top: 26px; font-size: 13px; color: var(--cream-dim); }

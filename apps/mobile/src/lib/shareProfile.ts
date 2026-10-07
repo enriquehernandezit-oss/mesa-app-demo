@@ -3,13 +3,13 @@ import { Linking, Share } from 'react-native'
 import { track } from '@/lib/analytics'
 import { getLanguage, t } from '@/lib/i18n'
 
-import { apiOrigin } from './api'
+import { shareOrigin } from './api'
 
 // The public profile link — the growth loop's return path. Falls back to the
 // app origin for a member without a handle. Ported from apps/app/src/lib/
 // shareProfile.ts (navigator.share → RN Share).
 export function profileShareLink(handle: string | null | undefined): string {
-  return handle ? `${apiOrigin}/p/u/${handle}` : apiOrigin
+  return handle ? `${shareOrigin}/p/u/${handle}` : shareOrigin
 }
 
 // The caption that rides with a shared list. Kept URL-free: when a share carries
@@ -37,7 +37,7 @@ export async function shareProfile(handle: string | null | undefined): Promise<v
 }
 
 export function inviteShareLink(code: string): string {
-  return `${apiOrigin}/p/i/${code}`
+  return `${shareOrigin}/p/i/${code}`
 }
 
 // WhatsApp-first share: that's where Santo Domingo actually plans dinner — the
