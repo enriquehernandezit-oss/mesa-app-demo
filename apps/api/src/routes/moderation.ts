@@ -1,4 +1,4 @@
-import { db, schema } from '@mesa/db'
+import { db, refreshPlaceCovers, schema } from '@mesa/db'
 import { and, desc, eq, gt, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -7,6 +7,7 @@ import { sendMail } from '../auth'
 import type { AuthedEnv } from '../context'
 import { alertModerators } from '../lib/moderatorAlert'
 import { background } from '../lib/notify'
+import { placesWithPhotosBy } from '../lib/placeCover'
 import { requireAuth, requireModerator } from '../middleware/session'
 
 // UGC moderation (App Store 1.2). Every user can report content and block
@@ -463,6 +464,10 @@ export const moderationRoutes = new Hono<AuthedEnv>()
   .delete('/dishes/:id', requireModerator, async (c) => {
     const id = c.req.param('id')
     if (!uuid.safeParse(id).success) return c.json({ error: 'not_found' }, 404)
+    const [removed] = await db
+      .select({ restaurantId: dishes.restaurantId })
+      .from(dishes)
+      .where(eq(dishes.id, id))
     await db.transaction(async (tx) => {
       await tx
         .update(dishes)
@@ -475,6 +480,7 @@ export const moderationRoutes = new Hono<AuthedEnv>()
           and(eq(reports.targetType, 'dish'), eq(reports.targetId, id), eq(reports.status, 'open')),
         )
     })
+    if (removed) await refreshPlaceCovers([removed.restaurantId])
     return c.json({ ok: true })
   })
 
@@ -564,5 +570,6 @@ export const moderationRoutes = new Hono<AuthedEnv>()
           ),
         )
     })
+    await refreshPlaceCovers(await placesWithPhotosBy(targetId))
     return c.json({ ok: true })
   })

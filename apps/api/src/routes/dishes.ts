@@ -1,4 +1,12 @@
-import { DISH_CATEGORIES, DISH_GROUPS, db, guessDishCategory, mesaNorm, schema } from '@mesa/db'
+import {
+  DISH_CATEGORIES,
+  DISH_GROUPS,
+  db,
+  guessDishCategory,
+  mesaNorm,
+  refreshPlaceCovers,
+  schema,
+} from '@mesa/db'
 import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -329,6 +337,9 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       }
     }
 
+    // A photo added or taken off changes which dish photo the place wears as its picture.
+    if (dishId && (image || removeImage)) await refreshPlaceCovers([restaurantId])
+
     // A caption that @-tags someone, on a dish that is new (a re-post of the same dish adds no caption).
     if (created && caption && dishId) {
       notifyMentions({
@@ -598,10 +609,11 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     if (!isUuid(c.req.param('id'))) return c.json({ error: 'not_found' }, 404)
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, c.req.param('id')), eq(dishes.userId, me.id)),
-      columns: { id: true, name: true, rankingId: true },
+      columns: { id: true, name: true, rankingId: true, restaurantId: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
     await db.update(dishes).set({ removedAt: new Date() }).where(eq(dishes.id, found.id))
+    await refreshPlaceCovers([found.restaurantId])
     await db
       .update(rankings)
       .set({ favoriteDish: null })

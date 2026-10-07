@@ -302,6 +302,13 @@
       "when": 1791354883482,
       "tag": "0042_home_area",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1791413217343,
+      "tag": "0043_place_cover_from_dishes",
+      "breakpoints": true
     }
   ]
 }

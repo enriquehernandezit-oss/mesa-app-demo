@@ -336,30 +336,6 @@ export const extraRestaurants: RestaurantSeedX[] = [
   },
 ]
 
-// Cover photo by cuisine for spots without a curated mapping.
-export const COVER_BY_CUISINE: Record<string, string> = {
-  Contemporary: 'cocktails',
-  Italian: 'pasta',
-  Brasserie: 'branzino',
-  Brunch: 'dessert',
-  Café: 'dessert',
-  Mexican: 'tapas',
-  'Wine Bar': 'wine',
-  Fusion: 'cocktails',
-  Grill: 'steak',
-  Steakhouse: 'steak',
-  Japanese: 'ceviche',
-  Dominican: 'mofongo',
-  Sandwiches: 'bar',
-  Spanish: 'tapas',
-  Tapas: 'tapas',
-  Pizza: 'pizza',
-  Mediterranean: 'branzino',
-  European: 'branzino',
-  Basque: 'branzino',
-  Peruvian: 'ceviche',
-}
-
 const FIRST = [
   'Camila',
   'Sebastián',

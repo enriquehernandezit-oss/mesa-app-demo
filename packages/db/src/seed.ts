@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 
 import { db, pool } from './client'
 import { refuseRemoteDatabase } from './localDatabase'
+import { refreshPlaceCovers } from './placeCover'
 import * as schema from './schema'
 import { scoreFor } from './score'
 import { EXISTING_SECTOR_ALIASES, NEW_SECTORS } from './sectors'
@@ -11,7 +12,6 @@ import { seedCuration } from './seed-curation'
 import { dishPosts, friends, neighborhoods, restaurants, waitlist } from './seed-data'
 import {
   COMMENT_TEMPLATES,
-  COVER_BY_CUISINE,
   extraNeighborhoods,
   extraRestaurants,
   generateUsers,
@@ -23,25 +23,6 @@ import {
 // spread over six weeks, an organic follow graph, and cheers throughout.
 // Deterministic (fixed PRNG seeds) and idempotent (truncates first).
 // Run with: bun run --env-file=.env src/seed.ts  (or `bun db:seed`).
-
-// Curated cover photos for the original 15; the rest map by cuisine.
-const COVER_BY_KEY: Record<string, string> = {
-  sophias: 'cocktails',
-  peperoni: 'pasta',
-  mijas: 'tapas',
-  boga: 'branzino',
-  segundo: 'ceviche',
-  bottega: 'pizza',
-  mitre: 'wine',
-  adrian: 'mofongo',
-  vesuvio: 'bar',
-  cava: 'steak',
-  positano: 'dessert',
-  patepalo: 'branzino',
-  lulu: 'tapas',
-  jalao: 'mofongo',
-  mesonbari: 'cocktails',
-}
 
 // Price tiers for the curated 15 (the extras carry their own).
 const PRICE_BY_KEY: Record<string, number> = {
@@ -129,12 +110,8 @@ async function seed() {
     ...restaurants.map((r) => ({
       ...r,
       priceTier: PRICE_BY_KEY[r.key] ?? 2,
-      cover: COVER_BY_KEY[r.key] ?? COVER_BY_CUISINE[r.cuisine] ?? 'bar',
     })),
-    ...extraRestaurants.map((r) => ({
-      ...r,
-      cover: COVER_BY_CUISINE[r.cuisine] ?? 'bar',
-    })),
+    ...extraRestaurants,
   ]
   const rRows = await db
     .insert(schema.restaurants)
@@ -150,7 +127,6 @@ async function seed() {
         closesAt: CLOSES_AT[i % CLOSES_AT.length],
         website: i % 3 === 2 ? null : siteFor(r.name),
         priceTier: r.priceTier,
-        coverImageId: `/restaurants/${r.cover}.jpg`,
         isDemo: true,
       })),
     )
@@ -382,6 +358,8 @@ async function seed() {
   await db.insert(schema.waitlist).values(waitlist)
 
   // --- editorial curated lists (chosen from the rankings just inserted) ---
+  // A place wears its best public dish photo — the same rule the API keeps (placeCover.ts).
+  await refreshPlaceCovers(undefined, db)
   const listCount = await seedCuration(db)
 
   console.log(`inserted: ${listCount} curated lists`)
