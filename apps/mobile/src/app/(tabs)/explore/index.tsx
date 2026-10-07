@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  LayoutAnimation,
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -46,13 +47,12 @@ import { CloseIcon, MapIcon, SearchIcon, SlidersIcon, SortIcon } from '@/compone
 import { pickOne, showSheet } from '@/components/ui/Sheet'
 import { toast } from '@/components/ui/toast-store'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
-import { useScrollTopOffset } from '@/hooks/useScrollTopOffset'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
 import { bringToTop, flatListHost } from '@/lib/bringToTop'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import type { LatLng } from '@/lib/haversine'
-import { t as translate, useLanguage, useT } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import {
   type LocationFilter as Location,
   isDefaultLocation,
@@ -155,7 +155,6 @@ function RemovablePill({ label, onRemove }: { label: string; onRemove: () => voi
 
 export default function ExploreScreen() {
   const t = useT()
-  const lang = useLanguage()
   const router = useRouter()
   const tabBarClearance = useTabBarClearance()
   // Cerca and Abierto ahora. The position is asked for only when Cerca is tapped (iOS shows its
@@ -360,28 +359,17 @@ export default function ExploreScreen() {
     return [...hits, ...inMesa.filter((h) => !have.has(h.id))]
   }, [hits, inMesa])
 
-  // The map, as the bar's one action. Memoized (responsiveness audit): written inline, this object
-  // got a brand new `headerRight` function on every render — including every keystroke via setQ —
-  // and react-native-screens rebuilding the native header button mid-press could drop that tap.
-  // Searching: the field is focused, or holds a search. The navigation bar (the big "Explora" and the
-  // map button) steps away so the field sits at the top and the results fill the space above the
-  // keyboard — iOS folds a large title only under a finger, never for a scroll made in code, so the
-  // bar has to go. It comes back once the field is empty and the keyboard is down.
+  // Searching: the field is focused, or holds a search. The title row folds away (one layout
+  // animation) so the field sits at the top and the results fill the space above the keyboard —
+  // nothing scrolls, because a scroll made in code raced iOS's own keyboard adjustment and the list
+  // slid twice. It comes back when the field is empty and the keyboard is down.
   const [searchFocused, setSearchFocused] = useState(false)
   const searching = searchFocused || q.trim().length > 0
-  const headerOptions = useMemo(
-    () => ({
-      headerShown: !searching,
-      headerRight: () => (
-        <IconButton
-          accessibilityLabel={translate(lang, 'explore.map_label')}
-          onPress={() => router.push('/map')}
-          icon={<MapIcon size={18} color="text" />}
-        />
-      ),
-    }),
-    [lang, router, searching],
-  )
+  const setFocusedAnimated = (on: boolean) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    setSearchFocused(on)
+  }
+  const insets = useSafeAreaInsets()
 
   // Explore is nested one level inside its own Stack (explore/_layout.tsx),
   // so { nested: true } — see the hook's own header for why a plain
@@ -389,14 +377,12 @@ export default function ExploreScreen() {
   // still covers both views: they share this list, Events riding in its
   // header and Places as the rows (see the render below).
   const listRef = useRef<FlatList<ExploreHit>>(null)
-  // Not offset 0 — the list rests a large-title header lower than that (useScrollTopOffset).
-  const topOffset = useScrollTopOffset()
-  // Tapping the search (or the city search under it) slides it up to just under the large title, so the
-  // results fill the space above the keyboard (lib/bringToTop.ts). Under the title, not under a folded
-  // bar: iOS folds a large title only under a finger, so a field slid higher hid behind "Explora".
+  // The list's top is offset 0: the page draws its own title, and the status bar's height is padding.
+  const topOffset = 0
+  // Tapping a search slides it to just under the status bar, the title scrolling away, so the results
+  // fill the space above the keyboard (lib/bringToTop.ts).
   const liftSearch = (e: FocusEvent, gap: number) =>
-    bringToTop(flatListHost(listRef), e, { top: -topOffset, gap })
-  const insets = useSafeAreaInsets()
+    bringToTop(flatListHost(listRef), e, { top: insets.top, gap })
   useResetOnTabPress(
     useCallback(
       (wasActive: boolean) => {
@@ -445,6 +431,23 @@ export default function ExploreScreen() {
       {/* Search is Mesa's own field, not the navigation bar's native one: on iOS 26 the native bar
           folds into the bottom toolbar — behind the floating tab bar, so it was simply gone —
           and stacked under the title it takes the system's colours, unreadable at Night. */}
+      <View style={{ height: insets.top + 8 }} />
+      {searching ? null : (
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text
+            accessibilityRole="header"
+            maxFontSizeMultiplier={MAX_SCALE}
+            className="font-serif text-display text-text"
+          >
+            {t('tabs.explore')}
+          </Text>
+          <IconButton
+            accessibilityLabel={t('explore.map_label')}
+            onPress={() => router.push('/map')}
+            icon={<MapIcon size={18} color="text" />}
+          />
+        </View>
+      )}
       <View className="mt-1">
         <Field
           ref={searchRef}
@@ -452,12 +455,8 @@ export default function ExploreScreen() {
           placeholder={t('explore.search_placeholder')}
           value={q}
           onChangeText={setQ}
-          onFocus={(e) => {
-            setSearchFocused(true)
-            // The bar is leaving, so the field goes to just under the status bar.
-            bringToTop(flatListHost(listRef), e, { top: insets.top, gap: 8 })
-          }}
-          onBlur={() => setSearchFocused(false)}
+          onFocus={() => setFocusedAnimated(true)}
+          onBlur={() => setFocusedAnimated(false)}
           returnKeyType="search"
           clearButtonMode="while-editing"
           autoCorrect={false}
@@ -649,7 +648,6 @@ export default function ExploreScreen() {
     <View className="flex-1 bg-bg">
       {/* The map entry is the navigation bar's right action; the search field is the page's own
           (in the list header) — see the comment there. */}
-      <Stack.Screen options={headerOptions} />
       {/* Places is a real virtualized list (perf pass). It was a ScrollView
           with `hits.map()`, so the browse state mounted every row the
           catalog returned — ~97 of them, around a thousand native views.
@@ -687,8 +685,9 @@ export default function ExploreScreen() {
         // search field, filters and cards line up with it.
         contentContainerClassName="px-4"
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
-        contentInsetAdjustmentBehavior="automatic"
-        // Lets scrollToOffset go to the negative top offset (see useScrollTopOffset); by default RN clamps it to 0.
+        // The title row pads itself below the status bar (see the list header).
+        contentInsetAdjustmentBehavior="never"
+        // Lets a search near the end of a short list still slide to the top.
         scrollToOverflowEnabled
         // Dragging the results hides the keyboard at once (Instagram, WhatsApp) — they are what you
         // are reading — and automaticallyAdjustKeyboardInsets (below) leaves room to scroll to the last one.
@@ -702,6 +701,13 @@ export default function ExploreScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accent} />
         }
+      />
+      {/* The page draws its own title, so nothing covers the status bar: this strip keeps scrolled
+          rows from showing through behind the clock. */}
+      <View
+        pointerEvents="none"
+        className="absolute inset-x-0 top-0 bg-bg"
+        style={{ height: insets.top }}
       />
       <ExploreFilters
         visible={filtersOpen}

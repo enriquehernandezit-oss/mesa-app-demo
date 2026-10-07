@@ -4,9 +4,10 @@ import { useT } from '@/lib/i18n'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
 import { themeColors } from '@/theme/vars'
 
-// Explore gets its own stack so it owns a real UINavigationBar with a large title.
-// The search field is Mesa's own Field at the top of the results list, not a native
-// search bar. The map screen it pushes to keeps its own immersive presentation.
+// Explore gets its own stack (the tab's own back history). Its title is drawn by the page itself,
+// not a navigation bar: tapping the search has to slide the field to the top with the title scrolling
+// away, and iOS folds a large title only under a finger — hiding the bar instead made the list jump
+// twice. The Feed draws its top the same way.
 export default function ExploreLayout() {
   const t = useT()
   const theme = useResolvedTheme()
@@ -14,7 +15,7 @@ export default function ExploreLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         headerLargeTitle: true,
         title: t('tabs.explore'),
         headerTintColor: c.accent,
