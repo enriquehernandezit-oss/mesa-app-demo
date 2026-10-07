@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -9,6 +9,7 @@ import { Button, RowsSkeleton } from '@/components/ui'
 import { SheetHeader, SheetTitle } from '@/components/ui/SheetHeader'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
+import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { captureError } from '@/lib/errors'
 import { tapSuccess } from '@/lib/haptics'
 import { useT } from '@/lib/i18n'
@@ -23,6 +24,7 @@ export default function InviteScreen() {
   const t = useT()
   const { planId } = useLocalSearchParams<{ planId: string }>()
   const router = useRouter()
+  const scrollRef = useRef<ScrollView>(null)
   const queryClient = useQueryClient()
   const insets = useSafeAreaInsets()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -53,8 +55,13 @@ export default function InviteScreen() {
     <View className="flex-1 bg-bg">
       <SheetHeader onClose={() => router.back()} />
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
+        // Tapping a search below slides it to the top (lib/bringToTop.ts); these let it get there.
+        scrollToOverflowEnabled
+        automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <SheetTitle>{t('plans.invite_more')}</SheetTitle>
@@ -63,6 +70,7 @@ export default function InviteScreen() {
             <RowsSkeleton />
           ) : (
             <FollowerPicker
+              onSearchFocus={(e) => bringToTop(scrollViewHost(scrollRef), e)}
               selected={selected}
               onToggle={(user) =>
                 setSelected((prev) => {

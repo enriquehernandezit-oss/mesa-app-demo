@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native'
+import { type FocusEvent, Pressable, Text, View } from 'react-native'
 
 import { CitySearch } from '@/components/CitySearch'
 import { Caption, MAX_SCALE } from '@/components/ui'
@@ -12,7 +12,12 @@ import { useLift } from '@/theme/useLift'
 // Settings → Preferences: the city every search starts from (Explore, the rank flow's find step). Santo
 // Domingo until you change it. The current one is shown with a check; "Santo Domingo, RD" is always one tap
 // away, and any other city is a search. Changing it also starts the search you are on from the new city.
-export function DefaultCityPicker() {
+export function DefaultCityPicker({
+  onSearchFocus,
+}: {
+  // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
+  onSearchFocus?: (e: FocusEvent) => void
+}) {
   const t = useT()
   const lift = useLift()
   const words = useLocationWords()
@@ -56,6 +61,7 @@ export function DefaultCityPicker() {
           <Caption className="pb-2 text-meta">{t('settings.default_city_pick')}</Caption>
           <CitySearch
             onCard
+            onSearchFocus={onSearchFocus}
             onPick={(city) => setDefaultLocation({ kind: 'city', ...city })}
             exclude={new Set(current?.kind === 'city' ? [current.placeId] : [])}
           />

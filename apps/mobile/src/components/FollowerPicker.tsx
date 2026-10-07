@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { type FocusEvent, Pressable, Text, View } from 'react-native'
 
 import { PersonRow } from '@/components/PersonRow'
 import { Caption, EmptyState, ErrorState, RowsSkeleton, MAX_SCALE } from '@/components/ui'
@@ -28,10 +28,13 @@ export function FollowerPicker({
   selected,
   onToggle,
   exclude,
+  onSearchFocus,
 }: {
   selected: Set<string>
   onToggle: (user: FollowUser) => void
   exclude?: Set<string>
+  // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
+  onSearchFocus?: (e: FocusEvent) => void
 }) {
   const t = useT()
   const lift = useLift()
@@ -74,6 +77,7 @@ export function FollowerPicker({
         value={q}
         onChangeText={setQ}
         placeholder={t('plans.search_placeholder')}
+        onFocus={onSearchFocus}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"

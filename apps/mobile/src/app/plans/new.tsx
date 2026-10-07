@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { Pressable, ScrollView, Text, View } from 'react-native'
+import { useMemo, useRef, useState } from 'react'
+import { type FocusEvent, Pressable, ScrollView, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { FollowerPicker } from '@/components/FollowerPicker'
@@ -25,6 +25,7 @@ import { SheetHeader, SheetTitle } from '@/components/ui/SheetHeader'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
+import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { captureError } from '@/lib/errors'
 import { tapSelect, tapSuccess } from '@/lib/haptics'
 import { dateLocale, useT } from '@/lib/i18n'
@@ -127,6 +128,7 @@ export default function NewPlanScreen() {
   const [step, setStep] = useState<Step>(prefillSpot ? 'when' : 'spots')
   const [spots, setSpots] = useState<PlanSpot[]>(prefillSpot ? [prefillSpot] : [])
   const [created, setCreated] = useState(false)
+  const scrollRef = useRef<ScrollView>(null)
   const [query, setQuery] = useState('')
   const today = useMemo(() => new Date(), [])
   const [day, setDay] = useState<Date>(prefillDate ?? today)
@@ -252,8 +254,12 @@ export default function NewPlanScreen() {
         onBack={step === 'spots' ? undefined : goBack}
       />
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
+        // Tapping a search below slides it to the top (lib/bringToTop.ts); these let it get there.
+        scrollToOverflowEnabled
+        automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         // Scrolling the spot results hides the keyboard, like the other search lists.
         keyboardDismissMode="on-drag"
@@ -266,6 +272,7 @@ export default function NewPlanScreen() {
             results={results.data?.restaurants ?? []}
             isPending={results.isPending}
             onToggle={toggleSpot}
+            onSearchFocus={(e) => bringToTop(scrollViewHost(scrollRef), e)}
           />
         )}
         {step === 'when' && (
@@ -287,6 +294,7 @@ export default function NewPlanScreen() {
             <Caption className="mt-2 px-5 text-pill">{t('plans.no_followers_body')}</Caption>
             <View className="mt-4 px-4">
               <FollowerPicker
+                onSearchFocus={(e) => bringToTop(scrollViewHost(scrollRef), e)}
                 selected={new Set(invitees.keys())}
                 onToggle={(user) =>
                   setInvitees((prev) => {
@@ -344,6 +352,7 @@ function SpotsStep({
   results,
   isPending,
   onToggle,
+  onSearchFocus,
 }: {
   spots: PlanSpot[]
   query: string
@@ -351,6 +360,7 @@ function SpotsStep({
   results: PlanSpot[]
   isPending: boolean
   onToggle: (item: PlanSpot) => void
+  onSearchFocus: (e: FocusEvent) => void
 }) {
   const t = useT()
   const selectedIds = new Set(spots.map((s) => s.id))
@@ -363,6 +373,7 @@ function SpotsStep({
           value={query}
           onChangeText={setQuery}
           placeholder={t('plans.search_spot_placeholder')}
+          onFocus={onSearchFocus}
           returnKeyType="search"
           clearButtonMode="while-editing"
           autoCorrect={false}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { type FocusEvent, Pressable, Text, View } from 'react-native'
 
 import { CitySearch } from '@/components/CitySearch'
 import { Button, MAX_SCALE } from '@/components/ui'
@@ -24,7 +24,14 @@ import { useLift } from '@/theme/useLift'
 //
 // Inline, not a sheet: the rank flow is a native modal, and Mesa's sheets render underneath those.
 // The value lives in lib/locationFilter (shared by every screen that searches).
-export function LocationFilter({ resetKey }: { resetKey?: number }) {
+export function LocationFilter({
+  resetKey,
+  onSearchFocus,
+}: {
+  resetKey?: number
+  // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
+  onSearchFocus?: (e: FocusEvent) => void
+}) {
   const t = useT()
   const lift = useLift()
   const filter = useLocationFilter()
@@ -55,7 +62,7 @@ export function LocationFilter({ resetKey }: { resetKey?: number }) {
           <ChevronIcon size={14} color="text" />
         </View>
       </Pressable>
-      {open ? <LocationPanel onDone={() => setOpen(false)} /> : null}
+      {open ? <LocationPanel onDone={() => setOpen(false)} onSearchFocus={onSearchFocus} /> : null}
     </View>
   )
 }
@@ -87,7 +94,13 @@ function ChosenPlace({ label, onRemove }: { label: string; onRemove?: () => void
   )
 }
 
-function LocationPanel({ onDone }: { onDone: () => void }) {
+function LocationPanel({
+  onDone,
+  onSearchFocus,
+}: {
+  onDone: () => void
+  onSearchFocus?: (e: FocusEvent) => void
+}) {
   const t = useT()
   const lift = useLift()
   const filter = useLocationFilter()
@@ -114,6 +127,7 @@ function LocationPanel({ onDone }: { onDone: () => void }) {
         exclude={picked}
         disabled={full}
         caption={t('location.max_cities')}
+        onSearchFocus={onSearchFocus}
         onPick={(city) => addLocation({ kind: 'city', ...city })}
       />
       <Button size="sm" variant="secondary" onPress={onDone}>

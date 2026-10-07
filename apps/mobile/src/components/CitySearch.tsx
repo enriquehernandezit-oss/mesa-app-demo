@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { type FocusEvent, Pressable, Text, View } from 'react-native'
 
 import { Caption, MAX_SCALE } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
@@ -20,6 +20,7 @@ export function CitySearch({
   disabled,
   onCard,
   caption,
+  onSearchFocus,
 }: {
   onPick: (city: City) => void
   exclude?: ReadonlySet<string>
@@ -27,6 +28,8 @@ export function CitySearch({
   onCard?: boolean
   // Shown under the field when `disabled` (e.g. "Up to 5 cities").
   caption?: string
+  // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
+  onSearchFocus?: (e: FocusEvent) => void
 }) {
   const t = useT()
   const [q, setQ] = useState('')
@@ -48,6 +51,7 @@ export function CitySearch({
         placeholder={t('location.search_placeholder')}
         value={q}
         onChangeText={setQ}
+        onFocus={onSearchFocus}
         returnKeyType="search"
         autoCorrect={false}
         editable={!disabled}

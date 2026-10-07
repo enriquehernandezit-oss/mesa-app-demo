@@ -43,6 +43,7 @@ import { toast } from '@/components/ui/toast-store'
 import { useProfile } from '@/hooks/useProfile'
 import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { ApiError, api } from '@/lib/api'
+import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { ALL_CUISINES, cuisineLabel, displayScore } from '@/lib/display'
 import { captureError } from '@/lib/errors'
 import { dateLocale, useLanguage, useT } from '@/lib/i18n'
@@ -569,6 +570,7 @@ function StatTile({
 const MAX_FAVORITE_CUISINES = 10
 
 function EditProfile({ onClose }: { onClose: () => void }) {
+  const editScrollRef = useRef<ScrollView>(null)
   const queryClient = useQueryClient()
   const t = useT()
   const tabBarClearance = useTabBarClearance()
@@ -669,9 +671,13 @@ function EditProfile({ onClose }: { onClose: () => void }) {
         title={t('profile.edit_profile')}
       />
       <ScrollView
+        ref={editScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        // Tapping a search below slides it to the top (lib/bringToTop.ts); these let it get there.
+        scrollToOverflowEnabled
         automaticallyAdjustKeyboardInsets
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
         <View className="mt-2 items-center">
@@ -736,6 +742,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               sectors={neighborhoods.data?.neighborhoods ?? []}
               selected={new Set(currentSlug ? [currentSlug] : [])}
               onToggle={setSlug}
+              onSearchFocus={(e) => bringToTop(scrollViewHost(editScrollRef), e)}
             />
           </View>
           <View>
@@ -744,6 +751,7 @@ function EditProfile({ onClose }: { onClose: () => void }) {
               sectors={neighborhoods.data?.neighborhoods ?? []}
               selected={favoriteSlugs}
               onToggle={toggleFavoriteSlug}
+              onSearchFocus={(e) => bringToTop(scrollViewHost(editScrollRef), e)}
             />
           </View>
           <View>

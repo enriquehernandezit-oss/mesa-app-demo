@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { Redirect, useRouter } from 'expo-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -21,6 +21,7 @@ import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
 import { useSession } from '@/lib/auth-client'
 import { useAuthLost } from '@/lib/authLost'
+import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { contactsAvailable, importContactPhones } from '@/lib/contacts'
 import { cuisineLabel } from '@/lib/display'
 import { captureError } from '@/lib/errors'
@@ -205,12 +206,17 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
       : save.isError
         ? t('onboarding.profile_save_error')
         : null
+  const scrollRef = useRef<ScrollView>(null)
 
   return (
     <ScrollView
+      ref={scrollRef}
       showsVerticalScrollIndicator={false}
       contentContainerClassName="px-5 pt-6 pb-10"
+      // Tapping a search below slides it to the top (lib/bringToTop.ts); these let it get there.
+      scrollToOverflowEnabled
       automaticallyAdjustKeyboardInsets
+      keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
     >
       <StepTitle title={t('onboarding.who_are_you')} subtitle={t('onboarding.identity_subtitle')} />
@@ -267,6 +273,7 @@ function ProfileStep({ onNext }: { onNext: () => void }) {
           selected={new Set(neighborhoodSlug ? [neighborhoodSlug] : [])}
           onToggle={setNeighborhood}
           size="sm"
+          onSearchFocus={(e) => bringToTop(scrollViewHost(scrollRef), e)}
         />
       )}
 

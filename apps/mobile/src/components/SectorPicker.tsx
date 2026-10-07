@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View } from 'react-native'
+import { type FocusEvent, View } from 'react-native'
 
 import { Caption, Chip } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
@@ -15,11 +15,14 @@ export function SectorPicker({
   selected,
   onToggle,
   size,
+  onSearchFocus,
 }: {
   sectors: Sector[]
   selected: ReadonlySet<string>
   onToggle: (slug: string) => void
   size?: 'sm'
+  // The search field was focused — the page uses it to bring the field to the top (lib/bringToTop.ts).
+  onSearchFocus?: (e: FocusEvent) => void
 }) {
   const t = useT()
   const [query, setQuery] = useState('')
@@ -36,6 +39,7 @@ export function SectorPicker({
           value={query}
           onChangeText={setQuery}
           placeholder={t('sectors.search_placeholder')}
+          onFocus={onSearchFocus}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"

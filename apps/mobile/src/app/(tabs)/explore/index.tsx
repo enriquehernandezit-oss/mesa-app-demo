@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   FlatList,
+  type FocusEvent,
   Keyboard,
   Linking,
   Pressable,
@@ -47,6 +48,7 @@ import { useResetOnTabPress } from '@/hooks/useResetOnTabPress'
 import { useScrollTopOffset } from '@/hooks/useScrollTopOffset'
 import { track } from '@/lib/analytics'
 import { api } from '@/lib/api'
+import { bringToTop, flatListHost } from '@/lib/bringToTop'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import type { LatLng } from '@/lib/haversine'
 import { t as translate, useLanguage, useT } from '@/lib/i18n'
@@ -381,6 +383,11 @@ export default function ExploreScreen() {
   const listRef = useRef<FlatList<ExploreHit>>(null)
   // Not offset 0 — the list rests a large-title header lower than that (useScrollTopOffset).
   const topOffset = useScrollTopOffset()
+  // Tapping the search (or the city search under it) slides it up to just under the large title, so the
+  // results fill the space above the keyboard (lib/bringToTop.ts). Under the title, not under a folded
+  // bar: iOS folds a large title only under a finger, so a field slid higher hid behind "Explora".
+  const liftSearch = (e: FocusEvent, gap: number) =>
+    bringToTop(flatListHost(listRef), e, { top: -topOffset, gap })
   useResetOnTabPress(
     useCallback(
       (wasActive: boolean) => {
@@ -436,6 +443,7 @@ export default function ExploreScreen() {
           placeholder={t('explore.search_placeholder')}
           value={q}
           onChangeText={setQ}
+          onFocus={(e) => liftSearch(e, 4)}
           returnKeyType="search"
           clearButtonMode="while-editing"
           autoCorrect={false}
@@ -445,7 +453,7 @@ export default function ExploreScreen() {
       {/* Where to look. Places only: Events has no place to scope. */}
       {view === 'places' ? (
         <View className="mt-2">
-          <LocationFilter resetKey={locationReset} />
+          <LocationFilter resetKey={locationReset} onSearchFocus={(e) => liftSearch(e, 12)} />
         </View>
       ) : null}
       <Segmented

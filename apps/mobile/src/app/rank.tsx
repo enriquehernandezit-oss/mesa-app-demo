@@ -8,7 +8,7 @@ import {
 import { Image } from 'expo-image'
 import { Link, useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { type Dispatch, type SetStateAction, useEffect, useMemo, useRef, useState } from 'react'
-import { Keyboard, Pressable, ScrollView, Text, View } from 'react-native'
+import { type FocusEvent, Keyboard, Pressable, ScrollView, Text, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -47,6 +47,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { showActionSheet } from '@/lib/actionSheet'
 import { track } from '@/lib/analytics'
 import { ApiError, api } from '@/lib/api'
+import { bringToTop, scrollViewHost } from '@/lib/bringToTop'
 import { mesaNorm } from '@/lib/dishCategories'
 import { pickDishPhoto } from '@/lib/dishPhoto'
 import {
@@ -877,6 +878,7 @@ function RevealStep({
   onDone: () => void
   onAddNote: () => void
 }) {
+  const revealScrollRef = useRef<ScrollView>(null)
   const insets = useSafeAreaInsets()
   // The keyboard's cover of the screen's bottom (this sheet's bottom bar sits on that edge).
   const keyboardInset = useKeyboardInset()
@@ -969,8 +971,12 @@ function RevealStep({
         }
       />
       <ScrollView
+        ref={revealScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-6"
+        // Tapping a search below slides it to the top (lib/bringToTop.ts); these let it get there.
+        scrollToOverflowEnabled
+        automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
@@ -1056,7 +1062,10 @@ function RevealStep({
             value={dishQuery}
             onChangeText={setDishQuery}
             onSubmitEditing={addNewDishFromQuery}
-            onFocus={() => setSearching(true)}
+            onFocus={(e) => {
+              setSearching(true)
+              bringToTop(scrollViewHost(revealScrollRef), e)
+            }}
             onBlur={() => setSearching(false)}
           />
         </View>
@@ -1629,6 +1638,7 @@ function FindStep({
   onGoogleCreated: (restaurant: NewRestaurant) => void
   onBack: () => void
 }) {
+  const findScrollRef = useRef<ScrollView>(null)
   const insets = useSafeAreaInsets()
   const t = useT()
   const [adding, setAdding] = useState(false)
@@ -1845,8 +1855,11 @@ function FindStep({
       </View>
 
       <ScrollView
+        ref={findScrollRef}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-10"
+        // Lets the add-place sector search slide to the top (lib/bringToTop.ts).
+        scrollToOverflowEnabled
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         // Scrolling the results hides the keyboard, like the other search lists.
@@ -1891,7 +1904,11 @@ function FindStep({
         )}
 
         {wantOnly ? null : adding ? (
-          <AddPlaceForm addPlace={addPlace} onCancel={() => setAdding(false)} />
+          <AddPlaceForm
+            addPlace={addPlace}
+            onCancel={() => setAdding(false)}
+            onSearchFocus={(e) => bringToTop(scrollViewHost(findScrollRef), e)}
+          />
         ) : (
           <Pressable
             accessibilityRole="button"
@@ -1916,9 +1933,11 @@ function FindStep({
 function AddPlaceForm({
   addPlace,
   onCancel,
+  onSearchFocus,
 }: {
   addPlace: AddPlaceMutation
   onCancel: () => void
+  onSearchFocus: (e: FocusEvent) => void
 }) {
   const t = useT()
   const [name, setName] = useState('')
@@ -1944,6 +1963,7 @@ function AddPlaceForm({
         selected={new Set(slug ? [slug] : [])}
         onToggle={setSlug}
         size="sm"
+        onSearchFocus={onSearchFocus}
       />
       <View className="flex-row justify-end gap-3">
         <Button variant="secondary" size="sm" className="px-4" onPress={onCancel}>
