@@ -490,6 +490,20 @@ const DISHES: Record<string, string[]> = {
 // what a user picks while ranking. (Rows written before this vocabulary was
 // localized are still readable — see tagLabel() in apps/mobile/src/lib/display.ts,
 // which translates any legacy English value at render time.)
+// The English tags rankings carried before the vocabulary became Spanish, and the Spanish value each
+// one became. Migration 0041 rewrote the stored rows with exactly these pairs (seed-extra.test.ts keeps
+// the two in step), so Explore's occasion filter — an exact match — finds them; the app's tagLabel()
+// still translates any straggler on screen.
+export const LEGACY_TAG_ES: Record<string, string> = {
+  'Date Night': 'Cena romántica',
+  'Special Occasion': 'Ocasión especial',
+  'Group Dinner': 'Cena en grupo',
+  Outdoor: 'Al aire libre',
+  'Fine Dining': 'Alta cocina',
+  Casual: 'Informal',
+  'Late Night': 'Trasnoche',
+}
+
 export const TAGS = [
   'Cena romántica',
   'Ocasión especial',

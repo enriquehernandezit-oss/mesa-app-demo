@@ -288,6 +288,13 @@
       "when": 1791277444500,
       "tag": "0040_abnormal_human_torch",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791347059670,
+      "tag": "0041_occasion_tags_spanish",
+      "breakpoints": true
     }
   ]
 }
