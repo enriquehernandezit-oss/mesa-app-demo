@@ -174,10 +174,11 @@ export const meRoutes = new Hono<AuthedEnv>()
     const { rankings, eulaAcceptedAt, neighborhoodId, phoneHash, ...profile } = row
     // Handle (Instagram) is optional, so it's no longer part of the gate —
     // a neighborhood, an accepted EULA, and at least one ranking complete it.
-    const onboardingComplete =
-      (Boolean(neighborhoodId) || Boolean(row.homeArea)) &&
-      Boolean(eulaAcceptedAt) &&
-      rankings.length > 0
+    // Sign-up step 1 (profile, home, terms) is saved; only the starter list is missing. The app resumes
+    // sign-up there instead of asking for the profile again.
+    const profileStepDone =
+      (Boolean(neighborhoodId) || Boolean(row.homeArea)) && Boolean(eulaAcceptedAt)
+    const onboardingComplete = profileStepDone && rankings.length > 0
 
     // Which providers this account signs in with — the delete flow asks Apple again for an Apple account.
     const providers = (
@@ -200,6 +201,7 @@ export const meRoutes = new Hono<AuthedEnv>()
         phoneMatchEnabled: Boolean(phoneHash),
       },
       onboardingComplete,
+      profileStepDone,
     })
   })
   // Completes the profile step of onboarding (name, @handle, neighborhood,

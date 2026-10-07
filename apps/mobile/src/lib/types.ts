@@ -49,6 +49,9 @@ export interface MeResponse {
     birthday: string | null
   }
   onboardingComplete: boolean
+  // Sign-up step 1 is saved (profile, home, terms) — sign-up resumes at the starter list. Absent from an
+  // older API.
+  profileStepDone?: boolean
 }
 
 // A row in the moderator queue. `target` carries the reported content itself —

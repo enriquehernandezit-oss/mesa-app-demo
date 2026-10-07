@@ -33,7 +33,7 @@ import { choose, initPairwise, isDone, nextComparison, progress, skip, tie } fro
 import { takePendingInvite } from '@/lib/pendingInvite'
 import { resetToSignIn } from '@/lib/resetToSignIn'
 import { parseBirthdayIso } from '@/lib/time'
-import type { Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
+import type { MeResponse, Neighborhood, Restaurant, SuggestedUser } from '@/lib/types'
 import { currentLocationStatus, requestMyLocation } from '@/lib/useMyLocation'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
@@ -57,7 +57,12 @@ export default function Onboarding() {
   const { data: session, isPending } = useSession()
   const authed = Boolean(session?.user)
   const { data: me } = useProfile(authed && !authLost)
-  const [step, setStep] = useState<Step>('profile')
+  // Where sign-up starts: someone who left after saving step 1 (and signed in again) picks up at the
+  // starter list instead of filling the profile in twice. Decided once, when /me first arrives.
+  const [step, setStep] = useState<Step | null>(null)
+  useEffect(() => {
+    if (step === null && me) setStep(me.profileStepDone ? 'rank' : 'profile')
+  }, [step, me])
   const queryClient = useQueryClient()
   const router = useRouter()
   const t = useT()
@@ -79,7 +84,7 @@ export default function Onboarding() {
     router.replace('/discover')
   }
 
-  const stepIndex = STEPS.indexOf(step)
+  const stepIndex = step ? STEPS.indexOf(step) : 0
 
   // A way out of sign-up at any step. The account already exists (it was made on the screen before), so
   // "leaving" is either signing out to finish later, or deleting it — the same page as Settings uses.
@@ -137,7 +142,10 @@ export default function Onboarding() {
         </View>
       </View>
 
-      {step === 'profile' && <ProfileStep onNext={() => setStep('rank')} />}
+      {step === null && <Body className="px-5 pt-8">{t('onboarding.loading_spots')}</Body>}
+      {step === 'profile' && me && (
+        <ProfileStep initial={me.profile} onNext={() => setStep('rank')} />
+      )}
       {step === 'rank' && <RankStep onNext={() => setStep('friends')} />}
       {step === 'friends' && <FriendsStep onFinish={finish} />}
     </SafeAreaView>
@@ -146,22 +154,32 @@ export default function Onboarding() {
 
 // Step 1: identity. Name, @handle, home sector, and the EULA/terms accept a UGC
 // app needs at signup (App Store 1.2).
-function ProfileStep({ onNext }: { onNext: () => void }) {
+// What is already on the account fills step 1 in: the name Google or Apple gave, and anything saved
+// on an earlier, unfinished try. An email sign-up's name is the address's first part (a placeholder the
+// server needs), so it is left for the member to type.
+function initialName(p: MeResponse['profile']): string {
+  const placeholder = p.email?.split('@')[0]
+  return p.name && p.name !== placeholder && !p.email?.endsWith('@phone.mesa.local') ? p.name : ''
+}
+
+function ProfileStep({ initial, onNext }: { initial: MeResponse['profile']; onNext: () => void }) {
   const t = useT()
-  const [name, setName] = useState('')
-  const [handle, setHandle] = useState('')
-  const [neighborhoodSlug, setNeighborhoodSlug] = useState('')
+  const [name, setName] = useState(() => initialName(initial))
+  const [handle, setHandle] = useState(initial.handle ?? '')
+  const [neighborhoodSlug, setNeighborhoodSlug] = useState(initial.neighborhood?.slug ?? '')
   // "Otro": lives outside the sectors, and says where instead.
-  const [otherArea, setOtherArea] = useState(false)
-  const [homeArea, setHomeArea] = useState('')
+  const [otherArea, setOtherArea] = useState(Boolean(initial.homeArea))
+  const [homeArea, setHomeArea] = useState(initial.homeArea ?? '')
   const setNeighborhood = (slug: string) => {
     setNeighborhoodSlug(slug)
     setOtherArea(false)
   }
   const [accepted, setAccepted] = useState(false)
-  const [birthDay, setBirthDay] = useState('')
-  const [birthMonth, setBirthMonth] = useState('')
-  const [birthYear, setBirthYear] = useState('')
+  // Saved as YYYY-MM-DD.
+  const [savedYear, savedMonth, savedDay] = (initial.birthday ?? '').split('-')
+  const [birthDay, setBirthDay] = useState(savedDay ?? '')
+  const [birthMonth, setBirthMonth] = useState(savedMonth ?? '')
+  const [birthYear, setBirthYear] = useState(savedYear ?? '')
 
   const {
     data,

@@ -359,6 +359,17 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
       expect(me.neighborhood?.slug).toBe(tag)
     })
 
+    test('profileStepDone needs a home and accepted terms, and the starter list is still missing', async () => {
+      as(ben)
+      await send('PATCH', '/me/profile', { name: 'Ben', neighborhoodSlug: tag, acceptEula: true })
+      const body = (await (await send('GET', '/me')).json()) as {
+        profileStepDone: boolean
+        onboardingComplete: boolean
+      }
+      expect(body.profileStepDone).toBe(true)
+      expect(body.onboardingComplete).toBe(false)
+    })
+
     test('neither, both, or a one-letter place is refused', async () => {
       as(ana)
       for (const body of [
