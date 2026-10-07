@@ -290,6 +290,20 @@ answers on both its Railway address and the domain: the home page (`/`), support
 8. **App Store Connect:** privacy URL `https://mesasocial.app/legal/privacy`, support URL
    `https://mesasocial.app/support`, marketing URL `https://mesasocial.app`.
 
+### Confirming email sign-ups with a code
+
+An email + password sign-up has to prove the address is theirs: Mesa mails a 6-digit code (valid 10
+minutes, 3 wrong guesses spend it) and the app asks for it before letting the member in. Apple and
+Google sign-ins skip it. A sign-in with the right password on a still-unconfirmed address mails a
+fresh code; only the newest code works.
+
+It is **off until you switch it on**, by the Railway variable `REQUIRE_EMAIL_VERIFICATION=true`. Order
+matters: deploy the API, publish the OTA that carries the code screen (the installed build must show
+`3c4848af…`), then set the variable. Set earlier, an app without the screen creates the account and
+shows nothing to type. Needs `EMAIL_PROVIDER_API_KEY` and `EMAIL_FROM` working (a verified Resend
+domain), since the code travels by email. Accounts already created with an address that can't receive
+mail (test accounts) are locked out once it is on.
+
 ## What is NOT on Railway (Phase 1)
 
 - **The iOS build** — that's EAS Build + the Apple Developer account, tracked in

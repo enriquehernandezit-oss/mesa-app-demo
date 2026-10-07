@@ -21,7 +21,7 @@ export const es = {
   'auth.PASSWORD_TOO_SHORT': 'La contraseña debe tener al menos 8 caracteres.',
   'auth.PASSWORD_TOO_LONG': 'Esa contraseña es demasiado larga.',
   'auth.PASSWORD_COMPROMISED': 'Esa contraseña apareció en una filtración conocida. Elige otra.',
-  'auth.EMAIL_NOT_VERIFIED': 'Confirma tu correo antes de entrar. Te enviamos un enlace.',
+  'auth.EMAIL_NOT_VERIFIED': 'Confirma tu correo antes de entrar. Te enviamos un código.',
   'auth.CREDENTIAL_ACCOUNT_NOT_FOUND': 'Esa cuenta entra con Apple o Instagram, no con contraseña.',
   'auth.SESSION_EXPIRED': 'Tu sesión venció. Entra de nuevo.',
   'auth.SESSION_NOT_FRESH': 'Por seguridad, vuelve a entrar para hacer este cambio.',
@@ -49,6 +49,17 @@ export const es = {
   'auth.suspended_body':
     'Suspendimos esta cuenta por incumplir las normas de la comunidad. Si crees que fue un error, responde al correo con el que te registraste.',
   'auth.back_to_start': 'Volver al inicio',
+  // Confirming an email + password sign-up with the 6-digit code (components/ConfirmEmailCode.tsx)
+  'auth.confirm_title': 'Confirma tu correo',
+  'auth.confirm_body':
+    'Enviamos un código de 6 dígitos a {email}. Escríbelo aquí. Si no llega, revisa spam.',
+  'auth.confirm_code_label': 'Código de 6 dígitos',
+  'auth.confirm_button': 'Confirmar',
+  'auth.confirm_resend': 'Enviar otro código',
+  'auth.confirm_resend_in': 'Enviar otro código en {n} s',
+  'auth.confirm_resent': 'Te enviamos un código nuevo. Usa el más reciente.',
+  'auth.confirm_wrong_email': '¿Correo equivocado? Volver',
+  'auth.confirm_spent': 'Ese código ya no sirve. Pide uno nuevo.',
   'auth.create_account_eyebrow': 'Crea tu cuenta',
   'auth.welcome_back': 'Bienvenido de nuevo',
   'auth.email_placeholder': 'tu@correo.com',

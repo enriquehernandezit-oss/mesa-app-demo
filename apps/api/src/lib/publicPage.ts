@@ -207,5 +207,3 @@ export function notFound(canonical: string): string {
 // direction would be a cycle.
 export const resetPasswordUrl = (token: string) =>
   `${publicOrigin()}/p/reset-password?token=${encodeURIComponent(token)}`
-
-export const verifyEmailUrl = () => `${publicOrigin()}/p/verify-email`

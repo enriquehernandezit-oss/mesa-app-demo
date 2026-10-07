@@ -167,9 +167,9 @@ export const authPagesRoutes = new Hono<AppEnv>()
     )
   })
 
-  // Where Better Auth redirects after it verifies the emailed token (auth.ts
-  // `callbackURL`). The verification already happened upstream — this page only
-  // reports it and points back at the app.
+  // Where Better Auth redirects after it verifies an emailed confirmation LINK. New sign-ups confirm
+  // with a 6-digit code in the app instead (lib/emailCode.ts); this stays for links already sitting
+  // in inboxes from before. The verification happened upstream — this page only reports it.
   .get('/verify-email', (c) => {
     c.header('Cache-Control', 'no-store')
     return c.html(

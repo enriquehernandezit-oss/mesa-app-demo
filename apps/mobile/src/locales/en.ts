@@ -14,7 +14,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.PASSWORD_TOO_SHORT': 'Your password needs at least 8 characters.',
   'auth.PASSWORD_TOO_LONG': "That password's too long.",
   'auth.PASSWORD_COMPROMISED': 'That password showed up in a known breach. Pick another.',
-  'auth.EMAIL_NOT_VERIFIED': 'Confirm your email before signing in. We sent you a link.',
+  'auth.EMAIL_NOT_VERIFIED': 'Confirm your email before signing in. We sent you a code.',
   'auth.CREDENTIAL_ACCOUNT_NOT_FOUND':
     'That account signs in with Apple or Instagram, not a password.',
   'auth.SESSION_EXPIRED': 'Your session expired. Sign in again.',
@@ -42,6 +42,17 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.suspended_body':
     'We suspended this account for breaking community guidelines. If you think this was a mistake, reply to the email you signed up with.',
   'auth.back_to_start': 'Back to start',
+  // Confirming an email + password sign-up with the 6-digit code (components/ConfirmEmailCode.tsx)
+  'auth.confirm_title': 'Confirm your email',
+  'auth.confirm_body':
+    'We sent a 6-digit code to {email}. Enter it here. If it does not arrive, check spam.',
+  'auth.confirm_code_label': '6-digit code',
+  'auth.confirm_button': 'Confirm',
+  'auth.confirm_resend': 'Send another code',
+  'auth.confirm_resend_in': 'Send another code in {n} s',
+  'auth.confirm_resent': 'We sent you a new code. Use the most recent one.',
+  'auth.confirm_wrong_email': 'Wrong email? Go back',
+  'auth.confirm_spent': 'That code no longer works. Ask for a new one.',
   'auth.create_account_eyebrow': 'Create your account',
   'auth.welcome_back': 'Welcome back',
   'auth.email_placeholder': 'you@email.com',

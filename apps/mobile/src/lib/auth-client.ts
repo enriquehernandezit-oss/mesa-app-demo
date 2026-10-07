@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
+import { emailOTPClient, genericOAuthClient, phoneNumberClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 
 import { track } from '@/lib/analytics'
@@ -12,8 +12,8 @@ import { unregisterPush } from './push'
 import { queryClient } from './query'
 
 // Better Auth client, pointed at the Hono API. Mirrors the server's providers
-// (apps/api/src/auth.ts): email+password (built in), phone OTP, Apple (social),
-// Instagram (generic OAuth). Whether the social ones complete depends on the
+// (apps/api/src/auth.ts): email+password (built in) with its 6-digit confirmation code (emailOTP),
+// phone OTP, Apple (social), Instagram (generic OAuth). Whether the social ones complete depends on the
 // server having their secrets; email/password works in every build.
 //
 // EXPO_PUBLIC_API_URL is the API's absolute public URL; Better Auth mounts at
@@ -30,7 +30,7 @@ const baseURL = `${apiBaseOrigin}/api/auth`
 
 export const authClient = createAuthClient({
   baseURL,
-  plugins: [phoneNumberClient(), genericOAuthClient()],
+  plugins: [phoneNumberClient(), genericOAuthClient(), emailOTPClient()],
   fetchOptions: {
     // Bearer only — never the iOS cookie jar. Better Auth defaults to
     // `credentials: 'include'`, and RN's fetch then lets NSURLSession store

@@ -181,7 +181,13 @@ export const authThrottleAfter = createAuthMiddleware(async (ctx) => {
   const key = throttleKey(email)
 
   // A rejected sign-in leaves an APIError here; a successful one leaves the
-  // session payload.
+  // session payload. EMAIL_NOT_VERIFIED is not a failure: Better Auth only says it once the password
+  // was right (and emails a code), so counting it would back off a member for confirming their email.
+  const returned = ctx.context.returned
+  const unconfirmed =
+    returned instanceof APIError &&
+    (returned.body as { code?: unknown } | undefined)?.code === 'EMAIL_NOT_VERIFIED'
+  if (unconfirmed) return
   const failed = failedCall
   // Recorded either way. A failed attempt is resolved back to the account it
   // targeted — otherwise the row says only "someone failed a sign-in from this

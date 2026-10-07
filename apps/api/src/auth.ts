@@ -1,11 +1,18 @@
 import { db, schema } from '@mesa/db'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { bearer, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
+import { bearer, emailOTP, genericOAuth, haveIBeenPwned, phoneNumber } from 'better-auth/plugins'
 
 import { PWNED_MESSAGE } from './lib/authMessages'
 import { authThrottleAfter, authThrottleBefore } from './lib/authThrottle'
-import { resetPasswordUrl, verifyEmailUrl } from './lib/publicPage'
+import {
+  EMAIL_CODE_ATTEMPTS,
+  EMAIL_CODE_LENGTH,
+  EMAIL_CODE_MINUTES,
+  emailCodeGuard,
+  emailCodeMail,
+} from './lib/emailCode'
+import { resetPasswordUrl } from './lib/publicPage'
 
 // Better Auth wired to Postgres via the pooled Drizzle client from @mesa/db.
 //
@@ -40,6 +47,11 @@ const isDevEnv = ['development', 'dev', 'test'].includes(process.env.NODE_ENV ??
 // every send then threw, so a "working" phone login failed for the one person who tried it. When a
 // sender is written, this is the one line to change (and docs/DEPLOY.md's phone note with it).
 const hasSms = isDevEnv
+
+// Must an email + password account confirm its address (the 6-digit code) before it can sign in?
+// Off until the app that can enter the code is out: switched on with the code screen missing, a new
+// member signs up and is simply never let in. Turned on from Railway, no deploy of code needed.
+const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true'
 
 const hasApple = Boolean(process.env.APPLE_CLIENT_ID)
 // Both GOOGLE_CLIENT_ID (the Web client, paired with the secret) and
@@ -143,6 +155,19 @@ const instagramPlugin = genericOAuth({
   ],
 })
 
+// The emailOTP plugin's other routes: password-free sign-in by code, its own password reset and
+// email change. Mesa has one reset (the emailed link) and confirmation is the only job the code does,
+// so these stay closed — including the "is this code right?" check, which would only be a free guess.
+const EMAIL_OTP_UNUSED = [
+  '/email-otp/check-verification-otp',
+  '/sign-in/email-otp',
+  '/email-otp/request-password-reset',
+  '/forget-password/email-otp',
+  '/email-otp/reset-password',
+  '/email-otp/request-email-change',
+  '/email-otp/change-email',
+]
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
@@ -229,7 +254,9 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    requireEmailVerification: false,
+    // With it on, sign-up returns no session and sign-in with the right password answers
+    // EMAIL_NOT_VERIFIED (403) and emails a fresh code; entering it signs the member in.
+    requireEmailVerification,
     // Defaults to FALSE, which quietly defeats the point of a reset: someone
     // who resets because their account was compromised would leave the
     // attacker's session alive. Resetting a password must end every other
@@ -254,27 +281,13 @@ This link expires in about an hour. If you didn't request it, you can safely ign
     },
   },
 
-  // Email verification. A link is sent on email/password signup (skipped for
-  // placeholder phone accounts inside sendMail); clicking it hits Better Auth's
-  // verify endpoint and signs the user in. Not required to use the app in this
-  // build (requireEmailVerification:false) — it confirms the address, no gate.
+  // Email verification is a 6-digit code (the emailOTP plugin below takes over sending it), mailed on
+  // email + password sign-up and again on any sign-in while the address is unconfirmed. Entering it
+  // confirms the address and signs the member in — needed when sign-up handed out no session.
   emailVerification: {
     sendOnSignUp: true,
+    sendOnSignIn: true,
     autoSignInAfterVerification: true,
-    // Land on a page that says it worked rather than dumping the member on a
-    // bare redirect from the API. Served by this same server under /p, ahead of
-    // the session middleware, so it works on a device that has never signed in.
-    callbackURL: verifyEmailUrl(),
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendMail(
-        user.email,
-        'Verify your email for Mesa',
-        `Welcome to Mesa. Confirm your email to finish setting up your account:
-${url}
-
-If you didn't create a Mesa account, you can ignore this email.`,
-      )
-    },
   },
 
   // Per-account sign-in throttling. The IP limit above bounds one noisy source;
@@ -358,12 +371,13 @@ If you didn't create a Mesa account, you can ignore this email.`,
   // Phone sign-in is off outside development until an SMS sender exists. disabledPaths keeps the
   // plugin, its schema and the client wiring intact, so turning it on is one line, not a revert.
   disabledPaths: hasSms
-    ? []
+    ? [...EMAIL_OTP_UNUSED]
     : [
         '/phone-number/send-otp',
         '/phone-number/verify',
         '/phone-number/request-password-reset',
         '/phone-number/reset-password',
+        ...EMAIL_OTP_UNUSED,
       ],
 
   plugins: [
@@ -382,6 +396,23 @@ If you didn't create a Mesa account, you can ignore this email.`,
     // tracking prevention and the Capacitor native webview. Cookies still work
     // untouched for first-party/same-origin web.
     bearer(),
+    // Email confirmation by code. Codes are stored hashed and expire; the guard stops a code being
+    // sent for an address that is already confirmed (lib/emailCode.ts).
+    emailOTP({
+      otpLength: EMAIL_CODE_LENGTH,
+      expiresIn: EMAIL_CODE_MINUTES * 60,
+      allowedAttempts: EMAIL_CODE_ATTEMPTS,
+      storeOTP: 'hashed',
+      overrideDefaultEmailVerification: true,
+      // The plugin can also sign people up and in by code alone; Mesa uses it for confirmation only.
+      disableSignUp: true,
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        if (type !== 'email-verification') return
+        const mail = emailCodeMail(otp)
+        await sendMail(email, mail.subject, mail.body)
+      },
+    }),
+    emailCodeGuard,
     phoneNumber({
       sendOTP: async ({ phoneNumber: to, code }) => {
         // Dev path: no SMS provider needed to exercise phone login locally.

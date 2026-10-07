@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { ConfirmEmailCode } from '@/components/ConfirmEmailCode'
 import { GoogleSignInButton } from '@/components/GoogleSignInButton'
 import { Body, Button, Caption, Eyebrow, MAX_SCALE, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
@@ -26,6 +27,7 @@ import { track } from '@/lib/analytics'
 import { authClient, signOut } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { clearAuthLost } from '@/lib/authLost'
+import { needsEmailCode } from '@/lib/emailConfirm'
 import { useT } from '@/lib/i18n'
 import { queryClient } from '@/lib/query'
 import { useResolvedTheme } from '@/theme/ThemeProvider'
@@ -94,6 +96,8 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'signup' | 'signin'>('signup')
   const [resetSent, setResetSent] = useState(false)
+  // The address waiting on its 6-digit code (components/ConfirmEmailCode.tsx), or null.
+  const [confirming, setConfirming] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [appleAvailable, setAppleAvailable] = useState(false)
@@ -190,6 +194,12 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
         : authClient.signIn.email({ email: addr, password })
     ).catch(() => ({ error: NETWORK_ERROR }))
     setBusy(false)
+    // The server mailed a code: a new account has no session until the address is confirmed, and a
+    // sign-in with the right password on an unconfirmed one gets a fresh code.
+    if (needsEmailCode(mode, res)) {
+      setConfirming(addr)
+      return
+    }
     if ('error' in res && res.error) {
       setError(
         authErrorMessage(
@@ -210,8 +220,11 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
       .requestPasswordReset({ email: email.trim(), redirectTo: '/reset-password' })
       .catch(() => ({ error: NETWORK_ERROR }))
     setBusy(false)
-    if ('error' in res && res.error && (res.error as AuthClientError).status === 429) {
-      setError(authErrorMessage(res.error))
+    // The server answers the same "sent" for an address with no account (so nobody can tell who is a
+    // member), which means ANY error here is a real failure — no connection, a restarting server, a
+    // rate limit. Saying "sent" over those left people waiting for an email that was never asked for.
+    if ('error' in res && res.error) {
+      setError(authErrorMessage(res.error as AuthClientError))
       return
     }
     setResetSent(true)
@@ -243,6 +256,10 @@ export function AuthFlow({ suspended = false }: { suspended?: boolean }) {
         </View>
       </SafeAreaView>
     )
+  }
+
+  if (confirming) {
+    return <ConfirmEmailCode email={confirming} onBack={() => setConfirming(null)} />
   }
 
   const canSubmit = email.includes('@') && password.length >= 8
