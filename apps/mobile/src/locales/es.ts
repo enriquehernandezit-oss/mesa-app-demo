@@ -360,6 +360,10 @@ export const es = {
   'explore.trending_title': 'Sonando esta semana',
   'explore.cheers_this_week': { one: '{n} cheer esta semana', other: '{n} cheers esta semana' },
   'explore.map_label': 'Ver el mapa',
+  'explore.map_button': 'Mapa',
+  'explore.show_list': 'Ver la lista',
+  'explore.map_count': { one: '1 lugar en el mapa', other: '{n} lugares en el mapa' },
+  'explore.map_none': 'Ningún lugar para mostrar en el mapa.',
   'explore.search_placeholder': 'Busca un spot, plato o miembro',
 
   // app/leaderboard.tsx

@@ -194,6 +194,9 @@ async function exploreRows(
       // Metres from the member, only when they asked for Cerca.
       distanceM: near ? sql<number | null>`round(${distanceSql(near)})::int` : sql<null>`null`,
       address: restaurants.address,
+      // Where it is, for Explore's map view of the same results.
+      lat: restaurants.lat,
+      lng: restaurants.lng,
       friendAvg: sql<
         number | null
       >`avg(${rankings.score}) filter (where ${inArray(rankings.userId, following)})::float`,

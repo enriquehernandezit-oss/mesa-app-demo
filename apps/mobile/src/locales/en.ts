@@ -344,6 +344,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'explore.trending_title': 'Trending this week',
   'explore.cheers_this_week': { one: '{n} cheer this week', other: '{n} cheers this week' },
   'explore.map_label': 'View the map',
+  'explore.map_button': 'Map',
+  'explore.show_list': 'Show the list',
+  'explore.map_count': { one: '1 place on the map', other: '{n} places on the map' },
+  'explore.map_none': 'No places to show on the map.',
   'explore.search_placeholder': 'Search a spot, dish, or member',
 
   'leaderboard.period_month': 'This month',

@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { HitRow } from '@/components/explore/HitRow'
 import { MemberRow } from '@/components/explore/MemberRow'
+import { ResultsMap } from '@/components/explore/ResultsMap'
 import { TrendingRail } from '@/components/explore/TrendingRail'
 import {
   type ExploreFilterValues,
@@ -363,6 +364,8 @@ export default function ExploreScreen() {
   // animation) so the field sits at the top and the results fill the space above the keyboard —
   // nothing scrolls, because a scroll made in code raced iOS's own keyboard adjustment and the list
   // slid twice. It comes back when the field is empty and the keyboard is down.
+  // Explore's results as pins on a map instead of rows (components/explore/ResultsMap.tsx).
+  const [mapOpen, setMapOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const searching = searchFocused || q.trim().length > 0
   const setFocusedAnimated = (on: boolean) => {
@@ -391,6 +394,7 @@ export default function ExploreScreen() {
         // from another tab keeps your search — only the scroll position is refreshed.)
         if (wasActive) {
           Keyboard.dismiss()
+          setMapOpen(false)
           setQ('')
           clearFilters()
           setSort('score')
@@ -709,6 +713,38 @@ export default function ExploreScreen() {
         className="absolute inset-x-0 top-0 bg-bg"
         style={{ height: insets.top }}
       />
+      {/* The same results as pins. A floating button, like Airbnb's, only on Places and only when there
+          is something to show; it hides while the keyboard is up. */}
+      {view === 'places' && !mapOpen && !searchFocused && shownHits.length > 0 ? (
+        <View
+          pointerEvents="box-none"
+          className="absolute inset-x-0 items-center"
+          style={{ bottom: tabBarClearance + 6 }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('explore.map_label')}
+            onPress={() => setMapOpen(true)}
+            className="min-h-[44px] flex-row items-center gap-2 rounded-pill bg-ink px-5 active:opacity-80"
+          >
+            <MapIcon size={16} color="on-ink" />
+            <Text
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="font-ui-semibold text-subhead text-on-ink"
+            >
+              {t('explore.map_button')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+      {mapOpen ? (
+        <ResultsMap
+          hits={shownHits}
+          me={position}
+          bottomInset={tabBarClearance}
+          onClose={() => setMapOpen(false)}
+        />
+      ) : null}
       <ExploreFilters
         visible={filtersOpen}
         onClose={() => setFiltersOpen(false)}

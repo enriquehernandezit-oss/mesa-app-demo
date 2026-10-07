@@ -344,6 +344,9 @@ export interface ExploreHit {
   // Metres from the member — only when Explore sent a position (Cerca).
   distanceM?: number | null
   address?: string | null
+  // Where it is — what Explore's map view plots (absent from an older API).
+  lat?: number
+  lng?: number
   friendAvg: number | null
   friendCount: number
   mesaCount: number
