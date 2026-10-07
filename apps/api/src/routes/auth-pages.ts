@@ -4,6 +4,7 @@ import { auth } from '../auth'
 import type { AppEnv } from '../context'
 import { PWNED_MESSAGE } from '../lib/authMessages'
 import { esc, layout } from '../lib/publicPage'
+import { checkBreached } from '../lib/pwnedPassword'
 
 // The two pages an auth email has to land on. They used to live in the Vite web
 // app; that app is retired, so they live here — the one web surface that
@@ -23,6 +24,12 @@ import { esc, layout } from '../lib/publicPage'
 // way out of the page.
 const APP_SCHEME = 'mesa://'
 
+// Better Auth's own limits (emailAndPassword.minPasswordLength in auth.ts, and its default maximum).
+// Checked here because Better Auth rejects a wrong length before it spends the token, but this page
+// would then have nothing to show except "expired".
+const MIN_PASSWORD = 8
+const MAX_PASSWORD = 128
+
 function appFooter(label: string): string {
   return `<a class="cta" href="${APP_SCHEME}">${esc(label)}</a>
     <p class="tagline">where your friends actually eat</p>`
@@ -41,12 +48,13 @@ function page(opts: { canonical: string; title: string; body: string; footer?: s
 
 // A dead end that still tells the truth. Reset tokens are single-use and
 // short-lived, so "expired" is the common case here, not an error state.
-function tokenGone(canonical: string): string {
+function tokenGone(canonical: string, reason?: string): string {
   return page({
     canonical,
     title: 'Enlace vencido — Mesa',
     body: `<div class="missing">
       <h1>Enlace vencido</h1>
+      ${reason ? `<p class="error">${esc(reason)}</p>` : ''}
       <p class="hint">Este enlace ya se usó o expiró. Pide uno nuevo desde la app: <em>¿Olvidaste tu contraseña?</em></p>
     </div>`,
     footer: appFooter('Abrir Mesa'),
@@ -98,14 +106,34 @@ export const authPagesRoutes = new Hono<AppEnv>()
     if (!token) return c.html(tokenGone(c.req.url), 400)
     // Checked here as well as by `minlength`/`required` so a client that ignores
     // the attributes still gets the same answer.
-    if (password.length < 8) {
+    if (password.length < MIN_PASSWORD) {
       return c.html(
         formPage(c.req.url, token, 'La contraseña debe tener al menos 8 caracteres.'),
         400,
       )
     }
+    if (password.length > MAX_PASSWORD) {
+      return c.html(
+        formPage(c.req.url, token, 'La contraseña puede tener como máximo 128 caracteres.'),
+        400,
+      )
+    }
     if (password !== confirm) {
       return c.html(formPage(c.req.url, token, 'Las contraseñas no coinciden.'), 400)
+    }
+    // Before Better Auth sees it: its reset endpoint spends the token first and checks the breach list
+    // second, so a breached password there costs the member their link (lib/pwnedPassword.ts).
+    const breach = await checkBreached(password)
+    if (breach === 'breached') return c.html(formPage(c.req.url, token, PWNED_MESSAGE), 400)
+    if (breach === 'unknown') {
+      return c.html(
+        formPage(
+          c.req.url,
+          token,
+          'No pudimos comprobar la contraseña en este momento. Intenta de nuevo en un minuto.',
+        ),
+        503,
+      )
     }
 
     // Through Better Auth's own API, not the database: this is the path that
@@ -118,13 +146,12 @@ export const authPagesRoutes = new Hono<AppEnv>()
         headers: c.req.raw.headers,
       })
     } catch (err) {
-      // Better Auth throws for a spent, unknown or expired token. It's also the
-      // breached-password rejection (the haveIBeenPwned plugin), which is a
-      // different problem: the link is fine, the password is not. Telling someone
-      // their token expired then sends them in a circle, and the token is still
-      // good, so the form comes back with the reason.
+      // Better Auth throws for a spent, unknown or expired token. The breach list is checked above,
+      // so its own breached-password rejection only lands here if the two lookups disagree — and by
+      // then Better Auth has already spent the token, so the form can't come back: say why, and that
+      // a new link is needed.
       if (err instanceof Error && err.message === PWNED_MESSAGE) {
-        return c.html(formPage(c.req.url, token, PWNED_MESSAGE), 400)
+        return c.html(tokenGone(c.req.url, PWNED_MESSAGE), 400)
       }
       return c.html(tokenGone(c.req.url), 400)
     }
