@@ -216,6 +216,19 @@ async function exploreRows(
     .map((r) => ({ ...r, isNew: r.mesaCount === 0 }))
 }
 
+// A filter facet's values from repeated query params: trimmed, empties and repeats dropped, and capped so
+// one request cannot carry an unbounded IN list.
+const MAX_FACET_VALUES = 30
+function facetValues(raw: string[] | undefined): string[] {
+  const seen = new Set<string>()
+  for (const v of raw ?? []) {
+    const value = v.trim()
+    if (value) seen.add(value)
+    if (seen.size >= MAX_FACET_VALUES) break
+  }
+  return [...seen]
+}
+
 export const restaurantRoutes = new Hono<AuthedEnv>()
   .use(requireAuth)
   // Explore/search — find a spot by name/cuisine/neighborhood, optionally
@@ -240,12 +253,16 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
   .get('/', async (c) => {
     const me = c.get('user')
     const q = (c.req.query('q') ?? '').trim()
-    const hood = (c.req.query('neighborhood') ?? '').trim()
-    const cuisine = (c.req.query('cuisine') ?? '').trim()
-    const price = Number(c.req.query('price')) || null
+    // Each facet takes several values (`cuisine=a&cuisine=b`): a place matches ANY value within a
+    // facet, and every facet that is set. One value is the same request the app always sent.
+    const hoods = facetValues(c.req.queries('neighborhood'))
+    const cuisines = facetValues(c.req.queries('cuisine'))
+    const prices = facetValues(c.req.queries('price'))
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n >= 1 && n <= 4)
     const openNow = c.req.query('open') === '1'
-    const occasion = (c.req.query('occasion') ?? '').trim()
-    const highlight = (c.req.query('highlight') ?? '').trim()
+    const occasions = facetValues(c.req.queries('occasion'))
+    const highlights = facetValues(c.req.queries('highlight'))
     const minScore = Number(c.req.query('minScore')) || null
     // Cerca: the member's position and how far counts as near. Distance sorting needs a position.
     const near = parseNear(c.req.query('near'))
@@ -271,27 +288,32 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
     const liveConds = [isNull(restaurants.removedAt), isNull(restaurants.closedAt)]
     const where = location ? locationCondition(location) : undefined
     if (where) liveConds.push(where)
-    if (hood) liveConds.push(eq(neighborhoods.slug, hood))
-    if (price) liveConds.push(eq(restaurants.priceTier, price))
-    // Cuisine facet — the chip value is the exact stored English cuisine (from
-    // GET /restaurants/cuisines), so an equality is exact and correct.
-    if (cuisine) liveConds.push(eq(restaurants.cuisine, cuisine))
+    if (hoods.length) liveConds.push(inArray(neighborhoods.slug, hoods))
+    if (prices.length) liveConds.push(inArray(restaurants.priceTier, prices))
+    // Cuisine facet — the chip values are the exact stored English cuisines (from
+    // GET /restaurants/cuisines), so membership is exact and correct.
+    if (cuisines.length) liveConds.push(inArray(restaurants.cuisine, cuisines))
     // "Open now" is a demo filter over the display close-time (not real hours).
     // Really open at this minute, from Google's weekly hours (lib/openNow.ts). It used to mean "has a
     // closing time", which said nothing about now.
     if (openNow) liveConds.push(isOpenNow())
     if (near) liveConds.push(sql`${distanceSql(near)} <= ${radiusM}`)
     // Occasion (A1) and highlight ("What stood out?", P2) — at least one ranking of this place
-    // carries the tag. Both live in rankings.tags, so they are the same filter on two params; with
-    // both set a place needs a ranking for each. Same qualifying-id-subquery shape as
-    // dishMatch/rankedPool below. Written as array containment (`@>`), not `x = any(tags)`: both
-    // mean the same for one value, but only containment is served by rankings_tags_gin_idx.
-    for (const tagValue of [occasion, highlight]) {
-      if (!tagValue) continue
+    // carries one of the picked tags. Both live in rankings.tags, so they are the same filter on two
+    // params; with both set a place needs a match for each. Same qualifying-id-subquery shape as
+    // dishMatch/rankedPool below. Written as array overlap (`&&`), not `x = any(tags)`: overlap is
+    // "any of these" and is what rankings_tags_gin_idx serves.
+    for (const tagValues of [occasions, highlights]) {
+      if (!tagValues.length) continue
       const tagMatch = db
         .selectDistinct({ id: rankings.restaurantId })
         .from(rankings)
-        .where(sql`${rankings.tags} @> array[${tagValue}]::text[]`)
+        .where(
+          sql`${rankings.tags} && array[${sql.join(
+            tagValues.map((v) => sql`${v}`),
+            sql`, `,
+          )}]::text[]`,
+        )
       liveConds.push(inArray(restaurants.id, tagMatch))
     }
     // Score band (A1) — friend average at or above the threshold, gated on

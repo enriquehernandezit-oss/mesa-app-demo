@@ -17,25 +17,39 @@ import { useT } from '@/lib/i18n'
 import type { Neighborhood } from '@/lib/types'
 import { useLift } from '@/theme/useLift'
 
+// Every facet but the minimum score takes several values: a place shows when it matches ANY of a
+// facet's picks, and every facet that has picks (Japanese or American, in Piantini). The score is a
+// floor, so it stays one value.
 export type ExploreFilterValues = {
-  hood: string | null
-  cuisine: string | null
-  price: number | null
-  occasion: string | null
-  highlight: string | null
+  hood: string[]
+  cuisine: string[]
+  price: number[]
+  occasion: string[]
+  highlight: string[]
   minScore: number | null
 }
 
+type ListKey = 'hood' | 'cuisine' | 'occasion' | 'highlight'
+
 export const NO_EXPLORE_FILTERS: ExploreFilterValues = {
-  hood: null,
-  cuisine: null,
-  price: null,
-  occasion: null,
-  highlight: null,
+  hood: [],
+  cuisine: [],
+  price: [],
+  occasion: [],
+  highlight: [],
   minScore: null,
 }
 
-const PRICES = ['1', '2', '3', '4'] as const
+// How many picks are applied in total — what the Filters chip counts.
+export const exploreFilterCount = (v: ExploreFilterValues) =>
+  v.hood.length +
+  v.cuisine.length +
+  v.price.length +
+  v.occasion.length +
+  v.highlight.length +
+  (v.minScore != null ? 1 : 0)
+
+const PRICES = [1, 2, 3, 4] as const
 const SCORES = [
   { value: 'all', label: '' },
   { value: '70', label: '7+' },
@@ -50,17 +64,17 @@ const EASE = Easing.out(Easing.cubic)
 // Everything else starts closed; that is the whole point of the disclosure.
 type SectionKey = keyof ExploreFilterValues
 const openSections = (v: ExploreFilterValues): Record<SectionKey, boolean> => ({
-  price: v.price != null,
+  price: v.price.length > 0,
   minScore: v.minScore != null,
-  hood: v.hood != null,
-  cuisine: v.cuisine != null,
-  occasion: v.occasion != null,
-  highlight: v.highlight != null,
+  hood: v.hood.length > 0,
+  cuisine: v.cuisine.length > 0,
+  occasion: v.occasion.length > 0,
+  highlight: v.highlight.length > 0,
 })
 
 // Explore's filters as ONE panel (founder's mock, Sept 2026): every dimension
-// reachable at once — price and minimum score as segmented rows, neighborhood,
-// cuisine and occasion as wrapping chips — edited as a draft, then applied
+// reachable at once — the minimum score as a segmented row, price, neighborhood,
+// cuisine, occasion and highlights as wrapping chips that each take several picks — edited as a draft, then applied
 // with "Ver N lugares". The count is live: the panel runs the same
 // ['explore', ...] query the screen will run on apply, so the number is real
 // and applying lands on an already-warm cache (no second load).
@@ -136,6 +150,25 @@ export function ExploreFilters({
   const set = <K extends keyof ExploreFilterValues>(k: K, v: ExploreFilterValues[K]) =>
     setDraft((d) => ({ ...d, [k]: v }))
   const toggle = (k: SectionKey) => setOpen((o) => ({ ...o, [k]: !o[k] }))
+  // A chip adds its value to the facet, or takes it out again.
+  const flip = (k: ListKey, v: string) =>
+    setDraft((d) => ({
+      ...d,
+      [k]: d[k].includes(v) ? d[k].filter((x) => x !== v) : [...d[k], v],
+    }))
+  const flipPrice = (v: number) =>
+    setDraft((d) => ({
+      ...d,
+      price: d.price.includes(v) ? d.price.filter((x) => x !== v) : [...d.price, v].sort(),
+    }))
+  // The header's summary: the one pick, or the first and how many more.
+  const summary = (labels: string[]) =>
+    labels.length === 0
+      ? t('common.any')
+      : labels.length === 1
+        ? labels[0]
+        : `${labels[0]} +${labels.length - 1}`
+  const hoodName = (slug: string) => neighborhoods.find((n) => n.slug === slug)?.name ?? slug
 
   return (
     <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
@@ -179,19 +212,23 @@ export function ExploreFilters({
               <Group
                 first
                 label={t('explore.price')}
-                value={draft.price != null ? '$'.repeat(draft.price) : t('common.any')}
-                active={draft.price != null}
+                value={summary(draft.price.map((n) => '$'.repeat(n)))}
+                active={draft.price.length > 0}
                 open={open.price}
                 onToggle={() => toggle('price')}
               >
-                <Segmented
-                  value={
-                    draft.price != null ? (String(draft.price) as (typeof PRICES)[number]) : null
-                  }
-                  onChange={(v) => set('price', Number(v))}
-                  onClear={() => set('price', null)}
-                  options={PRICES.map((p) => ({ value: p, label: '$'.repeat(Number(p)) }))}
-                />
+                <ChipWrap>
+                  {PRICES.map((n) => (
+                    <Chip
+                      key={n}
+                      size="sm"
+                      state={draft.price.includes(n) ? 'selected' : 'default'}
+                      onPress={() => flipPrice(n)}
+                    >
+                      {'$'.repeat(n)}
+                    </Chip>
+                  ))}
+                </ChipWrap>
               </Group>
 
               <Group
@@ -219,12 +256,8 @@ export function ExploreFilters({
 
               <Group
                 label={t('explore.sector')}
-                value={
-                  draft.hood
-                    ? (neighborhoods.find((n) => n.slug === draft.hood)?.name ?? draft.hood)
-                    : t('common.any')
-                }
-                active={draft.hood != null}
+                value={summary(draft.hood.map(hoodName))}
+                active={draft.hood.length > 0}
                 open={open.hood}
                 onToggle={() => toggle('hood')}
               >
@@ -233,8 +266,8 @@ export function ExploreFilters({
                     <Chip
                       key={n.slug}
                       size="sm"
-                      state={draft.hood === n.slug ? 'selected' : 'default'}
-                      onPress={() => set('hood', draft.hood === n.slug ? null : n.slug)}
+                      state={draft.hood.includes(n.slug) ? 'selected' : 'default'}
+                      onPress={() => flip('hood', n.slug)}
                     >
                       {n.name}
                     </Chip>
@@ -244,10 +277,8 @@ export function ExploreFilters({
 
               <Group
                 label={t('explore.cuisine')}
-                value={
-                  draft.cuisine ? (cuisineLabel(draft.cuisine) ?? draft.cuisine) : t('common.any')
-                }
-                active={draft.cuisine != null}
+                value={summary(draft.cuisine.map((c) => cuisineLabel(c) ?? c))}
+                active={draft.cuisine.length > 0}
                 open={open.cuisine}
                 onToggle={() => toggle('cuisine')}
               >
@@ -256,8 +287,8 @@ export function ExploreFilters({
                     <Chip
                       key={c}
                       size="sm"
-                      state={draft.cuisine === c ? 'selected' : 'default'}
-                      onPress={() => set('cuisine', draft.cuisine === c ? null : c)}
+                      state={draft.cuisine.includes(c) ? 'selected' : 'default'}
+                      onPress={() => flip('cuisine', c)}
                     >
                       {cuisineLabel(c) ?? c}
                     </Chip>
@@ -267,8 +298,8 @@ export function ExploreFilters({
 
               <Group
                 label={t('explore.occasion')}
-                value={draft.occasion ? tagLabel(draft.occasion) : t('common.any')}
-                active={draft.occasion != null}
+                value={summary(draft.occasion.map(tagLabel))}
+                active={draft.occasion.length > 0}
                 open={open.occasion}
                 onToggle={() => toggle('occasion')}
               >
@@ -277,8 +308,8 @@ export function ExploreFilters({
                     <Chip
                       key={tag}
                       size="sm"
-                      state={draft.occasion === tag ? 'selected' : 'default'}
-                      onPress={() => set('occasion', draft.occasion === tag ? null : tag)}
+                      state={draft.occasion.includes(tag) ? 'selected' : 'default'}
+                      onPress={() => flip('occasion', tag)}
                     >
                       {tagLabel(tag)}
                     </Chip>
@@ -288,8 +319,8 @@ export function ExploreFilters({
 
               <Group
                 label={t('explore.highlights')}
-                value={draft.highlight ? tagLabel(draft.highlight) : t('common.any')}
-                active={draft.highlight != null}
+                value={summary(draft.highlight.map(tagLabel))}
+                active={draft.highlight.length > 0}
                 open={open.highlight}
                 onToggle={() => toggle('highlight')}
               >
@@ -298,8 +329,8 @@ export function ExploreFilters({
                     <Chip
                       key={tag}
                       size="sm"
-                      state={draft.highlight === tag ? 'selected' : 'default'}
-                      onPress={() => set('highlight', draft.highlight === tag ? null : tag)}
+                      state={draft.highlight.includes(tag) ? 'selected' : 'default'}
+                      onPress={() => flip('highlight', tag)}
                     >
                       {tagLabel(tag)}
                     </Chip>

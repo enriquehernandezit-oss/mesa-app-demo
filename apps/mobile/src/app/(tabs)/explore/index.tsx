@@ -18,7 +18,12 @@ import { EventsBrowse } from '@/components/events/EventsBrowse'
 import { HitRow } from '@/components/explore/HitRow'
 import { MemberRow } from '@/components/explore/MemberRow'
 import { TrendingRail } from '@/components/explore/TrendingRail'
-import { type ExploreFilterValues, ExploreFilters } from '@/components/ExploreFilters'
+import {
+  type ExploreFilterValues,
+  ExploreFilters,
+  NO_EXPLORE_FILTERS,
+  exploreFilterCount,
+} from '@/components/ExploreFilters'
 import { ExternalResults } from '@/components/ExternalResults'
 import { LocationFilter } from '@/components/LocationFilter'
 import { useTabBarClearance } from '@/components/MesaTabBar'
@@ -86,15 +91,17 @@ const NO_MEMBERS: ExploreMember[] = []
 // One key + fetch for the screen's results AND the filter panel's live
 // count, so the panel's "Ver N lugares" warms exactly the cache entry the
 // screen reads once those filters are applied.
+// Sorted copies: picking Japanese then American is the same search (and cache entry) as the reverse.
+const sorted = <T extends string | number>(xs: T[]) => [...xs].sort()
 function exploreKey(q: string, f: ExploreFilterValues, sort: SortKey, loc: Location, here: Here) {
   return [
     'explore',
     q,
-    f.hood,
-    f.cuisine,
-    f.price,
-    f.occasion,
-    f.highlight,
+    sorted(f.hood),
+    sorted(f.cuisine),
+    sorted(f.price),
+    sorted(f.occasion),
+    sorted(f.highlight),
     f.minScore,
     sort,
     locationQuery(loc),
@@ -112,11 +119,12 @@ function fetchExplore(q: string, f: ExploreFilterValues, sort: SortKey, loc: Loc
   if (near) params.set('near', near)
   if (here.openNow) params.set('open', '1')
   if (q.length >= 2) params.set('q', q)
-  if (f.hood) params.set('neighborhood', f.hood)
-  if (f.cuisine) params.set('cuisine', f.cuisine)
-  if (f.price) params.set('price', String(f.price))
-  if (f.occasion) params.set('occasion', f.occasion)
-  if (f.highlight) params.set('highlight', f.highlight)
+  // A facet with several picks repeats its param; the API matches any of them.
+  for (const v of sorted(f.hood)) params.append('neighborhood', v)
+  for (const v of sorted(f.cuisine)) params.append('cuisine', v)
+  for (const v of sorted(f.price)) params.append('price', String(v))
+  for (const v of sorted(f.occasion)) params.append('occasion', v)
+  for (const v of sorted(f.highlight)) params.append('highlight', v)
   if (f.minScore) params.set('minScore', String(f.minScore))
   params.set('sort', sort)
   return api.get<ExploreResponse>(`/restaurants?${params}`)
@@ -181,8 +189,15 @@ export default function ExploreScreen() {
     focus?: string
     view?: string
   }>()
-  const [hood, setHood] = useState<string | null>(params.neighborhood ?? null)
-  const [cuisine, setCuisine] = useState<string | null>(params.cuisine ?? null)
+  // One state for every filter in the panel. Seeded from a deep link once (see above).
+  const [filters, setFilters] = useState<ExploreFilterValues>(() => ({
+    ...NO_EXPLORE_FILTERS,
+    hood: params.neighborhood ? [params.neighborhood] : [],
+    cuisine: params.cuisine ? [params.cuisine] : [],
+  }))
+  // Drops one pick from a facet (the × on its pill in the rail).
+  const removePick = <K extends 'hood' | 'cuisine' | 'occasion' | 'highlight'>(k: K, v: string) =>
+    setFilters((f) => ({ ...f, [k]: f[k].filter((x) => x !== v) }))
   // Feed's search field hands off here with `?focus=1`: put the cursor in ours. `useFocusEffect`,
   // not a plain `useEffect` — Explore is a tab, so it can already be mounted from an earlier visit
   // this session, and an effect keyed on `params.focus` alone would not fire again. Slightly
@@ -208,10 +223,6 @@ export default function ExploreScreen() {
       router.setParams({ view: '' })
     }, [params.view, router]),
   )
-  const [price, setPrice] = useState<number | null>(null)
-  const [occasion, setOccasion] = useState<string | null>(null)
-  const [highlight, setHighlight] = useState<string | null>(null)
-  const [minScore, setMinScore] = useState<number | null>(null)
   const [sort, setSort] = useState<SortKey>('score')
 
   const neighborhoods = useQuery({
@@ -260,32 +271,26 @@ export default function ExploreScreen() {
 
   // "Neighborhood ▾": the one filter worth a pill of its own — a bottom-sheet chooser, the same
   // pattern as Your list's. (The rest live in the Filters panel.)
+  // With no sector picked, the rail's "Sector ▾" picks one here; more are added in the panel.
   const pickHood = async () => {
     const list = neighborhoods.data?.neighborhoods ?? []
     const v = await pickOne(
       t('explore.sector'),
       list.map((n) => n.slug),
-      hood,
+      null,
       (slug) => list.find((n) => n.slug === slug)?.name ?? slug,
     )
-    if (v !== undefined) setHood(v)
+    if (v) setFilters((f) => ({ ...f, hood: [v] }))
   }
 
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const panelCount = [hood, cuisine, price, occasion, highlight, minScore].filter(
-    (v) => v != null,
-  ).length
+  const panelCount = exploreFilterCount(filters)
   const activeCount = panelCount + (nearby ? 1 : 0) + (openNow ? 1 : 0)
   const clearFilters = useCallback(() => {
     setNearby(false)
     setOpenNow(false)
     setSort((s) => (s === 'distance' ? 'score' : s))
-    setHood(null)
-    setCuisine(null)
-    setPrice(null)
-    setOccasion(null)
-    setHighlight(null)
-    setMinScore(null)
+    setFilters(NO_EXPLORE_FILTERS)
   }, [])
 
   // Holds off the Mesa search request itself until typing pauses — a request
@@ -301,7 +306,7 @@ export default function ExploreScreen() {
 
   // Default browse: with no query and no filters the API returns the top spots
   // by friends' score, so Explore is never a blank screen.
-  const filterValues = { hood, cuisine, price, occasion, highlight, minScore }
+  const filterValues = filters
   // WHERE to look — Santo Domingo by default — scopes Mesa's own places here and Google's below.
   const location = useLocationFilter()
   const here: Here = { near: nearby ? position : null, openNow }
@@ -322,16 +327,7 @@ export default function ExploreScreen() {
   // The default browse state: no query, no filters. Anything else is a search,
   // and the trending rail steps out of the way.
   const browsing =
-    debouncedQ.length < 2 &&
-    !hood &&
-    !cuisine &&
-    price == null &&
-    !occasion &&
-    !highlight &&
-    minScore == null &&
-    !nearby &&
-    !openNow &&
-    isDefaultLocation(location)
+    debouncedQ.length < 2 && panelCount === 0 && !nearby && !openNow && isDefaultLocation(location)
 
   // Google — any restaurant, Santo Domingo first then the Dominican Republic then the world
   // (the location filter narrows or widens that), for every real query, not just the ones
@@ -512,33 +508,57 @@ export default function ExploreScreen() {
                 ? `${t('explore.filters_chip')} · ${panelCount}`
                 : t('explore.filters_chip')}
             </Chip>
-            {hood ? (
-              <RemovablePill
-                label={neighborhoods.data?.neighborhoods.find((n) => n.slug === hood)?.name ?? hood}
-                onRemove={() => setHood(null)}
-              />
-            ) : (
+            {/* One pill per pick, each with its own ×. */}
+            {filters.hood.length === 0 ? (
               <Chip size="sm" chevron onPress={pickHood}>
                 {t('explore.sector')}
               </Chip>
+            ) : (
+              filters.hood.map((slug) => (
+                <RemovablePill
+                  key={`hood-${slug}`}
+                  label={
+                    neighborhoods.data?.neighborhoods.find((n) => n.slug === slug)?.name ?? slug
+                  }
+                  onRemove={() => removePick('hood', slug)}
+                />
+              ))
             )}
-            {cuisine ? (
+            {filters.cuisine.map((c) => (
               <RemovablePill
-                label={cuisineLabel(cuisine) ?? cuisine}
-                onRemove={() => setCuisine(null)}
+                key={`cuisine-${c}`}
+                label={cuisineLabel(c) ?? c}
+                onRemove={() => removePick('cuisine', c)}
               />
-            ) : null}
-            {price != null ? (
-              <RemovablePill label={'$'.repeat(price)} onRemove={() => setPrice(null)} />
-            ) : null}
-            {occasion ? (
-              <RemovablePill label={tagLabel(occasion)} onRemove={() => setOccasion(null)} />
-            ) : null}
-            {highlight ? (
-              <RemovablePill label={tagLabel(highlight)} onRemove={() => setHighlight(null)} />
-            ) : null}
-            {minScore != null ? (
-              <RemovablePill label={`${minScore / 10}+`} onRemove={() => setMinScore(null)} />
+            ))}
+            {filters.price.map((n) => (
+              <RemovablePill
+                key={`price-${n}`}
+                label={'$'.repeat(n)}
+                onRemove={() =>
+                  setFilters((f) => ({ ...f, price: f.price.filter((x) => x !== n) }))
+                }
+              />
+            ))}
+            {filters.occasion.map((tag) => (
+              <RemovablePill
+                key={`occasion-${tag}`}
+                label={tagLabel(tag)}
+                onRemove={() => removePick('occasion', tag)}
+              />
+            ))}
+            {filters.highlight.map((tag) => (
+              <RemovablePill
+                key={`highlight-${tag}`}
+                label={tagLabel(tag)}
+                onRemove={() => removePick('highlight', tag)}
+              />
+            ))}
+            {filters.minScore != null ? (
+              <RemovablePill
+                label={`${filters.minScore / 10}+`}
+                onRemove={() => setFilters((f) => ({ ...f, minScore: null }))}
+              />
             ) : null}
           </ScrollView>
           {activeCount > 0 && (
@@ -664,15 +684,8 @@ export default function ExploreScreen() {
       <ExploreFilters
         visible={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        value={{ hood, cuisine, price, occasion, highlight, minScore }}
-        onApply={(f) => {
-          setHood(f.hood)
-          setCuisine(f.cuisine)
-          setPrice(f.price)
-          setOccasion(f.occasion)
-          setHighlight(f.highlight)
-          setMinScore(f.minScore)
-        }}
+        value={filters}
+        onApply={setFilters}
         neighborhoods={neighborhoods.data?.neighborhoods ?? []}
         cuisines={cuisines.data?.cuisines ?? []}
         countQuery={(d) => ({

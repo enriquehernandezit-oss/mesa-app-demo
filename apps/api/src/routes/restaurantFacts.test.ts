@@ -192,6 +192,40 @@ describe.skipIf(!deps)('restaurant facts and the occasion filter (local DB)', ()
     test('a place whose rankings carry no tags never matches', async () => {
       expect(await occasion(romantica)).not.toContain(ids.member)
     })
+
+    test('several occasions match a place carrying ANY of them', async () => {
+      const both = (
+        await get<Explore>(
+          ana,
+          `/restaurants?occasion=${encodeURIComponent(terraza)}&occasion=${encodeURIComponent(`${tag} nunca`)}`,
+        )
+      ).json.restaurants
+        .map((r) => r.id)
+        .sort()
+      expect(both).toEqual([ids.catalog])
+      const union = (
+        await get<Explore>(
+          ana,
+          `/restaurants?occasion=${encodeURIComponent(terraza)}&occasion=${encodeURIComponent(romantica)}`,
+        )
+      ).json.restaurants
+        .map((r) => r.id)
+        .sort()
+      expect(union).toEqual([ids.catalog, ids.seed].sort())
+    })
+
+    test('a repeated or blank value changes nothing', async () => {
+      const once = await occasion(romantica)
+      const twice = (
+        await get<Explore>(
+          ana,
+          `/restaurants?occasion=${encodeURIComponent(romantica)}&occasion=${encodeURIComponent(romantica)}&occasion=`,
+        )
+      ).json.restaurants
+        .map((r) => r.id)
+        .sort()
+      expect(twice).toEqual(once)
+    })
   })
 
   describe('GET /restaurants?highlight=', () => {
@@ -210,6 +244,21 @@ describe.skipIf(!deps)('restaurant facts and the occasion filter (local DB)', ()
         ids.catalog,
       ])
       expect(await ids_(`${q('occasion', terraza)}&${q('highlight', `${tag} nunca`)}`)).toEqual([])
+    })
+
+    test('several sectors or cuisines widen the match; a set facet still narrows it', async () => {
+      // Every tagged place sits in this test's own sector; adding a second sector keeps them all.
+      const inSector = await ids_(`${q('occasion', romantica)}&${q('neighborhood', tag)}`)
+      expect(inSector).toEqual([ids.catalog, ids.seed].sort())
+      expect(
+        await ids_(
+          `${q('occasion', romantica)}&${q('neighborhood', tag)}&${q('neighborhood', `${tag}-otro`)}`,
+        ),
+      ).toEqual(inSector)
+      // A sector none of them is in, on its own, finds none of them.
+      expect(await ids_(`${q('occasion', romantica)}&${q('neighborhood', `${tag}-otro`)}`)).toEqual(
+        [],
+      )
     })
   })
 })
