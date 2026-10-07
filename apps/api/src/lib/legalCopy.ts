@@ -141,7 +141,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: 'Cambios y contacto',
         paragraphs: [
           'Si cambia algo importante, actualizamos la fecha de este documento y publicamos la versión nueva aquí y en la app.',
-          'Para cualquier duda o pedido sobre tus datos, escríbenos: Durante la beta escríbenos respondiendo al correo con el que te invitamos, o desde TestFlight → Enviar comentarios. Publicaremos una dirección de soporte aquí cuando Mesa salga de la beta. Mesa es un equipo pequeño y te contesta la misma gente que la construye.',
+          'Para cualquier duda o pedido sobre tus datos, escríbenos a soporte@mesasocial.app. Mesa es un equipo pequeño y te contesta la misma gente que la construye.',
         ],
       },
     ],
@@ -218,7 +218,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
         heading: 'Cambios y contacto',
         paragraphs: [
           'Si cambia algo importante, actualizamos la fecha de este documento. Seguir usando Mesa después de un cambio es aceptarlo.',
-          'Para cualquier duda, escríbenos: Durante la beta escríbenos respondiendo al correo con el que te invitamos, o desde TestFlight → Enviar comentarios. Publicaremos una dirección de soporte aquí cuando Mesa salga de la beta.',
+          'Para cualquier duda, escríbenos a soporte@mesasocial.app.',
         ],
       },
     ],
@@ -251,7 +251,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
       {
         heading: 'Mantenimiento y soporte',
         paragraphs: [
-          'El mantenimiento y el soporte de Mesa los damos nosotros. Apple no tiene ninguna obligación de prestarlos. Durante la beta escríbenos respondiendo al correo con el que te invitamos, o desde TestFlight → Enviar comentarios. Publicaremos una dirección de soporte aquí cuando Mesa salga de la beta.',
+          'El mantenimiento y el soporte de Mesa los damos nosotros. Apple no tiene ninguna obligación de prestarlos. Escríbenos a soporte@mesasocial.app.',
         ],
       },
       {

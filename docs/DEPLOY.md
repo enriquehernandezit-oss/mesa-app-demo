@@ -257,6 +257,39 @@ Env-gated features that stay safely off until you add their keys — the code
 simply skips them: `APPLE_*`, `GOOGLE_*` (sign-in), `R2_*` (image upload),
 `GOOGLE_PLACES_API_KEY`, `EXPO_ACCESS_TOKEN` (push). See the table in Step 3.
 
+## Going live on mesasocial.app (domain, email, links, Google sign-in)
+
+The public domain is **mesasocial.app** (Cloudflare Registrar and DNS). One Railway service (`mesa-api`)
+answers on both its Railway address and the domain: the home page (`/`), support (`/support`), share pages
+(`/p/*`), legal pages (`/legal/*`) and the app-links file. In order:
+
+1. **Railway** → `mesa-api` → Settings → Networking → _Custom Domain_ → add `mesasocial.app`. Railway shows a
+   CNAME (and a verification TXT). Add them in **Cloudflare DNS** with the proxy **off** ("DNS only", grey
+   cloud) so Railway can issue the certificate. Wait for Railway to say the domain is active.
+2. **Email forwarding (support).** Cloudflare → Email → Email Routing → enable → create `soporte@mesasocial.app`
+   → forward to the founder's inbox (confirm the verification email). Send a test to it before anything
+   publishes the address.
+3. **Resend** → Domains → add `mesasocial.app` → add the DNS records it lists in Cloudflare (DNS only) → Verify.
+   Then set `EMAIL_FROM` on Railway to `Mesa <hola@mesasocial.app>`. (Resend sends from a `send.` subdomain, so
+   it does not clash with Email Routing's records on the apex.) Without a verified domain Resend only delivers
+   to the Resend account owner, so password-reset emails reach nobody else.
+4. **Railway variables:** `PUBLIC_WEB_URL=https://mesasocial.app`, `PUBLIC_API_URL=https://mesasocial.app`
+   (links in emails and share-card images), and add `https://mesasocial.app` to `APP_ORIGINS`. Then, once
+   `EMAIL_PROVIDER_API_KEY` and `EMAIL_FROM` are confirmed, `NODE_ENV=production`.
+5. **Google sign-in:** Google Cloud → Google Auth Platform → _Branding_: app name Mesa, home page
+   `https://mesasocial.app`, privacy `https://mesasocial.app/legal/privacy`, terms `/legal/terms`, authorized
+   domain `mesasocial.app` (verify it in Google Search Console with a DNS TXT record) → _Audience_ → **Publish
+   app**. Mesa asks only for email, name and photo, so Google's verification review is not needed. Prefer a
+   project owned by a Mesa Google account over a personal one.
+6. **Apple:** developer.apple.com → Certificates, Identifiers & Profiles → Services → _Sign in with Apple for
+   Email Communication_ → add the domain `mesasocial.app` and sender `hola@mesasocial.app` (so mail reaches
+   people who chose "Hide My Email").
+7. **App links:** set `APP_LINK_DOMAIN=mesasocial.app` in the EAS _production_ environment, then make a new
+   build (it adds the associated-domains entitlement, so the app's fingerprint changes). The API already
+   serves `/.well-known/apple-app-site-association` once `APPLE_TEAM_ID` is set.
+8. **App Store Connect:** privacy URL `https://mesasocial.app/legal/privacy`, support URL
+   `https://mesasocial.app/support`, marketing URL `https://mesasocial.app`.
+
 ## What is NOT on Railway (Phase 1)
 
 - **The iOS build** — that's EAS Build + the Apple Developer account, tracked in

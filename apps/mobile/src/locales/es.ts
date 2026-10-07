@@ -1065,6 +1065,7 @@ export const es = {
   'settings.moderation': 'Moderación',
   'settings.privacy_policy': 'Política de Privacidad',
   'settings.terms': 'Términos',
+  'settings.contact_support': 'Escribir a soporte',
   'settings.eula': 'EULA',
   'settings.sign_out': 'Cerrar sesión',
   'settings.current_password_placeholder': 'Contraseña actual',

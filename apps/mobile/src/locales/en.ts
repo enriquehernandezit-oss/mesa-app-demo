@@ -1001,6 +1001,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.moderation': 'Moderation',
   'settings.privacy_policy': 'Privacy Policy',
   'settings.terms': 'Terms',
+  'settings.contact_support': 'Contact support',
   'settings.eula': 'EULA',
   'settings.sign_out': 'Sign out',
   'settings.current_password_placeholder': 'Current password',

@@ -1,12 +1,13 @@
 import Constants from 'expo-constants'
 import { useRouter } from 'expo-router'
-import { ScrollView, Text, View } from 'react-native'
+import { Linking, ScrollView, Text, View } from 'react-native'
 
 import { Group, NavRow, Row } from '@/components/SettingsRow'
 import { Caption, MAX_SCALE, Wordmark } from '@/components/ui'
 import { useT } from '@/lib/i18n'
+import { SUPPORT_EMAIL } from '@/lib/support'
 
-// Acerca de (M15) — the three legal doc links plus the app's own version
+// Acerca de (M15) — the three legal doc links, a way to write to support, plus the app's own version
 // number, split out of the old flat app/settings.tsx. Redesign 2: the lowercase wordmark (the logo
 // — never the app-icon M) over "Mesa 1.0.0", then one grouped card.
 export default function AboutSettings() {
@@ -32,6 +33,11 @@ export default function AboutSettings() {
           />
           <NavRow label={t('settings.terms')} onPress={() => router.push('/legal/terms')} />
           <NavRow label={t('settings.eula')} onPress={() => router.push('/legal/eula')} />
+          {/* The same address the legal text and the website give; opens the Mail app. */}
+          <NavRow
+            label={t('settings.contact_support')}
+            onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+          />
           <Row last>
             <Text
               maxFontSizeMultiplier={MAX_SCALE}

@@ -35,6 +35,7 @@ import { rankingsRoutes } from './routes/rankings'
 import { restaurantRoutes } from './routes/restaurants'
 import { savedRoutes } from './routes/saved'
 import { sharePagesRoutes } from './routes/share-pages'
+import { siteRoutes } from './routes/site'
 import { socialRoutes } from './routes/social'
 import { uploadsRoutes } from './routes/uploads'
 import { wellKnownRoutes } from './routes/well-known'
@@ -83,32 +84,34 @@ const COMMON_HEADERS = {
   crossOriginEmbedderPolicy: false,
 } as const
 
-app.use(
-  '/p/*',
-  secureHeaders({
-    ...COMMON_HEADERS,
-    contentSecurityPolicy: {
-      defaultSrc: ["'none'"],
-      scriptSrc: ["'none'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ['https://fonts.gstatic.com'],
-      // Covers resolve two ways in absoluteCover(): an R2 upload URL, or —
-      // for every seeded row today — a local /restaurants/*.jpg, which this
-      // server now serves itself, hence 'self'. (These used to come from the
-      // separate web origin; that app is retired.) Crawlers don't enforce
-      // CSP, so getting this wrong fails silently for humans who open the link
-      // while the OG unfurl still looks fine — worth being exact about.
-      imgSrc: ["'self'", ...(R2_PUBLIC_BASE_URL ? [R2_PUBLIC_BASE_URL] : []), 'data:'],
-      baseUri: ["'none'"],
-      // 'self', not 'none': /p/reset-password is a real <form> that posts back
-      // to this server. Scoped to /p/* — the catch-all block below keeps
-      // form-action 'none' everywhere else. scriptSrc stays 'none'; the reset
-      // flow is deliberately JS-free so it works with a locked-down CSP.
-      formAction: ["'self'"],
-      frameAncestors: ["'none'"],
-    },
-  }),
-)
+// The server-rendered HTML pages that load Instrument Serif: share/auth pages (/p/*) and the home and
+// support pages. Same policy for all of them.
+const HTML_PAGE_HEADERS = secureHeaders({
+  ...COMMON_HEADERS,
+  contentSecurityPolicy: {
+    defaultSrc: ["'none'"],
+    scriptSrc: ["'none'"],
+    styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+    fontSrc: ['https://fonts.gstatic.com'],
+    // Covers resolve two ways in absoluteCover(): an R2 upload URL, or —
+    // for every seeded row today — a local /restaurants/*.jpg, which this
+    // server now serves itself, hence 'self'. (These used to come from the
+    // separate web origin; that app is retired.) Crawlers don't enforce
+    // CSP, so getting this wrong fails silently for humans who open the link
+    // while the OG unfurl still looks fine — worth being exact about.
+    imgSrc: ["'self'", ...(R2_PUBLIC_BASE_URL ? [R2_PUBLIC_BASE_URL] : []), 'data:'],
+    baseUri: ["'none'"],
+    // 'self', not 'none': /p/reset-password is a real <form> that posts back
+    // to this server. Scoped to /p/* — the catch-all block below keeps
+    // form-action 'none' everywhere else. scriptSrc stays 'none'; the reset
+    // flow is deliberately JS-free so it works with a locked-down CSP.
+    formAction: ["'self'"],
+    frameAncestors: ["'none'"],
+  },
+})
+app.use('/p/*', HTML_PAGE_HEADERS)
+app.use('/', HTML_PAGE_HEADERS)
+app.use('/support', HTML_PAGE_HEADERS)
 
 // /legal/* is HTML too, but stricter than /p: the pages carry no images and no
 // web fonts, so the only thing they need past the catch-all's "nothing at all"
@@ -168,6 +171,10 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw))
 // their literal paths are matched before the share pages' /:param routes.
 app.route('/p', authPagesRoutes)
 app.route('/p', sharePagesRoutes)
+
+// The home and support pages on the public domain (Google's consent screen, App Store Connect and
+// anyone curious link here). Pre-session, like /p and /legal.
+app.route('/', siteRoutes)
 
 // The universal-link file (404 until APPLE_TEAM_ID is set) — pre-session, Apple's fetch has no cookie.
 app.route('/.well-known', wellKnownRoutes)

@@ -3,6 +3,8 @@
 // /p/verify-email). Extracted from routes/share-pages.ts when the second
 // consumer arrived; it holds no route logic, only the frame.
 
+import { reportPageHref } from './support'
+
 export function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -93,7 +95,8 @@ export function layout(opts: {
   const foot =
     footer ??
     `<a class="cta" href="${esc(ctaHref(canonical))}">Ábrelo en Mesa</a>
-    <p class="tagline">where your friends actually eat</p>`
+    <p class="tagline">where your friends actually eat</p>
+    <p class="fine"><a href="${esc(reportPageHref(canonical))}">Reportar esta página</a> · <a href="/legal/privacy">Privacidad</a> · <a href="/legal/terms">Términos</a></p>`
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -152,6 +155,11 @@ export function layout(opts: {
     .cta { display: inline-block; margin-top: 34px; background: var(--burgundy); color: var(--cream); font-weight: 600; font-size: 16px; text-decoration: none; padding: 16px 36px; border-radius: 999px; }
     .tagline { font-family: 'Instrument Serif', Georgia, serif; font-style: normal; font-size: 18px; color: var(--cream-dim); margin-top: 20px; }
     .missing { padding: 60px 0; }
+    .fine { margin-top: 26px; font-size: 13px; color: var(--cream-dim); }
+    .fine a { color: var(--cream-dim); text-underline-offset: 3px; }
+    .copy { color: var(--cream-dim); font-size: 16px; line-height: 1.5; margin: 18px auto 0; max-width: 380px; text-align: left; }
+    .copy a { color: var(--cream); }
+    h2 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-style: normal; font-size: 28px; color: var(--cream); margin-top: 30px; text-align: left; }
 
     /* Auth pages (/p/reset-password, /p/verify-email). No JS runs on these —
        script-src is 'none' — so the form posts back to this server and every
