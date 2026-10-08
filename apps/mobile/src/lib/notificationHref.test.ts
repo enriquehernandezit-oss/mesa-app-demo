@@ -29,6 +29,7 @@ describe('notificationHref', () => {
     expect(href('follow_request')).toBe('/follow-requests')
     expect(href('cheers')).toBe('/r/r1')
     expect(href('saved_ranked')).toBe('/r/r1')
+    expect(href('place_share')).toBe('/r/r1')
     expect(href('comment')).toBe('/comments/k1')
     expect(href('dish_cheer')).toBe('/dish/d1')
     expect(href('plan_invite')).toBe('/plans/p1')

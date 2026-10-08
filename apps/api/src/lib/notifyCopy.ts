@@ -102,6 +102,10 @@ const BODY: Record<Kind, Record<Locale, (w: Words) => string>> = {
     es: (w) => `${w.name} te envió ${w.event}`,
     en: (w) => `${w.name} sent you ${w.event}`,
   },
+  place_share: {
+    es: (w) => `${w.name} te envió ${w.place}`,
+    en: (w) => `${w.name} sent you ${w.place}`,
+  },
   // Told about a PLACE, not a person: three or more of the people you follow love it.
   friends_love: {
     es: (w) =>
@@ -160,6 +164,7 @@ export function pushPayload(n: NotificationRow): Record<string, string> | undefi
     case 'comment':
     case 'saved_ranked':
     case 'friends_love':
+    case 'place_share':
       return n.restaurantId ? { type: 'restaurant', restaurantId: n.restaurantId } : undefined
     case 'dish_cheer':
       return n.dishId ? { type: 'dish', dishId: n.dishId } : undefined

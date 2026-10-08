@@ -76,6 +76,11 @@ export const KIND_RULES: Record<Kind, KindRule> = {
     category: 'events',
     throttle: (n) => `event-share:${n.actorId}:${n.userId}:${hourBucket(n.createdAt)}`,
   },
+  // Sent by a person to a person, like an event or a plan invite: one push per (sender, recipient) an hour.
+  place_share: {
+    category: 'friends',
+    throttle: (n) => `place-share:${n.actorId}:${n.userId}:${hourBucket(n.createdAt)}`,
+  },
   dish_nudge: { category: 'dishes' },
   // At most one friends-love push a day however many places cross the line (the rest wait in the
   // inbox).

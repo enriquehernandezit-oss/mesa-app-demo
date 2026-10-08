@@ -211,6 +211,8 @@ function MesaStack() {
       {/* "See all dishes" (M22) — the rail's overflow destination, same
           ScreenHeader idiom as menu/[restaurantId] below. */}
       <Stack.Screen name="r/[restaurantId]/dishes" />
+      {/* Sending the place to followers in the app — a sheet, like sending an event. */}
+      <Stack.Screen name="r/[restaurantId]/send" options={{ presentation: 'modal' }} />
       <Stack.Screen name="u/[userId]" />
       {/* The taste-match pair page (M16), reached from u/[userId]'s match
           pill — same custom ScreenHeader idiom, no native title. */}

@@ -18,6 +18,7 @@ import { ScreenHeader } from '@/components/ScreenHeader'
 import { Caption, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { BookmarkIcon, ListIcon, PeopleIcon, TrophyIcon } from '@/components/ui/icons'
 import { SpotCard, SpotRail } from '@/components/ui/patterns'
+import { showActionSheet } from '@/lib/actionSheet'
 import { ApiError, api, shareOrigin } from '@/lib/api'
 import { cuisineLabel, tagLabel } from '@/lib/display'
 import { closesLabel, openStatusLine } from '@/lib/hours'
@@ -184,7 +185,7 @@ export default function RestaurantProfile() {
     })
 
   const shareMeta = [cuisineLabel(restaurant.cuisine), hood].filter(Boolean).join(' · ')
-  const shareSpot = () =>
+  const shareCard = () =>
     shareSpotCard({
       name: restaurant.name,
       meta: shareMeta,
@@ -194,6 +195,16 @@ export default function RestaurantProfile() {
       coverUrl: imageUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
       text: `${t('place.share_text', { name: restaurant.name })}\n${shareOrigin}/p/spot/${restaurant.id}`,
     })
+  // Two ways to share: to people in Mesa (it lands in their bell and opens the place), or the card
+  // and link to WhatsApp and the rest.
+  const shareSpot = async () => {
+    const i = await showActionSheet({
+      title: t('place.share_title'),
+      options: [{ label: t('place.share_in_mesa') }, { label: t('place.share_elsewhere') }],
+    })
+    if (i === 0) router.push(`/r/${restaurant.id}/send`)
+    else if (i === 1) shareCard()
+  }
 
   // The score on the photo: Mesa's, or the friends' when Mesa's is hidden.
   const chromeScore = showMesa ? allMesa.avg : friendAvg

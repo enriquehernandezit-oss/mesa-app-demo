@@ -109,7 +109,7 @@ You can **delete your own dish post**; anyone else's is reportable.
 - **Your profile** (`profile.tsx`) — avatar picker, the same stat trio, an editorial line drawn
   from your own data (_"Comes sobre todo italiana, casi siempre en Piantini."_), routes into your
   lists, and two stat cards (Rank en RD, racha).
-- **Activity** — cheers, new followers, friends ranking a spot you saved, friends out-ranking you.
+- **Activity** — cheers, new followers, friends ranking a spot you saved, friends out-ranking you. **Sending**: from a place's or an event's share button, "Send in Mesa" picks from your followers (the people a plan can invite); each gets it in their bell and as a push that opens it, once however many times it is sent, within a daily limit (`POST /restaurants/:id/share`, `POST /events/:id/share`).
   Two friend signals. **A place your friends love**: 3 or more of the people you follow gave it 8.0+ in
   the last 30 days — said once per place, with different words if you have been, and at most one such
   push a day (the rest wait in the inbox). **A taste match**: two people who **follow each other** cross

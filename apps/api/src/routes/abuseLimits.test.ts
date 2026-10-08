@@ -29,6 +29,7 @@ async function loadDeps() {
     { db, schema },
     { plansRoutes },
     { eventsRoutes },
+    { restaurantRoutes },
     { dishesRoutes },
     { meRoutes },
     { sharePagesRoutes },
@@ -40,6 +41,7 @@ async function loadDeps() {
     import('@mesa/db'),
     import('./plans'),
     import('./events'),
+    import('./restaurants'),
     import('./dishes'),
     import('./me'),
     import('./share-pages'),
@@ -53,6 +55,7 @@ async function loadDeps() {
     schema,
     plansRoutes,
     eventsRoutes,
+    restaurantRoutes,
     dishesRoutes,
     meRoutes,
     sharePagesRoutes,
@@ -73,6 +76,7 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
     schema,
     plansRoutes,
     eventsRoutes,
+    restaurantRoutes,
     dishesRoutes,
     meRoutes,
     sharePagesRoutes,
@@ -113,6 +117,7 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
     })
     .route('/plans', plansRoutes)
     .route('/events', eventsRoutes)
+    .route('/restaurants', restaurantRoutes)
     .route('/dishes', dishesRoutes)
     .route('/me', meRoutes)
   const publicApp = new Hono().route('/p', sharePagesRoutes)
@@ -370,6 +375,58 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
           .status,
       ).toBe(404)
       expect((await send('POST', `/events/${eventId}/share`, { userIds: [] })).status).toBe(400)
+    })
+  })
+
+  describe('sending a place in the app', () => {
+    const inbox = async (userId: string) => {
+      await notifyLib.settleNotify()
+      return db
+        .select({
+          actorId: schema.notifications.actorId,
+          placeId: schema.notifications.restaurantId,
+        })
+        .from(schema.notifications)
+        .where(
+          and(
+            eq(schema.notifications.userId, userId),
+            eq(schema.notifications.kind, 'place_share'),
+          ),
+        )
+    }
+
+    test('reaches the followers picked, once however many times it is sent', async () => {
+      as(host)
+      const res = await send('POST', `/restaurants/${restaurantId}/share`, {
+        userIds: [id('f1'), id('f2')],
+      })
+      expect(res.status).toBe(200)
+      await send('POST', `/restaurants/${restaurantId}/share`, { userIds: [id('f1')] })
+      const rows = await inbox(id('f1'))
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.actorId).toBe(host.id)
+      expect(rows[0]?.placeId).toBe(restaurantId)
+      expect(await inbox(id('f2'))).toHaveLength(1)
+    })
+
+    test('never reaches someone who does not follow the sender', async () => {
+      as(host)
+      const res = await send('POST', `/restaurants/${restaurantId}/share`, {
+        userIds: [stranger.id],
+      })
+      expect(res.status).toBe(400)
+      expect(await inbox(stranger.id)).toHaveLength(0)
+    })
+
+    test('an unknown place is a 404 and an empty list is refused', async () => {
+      as(host)
+      expect(
+        (await send('POST', `/restaurants/${crypto.randomUUID()}/share`, { userIds: [id('f3')] }))
+          .status,
+      ).toBe(404)
+      expect(
+        (await send('POST', `/restaurants/${restaurantId}/share`, { userIds: [] })).status,
+      ).toBe(400)
     })
   })
 

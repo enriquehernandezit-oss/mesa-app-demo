@@ -1303,6 +1303,8 @@ export type NotificationKind =
   | 'event_cancelled'
   // A member sent an event to one of their followers ("mira esto").
   | 'event_share'
+  // A member sent a place to one of their followers.
+  | 'place_share'
   | 'dish_nudge'
   | 'friends_love'
   | 'taste_match'

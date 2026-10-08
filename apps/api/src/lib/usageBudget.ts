@@ -54,3 +54,7 @@ export const spendMatchBudget = (userId: string, count: number) =>
 export const EVENT_SHARE_DAILY_LIMIT = 200
 export const spendEventShareBudget = (userId: string, recipients: number) =>
   spendBudget(`event-share:${userId}`, recipients, EVENT_SHARE_DAILY_LIMIT)
+
+// Sending a place to people in the app: same shape and limit as sending an event.
+export const spendPlaceShareBudget = (userId: string, recipients: number) =>
+  spendBudget(`place-share:${userId}`, recipients, EVENT_SHARE_DAILY_LIMIT)

@@ -52,6 +52,8 @@ function templateFor(n: NotificationItem, t: T): string {
       return t('activity.event_cancelled')
     case 'event_share':
       return t('activity.event_share')
+    case 'place_share':
+      return t('activity.place_share')
     case 'dish_nudge':
       return t('activity.dish_nudge', { n: n.data?.count ?? 3 })
     case 'friends_love':

@@ -23,6 +23,7 @@ const FILTER_OF: Record<NotificationKind, Exclude<ActivityFilter, 'all'>> = {
   event_going: 'events',
   event_cancelled: 'events',
   event_share: 'events',
+  place_share: 'rankings',
 }
 
 export const matchesFilter = (kind: NotificationKind, filter: ActivityFilter): boolean =>

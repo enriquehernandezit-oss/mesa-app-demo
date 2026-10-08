@@ -14,6 +14,7 @@ export function notificationHref(n: NotificationItem): string | null {
     case 'cheers':
     case 'saved_ranked':
     case 'friends_love':
+    case 'place_share':
       return n.restaurant ? `/r/${n.restaurant.id}` : null
     // A comment opens its thread.
     case 'comment':

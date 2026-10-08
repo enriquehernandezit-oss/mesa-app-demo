@@ -12,11 +12,19 @@ import { likeEscaped } from '../lib/likeEscape'
 import { locationCondition, normalizeLocation, parseScope } from '../lib/location'
 import { menuSectionLabel } from '../lib/menuSections'
 import { type Near, distanceSql, parseNear, parseRadius } from '../lib/nearby'
+import { notify } from '../lib/notify'
 import { hoursColumns, openStatus } from '../lib/openingHours'
 import { isOpenNow, openNowColumn } from '../lib/openNow'
 import { findExistingMatch, findGooglePlaceMatch } from '../lib/placeMatch'
 import { ownedByGoogleId, partitionByMesa, searchPlaces } from '../lib/placeSearch'
-import { bannedUserIds, blockedByMe, blockedMe, followingIds } from '../lib/visibility'
+import { spendPlaceShareBudget } from '../lib/usageBudget'
+import {
+  bannedUserIds,
+  blockedByMe,
+  blockedMe,
+  followersAmong,
+  followingIds,
+} from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Restaurant profile (M4): the place itself, which of the people you follow
@@ -26,6 +34,8 @@ import { requireAuth, requireEula } from '../middleware/session'
 const { rankings, vibeNotes, restaurants, user, savedPlaces } = schema
 
 const { neighborhoods, lists, listItems } = schema
+
+const shareSchema = z.object({ userIds: z.array(z.string().min(1)).min(1).max(50) })
 
 // Fuzzy-name threshold for catalog search (pg_trgm word_similarity: the query
 // vs the closest WORD in the name, which is what tolerates a one-letter miss in
@@ -1056,6 +1066,42 @@ export const restaurantRoutes = new Hono<AuthedEnv>()
       })),
       verifiedAt,
     })
+  })
+  // Send a place to people in the app ("mira este lugar"): each one gets it in their bell and as a
+  // push that opens the place. Only to the sender's followers — the same people a plan or an event
+  // can go to — so it can never reach a stranger. Sending the same place to someone twice is one
+  // notification.
+  .post('/:id/share', async (c) => {
+    const me = c.get('user')
+    const id = c.req.param('id')
+    if (!isUuid(id)) return c.json({ error: 'not_found' }, 404)
+    const parsed = shareSchema.safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const userIds = [...new Set(parsed.data.userIds)]
+
+    const found = await db.query.restaurants.findFirst({
+      where: and(eq(restaurants.id, id), isNull(restaurants.removedAt)),
+      columns: { id: true },
+    })
+    if (!found) return c.json({ error: 'not_found' }, 404)
+
+    const allowed = await followersAmong(me.id, userIds)
+    if (allowed.size !== userIds.length) return c.json({ error: 'invalid_recipients' }, 400)
+    if (!(await spendPlaceShareBudget(me.id, userIds.length))) {
+      return c.json({ error: 'too_many' }, 429)
+    }
+
+    notify(
+      userIds.map((userId) => ({
+        userId,
+        kind: 'place_share' as const,
+        // One per (place, sender): sending it again to the same person doesn't ping them twice.
+        dedupeKey: `place_share:${id}:${me.id}`,
+        actorId: me.id,
+        restaurantId: id,
+      })),
+    )
+    return c.json({ sent: userIds.length })
   })
   // Add a place that isn't on Mesa yet ("Can't find it? Add a new restaurant" in
   // the rank flow). Minimal fields; coordinates land on the neighborhood's

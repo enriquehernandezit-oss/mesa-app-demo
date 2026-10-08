@@ -19,6 +19,7 @@ const KINDS: Record<schema.NotificationKind, true> = {
   event_going: true,
   event_cancelled: true,
   event_share: true,
+  place_share: true,
   dish_nudge: true,
   friends_love: true,
   taste_match: true,
@@ -48,6 +49,8 @@ describe('pushCopy', () => {
     expect(pushCopy('cheers', 'es', ctx).body).toBe('Ana le dio cheers a tu ranking de Lumbre')
     expect(pushCopy('cheers', 'en', ctx).body).toBe('Ana cheered your ranking of Lumbre')
     expect(pushCopy('follow', 'en', ctx).body).toBe('Ana started following you')
+    expect(pushCopy('place_share', 'es', ctx).body).toBe('Ana te envió Lumbre')
+    expect(pushCopy('place_share', 'en', ctx).body).toBe('Ana sent you Lumbre')
     expect(pushCopy('follow_request', 'en', ctx).body).toBe('Ana requested to follow you')
     expect(pushCopy('follow_request', 'es', ctx).body).toBe('Ana quiere seguirte')
     expect(pushCopy('follow_accepted', 'en', ctx).body).toBe('Ana accepted your follow request')
