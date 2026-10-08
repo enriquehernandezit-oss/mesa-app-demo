@@ -163,8 +163,13 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   stack (number over a small `accent` word, right-aligned), and a glass capsule on photo heroes.
   A score is always attributed — yours, a friend's, or "Mesa's" — never the place's own rating.
 - **The picture rule.** A card's picture is, in order: the friend's photo → the place's photo →
-  the friend's **words** set as the picture → a **name card** (`surface-raised`, hairline ring,
-  the name in serif). A place page with no photo opens on its map. No letter tiles, no stamps.
+  a **name card** (the name in serif). A place page with no photo opens on its map. No letter
+  tiles, no stamps. **A name card is burgundy, cream or black** — `accent-fill` / `on-bar` / `bar`
+  with cream or ink type, the same in both themes, chosen from the place's name
+  (`nameCardTone`) so a place always wears the same one and a screen of them isn't one colour;
+  cream and black carry a hairline ring. **The Feed's friend card never shows a name card**: with
+  no photo it has no picture at all — the friend's **words** lead, or, with none, the place's name
+  in the serif over its neighborhood.
   The name card's type size is worked out in `lib/nameCard.ts` (the biggest size, a fifth of the
   box's short side, at which the name wraps into ≤ 3 lines inside the padding) — never iOS's
   shrink-to-fit, which left the same 26pt name a few points tall on one card and full size on the next.

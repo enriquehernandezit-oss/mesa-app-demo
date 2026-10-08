@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { heroNameSize, nameCardFontSize, nameCardLines } from './nameCard'
+import { heroNameSize, nameCardFontSize, nameCardLines, nameCardTone } from './nameCard'
 
 describe('nameCardLines', () => {
   test('a short name is one line', () => {
@@ -62,5 +62,29 @@ describe('heroNameSize', () => {
 
   test('never below the floor, however long', () => {
     expect(heroNameSize('x'.repeat(200), column, 46)).toBe(24)
+  })
+})
+
+describe('nameCardTone', () => {
+  test('a place always wears the same colour, whatever the case or spacing', () => {
+    expect(nameCardTone('La Pinseria')).toBe(nameCardTone('  la pinseria '))
+  })
+  test('burgundy, cream and black all turn up across a list of places', () => {
+    const names = [
+      'La Pinseria',
+      'Mesón de Bari',
+      'Sophia’s Bar & Grill',
+      'Pasta Factory',
+      'Ichiban',
+      'El Conuco',
+      'Aqua',
+      'Mitre',
+      'Barra Payan',
+      'Lulu',
+      'Jalao',
+      'Cantábrico',
+    ]
+    const tones = new Set(names.map(nameCardTone))
+    expect([...tones].sort()).toEqual(['black', 'burgundy', 'cream'])
   })
 })

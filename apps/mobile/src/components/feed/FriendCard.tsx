@@ -14,7 +14,6 @@ import { MAX_SCALE } from '@/components/ui'
 import { Avatar } from '@/components/ui/Avatar'
 import { CommentIcon, MoreIcon } from '@/components/ui/icons'
 import { ScoreBadge } from '@/components/ui/patterns'
-import { PlaceCover } from '@/components/ui/PlaceCover'
 import { toast } from '@/components/ui/toast-store'
 import { api } from '@/lib/api'
 import { useT } from '@/lib/i18n'
@@ -25,10 +24,10 @@ import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
 import { DATA_FIGURES } from '@/theme/vars'
 
-// A friend's ranking, as one card. Three shapes, by what there is to show — the
+// A friend's ranking, as one card. Two shapes, by what there is to show — the
 // picture rule (docs/DESIGN.md): the friend's photo or the place's photo on the right,
-// fading into the card; else their WORDS set as the picture; else the place's NAME
-// CARD. Under the place: the friend's note (or the neighborhood), then a dense line —
+// fading into the card; else no picture at all — their WORDS lead, or, with none, the
+// place's name does. A place with no photo never gets a name card here. Under the place: the friend's note (or the neighborhood), then a dense line —
 // cheers, comments, save. The whole card opens the place (or the dish, for a dish
 // post); the avatar, the "···" and each action keep their own targets.
 //
@@ -240,8 +239,9 @@ export const FriendCard = memo(function FriendCard({
             <View className="absolute bottom-2.5 right-2.5">{save('photo')}</View>
           </View>
         </Pressable>
-      ) : item.note ? (
-        // No photo, but they said something: their words are the picture.
+      ) : (
+        // No photo: no picture. Their words lead when they said something; otherwise the
+        // place's name does, and the neighborhood sits under it.
         <Pressable
           accessibilityRole="button"
           onPress={() => router.push(href)}
@@ -252,50 +252,51 @@ export const FriendCard = memo(function FriendCard({
             <View className="flex-1">{who}</View>
             <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
           </View>
-          <Text
-            selectable
-            numberOfLines={3}
-            onLongPress={onReportNote}
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-2 font-serif text-serif-md text-text"
-          >
-            “<MentionText text={item.note} />”
-          </Text>
-          <Text
-            numberOfLines={1}
-            maxFontSizeMultiplier={MAX_SCALE}
-            className="mt-1 font-ui text-label text-text-muted"
-          >
-            {atPlace[0]}
-            <Text maxFontSizeMultiplier={MAX_SCALE} className="text-text">
-              {title}
-            </Text>
-            {atPlace[1]}
-            {item.neighborhood ? ` · ${item.neighborhood}` : ''}
-          </Text>
+          {item.note ? (
+            <>
+              <Text
+                selectable
+                numberOfLines={3}
+                onLongPress={onReportNote}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="mt-2 font-serif text-serif-md text-text"
+              >
+                “<MentionText text={item.note} />”
+              </Text>
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="mt-1 font-ui text-label text-text-muted"
+              >
+                {atPlace[0]}
+                <Text maxFontSizeMultiplier={MAX_SCALE} className="text-text">
+                  {title}
+                </Text>
+                {atPlace[1]}
+                {item.neighborhood ? ` · ${item.neighborhood}` : ''}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text
+                numberOfLines={2}
+                maxFontSizeMultiplier={MAX_SCALE}
+                className="mt-2 font-serif text-serif-md text-text"
+              >
+                {title}
+              </Text>
+              {item.neighborhood ? (
+                <Text
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="mt-0.5 font-ui text-label text-text-muted"
+                >
+                  {item.neighborhood}
+                </Text>
+              ) : null}
+            </>
+          )}
           {actions(true)}
-        </Pressable>
-      ) : (
-        // Nothing to show or say: the place's name card, with the score under its name.
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(href)}
-          className={shell}
-          style={lift}
-        >
-          <View className="min-h-[112px] overflow-hidden rounded-card">
-            <View className="absolute inset-y-2 right-2 w-[112px]">
-              <PlaceCover name={item.restaurant.name} className="h-full w-full" />
-            </View>
-            <View className="pb-2.5 pl-4 pr-[132px] pt-3">
-              {body}
-              <View className="mt-1.5 flex-row">
-                <ScoreBadge size="sm" score={item.score} attribution={{ kind: 'stated' }} />
-              </View>
-              {actions(false)}
-            </View>
-            <View className="absolute bottom-3 right-3">{save('chip')}</View>
-          </View>
         </Pressable>
       )}
     </Animated.View>

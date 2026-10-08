@@ -57,3 +57,18 @@ export function heroNameSize(name: string, width: number, max: number, scale = 1
   }
   return HERO_MIN
 }
+
+// A name card is one of three colourways — burgundy, cream or black — so a screen of places with no
+// photo isn't a wall of one colour. Which one follows from the place's name, so a place always wears
+// the same card, in both themes.
+export type NameCardTone = 'burgundy' | 'cream' | 'black'
+const TONES: readonly NameCardTone[] = ['burgundy', 'cream', 'black']
+
+export function nameCardTone(name: string): NameCardTone {
+  // FNV-1a: cheap, and names that differ by a letter still land on different colours.
+  let h = 0x811c9dc5
+  for (const ch of name.trim().toLowerCase()) {
+    h = Math.imul(h ^ (ch.codePointAt(0) ?? 0), 0x01000193)
+  }
+  return TONES[(h >>> 0) % TONES.length] ?? 'burgundy'
+}
