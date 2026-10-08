@@ -184,7 +184,7 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
       .returning({ id: schema.events.id })
     eventId = event?.id ?? ''
 
-    // Two dishes at the restaurant from a public account: one public, one friends-only.
+    // Two dishes at the restaurant.
     const [ranking] = await db
       .insert(schema.rankings)
       .values({ userId: poster.id, restaurantId, position: 1, score: 90 })
@@ -195,7 +195,6 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
         rankingId: ranking?.id as string,
         restaurantId,
         name: 'Public Mofongo',
-        visibility: 'public',
       },
       {
         userId: poster.id,
@@ -298,12 +297,12 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
   })
 
   describe('dish-name suggestions', () => {
-    test("a stranger is offered the public dish's name, not the friends-only one", async () => {
+    test("a stranger is offered every dish's name — dishes are public", async () => {
       as(stranger)
       const res = await send('GET', `/dishes/restaurant/${restaurantId}/names`)
       const names = ((await res.json()) as { names: { label: string }[] }).names.map((n) => n.label)
       expect(names).toContain('Public Mofongo')
-      expect(names).not.toContain('Secret Tostones')
+      expect(names).toContain('Secret Tostones')
     })
 
     test('the poster sees both of their own', async () => {

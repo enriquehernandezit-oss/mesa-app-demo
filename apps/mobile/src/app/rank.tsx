@@ -394,7 +394,6 @@ export default function RankAPlace() {
         restaurantId: pickedId,
         name: dish.name,
         sentiment: dish.sentiment ?? undefined,
-        visibility: 'friends',
         alsoFavorite: opts.isFirst,
         ...(opts.image ? { image: opts.image, grain: opts.grain } : {}),
         ...(opts.removeImage ? { removeImage: true } : {}),

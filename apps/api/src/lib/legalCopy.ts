@@ -28,7 +28,7 @@ export interface LegalDoc {
   sections: LegalSection[]
 }
 
-const UPDATED = 'Última actualización: 6 de octubre de 2026'
+const UPDATED = 'Última actualización: 8 de octubre de 2026'
 
 // Written in Spanish only, like the rest of the documents: the app's default
 // language is Spanish and its members are in Santo Domingo. A half-machine-
@@ -64,7 +64,7 @@ export const LEGAL_DOCS: Record<LegalDocId, LegalDoc> = {
       {
         heading: 'Lo que publicas',
         paragraphs: [
-          'Tus rankings, tus notas de vibe, tus fotos de platos, tus comentarios y tus listas son tuyos. Dentro de la app los ven las personas que te siguen y quien visite tu perfil.',
+          'Tus rankings, tus notas de vibe, tus comentarios y tus listas son tuyos. Dentro de la app los ven las personas que te siguen y quien visite tu perfil. Las fotos de platos que subes, al rankear o desde la página de un lugar, y lo que cuentas de cada plato son públicos: los ve cualquier miembro en la página de ese lugar, tu cuenta sea pública o privada. Una cuenta privada mantiene privados sus rankings, notas y listas.',
           'Cuando compartes un enlace —tu pasaporte, un sitio, un plan, una invitación— la página que se abre es pública en la web: cualquiera con ese enlace la ve sin tener cuenta. El enlace de un plan lleva un identificador imposible de adivinar, así que solo llega a quien tú se lo mandes.',
           'Puedes editar o eliminar cualquier cosa que hayas publicado, en el momento que quieras.',
         ],

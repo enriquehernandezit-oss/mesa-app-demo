@@ -168,7 +168,7 @@ describe.skipIf(!deps)('private accounts and follow requests (local DB)', () => 
       .values({ name: tag, neighborhoodId, lat: 18.47, lng: -69.93, isDemo: true })
       .returning({ id: schema.restaurants.id })
     restaurantId = r!.id
-    // priv has ranked a place and posted a PUBLIC dish; cy follows priv (approved already).
+    // priv has ranked a place and posted a dish; cy follows priv (approved already).
     const [k] = await db
       .insert(schema.rankings)
       .values({ userId: priv.id, restaurantId, position: 1, score: 90 })
@@ -183,7 +183,6 @@ describe.skipIf(!deps)('private accounts and follow requests (local DB)', () => 
         rankingId: k!.id,
         restaurantId,
         name: 'Pizza',
-        visibility: 'public',
       })
       .returning({ id: schema.dishes.id })
     dishId = d!.id
@@ -392,11 +391,9 @@ describe.skipIf(!deps)('private accounts and follow requests (local DB)', () => 
       expect(await ids(bo)).toContain(priv.id)
     })
 
-    test('a public dish from a private account is still only for approved followers', async () => {
-      expect((await call(bo, 'GET', `/dishes/${dishId}`)).status).toBe(404)
-      expect((await call(cy, 'GET', `/dishes/${dishId}`)).status).toBe(200)
-      await setPrivate(false)
+    test('a dish from a private account is public: a stranger can open it', async () => {
       expect((await call(bo, 'GET', `/dishes/${dishId}`)).status).toBe(200)
+      expect((await call(cy, 'GET', `/dishes/${dishId}`)).status).toBe(200)
     })
 
     test('a private account has no public page, and is not quoted on a place page', async () => {

@@ -309,6 +309,13 @@
       "when": 1791413217343,
       "tag": "0043_place_cover_from_dishes",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1791467609958,
+      "tag": "0044_dishes_public_places_without_photos",
+      "breakpoints": true
     }
   ]
 }

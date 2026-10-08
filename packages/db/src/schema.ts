@@ -821,7 +821,9 @@ export const dishes = pgTable(
     sentiment: text('sentiment'),
     // Capture-time grain treatment (a delivery-time transform, once one exists).
     grain: text('grain').notNull().default('none'), // candlelit | daylight | none
-    visibility: text('visibility').notNull().default('friends'), // friends | public
+    // Every dish is public now (anyone signed in sees it on the place's page, whatever the poster's
+    // account privacy); the column stays for older rows and clients that still send 'friends'.
+    visibility: text('visibility').notNull().default('public'), // friends | public
     removedAt: timestamp('removed_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),

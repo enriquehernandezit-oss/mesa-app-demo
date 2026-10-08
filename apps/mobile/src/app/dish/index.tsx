@@ -6,7 +6,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { MentionField } from '@/components/MentionField'
-import { Body, Button, Caption, Chip, ErrorState, MAX_SCALE, Toggle } from '@/components/ui'
+import { Body, Button, Caption, Chip, ErrorState, MAX_SCALE } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
 import { PlusIcon } from '@/components/ui/icons'
 import { ScoreStack } from '@/components/ui/patterns'
@@ -70,10 +70,6 @@ export default function DishCompose() {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [categoryTouched, setCategoryTouched] = useState(false)
   const [caption, setCaption] = useState('')
-  // null until the member touches the switch. A photo on a place that has no picture yet starts
-  // public — it can become the place's picture, and the line under the switch says so — and
-  // everything else starts friends-only, as always.
-  const [friendsOnlyChoice, setFriendsOnlyChoice] = useState<boolean | null>(null)
   const [posted, setPosted] = useState(false)
   const goneRef = useRef(false)
   const captionRef = useRef<TextInput>(null)
@@ -143,14 +139,12 @@ export default function DishCompose() {
         caption: caption.trim() || undefined,
         image: image ?? undefined,
         grain: image ? grain : 'none',
-        visibility: friendsOnly ? 'friends' : 'public',
       }),
     onSuccess: (res) => {
-      track('dish_posted', { grain, friendsOnly, hasPhoto: image !== null, category: categoryId })
+      track('dish_posted', { grain, hasPhoto: image !== null, category: categoryId })
       setPosted(true)
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
-      queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['dish-names', restaurantId] })
@@ -219,8 +213,6 @@ export default function DishCompose() {
 
   const restaurant = q.data?.restaurant
   const myRanking = q.data?.myRanking ?? null
-  const placeNeedsPicture = Boolean(restaurant) && !restaurant?.coverImageId
-  const friendsOnly = friendsOnlyChoice ?? !(placeNeedsPicture && image !== null)
   const hasRanked = Boolean(myRanking)
 
   // `retry: false` on the query above means a failed fetch used to leave this
@@ -423,22 +415,6 @@ export default function DishCompose() {
             </Pressable>
           </View>
         )}
-
-        <View className="mt-2 min-h-[54px] flex-row items-center justify-between gap-3 px-5">
-          <Text maxFontSizeMultiplier={MAX_SCALE} className="flex-1 font-ui text-subhead text-text">
-            {t('dish.friends_only_label')}
-          </Text>
-          <Toggle
-            checked={friendsOnly}
-            onChange={setFriendsOnlyChoice}
-            label={t('dish.friends_only_label')}
-          />
-        </View>
-        {placeNeedsPicture && image !== null ? (
-          <Caption className="px-5">
-            {t(friendsOnly ? 'dish.picture_friends_hint' : 'dish.picture_public_hint')}
-          </Caption>
-        ) : null}
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
           <Caption className="mt-1 px-5 text-danger">{t('dish.rank_first_error')}</Caption>

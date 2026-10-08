@@ -120,22 +120,18 @@ export const authorVisibleTo = (viewerId: string, authorId: PgColumn, authorPriv
   or(eq(authorPrivate, false), eq(authorId, viewerId), inArray(authorId, followingIds(viewerId)))
 
 // Which dishes the given viewer may see — the rule GET /dishes/:id and a restaurant's dish rail
-// already apply, in one place for everything else that points at a dish (cheering it, saving it,
-// adding it to a list, reading either back). A dish is visible when it is the viewer's own, or
-// public from a public account, or posted by someone the viewer follows; never when it was removed
-// by a moderator, its poster is banned, or a block stands between them. The query joins `user` on
-// `dishes.userId` for the poster's flags.
+// apply, in one place for everything else that points at a dish (cheering it, saving it, adding it
+// to a list, reading either back). Dishes and their photos are public: anyone signed in sees them
+// on the place's page, whether the poster's account is public or private (the account's privacy
+// covers its rankings, notes and lists, not its dishes). Never when it was removed by a moderator,
+// its poster is banned, or a block stands between them. The query joins `user` on `dishes.userId`
+// for the poster's ban flag.
 export const dishVisibleTo = (viewerId: string) =>
   and(
     isNull(dishes.removedAt),
     isNull(user.bannedAt),
     notInArray(dishes.userId, blockedByMe(viewerId)),
     notInArray(dishes.userId, blockedMe(viewerId)),
-    or(
-      eq(dishes.userId, viewerId),
-      and(eq(dishes.visibility, 'public'), eq(user.isPrivate, false)),
-      inArray(dishes.userId, followingIds(viewerId)),
-    ),
   )
 
 // One dish, or undefined when it does not exist or is not the viewer's to see (all read as 404).

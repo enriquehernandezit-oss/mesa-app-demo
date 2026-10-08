@@ -4,7 +4,6 @@ import { eq, sql } from 'drizzle-orm'
 
 import { db, pool } from './client'
 import { refuseRemoteDatabase } from './localDatabase'
-import { refreshPlaceCovers } from './placeCover'
 import * as schema from './schema'
 import { scoreFor } from './score'
 import { EXISTING_SECTOR_ALIASES, NEW_SECTORS } from './sectors'
@@ -358,8 +357,6 @@ async function seed() {
   await db.insert(schema.waitlist).values(waitlist)
 
   // --- editorial curated lists (chosen from the rankings just inserted) ---
-  // A place wears its best public dish photo — the same rule the API keeps (placeCover.ts).
-  await refreshPlaceCovers(undefined, db)
   const listCount = await seedCuration(db)
 
   console.log(`inserted: ${listCount} curated lists`)

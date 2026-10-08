@@ -162,8 +162,7 @@ photo`, `radius` a prop) — and tells the material Mesa's _resolved_ theme, not
   5+ **Fine**, else **Skip**. Three forms: a capsule (`chip` / `photo` / `solid`), a dense-row
   stack (number over a small `accent` word, right-aligned), and a glass capsule on photo heroes.
   A score is always attributed — yours, a friend's, or "Mesa's" — never the place's own rating.
-- **The picture rule.** A card's picture is, in order: the friend's photo → the place's photo →
-  a **name card** (the name in serif). A place page with no photo opens on its map. No letter
+- **The picture rule.** A card's picture is, in order: the friend's photo → a **name card** (the name in serif; a place has no photo of its own — the dish photos members post live on its page). A place page with no photo opens on its map. No letter
   tiles, no stamps. **A name card is burgundy, cream or black** — `accent-fill` / `on-bar` / `bar`
   with cream or ink type, the same in both themes, chosen from the place's name
   (`nameCardTone`) so a place always wears the same one and a screen of them isn't one colour;

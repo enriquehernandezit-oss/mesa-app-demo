@@ -1,12 +1,4 @@
-import {
-  DISH_CATEGORIES,
-  DISH_GROUPS,
-  db,
-  guessDishCategory,
-  mesaNorm,
-  refreshPlaceCovers,
-  schema,
-} from '@mesa/db'
+import { DISH_CATEGORIES, DISH_GROUPS, db, guessDishCategory, mesaNorm, schema } from '@mesa/db'
 import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -16,7 +8,7 @@ import { isUuid } from '../lib/ids'
 import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
 import { notifyMentions } from '../lib/mentionNotify'
 import { notify } from '../lib/notify'
-import { blockedByMe, blockedMe, dishVisibleTo, followingIds, visibleDish } from '../lib/visibility'
+import { blockedByMe, blockedMe, dishVisibleTo, visibleDish } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Dish posts (Phase 6; categorized + photo-optional as of M11). A dish is
@@ -28,7 +20,6 @@ const {
   dishes,
   rankings,
   user,
-  follows,
   userBlocks,
   savedDishes,
   dishCheers,
@@ -95,13 +86,6 @@ async function scoredDishesForRestaurant(me: { id: string }, restaurantId: strin
         isNull(user.bannedAt),
         notInArray(dishes.userId, blockedByMe(me.id)),
         notInArray(dishes.userId, blockedMe(me.id)),
-        // A dish marked public is still a private account's content (F1): shown only to its
-        // approved followers, like the rest of what they post.
-        or(
-          eq(dishes.userId, me.id),
-          and(eq(dishes.visibility, 'public'), eq(user.isPrivate, false)),
-          inArray(dishes.userId, followingIds(me.id)),
-        ),
       ),
     )
     .orderBy(desc(dishes.createdAt))
@@ -185,7 +169,8 @@ const createSchema = z.object({
   categoryId: z.string().optional(),
   sentiment: z.enum(['loved', 'fine', 'disliked']).optional(),
   grain: z.enum(['candlelit', 'daylight', 'none']).default('none'),
-  visibility: z.enum(['friends', 'public']).default('friends'),
+  // Dishes are public now; older app builds still send this, and it is ignored.
+  visibility: z.enum(['friends', 'public']).optional(),
   alsoFavorite: z.boolean().optional(),
 })
 
@@ -253,7 +238,6 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       categoryId: requestedCategoryId,
       sentiment,
       grain,
-      visibility,
       alsoFavorite,
     } = parsed.data
 
@@ -315,7 +299,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
           categoryId,
           sentiment: sentiment ?? null,
           grain,
-          visibility,
+          visibility: 'public',
         })
         .onConflictDoNothing()
         .returning({ id: dishes.id })
@@ -336,9 +320,6 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         if (won) await updateExisting(won.id)
       }
     }
-
-    // A photo added or taken off changes which dish photo the place wears as its picture.
-    if (dishId && (image || removeImage)) await refreshPlaceCovers([restaurantId])
 
     // A caption that @-tags someone, on a dish that is new (a re-post of the same dish adds no caption).
     if (created && caption && dishId) {
@@ -511,8 +492,6 @@ export const dishesRoutes = new Hono<AuthedEnv>()
         categoryId: dishes.categoryId,
         grain: dishes.grain,
         createdAt: dishes.createdAt,
-        visibility: dishes.visibility,
-        posterPrivate: user.isPrivate,
         user: { id: user.id, name: user.name, handle: user.handle, image: user.image },
         score: rankings.score,
         restaurant: {
@@ -538,23 +517,7 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .limit(1)
     if (!row) return c.json({ error: 'not_found' }, 404)
 
-    // Visibility: mine, public, someone I follow — or, unconditionally, a
-    // moderator's. The moderation queue links straight to this endpoint so a
-    // report can be reviewed with real context, and a moderator reviewing a
-    // report is very often looking at exactly the case they don't follow the
-    // poster — the same visibility gate that protects everyone else would
-    // otherwise 404 the one person whose job is to look at it. Moderators
-    // could already act on any dish blind via DELETE /moderation/dishes/:id;
-    // this only lets them see it first.
     const posterIsMe = row.user.id === me.id
-    if (!posterIsMe && !me.isModerator && (row.visibility !== 'public' || row.posterPrivate)) {
-      const [f] = await db
-        .select({ id: follows.followingId })
-        .from(follows)
-        .where(and(eq(follows.followerId, me.id), eq(follows.followingId, row.user.id)))
-        .limit(1)
-      if (!f) return c.json({ error: 'not_found' }, 404)
-    }
     // Never surface a dish when either of us has blocked the other (symmetric)
     // — including for a moderator, who still shouldn't see a blocked poster's
     // content through this path (they have the queue for that).
@@ -589,10 +552,9 @@ export const dishesRoutes = new Hono<AuthedEnv>()
       .from(dishCheers)
       .where(eq(dishCheers.dishId, id))
 
-    const { visibility: _v, posterPrivate: _p, ...dish } = row
     return c.json({
       dish: {
-        ...dish,
+        ...row,
         posterIsMe,
         saved: Boolean(savedRow),
         cheerCount: cheerRow?.count ?? 0,
@@ -609,11 +571,10 @@ export const dishesRoutes = new Hono<AuthedEnv>()
     if (!isUuid(c.req.param('id'))) return c.json({ error: 'not_found' }, 404)
     const found = await db.query.dishes.findFirst({
       where: and(eq(dishes.id, c.req.param('id')), eq(dishes.userId, me.id)),
-      columns: { id: true, name: true, rankingId: true, restaurantId: true },
+      columns: { id: true, name: true, rankingId: true },
     })
     if (!found) return c.json({ error: 'not_found' }, 404)
     await db.update(dishes).set({ removedAt: new Date() }).where(eq(dishes.id, found.id))
-    await refreshPlaceCovers([found.restaurantId])
     await db
       .update(rankings)
       .set({ favoriteDish: null })

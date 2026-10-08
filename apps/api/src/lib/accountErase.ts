@@ -1,8 +1,7 @@
-import { db, refreshPlaceCovers, schema } from '@mesa/db'
+import { db, schema } from '@mesa/db'
 import { eq, inArray, sql } from 'drizzle-orm'
 
 import { throttleKey } from './authThrottle'
-import { placesWithPhotosBy } from './placeCover'
 import { deleteUserPhotos } from './r2'
 import { matchBudgetKey } from './usageBudget'
 
@@ -27,8 +26,6 @@ export async function eraseAccount(member: {
     console.error('account erase: photo cleanup failed', err instanceof Error ? err.message : err)
   }
 
-  // Places that wear one of their photos as the picture get the next best one (or none).
-  const places = await placesWithPhotosBy(member.id)
   const email = member.email.trim().toLowerCase()
   await db.transaction(async (tx) => {
     await tx.delete(user).where(eq(user.id, member.id))
@@ -39,6 +36,5 @@ export async function eraseAccount(member: {
     await tx.delete(waitlist).where(sql`lower(${waitlist.email}) = ${email}`)
     await tx.delete(verification).where(sql`lower(${verification.identifier}) = ${email}`)
   })
-  await refreshPlaceCovers(places)
   return { photos }
 }

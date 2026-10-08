@@ -61,11 +61,12 @@ pending request cannot leak through them.
 Added in the October audit: holding an id is not access. `GET|POST /comments/ranking/:id` and
 `POST /cheers/:id` answer 404 for a private account's ranking unless the caller is an approved follower
 (`visibleRanking` uses `authorVisibleTo`); a dish is cheered, saved or filed in a list only if
-`visibleDish` (lib/visibility.ts) says it is the caller's to see, and saved lists and collections drop a
-dish that has since been removed or gone private; People-you-may-know's taste tier skips private
+`visibleDish` (lib/visibility.ts) says it is the caller's to see — and dishes are public (photo and
+rating, whatever the poster's account privacy; only a removal, a ban or a block hides one) — and saved
+lists and collections drop a dish that has since been removed; People-you-may-know's taste tier skips private
 accounts; a private account can take someone off its followers with `DELETE /social/followers/:userId`
-(no notification; they can ask again). The public collection page lists a dish only when it is public,
-from a public, un-banned account, and not removed.
+(no notification; they can ask again). The public collection page lists a dish unless it was removed or
+its poster is banned (its owner must still be a public account).
 
 ## Moderation rules worth knowing
 

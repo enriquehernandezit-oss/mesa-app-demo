@@ -114,9 +114,7 @@ describe.skipIf(!deps)('share pages: curated list / collection / dish list (loca
       { listId: list.id, restaurantId: r1 as string, position: 2 },
     ])
 
-    // A ranking + two dishes off it (a ranking can own up to 3) — one
-    // public, one 'friends' (the default) — to prove the collection page
-    // excludes the private one.
+    // A ranking + two dishes off it (a ranking can own up to 3) — the collection page names both.
     const [ranking] = await db
       .insert(schema.rankings)
       .values({ userId: ownerId, restaurantId: r0 as string, position: 1, score: 90 })
@@ -131,15 +129,12 @@ describe.skipIf(!deps)('share pages: curated list / collection / dish list (loca
           rankingId: ranking.id,
           restaurantId: r0 as string,
           name: 'Public Dish',
-          visibility: 'public',
         },
         {
           userId: ownerId,
           rankingId: ranking.id,
           restaurantId: r0 as string,
-          name: 'Friends Only Dish',
-          // visibility defaults to 'friends' — the case a public page must
-          // never name.
+          name: 'Second Dish',
         },
       ])
       .returning({ id: schema.dishes.id })
@@ -251,14 +246,14 @@ describe.skipIf(!deps)('share pages: curated list / collection / dish list (loca
   })
 
   describe('GET /p/collection/:id', () => {
-    test("names the restaurant and the public dish, never the 'friends' one", async () => {
+    test('names the restaurant and both dishes', async () => {
       const res = await get(`/p/collection/${collectionId}`)
       expect(res.status).toBe(200)
       const html = await res.text()
       expect(html).toContain('Test Collection')
       expect(html).toContain(`${tag}-r2`) // the plain restaurant item
       expect(html).toContain('Public Dish')
-      expect(html).not.toContain('Friends Only Dish')
+      expect(html).toContain('Second Dish')
     })
 
     test('an unknown id 404s', async () => {

@@ -197,7 +197,6 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
         restaurantId: restaurantIds[0]!,
         name: `${tag} dish`,
         imageId: 'x',
-        visibility: 'friends',
       })
       .returning({ id: schema.dishes.id })
     dishId = dish!.id
@@ -262,17 +261,17 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
       expect((await send('POST', `/cheers/${rankingId}`)).status).toBe(200)
     })
 
-    test('its friends-only dish: cheering, saving and filing it in a list are refused to a stranger and allowed to a follower', async () => {
+    test('its dish is public: a stranger can cheer, save and file it in a list', async () => {
       as(stranger)
-      expect((await send('POST', `/dishes/${dishId}/cheer`)).status).toBe(404)
-      expect((await send('POST', '/saved/dishes', { dishId })).status).toBe(404)
+      expect((await send('POST', `/dishes/${dishId}/cheer`)).status).toBe(200)
+      expect((await send('POST', '/saved/dishes', { dishId })).status).toBe(200)
       const add = await send('POST', `/collections/${collectionId}/items`, { dishId })
-      expect(add.status).toBe(400)
-      expect(await add.json()).toEqual({ error: 'unknown_dish' })
-      const none = await db.query.savedDishes.findMany({
-        where: eq(schema.savedDishes.userId, id('stranger')),
-      })
-      expect(none).toHaveLength(0)
+      expect(add.status).toBeLessThan(300)
+      await db.delete(schema.savedDishes).where(eq(schema.savedDishes.userId, id('stranger')))
+      await db.delete(schema.dishCheers).where(eq(schema.dishCheers.userId, id('stranger')))
+      await db
+        .delete(schema.collectionItems)
+        .where(eq(schema.collectionItems.collectionId, collectionId))
 
       as(follower)
       expect((await send('POST', `/dishes/${dishId}/cheer`)).status).toBe(200)
@@ -434,7 +433,7 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
   })
 
   describe('a public list page shows only what the public may see', () => {
-    test('a removed dish, and a public dish from a private account, are not listed', async () => {
+    test("a removed dish is not listed; a private account's dish is, like any dish", async () => {
       const pub = new Hono().route('/p', sharePagesRoutes)
       const [r] = await db
         .insert(schema.rankings)
@@ -460,7 +459,7 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
           visibility: 'public',
         })
         .returning({ id: schema.dishes.id })
-      // the private owner's dish, marked public — still a private account's content
+      // the private owner's dish — dishes are public whatever the account's privacy
       const ownerRanking = await db.query.rankings.findFirst({
         where: and(
           eq(schema.rankings.userId, id('owner')),
@@ -475,7 +474,6 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
           restaurantId: restaurantIds[2]!,
           name: `${tag} hidden dish`,
           imageId: 'x',
-          visibility: 'public',
         })
         .returning({ id: schema.dishes.id })
       await db.insert(schema.collectionItems).values([
@@ -486,7 +484,7 @@ describe.skipIf(!deps)('privacy and moderation gaps (local DB)', () => {
 
       let html = await page()
       expect(html).toContain(`${tag} shown dish`)
-      expect(html).not.toContain(`${tag} hidden dish`)
+      expect(html).toContain(`${tag} hidden dish`)
 
       await db
         .update(schema.dishes)

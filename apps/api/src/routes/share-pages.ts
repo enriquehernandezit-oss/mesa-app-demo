@@ -442,10 +442,8 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
   // A member's named list (M8/M19) — public the same way a profile or a plan
   // is: gated by an unguessable id, not a real access-control flag (collections
-  // have never had a privacy toggle). A dish item keeps the poster's own
-  // visibility choice, though — a 'friends'-only dish can't be named (or its
-  // photo used) on a page anyone can load with no session, the same rule
-  // GET /dishes/:id enforces for a signed-in stranger.
+  // have never had a privacy toggle). A dish item shows like it does in the
+  // app — dishes are public — unless its poster is banned.
   .get('/collection/:id', async (c) => {
     const canonical = c.req.url
     c.header('Cache-Control', 'public, max-age=300')
@@ -471,8 +469,6 @@ export const sharePagesRoutes = new Hono<AppEnv>()
         restaurantCover: restaurants.coverImageId,
         dishName: dishes.name,
         dishImage: dishes.imageId,
-        dishVisibility: dishes.visibility,
-        dishPosterPrivate: user.isPrivate,
         dishPosterBanned: user.bannedAt,
       })
       .from(collectionItems)
@@ -489,9 +485,8 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     // No stored position (the in-app list orders by createdAt too) — the
     // display ordinal below is synthetic, same visual language as a real one.
-    // A dish shows only when it is public from a public, un-banned account — the page is public.
-    const dishShown = (r: (typeof rawRows)[number]) =>
-      r.dishVisibility === 'public' && r.dishPosterPrivate === false && r.dishPosterBanned === null
+    // A dish shows unless its poster is banned — dishes are public.
+    const dishShown = (r: (typeof rawRows)[number]) => r.dishPosterBanned === null
     const items = rawRows
       .filter((r) => r.restaurantName || dishShown(r))
       .map((r, i) => ({
@@ -570,7 +565,6 @@ export const sharePagesRoutes = new Hono<AppEnv>()
         name: restaurants.name,
         restaurantCover: restaurants.coverImageId,
         dishImage: dishes.imageId,
-        dishVisibility: dishes.visibility,
       })
       .from(dishListItems)
       .innerJoin(restaurants, eq(restaurants.id, dishListItems.restaurantId))
@@ -589,9 +583,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
 
     const who = owner.name || `@${owner.handle}`
     const first = rows[0]
-    const firstCover = first
-      ? ((first.dishVisibility === 'public' ? first.dishImage : null) ?? first.restaurantCover)
-      : null
+    const firstCover = first ? (first.dishImage ?? first.restaurantCover) : null
     const cover = absoluteCover(firstCover)
     const description =
       rows.length > 0

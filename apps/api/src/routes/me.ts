@@ -1,4 +1,4 @@
-import { db, hashPhone, normalizePhone, refreshPlaceCovers, schema } from '@mesa/db'
+import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
 import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -16,7 +16,6 @@ import { clearFailures, lockedForMs, noteFailure } from '../lib/authThrottle'
 import { isReservedHandle } from '../lib/handles'
 import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
 import { notify } from '../lib/notify'
-import { placesWithPhotosBy } from '../lib/placeCover'
 import { weeklyStreak } from '../lib/streak'
 import { citywideRank, followCounts } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -375,8 +374,6 @@ export const meRoutes = new Hono<AuthedEnv>()
       }
       return pending.map((p) => p.requesterId)
     })
-    // Their public dish photos stop (or start) being a place's picture.
-    await refreshPlaceCovers(await placesWithPhotosBy(me.id))
     notify(
       approved.map((requesterId) => ({
         userId: requesterId,
