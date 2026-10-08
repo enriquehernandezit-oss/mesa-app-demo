@@ -275,6 +275,10 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'dish.caption_placeholder': 'Write a comment… e.g. falls apart with a fork',
   'dish.linked_ranking': 'Linked ranking',
   'dish.friends_only_label': 'Share with friends only',
+  'dish.picture_public_hint':
+    'This place has no picture yet. Your photo will be it, and anyone will see it.',
+  'dish.picture_friends_hint':
+    'This place has no picture yet. Turn off friends only and your photo can be it.',
   'dish.rank_first_error': 'Rank this spot first.',
   'dish.publishing': 'Posting…',
   'dish.publish_button': 'Post dish',

@@ -70,7 +70,10 @@ export default function DishCompose() {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   const [categoryTouched, setCategoryTouched] = useState(false)
   const [caption, setCaption] = useState('')
-  const [friendsOnly, setFriendsOnly] = useState(true)
+  // null until the member touches the switch. A photo on a place that has no picture yet starts
+  // public — it can become the place's picture, and the line under the switch says so — and
+  // everything else starts friends-only, as always.
+  const [friendsOnlyChoice, setFriendsOnlyChoice] = useState<boolean | null>(null)
   const [posted, setPosted] = useState(false)
   const goneRef = useRef(false)
   const captionRef = useRef<TextInput>(null)
@@ -147,6 +150,7 @@ export default function DishCompose() {
       setPosted(true)
       tapSuccess()
       queryClient.invalidateQueries({ queryKey: ['dishes', restaurantId] })
+      queryClient.invalidateQueries({ queryKey: ['restaurant', restaurantId] })
       queryClient.invalidateQueries({ queryKey: ['feed'] })
       queryClient.invalidateQueries({ queryKey: ['saved'] })
       queryClient.invalidateQueries({ queryKey: ['dish-names', restaurantId] })
@@ -215,6 +219,8 @@ export default function DishCompose() {
 
   const restaurant = q.data?.restaurant
   const myRanking = q.data?.myRanking ?? null
+  const placeNeedsPicture = Boolean(restaurant) && !restaurant?.coverImageId
+  const friendsOnly = friendsOnlyChoice ?? !(placeNeedsPicture && image !== null)
   const hasRanked = Boolean(myRanking)
 
   // `retry: false` on the query above means a failed fetch used to leave this
@@ -424,10 +430,15 @@ export default function DishCompose() {
           </Text>
           <Toggle
             checked={friendsOnly}
-            onChange={setFriendsOnly}
+            onChange={setFriendsOnlyChoice}
             label={t('dish.friends_only_label')}
           />
         </View>
+        {placeNeedsPicture && image !== null ? (
+          <Caption className="px-5">
+            {t(friendsOnly ? 'dish.picture_friends_hint' : 'dish.picture_public_hint')}
+          </Caption>
+        ) : null}
 
         {post.error instanceof ApiError && post.error.code === 'rank_it_first' && (
           <Caption className="mt-1 px-5 text-danger">{t('dish.rank_first_error')}</Caption>

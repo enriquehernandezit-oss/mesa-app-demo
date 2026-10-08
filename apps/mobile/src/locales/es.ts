@@ -288,6 +288,10 @@ export const es = {
   'dish.caption_placeholder': 'Escribe tu comentario… ej. se deshace con el tenedor',
   'dish.linked_ranking': 'Ranking vinculado',
   'dish.friends_only_label': 'Compartir solo con amigos',
+  'dish.picture_public_hint':
+    'Este lugar aún no tiene imagen. Tu foto será la imagen y cualquiera podrá verla.',
+  'dish.picture_friends_hint':
+    'Este lugar aún no tiene imagen. Desactiva «solo amigos» y tu foto podrá serlo.',
   'dish.rank_first_error': 'Rankea este spot primero.',
   'dish.publishing': 'Publicando…',
   'dish.publish_button': 'Publicar plato',
