@@ -21,12 +21,21 @@ import { requireAuth } from '../middleware/session'
 // scope=friends (M7) narrows the same query to followingIds ∪ followerIds ∪
 // me — "friends" in the loose Instagram sense this app uses everywhere else
 // (no mutual-follow requirement), not a separate relationship.
+//
+// scope=area&neighborhood=<slug> narrows it to the people whose home sector is that one — the
+// top diners of Piantini, of Naco. Without a slug it is the citywide board.
 const { rankings, user, neighborhoods } = schema
 
 export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/', async (c) => {
   const me = c.get('user')
   const period = c.req.query('period') === 'month' ? 'month' : 'all'
-  const scope = c.req.query('scope') === 'friends' ? 'friends' : 'all'
+  const area = (c.req.query('neighborhood') ?? '').trim().slice(0, 80)
+  const scope =
+    c.req.query('scope') === 'friends'
+      ? 'friends'
+      : c.req.query('scope') === 'area' && area
+        ? 'area'
+        : 'all'
 
   const rows = await db
     .select({
@@ -64,13 +73,14 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
               eq(user.id, me.id),
             )
           : sql`true`,
+        scope === 'area' ? eq(neighborhoods.slug, area) : sql`true`,
       ),
     )
     .groupBy(user.id, user.name, user.handle, user.image, neighborhoods.name)
     .orderBy(sql`count(${rankings.id}) desc`)
     .limit(50)
 
-  // Friends scope, or the month toggle: your position within this (typically
+  // Friends or area scope, or the month toggle: your position within this (typically
   // well under 50, or period-filtered either way) list is the meaningful
   // number, same as before. Only all-time + citywide reaches for the real
   // unbounded rank — findIndex on a top-50-capped list used to read null for
@@ -80,7 +90,7 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
   // itself always all-time, so reusing it for the month toggle would compare
   // a monthly count against an all-time population — not a fix, a different bug.
   let myRank: number | null = null
-  if (scope === 'friends' || period === 'month') {
+  if (scope !== 'all' || period === 'month') {
     const i = rows.findIndex((r) => r.id === me.id)
     myRank = i >= 0 ? i + 1 : null
   } else {
@@ -89,5 +99,11 @@ export const leaderboardRoutes = new Hono<AuthedEnv>().use(requireAuth).get('/',
     myRank = myCount > 0 ? await citywideRank(me.id, myCount) : null
   }
 
-  return c.json({ leaderboard: rows, myRank, period, scope })
+  return c.json({
+    leaderboard: rows,
+    myRank,
+    period,
+    scope,
+    neighborhood: scope === 'area' ? area : null,
+  })
 })

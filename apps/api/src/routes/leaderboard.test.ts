@@ -95,6 +95,11 @@ describe.skipIf(!deps)('leaderboard routes (local DB)', () => {
       .returning({ id: schema.neighborhoods.id })
     if (!n) throw new Error('fixture neighborhood insert failed')
     neighborhoodId = n.id
+    // friend and stranger live in the fixture sector; me and follower have none.
+    await db
+      .update(schema.user)
+      .set({ neighborhoodId })
+      .where(inArray(schema.user.id, [userId('friend'), userId('stranger')]))
 
     // 25 shared restaurants (the highest count needed) — each user ranks a
     // prefix of them, so the unique (user, restaurant) constraint never collides.
@@ -155,6 +160,22 @@ describe.skipIf(!deps)('leaderboard routes (local DB)', () => {
     expect(ids).toContain(userId('friend')) // I follow them
     expect(ids).toContain(userId('follower')) // they follow me
     expect(ids).not.toContain(userId('stranger'))
+  })
+
+  test('scope=area lists only the people whose home sector it is, and myRank is within that board', async () => {
+    const body = await leaderboard(`scope=area&neighborhood=${tag}&period=all`)
+    expect(body.scope).toBe('area')
+    expect(body.leaderboard.map((r) => r.id)).toEqual([userId('stranger'), userId('friend')])
+    // I live elsewhere, so I am not on this board.
+    expect(body.myRank).toBeNull()
+  })
+
+  test('scope=area with no sector, or one nobody lives in, is the citywide board or an empty one', async () => {
+    const none = await leaderboard('scope=area&period=all')
+    expect(none.scope).toBe('all')
+    const empty = await leaderboard('scope=area&neighborhood=no-such-sector&period=all')
+    expect(empty.scope).toBe('area')
+    expect(empty.leaderboard).toEqual([])
   })
 
   test('scope=all (default) includes everyone, unlike scope=friends', async () => {
