@@ -3,7 +3,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native'
 
 import { MAX_SCALE } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
-import { ChevronIcon, PinIcon } from '@/components/ui/icons'
+import { ChevronIcon, PinIcon, PlusIcon } from '@/components/ui/icons'
 import { PlaceCover } from '@/components/ui/PlaceCover'
 import { heroNameSize } from '@/lib/nameCard'
 import { useColor } from '@/theme/useColor'
@@ -26,7 +26,7 @@ export type PlaceTag = {
 // event) and the name's largest size (`titleSize`) are the two things that differ.
 //
 // Photos members posted of the dishes here, on the first screen: a few thumbnails and a way into all
-// of them. Only given for a place that has some.
+// of them. With no photos yet (`items` empty) it is an invitation to add the first one.
 export type PlacePhotos = {
   items: { id: string; name: string; imageId: string }[]
   label: string
@@ -132,7 +132,7 @@ export function PlaceHero({
         </Glass>
       ) : null}
 
-      {photos && photos.items.length > 0 ? (
+      {photos ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={photos.label}
@@ -141,6 +141,11 @@ export function PlaceHero({
         >
           <Glass variant="panel" radius={30} className="flex-row items-center gap-3 p-[11px]">
             <View className="flex-row gap-1.5">
+              {photos.items.length === 0 ? (
+                <View className="h-[46px] w-[46px] items-center justify-center rounded-pill bg-hchip">
+                  <PlusIcon size={20} color="hglass-fg" strokeWidth={2.2} />
+                </View>
+              ) : null}
               {photos.items.slice(0, 4).map((p) => (
                 <View key={p.id} className="h-[46px] w-[46px] overflow-hidden rounded-[14px]">
                   <PlaceCover
@@ -159,7 +164,9 @@ export function PlaceHero({
             >
               {photos.label}
             </Text>
-            <ChevronIcon size={16} color="hglass-fg" strokeWidth={2.2} />
+            {photos.items.length > 0 ? (
+              <ChevronIcon size={16} color="hglass-fg" strokeWidth={2.2} />
+            ) : null}
           </Glass>
         </Pressable>
       ) : null}

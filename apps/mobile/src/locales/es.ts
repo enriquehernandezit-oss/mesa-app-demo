@@ -1307,6 +1307,7 @@ export const es = {
   'events.hint': 'Cuándo, dónde y quién va, más abajo',
   'events.invite_friends': 'Invitar amigos',
   'place.dish_photos': 'Fotos de platos',
+  'place.add_first_photo': 'Agrega la primera foto de un plato',
   'place.share_title': 'Compartir lugar',
   'place.share_in_mesa': 'Enviar en Mesa',
   'place.share_elsewhere': 'Compartir una tarjeta o enlace',

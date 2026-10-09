@@ -333,7 +333,14 @@ export default function RestaurantProfile() {
                       label: t('place.dish_photos'),
                       onPress: () => router.push(`/r/${restaurantId}/dishes`),
                     }
-                  : undefined
+                  : // Nothing posted yet: whoever has ranked the place is asked to add the first photo.
+                    myRanking && dishesQ.isSuccess
+                    ? {
+                        items: [],
+                        label: t('place.add_first_photo'),
+                        onPress: () => router.push(`/dish?restaurant=${restaurantId}`),
+                      }
+                    : undefined
               }
               bottom={barBottom + RANK_BAR_HEIGHT + 14}
             />
