@@ -240,15 +240,44 @@ export default function RankAPlace() {
     [saved.data],
   )
 
-  // Resolve the picked spot from candidates, my list, or a just-added place.
+  // A place opened from its own page ("Rank it") may be outside the 60 candidates the list returns
+  // (they are alphabetical, so most of the catalog is), and the flow used to land on Find instead of
+  // How was it?. Fetch that one place directly; it is the same request the place page made.
+  const inLists = (id: string) =>
+    candList.some((r) => r.id === id) || existing.some((r) => r.id === id) || addedPlace?.id === id
+  const linkedLookup = useQuery({
+    queryKey: ['restaurant', params.restaurant],
+    queryFn: () => api.get<RestaurantProfileResponse>(`/restaurants/${params.restaurant}`),
+    enabled: Boolean(params.restaurant) && !candidates.isPending && !inLists(params.restaurant!),
+    staleTime: 30_000,
+  })
+  const linked = useMemo<Item | null>(() => {
+    const r = linkedLookup.data?.restaurant
+    if (!r) return null
+    return {
+      id: r.id,
+      name: r.name,
+      cuisine: r.cuisine,
+      coverImageId: r.coverImageId,
+      neighborhood: r.neighborhood?.name ?? null,
+      priceTier: r.priceTier,
+      closesAt: r.closesAt,
+      phone: r.phone,
+      lat: r.lat,
+      lng: r.lng,
+    }
+  }, [linkedLookup.data])
+
+  // Resolve the picked spot from candidates, my list, a just-added place, or the linked place.
   const picked = useMemo<Item | null>(() => {
     if (!pickedId) return null
     return (
       candList.find((r) => r.id === pickedId) ??
       existing.find((r) => r.id === pickedId) ??
-      (addedPlace?.id === pickedId ? addedPlace : null)
+      (addedPlace?.id === pickedId ? addedPlace : null) ??
+      (linked?.id === pickedId ? linked : null)
     )
-  }, [pickedId, candList, existing, addedPlace])
+  }, [pickedId, candList, existing, addedPlace, linked])
   const isRerank = Boolean(pickedId && existing.some((r) => r.id === pickedId))
   const existingForCompare = useMemo(
     () => (isRerank ? existing.filter((r) => r.id !== pickedId) : existing),
@@ -657,7 +686,7 @@ export default function RankAPlace() {
   // Finished: the toast is up and the modal is on its way out (see finishToRankings).
   if (placedStamp) return <View className="flex-1 bg-bg" />
 
-  if (candidates.isPending || mine.isPending) {
+  if (candidates.isPending || mine.isPending || (!picked && linkedLookup.isLoading)) {
     return (
       <View className="flex-1 items-center justify-center bg-bg">
         <RowsSkeleton rows={5} thumb={56} className="px-5" />
