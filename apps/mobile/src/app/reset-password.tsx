@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Body, Button, Caption, Serif, Wordmark } from '@/components/ui'
 import { Field } from '@/components/ui/Field'
 import { LockIcon } from '@/components/ui/icons'
+import { ApiError, api } from '@/lib/api'
 import { authClient } from '@/lib/auth-client'
 import { authErrorMessage } from '@/lib/authErrors'
 import { useT } from '@/lib/i18n'
@@ -39,6 +40,31 @@ export default function ResetPassword() {
     if (!token) return
     setError(null)
     setBusy(true)
+    // Ask the API about the password first: Better Auth spends the emailed link before it checks the
+    // breach list, so a breached password used to cost the member their link. An API from before this
+    // check exists answers 404 — carry on as it always did.
+    let verdict: 'breached' | 'clean' | 'unknown' | 'invalid_link' = 'clean'
+    try {
+      verdict = (
+        await api.post<{ result: typeof verdict }>('/p/reset-password/check', { token, password })
+      ).result
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) {
+        setBusy(false)
+        return setError(
+          authErrorMessage(
+            { status: err instanceof ApiError ? err.status : 0 },
+            t('auth.reset_check_failed'),
+          ),
+        )
+      }
+    }
+    if (verdict !== 'clean') {
+      setBusy(false)
+      if (verdict === 'breached') return setError(t('auth.PASSWORD_COMPROMISED'))
+      if (verdict === 'unknown') return setError(t('auth.reset_check_failed'))
+      return setError(t('auth.reset_invalid_link'))
+    }
     // `.catch`: offline, the client throws instead of returning { error } and `busy` stayed true, so
     // the button sat on "…" for good. And the message goes through the translations rather than the
     // library's English.

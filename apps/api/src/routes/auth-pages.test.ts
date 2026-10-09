@@ -134,6 +134,29 @@ describe.skipIf(!deps)('password reset page (local DB)', () => {
     expect(retry.status).toBe(200)
   })
 
+  test("the app's check says breached, clean or unknown without spending the link", async () => {
+    await installBreachService()
+    const token = await issueToken()
+    const check = async (t: string, password: string) =>
+      (await (
+        await app.request('/p/reset-password/check', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ token: t, password }),
+        })
+      ).json()) as { result: string }
+
+    expect((await check(token, BREACHED)).result).toBe('breached')
+    expect((await check(token, GOOD)).result).toBe('clean')
+    breachServiceDown = true
+    expect((await check(token, GOOD)).result).toBe('unknown')
+    breachServiceDown = false
+    // A token nobody issued is not allowed to ask.
+    expect((await check(`${tag}-nope`, GOOD)).result).toBe('invalid_link')
+    // Asking did not spend it: the link still resets.
+    expect((await submit(token, GOOD)).status).toBe(200)
+  })
+
   test('a password over the maximum keeps the link and says why', async () => {
     const token = await issueToken()
     const res = await submit(token, 'x'.repeat(129))

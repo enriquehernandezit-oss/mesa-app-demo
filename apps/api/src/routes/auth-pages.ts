@@ -1,3 +1,5 @@
+import { db, schema } from '@mesa/db'
+import { and, eq, gt } from 'drizzle-orm'
 import { Hono } from 'hono'
 
 import { auth } from '../auth'
@@ -93,6 +95,35 @@ export const authPagesRoutes = new Hono<AppEnv>()
     const token = c.req.query('token')
     if (!token) return c.html(tokenGone(c.req.url), 400)
     return c.html(formPage(c.req.url, token))
+  })
+
+  // The same breach check for the app's own reset screen, which calls Better Auth directly and so used
+  // to spend the emailed link on a breached password. It asks here first, while the link is unspent.
+  // Only someone holding a live link can ask (Better Auth keeps it as `reset-password:<token>`), so
+  // this is no open password-lookup. JSON in, JSON out; never cached.
+  .post('/reset-password/check', async (c) => {
+    c.header('Cache-Control', 'no-store')
+    const body = (await c.req.json().catch(() => null)) as {
+      token?: unknown
+      password?: unknown
+    } | null
+    const token = typeof body?.token === 'string' ? body.token : ''
+    const password = typeof body?.password === 'string' ? body.password : ''
+    if (!token || !password || password.length > MAX_PASSWORD) {
+      return c.json({ error: 'invalid_body' }, 400)
+    }
+    const [live] = await db
+      .select({ id: schema.verification.id })
+      .from(schema.verification)
+      .where(
+        and(
+          eq(schema.verification.identifier, `reset-password:${token}`),
+          gt(schema.verification.expiresAt, new Date()),
+        ),
+      )
+      .limit(1)
+    if (!live) return c.json({ result: 'invalid_link' })
+    return c.json({ result: await checkBreached(password) })
   })
 
   .post('/reset-password', async (c) => {

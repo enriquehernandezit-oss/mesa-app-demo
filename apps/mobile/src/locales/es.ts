@@ -87,6 +87,8 @@ export const es = {
   'auth.reset_confirm_placeholder': 'Confirma la nueva contraseña',
   'auth.reset_save_button': 'Guardar nueva contraseña',
   'auth.reset_mismatch': 'Las contraseñas no coinciden.',
+  'auth.reset_check_failed':
+    'No pudimos comprobar la contraseña ahora. Intenta de nuevo en un minuto.',
   'auth.reset_invalid_link': 'Este enlace no es válido o ya venció.',
 
   // app/verify-email.tsx

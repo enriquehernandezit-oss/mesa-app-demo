@@ -82,6 +82,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.reset_confirm_placeholder': 'Confirm the new password',
   'auth.reset_save_button': 'Save new password',
   'auth.reset_mismatch': "Passwords don't match.",
+  'auth.reset_check_failed': "Couldn't check that password right now. Try again in a minute.",
   'auth.reset_invalid_link': "This link isn't valid or already expired.",
 
   'auth.verify_confirmed_eyebrow': 'Email confirmed',
