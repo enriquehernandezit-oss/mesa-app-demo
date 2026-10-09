@@ -998,7 +998,7 @@ export const es = {
   'passport.following_button': 'Siguiendo',
   'passport.requested_button': 'Solicitado',
   'passport.private_title': 'Esta cuenta es privada',
-  'passport.private_body': 'Sigue a {name} para ver su lista, notas y platos.',
+  'passport.private_body': 'Sigue a {name} para ver su lista y notas.',
   'passport.private_requested': 'Tu solicitud está esperando que {name} la acepte.',
   'passport.follow_button': 'Seguir',
   'passport.report': 'Reportar',
@@ -1063,7 +1063,7 @@ export const es = {
     'Auto pasa a Noche al anochecer o si tu iPhone está en modo oscuro.',
   'settings.private_account': 'Cuenta privada',
   'settings.private_account_hint':
-    'Solo las personas que apruebes pueden ver tu lista, notas y platos. Quienes ya te siguen mantienen el acceso.',
+    'Solo las personas que apruebes pueden ver tu lista y notas. Los platos que publicas siguen públicos en la página del lugar. Quienes ya te siguen mantienen el acceso.',
   'settings.private_error': 'No se pudo cambiar. Inténtalo de nuevo.',
   'settings.private_off_title': '¿Hacer tu cuenta pública?',
   'settings.private_off_body': {

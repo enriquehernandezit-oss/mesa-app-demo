@@ -938,7 +938,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'passport.following_button': 'Following',
   'passport.requested_button': 'Requested',
   'passport.private_title': 'This account is private',
-  'passport.private_body': 'Follow {name} to see their list, notes and dishes.',
+  'passport.private_body': 'Follow {name} to see their list and notes.',
   'passport.private_requested': 'Your request is waiting for {name} to accept.',
   'passport.follow_button': 'Follow',
   'passport.report': 'Report',
@@ -1000,7 +1000,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
     'Auto switches to Night after dark, or when your iPhone is in dark mode.',
   'settings.private_account': 'Private account',
   'settings.private_account_hint':
-    'Only people you approve can see your list, notes and dishes. People who already follow you keep access.',
+    "Only people you approve can see your list and notes. Dishes you post stay public on the place's page. People who already follow you keep access.",
   'settings.private_error': "Couldn't change that. Try again.",
   'settings.private_off_title': 'Make your account public?',
   'settings.private_off_body': {

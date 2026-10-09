@@ -40,7 +40,7 @@ row in the inbox list**: it lives behind the pinned "Follow requests" row.
 | Their list, notes, top 3                                                             | **no** ("Follow to see their list")   | yes               | yes       |
 | Taste match and the pair page                                                        | **no**                                | yes               | —         |
 | Their followers / following lists                                                    | **no**                                | yes               | yes       |
-| Their dishes (even ones marked public)                                               | **no**                                | yes               | yes       |
+| Dishes they post, on the place's page (photo and rating)                             | yes (always public)                   | yes               | yes       |
 | Their rankings in your feed, Popular's friend line, "friends going"                  | **no**                                | yes               | —         |
 | The city leaderboard                                                                 | not listed                            | listed            | listed    |
 | A public web page (`/p/u/:handle`, their lists, their notes quoted on `/p/spot/:id`) | **none** (404 / left out)             | —                 | —         |
@@ -86,7 +86,7 @@ its poster is banned (its owner must still be a public account).
   row doesn't know the account is private, so it waits for the server's answer instead of flashing "Following".
 - **A private profile you don't follow** (`app/u/[userId].tsx`): name, @handle, neighborhood and the three
   counts, the Follow / Requested button, and in place of the list a lock card ("Follow {name} to see their
-  list, notes and dishes" / "Your request is waiting for {name} to accept"). No taste match. The counts
+  list and notes" / "Your request is waiting for {name} to accept"). No taste match. The counts
   are not tappable, and the followers/following screen says the list is private.
 - **Activity → pinned "Follow requests" row** (`components/activity/FollowRequestsRow.tsx`): the newest
   asker's face with the count, "Héctor and 1 other want to follow you", a chevron into
