@@ -1,8 +1,11 @@
-import { toast } from '@/components/ui/toast-store'
+import { Alert, Linking } from 'react-native'
+
 import { showActionSheet } from '@/lib/actionSheet'
+import { ApiError } from '@/lib/api'
 import { captureError } from '@/lib/errors'
 import { getLanguage, t } from '@/lib/i18n'
 import { openImagePicker } from '@/lib/image'
+import { modalAlert } from '@/lib/modalAlert'
 import { editPhoto } from '@/lib/photoEditor'
 import { uploadImage } from '@/lib/upload'
 
@@ -29,8 +32,12 @@ import { uploadImage } from '@/lib/upload'
 // dismissing risk the P0 fix addressed for the avatar picker.
 let picking = false
 
+// The crop screen is a native modal still sliding away when a fast failure (R2 off, a 429) comes
+// back; UIKit drops an alert presented mid-dismiss, so the error showed nothing. Wait it out.
+const afterEditorCloses = () => new Promise<void>((resolve) => setTimeout(resolve, 500))
+
 // Returns the uploaded R2 URL, or null if the member cancelled, denied
-// permission, or the upload itself failed (uploadImage() toasts on that last
+// permission, or the upload itself failed (an alert says so on that last
 // case specifically — a picked photo that silently doesn't attach reads as
 // broken, not as "you cancelled").
 export async function pickDishPhoto(): Promise<string | null> {
@@ -47,14 +54,32 @@ export async function pickDishPhoto(): Promise<string | null> {
     if (picked === null) return null
     const source = picked === 0 ? 'camera' : 'library'
     const result = await openImagePicker(source)
+    if (result.status === 'denied') {
+      // An Alert, not a toast: this runs inside the rank and composer sheets, where a toast can't show.
+      Alert.alert(t(lang, 'profile.no_camera_access'), undefined, [
+        { text: t(lang, 'common.cancel'), style: 'cancel' },
+        { text: t(lang, 'profile.settings_action'), onPress: () => Linking.openSettings() },
+      ])
+      return null
+    }
     if (result.status !== 'picked') return null
     const edited = await editPhoto(result.asset.uri, { maxEdge: 1280, quality: 0.72 })
     if (!edited) return null
     const uploaded = await uploadImage(edited)
-    if (!uploaded) toast({ variant: 'error', message: t(lang, 'dish.photo_upload_error') })
+    if (!uploaded) {
+      await afterEditorCloses()
+      modalAlert(t(lang, 'dish.photo_upload_error'))
+    }
     return uploaded
   } catch (err) {
-    captureError(err, 'image.pick')
+    await afterEditorCloses()
+    // The daily upload limit (60) answers 429; saying nothing looked like a broken button.
+    if (err instanceof ApiError && err.status === 429) {
+      modalAlert(t(getLanguage(), 'dish.photo_limit'))
+    } else {
+      captureError(err, 'image.pick')
+      modalAlert(t(getLanguage(), 'dish.photo_upload_error'))
+    }
     return null
   } finally {
     picking = false

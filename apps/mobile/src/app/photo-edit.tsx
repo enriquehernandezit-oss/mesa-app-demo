@@ -9,9 +9,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Button, Caption, IconButton, MAX_SCALE as MAX_FONT_SCALE } from '@/components/ui'
 import { CloseIcon, RotateIcon } from '@/components/ui/icons'
-import { toast } from '@/components/ui/toast-store'
 import { captureError } from '@/lib/errors'
 import { useT } from '@/lib/i18n'
+import { modalAlert } from '@/lib/modalAlert'
 import { finishPhotoEdit, getPendingPhotoEdit } from '@/lib/photoEditor'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
@@ -116,7 +116,7 @@ export default function PhotoEditScreen() {
       .catch((err) => {
         if (cancelled) return
         captureError(err, 'photoEdit.load')
-        toast({ variant: 'error', message: t('photoEdit.error') })
+        modalAlert(t('photoEdit.error'))
         finish(null)
         router.back()
       })
@@ -188,7 +188,7 @@ export default function PhotoEditScreen() {
       savedTranslateY.value = 0
     } catch (err) {
       captureError(err, 'photoEdit.rotate')
-      toast({ variant: 'error', message: t('photoEdit.error') })
+      modalAlert(t('photoEdit.error'))
     } finally {
       setBusy(false)
     }
@@ -215,7 +215,7 @@ export default function PhotoEditScreen() {
       router.back()
     } catch (err) {
       captureError(err, 'photoEdit.confirm')
-      toast({ variant: 'error', message: t('photoEdit.error') })
+      modalAlert(t('photoEdit.error'))
     } finally {
       setBusy(false)
     }

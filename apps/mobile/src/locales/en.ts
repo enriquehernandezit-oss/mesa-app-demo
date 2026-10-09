@@ -514,6 +514,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'dish.take_photo': 'Take photo',
   'dish.choose_from_library': 'Choose from library',
   'dish.photo_upload_error': "Couldn't upload the photo. Try again.",
+  'dish.photo_limit': "You've reached today's photo limit. Try again tomorrow.",
 
   // Crop/rotate (M6) — app/photo-edit.tsx, shared by the avatar picker and
   // every dish-photo call site.

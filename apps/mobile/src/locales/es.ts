@@ -545,6 +545,7 @@ export const es = {
   'dish.take_photo': 'Tomar foto',
   'dish.choose_from_library': 'Elegir de la biblioteca',
   'dish.photo_upload_error': 'No se pudo subir la foto. Intenta de nuevo.',
+  'dish.photo_limit': 'Llegaste al límite de fotos de hoy. Intenta mañana.',
 
   // Recortar/girar (M6) — app/photo-edit.tsx, compartido por el selector de
   // avatar y cada punto donde se elige una foto de plato.

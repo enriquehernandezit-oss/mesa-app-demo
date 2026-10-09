@@ -72,6 +72,8 @@ export default function DishCompose() {
   const [caption, setCaption] = useState('')
   const [posted, setPosted] = useState(false)
   const goneRef = useRef(false)
+  const confirmRef = useRef<(() => void) | null>(null)
+  useEffect(() => () => confirmRef.current?.(), [])
   const captionRef = useRef<TextInput>(null)
 
   // The category pills pre-select a keyword guess so picking one is usually
@@ -154,19 +156,23 @@ export default function DishCompose() {
       // without it, publishing reads as "a haptic, then nothing," which is
       // indistinguishable from a mistap. The repeat-dish nudge (M20) doubles
       // as that confirmation when it fires; otherwise a plain one does.
-      if (res.nudge) {
-        toast({
-          message:
-            res.nudge.kind === 'first'
-              ? t('dishLists.nudge_toast_first', { label: res.nudge.label })
-              : t('dishLists.nudge_toast_insert', { label: res.nudge.label }),
-          action: {
-            label: t('dishLists.rank_button'),
-            onClick: () => router.push(`/dish-lists/rank?listId=${res.nudge?.listId}`),
-          },
-        })
-      } else {
-        toast({ message: t('dish.posted_toast') })
+      // Raised as the sheet closes (see the cleanup below): the Toaster can't draw above a native modal.
+      const nudge = res.nudge
+      confirmRef.current = () => {
+        if (nudge) {
+          toast({
+            message:
+              nudge.kind === 'first'
+                ? t('dishLists.nudge_toast_first', { label: nudge.label })
+                : t('dishLists.nudge_toast_insert', { label: nudge.label }),
+            action: {
+              label: t('dishLists.rank_button'),
+              onClick: () => router.push(`/dish-lists/rank?listId=${nudge.listId}`),
+            },
+          })
+        } else {
+          toast({ message: t('dish.posted_toast') })
+        }
       }
     },
     onError: (err) => {

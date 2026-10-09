@@ -1,10 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { toast } from '@/components/ui/toast-store'
 import { ApiError, api } from '@/lib/api'
 import { dedupeExternal } from '@/lib/dedupeExternal'
 import { useT } from '@/lib/i18n'
 import { locationQuery, useLocationFilter } from '@/lib/locationFilter'
+import { modalAlert } from '@/lib/modalAlert'
 import type {
   ExploreHit,
   ExternalSearchResponse,
@@ -91,15 +91,14 @@ export function useExternalPlaceSearch(opts: {
     },
     onError: (err) => {
       const status = err instanceof ApiError ? err.status : null
-      toast({
-        variant: 'error',
-        message:
-          status === 429
-            ? t('rank.add_place_capped')
-            : status === 409
-              ? t('rank.add_place_closed')
-              : t('rank.add_place_connection_error'),
-      })
+      // An Alert: the rank sheet is a native modal, where a toast can't show.
+      modalAlert(
+        status === 429
+          ? t('rank.add_place_capped')
+          : status === 409
+            ? t('rank.add_place_closed')
+            : t('rank.add_place_connection_error'),
+      )
     },
   })
 
