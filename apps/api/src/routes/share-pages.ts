@@ -38,6 +38,9 @@ const {
 // plan date on this page (and everywhere else plans render) is pinned to it
 // rather than the reader's own device, since "8:00 pm" in a WhatsApp share
 // should mean Santo Domingo time regardless of who's reading it.
+// A shared profile page lists the member's whole ranking, to this many places.
+const PROFILE_PAGE_MAX = 200
+
 const planDateFormatter = new Intl.DateTimeFormat('es-DO', {
   timeZone: 'America/Santo_Domingo',
   weekday: 'short',
@@ -196,11 +199,12 @@ export const sharePagesRoutes = new Hono<AppEnv>()
       .innerJoin(restaurants, eq(restaurants.id, rankings.restaurantId))
       .where(eq(rankings.userId, target.id))
       .orderBy(asc(rankings.position))
-      .limit(8)
+      .limit(PROFILE_PAGE_MAX)
 
     const who = target.name || `@${target.handle}`
     const hood = target.neighborhood?.name ?? 'Santo Domingo'
-    const title = `${who} · Top ${rows.length} en Mesa`
+    // The whole list, not a top eight: the person it was shared with sees what the sharer ranked.
+    const title = `${who} · ${rows.length} ${rows.length === 1 ? 'lugar' : 'lugares'} en Mesa`
     const description =
       rows.length > 0
         ? `${rows
@@ -215,7 +219,7 @@ export const sharePagesRoutes = new Hono<AppEnv>()
           ? `<img class="cover" src="${esc(absoluteCover(rows[0].coverImageId) as string)}" alt="" />`
           : ''
       }
-      <p class="eyebrow">Top ${rows.length} · ${esc(hood)}</p>
+      <p class="eyebrow">${rows.length} ${rows.length === 1 ? 'lugar' : 'lugares'} · ${esc(hood)}</p>
       <h1>${esc(who)}</h1>
       <ol class="list">
         ${rows

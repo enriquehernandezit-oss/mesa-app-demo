@@ -7,7 +7,7 @@ import { z } from 'zod'
 import type { AuthedEnv } from '../context'
 import { isUuid } from '../lib/ids'
 import { imageRefSchema, isOwnImageRef } from '../lib/imageRef'
-import { visibleDish, visibleDishIds } from '../lib/visibility'
+import { listOwnerVisibleTo, visibleDish, visibleDishIds } from '../lib/visibility'
 import { requireAuth, requireEula } from '../middleware/session'
 
 // Named lists (M19) — user-created folders layered on top of the two master
@@ -67,6 +67,12 @@ const addItemSchema = z
   .refine((b) => Boolean(b.restaurantId) !== Boolean(b.dishId), {
     message: 'exactly one of restaurantId or dishId is required',
   })
+
+// Any list by id, for a read: the viewer's right to see its owner's lists is checked by the caller.
+async function loadCollection(id: string) {
+  if (!z.string().uuid().safeParse(id).success) return null
+  return (await db.query.collections.findFirst({ where: eq(collections.id, id) })) ?? null
+}
 
 async function loadOwnedCollection(id: string, userId: string) {
   if (!z.string().uuid().safeParse(id).success) return null
@@ -188,10 +194,13 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
   // place, if I've since ranked it ("Ya fuiste · #N" instead of the normal
   // saved-place row; see collectionItems' own header on why ranking a place
   // never removes it from a named list the way it clears the master one).
+  // Anyone the owner's account lets see it can open a shared list (read-only for them): a shared
+  // link opens in the app, and "my ranking" on each place is the viewer's own.
   .get('/:id', async (c) => {
     const me = c.get('user')
-    const found = await loadOwnedCollection(c.req.param('id'), me.id)
-    if (!found) return c.json({ error: 'not_found' }, 404)
+    const found = await loadCollection(c.req.param('id'))
+    const owner = found ? await listOwnerVisibleTo(me.id, found.userId) : null
+    if (!found || !owner) return c.json({ error: 'not_found' }, 404)
 
     const rows = await db
       .select({
@@ -233,6 +242,8 @@ export const collectionsRoutes = new Hono<AuthedEnv>()
       name: found.name,
       description: found.description,
       coverImageId: found.coverImageId,
+      isOwner: owner.id === me.id,
+      owner: { id: owner.id, name: owner.name, handle: owner.handle },
       items: shownRows.map((r) => ({
         itemId: r.itemId,
         addedAt: r.addedAt,

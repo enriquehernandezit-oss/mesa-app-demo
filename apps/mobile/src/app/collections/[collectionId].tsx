@@ -129,7 +129,9 @@ export default function CollectionDetailScreen() {
     )
   }
 
-  const { name, items, description, coverImageId } = q.data
+  const { name, items, description, coverImageId, owner } = q.data
+  // Someone else's list, opened from a shared link: look and open, nothing to change.
+  const isOwner = q.data.isOwner !== false
   // Cover: the list's own photo, else its first item's — same fallback the
   // lists grid uses (the API's previewImageId).
   const firstImage = items.find((i) => i.restaurant?.coverImageId)?.restaurant?.coverImageId ?? null
@@ -160,11 +162,13 @@ export default function CollectionDetailScreen() {
                 icon={<ShareIcon size={18} color="text" />}
               />
             )}
-            <IconButton
-              accessibilityLabel={t('rankings.more_actions')}
-              onPress={openMenu}
-              icon={<MoreIcon size={18} color="text" />}
-            />
+            {isOwner && (
+              <IconButton
+                accessibilityLabel={t('rankings.more_actions')}
+                onPress={openMenu}
+                icon={<MoreIcon size={18} color="text" />}
+              />
+            )}
           </View>
         }
       />
@@ -178,8 +182,9 @@ export default function CollectionDetailScreen() {
             description edited in place. */}
         <View className="items-center px-6">
           <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('saveToList.cover_label')}
+            accessibilityRole={isOwner ? 'button' : undefined}
+            accessibilityLabel={isOwner ? t('saveToList.cover_label') : undefined}
+            disabled={!isOwner}
             onPress={async () => {
               const uri = await pickDishPhoto()
               if (uri) update.mutate({ coverImageId: uri })
@@ -196,9 +201,11 @@ export default function CollectionDetailScreen() {
                 />
               </View>
             </View>
-            <View className="absolute -right-0.5 bottom-1 h-[30px] w-[30px] items-center justify-center rounded-pill border-2 border-bg bg-ink">
-              <CameraIcon size={15} color="on-ink" />
-            </View>
+            {isOwner && (
+              <View className="absolute -right-0.5 bottom-1 h-[30px] w-[30px] items-center justify-center rounded-pill border-2 border-bg bg-ink">
+                <CameraIcon size={15} color="on-ink" />
+              </View>
+            )}
           </Pressable>
           <Text
             maxFontSizeMultiplier={MAX_SCALE}
@@ -209,6 +216,18 @@ export default function CollectionDetailScreen() {
           <Caption className="mt-1 text-pill">
             {t('saveToList.item_count', { n: items.length })}
           </Caption>
+          {!isOwner && owner?.name ? (
+            <Link href={`/u/${owner.id}`} asChild>
+              <Pressable accessibilityRole="link" className="mt-2 min-h-[36px] justify-center">
+                <Text
+                  maxFontSizeMultiplier={MAX_SCALE}
+                  className="font-ui-semibold text-pill text-accent"
+                >
+                  {t('collections.by_owner', { name: owner.name })}
+                </Text>
+              </Pressable>
+            </Link>
+          ) : null}
         </View>
 
         <View className="mt-2 px-5">
@@ -251,6 +270,7 @@ export default function CollectionDetailScreen() {
             </View>
           ) : description ? (
             <Pressable
+              disabled={!isOwner}
               onPress={() => {
                 setBio(description)
                 setEditingBio(true)
@@ -259,7 +279,7 @@ export default function CollectionDetailScreen() {
             >
               <Body className="mt-1 text-center text-subhead">{description}</Body>
             </Pressable>
-          ) : (
+          ) : !isOwner ? null : (
             <Pressable
               hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
               accessibilityRole="button"
@@ -288,7 +308,7 @@ export default function CollectionDetailScreen() {
                 key={item.itemId}
                 item={item}
                 removing={removeItem.isPending}
-                onRemove={() => removeItem.mutate(item.itemId)}
+                onRemove={isOwner ? () => removeItem.mutate(item.itemId) : null}
               />
             ))
           )}
@@ -311,7 +331,8 @@ function CollectionItemRow({
   // mid-delete. A fast double-tap otherwise fired two overlapping DELETEs
   // with no feedback in between, reading as "nothing happened, tap again."
   removing: boolean
-  onRemove: () => void
+  // Null on a list that is not yours: no Remove.
+  onRemove: (() => void) | null
 }) {
   const t = useT()
   const lift = useLift()
@@ -324,7 +345,7 @@ function CollectionItemRow({
         .filter(Boolean)
         .join(' · ')
     : null
-  const remove = (
+  const remove = onRemove ? (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: removing }}
@@ -343,7 +364,7 @@ function CollectionItemRow({
         {t('rankings.remove')}
       </Text>
     </Pressable>
-  )
+  ) : null
   return (
     <Link href={place ? `/r/${place.id}` : `/dish/${dish?.id}`} asChild>
       <Pressable

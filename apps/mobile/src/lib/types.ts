@@ -580,6 +580,10 @@ export interface CollectionDetail {
   name: string
   description: string | null
   coverImageId: string | null
+  // A list can be opened by someone else from a shared link (read-only for them). Absent from an
+  // older API, which only ever served the owner.
+  isOwner?: boolean
+  owner?: { id: string; name: string | null; handle: string | null }
   items: CollectionItem[]
 }
 
@@ -621,6 +625,8 @@ export interface DishListDetail {
   label: string
   nameKey: string
   rankedAt: string | null
+  isOwner?: boolean
+  owner?: { id: string; name: string | null; handle: string | null }
   // Ordered, position-ascending.
   ranked: (DishListEntry & { position: number })[]
   unranked: DishListEntry[]

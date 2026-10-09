@@ -4,6 +4,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
+import { listOwnerVisibleTo } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
 
 // Dish ranking (M20) — "Tus platos": once a member has posted the same dish
@@ -15,6 +16,12 @@ import { requireAuth } from '../middleware/session'
 // that stays exclusively routes/dishes.ts's job, so "3+ restaurants" is the
 // one and only trigger.
 const { dishLists, dishListItems, dishes, restaurants, neighborhoods } = schema
+
+// Any dish list by id, for a read: the caller checks the viewer may see its owner's lists.
+async function loadList(id: string) {
+  if (!z.string().uuid().safeParse(id).success) return null
+  return (await db.query.dishLists.findFirst({ where: eq(dishLists.id, id) })) ?? null
+}
 
 async function loadOwnedList(id: string, userId: string) {
   if (!z.string().uuid().safeParse(id).success) return null
@@ -67,8 +74,10 @@ export const dishListsRoutes = new Hono<AuthedEnv>()
   // alone is enough to find it back.
   .get('/:id', async (c) => {
     const me = c.get('user')
-    const found = await loadOwnedList(c.req.param('id'), me.id)
-    if (!found) return c.json({ error: 'not_found' }, 404)
+    const found = await loadList(c.req.param('id'))
+    const owner = found ? await listOwnerVisibleTo(me.id, found.userId) : null
+    if (!found || !owner) return c.json({ error: 'not_found' }, 404)
+    const isOwner = owner.id === me.id
 
     const dishCols = {
       id: dishes.id,
@@ -108,29 +117,34 @@ export const dishListsRoutes = new Hono<AuthedEnv>()
       .orderBy(asc(dishListItems.position))
 
     const placedIds = rankedRows.map((r) => r.restaurant.id)
-    const unrankedRows = await db
-      .select({
-        restaurant: restaurantCols,
-        neighborhood: neighborhoods.name,
-        dish: dishCols,
-      })
-      .from(dishes)
-      .innerJoin(restaurants, eq(restaurants.id, dishes.restaurantId))
-      .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
-      .where(
-        and(
-          eq(dishes.userId, found.userId),
-          eq(dishes.nameKey, found.nameKey),
-          isNull(dishes.removedAt),
-          placedIds.length > 0 ? notInArray(dishes.restaurantId, placedIds) : undefined,
-        ),
-      )
+    // What the owner has yet to place is theirs to act on; others see the ranked order only.
+    const unrankedRows = !isOwner
+      ? []
+      : await db
+          .select({
+            restaurant: restaurantCols,
+            neighborhood: neighborhoods.name,
+            dish: dishCols,
+          })
+          .from(dishes)
+          .innerJoin(restaurants, eq(restaurants.id, dishes.restaurantId))
+          .leftJoin(neighborhoods, eq(neighborhoods.id, restaurants.neighborhoodId))
+          .where(
+            and(
+              eq(dishes.userId, found.userId),
+              eq(dishes.nameKey, found.nameKey),
+              isNull(dishes.removedAt),
+              placedIds.length > 0 ? notInArray(dishes.restaurantId, placedIds) : undefined,
+            ),
+          )
 
     return c.json({
       id: found.id,
       label: found.label,
       nameKey: found.nameKey,
       rankedAt: found.rankedAt,
+      isOwner,
+      owner: { id: owner.id, name: owner.name, handle: owner.handle },
       // `neighborhood` inside `restaurant` is where the app reads it (types.ts DishListEntry); the
       // queries select it beside the restaurant. Both are sent.
       ranked: rankedRows.map((r) => ({

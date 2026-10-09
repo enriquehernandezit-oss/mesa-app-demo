@@ -61,10 +61,15 @@ export default function DishListDetailScreen() {
     )
   }
 
-  const { label, ranked, unranked } = q.data
+  const { label, ranked, unranked, owner } = q.data
+  // Someone else's list, opened from a shared link: their ranked order, nothing to act on.
+  const isOwner = q.data.isOwner !== false
+  const title = isOwner
+    ? t('dishLists.your_best', { label })
+    : t('dishLists.their_best', { label, name: owner?.name ?? '' })
   const shareDishList = () =>
     shareListCard({
-      eyebrow: t('dishLists.your_best', { label }),
+      eyebrow: title,
       subtitle: t('dishLists.ranked_count', { n: ranked.length }),
       items: ranked.map((entry) => ({ position: entry.position, name: entry.restaurant.name })),
       coverUrl: imageUrl(ranked[0]?.dish.imageId ?? ranked[0]?.restaurant.coverImageId, {
@@ -92,7 +97,7 @@ export default function DishListDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-10">
         <View className="px-5">
           <Text maxFontSizeMultiplier={MAX_SCALE} className="font-serif text-display text-text">
-            {t('dishLists.your_best', { label })}
+            {title}
           </Text>
           {ranked.length > 0 ? (
             <Caption className="mt-1.5 text-pill">

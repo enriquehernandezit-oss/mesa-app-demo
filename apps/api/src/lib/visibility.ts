@@ -113,6 +113,31 @@ export async function canSeeContent(
   return Boolean(row)
 }
 
+// Whose lists (a named list, a dish list) a viewer may open by its id: the owner, or someone whose
+// account is not banned, has no block with the viewer in either direction, and is public or has
+// approved the viewer. The owner's name and picture come back for the "list by …" line; null is a 404.
+export async function listOwnerVisibleTo(viewerId: string, ownerId: string) {
+  const owner = await db.query.user.findFirst({
+    where: eq(user.id, ownerId),
+    columns: { id: true, name: true, handle: true, image: true, bannedAt: true, isPrivate: true },
+  })
+  if (!owner) return null
+  if (owner.id === viewerId) return owner
+  if (owner.bannedAt) return null
+  const [block] = await db
+    .select({ b: userBlocks.blockerId })
+    .from(userBlocks)
+    .where(
+      or(
+        and(eq(userBlocks.blockerId, viewerId), eq(userBlocks.blockedId, ownerId)),
+        and(eq(userBlocks.blockerId, ownerId), eq(userBlocks.blockedId, viewerId)),
+      ),
+    )
+    .limit(1)
+  if (block) return null
+  return (await canSeeContent(viewerId, owner)) ? owner : null
+}
+
 // The same rule for a list query: rows whose author is open, is the viewer, or is followed by
 // the viewer. `authorPrivate` is the author's `user.isPrivate` — the query has to join `user`
 // for it (most already do, for the ban check).

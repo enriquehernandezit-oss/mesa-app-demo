@@ -55,6 +55,11 @@ ranked it, Popular): nothing there says who.
 allowed) · `GET /rankings/user/:id/match` · `GET /social/followers|following` (`locked: true`) ·
 `GET /dishes/:id` and the place's dish rail · `GET /leaderboard` and `citywideRank` (same population) ·
 `/p/u`, `/p/collection`, `/p/dish-list`, `/p/spot` (note), `/p/i`.
+A shared list opens in the app by its id (`GET /collections/:id`, `GET /dish-lists/:id`) for the owner and for
+anyone `listOwnerVisibleTo` (lib/visibility.ts) allows: the owner's account is not banned, no block either way,
+and it is public or has approved the viewer. They get it read-only (`isOwner: false`, the owner's name), a dish
+list without what is left to rank; editing and deleting stay owner-only. The public `/p/u/:handle` page lists
+the member's whole ranking (up to 200), with "Ábrelo en Mesa" opening their profile in the app.
 The feed, home, Popular, events-going, plans and place friend notes already read `follows` only, so a
 pending request cannot leak through them.
 
