@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 
@@ -71,13 +72,15 @@ export default function AccountSettings() {
     },
   })
 
-  const [verifySent, setVerifySent] = useState(false)
+  const router = useRouter()
   const [verifying, setVerifying] = useState(false)
-  async function resendVerification() {
+  // Mails a 6-digit code and opens the screen to type it in. (It used to ask for a "link" and then say
+  // "Link sent", but the email carries a code, and there was nowhere to enter it.)
+  async function sendVerificationCode() {
     if (!realEmail || verifying) return
     setVerifying(true)
-    const res = await authClient
-      .sendVerificationEmail({ email: realEmail, callbackURL: '/verify-email' })
+    const res = await authClient.emailOtp
+      .sendVerificationOtp({ email: realEmail, type: 'email-verification' })
       .catch(() => ({ error: { message: 'network' } }))
     setVerifying(false)
     if (res && 'error' in res && res.error) {
@@ -87,7 +90,7 @@ export default function AccountSettings() {
       })
       return
     }
-    setVerifySent(true)
+    router.push({ pathname: '/settings/confirm-email', params: { email: realEmail } })
   }
 
   const [changingPassword, setChangingPassword] = useState(false)
@@ -162,14 +165,12 @@ export default function AccountSettings() {
                   <Caption>{t('settings.verified')}</Caption>
                   <CheckIcon size={14} color="text-muted" strokeWidth={2.2} />
                 </View>
-              ) : verifySent ? (
-                <Caption>{t('settings.link_sent')}</Caption>
               ) : (
                 <Pressable
                   hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
                   accessibilityRole="button"
                   disabled={verifying}
-                  onPress={resendVerification}
+                  onPress={sendVerificationCode}
                   className="min-h-[36px] justify-center active:opacity-60"
                 >
                   <Text

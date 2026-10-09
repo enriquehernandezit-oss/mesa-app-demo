@@ -28,7 +28,17 @@ const NETWORK_ERROR = { message: 'network' }
 
 type Failure = { code?: string; message?: string; status?: number }
 
-export function ConfirmEmailCode({ email, onBack }: { email: string; onBack: () => void }) {
+// `onConfirmed` is for a member who is already signed in and confirming from Settings: the screen then
+// says so in its own words, and a right code ends in that callback rather than the sign-up path.
+export function ConfirmEmailCode({
+  email,
+  onBack,
+  onConfirmed,
+}: {
+  email: string
+  onBack: () => void
+  onConfirmed?: () => void
+}) {
   const t = useT()
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -61,6 +71,11 @@ export function ConfirmEmailCode({ email, onBack }: { email: string; onBack: () 
           ? t('auth.confirm_spent')
           : authErrorMessage(failure, t('auth.fallback')),
       )
+      return
+    }
+    if (onConfirmed) {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      onConfirmed()
       return
     }
     track('signed_up', { method: 'email' })
@@ -110,7 +125,9 @@ export function ConfirmEmailCode({ email, onBack }: { email: string; onBack: () 
                 {t('auth.confirm_title')}
               </Serif>
               <Body className="text-center text-subhead text-text-muted">
-                {t('auth.confirm_body', { email })}
+                {onConfirmed
+                  ? t('auth.confirm_body_account', { email })
+                  : t('auth.confirm_body', { email })}
               </Body>
             </View>
 
@@ -176,7 +193,7 @@ export function ConfirmEmailCode({ email, onBack }: { email: string; onBack: () 
                   maxFontSizeMultiplier={MAX_SCALE}
                   className="text-center font-ui text-pill text-text-muted"
                 >
-                  {t('auth.confirm_wrong_email')}
+                  {onConfirmed ? t('common.back_plain') : t('auth.confirm_wrong_email')}
                 </Text>
               </Pressable>
             </View>

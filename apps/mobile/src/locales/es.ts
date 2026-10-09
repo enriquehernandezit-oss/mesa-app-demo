@@ -53,6 +53,8 @@ export const es = {
   'auth.confirm_title': 'Confirma tu correo',
   'auth.confirm_body':
     'Enviamos un código de 6 dígitos a {email}. Escríbelo aquí. Si no llega, revisa spam, o vuelve atrás e inicia sesión si ya tienes cuenta.',
+  'auth.confirm_body_account':
+    'Enviamos un código de 6 dígitos a {email}. Escríbelo aquí. Si no llega, revisa spam.',
   'auth.confirm_code_label': 'Código de 6 dígitos',
   'auth.confirm_button': 'Confirmar',
   'auth.confirm_resend': 'Enviar otro código',
@@ -1102,7 +1104,7 @@ export const es = {
   'settings.invite_friends': 'Invitar amigos',
   'settings.joined_count': { one: '{n} se unió', other: '{n} se unieron' },
   'settings.verified': 'Verificado',
-  'settings.link_sent': 'Enlace enviado ›',
+  'settings.email_confirmed': 'Correo confirmado.',
   'settings.sending': 'Enviando…',
   'settings.verify_email': 'Verificar correo',
   'settings.moderation': 'Moderación',

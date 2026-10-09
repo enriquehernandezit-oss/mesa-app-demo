@@ -46,6 +46,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'auth.confirm_title': 'Confirm your email',
   'auth.confirm_body':
     'We sent a 6-digit code to {email}. Enter it here. If it does not arrive, check spam, or go back and sign in if you already have an account.',
+  'auth.confirm_body_account':
+    'We sent a 6-digit code to {email}. Enter it here. If it does not arrive, check spam.',
   'auth.confirm_code_label': '6-digit code',
   'auth.confirm_button': 'Confirm',
   'auth.confirm_resend': 'Send another code',
@@ -1037,7 +1039,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'settings.invite_friends': 'Invite friends',
   'settings.joined_count': { one: '{n} joined', other: '{n} joined' },
   'settings.verified': 'Verified',
-  'settings.link_sent': 'Link sent ›',
+  'settings.email_confirmed': 'Email confirmed.',
   'settings.sending': 'Sending…',
   'settings.verify_email': 'Verify email',
   'settings.moderation': 'Moderation',

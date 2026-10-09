@@ -232,6 +232,10 @@ function MesaStack() {
         options={{ ...utility, headerLargeTitle: false, title: t('settings.account') }}
       />
       <Stack.Screen
+        name="settings/confirm-email"
+        options={{ presentation: 'modal', headerShown: false }}
+      />
+      <Stack.Screen
         name="settings/delete-account"
         options={{ ...utility, headerLargeTitle: false, title: t('settings.delete_account') }}
       />
