@@ -22,6 +22,7 @@ import { requireAuth, requireEula } from '../middleware/session'
 // attached to a ranking — Mesa's identity, and the app's only UGC in Phase 1.
 
 const {
+  dishes,
   rankings,
   vibeNotes,
   restaurants,
@@ -96,6 +97,8 @@ export const rankingsRoutes = new Hono<AuthedEnv>()
         createdAt: rankings.createdAt,
         tags: rankings.tags,
         favoriteDish: rankings.favoriteDish,
+        // Removing a ranking deletes its dishes, so the app warns first when there are some.
+        dishCount: sql<number>`(select count(*)::int from ${dishes} where ${dishes.rankingId} = ${rankings.id} and ${dishes.removedAt} is null)`,
         restaurant: {
           id: restaurants.id,
           name: restaurants.name,

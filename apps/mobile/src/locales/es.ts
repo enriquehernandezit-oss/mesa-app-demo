@@ -450,6 +450,12 @@ export const es = {
 
   // lib/rankingRemoval.ts
   'rankings.remove_error': 'No se pudo quitar de tu lista',
+  'rankings.remove_dishes_title': '¿Quitar {name}?',
+  'rankings.remove_dishes_body': {
+    one: 'El plato y la foto que subiste aquí se borran con él, igual que los likes y los guardados.',
+    other:
+      'Los {n} platos y fotos que subiste aquí se borran con él, igual que los likes y los guardados.',
+  },
   'rankings.removed_toast': 'Quité {name} de tu lista',
   'rankings.undo': 'Deshacer',
 

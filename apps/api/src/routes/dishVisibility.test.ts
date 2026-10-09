@@ -25,11 +25,12 @@ async function localDbReachable(): Promise<boolean> {
 }
 
 async function loadDeps() {
-  const [{ db, schema }, { dishesRoutes }] = await Promise.all([
+  const [{ db, schema }, { dishesRoutes }, { rankingsRoutes }] = await Promise.all([
     import('@mesa/db'),
     import('./dishes'),
+    import('./rankings'),
   ])
-  return { db, schema, dishesRoutes }
+  return { db, schema, dishesRoutes, rankingsRoutes }
 }
 const deps = (await localDbReachable()) ? await loadDeps() : null
 
@@ -37,7 +38,7 @@ type Me = AuthedEnv['Variables']['user']
 
 describe.skipIf(!deps)('dishes are public (local DB)', () => {
   if (!deps) return
-  const { db, schema, dishesRoutes } = deps
+  const { db, schema, dishesRoutes, rankingsRoutes } = deps
 
   const tag = `test-${crypto.randomUUID().slice(0, 8)}`
   const person = (label: string): Me =>
@@ -65,6 +66,7 @@ describe.skipIf(!deps)('dishes are public (local DB)', () => {
       await next()
     })
     .route('/dishes', dishesRoutes)
+    .route('/rankings', rankingsRoutes)
 
   const post = (body: Record<string, unknown>) =>
     app.request('/dishes', {
@@ -142,5 +144,12 @@ describe.skipIf(!deps)('dishes are public (local DB)', () => {
     const row = await dishRow()
     expect((await app.request(`/dishes/${row?.id}`)).status).toBe(200)
     current = poster
+  })
+
+  test('your list says how many dishes removing a ranking would delete', async () => {
+    current = poster
+    const res = await app.request('/rankings')
+    const { rankings } = (await res.json()) as { rankings: { dishCount: number }[] }
+    expect(rankings[0]?.dishCount).toBe(1)
   })
 })

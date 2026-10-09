@@ -202,8 +202,10 @@ export default function RestaurantProfile() {
       name: restaurant.name,
       meta: shareMeta,
       position: myRanking?.position ?? null,
-      score: myRanking?.score ?? friendsRankings[0]?.score ?? null,
-      note: friendsRankings.find((f) => f.note)?.note ?? null,
+      // Only the sharer's own ranking goes on the card: it leaves the app as an image, and a friend's
+      // score or note (possibly from a private account) is theirs, not the sharer's to post.
+      score: myRanking?.score ?? null,
+      note: null,
       coverUrl: imageUrl(restaurant.coverImageId, { w: 1080, h: 1150 }),
       text: `${t('place.share_text', { name: restaurant.name })}\n${shareOrigin}/p/spot/${restaurant.id}`,
     })

@@ -426,6 +426,12 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'share.dish_list_text': '{label} · my ranking on Mesa 🥂\n{link}',
 
   'rankings.remove_error': "Couldn't remove it from your list",
+  'rankings.remove_dishes_title': 'Remove {name}?',
+  'rankings.remove_dishes_body': {
+    one: 'The dish and photo you posted here are deleted with it, and so are the likes and saves on them.',
+    other:
+      'The {n} dishes and photos you posted here are deleted with it, and so are the likes and saves on them.',
+  },
   'rankings.removed_toast': 'Removed {name} from your list',
   'rankings.undo': 'Undo',
 

@@ -195,6 +195,8 @@ export interface Ranking {
   createdAt?: string
   tags?: string[] | null
   favoriteDish?: string | null
+  // Live dishes posted on this ranking (own list only): removing the ranking deletes them.
+  dishCount?: number
   restaurant: RankedRestaurant
   neighborhood: string | null
   note: string | null

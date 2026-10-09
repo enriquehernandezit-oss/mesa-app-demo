@@ -2,6 +2,8 @@
 // hook) so the pending delete and its undo survive RankingRow unmounting the
 // instant the row is optimistically removed. Imports the queryClient
 // singleton (lib/query.ts) directly, same reason.
+import { Alert } from 'react-native'
+
 import { toast } from '../components/ui/toast-store'
 import { api } from './api'
 import { scoreForPosition } from './display'
@@ -36,7 +38,30 @@ function renumber(rs: Ranking[]): Ranking[] {
 // so sharing one list here is a correctness fix, not just deduplication.
 const invalidateAfterRemoval = invalidateAfterRanking
 
+// Removing a ranking also deletes the dishes and photos posted on it (and the likes and saves on
+// them), so a ranking that has dishes asks first. The undo toast still covers a plain removal.
 export function removeRankingWithUndo(ranking: Ranking): void {
+  const n = ranking.dishCount ?? 0
+  if (n === 0 || pending.has(ranking.id)) {
+    startRemoval(ranking)
+    return
+  }
+  const lang = getLanguage()
+  Alert.alert(
+    t(lang, 'rankings.remove_dishes_title', { name: ranking.restaurant.name }),
+    t(lang, 'rankings.remove_dishes_body', { n }),
+    [
+      { text: t(lang, 'common.cancel'), style: 'cancel' },
+      {
+        text: t(lang, 'rankings.remove'),
+        style: 'destructive',
+        onPress: () => startRemoval(ranking),
+      },
+    ],
+  )
+}
+
+function startRemoval(ranking: Ranking): void {
   if (pending.has(ranking.id)) return
   const cur = queryClient.getQueryData<Cache>(KEY)
   if (!cur) return
@@ -66,7 +91,7 @@ export function removeRankingWithUndo(ranking: Ranking): void {
           message: t(getLanguage(), 'rankings.remove_error'),
           action: {
             label: t(getLanguage(), 'common.retry'),
-            onClick: () => removeRankingWithUndo(ranking),
+            onClick: () => startRemoval(ranking),
           },
         })
       })
