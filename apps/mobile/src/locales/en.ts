@@ -45,7 +45,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   // Confirming an email + password sign-up with the 6-digit code (components/ConfirmEmailCode.tsx)
   'auth.confirm_title': 'Confirm your email',
   'auth.confirm_body':
-    'We sent a 6-digit code to {email}. Enter it here. If it does not arrive, check spam.',
+    'We sent a 6-digit code to {email}. Enter it here. If it does not arrive, check spam, or go back and sign in if you already have an account.',
   'auth.confirm_code_label': '6-digit code',
   'auth.confirm_button': 'Confirm',
   'auth.confirm_resend': 'Send another code',

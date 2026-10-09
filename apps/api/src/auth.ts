@@ -11,6 +11,8 @@ import {
   EMAIL_CODE_MINUTES,
   emailCodeGuard,
   emailCodeMail,
+  existingAccountMail,
+  shouldSendExistingNotice,
 } from './lib/emailCode'
 import { resetPasswordUrl } from './lib/publicPage'
 
@@ -257,6 +259,14 @@ export const auth = betterAuth({
     // With it on, sign-up returns no session and sign-in with the right password answers
     // EMAIL_NOT_VERIFIED (403) and emails a fresh code; entering it signs the member in.
     requireEmailVerification,
+    // Sign-up with an address that already has an account answers like any new sign-up, so the person
+    // is told by email instead (lib/emailCode.ts). Not awaited: the answer must take as long as a
+    // new sign-up's, or its timing gives the account away.
+    onExistingUserSignUp: async ({ user }) => {
+      if (!shouldSendExistingNotice(user.email)) return
+      const mail = existingAccountMail()
+      void sendMail(user.email, mail.subject, mail.body)
+    },
     // Defaults to FALSE, which quietly defeats the point of a reset: someone
     // who resets because their account was compromised would leave the
     // attacker's session alive. Resetting a password must end every other

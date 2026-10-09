@@ -52,7 +52,7 @@ export const es = {
   // Confirming an email + password sign-up with the 6-digit code (components/ConfirmEmailCode.tsx)
   'auth.confirm_title': 'Confirma tu correo',
   'auth.confirm_body':
-    'Enviamos un código de 6 dígitos a {email}. Escríbelo aquí. Si no llega, revisa spam.',
+    'Enviamos un código de 6 dígitos a {email}. Escríbelo aquí. Si no llega, revisa spam, o vuelve atrás e inicia sesión si ya tienes cuenta.',
   'auth.confirm_code_label': 'Código de 6 dígitos',
   'auth.confirm_button': 'Confirmar',
   'auth.confirm_resend': 'Enviar otro código',
