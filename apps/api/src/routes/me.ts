@@ -176,9 +176,13 @@ export const meRoutes = new Hono<AuthedEnv>()
     // a neighborhood, an accepted EULA, and at least one ranking complete it.
     // Sign-up step 1 (profile, home, terms) is saved; only the starter list is missing. The app resumes
     // sign-up there instead of asking for the profile again.
-    const profileStepDone =
+    // The birthday is part of step 1 (and the only age check there is): without it sign-up resumes at
+    // step 1, so leaving after a failed birthday can't walk past it. Members who finished before the
+    // birthday was asked for are not sent back: `onboardingComplete` does not need it.
+    const profileSaved =
       (Boolean(neighborhoodId) || Boolean(row.homeArea)) && Boolean(eulaAcceptedAt)
-    const onboardingComplete = profileStepDone && rankings.length > 0
+    const profileStepDone = profileSaved && Boolean(row.birthday)
+    const onboardingComplete = profileSaved && rankings.length > 0
 
     // Which providers this account signs in with — the delete flow asks Apple again for an Apple account.
     const providers = (

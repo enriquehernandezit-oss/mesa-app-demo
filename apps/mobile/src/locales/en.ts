@@ -810,6 +810,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'onboarding.birthday_year': 'YYYY',
   'onboarding.birthday_helper':
     "Private — only you and Mesa see it, never your profile or followers. We just want to know who's actually using the app.",
+  'onboarding.under_age': 'Mesa is for people 18 and older.',
   'onboarding.birthday_invalid': "That date doesn't look right.",
   'onboarding.eula_accept':
     "I accept Mesa's Terms and EULA, and understand that inappropriate content and abusive users can be reported, blocked and removed.",

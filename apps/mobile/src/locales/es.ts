@@ -864,6 +864,7 @@ export const es = {
   'onboarding.birthday_year': 'AAAA',
   'onboarding.birthday_helper':
     'Privado — solo tú y Mesa lo ven, nunca tu perfil ni tus seguidores. Solo queremos saber quién usa la app de verdad.',
+  'onboarding.under_age': 'Mesa es para mayores de 18 años.',
   'onboarding.birthday_invalid': 'Esa fecha no parece correcta.',
   'onboarding.eula_accept':
     'Acepto los Términos y el EULA de Mesa, y entiendo que el contenido inapropiado y los usuarios abusivos pueden ser reportados, bloqueados y eliminados.',

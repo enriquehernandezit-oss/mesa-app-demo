@@ -457,13 +457,29 @@ describe.skipIf(!deps)('abuse limits and small gaps (local DB)', () => {
       expect(me.neighborhood?.slug).toBe(tag)
     })
 
-    test('profileStepDone needs a home and accepted terms, and the starter list is still missing', async () => {
+    test('profileStepDone needs a home, accepted terms and an adult birthday; the starter list is still missing', async () => {
       as(ben)
       await send('PATCH', '/me/profile', { name: 'Ben', neighborhoodSlug: tag, acceptEula: true })
-      const body = (await (await send('GET', '/me')).json()) as {
-        profileStepDone: boolean
-        onboardingComplete: boolean
-      }
+      const readGate = async () =>
+        (await (await send('GET', '/me')).json()) as {
+          profileStepDone: boolean
+          onboardingComplete: boolean
+        }
+      // Saved but no birthday: sign-up resumes at step 1, not past it.
+      expect((await readGate()).profileStepDone).toBe(false)
+
+      // Under 18 is refused and records nothing.
+      const young = new Date()
+      young.setUTCFullYear(young.getUTCFullYear() - 17)
+      const refused = await send('PATCH', '/me/birthday', {
+        birthday: young.toISOString().slice(0, 10),
+      })
+      expect(refused.status).toBe(400)
+      expect(((await refused.json()) as { error: string }).error).toBe('under_age')
+      expect((await readGate()).profileStepDone).toBe(false)
+
+      expect((await send('PATCH', '/me/birthday', { birthday: '1995-06-15' })).status).toBe(200)
+      const body = await readGate()
       expect(body.profileStepDone).toBe(true)
       expect(body.onboardingComplete).toBe(false)
     })

@@ -240,14 +240,17 @@ function ProfileStep({ initial, onNext }: { initial: MeResponse['profile']; onNe
 
   const save = useMutation({
     mutationFn: async () => {
+      if (!birthday) return // canSubmit already guards this; defensive only
+      // The birthday goes first: the server refuses under 18, and a refusal must leave nothing saved.
+      // Profile first used to store the name and the accepted terms, fail on the birthday, and let a
+      // later launch resume past this step without one.
+      await api.patch('/me/birthday', { birthday })
       await api.patch('/me/profile', {
         name: name.trim(),
         ...(handleProvided ? { handle: igUser } : {}),
         ...(otherArea ? { homeArea: homeArea.trim() } : { neighborhoodSlug }),
         acceptEula: true,
       })
-      if (!birthday) return // canSubmit already guards this; defensive only
-      await api.patch('/me/birthday', { birthday })
     },
     onSuccess: () => {
       tapSuccess()
@@ -264,9 +267,11 @@ function ProfileStep({ initial, onNext }: { initial: MeResponse['profile']; onNe
   const errorText =
     save.error instanceof ApiError && save.error.code === 'handle_taken'
       ? t('onboarding.handle_taken')
-      : save.isError
-        ? t('onboarding.profile_save_error')
-        : null
+      : save.error instanceof ApiError && save.error.code === 'under_age'
+        ? t('onboarding.under_age')
+        : save.isError
+          ? t('onboarding.profile_save_error')
+          : null
   const scrollRef = useRef<ScrollView>(null)
 
   return (
