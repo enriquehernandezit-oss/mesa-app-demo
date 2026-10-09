@@ -312,6 +312,13 @@ export default function RankAPlace() {
     },
   })
   const committedForId = useRef<string | null>(null)
+  // Settles when the ranking's own save does (never rejects: commitInitial reports its failure). A dish
+  // is saved against the ranking, so its POST waits for this; a dish tapped the second the score showed
+  // used to race ahead of it, fail, and sit on "Saving…" for good.
+  const commitSettled = useRef<Promise<unknown>>(Promise.resolve())
+  const commitRanking = (pos: number) => {
+    commitSettled.current = commitInitial.mutateAsync(pos).catch(() => undefined)
+  }
   // Snapshot of `picked` at the exact moment a position first commits for this
   // pick — RevealStep/NoteStep/the placed-stamp below read THIS instead of
   // the live `picked` memo. `invalidateAfterRanking` (in commitInitial's own
@@ -329,9 +336,9 @@ export default function RankAPlace() {
     if (pickedId && position !== null && committedForId.current !== pickedId) {
       committedForId.current = pickedId
       pickedRef.current = picked
-      commitInitial.mutate(position)
+      commitRanking(position)
     }
-  }, [pickedId, position, picked, commitInitial.mutate])
+  }, [pickedId, position, picked, commitInitial.mutateAsync])
   // oxlint-enable react/exhaustive-deps
   const committedPlace = pickedRef.current
 
@@ -395,15 +402,31 @@ export default function RankAPlace() {
   // settled, is unaffected.
   const pendingDishActionRef = useRef<Set<string>>(new Set())
 
-  function enqueueDish(fn: () => Promise<void>) {
+  // Dishes whose save failed: their card says so, with Retry, instead of "Saving…" for ever.
+  const [failedDishes, setFailedDishes] = useState<Set<string>>(new Set())
+  const markDish = (nameKey: string | undefined, failed: boolean) => {
+    if (!nameKey) return
+    setFailedDishes((cur) => {
+      if (cur.has(nameKey) === failed) return cur
+      const next = new Set(cur)
+      if (failed) next.add(nameKey)
+      else next.delete(nameKey)
+      return next
+    })
+  }
+
+  function enqueueDish(fn: () => Promise<void>, nameKey?: string) {
     dishSyncCountRef.current++
     setDishSyncPending(true)
     const run = async () => {
       try {
+        await commitSettled.current
         await fn()
+        markDish(nameKey, false)
       } catch (err) {
         captureError(err, 'rank.dish_sync')
         modalAlert(t('rank.dish_sync_error'))
+        markDish(nameKey, true)
       } finally {
         dishSyncCountRef.current--
         if (dishSyncCountRef.current === 0) setDishSyncPending(false)
@@ -461,7 +484,7 @@ export default function RankAPlace() {
     pendingDishActionRef.current.add(candidate.nameKey)
     const isFirst = selectedDishes.length === 0
     setSelectedDishes((cur) => [...cur, candidate])
-    enqueueDish(() => postDish(candidate, { isFirst })).finally(() => {
+    enqueueDish(() => postDish(candidate, { isFirst }), candidate.nameKey).finally(() => {
       pendingDishActionRef.current.delete(candidate.nameKey)
     })
   }
@@ -492,7 +515,16 @@ export default function RankAPlace() {
     const updated: SelectedDish = { ...target, sentiment }
     setSelectedDishes((cur) => cur.map((d) => (d.nameKey === nameKey ? updated : d)))
     const isFirst = selectedDishes[0]?.nameKey === nameKey
-    enqueueDish(() => postDish(updated, { isFirst }))
+    enqueueDish(() => postDish(updated, { isFirst }), nameKey)
+  }
+
+  function retryDish(nameKey: string) {
+    const target = selectedDishes.find((d) => d.nameKey === nameKey)
+    if (!target) return
+    enqueueDish(
+      () => postDish(target, { isFirst: selectedDishes[0]?.nameKey === nameKey }),
+      nameKey,
+    )
   }
 
   async function attachDishPhoto() {
@@ -754,7 +786,7 @@ export default function RankAPlace() {
         friendAvg={friendsQuery.data?.friendAvg ?? 0}
         commitPending={commitInitial.isPending}
         commitError={commitInitial.isError}
-        onRetryCommit={() => commitInitial.mutate(position)}
+        onRetryCommit={() => commitRanking(position)}
         selectedDishes={selectedDishes}
         dishCounts={dishCounts}
         dishNudge={dishNudge}
@@ -763,6 +795,8 @@ export default function RankAPlace() {
         dishNamesError={dishNamesQuery.isError}
         dishImage={dishImage}
         dishGrain={dishGrain}
+        dishFailed={failedDishes}
+        onRetryDish={retryDish}
         onAddDish={addDish}
         onRemoveDish={removeDish}
         onSetSentiment={setDishSentiment}
@@ -876,6 +910,8 @@ function RevealStep({
   dishNamesError,
   dishImage,
   dishGrain,
+  dishFailed,
+  onRetryDish,
   onAddDish,
   onRemoveDish,
   onSetSentiment,
@@ -904,6 +940,8 @@ function RevealStep({
   dishNamesError: boolean
   dishImage: string | null
   dishGrain: Grain
+  dishFailed: Set<string>
+  onRetryDish: (nameKey: string) => void
   onAddDish: (dish: SelectedDish) => void
   onRemoveDish: (nameKey: string) => void
   onSetSentiment: (nameKey: string, sentiment: Sentiment) => void
@@ -1175,7 +1213,21 @@ function RevealStep({
               </Text>
               {/* Every change saves as you make it (the parent's queue) — this says so,
                   instead of leaving "did that stick?" to guesswork. */}
-              {d.dishId ? (
+              {dishFailed.has(d.nameKey) ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => onRetryDish(d.nameKey)}
+                  hitSlop={8}
+                  className="active:opacity-60"
+                >
+                  <Text
+                    maxFontSizeMultiplier={MAX_SCALE}
+                    className="font-ui-semibold text-label text-accent"
+                  >
+                    {t('rank.dish_sync_error')} · {t('rank.retry_short')}
+                  </Text>
+                </Pressable>
+              ) : d.dishId ? (
                 <View className="flex-row items-center gap-1">
                   <CheckIcon size={14} color="text-muted" strokeWidth={2.2} />
                   <Caption>{t('rank.dish_saved')}</Caption>
