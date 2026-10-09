@@ -1171,6 +1171,8 @@ export const es = {
   'rank.discard_note_title': '¿Descartar tu nota?',
   'rank.discard_note_message': 'Tu ranking ya quedó guardado.',
   'rank.discard_button': 'Descartar',
+  'rank.leave_saved_title': '¿Salir sin cambiarlo?',
+  'rank.leave_button': 'Salir',
   'rank.save_error': 'No se pudo guardar tu nota',
   'rank.add_place_capped': 'Llegaste al límite de lugares por hoy.',
   'rank.add_place_error': 'No se pudo agregar el lugar.',

@@ -1106,6 +1106,8 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'rank.discard_note_title': 'Discard your note?',
   'rank.discard_note_message': 'Your ranking is already saved.',
   'rank.discard_button': 'Discard',
+  'rank.leave_saved_title': 'Leave without changing it?',
+  'rank.leave_button': 'Leave',
   'rank.save_error': "Couldn't save your note",
   'rank.add_place_capped': "You've hit today's limit for adding places.",
   'rank.add_place_error': "Couldn't add the place.",

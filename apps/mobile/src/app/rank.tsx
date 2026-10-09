@@ -566,11 +566,20 @@ export default function RankAPlace() {
     ((sentiment !== null && position === null) ||
       (position !== null && !revealed && (commitInitial.isPending || commitInitial.isError)) ||
       (revealed && (note.trim() !== '' || tags.length > 0)))
+  // Backed out of the score to redo the comparisons: the ranking was saved when the score showed, so
+  // "Discard this ranking?" would be a lie. Say it is kept; the sheet can still be left.
+  const keptAtReveal = position === null && commitInitial.isSuccess
   usePreventRemove(dirty, ({ data }) => {
     showActionSheet({
-      title: revealed ? t('rank.discard_note_title') : t('rank.discard_title'),
-      message: revealed ? t('rank.discard_note_message') : undefined,
-      options: [{ label: t('rank.discard_button'), destructive: true }],
+      title: keptAtReveal
+        ? t('rank.leave_saved_title')
+        : revealed
+          ? t('rank.discard_note_title')
+          : t('rank.discard_title'),
+      message: keptAtReveal || revealed ? t('rank.discard_note_message') : undefined,
+      options: keptAtReveal
+        ? [{ label: t('rank.leave_button') }]
+        : [{ label: t('rank.discard_button'), destructive: true }],
     }).then((i) => {
       if (i === 0) navigation.dispatch(data.action)
     })
