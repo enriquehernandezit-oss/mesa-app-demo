@@ -1306,6 +1306,7 @@ export const es = {
   'events.until': 'hasta las {time}',
   'events.hint': 'Cuándo, dónde y quién va, más abajo',
   'events.invite_friends': 'Invitar amigos',
+  'place.dish_photos': 'Fotos de platos',
   'place.share_title': 'Compartir lugar',
   'place.share_in_mesa': 'Enviar en Mesa',
   'place.share_elsewhere': 'Compartir una tarjeta o enlace',

@@ -1251,6 +1251,7 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'events.send_n': { one: 'Send to 1', other: 'Send to {n}' },
   'events.sent_count': { one: 'Sent to 1 person.', other: 'Sent to {n} people.' },
   'events.send_error': "Couldn't send it. Try again.",
+  'place.dish_photos': 'Dish photos',
   'place.share_title': 'Share place',
   'place.share_in_mesa': 'Send in Mesa',
   'place.share_elsewhere': 'Share a card or link',

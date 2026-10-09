@@ -4,6 +4,7 @@ import { Pressable, Text, View, useWindowDimensions } from 'react-native'
 import { MAX_SCALE } from '@/components/ui'
 import { Glass } from '@/components/ui/Glass'
 import { ChevronIcon, PinIcon } from '@/components/ui/icons'
+import { PlaceCover } from '@/components/ui/PlaceCover'
 import { heroNameSize } from '@/lib/nameCard'
 import { useColor } from '@/theme/useColor'
 import { useLift } from '@/theme/useLift'
@@ -24,6 +25,14 @@ export type PlaceTag = {
 // page and the event page share it: the chip's `icon` (a pin for a place, the kind's icon for an
 // event) and the name's largest size (`titleSize`) are the two things that differ.
 //
+// Photos members posted of the dishes here, on the first screen: a few thumbnails and a way into all
+// of them. Only given for a place that has some.
+export type PlacePhotos = {
+  items: { id: string; name: string; imageId: string }[]
+  label: string
+  onPress: () => void
+}
+
 // `bottom` is the room to leave under the hint for the floating bar.
 export function PlaceHero({
   name,
@@ -34,6 +43,7 @@ export function PlaceHero({
   tags,
   hint,
   bottom,
+  photos,
 }: {
   name: string
   category: string
@@ -43,6 +53,7 @@ export function PlaceHero({
   tags: PlaceTag[]
   hint: string
   bottom: number
+  photos?: PlacePhotos
 }) {
   const lift = useLift('float')
   const shade = useColor('photo-scrim')
@@ -119,6 +130,38 @@ export function PlaceHero({
             })}
           </View>
         </Glass>
+      ) : null}
+
+      {photos && photos.items.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={photos.label}
+          onPress={photos.onPress}
+          className="mt-3 active:opacity-80"
+        >
+          <Glass variant="panel" radius={30} className="flex-row items-center gap-3 p-[11px]">
+            <View className="flex-row gap-1.5">
+              {photos.items.slice(0, 4).map((p) => (
+                <View key={p.id} className="h-[46px] w-[46px] overflow-hidden rounded-[14px]">
+                  <PlaceCover
+                    name={p.name}
+                    coverImageId={p.imageId}
+                    size={{ w: 140, h: 140 }}
+                    className="h-full w-full rounded-none"
+                  />
+                </View>
+              ))}
+            </View>
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={MAX_SCALE}
+              className="flex-1 font-ui-semibold text-label text-hglass-fg"
+            >
+              {photos.label}
+            </Text>
+            <ChevronIcon size={16} color="hglass-fg" strokeWidth={2.2} />
+          </Glass>
+        </Pressable>
       ) : null}
 
       <View className="mt-6 flex-row items-center justify-center gap-1.5">

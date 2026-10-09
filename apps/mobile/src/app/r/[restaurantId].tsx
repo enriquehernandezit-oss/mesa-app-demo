@@ -28,6 +28,7 @@ import { placeWhere } from '@/lib/placeWhere'
 import { useFriendsOnlyScores } from '@/lib/prefs'
 import { shareSpotCard } from '@/lib/shareCardStore'
 import type {
+  Dish,
   EventSummary,
   RestaurantMenu as RestaurantMenuData,
   RestaurantProfileResponse,
@@ -83,6 +84,17 @@ export default function RestaurantProfile() {
     queryFn: () => api.get<{ events: EventSummary[] }>(`/events/restaurant/${restaurantId}`),
     enabled: Boolean(restaurantId),
   })
+
+  // The dish photos members posted here (the same query and cache as the dishes rail below), for the
+  // thumbnails on the first screen.
+  const dishesQ = useQuery({
+    queryKey: ['dishes', restaurantId],
+    queryFn: () => api.get<{ dishes: Dish[] }>(`/dishes/restaurant/${restaurantId}`),
+    enabled: Boolean(restaurantId),
+  })
+  const dishPhotos = (dishesQ.data?.dishes ?? []).flatMap((d) =>
+    d.imageId ? [{ id: d.id, name: d.name, imageId: d.imageId }] : [],
+  )
 
   // Warms the menu screen's own query before the "Menu" tile is ever tapped, so the push
   // usually opens straight to the loaded list.
@@ -314,6 +326,15 @@ export default function RestaurantProfile() {
               sub={[hoursLine, where].filter(Boolean).join(' · ')}
               tags={tags}
               hint={t('place.hint')}
+              photos={
+                dishPhotos.length > 0
+                  ? {
+                      items: dishPhotos,
+                      label: t('place.dish_photos'),
+                      onPress: () => router.push(`/r/${restaurantId}/dishes`),
+                    }
+                  : undefined
+              }
               bottom={barBottom + RANK_BAR_HEIGHT + 14}
             />
           </Animated.View>
