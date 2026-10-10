@@ -874,6 +874,9 @@ export const es = {
   'onboarding.profile_save_error': 'No se pudo guardar — revisa tus datos e intenta de nuevo.',
   'onboarding.continue': 'Continuar',
   'onboarding.loading_spots': 'Cargando spots…',
+  'onboarding.profile_load_error':
+    'No pudimos cargar tu perfil. Revisa tu conexión e inténtalo de nuevo.',
+  'onboarding.spots_empty': 'Todavía no hay lugares para elegir. Inténtalo de nuevo en un momento.',
   'onboarding.spots_error': 'No se pudieron cargar los spots.',
   'onboarding.which_have_you_been': 'Elige tus favoritos',
   'onboarding.choose_range':

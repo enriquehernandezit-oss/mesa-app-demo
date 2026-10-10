@@ -56,7 +56,7 @@ export default function Onboarding() {
   const authLost = useAuthLost()
   const { data: session, isPending } = useSession()
   const authed = Boolean(session?.user)
-  const { data: me } = useProfile(authed && !authLost)
+  const { data: me, isError: meError, refetch: refetchMe } = useProfile(authed && !authLost)
   // Where sign-up starts: someone who left after saving step 1 (and signed in again) picks up at the
   // starter list instead of filling the profile in twice. Decided once, when /me first arrives.
   const [step, setStep] = useState<Step | null>(null)
@@ -142,7 +142,18 @@ export default function Onboarding() {
         </View>
       </View>
 
-      {step === null && <Body className="px-5 pt-8">{t('onboarding.loading_spots')}</Body>}
+      {/* Waiting on the profile. If it fails to load this used to say "Loading spots…" for good, with
+          nothing to tap but Leave. */}
+      {step === null &&
+        (meError ? (
+          <View className="flex-1 items-center justify-center px-5">
+            <ErrorState onRetry={() => refetchMe()}>
+              {t('onboarding.profile_load_error')}
+            </ErrorState>
+          </View>
+        ) : (
+          <Body className="px-5 pt-8">{t('onboarding.loading_spots')}</Body>
+        ))}
       {step === 'profile' && me && (
         <ProfileStep initial={me.profile} onNext={() => setStep('rank')} />
       )}
@@ -527,6 +538,16 @@ function RankStep({ onNext }: { onNext: () => void }) {
     return (
       <View className="flex-1 items-center justify-center px-5">
         <ErrorState onRetry={() => refetch()}>{t('onboarding.spots_error')}</ErrorState>
+      </View>
+    )
+  }
+
+  // Nothing to pick from (the API tops the list up from the whole catalog, so this means the catalog
+  // itself is empty or the answer was cut short): the button below could never be enabled. Offer a retry.
+  if (data.restaurants.length === 0) {
+    return (
+      <View className="flex-1 items-center justify-center px-5">
+        <ErrorState onRetry={() => refetch()}>{t('onboarding.spots_empty')}</ErrorState>
       </View>
     )
   }

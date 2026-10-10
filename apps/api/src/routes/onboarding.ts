@@ -1,10 +1,11 @@
 import { db, hashPhone, normalizePhone, schema } from '@mesa/db'
-import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne, notInArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import type { AuthedEnv } from '../context'
 import { currentOrder, lockUserList, rewrite } from '../lib/rankingOrder'
+import { starterCandidates } from '../lib/starterCandidates'
 import { spendMatchBudget } from '../lib/usageBudget'
 import { blockedByMe, blockedMe, followingIds } from '../lib/visibility'
 import { requireAuth } from '../middleware/session'
@@ -15,9 +16,6 @@ import { requireAuth } from '../middleware/session'
 
 // Unset -> contact matching is fully dark, same convention as routes/social.ts.
 const PHONE_MATCH_SECRET = process.env.PHONE_MATCH_SECRET
-
-// How many places the sign-up starter list offers.
-export const STARTER_CANDIDATES = 20
 
 const rankingsSchema = z.object({
   // Ordered best-first, as the pairwise comparisons settled them.
@@ -51,42 +49,8 @@ export const onboardingRoutes = new Hono<AuthedEnv>()
   // would, post-import (M6), make a newcomer's first impression the 15
   // alphabetically-first Foursquare rows (fast-food and all). (M7)
   .get('/candidates', async (c) => {
-    const inAnyList = db
-      .selectDistinct({ id: schema.listItems.restaurantId })
-      .from(schema.listItems)
-    const rows = await db
-      .select({
-        id: schema.restaurants.id,
-        name: schema.restaurants.name,
-        cuisine: schema.restaurants.cuisine,
-        coverImageId: schema.restaurants.coverImageId,
-        neighborhoodSlug: schema.neighborhoods.slug,
-        neighborhoodName: schema.neighborhoods.name,
-      })
-      .from(schema.restaurants)
-      .leftJoin(
-        schema.neighborhoods,
-        eq(schema.neighborhoods.id, schema.restaurants.neighborhoodId),
-      )
-      .leftJoin(schema.rankings, eq(schema.rankings.restaurantId, schema.restaurants.id))
-      .where(
-        and(
-          isNull(schema.restaurants.removedAt),
-          isNull(schema.restaurants.closedAt),
-          or(eq(schema.restaurants.isDemo, true), inArray(schema.restaurants.id, inAnyList)),
-        ),
-      )
-      .groupBy(schema.restaurants.id, schema.neighborhoods.slug, schema.neighborhoods.name)
-      .orderBy(sql`count(${schema.rankings.id}) desc`, asc(schema.restaurants.name))
-      // The 20 most-ranked: sign-up asks for the 1–5 you like most among them (Beli's first-run list).
-      .limit(STARTER_CANDIDATES)
-    const restaurants = rows.map(({ neighborhoodSlug, neighborhoodName, ...r }) => ({
-      ...r,
-      neighborhood:
-        neighborhoodSlug && neighborhoodName
-          ? { slug: neighborhoodSlug, name: neighborhoodName }
-          : null,
-    }))
+    // The 20 most-ranked: sign-up asks for the 1–5 you like most among them (Beli's first-run list).
+    const restaurants = await db.transaction((tx) => starterCandidates(tx))
     return c.json({ restaurants })
   })
 

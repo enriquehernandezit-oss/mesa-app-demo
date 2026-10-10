@@ -820,6 +820,9 @@ export const en: Record<keyof typeof es, string | { one: string; other: string }
   'onboarding.profile_save_error': "Couldn't save — check your info and try again.",
   'onboarding.continue': 'Continue',
   'onboarding.loading_spots': 'Loading spots…',
+  'onboarding.profile_load_error':
+    "Couldn't load your profile. Check your connection and try again.",
+  'onboarding.spots_empty': 'There are no places to choose from yet. Try again in a moment.',
   'onboarding.spots_error': "Couldn't load the spots.",
   'onboarding.which_have_you_been': 'Pick your favorites',
   'onboarding.choose_range':
