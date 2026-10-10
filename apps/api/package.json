@@ -26,7 +26,8 @@
     "taste:backfill": "bun run src/taste-backfill.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "user:delete": "bun run src/delete-user.ts"
+    "user:delete": "bun run src/delete-user.ts",
+    "users:purge-seed": "bun run src/purge-seed-users.ts"
   },
   "dependencies": {
     "@mesa/db": "workspace:*",

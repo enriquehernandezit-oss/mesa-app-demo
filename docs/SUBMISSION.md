@@ -39,7 +39,24 @@ by `RNMAPBOX_MAPS_DOWNLOAD_TOKEN`, which is the one the podspec reads).
 
 ## 2. Founder: production data hygiene
 
-- **Delete the demo account** (`demo@mesa.test`). Its password has been typed in
+- **Remove the seeded fictional members** (about 40 invented people with their rankings,
+  dishes, notes, comments and follows) so only real people are in the app. Back up the
+  database first; this cannot be undone. `apps/api/src/purge-seed-users.ts`
+  (`lib/purgeSeedMembers.ts` says exactly who counts: no email, no sign-in account, no
+  session, no phone — so no real member and not the demo account):
+
+  ```bash
+  cd apps/api
+  DATABASE_URL="<prod url>" bun run users:purge-seed --dry-run          # lists them, rolls back
+  DATABASE_URL="<prod url>" bun run users:purge-seed --expect <count>   # the count the dry run printed
+  ```
+
+  The demo account follows 8 of them, so its feed goes empty afterwards.
+
+- **The demo account** (`demo@mesa.test`) stays for now. Change its password in the app
+  (Settings → Your account → Change password) once the public link is out; delete it later with
+  `user:delete`.
+- (Older note, kept for the delete step:) **Delete the demo account** (`demo@mesa.test`). Its password has been typed in
   plain text; it must not exist once outsiders have a build.
   `apps/api/src/delete-user.ts` (dry-run first).
 - **Invented catalog data**: the seed gives real Santo Domingo restaurants fake
